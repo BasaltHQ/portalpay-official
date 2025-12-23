@@ -1,0 +1,32 @@
+version: "3.9"
+
+# White-label demo: run two containers from the same image with different branding
+# Both services share the same connections and secrets via .env
+services:
+  portalpay:
+    build: .
+    image: payportal:latest
+    env_file:
+      - .env
+    environment:
+      - BRAND_KEY=portalpay
+      # Optional: only needed if you want client-side reads of brand (not required in our implementation)
+      # - NEXT_PUBLIC_BRAND_KEY=portalpay
+    ports:
+      - "8081:3000"
+    # If brand assets are customized outside the image, mount them read-only
+    volumes:
+      - ./public/brands/portalpay:/app/public/brands/portalpay:ro
+
+  paynex:
+    image: payportal:latest
+    env_file:
+      - .env
+    environment:
+      - BRAND_KEY=paynex
+      # Optional: only needed if you want client-side reads of brand (not required in our implementation)
+      # - NEXT_PUBLIC_BRAND_KEY=acme
+    ports:
+      - "8082:3000"
+    volumes:
+      - ./public/brands/acme:/app/public/brands/acme:ro

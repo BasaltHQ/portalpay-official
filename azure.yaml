@@ -1,0 +1,17 @@
+name: payportal-partner
+
+infra:
+  provider: bicep
+  path: infra/main.bicep
+
+parameters:
+  # These are set at deploy-time via `azd env set` from scripts/partner-provision.ps1
+  managedEnvironmentId: ${MANAGED_ENVIRONMENT_ID}
+  name: ${CONTAINER_APP_NAME}
+  location: ${AZURE_LOCATION}
+  image: ${CONTAINER_IMAGE}
+  brandKey: ${BRAND_KEY}
+  appUrl: ${NEXT_PUBLIC_APP_URL}
+  brandName: ${PP_BRAND_NAME}
+  brandLogo: ${PP_BRAND_LOGO}
+  brandFavicon: ${PP_BRAND_FAVICON}

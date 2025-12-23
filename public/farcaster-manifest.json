@@ -1,0 +1,15 @@
+{
+  "name": "Chicken Bones",
+  "icon": "/android-chrome-192x192.png",
+  "description": "Read the chicken bones. Live AI audio agent with sessions and billing.",
+  "splash": "/story4.png",
+  "home_url": "/",
+  "terms_url": "/",
+  "privacy_url": "/",
+  "app": {
+    "platform": "web",
+    "url": "/"
+  }
+}
+
+

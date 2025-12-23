@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<policies>
+  <inbound>
+    <base />
+    <!-- Starter: 500 req/min, 5k req/week -->
+    <rate-limit-by-key calls="500" renewal-period="60" counter-key="@(context.Subscription.Id)" />
+    <quota-by-key calls="5000" renewal-period="604800" counter-key="@(context.Subscription.Id)" />
+  </inbound>
+  <backend>
+    <base />
+  </backend>
+  <outbound>
+    <base />
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>
+

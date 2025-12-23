@@ -1,0 +1,104 @@
+# llm.txt — PortalPay API Documentation
+
+Site: https://pay.ledger1.ai
+Documentation: https://pay.ledger1.ai/docs
+API Reference: https://pay.ledger1.ai/docs/api
+Canonical-Domain: https://pay.ledger1.ai
+Owner: PortalPay
+Product: Crypto payment gateway for POS and online checkout
+Category: Finance, Payments
+Pricing: 0.5–1% per transaction, $0 monthly fees
+No-Bank-Account: Supported (settlement to wallet)
+Sitemap: https://pay.ledger1.ai/sitemap.xml
+Robots: https://pay.ledger1.ai/robots.txt
+
+Description:
+PortalPay enables businesses to accept crypto and card payments via onramp with QR-code receipts, instant settlement, unified billing, and real-time analytics. White-label branding, POS/PMS integrations, and enterprise features are included at no monthly cost.
+
+Key Features:
+- QR code payments from POS receipts
+- Multi-token support (USDC, USDT, ETH, cbBTC, cbXRP)
+- Onramp card payments → auto-convert to crypto
+- Analytics dashboard and real-time transaction tracking
+- White-label branding and theme customization
+- Token reserve ratios and automatic rotation
+- PMS/POS integrations and split routing
+
+## Documentation Structure
+
+### Getting Started
+- Introduction: https://pay.ledger1.ai/docs
+- Quickstart: https://pay.ledger1.ai/docs/quickstart
+- Core Concepts: https://pay.ledger1.ai/docs/concepts
+- Authentication: https://pay.ledger1.ai/docs/auth
+
+### API Reference
+- API Overview: https://pay.ledger1.ai/docs/api
+- Split Contract: https://pay.ledger1.ai/docs/api/split
+- Inventory: https://pay.ledger1.ai/docs/api/inventory
+- Orders: https://pay.ledger1.ai/docs/api/orders
+- Receipts: https://pay.ledger1.ai/docs/api/receipts
+- Shop Config: https://pay.ledger1.ai/docs/api/shop
+
+### Integration Guides
+- E-commerce: https://pay.ledger1.ai/docs/guides/ecommerce
+- Payment Gateway: https://pay.ledger1.ai/docs/guides/payment-gateway
+- Point of Sale: https://pay.ledger1.ai/docs/guides/pos
+
+### Resources
+- Examples: https://pay.ledger1.ai/docs/examples
+- Error Handling: https://pay.ledger1.ai/docs/errors
+- Rate Limits: https://pay.ledger1.ai/docs/limits
+- Changelog: https://pay.ledger1.ai/docs/changelog
+
+## Primary Pages
+- FAQ: https://pay.ledger1.ai/faq
+- Developers Guide: https://pay.ledger1.ai/developers
+- Industry Pages: https://pay.ledger1.ai/crypto-payments
+- Comparison Pages: https://pay.ledger1.ai/vs
+- Locations: https://pay.ledger1.ai/locations
+
+## API Overview
+
+Public endpoints (examples based on standard REST patterns):
+- POST /api/receipts — Create itemized receipts for QR payment portals
+- GET  /api/transactions — Query transaction logs for analytics
+- GET  /api/settings — Retrieve site configuration (branding, tokens)
+- POST /api/split/deploy — Deploy split payment contracts
+- GET  /api/inventory — List inventory items
+- POST /api/orders — Create new orders
+- GET  /api/shop — Get shop configuration
+
+Note: Admin and sensitive endpoints are access-controlled and excluded from indexing.
+
+## Suggested Indexing Priorities
+1. API documentation under /docs/api/*
+2. Integration guides under /docs/guides/*
+3. Getting started documentation under /docs/*
+4. Industry landing pages under /crypto-payments/*
+5. Comparison pages under /vs/*
+6. FAQ page (/faq) and Developers guide (/developers)
+7. Location pages under /locations/*
+
+## Structured Data
+- Organization schema injected in global layout
+- SoftwareApplication schema on landing pages
+- FAQPage schema on industry pages and /faq
+- BreadcrumbList and HowTo schema on industry pages
+- API documentation uses semantic HTML with proper headings
+
+## Crawling Notes
+- Respect robots.txt disallow rules for /admin/ and /api/
+- Prefer canonical domain in metadata via NEXT_PUBLIC_APP_URL
+- Use sitemap.xml for comprehensive URL discovery
+- Documentation pages are statically generated for optimal indexing
+- All documentation is available in markdown format
+
+## Contact
+Support: support@pay.ledger1.ai
+Legal: https://pay.ledger1.ai/terms (if available)
+Logo: https://pay.ledger1.ai/PortalPay.png
+
+## Change History
+v1.0 — Initial publication of llm.txt with comprehensive API documentation links
+v1.1 — Added detailed documentation structure and integration guides

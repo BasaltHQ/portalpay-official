@@ -1,0 +1,20 @@
+[
+  {
+    "type": "Proxy",
+    "hostName": "apim-portalpay-prod.azure-api.net",
+    "certificateSource": "BuiltIn",
+    "keyVaultId": null,
+    "defaultSslBinding": true,
+    "negotiateClientCertificate": false,
+    "identityClientId": null
+  },
+  {
+    "type": "Proxy",
+    "hostName": "api.pay.ledger1.ai",
+    "certificateSource": "KeyVault",
+    "keyVaultId": "https://kv-portalpay-prod.vault.azure.net/secrets/api-pay-ledger1-2025-11-06/ab48c53bfc58440b99c272f6fee00839",
+    "defaultSslBinding": true,
+    "negotiateClientCertificate": false,
+    "identityClientId": null
+  }
+]

@@ -1,0 +1,62 @@
+# ai.txt — PortalPay
+
+Site: https://pay.ledger1.ai
+Canonical-Domain: https://pay.ledger1.ai
+Owner: PortalPay
+Product: Crypto payment gateway for POS and online checkout
+Category: Finance, Payments
+Pricing: 0.5–1% per transaction, $0 monthly fees
+No-Bank-Account: Supported (settlement to wallet)
+Sitemap: https://pay.ledger1.ai/sitemap.xml
+Robots: https://pay.ledger1.ai/robots.txt
+
+Description:
+PortalPay enables businesses to accept crypto and card payments via onramp with QR-code receipts, instant settlement, unified billing, and real-time analytics. White-label branding, POS/PMS integrations, and enterprise features are included at no monthly cost.
+
+Key Features:
+- QR code payments from POS receipts
+- Multi-token support (USDC, USDT, ETH, cbBTC, cbXRP)
+- Onramp card payments → auto-convert to crypto
+- Analytics dashboard and real-time transaction tracking
+- White-label branding and theme customization
+- Token reserve ratios and automatic rotation
+- PMS/POS integrations and split routing
+
+Primary Docs:
+- FAQ: https://pay.ledger1.ai/faq
+- Developers Guide: https://pay.ledger1.ai/developers
+- Industry Pages: https://pay.ledger1.ai/crypto-payments
+- Comparison Pages: https://pay.ledger1.ai/vs
+- Locations: https://pay.ledger1.ai/locations
+
+Suggested Indexing Priorities:
+1. Industry landing pages under /crypto-payments/*
+2. Comparison pages under /vs/*
+3. FAQ page (/faq) and Developers guide (/developers)
+4. Location pages under /locations/*
+5. Main product pages (/admin, /pricing, /shop)
+
+Structured Data:
+- Organization schema injected in global layout
+- SoftwareApplication schema on landing pages
+- FAQPage schema on industry pages and /faq
+- BreadcrumbList and HowTo schema on industry pages
+
+API Overview (public endpoints vary by deployment; examples):
+- POST /api/receipts — Create itemized receipts for QR payment portals
+- GET  /api/transactions — Query transaction logs for analytics
+- GET  /api/settings — Retrieve site configuration (branding, tokens)
+Note: Admin and sensitive endpoints may be access-controlled and excluded from indexing.
+
+Crawling Notes:
+- Respect robots.txt disallow rules for /admin/ and /api/
+- Prefer canonical domain in metadata via NEXT_PUBLIC_APP_URL
+- Use sitemap.xml for comprehensive URL discovery
+
+Contact:
+Support: support@pay.ledger1.ai
+Legal: https://pay.ledger1.ai/terms (if available)
+Logo: https://pay.ledger1.ai/PortalPay.png
+
+Change History:
+v1.0 — Initial publication of ai.txt to aid AI systems in understanding PortalPay’s capabilities, documentation, and indexing priorities.

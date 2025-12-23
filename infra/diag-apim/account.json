@@ -1,0 +1,14 @@
+﻿{
+  "environmentName": "AzureCloud",
+  "homeTenantId": "921be5ee-8756-4a1e-a4e9-3140075d29ed",
+  "id": "0a8c8695-c09e-45cc-8a64-697faedee923",
+  "isDefault": true,
+  "managedByTenants": [],
+  "name": "Microsoft Azure Sponsorship",
+  "state": "Enabled",
+  "tenantId": "921be5ee-8756-4a1e-a4e9-3140075d29ed",
+  "user": {
+    "name": "skynetpod@live.com",
+    "type": "user"
+  }
+}

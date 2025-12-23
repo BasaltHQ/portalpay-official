@@ -1,0 +1,18 @@
+﻿[
+  {
+    "etag": "\"a2038dd8-0000-0100-0000-6901312c0000\"",
+    "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.Network/privateDnsZones/privatelink.azure-api.net/virtualNetworkLinks/link-vnet-portalpay-prod",
+    "location": "global",
+    "name": "link-vnet-portalpay-prod",
+    "provisioningState": "Succeeded",
+    "registrationEnabled": true,
+    "resolutionPolicy": "Default",
+    "resourceGroup": "rg-portalpay-prod",
+    "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+    "virtualNetwork": {
+      "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.Network/virtualNetworks/vnet-portalpay-prod",
+      "resourceGroup": "rg-portalpay-prod"
+    },
+    "virtualNetworkLinkState": "Completed"
+  }
+]

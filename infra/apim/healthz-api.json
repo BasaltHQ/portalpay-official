@@ -1,0 +1,10 @@
+{
+  "properties": {
+    "displayName": "Healthz",
+    "path": "healthz",
+    "protocols": [
+      "https"
+    ],
+    "subscriptionRequired": false
+  }
+}

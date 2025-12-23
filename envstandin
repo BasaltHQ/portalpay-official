@@ -1,0 +1,82 @@
+JWT_SECRET=your-super-secret-jwt-key-for-development-change-in-production-min-32-chars
+MONGODB_URI=mongodb+srv://skynetpod:Vishnu%40123@varuniengram.global.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000
+NODE_ENV=development
+DEMO_MODE=true
+DEMO_STUBS=true
+NEXT_PUBLIC_DEMO_MODE=true
+BRAND_NAME=LedgerOne Auto
+BACKOFFICE_NAME=LedgerOne Auto Shop
+MONGODB_DB_NAME=ledgerone-autoshop-demo
+MONGODB_DB_NAME_DEMO=ledgerone-autoshop-demo
+MONGODB_URI_DEMO='mongodb+srv://skynetpod:Vishnu%40123@varuniengram.global.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000'
+NEXT_PUBLIC_GRAPHQL_URL=http://localhost:3000/api/graphql
+
+# Bear Cloud API Configuration
+NEXT_PUBLIC_BEAR_CLOUD_API_URL=api.bearrobotics.ai:443
+NEXT_PUBLIC_BEAR_CLOUD_AUTH_URL=https://api-auth.bearrobotics.ai/authorizeApiAccess
+NEXT_PUBLIC_BEAR_CLOUD_API_KEY=8927a329-55c2-40a3-aeb9-03cfa1229769
+NEXT_PUBLIC_BEAR_CLOUD_SECRET=7d8519ea-5908-408e-badf-fd0183730e9d
+NEXT_PUBLIC_BEAR_CLOUD_SCOPE=LOCAL_GOAT_LLC
+DEMO_FREEZE_DATE=2025-09-04T13:00:00-05:00
+NEXT_PUBLIC_DEMO_FREEZE_TIME=14:00
+
+# Optional: API timeout settings
+NEXT_PUBLIC_BEAR_CLOUD_TIMEOUT=30000
+
+# Optional: Enable/disable robotics module
+NEXT_PUBLIC_ROBOTICS_ENABLED=true
+
+# Optional: Mock data fallback (for development/testing)
+NEXT_PUBLIC_ROBOTICS_USE_MOCK_FALLBACK=true
+
+# Toast API
+TOAST_CLIENT_SECRET=qK8YBX4Z27oUA8M36Ppw5newpF6GE4zJ8HiqOvQTsN8j6Dsem0LAGSDjF8lCzeIc
+TOAST_CLIENT_ID=ZNt0eJ4SpovBJFqPF2hYHo2FXQT8cesx
+TOAST_API_HOSTNAME=https://ws-api.toasttab.com
+TOAST_USER_ACCESS_TYPE=TOAST_MACHINE_CLIENT
+TOAST_RESTAURANT_ID=9efdf98d-b68b-4d2a-96ff-5624b691a2d7
+
+# Azure OpenAI (Varuni)
+AZURE_OPENAI_API_KEY=aefad978082243b2a79e279b203efc29
+AZURE_OPENAI_ENDPOINT=https://panopticon.openai.azure.com/
+AZURE_OPENAI_API_VERSION=2024-04-01-preview
+AZURE_OPENAI_DEPLOYMENT=gpt-5-nano
+AZURE_OPENAI_MODEL_NAME=gpt-5-nano
+AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT=anubis-embedder
+VARUNI_RAG_ENABLED=true
+
+VARUNI_LANGGRAPH_ENABLED=false
+VARUNI_HITL_ENABLED=false
+VARUNI_PARALLEL_READS=true
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Toolset toggles (true/false). Omitted = true by default.
+VARUNI_TOOLSET_MAIN=true
+VARUNI_TOOLSET_UNIVERSAL=true
+VARUNI_TOOLSET_INVENTORY=true
+VARUNI_TOOLSET_KNOWLEDGE=true
+VARUNI_TOOLSET_ANALYTICS=true
+VARUNI_TOOLSET_VENDORS=true
+VARUNI_TOOLSET_ORDERS=true
+VARUNI_TOOLSET_SCHEDULING=false
+VARUNI_TOOLSET_MENUS=true
+VARUNI_TOOLSET_SEARCH=true
+VARUNI_TOOLSET_ROSTER=true
+VARUNI_TOOLSET_MAINTENANCE=true
+VARUNI_TOOLSET_GQL=true
+VARUNI_TOOLSET_REST=true
+VARUNI_TOOLSET_TOAST=true
+VARUNI_TOOLSET_SEVEN_SHIFTS=true
+
+# Token accounting (streaming usually lacks usage). When false, UI hides usage.
+VARUNI_COUNT_TOKENS=true
+
+# 7Shifts API
+SEVENSHIFTS_ACCESS_TOKEN=36396231623235382d393938642d343732302d393232632d633263353437333738633336
+
+# Azure OpenAI Realtime Voice
+AZURE_OPENAI_REALTIME_DEPLOYMENT=gpt-realtime
+AZURE_OPENAI_REALTIME_API_VERSION=2024-10-01-preview
+AZURE_OPENAI_REALTIME_WEBRTC_URL=https://eastus2.realtimeapi-preview.ai.azure.com/v1/realtimertc
+NEXT_PUBLIC_AZURE_OPENAI_REALTIME_WEBRTC_URL=https://eastus2.realtimeapi-preview.ai.azure.com/v1/realtimertc
+NEXT_PUBLIC_AZURE_OPENAI_REALTIME_DEPLOYMENT=gpt-realtime

@@ -1,0 +1,6 @@
+{
+  "properties": {
+    "format": "rawxml",
+    "value": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<policies>\n  <inbound>\n    <base />\n    <!-- Starter: 500 req/min, 5k req/week -->\n    <rate-limit-by-key calls=\"500\" renewal-period=\"60\" counter-key=\"@(context.Subscription.Id)\" />\n    <quota-by-key calls=\"5000\" renewal-period=\"604800\" counter-key=\"@(context.Subscription.Id)\" />\n  </inbound>\n  <backend>\n    <base />\n  </backend>\n  <outbound>\n    <base />\n  </outbound>\n  <on-error>\n    <base />\n  </on-error>\n</policies>\n"
+  }
+}

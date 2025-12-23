@@ -1,0 +1,302 @@
+export type BrandColors = {
+  primary: string;
+  accent?: string;
+};
+
+export type BrandLogos = {
+  app: string; // used for nav/defaults
+  favicon: string; // used for icons/manifest
+  symbol?: string; // compact symbol logo (e.g., /ppsymbol.png) for sidebars/footers/docs
+  og?: string; // dedicated Open Graph image
+  twitter?: string; // dedicated Twitter Card image
+  socialDefault?: string; // explicit default social image when no generative image
+  footer?: string; // optional footer symbol
+  navbarMode?: "symbol" | "logo"; // navbar presentation: symbol+text or full logo (height fits navbar, width auto)
+};
+
+export type BrandMeta = {
+  ogTitle?: string;
+  ogDescription?: string;
+};
+
+export type ApimCatalogEntry = {
+  productId: string; // real APIM Product ID (reused)
+  aliasName?: string; // partner-branded display name
+  aliasDescription?: string; // partner-branded description
+  visible?: boolean; // curate visibility in Partner Developer portal
+  docsSlug?: string; // optional curated docs route
+};
+
+export type BrandConfig = {
+  key: string;
+  name: string;
+  colors: BrandColors;
+  logos: BrandLogos;
+  meta?: BrandMeta;
+
+  // New: brand URL and partner split config
+  appUrl?: string; // brand-specific base URL (custom domain), resolved via defaults if absent
+  platformFeeBps?: number; // default 80 bps (0.8%)
+  partnerFeeBps?: number; // per-brand partner fee bps
+  defaultMerchantFeeBps?: number; // optional default merchant add-on bps
+  partnerWallet?: string; // optional wallet for partner recipient in split
+
+  // New: APIM product aliasing/curation for Partner Developer portal
+  apimCatalog?: ApimCatalogEntry[];
+};
+
+export const BRANDS: Record<string, BrandConfig> = {
+  portalpay: {
+    key: "portalpay",
+    name: "PortalPay",
+    colors: { primary: "#0EA5E9", accent: "#22C55E" },
+    logos: { app: "/ppsymbol.png", favicon: "/favicon-32x32.png", symbol: "/ppsymbol.png", og: "/PortalPay.png", twitter: "/PortalPay.png" },
+    meta: { ogTitle: "PortalPay", ogDescription: "Payments & portals" },
+    platformFeeBps: 50,
+    partnerFeeBps: 0,
+    defaultMerchantFeeBps: 0,
+    apimCatalog: [], // original platform may expose full catalog elsewhere
+  },
+  // Example second brand - provide assets under /public/brands/paynex/*
+  paynex: {
+    key: "paynex",
+    name: "Paynex",
+    colors: { primary: "#014611", accent: "#76a278" },
+    logos: { app: "/brands/paynex/paynexsymbolt.png", favicon: "/brands/paynex/favicon.ico", symbol: "/brands/paynex/paynexsymbolt.png" },
+    meta: { ogTitle: "Paynex", ogDescription: "At Paynex, we specialize in crafting customized merchant accounts specifically designed for high-risk industries." },
+    platformFeeBps: 50,
+    partnerFeeBps: 50, // example 0.25%
+    defaultMerchantFeeBps: 0,
+    partnerWallet: "0x2367ae402e06edb2460e51f820c09fc885f87b65", // set via Admin API
+    apimCatalog: [
+      // { productId: "prod-payments", aliasName: "Payments API", visible: true },
+      // { productId: "prod-receipts", aliasName: "Receipts API", visible: true },
+    ],
+  },
+};
+
+import { isPartnerContext, getSanitizedSplitBps } from "@/lib/env";
+
+/**
+ * Resolve the active brand key from environment or fallback.
+ * BRAND_KEY is server-only; do not expose client-side env unless necessary.
+ */
+export function getBrandKey(): string {
+  const raw = (process.env.BRAND_KEY || "").toLowerCase().trim();
+  // Always honor the configured brand key; do not require a hardcoded entry
+  if (raw) return raw;
+
+  // In partner context, no implicit fallback — brand must be provided via env/config
+  // However, we do not throw here to allow RootLayout to render a fallback (so middleware can redirect to /brand-not-configured)
+  if (isPartnerContext()) {
+    return "portalpay";
+  }
+
+  // Platform or local dev may fallback to portalpay
+  return "portalpay";
+}
+
+/**
+ * Apply runtime defaults to a brand config (appUrl, fees, catalog visibility).
+ */
+export function applyBrandDefaults(raw: BrandConfig): BrandConfig {
+  const appUrlEnv = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || undefined;
+
+  // Runtime env overrides injected during deploy for partner branding
+  const envBrandName = (process.env.PP_BRAND_NAME || process.env.BRAND_NAME || process.env.NEXT_PUBLIC_BRAND_NAME || "").trim();
+  const envBrandLogo = (
+    process.env.PP_BRAND_LOGO ||
+    process.env.BRAND_LOGO_URL ||
+    process.env.NEXT_PUBLIC_BRAND_LOGO_URL ||
+    ""
+  ).trim();
+  const envBrandFavicon = (
+    process.env.PP_BRAND_FAVICON ||
+    process.env.BRAND_FAVICON_URL ||
+    process.env.NEXT_PUBLIC_BRAND_FAVICON_URL ||
+    ""
+  ).trim();
+  const envBrandSymbol = (
+    process.env.PP_BRAND_SYMBOL ||
+    process.env.BRAND_SYMBOL_URL ||
+    process.env.NEXT_PUBLIC_BRAND_SYMBOL_URL ||
+    ""
+  ).trim();
+  const envBrandOg = (process.env.PP_BRAND_OG || process.env.BRAND_OG_URL || process.env.NEXT_PUBLIC_BRAND_OG_URL || "").trim();
+  const envBrandTwitter = (process.env.PP_BRAND_TWITTER || process.env.BRAND_TWITTER_URL || process.env.NEXT_PUBLIC_BRAND_TWITTER_URL || "").trim();
+  const envBrandSocialDefault = (process.env.PP_BRAND_SOCIAL_DEFAULT || process.env.BRAND_SOCIAL_DEFAULT || process.env.NEXT_PUBLIC_BRAND_SOCIAL_DEFAULT || "").trim();
+  const envPartnerWallet = (process.env.PARTNER_WALLET || "").trim();
+
+  // New: color overrides provided at deploy time (PartnerManagementPanel -> provision env)
+  const envBrandPrimary =
+    (process.env.BRAND_PRIMARY_COLOR || process.env.NEXT_PUBLIC_BRAND_PRIMARY_COLOR || "").trim();
+  const envBrandAccent =
+    (process.env.BRAND_ACCENT_COLOR || process.env.NEXT_PUBLIC_BRAND_ACCENT_COLOR || "").trim();
+
+  // Prefer runtime split BPS only when explicitly provided via env; otherwise keep brand defaults
+  const split = getSanitizedSplitBps();
+  const hasEnvPlatform =
+    typeof process.env.PLATFORM_SPLIT_BPS === "string" && process.env.PLATFORM_SPLIT_BPS.trim() !== "";
+  const hasEnvPartner =
+    typeof process.env.PARTNER_SPLIT_BPS === "string" && process.env.PARTNER_SPLIT_BPS.trim() !== "";
+  const platformFeeBps =
+    hasEnvPlatform && typeof split?.platform === "number"
+      ? split.platform
+      : (typeof raw.platformFeeBps === "number" ? raw.platformFeeBps : 50);
+  const partnerFeeBps =
+    hasEnvPartner && typeof split?.partner === "number"
+      ? split.partner
+      : (typeof raw.partnerFeeBps === "number" ? raw.partnerFeeBps : 0);
+  const defaultMerchantFeeBps =
+    typeof raw.defaultMerchantFeeBps === "number" ? raw.defaultMerchantFeeBps : 0;
+
+  const apimCatalog = Array.isArray(raw.apimCatalog)
+    ? raw.apimCatalog.map((e) => ({ ...e, visible: e.visible ?? true }))
+    : [];
+
+  // Compute effective colors, preferring DB overrides (raw), then env-injected values
+  const effectivePrimary = (raw.colors?.primary || envBrandPrimary || "#0a0a0a");
+  const effectiveAccent = (raw.colors?.accent || envBrandAccent || raw.colors?.accent);
+
+  return {
+    ...raw,
+    // Prefer database overrides; fall back to env-injected values if absent
+    name: raw.name || envBrandName,
+    colors: { primary: effectivePrimary, accent: effectiveAccent },
+    logos: {
+      app: raw.logos.app || envBrandLogo,
+      favicon: raw.logos.favicon || envBrandFavicon,
+      symbol: raw.logos.symbol || raw.logos.app || envBrandSymbol || envBrandLogo,
+      og: raw.logos.og || envBrandOg || raw.logos.app || envBrandLogo,
+      twitter: raw.logos.twitter || envBrandTwitter || raw.logos.og || envBrandOg || raw.logos.app || envBrandLogo,
+      socialDefault: (raw.logos as any)?.socialDefault || envBrandSocialDefault || undefined,
+      footer: raw.logos.footer,
+      // Preserve existing navbarMode if provided in raw (DB overrides) and leave undefined otherwise
+      ...(typeof (raw as any)?.logos?.navbarMode === "string"
+        ? { navbarMode: ((raw as any).logos.navbarMode === "logo" ? "logo" : "symbol") }
+        : {}),
+    },
+    appUrl: raw.appUrl || appUrlEnv, // prefer brand-specific appUrl; fall back to env
+    partnerWallet: raw.partnerWallet || envPartnerWallet,
+    platformFeeBps,
+    partnerFeeBps,
+    defaultMerchantFeeBps,
+    apimCatalog,
+  };
+}
+
+/**
+ * Get the active brand configuration (with defaults applied).
+ * 
+ * For dynamic partners NOT in the static BRANDS map, this returns a minimal stub.
+ * The actual branding (name, colors, logos) should be fetched from Cosmos DB
+ * via /api/platform/brands/{brandKey}/config and merged at runtime.
+ */
+export function getBrandConfig(envKey?: string): BrandConfig {
+  const key = (envKey || getBrandKey()).toLowerCase();
+  
+  // For partner containers OR unknown brands, always use a neutral stub hydrated via env/Cosmos
+  // This avoids needing to update the static BRANDS map for each new partner
+  const isPartner = isPartnerContext();
+  const isUnknownBrand = !BRANDS[key];
+  
+  if (isPartner || isUnknownBrand) {
+    // Use a neutral stub that will be hydrated from Cosmos DB at runtime
+    const stub: BrandConfig = {
+      key,
+      name: key ? key.charAt(0).toUpperCase() + key.slice(1) : "", // Titleized key as placeholder
+      colors: { primary: "#0a0a0a", accent: "#6b7280" }, // Neutral dark colors
+      logos: { app: "", favicon: "/api/favicon" }, // Use dynamic favicon endpoint
+      meta: {},
+      platformFeeBps: 50,
+      partnerFeeBps: 0,
+      defaultMerchantFeeBps: 0,
+      partnerWallet: "",
+      apimCatalog: [],
+    };
+    const configured = applyBrandDefaults(stub);
+
+    // Only use static BRANDS fallback if the key exists (for legacy partners like paynex)
+    // This is optional - new partners should be fully DB-driven
+    if (BRANDS[key]) {
+      const staticBrand = BRANDS[key];
+      // Merge static brand values as fallback when env/Cosmos doesn't provide them
+      if (!configured.logos.app || !configured.logos.symbol) {
+        configured.logos = {
+          app: configured.logos.app || staticBrand.logos.app,
+          favicon: configured.logos.favicon || staticBrand.logos.favicon,
+          symbol: configured.logos.symbol || staticBrand.logos.symbol || configured.logos.app || staticBrand.logos.app,
+          footer: configured.logos.footer || staticBrand.logos.footer,
+        };
+      }
+      if (!configured.name || !String(configured.name).trim()) {
+        configured.name = staticBrand.name;
+      }
+      // Partner wallet fallback
+      if ((!configured.partnerWallet || !/^0x[a-f0-9]{40}$/i.test(String(configured.partnerWallet))) && typeof staticBrand.partnerWallet === "string" && staticBrand.partnerWallet) {
+        configured.partnerWallet = staticBrand.partnerWallet;
+      }
+      // Partner fee bps fallback
+      if ((typeof configured.partnerFeeBps !== "number" || configured.partnerFeeBps <= 0) && typeof staticBrand.partnerFeeBps === "number" && staticBrand.partnerFeeBps > 0) {
+        configured.partnerFeeBps = staticBrand.partnerFeeBps;
+      }
+      // Platform fee bps fallback
+      if (typeof configured.platformFeeBps !== "number" && typeof staticBrand.platformFeeBps === "number") {
+        configured.platformFeeBps = staticBrand.platformFeeBps;
+      }
+    }
+
+    return configured;
+  }
+  
+  // Platform container with known brand (portalpay) - use static BRANDS entry
+  return applyBrandDefaults(BRANDS[key]);
+}
+
+/**
+ * Compute effective processing fee (bps) shown to merchants:
+ * platform (default 80) + partner (brand) + merchant add-on.
+ */
+export function getEffectiveProcessingFeeBps(
+  brand: BrandConfig,
+  merchantFeeBps?: number
+): number {
+  const platform = typeof brand.platformFeeBps === "number" ? brand.platformFeeBps : 50;
+  const partner = typeof brand.partnerFeeBps === "number" ? brand.partnerFeeBps : 0;
+  const merchant = typeof merchantFeeBps === "number" ? merchantFeeBps : (brand.defaultMerchantFeeBps ?? 0);
+  return platform + partner + merchant;
+}
+
+/**
+ * Utility to compute split amounts for a given gross amount (in minor units) for reporting.
+ * Note: Contract recipients may aggregate Partner into Platform if on-chain recipients are limited.
+ */
+export function computeSplitAmounts(
+  grossMinor: number,
+  brand: BrandConfig,
+  merchantFeeBps: number = 0
+): {
+  platformFeeBps: number;
+  partnerFeeBps: number;
+  merchantFeeBps: number;
+  amountPlatformMinor: number;
+  amountPartnerMinor: number;
+  amountMerchantMinor: number;
+} {
+  const platformFeeBps = typeof brand.platformFeeBps === "number" ? brand.platformFeeBps : 50;
+  const partnerFeeBps = typeof brand.partnerFeeBps === "number" ? brand.partnerFeeBps : 0;
+  const merchantBps = typeof merchantFeeBps === "number" ? merchantFeeBps : (brand.defaultMerchantFeeBps ?? 0);
+
+  const amountPlatformMinor = Math.floor((grossMinor * platformFeeBps) / 10000);
+  const amountPartnerMinor = Math.floor((grossMinor * partnerFeeBps) / 10000);
+  const amountMerchantMinor = grossMinor - amountPlatformMinor - amountPartnerMinor - Math.floor((grossMinor * merchantBps) / 10000);
+
+  return {
+    platformFeeBps,
+    partnerFeeBps,
+    merchantFeeBps: merchantBps,
+    amountPlatformMinor,
+    amountPartnerMinor,
+    amountMerchantMinor,
+  };
+}

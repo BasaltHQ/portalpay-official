@@ -1,0 +1,1012 @@
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import Script from "next/script";
+import { cache } from "react";
+import { HideableNavbar } from "@/components/hideable-navbar";
+import { QueryProvider } from "@/components/providers/query-provider";
+import { HydrationSanitizer } from "@/components/providers/hydration-sanitizer";
+import { ThirdwebAppProvider } from "@/components/providers/thirdweb-app-provider";
+import { ThemeLoader } from "@/components/providers/theme-loader";
+import { ThemeReadyGate } from "@/components/providers/theme-ready-gate";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { I18nProvider } from "@/components/providers/i18n-provider";
+import { AutoTranslateProvider } from "@/components/providers/auto-translate-provider";
+import SplitGuardMount from "@/components/split-guard-mount";
+import { getBaseUrl, isLocalhostUrl } from "@/lib/base-url";
+import messages from "../../messages/en.json";
+import { getBrandConfig, getBrandKey } from "@/config/brands";
+import { BrandProvider } from "@/contexts/BrandContext";
+import { getContainer } from "@/lib/cosmos";
+import { getEnv } from "@/lib/env";
+import { getBrandConfigFromCosmos, getContainerIdentity } from "@/lib/brand-config";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const APP_URL = getBaseUrl();
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+// Known partner brand patterns - hostname prefixes that map to partner brand keys
+const KNOWN_PARTNER_PATTERNS: Record<string, string> = {
+  paynex: "paynex",
+  xoinpay: "xoinpay",
+  icunow: "icunow-store",
+  // Add more partner brands here as needed
+};
+
+// Custom partner domains - full hostnames that map to partner brand keys
+const KNOWN_PARTNER_DOMAINS: Record<string, string> = {
+  "paynex.azurewebsites.net": "paynex",
+  "xoinpay.azurewebsites.net": "xoinpay",
+  "icunow.azurewebsites.net": "icunow-store"
+  // Add more custom partner domains here as needed
+};
+
+// Main platform hostnames that should NOT be treated as partner containers (without subdomains)
+const PLATFORM_HOSTNAMES = [
+  "pay.ledger1.ai",
+];
+
+function deriveBrandKeyFromHostname(host: string): { brandKey: string; containerType: string } | null {
+  if (!host) return null;
+  
+  // Remove port number if present (e.g., localhost:3001 -> localhost)
+  const hostLower = host.toLowerCase().split(":")[0];
+  
+  // Check custom partner domains first (exact match)
+  if (KNOWN_PARTNER_DOMAINS[hostLower]) {
+    return { brandKey: KNOWN_PARTNER_DOMAINS[hostLower], containerType: "partner" };
+  }
+  
+  // Check if this is a main platform hostname (exact match or subdomain)
+  for (const platformHost of PLATFORM_HOSTNAMES) {
+    if (hostLower === platformHost || hostLower.endsWith(`.${platformHost}`)) {
+      return { brandKey: "portalpay", containerType: "platform" };
+    }
+  }
+  
+  // Handle localhost with subdomains for development testing
+  // e.g., paynex.localhost:3001 -> brandKey: paynex, containerType: partner
+  if (hostLower === "localhost" || hostLower === "127.0.0.1") {
+    // Plain localhost without subdomain - use env vars (handled by caller)
+    return null;
+  }
+  
+  if (hostLower.endsWith(".localhost") || hostLower.endsWith(".127.0.0.1")) {
+    const parts = hostLower.split(".");
+    const candidate = parts[0];
+    if (candidate && candidate.length > 0 && candidate !== "www") {
+      // Check known partner patterns first
+      if (KNOWN_PARTNER_PATTERNS[candidate]) {
+        return { brandKey: KNOWN_PARTNER_PATTERNS[candidate], containerType: "partner" };
+      }
+      // Allow any subdomain on localhost for testing
+      return { brandKey: candidate, containerType: "partner" };
+    }
+  }
+  
+  // Extract potential brand key from hostname
+  // Patterns: <brandKey>.azurewebsites.net, <brandKey>.payportal.co, <brandKey>.<domain>
+  const parts = hostLower.split(".");
+  if (parts.length >= 2) {
+    const candidate = parts[0];
+    
+    // Check known partner patterns
+    if (KNOWN_PARTNER_PATTERNS[candidate]) {
+      return { brandKey: KNOWN_PARTNER_PATTERNS[candidate], containerType: "partner" };
+    }
+    
+    // For Azure Container Apps and custom domains, derive from subdomain
+    // e.g., paynex.azurewebsites.net -> paynex
+    // e.g., xoinpay.payportal.co -> xoinpay
+    if (candidate && candidate.length > 2 && !["www", "api", "admin"].includes(candidate)) {
+      const isAzure = hostLower.endsWith(".azurewebsites.net") || hostLower.endsWith(".azurecontainerapps.io");
+      const isPayportal = hostLower.endsWith(".payportal.co") || hostLower.endsWith(".portalpay.app");
+      
+      if (isAzure || isPayportal) {
+        return { brandKey: candidate, containerType: "partner" };
+      }
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Direct server-side access to container identity - no HTTP call needed
+ * The layout runs on the server so we can read process.env directly
+ * Falls back to hostname-based detection when env vars are not set
+ */
+async function getContainerIdentityDirect(): Promise<{ brandKey: string; containerType: string }> {
+  let containerType = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || process.env.CONTAINER_TYPE || "").toLowerCase();
+  let brandKey = String(process.env.NEXT_PUBLIC_BRAND_KEY || process.env.BRAND_KEY || "").toLowerCase();
+  
+  // If brandKey is empty, try to derive from hostname
+  if (!brandKey) {
+    try {
+      const { headers } = require("next/headers");
+      const headersList = await headers();
+      const host = headersList.get("x-forwarded-host") || headersList.get("host") || "";
+      const derived = deriveBrandKeyFromHostname(host);
+      
+      if (derived) {
+        brandKey = derived.brandKey;
+        // Only override containerType if it wasn't explicitly set in env
+        if (!containerType) {
+          containerType = derived.containerType;
+        }
+      }
+    } catch {
+      // headers() may fail in some contexts; continue with env values
+    }
+  }
+  
+  // Default containerType to "platform" if still empty
+  if (!containerType) {
+    containerType = "platform";
+  }
+  
+  return { containerType, brandKey };
+}
+
+/**
+ * Direct Cosmos DB read for brand config - NO HTTP fetch to avoid startup deadlock
+ * Uses the getBrandConfigFromCosmos function from brand-config.ts
+ */
+const getBrandConfigDirect = cache(async (brandKey: string): Promise<any> => {
+  if (!brandKey) return null;
+  
+  try {
+    // Direct Cosmos DB read - no HTTP fetch needed
+    const { brand } = await getBrandConfigFromCosmos(brandKey);
+    return brand || null;
+  } catch {
+    return null;
+  }
+});
+
+export async function generateMetadata(): Promise<Metadata> {
+  // Derive brand key from hostname (e.g., paynex.azurewebsites.net -> paynex)
+  let brandKeyFromHost: string | undefined;
+  try {
+    const hostUrl = getBaseUrl();
+    const u = new URL(hostUrl);
+    const host = u.hostname || "";
+    const parts = host.split(".");
+    if (parts.length >= 3 && host.endsWith(".azurewebsites.net")) {
+      brandKeyFromHost = parts[0].toLowerCase();
+    }
+    // Prefer server-provided container identity (uses NEXT_PUBLIC_BRAND_KEY/BRAND_KEY)
+    // Direct env access - no HTTP call needed
+    {
+      const ci = await getContainerIdentityDirect();
+      const bk = ci.brandKey;
+      const ct = ci.containerType;
+      // Only override when explicitly partner, or when host-based brandKey could not be derived
+      if (bk && (ct === "partner" || !brandKeyFromHost)) {
+        brandKeyFromHost = bk;
+      }
+    }
+    // Fallback to configured BRAND_KEY/env helper when not on azurewebsites host
+    if (!brandKeyFromHost) {
+      try {
+        brandKeyFromHost = getBrandKey();
+      } catch {}
+    }
+  } catch {}
+  const baseBrand = getBrandConfig(brandKeyFromHost);
+  let runtimeBrand = baseBrand;
+  const envMeta = getEnv();
+  // Get container identity for proper partner detection (includes hostname-derived type)
+  let containerIdentityForMeta: { containerType: string; brandKey: string } = { containerType: "platform", brandKey: "" };
+  try {
+    containerIdentityForMeta = await getContainerIdentityDirect();
+  } catch {}
+  const isPlatformPortalpay = String(envMeta.CONTAINER_TYPE || "").toLowerCase() === "platform" && baseBrand.key === "portalpay";
+
+  // Prefer site-config theme.meta for OG title/description (runtime editable in Admin > Branding)
+  // Direct Cosmos DB read - NO HTTP fetch to avoid startup deadlock
+  let siteMetaTitle: string | undefined;
+  let siteMetaDescription: string | undefined;
+  let siteAppUrl: string | undefined;
+  let siteBrandName: string | undefined;
+  let siteLogosSocialDefault: string | undefined;
+  try {
+    const recipient = String(process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "").toLowerCase();
+    const c = await getContainer();
+    const DOC_ID = "site:config";
+    const partition = recipient || DOC_ID;
+    const { resource } = await c.item(DOC_ID, partition).read<any>();
+    if (resource) {
+      // Prefer brandName from site-config to avoid tab title showing platform default
+      if (typeof resource?.theme?.brandName === "string" && resource.theme.brandName.trim()) {
+        siteBrandName = resource.theme.brandName.trim();
+      }
+      const meta = (resource?.theme?.meta || {}) as any;
+      if (typeof meta.ogTitle === "string" && meta.ogTitle.trim()) siteMetaTitle = meta.ogTitle.trim();
+      if (typeof meta.ogDescription === "string" && meta.ogDescription.trim()) siteMetaDescription = meta.ogDescription.trim();
+      // Prefer appUrl from site-config for metadata base
+      if (typeof resource?.appUrl === "string" && resource.appUrl.trim()) {
+        siteAppUrl = resource.appUrl.trim();
+      }
+      // Read optional default social image from site-config theme.logos.socialDefault
+      try {
+        const rawSD = (resource?.theme?.logos as any)?.socialDefault;
+        if (typeof rawSD === "string") {
+          const v = rawSD.trim();
+          if (/^https?:\/\//i.test(v) || v.startsWith("/")) {
+            siteLogosSocialDefault = v;
+          }
+        }
+      } catch {}
+    }
+  } catch {}
+
+  // Fallback to platform brand config meta if site-config meta is missing
+  let platformMetaTitle: string | undefined;
+  let platformMetaDescription: string | undefined;
+  // Prefer hostname-derived brandKey over static baseBrand.key for metadata fetch
+  const effectiveBrandKeyForMetaFetch = brandKeyFromHost || baseBrand.key;
+  try {
+    // Use cached function to deduplicate brand config fetches within the same render
+    const b = await getBrandConfigDirect(effectiveBrandKeyForMetaFetch);
+    const bm = ((b as any)?.meta || {}) as any;
+    if (typeof bm.ogTitle === "string" && bm.ogTitle.trim()) platformMetaTitle = bm.ogTitle.trim();
+    if (typeof bm.ogDescription === "string" && bm.ogDescription.trim()) platformMetaDescription = bm.ogDescription.trim();
+    // Prefer platform brand appUrl if site-config didn't provide it
+    if (!siteAppUrl && typeof b?.appUrl === "string" && b.appUrl.trim()) {
+      siteAppUrl = b.appUrl.trim();
+    }
+    // Merge runtime brand overrides (name, logos, appUrl, meta, etc.)
+    if (b && typeof b === "object") {
+      const isPartner = String(envMeta.CONTAINER_TYPE || "").toLowerCase() === "partner";
+      runtimeBrand = {
+        ...baseBrand,
+        name: typeof b.name === "string" && b.name ? b.name : baseBrand.name,
+        colors: b.colors && typeof b.colors === "object" ? b.colors : baseBrand.colors,
+        // Do NOT override partner logos with platform overrides; keep static partner assets
+        logos: isPartner
+          ? baseBrand.logos
+          : (b.logos && typeof b.logos === "object" ? { ...baseBrand.logos, ...b.logos } : baseBrand.logos),
+        appUrl: typeof b.appUrl === "string" && b.appUrl ? b.appUrl : baseBrand.appUrl,
+        partnerFeeBps: typeof b.partnerFeeBps === "number" ? b.partnerFeeBps : baseBrand.partnerFeeBps,
+        defaultMerchantFeeBps: typeof b.defaultMerchantFeeBps === "number" ? b.defaultMerchantFeeBps : baseBrand.defaultMerchantFeeBps,
+        partnerWallet: typeof b.partnerWallet === "string" && b.partnerWallet ? b.partnerWallet : baseBrand.partnerWallet,
+        apimCatalog: Array.isArray(b.apimCatalog) ? b.apimCatalog : baseBrand.apimCatalog,
+        meta: b.meta && typeof b.meta === "object" ? b.meta : baseBrand.meta,
+      };
+    }
+  } catch {}
+
+  // Detect partner container for brand name sanitization (use hostname-derived containerType)
+  const isPartnerContainerForMeta = String(containerIdentityForMeta.containerType || envMeta.CONTAINER_TYPE || "").toLowerCase() === "partner" ||
+    (brandKeyFromHost && brandKeyFromHost.toLowerCase() !== "portalpay") ||
+    (containerIdentityForMeta.brandKey && containerIdentityForMeta.brandKey.toLowerCase() !== "portalpay");
+  const sanitizedName = (() => {
+    const nm = String(runtimeBrand?.name || "").trim();
+    // In partner containers, treat "PortalPay" as a generic placeholder
+    const generic = /^ledger\d*$/i.test(nm) || /^partner\d*$/i.test(nm) || /^default$/i.test(nm) ||
+      (isPartnerContainerForMeta && /^portalpay$/i.test(nm));
+    if (!nm || generic) {
+      // Prefer hostname-derived brandKey, containerIdentity brandKey, then runtimeBrand.key for titleize
+      const k = String(brandKeyFromHost || containerIdentityForMeta.brandKey || (runtimeBrand as any)?.key || "").trim();
+      return k && k.toLowerCase() !== "portalpay" ? k.charAt(0).toUpperCase() + k.slice(1) : (nm || "PortalPay");
+    }
+    return nm;
+  })();
+  // In partner containers, skip platform ogTitle if it says "PortalPay" to avoid wrong branding
+  const filteredOgTitle = (() => {
+    if (isPartnerContainerForMeta && /^portalpay$/i.test(String(runtimeBrand.meta?.ogTitle || "").trim())) {
+      return undefined;
+    }
+    return runtimeBrand.meta?.ogTitle;
+  })();
+  // Filter out "PortalPay" from all og title candidates when in partner containers
+  const ogTitle = (() => {
+    const candidates = [siteMetaTitle, platformMetaTitle, filteredOgTitle];
+    for (const c of candidates) {
+      const v = String(c || "").trim();
+      if (!v) continue;
+      // Skip if it says "PortalPay" anywhere in partner containers (exact match or contains)
+      if (isPartnerContainerForMeta) {
+        // Exact match "PortalPay" - skip entirely
+        if (/^portalpay$/i.test(v)) continue;
+        // Also skip titles that contain "PortalPay" as these leak platform branding
+        if (/portalpay/i.test(v)) continue;
+      }
+      return v;
+    }
+    return sanitizedName;
+  })();
+  const fallbackDescription = `${runtimeBrand.name} is a full‑stack crypto commerce platform: multi‑currency payments on Base, instant receipts & QR terminals, inventory & orders, tax jurisdictions & components, reserve analytics & strategy, on‑chain split releases, branding/partner tools, loyalty, and shops.`;
+  const candidateDescription =
+    siteMetaDescription ||
+    platformMetaDescription ||
+    runtimeBrand.meta?.ogDescription;
+  const description = (() => {
+    const fb = fallbackDescription;
+    const cd = (candidateDescription || "").trim();
+    const norm = cd.toLowerCase();
+    // If no description, or a generic/too-short placeholder, use the solid fallback
+    if (!cd) return fb;
+    if (norm === "payments & portals" || cd.length < 24) return fb;
+    return cd;
+  })();
+
+  // Choose metadata base: site-config appUrl if available, otherwise APP_URL
+  // CRITICAL: Never use localhost URLs in production metadata
+  let metadataBaseUrl = APP_URL;
+  if (siteAppUrl && siteAppUrl.length && !isLocalhostUrl(siteAppUrl)) {
+    metadataBaseUrl = siteAppUrl;
+  }
+  
+  // If metadataBaseUrl is still localhost in production, try to derive from brand appUrl or request headers
+  if (process.env.NODE_ENV === 'production' && isLocalhostUrl(metadataBaseUrl)) {
+    // Try brand appUrl first
+    if (runtimeBrand.appUrl && !isLocalhostUrl(runtimeBrand.appUrl)) {
+      metadataBaseUrl = runtimeBrand.appUrl;
+    } else {
+      // Try to get from request headers
+      try {
+        const { headers } = require('next/headers');
+        const headersList = await headers();
+        const host = headersList.get('x-forwarded-host') || headersList.get('host');
+        if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+          metadataBaseUrl = `https://${host}`;
+        }
+      } catch {
+        // headers() may fail; fall back to a placeholder that signals misconfiguration
+        // but won't leak localhost to crawlers
+        metadataBaseUrl = 'https://example.com';
+      }
+    }
+  }
+  // Force HTTPS for OG images when possible
+  const safeMetadataBase = /localhost|127\.0\.0\.1/i.test(metadataBaseUrl)
+    ? metadataBaseUrl
+    : metadataBaseUrl.replace(/^http:\/\//, "https://");
+  // Prefer dedicated OG/Twitter if provided; fallback to app logo
+  // IMPORTANT: For partner containers, ONLY use their own siteLogosSocialDefault if set.
+  // If partners haven't set their own social image, force the generative fallback to avoid
+  // inheriting platform branding/images.
+  // 
+  // Additionally, filter out any known platform image URLs that may have leaked into partner
+  // site-configs during provisioning or data inheritance.
+  const KNOWN_PLATFORM_SOCIAL_IMAGES = [
+    '/portalpay.png', '/portalpay2.png', '/socialbanner.jpg',
+    '/ppsymbol.png', '/ppsymbolbg.png'
+  ];
+  const isPlatformImage = (url: string | undefined): boolean => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    // Check if it's a known platform image path
+    if (KNOWN_PLATFORM_SOCIAL_IMAGES.some(p => lower.endsWith(p))) return true;
+    // Check if URL contains 'portalpay' in the path (common platform branding)
+    if (lower.includes('/portalpay') || lower.includes('portalpay.')) return true;
+    return false;
+  };
+  
+  // For partners: filter out platform images from siteLogosSocialDefault
+  const effectiveSiteLogosSocialDefault = (() => {
+    if (!siteLogosSocialDefault) return undefined;
+    // If this is a partner and the socialDefault looks like a platform image, ignore it
+    if (isPartnerContainerForMeta && isPlatformImage(siteLogosSocialDefault)) {
+      return undefined;
+    }
+    return siteLogosSocialDefault;
+  })();
+  
+  const ogImagePath = (() => {
+    // If partner container and no valid siteLogosSocialDefault was set in their site-config,
+    // return empty to force generative fallback
+    if (isPartnerContainerForMeta && !effectiveSiteLogosSocialDefault) {
+      return null; // Will trigger generative fallback
+    }
+    return effectiveSiteLogosSocialDefault || runtimeBrand.logos?.og || runtimeBrand.logos.app;
+  })();
+  const twitterImagePath = (() => {
+    if (isPartnerContainerForMeta && !effectiveSiteLogosSocialDefault) {
+      return null; // Will trigger generative fallback
+    }
+    return effectiveSiteLogosSocialDefault || runtimeBrand.logos?.twitter || ogImagePath;
+  })();
+
+  // Optional App Links (iOS / Android) + Deep Link
+  const iosAppId = process.env.NEXT_PUBLIC_IOS_APP_ID || process.env.IOS_APP_ID;
+  const androidPackage = process.env.NEXT_PUBLIC_ANDROID_PACKAGE || process.env.ANDROID_PACKAGE;
+  const deepLinkBase = (process.env.NEXT_PUBLIC_APP_DEEP_LINK || "portalpay://").toString();
+  const iosAppUrl = iosAppId ? `${deepLinkBase.replace(/\/+$/, "")}/open` : undefined;
+  const androidAppUrl = androidPackage ? `${deepLinkBase.replace(/\/+$/, "")}/open` : undefined;
+
+  // Optional Twitter handles
+  const twitterSite = process.env.NEXT_PUBLIC_TWITTER_SITE || "";
+  const twitterCreator = process.env.NEXT_PUBLIC_TWITTER_CREATOR || "";
+
+  // In partner containers, prefer the runtime brand name for tab/application titles
+  const isPartnerContainer = isPartnerContainerForMeta;
+  const brandNameForTitle = (() => {
+    // Prefer site-config name when present and not generic; otherwise use sanitized runtime brand name
+    const nm = String(siteBrandName || "").trim();
+    const generic = /^ledger\d*$/i.test(nm) || /^partner\d*$/i.test(nm) || /^default$/i.test(nm);
+    if (!nm || generic || isPartnerContainer) return sanitizedName;
+    return nm;
+  })();
+
+  return {
+    metadataBase: new URL(safeMetadataBase),
+    applicationName: brandNameForTitle,
+    title: {
+      default: ogTitle,
+      template: `%s • ${brandNameForTitle}`,
+    },
+    description,
+    keywords: [
+      runtimeBrand.name,
+      "payments",
+      "crypto",
+      "billing",
+      "receipts",
+      "analytics",
+      "commerce",
+    ],
+    alternates: {
+      canonical: "/",
+    },
+    openGraph: {
+      type: "website",
+      url: metadataBaseUrl,
+      title: ogTitle,
+      siteName: brandNameForTitle,
+      description,
+      locale: "en_US",
+      images: [
+        {
+          url: (ogImagePath && ogImagePath !== '/' ? (/^https?:\/\//i.test(ogImagePath) ? ogImagePath : `${safeMetadataBase}${ogImagePath}`) : `${safeMetadataBase}/api/og-image/fallback?title=${encodeURIComponent(ogTitle)}&brand=${encodeURIComponent(brandNameForTitle)}&desc=${encodeURIComponent(description)}`),
+          width: 1200,
+          height: 630,
+          alt: runtimeBrand.name,
+          type: "image/png",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description,
+      site: twitterSite || undefined,
+      creator: twitterCreator || undefined,
+      images: [ (twitterImagePath && twitterImagePath !== '/' ? (/^https?:\/\//i.test(twitterImagePath) ? twitterImagePath : `${safeMetadataBase}${twitterImagePath}`) : `${safeMetadataBase}/api/og-image/fallback?title=${encodeURIComponent(ogTitle)}&brand=${encodeURIComponent(brandNameForTitle)}&desc=${encodeURIComponent(description)}`) ],
+    },
+    appLinks: {
+      web: { url: safeMetadataBase },
+      ios: iosAppId && iosAppUrl ? [{ app_store_id: iosAppId as string, url: iosAppUrl }] : undefined,
+      android: androidPackage && androidAppUrl ? [{ package: androidPackage as string, url: androidAppUrl }] : undefined,
+    },
+    formatDetection: {
+      telephone: false,
+      date: false,
+      address: false,
+      email: false,
+      url: true,
+    },
+    icons: {
+      // Always use dynamic endpoint for favicon to avoid stale or wrong-brand icons after hydration
+      icon: [{ url: "/api/favicon" }],
+      apple: (() => {
+        const isPartner = String(envMeta.CONTAINER_TYPE || "").toLowerCase() === "partner";
+        const key = baseBrand.key || "";
+        return isPartner
+          ? [{ url: `/brands/${key}/apple-touch-icon.png`, sizes: "180x180", type: "image/png" }]
+          : [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }];
+      })(),
+      // Also advertise the dynamic endpoint as the shortcut icon so the tab updates correctly
+      shortcut: ["/api/favicon"],
+    },
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "black-translucent",
+      title: brandNameForTitle,
+    },
+    category: "finance",
+    robots: {
+      index: true,
+      follow: true,
+    },
+    other: iosAppId ? { "apple-itunes-app": `app-id=${iosAppId}` } : undefined,
+  };
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0a0a0a",
+};
+
+export default async function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  // Derive brand key from hostname (e.g., paynex.azurewebsites.net -> paynex)
+  let brandKeyFromHost: string | undefined;
+  try {
+    const hostUrl = getBaseUrl();
+    const u = new URL(hostUrl);
+    const host = u.hostname || "";
+    const parts = host.split(".");
+    if (parts.length >= 3 && host.endsWith(".azurewebsites.net")) {
+      brandKeyFromHost = parts[0].toLowerCase();
+    }
+    // Prefer server-provided container identity (uses NEXT_PUBLIC_BRAND_KEY/BRAND_KEY)
+    // Direct env access - no HTTP call needed
+    {
+      const ci = await getContainerIdentityDirect();
+      const bk = ci.brandKey;
+      const ct = ci.containerType;
+      // Only override when explicitly partner, or when host-based brandKey could not be derived
+      if (bk && (ct === "partner" || !brandKeyFromHost)) {
+        brandKeyFromHost = bk;
+      }
+    }
+    // Fallback to configured BRAND_KEY/env helper when not on azurewebsites host
+    if (!brandKeyFromHost) {
+      try {
+        brandKeyFromHost = getBrandKey();
+      } catch {}
+    }
+  } catch {}
+  const baseBrand = getBrandConfig(brandKeyFromHost);
+  let runtimeBrand = baseBrand;
+  const envLayout = getEnv();
+  const isPlatformPortalpayLayout = String(envLayout.CONTAINER_TYPE || "").toLowerCase() === "platform" && baseBrand.key === "portalpay";
+  // Prefer hostname-derived brandKey over static baseBrand.key to ensure we fetch the correct partner config
+  const effectiveBrandKeyForFetch = brandKeyFromHost || baseBrand.key;
+  try {
+    // Use cached function to deduplicate brand config fetches within the same render
+    const b = await getBrandConfigDirect(effectiveBrandKeyForFetch);
+    if (b && typeof b === "object") {
+      const isPartnerLayout = String(envLayout.CONTAINER_TYPE || "").toLowerCase() === "partner";
+      runtimeBrand = {
+        ...baseBrand,
+        name: typeof b.name === "string" && b.name ? b.name : baseBrand.name,
+        colors: b.colors && typeof b.colors === "object" ? b.colors : baseBrand.colors,
+        // Preserve partner logos in layout; avoid platform override replacing favicon/app logo
+        logos: isPartnerLayout
+          ? baseBrand.logos
+          : (b.logos && typeof b.logos === "object" ? { ...baseBrand.logos, ...b.logos } : baseBrand.logos),
+        appUrl: typeof b.appUrl === "string" && b.appUrl ? b.appUrl : baseBrand.appUrl,
+        partnerFeeBps: typeof b.partnerFeeBps === "number" ? b.partnerFeeBps : baseBrand.partnerFeeBps,
+        defaultMerchantFeeBps: typeof b.defaultMerchantFeeBps === "number" ? b.defaultMerchantFeeBps : baseBrand.defaultMerchantFeeBps,
+        partnerWallet: typeof b.partnerWallet === "string" && b.partnerWallet ? b.partnerWallet : baseBrand.partnerWallet,
+        apimCatalog: Array.isArray(b.apimCatalog) ? b.apimCatalog : baseBrand.apimCatalog,
+        meta: b.meta && typeof b.meta === "object" ? b.meta : baseBrand.meta,
+      };
+    }
+  } catch {}
+  const brand = runtimeBrand;
+  const pageBase = (brand.appUrl || APP_URL).replace(/^http:\/\//, "https://");
+  // Compute safe brand name for layout scope (avoid generic placeholders)
+  const isGenericBrandLayout = (() => {
+    const nm = String(brand?.name || "").trim();
+    return /^ledger\d*$/i.test(nm) || /^partner\d*$/i.test(nm) || /^default$/i.test(nm);
+  })();
+  const titleizedKeyLayout = (() => {
+    const k = String(brand?.key || "").trim();
+    return k ? k.charAt(0).toUpperCase() + k.slice(1) : "PortalPay";
+  })();
+  const displayBrandNameLayout = (!String(brand?.name || "").trim() || isGenericBrandLayout)
+    ? titleizedKeyLayout
+    : String(brand?.name || "").trim();
+  const containerIdentity = await getContainerIdentityDirect();
+  return (
+    <html
+      lang="en"
+      className="dark"
+      data-pp-theme-ready="0"
+      data-pp-theme-stage="boot"
+      data-pp-theme-lock="user"
+      data-pp-container-type={containerIdentity.containerType}
+      data-pp-brand-key={brand.key}
+      data-pp-owner-wallet={getEnv().NEXT_PUBLIC_OWNER_WALLET}
+      data-pp-admin-wallets={(getEnv().ADMIN_WALLETS || []).join(",")}
+      data-pp-brand-primary={brand.colors.primary}
+      data-pp-brand-accent={brand.colors.accent}
+      data-pp-brand-header="#ffffff"
+      data-pp-brand-body="#e5e7eb"
+      suppressHydrationWarning
+    >
+      <body
+        suppressHydrationWarning
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        style={{ overflowX: 'hidden' }}
+      >
+        <Script id="pp-preset-vars" strategy="beforeInteractive">{`try {
+          var d=document.documentElement;
+          var dp=d.getAttribute('data-pp-brand-primary')||'#1f2937';
+          var da=d.getAttribute('data-pp-brand-accent')||'#F54029';
+          var dh=d.getAttribute('data-pp-brand-header')||'#ffffff';
+          var db=d.getAttribute('data-pp-brand-body')||'#e5e7eb';
+          d.style.setProperty('--pp-primary',dp);
+          d.style.setProperty('--pp-secondary',da);
+          d.style.setProperty('--pp-text',dh);
+          d.style.setProperty('--pp-text-header',dh);
+          d.style.setProperty('--pp-text-body',db);
+          d.style.setProperty('--primary',dp);
+          d.style.setProperty('--primary-foreground',dh);
+        } catch(e) {}`}</Script>
+        <Script id="pp-prelock" strategy="beforeInteractive">{`try {
+          var d=document.documentElement;
+          var url=new URL(window.location.href);
+          var path=url.pathname || "";
+          // Strip any shop-related query hints when on /terminal to prevent unintended shop navigation
+          try {
+            if (path.indexOf("/terminal") === 0 || path.indexOf("/pricing") === 0) {
+              var changed=false;
+              if (url.searchParams.has("slug")) { url.searchParams.delete("slug"); changed=true; }
+              if (url.searchParams.has("shop")) { url.searchParams.delete("shop"); changed=true; }
+              if (changed) { window.history.replaceState({}, "", url.toString()); }
+            }
+          } catch(e) {}
+          var forcePortal = url.searchParams.get("forcePortalTheme") === "1";
+          var r = String(url.searchParams.get("recipient")||"").trim();
+          var w = String(url.searchParams.get("wallet")||"").trim();
+          var hasRecipient=/^0x[a-fA-F0-9]{40}$/i.test(r) || /^0x[a-fA-F0-9]{40}$/i.test(w);
+          var lock=d.getAttribute("data-pp-theme-lock")||"user";
+          if (path.startsWith("/portal")) { lock = forcePortal ? "portalpay-default" : (hasRecipient ? "merchant" : lock); }
+          else if (path.startsWith("/shop")) { lock="merchant"; }
+          else if (path.startsWith("/terminal")) { lock="user"; }
+          else if (path.startsWith("/pricing")) { lock = hasRecipient ? "merchant" : "user"; }
+          else if (path.startsWith("/developers/dashboard")) { var ct=d.getAttribute("data-pp-container-type")||"platform"; lock = ct==="platform" ? "portalpay-default" : lock; }
+          else if (path.startsWith("/developers/products")) { var ct=d.getAttribute("data-pp-container-type")||"platform"; lock = ct==="platform" ? "portalpay-default" : lock; }
+          d.setAttribute("data-pp-theme-lock", lock);
+          // mark merchant expected state for readiness gate
+          var isPricing = path.startsWith("/pricing");
+          d.setAttribute("data-pp-theme-merchant-expected", (lock==="merchant" || isPricing) ? "1" : "0");
+          // annotate current route for downstream CSS/JS guards
+          d.setAttribute("data-pp-route", path.startsWith("/portal") ? "portal" : (path.startsWith("/shop") ? "shop" : ((path.startsWith("/terminal") || path.startsWith("/pricing")) ? "terminal" : "other")));
+          // hide global background gradient on portal pages to avoid duplicate decorative layers
+          try { if (path.startsWith("/portal")) { var gg = document.querySelector(".global-gradient-layer"); if (gg) gg.setAttribute("hidden", ""); } } catch(e) {}
+          if (lock==="portalpay-default") {
+            d.setAttribute("data-pp-theme-stage","init");
+            d.setAttribute("data-pp-theme-ready","1");
+          }
+        } catch(e) {}`}</Script>
+        <Script id="pp-suppress-ethereum-redefine" strategy="beforeInteractive">{`
+          try {
+            // Suppress extension errors like "Cannot redefine property: ethereum"
+            window.addEventListener('error', function (e) {
+              try {
+                var msg = (e && e.message) ? String(e.message) : '';
+                if (msg.indexOf('Cannot redefine property: ethereum') !== -1) {
+                  e.stopImmediatePropagation && e.stopImmediatePropagation();
+                  e.preventDefault && e.preventDefault();
+                  return false;
+                }
+              } catch {}
+            }, true);
+            window.addEventListener('unhandledrejection', function (e) {
+              try {
+                var reason = e && (e.reason || e.detail);
+                var msg = reason && (reason.message || (reason.toString && reason.toString())) || '';
+                if (String(msg).indexOf('Cannot redefine property: ethereum') !== -1) {
+                  e.stopImmediatePropagation && e.stopImmediatePropagation();
+                  e.preventDefault && e.preventDefault();
+                  return false;
+                }
+              } catch {}
+            }, true);
+          } catch {}
+        `}</Script>
+        {process.env.NODE_ENV !== "production" && (<>
+        <Script id="pp-suppress-nested-button-error" strategy="beforeInteractive">{`
+          try {
+            // Suppress React DEV warning: "In HTML, <button> cannot be a descendant of <button>" from third-party modals
+            // Only intercept when the message matches exactly to avoid hiding other errors
+            window.addEventListener('error', function (e) {
+              try {
+                var msg = (e && e.message) ? String(e.message) : '';
+                var low = String(msg || '').toLowerCase();
+                var pats = [
+                  '<button> cannot be a descendant of <button>',
+                  '<button> cannot appear as a descendant of <button>',
+                  '<button> cannot contain a nested <button>',
+                  'validatedomnesting(',
+                  'warning: validatedomnesting',
+                  'this will cause a hydration error',
+                  'ancestor stack trace'
+                ];
+                for (var i=0;i<pats.length;i++){
+                  if (low.indexOf(pats[i]) !== -1) {
+                    e.stopImmediatePropagation && e.stopImmediatePropagation();
+                    e.preventDefault && e.preventDefault();
+                    return false;
+                  }
+                }
+              } catch {}
+            }, true);
+            window.addEventListener('unhandledrejection', function (e) {
+              try {
+                var reason = e && (e.reason || e.detail);
+                var msg = reason && (reason.message || (reason.toString && reason.toString())) || '';
+                var low = String(msg || '').toLowerCase();
+                var pats = [
+                  '<button> cannot be a descendant of <button>',
+                  '<button> cannot appear as a descendant of <button>',
+                  '<button> cannot contain a nested <button>',
+                  'validatedomnesting(',
+                  'warning: validatedomnesting',
+                  'this will cause a hydration error',
+                  'ancestor stack trace'
+                ];
+                for (var i=0;i<pats.length;i++){
+                  if (low.indexOf(pats[i]) !== -1) {
+                    e.stopImmediatePropagation && e.stopImmediatePropagation();
+                    e.preventDefault && e.preventDefault();
+                    return false;
+                  }
+                }
+              } catch {}
+            }, true);
+          } catch {}
+        `}</Script>
+        <Script id="pp-filter-react-nested-button" strategy="beforeInteractive">{`
+          try {
+            (function(){
+              var origError = console.error;
+              var origWarn = console.warn;
+              var origLog = console.log;
+              var origInfo = console.info;
+              var origDebug = console.debug;
+              function shouldSuppress(args){
+                try {
+                  var patterns = [
+                    'warning: validatedomnesting',
+                    'validatedomnesting(',
+                    '<button> cannot be a descendant of <button>',
+                    '<button> cannot appear as a descendant of <button>',
+                    '<button> cannot contain a nested <button>',
+                    'this will cause a hydration error',
+                    'ancestor stack trace'
+                  ];
+                  function extractText(x){
+                    try {
+                      if (!x) return '';
+                      if (typeof x === 'string') return x;
+                      if (x instanceof Error) return (x.message || '') + ' ' + (x.stack || '');
+                      if (typeof x.message === 'string' || typeof x.stack === 'string') return (x.message || '') + ' ' + (x.stack || '');
+                      if (Array.isArray(x)) return x.map(extractText).join(' ');
+                      var s = (x && x.toString && x.toString()) || '';
+                      return typeof s === 'string' ? s : '';
+                    } catch(_) { return ''; }
+                  }
+                  var blob = '';
+                  for (var i=0;i<args.length;i++) { blob += ' ' + extractText(args[i]); }
+                  var low = String(blob || '').toLowerCase();
+                  for (var j=0;j<patterns.length;j++){
+                    if (low.indexOf(patterns[j]) !== -1) return true;
+                  }
+                } catch(e){}
+                return false;
+              }
+              console.error = function(){
+                if (shouldSuppress(arguments)) return;
+                return origError.apply(this, arguments);
+              };
+              console.warn = function(){
+                if (shouldSuppress(arguments)) return;
+                return origWarn.apply(this, arguments);
+              };
+              console.log = function(){
+                if (shouldSuppress(arguments)) return;
+                return origLog.apply(this, arguments);
+              };
+              console.info = function(){
+                if (shouldSuppress(arguments)) return;
+                return origInfo.apply(this, arguments);
+              };
+              console.debug = function(){
+                if (shouldSuppress(arguments)) return;
+                return origDebug.apply(this, arguments);
+              };
+            })();
+          } catch {}
+        `}</Script>
+        <Script id="pp-fix-thirdweb-nested-buttons" strategy="afterInteractive">{`
+          try {
+            (function(){
+              function patchRoot(root){
+                try {
+                  // Find any nested buttons: button button
+                  var innerButtons = (root || document).querySelectorAll('button button');
+                  innerButtons.forEach(function(inner){
+                    try {
+                      if (!inner || inner.dataset.ppPatched === '1') return;
+                      var parent = inner.parentElement;
+                      if (!parent) return;
+                      var outer = parent.closest('button');
+                      if (!outer || outer === inner) return;
+
+                      // Hide the inner button but keep it in DOM to preserve event handlers
+                      inner.style.display = 'none';
+                      inner.setAttribute('aria-hidden', 'true');
+                      inner.dataset.ppPatched = '1';
+
+                      // Create a surrogate span that looks like the inner button
+                      var surrogate = document.createElement('span');
+                      surrogate.setAttribute('role', 'button');
+                      surrogate.setAttribute('tabindex', '0');
+                      try { surrogate.className = inner.className; } catch {}
+                      try { surrogate.style.cssText = inner.getAttribute('style') || ''; } catch {}
+
+                      // Move children from inner into surrogate (visual content like icons/text)
+                      try {
+                        while (inner.firstChild) { surrogate.appendChild(inner.firstChild); }
+                      } catch {}
+
+                      // Insert surrogate just before the hidden inner button
+                      try { parent.insertBefore(surrogate, inner); } catch {}
+
+                      // Wire events to trigger the hidden button
+                      function triggerHidden(){ try { inner.click(); } catch {} }
+                      surrogate.addEventListener('click', triggerHidden, true);
+                      surrogate.addEventListener('keydown', function(e){
+                        var k = e.key || e.code;
+                        if (k === 'Enter' || k === ' ' || k === 'Spacebar' || k === 'Space') { e.preventDefault(); triggerHidden(); }
+                      }, true);
+                    } catch {}
+                  });
+                } catch {}
+              }
+
+              // Initial patch
+              patchRoot(document);
+
+              // Observe future modal/dialog openings
+              var mo = new MutationObserver(function(muts){
+                try {
+                  for (var i=0;i<muts.length;i++){
+                    var m = muts[i];
+                    m.addedNodes && m.addedNodes.forEach(function(n){
+                      if (!(n instanceof Element)) return;
+                      // Patch when thirdweb modal or any dialog subtree is added
+                      if (n.matches && (n.matches('.tw-modal, .tw-connect, [role="dialog"]') || n.querySelector('.tw-modal, .tw-connect, [role="dialog"]'))){
+                        patchRoot(n);
+                      } else {
+                        // Opportunistic patch on any subtree additions
+                        patchRoot(n);
+                      }
+                    });
+                  }
+                } catch {}
+              });
+              try { mo.observe(document.documentElement, { childList: true, subtree: true }); } catch {}
+
+              // Re-run periodically in dev to catch late-loaded content
+              setInterval(function(){ try { patchRoot(document); } catch {} }, 1500);
+            })();
+          } catch {}
+        `}</Script>
+        <Script id="pp-reassert-console-filters" strategy="afterInteractive">{`
+          try {
+            (function(){
+              var patterns = [
+                'warning: validatedomnesting',
+                'validatedomnesting(',
+                '<button> cannot be a descendant of <button>',
+                '<button> cannot appear as a descendant of <button>',
+                '<button> cannot contain a nested <button>',
+                'this will cause a hydration error',
+                'ancestor stack trace'
+              ];
+              function extractText(x){
+                try {
+                  if (!x) return '';
+                  if (typeof x === 'string') return x;
+                  if (x instanceof Error) return (x.message || '') + ' ' + (x.stack || '');
+                  if (typeof x.message === 'string' || typeof x.stack === 'string') return (x.message || '') + ' ' + (x.stack || '');
+                  if (Array.isArray(x)) return x.map(extractText).join(' ');
+                  var s = (x && x.toString && x.toString()) || '';
+                  return typeof s === 'string' ? s : '';
+                } catch(_) { return ''; }
+              }
+              function shouldSuppress(args){
+                try {
+                  var blob = '';
+                  for (var i=0;i<args.length;i++) { blob += ' ' + extractText(args[i]); }
+                  var low = String(blob || '').toLowerCase();
+                  for (var j=0;j<patterns.length;j++){
+                    if (low.indexOf(patterns[j]) !== -1) return true;
+                  }
+                } catch(e){}
+                return false;
+              }
+              function patchConsoles(){
+                try {
+                  var origError = console.error.bind(console);
+                  var origWarn = console.warn.bind(console);
+                  var origLog = console.log.bind(console);
+                  var origInfo = console.info.bind(console);
+                  var origDebug = console.debug.bind(console);
+                  console.error = function(){ if (shouldSuppress(arguments)) return; return origError.apply(this, arguments); };
+                  console.warn  = function(){ if (shouldSuppress(arguments)) return; return origWarn.apply(this, arguments); };
+                  console.log   = function(){ if (shouldSuppress(arguments)) return; return origLog.apply(this, arguments); };
+                  console.info  = function(){ if (shouldSuppress(arguments)) return; return origInfo.apply(this, arguments); };
+                  console.debug = function(){ if (shouldSuppress(arguments)) return; return origDebug.apply(this, arguments); };
+                  window.__pp_console_patch = { patched: true };
+                } catch {}
+              }
+              // Initial patch now, and reassert periodically in dev to survive dev overlay resets
+              patchConsoles();
+              setInterval(function(){ try { if (!window.__pp_console_patch || !window.__pp_console_patch.patched) { patchConsoles(); } } catch {} }, 2000);
+            })();
+          } catch {}
+        `}</Script>
+        </>)}
+        <ThemeLoader />
+        <ThemeReadyGate />
+        {/* Client-side scrub to prevent hydration mismatch from extensions */}
+        <HydrationSanitizer />
+        <Script id="org-jsonld" type="application/ld+json" strategy="afterInteractive">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: displayBrandNameLayout,
+          url: pageBase,
+          logo: `${pageBase}${brand.logos.app}`,
+          description: runtimeBrand.meta?.ogDescription || `${displayBrandNameLayout} enables modern crypto payments with unified billing, instant receipts, and real-time analytics.`,
+        })}</Script>
+        <div className="fixed inset-0 -z-10 pointer-events-none global-gradient-layer" aria-hidden hidden>
+          <div className="absolute inset-0 max-w-[100vw] overflow-hidden" style={{
+            background:
+              "radial-gradient(800px 400px at 70% 10%, color-mix(in srgb, var(--pp-primary) 18%, transparent), transparent 60%)," +
+              "radial-gradient(900px 450px at 10% 80%, color-mix(in srgb, var(--pp-secondary) 10%, transparent), transparent 60%)",
+            filter: "saturate(1.1)",
+          }} />
+        </div>
+        <Script id="pp-hide-global-gradient-portal" strategy="afterInteractive">{`
+          try {
+            var d=document.documentElement;
+            var route=d.getAttribute('data-pp-route')||'';
+            var gg=document.querySelector('.global-gradient-layer');
+            var ms=document.getElementById('mobile-navbar-spacer');
+            if (route==='portal') {
+              if (gg) gg.setAttribute('hidden','');
+              if (ms) { ms.setAttribute('hidden',''); ms.style.height='0px'; }
+            } else {
+              if (gg) gg.removeAttribute('hidden');
+              if (ms) { ms.removeAttribute('hidden'); ms.style.height=''; }
+            }
+          } catch(e) {}
+        `}</Script>
+        <BrandProvider brand={brand}>
+          <ThirdwebAppProvider>
+            <ThemeProvider>
+              <QueryProvider>
+                <I18nProvider messages={messages}>
+                  <AutoTranslateProvider>
+                    <HideableNavbar />
+                    {/* Mobile spacer below navbar to avoid content crowding */}
+                    <div id="mobile-navbar-spacer" className="sm:hidden h-2" />
+                    <SplitGuardMount />
+                    {children}
+                  </AutoTranslateProvider>
+                </I18nProvider>
+              </QueryProvider>
+            </ThemeProvider>
+          </ThirdwebAppProvider>
+        </BrandProvider>
+      </body>
+    </html>
+  );
+}

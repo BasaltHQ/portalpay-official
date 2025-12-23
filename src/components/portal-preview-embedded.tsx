@@ -1,0 +1,952 @@
+"use client";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { CheckoutWidget, darkTheme, useActiveAccount } from "thirdweb/react";
+import dynamic from "next/dynamic";
+const ConnectButton = dynamic(() => import("thirdweb/react").then((m) => m.ConnectButton), { ssr: false });
+import { client, chain, getWallets } from "@/lib/thirdweb/client";
+import { getPortalThirdwebTheme, getConnectButtonStyle, connectButtonClass } from "@/lib/thirdweb/theme";
+import { fetchEthRates, fetchUsdRates, fetchBtcUsd, fetchXrpUsd, fetchSolUsd, type EthRates } from "@/lib/eth";
+import { SUPPORTED_CURRENCIES, convertFromUsd, formatCurrency, getCurrencyFlag, roundForCurrency } from "@/lib/fx";
+import { useBrand } from "@/contexts/BrandContext";
+import { cachedFetch } from "@/lib/client-api-cache";
+
+type SiteTheme = {
+  primaryColor: string;
+  secondaryColor: string;
+  brandLogoUrl: string;
+  brandFaviconUrl: string;
+  brandName: string;
+  fontFamily: string;
+  receiptBackgroundUrl: string;
+  brandLogoShape?: "round" | "square" | "unmasked";
+  textColor?: string;
+  headerTextColor?: string;
+  bodyTextColor?: string;
+  symbolLogoUrl?: string;
+  navbarMode?: "symbol" | "logo";
+};
+
+type DemoReceipt = {
+  lineItems: { label: string; priceUsd: number; qty?: number }[];
+  totalUsd: number;
+} | null;
+
+type TokenDef = {
+  symbol: "ETH" | "USDC" | "USDT" | "cbBTC" | "cbXRP" | "SOL";
+  type: "native" | "erc20";
+  address?: string;
+  decimals?: number;
+};
+
+function isValidHexAddress(addr: string): boolean {
+  try {
+    return /^0x[a-fA-F0-9]{40}$/.test(String(addr || "").trim());
+  } catch {
+    return false;
+  }
+}
+
+function getAvailableTokens(): TokenDef[] {
+  const tokens: TokenDef[] = [];
+  tokens.push({ symbol: "ETH", type: "native" });
+
+  const usdc = (process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS || "").trim();
+  const usdt = (process.env.NEXT_PUBLIC_BASE_USDT_ADDRESS || "").trim();
+  const cbbtc = (process.env.NEXT_PUBLIC_BASE_CBBTC_ADDRESS || "").trim();
+  const cbxrp = (process.env.NEXT_PUBLIC_BASE_CBXRP_ADDRESS || "").trim();
+
+  if (usdc)
+    tokens.push({
+      symbol: "USDC",
+      type: "erc20",
+      address: usdc,
+      decimals: Number(process.env.NEXT_PUBLIC_BASE_USDC_DECIMALS || 6),
+    });
+  if (usdt)
+    tokens.push({
+      symbol: "USDT",
+      type: "erc20",
+      address: usdt,
+      decimals: Number(process.env.NEXT_PUBLIC_BASE_USDT_DECIMALS || 6),
+    });
+  if (cbbtc)
+    tokens.push({
+      symbol: "cbBTC",
+      type: "erc20",
+      address: cbbtc,
+      decimals: Number(process.env.NEXT_PUBLIC_BASE_CBBTC_DECIMALS || 8),
+    });
+  if (cbxrp)
+    tokens.push({
+      symbol: "cbXRP",
+      type: "erc20",
+      address: cbxrp,
+      decimals: Number(process.env.NEXT_PUBLIC_BASE_CBXRP_DECIMALS || 6),
+    });
+
+  // Add SOL for display purposes (Solana native token shown in rotation)
+  const sol = (process.env.NEXT_PUBLIC_BASE_SOL_ADDRESS || "").trim();
+  if (sol)
+    tokens.push({
+      symbol: "SOL",
+      type: "erc20",
+      address: sol,
+      decimals: Number(process.env.NEXT_PUBLIC_BASE_SOL_DECIMALS || 9),
+    });
+
+  return tokens;
+}
+
+export function PortalPreviewEmbedded({
+  theme,
+  demoReceipt,
+  recipient,
+  sellerAddress,
+  className,
+  style,
+}: {
+  theme: SiteTheme;
+  demoReceipt: DemoReceipt;
+  recipient: `0x${string}` | string;
+  sellerAddress?: `0x${string}` | string;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const account = useActiveAccount();
+  const brandCtx = useBrand();
+  const [wallets, setWallets] = useState<any[]>([]);
+  useEffect(() => {
+    let mounted = true;
+    getWallets().then((w) => {
+      if (mounted) setWallets(w as any[]);
+    }).catch(() => setWallets([]));
+    return () => { mounted = false; };
+  }, []);
+  // Pull container brandKey and partner brand colors/logos to avoid relying solely on BrandContext (which may be platform default)
+  const [containerBrandKey, setContainerBrandKey] = useState<string>("");
+  const [partnerPrimaryColor, setPartnerPrimaryColor] = useState<string | null>(null);
+  const [partnerAccentColor, setPartnerAccentColor] = useState<string | null>(null);
+  const [partnerBrandName, setPartnerBrandName] = useState<string | null>(null);
+  const [partnerLogoApp, setPartnerLogoApp] = useState<string | null>(null);
+  const [partnerLogoSymbol, setPartnerLogoSymbol] = useState<string | null>(null);
+  const [partnerLogoFavicon, setPartnerLogoFavicon] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const ci = await cachedFetch("/api/site/container", { cache: "no-store" });
+        if (cancelled) return;
+        const bk = String(ci?.brandKey || "").trim();
+        const ct = String(ci?.containerType || "").toLowerCase();
+        setContainerBrandKey(bk);
+
+        // For partner containers, also fetch brand colors and logos
+        if (bk && ct === "partner") {
+          const pj = await cachedFetch(`/api/platform/brands/${encodeURIComponent(bk)}/config`, { cache: "no-store" });
+          if (!cancelled) {
+            const bc = (pj?.brand?.colors || {}) as any;
+            const bl = (pj?.brand?.logos || {}) as any;
+            const primary = typeof bc.primary === "string" ? bc.primary : null;
+            const accent = typeof bc.accent === "string" ? bc.accent : null;
+            const logoApp = typeof bl.app === "string" && bl.app ? bl.app : null;
+            const logoSymbol = typeof bl.symbol === "string" && bl.symbol ? bl.symbol : null;
+            const logoFavicon = typeof bl.favicon === "string" && bl.favicon ? bl.favicon : null;
+            const rawName = String(pj?.brand?.name || "").trim();
+            // Auto-titleize brandKey if brand name is missing or generic
+            const titleizedKey = bk ? bk.charAt(0).toUpperCase() + bk.slice(1) : "";
+            const isGenericName = !rawName || /^(ledger\d*|partner\d*|default|portalpay)$/i.test(rawName);
+            const brandName = isGenericName ? titleizedKey : rawName;
+
+            console.log("[PORTAL-PREVIEW] Partner brand fetched:", { bk, primary, accent, logoApp, logoSymbol, brandName });
+            setPartnerPrimaryColor(primary);
+            setPartnerAccentColor(accent);
+            setPartnerBrandName(brandName);
+            setPartnerLogoApp(logoApp);
+            setPartnerLogoSymbol(logoSymbol);
+            setPartnerLogoFavicon(logoFavicon);
+          }
+        }
+      } catch (e) {
+        console.error("[PORTAL-PREVIEW] Error fetching container/brand info:", e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  // Brand name fallback: if theme.brandName is missing or looks generic, titleize brand key (prefer theme.brandKey or container brandKey)
+  const keyForDisplay = String(((theme as any)?.brandKey || containerBrandKey || (brandCtx as any)?.key || "")).trim();
+  const titleizedKey = keyForDisplay ? keyForDisplay.charAt(0).toUpperCase() + keyForDisplay.slice(1) : "PortalPay";
+  const rawThemeName = String(theme?.brandName || "").trim();
+  // Detect partner container from HTML attribute to treat 'PortalPay' as generic placeholder in partner envs
+  const isPartnerContainerNow =
+    typeof document !== "undefined" &&
+    ((document.documentElement.getAttribute("data-pp-container-type") || "").toLowerCase() === "partner");
+  const isGenericThemeName =
+    /^ledger\d*$/i.test(rawThemeName) ||
+    /^partner\d*$/i.test(rawThemeName) ||
+    /^default$/i.test(rawThemeName) ||
+    (isPartnerContainerNow && /^portalpay$/i.test(rawThemeName));
+  const displayBrandName = (!rawThemeName || isGenericThemeName) ? titleizedKey : rawThemeName;
+  const wallet = (account?.address || "").toLowerCase();
+
+  // Compute effective colors: prefer partner brand colors over theme prop for partner containers
+  const effectivePrimaryColor = partnerPrimaryColor || theme.primaryColor;
+  const effectiveSecondaryColor = partnerAccentColor || theme.secondaryColor;
+
+  // Compute effective logos: prefer partner logos over theme prop for partner containers
+  const effectiveBrandName = partnerBrandName || displayBrandName;
+  const effectiveLogoApp = partnerLogoApp || (theme as any)?.brandLogoUrl || "";
+  const effectiveLogoSymbol = partnerLogoSymbol || (theme as any)?.symbolLogoUrl || "";
+  const effectiveLogoFavicon = partnerLogoFavicon || theme.brandFaviconUrl || "";
+
+  // Helper to get best logo for different contexts
+  const getHeaderLogo = () => {
+    // For header: prefer app logo, then symbol, then favicon
+    return effectiveLogoApp || effectiveLogoSymbol || effectiveLogoFavicon || "/ppsymbol.png";
+  };
+  const getSymbolLogo = () => {
+    // For symbol display: prefer symbol, then favicon, then app
+    return effectiveLogoSymbol || effectiveLogoFavicon || effectiveLogoApp || "/ppsymbol.png";
+  };
+
+  // Currency and rates
+  const [rates, setRates] = useState<EthRates>({});
+  const [usdRates, setUsdRates] = useState<Record<string, number>>({});
+  const [currency, setCurrency] = useState("USD");
+  const [currencyOpen, setCurrencyOpen] = useState(false);
+  const currencyRef = useRef<HTMLDivElement | null>(null);
+  const [ratesUpdatedAt, setRatesUpdatedAt] = useState<Date | null>(null);
+
+  const availableFiatCurrencies = useMemo(() => {
+    const keys = new Set(Object.keys(rates || {}).map((k) => k.toUpperCase()));
+    return SUPPORTED_CURRENCIES.filter((c) => c.code === "USD" || keys.has(c.code));
+  }, [rates]);
+
+  useEffect(() => {
+    fetchEthRates()
+      .then((r) => {
+        setRates(r);
+        setRatesUpdatedAt(new Date());
+      })
+      .catch(() => setRates({}));
+  }, []);
+
+  useEffect(() => {
+    fetchUsdRates()
+      .then((r) => setUsdRates(r))
+      .catch(() => setUsdRates({}));
+  }, []);
+
+  // Re-fetch FX rates when currency changes to minimize drift between display and widget
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetchEthRates();
+        if (!cancelled) {
+          setRates(r);
+          setRatesUpdatedAt(new Date());
+        }
+      } catch { }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currency]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetchUsdRates();
+        if (!cancelled) {
+          setUsdRates(r);
+        }
+      } catch { }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currency]);
+
+  // Periodically refresh rates to keep display aligned with widget quotes
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      fetchEthRates()
+        .then((r) => {
+          setRates(r);
+          setRatesUpdatedAt(new Date());
+        })
+        .catch(() => { });
+    }, 60000);
+    return () => {
+      window.clearInterval(id);
+    };
+  }, []);
+
+  useEffect(() => {
+    const id2 = window.setInterval(() => {
+      fetchUsdRates()
+        .then((r) => setUsdRates(r))
+        .catch(() => { });
+    }, 60000);
+    return () => {
+      window.clearInterval(id2);
+    };
+  }, []);
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!currencyRef.current) return;
+      if (!currencyRef.current.contains(e.target as Node)) setCurrencyOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  // Tokens and optional extra rates
+  const availableTokens = useMemo(() => getAvailableTokens(), []);
+  const [token, setToken] = useState<"ETH" | "USDC" | "USDT" | "cbBTC" | "cbXRP" | "SOL">("ETH");
+  const tokenDef = useMemo(() => availableTokens.find((t) => t.symbol === token), [availableTokens, token]);
+
+  // Bridge-supported tokens (USDC/USDT) for fiat onramp
+  const availableBridgeTokens = useMemo(
+    () => availableTokens.filter((t) => t.symbol === "USDC" || t.symbol === "USDT"),
+    [availableTokens]
+  );
+
+  // Track if we've initialized from site config (only do it once)
+  const tokenInitialized = useRef(false);
+
+  // Honor defaultPaymentToken from site config (admin/console) - only on first load
+  // Validate token is available and has a configured address for non-ETH, otherwise fall back to ETH
+  useEffect(() => {
+    if (tokenInitialized.current) return;
+    if (availableTokens.length === 0) return;
+
+    const walletForDefault = (() => {
+      try {
+        const w = String(recipient || "").toLowerCase();
+        return /^0x[a-f0-9]{40}$/.test(w) ? w : "";
+      } catch {
+        return "";
+      }
+    })();
+    const baseUrl = walletForDefault ? `/api/site/config?wallet=${encodeURIComponent(walletForDefault)}` : "/api/site/config";
+
+    fetch(baseUrl)
+      .then((r) => r.json())
+      .then((j: any) => {
+        if (tokenInitialized.current) return;
+        tokenInitialized.current = true;
+        const cfg = j?.config || {};
+        const t = cfg?.defaultPaymentToken;
+        if (typeof t === "string") {
+          const avail = availableTokens.find((x) => x.symbol === t);
+          const ok = t === "ETH" || (!!avail?.address && isValidHexAddress(String(avail.address)));
+          setToken(ok ? (t as any) : "ETH");
+        }
+      })
+      .catch(() => {
+        tokenInitialized.current = true;
+      });
+  }, [availableTokens, recipient]);
+
+  // Auto-rotate through tokens to make preview feel alive
+  // Shows cycling through ETH, USDC, USDT, cbBTC, cbXRP every 5 seconds
+  useEffect(() => {
+    if (availableTokens.length <= 1) return;
+    // Do not auto-rotate if a defaultPaymentToken has been initialized from site config
+    if (tokenInitialized.current) return;
+
+    console.log("[PORTAL-PREVIEW] Starting token rotation with tokens:", availableTokens.map(t => t.symbol));
+
+    const intervalId = setInterval(() => {
+      setToken((currentToken) => {
+        const currentIndex = availableTokens.findIndex((t) => t.symbol === currentToken);
+        const nextIndex = (currentIndex + 1) % availableTokens.length;
+        const nextToken = availableTokens[nextIndex].symbol;
+        console.log("[PORTAL-PREVIEW] Rotating token:", currentToken, "->", nextToken);
+        return nextToken;
+      });
+    }, 5000); // Rotate every 5 seconds for more visible animation
+
+    return () => {
+      console.log("[PORTAL-PREVIEW] Clearing token rotation interval");
+      clearInterval(intervalId);
+    };
+  }, [availableTokens]);
+
+  const [btcUsd, setBtcUsd] = useState(0);
+  const [xrpUsd, setXrpUsd] = useState(0);
+  const [solUsd, setSolUsd] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (token === "cbBTC") {
+        try {
+          const r = await fetchBtcUsd();
+          if (!cancelled) setBtcUsd(r);
+        } catch { }
+      }
+      if (token === "cbXRP") {
+        try {
+          const r = await fetchXrpUsd();
+          if (!cancelled) setXrpUsd(r);
+        } catch { }
+      }
+      if (token === "SOL") {
+        try {
+          const r = await fetchSolUsd();
+          if (!cancelled) setSolUsd(r);
+        } catch { }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  // Static token icons
+  const STATIC_TOKEN_ICONS: Record<string, string> = useMemo(
+    () => ({
+      ETH: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
+      USDC: "https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png",
+      USDT: "https://assets.coingecko.com/coins/images/325/small/Tether-logo.png",
+      cbBTC: "https://assets.coingecko.com/coins/images/1/small/bitcoin.png",
+      cbXRP: "https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png",
+      SOL: "https://assets.coingecko.com/coins/images/4128/small/solana.png",
+    }),
+    []
+  );
+
+  // Derived totals (demo)
+  const totalUsd = useMemo(() => {
+    return Number((demoReceipt?.totalUsd ?? 5).toFixed(2));
+  }, [demoReceipt?.totalUsd]);
+
+  const displayTotalRounded = useMemo(() => {
+    if (currency === "USD") return Number(totalUsd.toFixed(2));
+    const usdRate = Number(usdRates[currency] || 0);
+    const converted = usdRate > 0 ? totalUsd * usdRate : convertFromUsd(totalUsd, currency, rates);
+    const rounded = converted > 0 ? roundForCurrency(converted, currency) : 0;
+    return rounded;
+  }, [currency, totalUsd, usdRates, rates]);
+
+  // Amount calculations per token for the widget
+  const usdRate = Number(rates["USD"] || 0); // USD per ETH
+  const ethUnits = useMemo(() => {
+    if (!usdRate || usdRate <= 0) return 0;
+    return +(totalUsd / usdRate).toFixed(9);
+  }, [totalUsd, usdRate]);
+
+  const widgetAmount = useMemo(() => {
+    if (token === "ETH") {
+      return ethUnits > 0 ? ethUnits.toFixed(6) : "0";
+    }
+    const decimals = Number(tokenDef?.decimals || (tokenDef?.symbol === "cbBTC" ? 8 : 6));
+    if (tokenDef?.symbol === "USDC" || tokenDef?.symbol === "USDT") {
+      return totalUsd > 0 ? totalUsd.toFixed(decimals) : "0";
+    }
+    if (tokenDef?.symbol === "cbBTC") {
+      if (!btcUsd || btcUsd <= 0) return "0";
+      const units = totalUsd / btcUsd;
+      return units > 0 ? units.toFixed(decimals) : "0";
+    }
+    if (tokenDef?.symbol === "cbXRP") {
+      if (!xrpUsd || xrpUsd <= 0) return "0";
+      const units = totalUsd / xrpUsd;
+      return units > 0 ? units.toFixed(decimals) : "0";
+    }
+    if (tokenDef?.symbol === "SOL") {
+      if (!solUsd || solUsd <= 0) return "0";
+      const units = totalUsd / solUsd;
+      return units > 0 ? units.toFixed(decimals) : "0";
+    }
+    return "0";
+  }, [token, tokenDef?.decimals, tokenDef?.symbol, ethUnits, totalUsd, btcUsd, xrpUsd, solUsd]);
+
+  // Support check
+  const chainId = (chain as any)?.id ?? 0;
+  const hasClientId = !!(process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "");
+  const isBaseChain = chainId === 8453 || chainId === 84532;
+  const isFiatEligibleToken = token === "USDC" || token === "USDT";
+  const isFiatFlow = isBaseChain && isFiatEligibleToken;
+  // Pass currency on Base so header reflects selected currency for all tokens
+  // Validate currency is in the supported list before passing to widget
+  const isValidCurrency = SUPPORTED_CURRENCIES.some(c => c.code === currency);
+  const widgetCurrency = isBaseChain && isValidCurrency ? currency : undefined;
+  const widgetFiatAmount = useMemo(() => {
+    if (!widgetCurrency) return null;
+    const usdRounded = totalUsd > 0 ? Number(totalUsd.toFixed(2)) : 0;
+    return usdRounded > 0 ? usdRounded.toFixed(2) : "0";
+  }, [widgetCurrency, totalUsd]);
+  const widgetSupported =
+    (chainId === 8453 || chainId === 84532) &&
+    (token === "ETH" || token === "cbBTC" || token === "cbXRP" || token === "SOL" || (token === "USDC" || token === "USDT"));
+  const tokenAddr = token === "ETH" ? undefined : tokenDef?.address;
+  const hasTokenAddr = token === "ETH" || (tokenAddr ? isValidHexAddress(tokenAddr) : false);
+
+  const amountReady = useMemo(() => {
+    if (isFiatFlow && widgetFiatAmount) {
+      return Number(widgetFiatAmount) > 0;
+    }
+    return Number(widgetAmount) > 0;
+  }, [isFiatFlow, widgetFiatAmount, widgetAmount]);
+
+  // Adjust primary button text to "Pay X" with selected currency
+  const widgetRootRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const root = widgetRootRef.current;
+    if (!root) return;
+
+    function setPayLabel(el: HTMLElement | null) {
+      if (!el) return;
+      const btns = Array.from(el.querySelectorAll("button"));
+      const primary = btns.find((b) => /buy now/i.test((b.textContent || "").trim()));
+      if (primary) {
+        const labelText =
+          currency === "USD"
+            ? formatCurrency(totalUsd, "USD")
+            : formatCurrency(displayTotalRounded, currency);
+        primary.textContent = `Pay ${labelText}`;
+      }
+    }
+
+    setPayLabel(root);
+    const id = setTimeout(() => setPayLabel(root), 300);
+
+    const mo = new MutationObserver(() => setPayLabel(root));
+    try {
+      mo.observe(root, { childList: true, subtree: true });
+    } catch { }
+
+    return () => {
+      clearTimeout(id);
+      try {
+        mo.disconnect();
+      } catch { }
+    };
+  }, [totalUsd, currency, token, displayTotalRounded]);
+
+  // Reorder Checkout payment options to prioritize "Pay with Card"
+  // Observe document.body because the thirdweb sheet renders via portal outside our local container.
+  useEffect(() => {
+    const scopeEl = document.body;
+    const tryReorder = () => {
+      try {
+        const allButtons = Array.from(scopeEl.querySelectorAll('button'));
+        const getByText = (t: string) => allButtons.find(b => (b.textContent || '').toLowerCase().includes(t));
+        const isWalletAddrLike = (txt: string) => {
+          const s = (txt || '').toLowerCase();
+          if (!s.includes('0x')) return false;
+          // Accept truncated or full addresses
+          return /0x[a-f0-9]{2,6}(\.{3}|…)[a-f0-9]{2,6}/i.test(s) || /0x[a-f0-9]{6,}/i.test(s);
+        };
+        const cardBtn = getByText('pay with card');
+        const connectBtn = getByText('connect a wallet');
+        const walletBtn = allButtons.find(b => isWalletAddrLike(b.textContent || '')) || allButtons.find(b => /(metamask|coinbase wallet|wallet)/i.test(b.textContent || '')) || null;
+        // Find common parent list
+        const list = (cardBtn && connectBtn && cardBtn.parentElement === connectBtn.parentElement) ? (cardBtn.parentElement as HTMLElement) : (walletBtn && cardBtn && walletBtn.parentElement === cardBtn.parentElement ? (cardBtn.parentElement as HTMLElement) : null);
+        if (!list) return;
+        if ((list as any).dataset && (list as any).dataset.ppOrderApplied === '1') return; // avoid flicker
+        // Desired order: Card, Connect, Wallet Address
+        cardBtn && list.insertBefore(cardBtn, list.firstChild);
+        if (connectBtn) list.insertBefore(connectBtn, cardBtn ? cardBtn.nextSibling : list.firstChild);
+        if (walletBtn) list.insertBefore(walletBtn, connectBtn ? connectBtn.nextSibling : (cardBtn ? cardBtn.nextSibling : list.firstChild));
+        (list as any).dataset.ppOrderApplied = '1';
+        // Highlight Card option
+        if (cardBtn) {
+          const accent = effectiveSecondaryColor || theme.secondaryColor || '#F54029';
+          (cardBtn as HTMLElement).style.outline = `2px solid ${accent}`;
+          (cardBtn as HTMLElement).style.boxShadow = '0 0 0 3px rgba(0,0,0,0.15)';
+          if (!cardBtn.querySelector('[data-pp-badge]')) {
+            const titleEl = cardBtn.querySelector('span[color="primaryText"]') as HTMLElement | null;
+            const badge = document.createElement('span');
+            badge.dataset.ppBadge = '1';
+            badge.textContent = 'Recommended';
+            badge.style.marginLeft = '8px';
+            badge.style.fontSize = '11px';
+            badge.style.padding = '2px 6px';
+            badge.style.borderRadius = '9999px';
+            badge.style.background = accent;
+            badge.style.color = '#fff';
+            badge.style.opacity = '0.95';
+            (titleEl || cardBtn).appendChild(badge);
+          }
+        }
+      } catch { }
+    };
+    const mo = new MutationObserver(tryReorder);
+    mo.observe(scopeEl, { childList: true, subtree: true });
+    tryReorder();
+    const t1 = setTimeout(tryReorder, 100);
+    const t2 = setTimeout(tryReorder, 400);
+    const t3 = setTimeout(tryReorder, 1200);
+    return () => { try { mo.disconnect(); } catch { }; clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [effectiveSecondaryColor, theme.secondaryColor]);
+
+  // Compute navbar mode (Symbol+Text vs Full Width) with partner fallback
+  const isPartnerContainer =
+    typeof document !== "undefined" &&
+    ((document.documentElement.getAttribute("data-pp-container-type") || "").toLowerCase() === "partner");
+  const navbarMode: "symbol" | "logo" = (() => {
+    const m = (theme as any)?.navbarMode || ((theme as any)?.logos?.navbarMode);
+    if (m === "logo" || m === "symbol") return m;
+    return isPartnerContainer ? "logo" : "symbol";
+  })();
+
+  // Degrade to symbol+text if the full-width logo looks like a generic platform asset
+  const fullLogoCandidate = (() => {
+    const app = String((theme as any)?.brandLogoUrl || "").trim();
+    const sym = String((theme as any)?.symbolLogoUrl || "").trim();
+    const fav = String(theme.brandFaviconUrl || "").trim();
+    return app || sym || fav || "";
+  })();
+  const fileName = fullLogoCandidate.split("/").pop() || "";
+  const genericRe = /^(PortalPay(\d*)\.png|ppsymbol(\.png)?|favicon\-[0-9]+x[0-9]+\.png|next\.svg)$/i;
+  const hasPartnerPath = fullLogoCandidate.includes("/brands/");
+  const canUseFullLogo = !!fullLogoCandidate && (hasPartnerPath || !genericRe.test(fileName));
+  const effectiveNavbarMode: "symbol" | "logo" = (navbarMode === "logo" && canUseFullLogo) ? "logo" : "symbol";
+
+  // Render
+  return (
+    <div
+      className={`pp-embed-white-text rounded-2xl overflow-hidden border shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur ${className || ""}`}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+        ...(style || {}),
+      }}
+    >
+      {/* Header */}
+      <div
+        className="flex items-center gap-3 px-4 py-3"
+        style={{ background: effectivePrimaryColor, color: (theme.headerTextColor || theme.textColor || "#ffffff") }}
+      >
+        {effectiveNavbarMode === "logo" ? (
+          // Full-width logo (no text)
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt={effectiveBrandName || "Logo"}
+            src={getHeaderLogo()}
+            className="h-9 w-auto max-w-[360px] object-contain rounded-none bg-transparent"
+            style={{ fontFamily: theme.fontFamily }}
+          />
+        ) : (
+          <>
+            <div className={`w-9 h-9 ${theme.brandLogoShape === "round" ? "rounded-full" : (theme.brandLogoShape === "unmasked" ? "rounded-none" : "rounded-md")} bg-white/10 flex items-center justify-center overflow-hidden`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                alt={effectiveBrandName || "Logo"}
+                src={getSymbolLogo()}
+                className="max-h-9 object-contain"
+              />
+            </div>
+            <div className="font-semibold truncate" style={{ fontFamily: theme.fontFamily }}>
+              {effectiveBrandName}
+            </div>
+          </>
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          <ConnectButton
+            client={client}
+            chain={chain}
+            wallets={wallets}
+            connectButton={{
+              label: <span className="microtext">Login</span>,
+              className: connectButtonClass,
+              style: {
+                backgroundColor: "transparent",
+                border: `1px solid ${effectivePrimaryColor}`,
+                color: "#ffffff",
+                padding: "6px 10px",
+                lineHeight: "1",
+                height: "28px",
+                backdropFilter: "blur(6px) saturate(1.08)",
+                WebkitBackdropFilter: "blur(6px) saturate(1.08)",
+              },
+            }}
+            signInButton={{
+              label: "Authenticate",
+              className: connectButtonClass,
+              style: {
+                backgroundColor: "transparent",
+                border: `1px solid ${effectivePrimaryColor}`,
+                color: "#ffffff",
+                padding: "6px 10px",
+                lineHeight: "1",
+                height: "28px",
+                backdropFilter: "blur(6px) saturate(1.08)",
+                WebkitBackdropFilter: "blur(6px) saturate(1.08)",
+              },
+            }}
+            detailsButton={{
+              displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+            }}
+            connectModal={{
+              showThirdwebBranding: false,
+              title: "Login",
+              titleIcon: getSymbolLogo(),
+              size: "compact",
+            }}
+            theme={darkTheme({
+              colors: {
+                modalBg: "hsl(220 18% 7% / 0.86)",
+                borderColor: "hsl(220 14% 30% / 0.85)",
+                primaryText: "#ffffff",
+                secondaryText: "#ffffff",
+                accentText: "#ffffff",
+                accentButtonBg: effectivePrimaryColor,
+                accentButtonText: theme.headerTextColor || theme.textColor || "#ffffff",
+                primaryButtonBg: effectivePrimaryColor,
+                primaryButtonText: theme.headerTextColor || theme.textColor || "#ffffff",
+                connectedButtonBg: "rgba(255,255,255,0.04)",
+                connectedButtonBgHover: "rgba(255,255,255,0.08)",
+                modalOverlayBg: "hsl(220 18% 5% / 0.40)",
+              },
+            })}
+          />
+        </div>
+      </div>
+
+      {/* Scrollable content */}
+      <div
+        className="flex-1 overflow-y-auto p-3"
+        style={{
+          backdropFilter: "saturate(1.02) contrast(1.02)",
+          color: "#ffffff",
+        }}
+      >
+        {/* Currency equivalents selector */}
+        <div className="rounded-xl border bg-background/80 p-3" ref={currencyRef}>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-semibold">Order Preview</div>
+              <div className="microtext text-muted-foreground">
+                Totals are shown in the selected currency. USD equivalent is shown when applicable.
+              </div>
+            </div>
+            <div className="microtext text-muted-foreground">
+              {ratesUpdatedAt ? `Rates ${ratesUpdatedAt.toLocaleTimeString()}` : "Loading rates…"}
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <label className="text-xs text-muted-foreground">Select currency</label>
+            <div className="relative mt-1">
+              <button
+                type="button"
+                onClick={() => setCurrencyOpen((v) => !v)}
+                className="h-10 px-3 text-left border rounded-md bg-background hover:bg-foreground/5 transition-colors flex items-center gap-3 w-full"
+                title="Select currency"
+              >
+                <span className="inline-flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    alt={currency}
+                    src={getCurrencyFlag(currency)}
+                    className="w-[18px] h-[14px] rounded-[2px] ring-1 ring-foreground/10"
+                  />
+                </span>
+                <span className="truncate">
+                  {currency} — {(availableFiatCurrencies as readonly any[]).find((x) => x.code === currency)?.name || ""}
+                </span>
+                <span className="ml-auto opacity-70">▾</span>
+              </button>
+              {currencyOpen && (
+                <div className="absolute z-40 mt-1 w-full rounded-md border bg-background shadow-md p-1 max-h-64 overflow-auto">
+                  {availableFiatCurrencies.map((c) => (
+                    <button
+                      key={c.code}
+                      type="button"
+                      onClick={() => {
+                        setCurrency(c.code);
+                        setCurrencyOpen(false);
+                      }}
+                      className="w-full px-2 py-2 rounded-md hover:bg-foreground/5 flex items-center gap-2 text-sm transition-colors"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        alt={c.code}
+                        src={getCurrencyFlag(c.code)}
+                        className="w-[18px] h-[14px] rounded-[2px] ring-1 ring-foreground/10"
+                      />
+                      <span className="font-medium">{c.code}</span>
+                      <span className="text-muted-foreground">— {c.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Receipt */}
+        <div className="mt-4 rounded-2xl border p-3 bg-background/70">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 ${theme.brandLogoShape === "round" ? "rounded-full" : (theme.brandLogoShape === "unmasked" ? "rounded-none" : "rounded-lg")} bg-foreground/5 overflow-hidden grid place-items-center`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={getSymbolLogo()}
+                alt="Logo"
+                className="w-10 h-10 object-contain"
+              />
+            </div>
+            <div>
+              <div className="text-sm font-semibold">{effectiveBrandName || "Your Brand"}</div>
+              <div className="microtext text-muted-foreground">Digital Receipt</div>
+            </div>
+            <div className="ml-auto microtext text-muted-foreground">
+              Demo
+            </div>
+          </div>
+
+          <div className="mt-3 space-y-2">
+            {(() => {
+              const displayItems =
+                (demoReceipt?.lineItems as any[]) ||
+                [{ label: "Chicken Bowl", priceUsd: 4.0 }, { label: "Tax", priceUsd: 1.0 }];
+              return displayItems.map((it, idx) => (
+                <div key={idx} className={`flex items-center justify-between text-sm ${idx > 0 ? "mt-1" : ""}`}>
+                  <span className="opacity-80">
+                    {String(it.label || "")}
+                    {typeof it.qty === "number" && it.qty > 1 ? ` × ${it.qty}` : ""}
+                  </span>
+                  <span>
+                    {(() => {
+                      const usdVal = Number(it.priceUsd || 0);
+                      if (currency === "USD") {
+                        return formatCurrency(usdVal, "USD");
+                      }
+                      const converted = convertFromUsd(usdVal, currency, rates);
+                      const rounded = converted > 0 ? roundForCurrency(converted, currency) : 0;
+                      return rounded > 0 ? formatCurrency(rounded, currency) : formatCurrency(usdVal, "USD");
+                    })()}
+                  </span>
+                </div>
+              ));
+            })()}
+            <div className="border-t border-dashed my-2" />
+            <div className="flex items-center justify-between font-semibold">
+              <span>Total ({currency})</span>
+              <span>
+                {currency === "USD" ? formatCurrency(totalUsd, "USD") : formatCurrency(displayTotalRounded, currency)}
+              </span>
+            </div>
+
+            {/* Currency equivalent */}
+            {(() => {
+              if (currency === "USD") return null;
+              return (
+                <div className="mt-1 microtext text-muted-foreground">
+                  Equivalent: {formatCurrency(totalUsd, "USD")} (USD)
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+
+        {/* Payment Section */}
+        <div className="mt-4 rounded-2xl border p-3 bg-background/70">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold">Choose Payment Method</div>
+            <div className="flex items-center gap-2 microtext text-muted-foreground">
+              <span className="w-5 h-5 rounded-full overflow-hidden bg-foreground/10 grid place-items-center shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={STATIC_TOKEN_ICONS[token]} alt={token} className="w-5 h-5 object-contain" />
+              </span>
+              <span>Pay with {token}</span>
+            </div>
+          </div>
+
+          <div className="mt-2 flex flex-wrap gap-2">
+            {availableTokens.map((t) => (
+              <button
+                key={t.symbol}
+                type="button"
+                onClick={() => setToken(t.symbol)}
+                className={`px-2 py-1 rounded-md border text-xs ${token === t.symbol ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                title={`Use ${t.symbol}`}
+              >
+                {t.symbol}
+              </button>
+            ))}
+          </div>
+
+          <div
+            ref={widgetRootRef}
+            className="mt-3 rounded-lg border p-3"
+            style={{ height: "280px", minHeight: "280px", maxHeight: "280px", overflow: "hidden" }}
+          >
+            {amountReady && widgetSupported && (token === "ETH" || (tokenDef && hasTokenAddr)) ? (
+              <CheckoutWidget
+                key={`${token}-${currency}-${ratesUpdatedAt ? ratesUpdatedAt.getTime() : 0}`}
+                className="w-full"
+                client={client}
+                chain={chain}
+                currency={widgetCurrency as any}
+                amount={(isFiatFlow && widgetFiatAmount) ? (widgetFiatAmount as any) : widgetAmount}
+                seller={(sellerAddress as any) || (recipient as any)}
+                tokenAddress={token === "ETH" ? undefined : (tokenDef?.address as any)}
+                showThirdwebBranding={false}
+                theme={darkTheme({
+                  colors: {
+                    modalBg: "transparent",
+                    borderColor: "transparent",
+                    primaryText: "#ffffff",
+                    secondaryText: "#ffffff",
+                    accentText: "#ffffff",
+                    accentButtonBg: effectivePrimaryColor,
+                    accentButtonText: theme.headerTextColor || theme.textColor || "#ffffff",
+                    primaryButtonBg: effectivePrimaryColor,
+                    primaryButtonText: theme.headerTextColor || theme.textColor || "#ffffff",
+                    connectedButtonBg: "rgba(255,255,255,0.04)",
+                    connectedButtonBgHover: "rgba(255,255,255,0.08)",
+                  },
+                })}
+                style={{
+                  width: "100%",
+                  maxWidth: "100%",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: 0,
+                }}
+
+              />
+            ) : (
+              <div className="w-full flex flex-col items-center justify-center gap-3 py-6 text-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={getSymbolLogo()}
+                  alt="Logo"
+                  className="w-12 h-12 rounded-lg object-contain"
+                />
+                <div className="text-sm text-muted-foreground">
+                  {!amountReady
+                    ? "Loading rates…"
+                    : !widgetSupported
+                      ? "Unsupported token/network"
+                      : (!tokenDef || !hasTokenAddr)
+                        ? "Token not configured"
+                        : "Preparing checkout…"}
+                </div>
+              </div>
+            )}
+            <div className="microtext text-muted-foreground text-center mt-3">
+              Demo preview — matches the mobile Portal Preview styling and options.
+            </div>
+          </div>
+        </div>
+
+        {/* Footer note */}
+        <div
+          className="mt-2 px-4 py-2 text-[11px] opacity-80 rounded-xl"
+          style={{ background: effectivePrimaryColor, color: (theme.headerTextColor || theme.textColor || "#ffffff") }}
+        >
+          This embedded preview mirrors the mobile portal. Content scrolls if it exceeds the container.
+        </div>
+      </div>
+    </div>
+  );
+}

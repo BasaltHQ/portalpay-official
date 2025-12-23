@@ -1,0 +1,10 @@
+[
+  {
+    "chainId": 8453,
+    "chainName": "Base",
+    "address": "0x252b2f74b139f0cc21335c9403fb300f2b923204",
+    "deployedAt": "2025-12-20T09:58:22.686Z",
+    "verified": true,
+    "txHash": "0x2f968590b9c6a82155556f1f4e17fe61013e7524d447685b082dc9b7863bc0f7"
+  }
+]

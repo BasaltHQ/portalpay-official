@@ -1,0 +1,37 @@
+{
+  "common": {
+    "search": "Buscar",
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "loading": "Cargando",
+    "error": "Error",
+    "success": "Éxito",
+    "authenticate": "Autenticar",
+    "menu": "Menú"
+  },
+  "navbar": {
+    "console": "Consola",
+    "loyalty": "Lealtad",
+    "analytics": "Analíticas",
+    "leaderboard": "Tabla de clasificación",
+    "portalPreview": "Vista previa del portal",
+    "profile": "Perfil",
+    "shop": "Tienda",
+    "admin": "Administrador",
+    "searchUsers": "Buscar usuarios",
+    "filters": "Filtros"
+  },
+  "languageBar": {
+    "translatePage": "Traducir esta página",
+    "selectLanguage": "Seleccionar idioma"
+  },
+  "search": {
+    "search": "Buscar",
+    "domain": "Dominio",
+    "platform": "Plataforma",
+    "language": "Idioma",
+    "minXp": "XP mínimo",
+    "searching": "Buscando",
+    "noMatches": "Sin coincidencias"
+  }
+}

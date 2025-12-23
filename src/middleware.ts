@@ -1,0 +1,321 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getEnv, isPartnerContext, validatePartnerEnv } from "@/lib/env";
+
+const AUTH_COOKIE = "cb_auth_token";
+
+function decodeJwtPayload(token: string): any | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    let payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    // Pad to valid base64 length
+    while (payload.length % 4 !== 0) payload += "=";
+    const json = atob(payload);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+function isJwtExpired(token: string): boolean {
+  try {
+    const payload: any = decodeJwtPayload(token);
+    const now = Math.floor(Date.now() / 1000);
+    if (!payload || typeof payload.exp !== "number") return true;
+    return payload.exp <= now;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Middleware responsibilities:
+ * 1) Vanity slug rewrite: route root-level slugs to /shop/[slug]
+ * 2) Global security headers: CSP, frame-ancestors, HSTS, referrer-policy, etc.
+ */
+
+import { isCandidateSlug } from "@/lib/routing";
+
+/**
+ * Build a conservative CSP allowing:
+ * - default-src self
+ * - images from self, https, and data:
+ * - scripts from self with nonce support for inline scripts
+ * - styles from self with inline allowed for Tailwind class injection
+ * - connections to https endpoints (APIs, Thirdweb)
+ * Customize allowed hosts via AZURE_BLOB_PUBLIC_BASE_URL / NEXT_PUBLIC_APP_URL if present.
+ */
+function buildCsp(req: NextRequest): string {
+  const self = "'self'";
+  const data = "data:";
+  const https = "https:";
+  const ws = "ws:";
+  const wss = "wss:";
+  const isDev = process.env.NODE_ENV !== "production";
+  // Attempt to include blob/frontend domain paths
+  const extras: string[] = [];
+  try {
+    const base = process.env.AZURE_BLOB_PUBLIC_BASE_URL || "";
+    if (base) {
+      const u = new URL(base.startsWith("http") ? base : `https://${base}`);
+      extras.push(`${u.protocol}//${u.host}`);
+    }
+  } catch { }
+  try {
+    const app = process.env.NEXT_PUBLIC_APP_URL || "";
+    if (app) {
+      const u = new URL(app);
+      extras.push(`${u.protocol}//${u.host}`);
+    }
+  } catch { }
+  const imgSrc = [self, data, https, ...extras].join(" ");
+  // Allow dev HMR WebSockets explicitly
+  const connectSrc = [self, https, ws, wss, ...extras].join(" ");
+  // Script-src: Allow unsafe-inline in production for Next.js managed inline scripts; unsafe-eval only in dev for HMR
+  const scriptSrc = isDev
+    ? `${self} 'unsafe-inline' 'unsafe-eval'`
+    : `${self} 'unsafe-inline'`;
+  const policy = [
+    `default-src ${self}`,
+    `img-src ${imgSrc}`,
+    `script-src ${scriptSrc}`,
+    `style-src ${self} 'unsafe-inline'`,
+    `connect-src ${connectSrc}`,
+    `font-src ${self} ${https}`,
+    `frame-ancestors ${self}`,
+    `base-uri ${self}`,
+    `form-action ${self}`,
+    // Allow media from https for embedded audio/video if used
+    `media-src ${https} ${self}`,
+    // Allow Thirdweb wallet iframes and Adobe Sign
+    `frame-src ${self} https://embedded-wallet.thirdweb.com https://*.thirdweb.com https://na2.documents.adobe.com https://*.documents.adobe.com https://*.adobesign.com`,
+    // Disallow object/embed entirely
+    `object-src 'none'`,
+  ].join("; ");
+  return policy;
+}
+
+function applySecurityHeaders(req: NextRequest, res: NextResponse) {
+  const csp = buildCsp(req);
+  const isPortalRoute = req.nextUrl.pathname.startsWith("/portal/");
+  // For /portal/*, relax frame-ancestors to allow embedding from self and approved origins, and omit X-Frame-Options
+  let finalCsp = csp;
+  if (isPortalRoute) {
+    const allowedAncestors: string[] = ["'self'"];
+    try {
+      const app = process.env.NEXT_PUBLIC_APP_URL || "";
+      if (app) {
+        const u = new URL(app);
+        allowedAncestors.push(`${u.protocol}//${u.host}`);
+      }
+    } catch { }
+    // Explicitly allow pay.ledger1.ai
+    allowedAncestors.push("https://pay.ledger1.ai");
+    finalCsp = csp.replace(/frame-ancestors [^;]+/, `frame-ancestors ${allowedAncestors.join(" ")}`);
+  }
+  res.headers.set("Content-Security-Policy", finalCsp);
+  if (!isPortalRoute) {
+    res.headers.set("X-Frame-Options", "SAMEORIGIN");
+  } else {
+    try { res.headers.delete("X-Frame-Options"); } catch { }
+  }
+  res.headers.set("X-Content-Type-Options", "nosniff");
+  res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  const micPolicy = req.nextUrl.pathname.startsWith("/shop/") ? "microphone=(self)" : "microphone=()";
+  // Explicitly allow WebUSB prompts in top-level contexts
+  res.headers.set(
+    "Permissions-Policy",
+    `camera=(), ${micPolicy}, geolocation=(), accelerometer=(), gyroscope=(), usb=(self)`
+  );
+  // Coinbase Smart Wallet SDK requires COOP not to be 'same-origin' to allow popup communication.
+  // See: https://www.smartwallet.dev/guides/tips/popup-tips#cross-origin-opener-policy
+  res.headers.set("Cross-Origin-Opener-Policy", "unsafe-none");
+
+  // For API routes, use cross-origin to allow proxied/CDN requests
+  // For other routes, use same-origin for stricter security
+  const isApiRoute = req.nextUrl.pathname.startsWith("/api/");
+  res.headers.set("Cross-Origin-Resource-Policy", isApiRoute ? "cross-origin" : "same-origin");
+
+  // HSTS (only meaningful over HTTPS; harmless otherwise)
+  res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+}
+
+export function middleware(req: NextRequest) {
+  const url = req.nextUrl;
+
+  // Attach container type header for SSR/client awareness
+  try {
+    const env = getEnv();
+    const res = NextResponse.next();
+    res.headers.set("x-container-type", env.CONTAINER_TYPE);
+    applySecurityHeaders(req, res);
+    // Partner env fail-fast: if missing required envs, redirect to brand-not-configured (non-API routes)
+    if (isPartnerContext()) {
+      const missing = validatePartnerEnv();
+      const isApi = url.pathname.startsWith("/api/");
+      if (missing.length && !isApi && url.pathname !== "/brand-not-configured") {
+        const target = new URL("/brand-not-configured", req.url);
+        return NextResponse.redirect(target);
+      }
+    }
+    // Continue with existing middleware flow below; we already set headers for this early pass.
+  } catch {
+    // proceed with normal handling
+  }
+
+  // Allow unauthenticated access to Try It proxy endpoint
+  if (url.pathname === "/api/tryit-proxy") {
+    const res = NextResponse.next();
+    applySecurityHeaders(req, res);
+    return res;
+  }
+
+  // Gate access to /admin by requiring auth cookie presence and non-expired token
+  if (url.pathname.startsWith("/admin")) {
+    const token = req.cookies.get(AUTH_COOKIE)?.value;
+    const expired = !token || isJwtExpired(token);
+    if (expired) {
+      const target = new URL("/?login=admin", req.url);
+      const res = NextResponse.redirect(target);
+      applySecurityHeaders(req, res);
+      return res;
+    }
+  }
+
+  // Custom Domain Detection (needed for favicon routing below)
+  let faviconHostname = req.headers.get("host") || url.hostname || "";
+  faviconHostname = faviconHostname.split(":")[0].toLowerCase();
+
+  const isFaviconMainDomain =
+    (faviconHostname.endsWith("ledger1.ai")) ||
+    faviconHostname.endsWith("portalpay.io") ||
+    faviconHostname.includes("localhost") ||
+    faviconHostname === "127.0.0.1" ||
+    faviconHostname === "0.0.0.0" ||
+    faviconHostname.includes("azurewebsites.net") ||
+    faviconHostname.includes("vercel.app");
+
+  // Rewrite dynamic favicon to brand/merchant-aware API
+  // For custom domains, pass the hostname as shop parameter to resolve merchant favicon
+  if (url.pathname === "/favicon.ico") {
+    const target = new URL("/api/favicon", req.url);
+    if (!isFaviconMainDomain && faviconHostname) {
+      target.searchParams.set("shop", faviconHostname);
+    }
+    const res = NextResponse.rewrite(target);
+    applySecurityHeaders(req, res);
+    return res;
+  }
+
+  // Rewrite sized PNG favicons to dynamic endpoint to prevent platform fallback
+  if (url.pathname === "/favicon-32x32.png" || url.pathname === "/favicon-16x16.png") {
+    const target = new URL("/api/favicon", req.url);
+    if (!isFaviconMainDomain && faviconHostname) {
+      target.searchParams.set("shop", faviconHostname);
+    }
+    const res = NextResponse.rewrite(target);
+    applySecurityHeaders(req, res);
+    return res;
+  }
+
+  // Partner-specific PWA icon rewrites to ensure correct brand icons
+  if (isPartnerContext()) {
+    try {
+      const hostname = url.hostname || "";
+      let brandKey = (process.env.NEXT_PUBLIC_BRAND_KEY || process.env.BRAND_KEY || "").toLowerCase();
+      // Prefer subdomain on azurewebsites hosts
+      if (!brandKey && hostname.endsWith(".azurewebsites.net")) {
+        brandKey = hostname.split(".")[0].toLowerCase();
+      }
+      if (brandKey && brandKey !== "portalpay") {
+        const rewrites: Record<string, string> = {
+          "/apple-touch-icon.png": `/brands/${brandKey}/apple-touch-icon.png`,
+          "/android-chrome-192x192.png": `/brands/${brandKey}/android-chrome-192x192.png`,
+          "/android-chrome-512x512.png": `/brands/${brandKey}/android-chrome-512x512.png`,
+        };
+        const dest = rewrites[url.pathname];
+        if (dest) {
+          const target = new URL(dest, req.url);
+          const res = NextResponse.rewrite(target);
+          applySecurityHeaders(req, res);
+          return res;
+        }
+      }
+    } catch { }
+  }
+
+  // Custom Domain Rewriting
+  // If the hostname is NOT one of our main domains, we treat it as a custom shop domain.
+  let hostname = req.headers.get("host") || url.hostname || "";
+  // Strip port if present
+  hostname = hostname.split(":")[0].toLowerCase();
+
+  const isMainDomain =
+    (hostname.endsWith("ledger1.ai")) ||
+    hostname.endsWith("portalpay.io") ||
+    hostname.includes("localhost") ||
+    hostname === "127.0.0.1" ||
+    hostname === "0.0.0.0" ||
+    hostname.includes("azurewebsites.net") ||
+    hostname.includes("vercel.app"); // Add other platform domains as needed
+
+  if (!isMainDomain) {
+    // It's a custom domain!
+    // We rewrite the root path "/" to "/shop/[hostname]"
+    // We also need to handle subpaths like "/product/123" -> "/shop/[hostname]/product/123" if we supported deep linking,
+    // but for now the shop is a single page app at /shop/[slug].
+    // However, the shop page reads the slug from the URL params. 
+    // So we rewrite to /shop/[hostname] and let the page component handle the rest (it calls /api/shop/slug?slug=[hostname]).
+
+    // Only rewrite if it's a "page" request, not an API or asset request
+    const isAsset = url.pathname.includes(".") || url.pathname.startsWith("/_next") || url.pathname.startsWith("/api");
+    if (!isAsset && url.pathname === "/") {
+      const target = new URL(`/shop/${hostname}`, req.url);
+      const res = NextResponse.rewrite(target);
+      applySecurityHeaders(req, res);
+      return res;
+    }
+  }
+
+  const slug = isCandidateSlug(url.pathname);
+
+  // Redirect legacy docs to new developers/docs paths
+  if (url.pathname.startsWith("/docs")) {
+    const suffix = url.pathname.replace(/^\/docs/, "");
+    const target = new URL(`/developers/docs${suffix}`, req.url);
+    const res = NextResponse.redirect(target);
+    applySecurityHeaders(req, res);
+    return res;
+  }
+
+  // Alias redirect: /developers/dash -> /developers/dashboard
+  if (url.pathname === "/developers/dash" || url.pathname.startsWith("/developers/dash/")) {
+    const target = new URL(url.pathname.replace("/developers/dash", "/developers/dashboard"), req.url);
+    const res = NextResponse.redirect(target);
+    applySecurityHeaders(req, res);
+    return res;
+  }
+
+  if (slug) {
+    // Rewrite to internal shop route
+    const target = new URL(`/shop/${slug}`, req.url);
+    const res = NextResponse.rewrite(target);
+    applySecurityHeaders(req, res);
+    return res;
+  }
+
+  // Pass through as normal but apply headers
+  const res = NextResponse.next();
+  applySecurityHeaders(req, res);
+  // Attach container type header here as well (if not set above)
+  try {
+    const env = getEnv();
+    res.headers.set("x-container-type", env.CONTAINER_TYPE);
+  } catch { }
+  return res;
+}
+
+export const config = {
+  // Apply on all paths including API; rewrite logic itself excludes /api, but headers should be global
+  matcher: ["/:path*"],
+};

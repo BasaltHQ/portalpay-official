@@ -1,0 +1,409 @@
+.next/types/validator.ts(188,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/dashboard/analytics/page.tsx' is not a module.
+.next/types/validator.ts(197,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/dashboard/hostpro/page.tsx' is not a module.
+.next/types/validator.ts(206,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/dashboard/inventory/page.tsx' is not a module.
+.next/types/validator.ts(215,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/dashboard/invoicing/page.tsx' is not a module.
+.next/types/validator.ts(224,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/dashboard/menu/page.tsx' is not a module.
+.next/types/validator.ts(242,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/dashboard/robotic-fleets/page.tsx' is not a module.
+.next/types/validator.ts(251,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/dashboard/roster/page.tsx' is not a module.
+.next/types/validator.ts(260,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/dashboard/scheduling/page.tsx' is not a module.
+.next/types/validator.ts(269,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/dashboard/settings/page.tsx' is not a module.
+.next/types/validator.ts(278,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/dashboard/team/page.tsx' is not a module.
+.next/types/validator.ts(413,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/login/page.tsx' is not a module.
+.next/types/validator.ts(566,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/team/page.tsx' is not a module.
+.next/types/validator.ts(593,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/7shifts/active-shifts/route.ts' is not a module.
+.next/types/validator.ts(602,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/7shifts/department-overview/route.ts' is not a module.
+.next/types/validator.ts(611,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/7shifts/sync/route.ts' is not a module.
+.next/types/validator.ts(620,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/activity/recent/route.ts' is not a module.
+.next/types/validator.ts(818,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/auth/2fa/backup-codes/route.ts' is not a module.
+.next/types/validator.ts(872,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/auth/change-password/route.ts' is not a module.
+.next/types/validator.ts(971,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/debug/route.ts' is not a module.
+.next/types/validator.ts(1043,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/hostpro/assignments/route.ts' is not a module.
+.next/types/validator.ts(1052,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/hostpro/domain-presets/route.ts' is not a module.
+.next/types/validator.ts(1088,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/hostpro/process-floor-image/route.ts' is not a module.
+.next/types/validator.ts(1097,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/hostpro/scan-layout/route.ts' is not a module.
+.next/types/validator.ts(1178,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/inventory/csv-import/route.ts' is not a module.
+.next/types/validator.ts(1214,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/inventory/label-templates/route.ts' is not a module.
+.next/types/validator.ts(1259,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/inventory/transactions/route.ts' is not a module.
+.next/types/validator.ts(1358,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/menu-mappings/export/route.ts' is not a module.
+.next/types/validator.ts(1367,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/menu-mappings/route.ts' is not a module.
+.next/types/validator.ts(1376,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/menu-mappings/usage/route.ts' is not a module.
+.next/types/validator.ts(1386,31): error TS2344: Type 'typeof import("C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/merchants/[id]/fee/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/merchants/[id]/fee">'.
+  Types of property 'GET' are incompatible.
+    Type '(req: NextRequest, ctx: { params: { id: string; }; }) => Promise<NextResponse<any>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ id: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters 'ctx' and 'context' are incompatible.
+        Type '{ params: Promise<{ id: string; }>; }' is not assignable to type '{ params: { id: string; }; }'.
+          Types of property 'params' are incompatible.
+            Property 'id' is missing in type 'Promise<{ id: string; }>' but required in type '{ id: string; }'.
+.next/types/validator.ts(1511,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/orders/[id]/route.ts' is not a module.
+.next/types/validator.ts(1565,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/performance/route.ts' is not a module.
+.next/types/validator.ts(1943,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/robotic-fleets/calibration/route.ts' is not a module.
+.next/types/validator.ts(1970,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/robots/route.ts' is not a module.
+.next/types/validator.ts(1979,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/roles/route.ts' is not a module.
+.next/types/validator.ts(2393,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/toast/webhooks/route.ts' is not a module.
+.next/types/validator.ts(2510,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/varuni/chat/route.ts' is not a module.
+.next/types/validator.ts(2555,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/varuni/reindex/route.ts' is not a module.
+.next/types/validator.ts(2564,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/app/api/varuni/sessions/route.ts' is not a module.
+scripts/backfill-transactions.ts(1,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+scripts/backfill-transactions.ts(2,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/PurchaseOrder.ts' is not a module.
+scripts/backfill-transactions.ts(3,38): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryTransaction.ts' is not a module.
+scripts/backfill-transactions.ts(4,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+scripts/backfill-transactions.ts(5,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+scripts/container-test.ts(3,25): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/config/load-env.ts' is not a module.
+scripts/container-test.ts(4,32): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+scripts/repair-po-receipts.ts(1,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+scripts/repair-po-receipts.ts(2,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/PurchaseOrder.ts' is not a module.
+scripts/repair-po-receipts.ts(3,38): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryTransaction.ts' is not a module.
+scripts/repair-po-receipts.ts(4,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+scripts/repair-po-receipts.ts(5,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+scripts/test-connection-string.ts(3,25): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/config/load-env.ts' is not a module.
+scripts/test-connection.ts(1,25): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/config/load-env.ts' is not a module.
+scripts/test-connection.ts(2,32): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/admin/apk/zips/[app]/route.ts(5,19): error TS2307: Cannot find module 'jszip' or its corresponding type declarations.
+src/app/api/admin/devices/containers/route.ts(181,53): error TS2307: Cannot find module '@azure/arm-appcontainers' or its corresponding type declarations.
+src/app/api/admin/devices/containers/route.ts(234,54): error TS2307: Cannot find module '@azure/container-registry' or its corresponding type declarations.
+src/app/api/admin/devices/package/route.ts(5,19): error TS2307: Cannot find module 'jszip' or its corresponding type declarations.
+src/app/api/auth/2fa/disable/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/auth/2fa/disable/route.ts(3,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/app/api/auth/2fa/login/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/auth/2fa/login/route.ts(3,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/app/api/auth/2fa/login/route.ts(5,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/auth/2fa.ts' is not a module.
+src/app/api/auth/2fa/setup/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/auth/2fa/setup/route.ts(3,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/app/api/auth/2fa/setup/route.ts(5,26): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/auth/2fa.ts' is not a module.
+src/app/api/auth/2fa/verify/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/auth/2fa/verify/route.ts(3,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/app/api/auth/2fa/verify/route.ts(5,59): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/auth/2fa.ts' is not a module.
+src/app/api/auth/refresh/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/auth/refresh/route.ts(3,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/app/api/hostpro/assign-table/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/hostpro/assign-table/route.ts(3,25): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/HostSession.ts' is not a module.
+src/app/api/hostpro/domains/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/hostpro/domains/route.ts(3,25): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/HostSession.ts' is not a module.
+src/app/api/hostpro/match-tables/route.ts(29,56): error TS2554: Expected 0-1 arguments, but got 2.
+src/app/api/hostpro/seat/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/hostpro/seat/route.ts(3,25): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/HostSession.ts' is not a module.
+src/app/api/hostpro/session/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/hostpro/session/route.ts(3,25): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/HostSession.ts' is not a module.
+src/app/api/inventory/barcode-mapping/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/inventory/barcode-mapping/route.ts(3,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+src/app/api/inventory/clear/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/inventory/clear/route.ts(3,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+src/app/api/inventory/debug/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/inventory/debug/route.ts(3,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+src/app/api/inventory/list/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/inventory/list/route.ts(3,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+src/app/api/inventory/list/route.ts(37,72): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/app/api/inventory/list/route.ts(59,24): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/app/api/inventory/schema-check/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/inventory/schema-check/route.ts(3,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+src/app/api/inventory/transactions/sample/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/inventory/transactions/sample/route.ts(3,38): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryTransaction.ts' is not a module.
+src/app/api/inventory/transactions/sample/route.ts(4,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+src/app/api/inventory/waste/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/inventory/waste/route.ts(3,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+src/app/api/menu-mappings/capacity/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/menu-mappings/capacity/route.ts(3,29): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/MenuMapping.ts' is not a module.
+src/app/api/menu-mappings/capacity/route.ts(4,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+src/app/api/menu-mappings/cost/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/menu-mappings/cost/route.ts(3,29): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/MenuMapping.ts' is not a module.
+src/app/api/menu-mappings/cost/route.ts(4,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+src/app/api/orders/[id]/receive/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/orders/[id]/receive/route.ts(3,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/PurchaseOrder.ts' is not a module.
+src/app/api/orders/[id]/receive/route.ts(4,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+src/app/api/orders/[id]/receive/route.ts(5,38): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryTransaction.ts' is not a module.
+src/app/api/orders/[id]/receive/route.ts(7,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/app/api/robots/[id]/command/route.ts(2,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/bear-cloud-grpc.ts' is not a module.
+src/app/api/team-members/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/team-members/route.ts(3,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/TeamMember.ts' is not a module.
+src/app/api/team/[id]/reset-password/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/team/[id]/reset-password/route.ts(3,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/app/api/team/on-time-rate/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/team/on-time-rate/route.ts(3,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/app/api/team/on-time-rate/route.ts(4,30): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/SevenShiftsShift.ts' is not a module.
+src/app/api/team/on-time-rate/route.ts(5,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/ToastEmployee.ts' is not a module.
+src/app/api/team/on-time-rate/route.ts(32,40): error TS7006: Parameter 'shift' implicitly has an 'any' type.
+src/app/api/team/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/team/route.ts(3,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/app/api/team/summary/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/team/summary/route.ts(3,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/app/api/test/auth/route.ts(2,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/bear-cloud-grpc.ts' is not a module.
+src/app/api/test/explore/route.ts(2,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/bear-cloud-grpc.ts' is not a module.
+src/app/api/test/grpc-init/route.ts(10,39): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/bear-cloud-grpc.ts' is not a module.
+src/app/api/toast/debug/route.ts(2,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/toast/employees/[id]/delete/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/toast/employees/[id]/delete/route.ts(3,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/ToastEmployee.ts' is not a module.
+src/app/api/toast/employees/[id]/route.ts(2,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/toast/employees/[id]/route.ts(3,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/ToastEmployee.ts' is not a module.
+src/app/api/toast/employees/[id]/route.ts(4,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/toast/employees/clear/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/ToastEmployee.ts' is not a module.
+src/app/api/toast/employees/clear/route.ts(3,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/toast/employees/route.ts(2,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/toast/employees/route.ts(4,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/TeamMember.ts' is not a module.
+src/app/api/toast/employees/route.ts(5,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/ToastEmployee.ts' is not a module.
+src/app/api/toast/employees/route.ts(6,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/toast/employees/route.ts(55,43): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/app/api/toast/era-report/route.ts(2,32): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/toast/era-report/route.ts(46,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/toast/integration-status/route.ts(3,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/toast/integration-status/route.ts(29,54): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/app/api/toast/integration-status/route.ts(39,9): error TS2322: Type 'string' is not assignable to type 'null'.
+src/app/api/toast/integration-status/route.ts(48,9): error TS2322: Type '{ count: any; sample: any; }' is not assignable to type 'null'.
+src/app/api/toast/integration-status/route.ts(55,9): error TS2322: Type 'string' is not assignable to type 'null'.
+src/app/api/toast/integration-summary/route.ts(2,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/toast/integration-summary/route.ts(27,54): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/app/api/toast/integration-summary/route.ts(30,9): error TS2322: Type '{ name: any; location: any; guid: any; }' is not assignable to type 'null'.
+src/app/api/toast/integration-summary/route.ts(41,9): error TS2322: Type 'string' is not assignable to type 'null'.
+src/app/api/toast/integration-summary/route.ts(50,9): error TS2322: Type '{ total: any; activeCount: any; sampleNames: any; }' is not assignable to type 'null'.
+src/app/api/toast/integration-summary/route.ts(53,55): error TS7006: Parameter 'emp' implicitly has an 'any' type.
+src/app/api/toast/integration-summary/route.ts(61,9): error TS2322: Type 'string' is not assignable to type 'null'.
+src/app/api/toast/integration-summary/route.ts(69,7): error TS2322: Type 'string' is not assignable to type 'null'.
+src/app/api/toast/integration-summary/route.ts(70,7): error TS2322: Type 'string | null' is not assignable to type 'null'.
+  Type 'string' is not assignable to type 'null'.
+src/app/api/toast/menus/route.ts(2,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/toast/orders-bulk/route.ts(2,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/toast/orders-metrics/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/toast/orders-metrics/route.ts(3,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/Analytics.ts' is not a module.
+src/app/api/toast/orders-metrics/route.ts(4,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/toast/orders/route.ts(3,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/toast/orders/route.ts(4,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/toast/orders/route.ts(5,25): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/HostSession.ts' is not a module.
+src/app/api/toast/orders/route.ts(6,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/ToastEmployee.ts' is not a module.
+src/app/api/toast/orders/route.ts(9,25): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/config/load-env.ts' is not a module.
+src/app/api/toast/restaurants/route.ts(2,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/toast/sync/route.ts(2,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/toast/sync/route.ts(3,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/ToastEmployee.ts' is not a module.
+src/app/api/toast/sync/route.ts(4,24): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/ToastOrder.ts' is not a module.
+src/app/api/toast/sync/route.ts(5,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/toast/sync/route.ts(233,93): error TS18046: 'error' is of type 'unknown'.
+src/app/api/toast/time-entries/route.ts(2,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/toast/weekly-performance/route.ts(2,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/app/api/varuni/voice/log/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/varuni/voice/log/route.ts(3,25): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/ChatSession.ts' is not a module.
+src/app/api/vendors/stats/route.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/app/api/vendors/stats/route.ts(3,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/PurchaseOrder.ts' is not a module.
+src/app/dashboard/page.tsx(5,29): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/components/layout/dashboard-layout.tsx' is not a module.
+src/app/dashboard/page.tsx(14,8): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/hooks/use-graphql.ts' is not a module.
+src/app/dashboard/page.tsx(344,55): error TS2503: Cannot find namespace 'JSX'.
+src/app/dashboard/page.tsx(525,13): error TS7006: Parameter 'entry' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(567,14): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(567,17): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(596,56): error TS7006: Parameter 'acc' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(596,61): error TS7006: Parameter 'ticket' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(607,58): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(607,63): error TS7006: Parameter 'category' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(608,48): error TS7006: Parameter 'category' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(608,58): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(778,47): error TS7006: Parameter 'entry' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(778,54): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(1085,51): error TS7006: Parameter 'category' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(1085,61): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(1093,57): error TS7006: Parameter 'category' implicitly has an 'any' type.
+src/components/dashboard/WidgetsGrid.tsx(6,69): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/hooks/use-graphql.ts' is not a module.
+src/components/hostpro/AssignSplitPane.tsx(7,88): error TS2307: Cannot find module '@dnd-kit/core' or its corresponding type declarations.
+src/components/inventory/InventoryAnalyticsPanel.tsx(7,79): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/components/ui/select.tsx' is not a module.
+src/components/inventory/InventoryAnalyticsPanel.tsx(9,90): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/components/ui/dropdown-menu.tsx' is not a module.
+src/components/inventory/InventoryAnalyticsPanel.tsx(31,8): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/hooks/use-graphql.ts' is not a module.
+src/components/inventory/InventoryAnalyticsPanel.tsx(376,38): error TS18046: 'innerRadius' is of type 'unknown'.
+src/components/inventory/InventoryAnalyticsPanel.tsx(376,53): error TS18046: 'outerRadius' is of type 'unknown'.
+src/components/inventory/InventoryAnalyticsPanel.tsx(376,67): error TS18046: 'innerRadius' is of type 'unknown'.
+src/components/inventory/InventoryAnalyticsPanel.tsx(377,33): error TS2365: Operator '+' cannot be applied to types 'string | number' and 'number'.
+src/components/inventory/InventoryAnalyticsPanel.tsx(377,57): error TS18046: 'midAngle' is of type 'unknown'.
+src/components/inventory/InventoryAnalyticsPanel.tsx(378,33): error TS2365: Operator '+' cannot be applied to types 'string | number' and 'number'.
+src/components/inventory/InventoryAnalyticsPanel.tsx(378,57): error TS18046: 'midAngle' is of type 'unknown'.
+src/components/inventory/InventoryAnalyticsPanel.tsx(381,32): error TS18046: 'percent' is of type 'unknown'.
+src/components/inventory/InventoryReportsPanel.tsx(8,80): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/hooks/use-graphql.ts' is not a module.
+src/components/inventory/StockMovementChart.tsx(6,79): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/components/ui/select.tsx' is not a module.
+src/components/providers/apollo-provider.tsx(3,32): error TS2307: Cannot find module '@apollo/client' or its corresponding type declarations.
+src/components/robotic-fleets/api-test.tsx(16,23): error TS2307: Cannot find module 'sonner' or its corresponding type declarations.
+src/components/robotic-fleets/robot-dashboard.tsx(26,23): error TS2307: Cannot find module 'sonner' or its corresponding type declarations.
+src/components/robotic-fleets/robot-map-view.tsx(20,23): error TS2307: Cannot find module 'sonner' or its corresponding type declarations.
+src/components/robotic-fleets/workflow-creator.tsx(8,79): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/components/ui/select.tsx' is not a module.
+src/components/robotic-fleets/workflow-creator.tsx(293,74): error TS7006: Parameter 'v' implicitly has an 'any' type.
+src/components/robotic-fleets/workflow-creator.tsx(525,43): error TS7006: Parameter 'action' implicitly has an 'any' type.
+src/components/team/RosterPanel.tsx(9,79): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/components/ui/select.tsx' is not a module.
+src/components/team/RosterPanel.tsx(10,23): error TS2307: Cannot find module 'sonner' or its corresponding type declarations.
+src/components/team/RosterPanel.tsx(14,80): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/components/ui/command.tsx' is not a module.
+src/components/team/RosterPanel.tsx(231,27): error TS7006: Parameter 'checked' implicitly has an 'any' type.
+src/components/team/RosterPanel.tsx(604,143): error TS7006: Parameter 'v' implicitly has an 'any' type.
+src/components/team/RosterPanel.tsx(717,37): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/components/ui/checkbox.tsx(4,36): error TS2307: Cannot find module '@radix-ui/react-checkbox' or its corresponding type declarations.
+src/components/ui/form.tsx(14,8): error TS2307: Cannot find module 'react-hook-form' or its corresponding type declarations.
+src/components/ui/navigation-menu.tsx(2,42): error TS2307: Cannot find module '@radix-ui/react-navigation-menu' or its corresponding type declarations.
+src/components/ui/popover.tsx(4,35): error TS2307: Cannot find module '@radix-ui/react-popover' or its corresponding type declarations.
+src/components/ui/progress.tsx(2,36): error TS2307: Cannot find module '@radix-ui/react-progress' or its corresponding type declarations.
+src/components/ui/sonner.tsx(4,49): error TS2307: Cannot find module 'sonner' or its corresponding type declarations.
+src/components/varuni/chat/voice-chat.tsx(6,132): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/components/ui/dropdown-menu.tsx' is not a module.
+src/components/varuni/chat/voice-chat.tsx(675,48): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/lib/apollo-client.ts(1,67): error TS2307: Cannot find module '@apollo/client' or its corresponding type declarations.
+src/lib/apollo-client.ts(2,28): error TS2307: Cannot find module '@apollo/client/link/context' or its corresponding type declarations.
+src/lib/apollo-client.ts(3,25): error TS2307: Cannot find module '@apollo/client/link/error' or its corresponding type declarations.
+src/lib/apollo-client.ts(11,30): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/lib/apollo-client.ts(11,35): error TS7031: Binding element 'headers' implicitly has an 'any' type.
+src/lib/apollo-client.ts(24,30): error TS7031: Binding element 'graphQLErrors' implicitly has an 'any' type.
+src/lib/apollo-client.ts(24,45): error TS7031: Binding element 'networkError' implicitly has an 'any' type.
+src/lib/apollo-client.ts(26,30): error TS7031: Binding element 'message' implicitly has an 'any' type.
+src/lib/apollo-client.ts(26,39): error TS7031: Binding element 'locations' implicitly has an 'any' type.
+src/lib/apollo-client.ts(26,50): error TS7031: Binding element 'path' implicitly has an 'any' type.
+src/lib/apollo-client.ts(55,34): error TS7006: Parameter 'incoming' implicitly has an 'any' type.
+src/lib/apollo-client.ts(61,34): error TS7006: Parameter 'incoming' implicitly has an 'any' type.
+src/lib/apollo-client.ts(67,19): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/lib/apollo-client.ts(67,22): error TS7006: Parameter 'incoming' implicitly has an 'any' type.
+src/lib/apollo-client.ts(72,19): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/lib/apollo-client.ts(72,22): error TS7006: Parameter 'incoming' implicitly has an 'any' type.
+src/lib/auth/jwt.ts(1,52): error TS7016: Could not find a declaration file for module 'jsonwebtoken'. 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+src/lib/auth/jwt.ts(2,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/lib/db/create-admin.ts(1,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/lib/db/create-admin.ts(2,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/lib/db/seed-sample-data.ts(1,25): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/config/load-env.ts' is not a module.
+src/lib/db/seed-sample-data.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/lib/db/seed-sample-data.ts(3,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+src/lib/db/seed-sample-data.ts(4,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/TeamMember.ts' is not a module.
+src/lib/db/seed-sample-data.ts(5,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/Analytics.ts' is not a module.
+src/lib/db/seed-sample-data.ts(6,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/lib/db/seed-sample-data.ts(7,30): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/PerformanceEntry.ts' is not a module.
+src/lib/db/seed.ts(1,25): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/config/load-env.ts' is not a module.
+src/lib/db/seed.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/lib/db/seed.ts(3,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/lib/db/seed.ts(4,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/TeamMember.ts' is not a module.
+src/lib/db/seed.ts(7,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+src/lib/db/seed.ts(8,38): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryTransaction.ts' is not a module.
+src/lib/db/seed.ts(9,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/PurchaseOrder.ts' is not a module.
+src/lib/db/seed.ts(15,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/Analytics.ts' is not a module.
+src/lib/db/seed.ts(17,30): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/PerformanceEntry.ts' is not a module.
+src/lib/db/seed.ts(992,33): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/lib/db/seed.ts(992,39): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/lib/db/seed.ts(1188,42): error TS7006: Parameter 'bay' implicitly has an 'any' type.
+src/lib/db/seed.ts(1194,49): error TS7006: Parameter 'member' implicitly has an 'any' type.
+src/lib/graphql/demo-resolvers.ts(1501,3): error TS2322: Type '({ id: string; quantity: number; unit: string; note: string | undefined; part: DemoInventoryItem; } | null)[]' is not assignable to type 'DemoRecommendedPart[]'.
+  Type '{ id: string; quantity: number; unit: string; note: string | undefined; part: DemoInventoryItem; } | null' is not assignable to type 'DemoRecommendedPart'.
+    Type 'null' is not assignable to type 'DemoRecommendedPart'.
+src/lib/graphql/demo-resolvers.ts(1513,31): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'DemoRecommendedPart' is not assignable to type '{ id: string; quantity: number; unit: string; note: string | undefined; part: DemoInventoryItem; }'.
+    Property 'note' is optional in type 'DemoRecommendedPart' but required in type '{ id: string; quantity: number; unit: string; note: string | undefined; part: DemoInventoryItem; }'.
+src/lib/graphql/demo-resolvers.ts(1528,3): error TS2322: Type '({ id: string; servicePackage: DemoServicePackage; status: string; estimatedHours: number | undefined; actualHours: undefined; estimatedPrice: number | undefined; approved: boolean; technicianNotes: string | undefined; } | null)[]' is not assignable to type 'DemoTicketService[]'.
+  Type '{ id: string; servicePackage: DemoServicePackage; status: string; estimatedHours: number | undefined; actualHours: undefined; estimatedPrice: number | undefined; approved: boolean; technicianNotes: string | undefined; } | null' is not assignable to type 'DemoTicketService'.
+    Type 'null' is not assignable to type 'DemoTicketService'.
+src/lib/graphql/demo-resolvers.ts(1543,31): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'DemoTicketService' is not assignable to type '{ id: string; servicePackage: DemoServicePackage; status: string; estimatedHours: number | undefined; actualHours: undefined; estimatedPrice: number | undefined; approved: boolean; technicianNotes: string | undefined; }'.
+    Property 'estimatedHours' is optional in type 'DemoTicketService' but required in type '{ id: string; servicePackage: DemoServicePackage; status: string; estimatedHours: number | undefined; actualHours: undefined; estimatedPrice: number | undefined; approved: boolean; technicianNotes: string | undefined; }'.
+src/lib/graphql/resolvers.ts(1,22): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/User.ts' is not a module.
+src/lib/graphql/resolvers.ts(2,41): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/TeamMember.ts' is not a module.
+src/lib/graphql/resolvers.ts(4,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryItem.ts' is not a module.
+src/lib/graphql/resolvers.ts(7,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/PurchaseOrder.ts' is not a module.
+src/lib/graphql/resolvers.ts(8,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/Analytics.ts' is not a module.
+src/lib/graphql/resolvers.ts(9,38): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/InventoryTransaction.ts' is not a module.
+src/lib/graphql/resolvers.ts(10,24): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/Recipe.ts' is not a module.
+src/lib/graphql/resolvers.ts(11,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/ToastEmployee.ts' is not a module.
+src/lib/graphql/resolvers.ts(19,22): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/graphql/resolvers.ts(22,29): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/MenuMapping.ts' is not a module.
+src/lib/graphql/resolvers.ts(24,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/lib/graphql/resolvers.ts(230,28): error TS2304: Cannot find name 'ensureObjectId'.
+src/lib/graphql/resolvers.ts(280,30): error TS7006: Parameter 'member' implicitly has an 'any' type.
+src/lib/graphql/resolvers.ts(1479,26): error TS2304: Cannot find name 'ensureObjectId'.
+src/lib/graphql/resolvers.ts(1481,26): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/lib/graphql/resolvers.ts(1488,25): error TS7006: Parameter 'doc' implicitly has an 'any' type.
+src/lib/graphql/resolvers.ts(1496,26): error TS7006: Parameter 'name' implicitly has an 'any' type.
+src/lib/graphql/resolvers.ts(1503,25): error TS7006: Parameter 'doc' implicitly has an 'any' type.
+src/lib/graphql/resolvers.ts(1509,68): error TS2304: Cannot find name 'ensureObjectId'.
+src/lib/graphql/resolvers.ts(1570,16): error TS7006: Parameter 'emp' implicitly has an 'any' type.
+src/lib/graphql/resolvers.ts(1571,20): error TS7006: Parameter 'email' implicitly has an 'any' type.
+src/lib/graphql/resolvers.ts(1579,33): error TS7006: Parameter 'tm' implicitly has an 'any' type.
+src/lib/graphql/resolvers.ts(1583,47): error TS7006: Parameter 'emp' implicitly has an 'any' type.
+src/lib/graphql/resolvers.ts(1591,52): error TS2339: Property 'performance' does not exist on type '{}'.
+src/lib/graphql/resolvers.ts(1592,40): error TS2339: Property 'performance' does not exist on type '{}'.
+src/lib/graphql/resolvers.ts(1600,69): error TS7006: Parameter 'j' implicitly has an 'any' type.
+src/lib/graphql/resolvers.ts(1601,43): error TS2339: Property 'department' does not exist on type '{}'.
+src/lib/graphql/resolvers.ts(1610,38): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/lib/graphql/resolvers.ts(1612,38): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/lib/graphql/schema.ts(1,21): error TS2307: Cannot find module '@apollo/client' or its corresponding type declarations.
+src/lib/hooks/use-toast-integration.ts(2,23): error TS2307: Cannot find module 'sonner' or its corresponding type declarations.
+src/lib/models/AIInsight.ts(1,51): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/AutomationAsset.ts(1,22): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/AutomationAsset.ts(137,8): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/AutomationAsset.ts(138,19): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(1,22): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/InventoryCount.ts(148,43): error TS7006: Parameter 'next' implicitly has an 'any' type.
+src/lib/models/InventoryCount.ts(149,7): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(149,21): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(150,5): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(150,31): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(151,5): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(151,38): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(151,56): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/lib/models/InventoryCount.ts(152,5): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(152,39): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(152,58): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/lib/models/InventoryCount.ts(152,63): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/lib/models/InventoryCount.ts(153,5): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(153,42): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(154,15): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/lib/models/InventoryCount.ts(155,16): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/lib/models/InventoryCount.ts(155,21): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/lib/models/InventoryCount.ts(156,5): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(156,42): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(157,15): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/lib/models/InventoryCount.ts(158,16): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/lib/models/InventoryCount.ts(158,21): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/lib/models/InventoryCount.ts(160,27): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(160,45): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/lib/models/InventoryCount.ts(161,5): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/InventoryCount.ts(161,56): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(1,22): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/Invoice.ts(236,37): error TS7006: Parameter 'next' implicitly has an 'any' type.
+src/lib/models/Invoice.ts(237,31): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(238,7): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(238,31): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/lib/models/Invoice.ts(238,36): error TS7006: Parameter 'line' implicitly has an 'any' type.
+src/lib/models/Invoice.ts(240,31): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(241,7): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(241,31): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/lib/models/Invoice.ts(241,36): error TS7006: Parameter 'line' implicitly has an 'any' type.
+src/lib/models/Invoice.ts(243,3): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(244,3): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(245,43): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(245,76): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(245,106): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(246,3): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(247,3): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(247,40): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(248,39): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(249,7): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(249,29): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/lib/models/Invoice.ts(249,34): error TS7006: Parameter 'payment' implicitly has an 'any' type.
+src/lib/models/Invoice.ts(251,3): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/Invoice.ts(251,30): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/models/MenuIndex.ts(1,22): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/MenuVisibility.ts(1,22): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/OrderTrackingConfig.ts(1,22): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/RoleMapping.ts(1,44): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/RosterConfiguration.ts(1,44): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/SavedRoster.ts(1,44): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/ServiceBay.ts(1,22): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/ServiceLaneTicket.ts(1,22): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/ServicePackage.ts(1,22): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/Shift.ts(1,22): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/models/Supplier.ts(1,22): error TS2307: Cannot find module 'mongoose' or its corresponding type declarations.
+src/lib/reporting/exports.ts(27,28): error TS2307: Cannot find module 'xlsx' or its corresponding type declarations.
+src/lib/reporting/exports.ts(41,28): error TS2307: Cannot find module 'xlsx' or its corresponding type declarations.
+src/lib/reporting/exports.ts(62,32): error TS2307: Cannot find module 'jspdf' or its corresponding type declarations.
+src/lib/reporting/exports.ts(63,36): error TS2307: Cannot find module 'jspdf-autotable' or its corresponding type declarations.
+src/lib/reporting/exports.ts(81,32): error TS2307: Cannot find module 'jspdf' or its corresponding type declarations.
+src/lib/reporting/exports.ts(82,36): error TS2307: Cannot find module 'jspdf-autotable' or its corresponding type declarations.
+src/lib/services/bear-cloud-server.ts(230,36): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/lib/services/bear-cloud-server.ts(367,7): error TS2322: Type 'unknown[]' is not assignable to type 'WorkflowData[]'.
+  Type 'unknown' is not assignable to type 'WorkflowData'.
+src/lib/services/bear-cloud-server.ts(391,7): error TS2740: Type '{}' is missing the following properties from type 'WorkflowData': id, name, keyframes, status, and 2 more.
+src/lib/services/rag.ts(2,23): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/Embedding.ts' is not a module.
+src/lib/services/rag.ts(34,26): error TS7006: Parameter 'd' implicitly has an 'any' type.
+src/lib/services/rag.ts(35,10): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/lib/services/rag.ts(35,13): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/lib/services/rag.ts(37,8): error TS7006: Parameter 'd' implicitly has an 'any' type.
+src/lib/services/toast-auth.ts(2,31): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-error-handler.ts' is not a module.
+src/lib/services/toast-complete-api.ts(6,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/lib/services/toast-scheduler.ts(5,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/lib/services/toast-sync.ts(1,28): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/services/toast-api-client.ts' is not a module.
+src/lib/services/toast-sync.ts(2,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/models/ToastEmployee.ts' is not a module.
+src/lib/services/toast-sync.ts(3,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.
+src/lib/services/varuni-scheduler.ts(1,27): error TS2306: File 'C:/Users/meanp/OneDrive/Documents/HTL Projects/VS Code Projects/portalpay/src/lib/db/connection.ts' is not a module.

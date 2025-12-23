@@ -1,0 +1,7 @@
+# .mailmap to re-attribute commits to GenRevo89 (krishnapatel@mac.com)
+# Format variants:
+# New Name <new-email> <old-email>
+# New Name <new-email> Old Name <old-email>
+
+GenRevo89 <krishnapatel@mac.com> <info@theutilitycompany.co>
+GenRevo89 <krishnapatel@mac.com> genrevo <info@theutilitycompany.co>

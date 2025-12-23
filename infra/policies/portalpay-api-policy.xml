@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<policies>
+  <inbound>
+    <base />
+    <!-- Enforce Front Door origin via shared secret header -->
+    <choose>
+      <when condition="@((string)context.Request.Headers.GetValueOrDefault('x-edge-secret', '')) == 'AFDEDGESECRET-20251028'">
+        <!-- Request originated from Front Door: allow -->
+        <set-header name="x-subscription-id" exists-action="override">
+          <value>@(context.Subscription.Id)</value>
+        </set-header>
+      </when>
+      <otherwise>
+        <return-response>
+          <set-status code="403" reason="Forbidden" />
+          <set-header name="Content-Type" exists-action="override">
+            <value>application/json</value>
+          </set-header>
+          <body>{"error":"forbidden","message":"Request must originate from Front Door"}</body>
+        </return-response>
+      </otherwise>
+    </choose>
+    <!-- Strip legacy client-supplied wallet headers by overriding to empty (remove-header not supported) -->
+    <set-header name="x-wallet" exists-action="override">
+      <value></value>
+    </set-header>
+    <set-header name="wallet" exists-action="override">
+      <value></value>
+    </set-header>
+  </inbound>
+  <backend>
+    <base />
+  </backend>
+  <outbound>
+    <base />
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>

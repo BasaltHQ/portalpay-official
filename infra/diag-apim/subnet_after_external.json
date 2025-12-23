@@ -1,0 +1,26 @@
+﻿{
+  "addressPrefix": "10.180.1.0/24",
+  "delegations": [],
+  "etag": "W/\"3b8d195c-db3b-4696-b13b-058fa27b0a80\"",
+  "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.Network/virtualNetworks/vnet-portalpay-prod/subnets/snet-apim",
+  "ipConfigurations": [
+    {
+      "id": "/subscriptions/58575443-da19-480d-88d9-a1bb858b6aa2/resourceGroups/APIM-PORTALPAY-PROD-VGKYTHJW3ION0CRDHZLUISWWZNQZAT/PROVIDERS/MICROSOFT.COMPUTE/VIRTUALMACHINESCALESETS/GWHOST/VIRTUALMACHINES/2/NETWORKINTERFACES/GWHOST-NIC/ipConfigurations/GWHOST-IPCONFIG",
+      "resourceGroup": "APIM-PORTALPAY-PROD-VGKYTHJW3ION0CRDHZLUISWWZNQZAT"
+    },
+    {
+      "id": "/subscriptions/58575443-da19-480d-88d9-a1bb858b6aa2/resourceGroups/APIM-PORTALPAY-PROD-VGKYTHJW3ION0CRDHZLUISWWZNQZAT/PROVIDERS/MICROSOFT.COMPUTE/VIRTUALMACHINESCALESETS/GWHOST/VIRTUALMACHINES/3/NETWORKINTERFACES/GWHOST-NIC/ipConfigurations/GWHOST-IPCONFIG",
+      "resourceGroup": "APIM-PORTALPAY-PROD-VGKYTHJW3ION0CRDHZLUISWWZNQZAT"
+    }
+  ],
+  "name": "snet-apim",
+  "networkSecurityGroup": {
+    "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-apim-portalpay",
+    "resourceGroup": "rg-portalpay-prod"
+  },
+  "privateEndpointNetworkPolicies": "Disabled",
+  "privateLinkServiceNetworkPolicies": "Enabled",
+  "provisioningState": "Succeeded",
+  "resourceGroup": "rg-portalpay-prod",
+  "type": "Microsoft.Network/virtualNetworks/subnets"
+}

@@ -1,0 +1,734 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getContainer } from "@/lib/cosmos";
+import { IndustryPackType } from "@/lib/industry-packs";
+import { requireApimOrJwt } from "@/lib/gateway-auth";
+import { requireThirdwebAuth } from "@/lib/auth";
+import { requireCsrf } from "@/lib/security";
+import { getBrandKey } from "@/config/brands";
+import { isPlatformContext } from "@/lib/env";
+
+/**
+ * Resolve the brand key for shop config.
+ * Platform context (including localhost) always uses "portalpay".
+ * Partner context uses the configured BRAND_KEY.
+ */
+function resolveBrandKey(): string {
+  if (isPlatformContext()) {
+    return "portalpay";
+  }
+  try {
+    return getBrandKey() || "portalpay";
+  } catch {
+    return "portalpay";
+  }
+}
+
+const DOC_ID = "shop:config";
+
+function getDocIdForBrand(brandKey?: string): string {
+  try {
+    const key = String(brandKey || "").toLowerCase();
+    if (!key || key === "portalpay") return DOC_ID;
+    return `${DOC_ID}:${key}`;
+  } catch {
+    return DOC_ID;
+  }
+}
+
+type ShopTheme = {
+  primaryColor?: string;
+  secondaryColor?: string;
+  textColor?: string;
+  accentColor?: string;
+  brandLogoUrl?: string;
+  coverPhotoUrl?: string;
+  fontFamily?: string;
+  logoShape?: "square" | "circle";
+  heroFontSize?: "microtext" | "small" | "medium" | "large" | "xlarge";
+};
+
+type InventoryArrangement =
+  | "grid"              // simple grid (default)
+  | "featured_first"    // featured items at top, then grid
+  | "groups"            // grouped by category
+  | "carousel";         // horizontal carousel(s)
+
+type LinkItem = {
+  label: string;
+  url: string;
+};
+
+export type ShopConfig = {
+  id: string;
+  wallet: string;
+  type: "shop_config";
+  brandKey?: string; // Brand namespace for multi-tenant isolation (e.g., "portalpay", "paynex")
+  name: string;
+  description?: string;
+  bio?: string;
+  theme: ShopTheme;
+  arrangement: InventoryArrangement;
+  xpPerDollar?: number; // Loyalty: XP multiplier per $1 spent
+  loyalty?: {
+    baseXP?: number;
+    multiplier?: number;
+    prestige?: {
+      enabled: boolean;
+      maxLevel: number;
+      maxPrestige: number;
+      ranks?: { level: number; title: string; iconUrl?: string }[];
+    };
+    platformOptIn?: boolean;
+    rewards?: {
+      id: string;
+      level: number;
+      type: 'item' | 'discount' | 'coupon';
+      value?: string | number;
+      prestige?: number;
+      active?: boolean;
+      industryPack?: string;
+    }[];
+    art?: import('@/utils/generative-art').PlatformArtConfig; // Merchant-specific art config or override
+  };
+  slug?: string; // public slug for root link (e.g., /krishnastore)
+  links?: LinkItem[]; // merchant weblinks/socials
+  industryPack?: IndustryPackType; // Active industry pack
+  industryPackActivatedAt?: number; // Timestamp when pack was activated
+  customDomain?: string; // Custom domain (e.g. shop.example.com)
+  customDomainVerified?: boolean; // Whether the custom domain has been verified via DNS
+  setupComplete?: boolean;
+  createdAt: number;
+  updatedAt: number;
+};
+
+function defaults(): Required<Omit<ShopConfig, "wallet" | "id" | "type" | "slug" | "brandKey" | "industryPack" | "industryPackActivatedAt">> {
+  return {
+    name: "",
+    description: "",
+    bio: "",
+    theme: {
+      primaryColor: "#0ea5e9", // sky-500
+      secondaryColor: "#22c55e", // green-500
+      textColor: "#0b1020",
+      accentColor: "#f59e0b", // amber-500
+      brandLogoUrl: "/cblogod.png",
+      coverPhotoUrl: "",
+      fontFamily:
+        "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+      logoShape: "square",
+      heroFontSize: "medium",
+    },
+    arrangement: "grid",
+    xpPerDollar: 1,
+    loyalty: {
+      prestige: {
+        enabled: false,
+        maxLevel: 55,
+        maxPrestige: 10,
+        ranks: []
+      },
+      platformOptIn: false,
+      rewards: []
+    },
+    links: [],
+    customDomain: "",
+    customDomainVerified: false,
+    setupComplete: false,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+}
+
+function isValidUrl(u: any): boolean {
+  try {
+    const v = String(u || "");
+    if (!v) return false;
+    if (/^https?:\/\//i.test(v)) return true;
+    if (/^mailto:/i.test(v)) return true;
+    if (/^\//.test(v)) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+// Normalizes the shop config, applying defaults and ensuring validity.
+function normalize(raw?: any): Omit<ShopConfig, "wallet" | "id" | "type"> & { slug?: string } {
+  const d = defaults();
+  const out: any = {
+    name: d.name,
+    description: d.description,
+    bio: d.bio,
+    theme: { ...d.theme },
+    arrangement: d.arrangement,
+    xpPerDollar: 1,
+    loyalty: undefined,
+    links: [],
+    customDomain: "",
+    customDomainVerified: false,
+    setupComplete: false,
+    createdAt: d.createdAt,
+    updatedAt: d.updatedAt,
+    slug: undefined as string | undefined,
+  };
+
+  if (raw && typeof raw === "object") {
+    if (typeof raw.name === "string") out.name = String(raw.name).slice(0, 64);
+    if (typeof raw.description === "string") out.description = String(raw.description).slice(0, 4000);
+    if (typeof raw.bio === "string") out.bio = String(raw.bio).slice(0, 2000);
+
+    const t = raw.theme || {};
+    out.theme = {
+      primaryColor: typeof t.primaryColor === "string" ? t.primaryColor : d.theme.primaryColor,
+      secondaryColor: typeof t.secondaryColor === "string" ? t.secondaryColor : d.theme.secondaryColor,
+      textColor: typeof t.textColor === "string" ? t.textColor : d.theme.textColor,
+      accentColor: typeof t.accentColor === "string" ? t.accentColor : d.theme.accentColor,
+      brandLogoUrl: isValidUrl(t.brandLogoUrl) ? String(t.brandLogoUrl) : d.theme.brandLogoUrl,
+      coverPhotoUrl: t.coverPhotoUrl === "" ? "" : (isValidUrl(t.coverPhotoUrl) ? String(t.coverPhotoUrl) : d.theme.coverPhotoUrl),
+      fontFamily: typeof t.fontFamily === "string" ? t.fontFamily : d.theme.fontFamily,
+      logoShape: (t.logoShape === "square" || t.logoShape === "circle") ? t.logoShape : d.theme.logoShape,
+      heroFontSize: (t.heroFontSize === "microtext" || t.heroFontSize === "small" || t.heroFontSize === "medium" || t.heroFontSize === "large" || t.heroFontSize === "xlarge") ? t.heroFontSize : d.theme.heroFontSize,
+    };
+
+    const arr = String(raw.arrangement || "").toLowerCase();
+    out.arrangement = (["grid", "featured_first", "groups", "carousel"] as InventoryArrangement[]).includes(arr as any)
+      ? (arr as InventoryArrangement)
+      : d.arrangement;
+
+    // XP per $ setting
+    if (typeof raw.xpPerDollar === "number") {
+      const v = Number(raw.xpPerDollar);
+      out.xpPerDollar = Number.isFinite(v) && v >= 0 ? Math.min(1000, v) : out.xpPerDollar;
+    }
+
+    // Loyalty Settings
+    if (raw.loyalty && typeof raw.loyalty === "object") {
+      out.loyalty = {
+        prestige: {
+          enabled: Boolean(raw.loyalty.prestige?.enabled),
+          maxLevel: Number(raw.loyalty.prestige?.maxLevel) || 55,
+          maxPrestige: Number(raw.loyalty.prestige?.maxPrestige) || 10,
+          ranks: Array.isArray(raw.loyalty.prestige?.ranks) ? raw.loyalty.prestige.ranks : []
+        },
+        platformOptIn: Boolean(raw.loyalty.platformOptIn),
+        rewards: Array.isArray(raw.loyalty.rewards) ? raw.loyalty.rewards : []
+      };
+    }
+
+    if (typeof raw.createdAt === "number" && Number.isFinite(raw.createdAt)) out.createdAt = Math.max(0, Math.floor(raw.createdAt));
+    if (typeof raw.updatedAt === "number" && Number.isFinite(raw.updatedAt)) out.updatedAt = Math.max(0, Math.floor(raw.updatedAt));
+    if (typeof raw.setupComplete === "boolean") out.setupComplete = raw.setupComplete;
+
+    if (typeof raw.slug === "string") {
+      const s = String(raw.slug).toLowerCase().trim();
+      out.slug = s ? s.slice(0, 32) : undefined;
+    }
+
+    // Links
+    if (Array.isArray(raw.links)) {
+      const arr: any[] = raw.links;
+      out.links = arr
+        .filter((x) => x && typeof x === "object")
+        .map((x) => {
+          const label = typeof x.label === "string" ? String(x.label).slice(0, 64) : "";
+          const url = typeof x.url === "string" ? String(x.url) : "";
+          return { label, url };
+        })
+        .filter((x) => x.url && isValidUrl(x.url));
+    }
+
+    // Industry Pack
+    if (typeof raw.industryPack === "string") {
+      const validPacks: IndustryPackType[] = ["restaurant", "retail", "hotel", "freelancer", "publishing"];
+      const packType = String(raw.industryPack).toLowerCase();
+      if (validPacks.includes(packType as IndustryPackType)) {
+        out.industryPack = packType as IndustryPackType;
+      }
+    }
+    if (typeof raw.industryPackActivatedAt === "number" && Number.isFinite(raw.industryPackActivatedAt)) {
+      out.industryPackActivatedAt = Math.max(0, Math.floor(raw.industryPackActivatedAt));
+    }
+
+    // Custom Domain
+    if (typeof raw.customDomain === "string") {
+      const cd = String(raw.customDomain).trim().toLowerCase();
+      // Basic domain validation (loose)
+      if (cd && /^[a-z0-9.-]+\.[a-z]{2,}$/.test(cd)) {
+        out.customDomain = cd;
+      }
+    }
+    if (typeof raw.customDomainVerified === "boolean") {
+      out.customDomainVerified = raw.customDomainVerified;
+    }
+  }
+
+  // Clamp colors to strings
+  try {
+    for (const k of Object.keys(out.theme || {})) {
+      const v = (out.theme as any)[k];
+      (out.theme as any)[k] = typeof v === "string" ? v : (d.theme as any)[k];
+    }
+  } catch { }
+
+  return out as any;
+}
+
+function validateWallet(raw: string): string {
+  const w = String(raw || "").toLowerCase();
+  return /^0x[a-f0-9]{40}$/.test(w) ? w : "";
+}
+
+/**
+ * Reserved slugs that must never be claimed by shops,
+ * to avoid conflicts with top-level routes and system paths.
+ * Keep in sync with /api/shop/slug/route.ts
+ */
+const RESERVED_SLUGS = new Set<string>([
+  "admin",
+  "console",
+  "developers",
+  "developer",
+  "docs",
+  "doc",
+  "shop",
+  "portal",
+  "terminal",
+  "vs",
+  "locations",
+  "crypto-payments",
+  "get-started",
+  "faq",
+  "u",
+  "api",
+  "og-image",
+  "robots",
+  "sitemap",
+  "favicon",
+  "team",
+  "industry-packs",
+  "analytics",
+  "leaderboard",
+  "inventory",
+  "orders",
+  "receipts",
+  "reviews",
+  "site",
+  "platform",
+  "partners",
+  "billing",
+  "merchants",
+  "users",
+  "auth",
+  "test"
+]);
+function isReservedSlug(slug: string): boolean {
+  try { return RESERVED_SLUGS.has(String(slug || "").toLowerCase()); } catch { return false; }
+}
+
+function jsonResponse(
+  obj: any,
+  init?: { status?: number; headers?: Record<string, string> }
+) {
+  try {
+    const json = JSON.stringify(obj);
+    const len = new TextEncoder().encode(json).length;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...(init?.headers || {}),
+    };
+    headers["Content-Length"] = String(len);
+    return new NextResponse(json, { status: init?.status ?? 200, headers });
+  } catch {
+    return NextResponse.json(obj, init as any);
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const url = new URL(req.url);
+    const referer = req.headers.get("referer") || "";
+    const refPath = (() => { try { return referer ? (new URL(referer)).pathname : ""; } catch { return ""; } })();
+    const isTerminalRef = refPath.startsWith("/terminal");
+    // For GET requests, prioritize x-wallet header for public shop viewing
+    const xWalletHeader = req.headers.get("x-wallet");
+    let targetWallet = xWalletHeader ? validateWallet(xWalletHeader) : "";
+    let authUsed = false;
+
+    // If no x-wallet header, try authentication (for merchant's own shop management)
+    if (!targetWallet) {
+      try {
+        const caller = await requireApimOrJwt(req, ["shop:read"]);
+        targetWallet = caller.wallet;
+        authUsed = true;
+
+        // Parse wallet query param for superadmin override
+        const queryWallet = url.searchParams.get("wallet");
+
+        if (queryWallet && caller.source === "jwt") {
+          const ownerWallet = (process.env.NEXT_PUBLIC_OWNER_WALLET || "").toLowerCase();
+          const isSuperadmin = ownerWallet && caller.wallet === ownerWallet;
+
+          if (isSuperadmin) {
+            const validatedQueryWallet = validateWallet(queryWallet);
+            if (validatedQueryWallet) {
+              targetWallet = validatedQueryWallet;
+            }
+          }
+        }
+      } catch (e: any) {
+        // Authentication failed and no x-wallet header - continue to slug/default handling
+      }
+    }
+
+    const c = await getContainer();
+
+    // Determine brand key (if configured); safe for platform legacy.
+    let brandKey: string | undefined = undefined;
+    try {
+      brandKey = resolveBrandKey();
+    } catch {
+      brandKey = undefined;
+    }
+
+    // If no wallet but slug provided, attempt slug-based resolution
+    if (!targetWallet) {
+      const slugParamRaw = String(url.searchParams.get("slug") || "").toLowerCase().trim();
+      const slugParam = slugParamRaw.replace(/[^a-z0-9\-]/g, "").slice(0, 32);
+      // Ignore slug-based resolution when request originates from /terminal to avoid accidental shop context
+      if (isTerminalRef) {
+        return jsonResponse({ config: normalize() }, {
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+          },
+        });
+      }
+      if (slugParam) {
+        // Do not resolve reserved slugs to wallets; treat as no-config/defaults to avoid hijacking top-level routes
+        if (isReservedSlug(slugParam)) {
+          return jsonResponse({ config: normalize() }, {
+            headers: {
+              "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+              "Pragma": "no-cache",
+              "Expires": "0",
+            },
+          });
+        }
+        try {
+          const spec = {
+            query:
+              "SELECT TOP 1 c.id, c.wallet, c.slug FROM c WHERE c.type='shop_config' AND LOWER(c.slug)=@s",
+            parameters: [{ name: "@s", value: slugParam }],
+          } as { query: string; parameters: { name: string; value: any }[] };
+          const { resources } = await c.items.query(spec).fetchAll();
+          const row = Array.isArray(resources) && resources.length ? (resources[0] as any) : null;
+          const foundWallet = row && typeof row.wallet === "string" ? String(row.wallet).toLowerCase() : "";
+          if (foundWallet) {
+            // Prefer brand-scoped doc first when brand is configured
+            try {
+              if (brandKey) {
+                const { resource } = await c.item(getDocIdForBrand(brandKey), foundWallet).read<any>();
+                if (resource) {
+                  return jsonResponse({ config: normalize(resource) }, {
+                    headers: {
+                      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+                      "Pragma": "no-cache",
+                      "Expires": "0",
+                    },
+                  });
+                }
+              }
+            } catch { }
+            // In partner containers, do NOT fallback to legacy; return defaults so shop appears unconfigured
+            if (brandKey && String(brandKey).toLowerCase() !== "portalpay") {
+              return jsonResponse({ config: normalize() }, {
+                headers: {
+                  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+                  "Pragma": "no-cache",
+                  "Expires": "0",
+                },
+              });
+            }
+            // Platform container: fallback to legacy doc id
+            try {
+              const { resource } = await c.item(DOC_ID, foundWallet).read<any>();
+              if (resource) {
+                return jsonResponse({ config: normalize(resource) }, {
+                  headers: {
+                    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+                    "Pragma": "no-cache",
+                    "Expires": "0",
+                  },
+                });
+              }
+            } catch { }
+          }
+        } catch {
+          // ignore, fall through to defaults
+        }
+      }
+    }
+
+    // Prefer per-wallet config
+    if (targetWallet) {
+      let found = false;
+
+      // Try brand-scoped doc first when brand is configured
+      if (brandKey) {
+        try {
+          const { resource } = await c.item(getDocIdForBrand(brandKey), targetWallet).read<any>();
+          if (resource) {
+            found = true;
+            return jsonResponse({ config: normalize(resource) }, {
+              headers: {
+                "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0",
+              },
+            });
+          }
+        } catch { }
+      }
+
+      // In partner containers, do NOT fallback to legacy; return defaults (or 404 for authenticated management)
+      if (brandKey && String(brandKey).toLowerCase() !== "portalpay") {
+        if (authUsed && !found) {
+          // Authenticated path requested a specific wallet but no config exists in this brand
+          return jsonResponse({ error: "not_found" }, { status: 404 });
+        }
+        return jsonResponse({ config: normalize() }, {
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+          },
+        });
+      }
+      // Platform container: fallback to legacy doc id
+      try {
+        const { resource } = await c.item(DOC_ID, targetWallet).read<any>();
+        if (resource) {
+          found = true;
+          return jsonResponse({ config: normalize(resource) }, {
+            headers: {
+              "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+              "Pragma": "no-cache",
+              "Expires": "0",
+            },
+          });
+        } else if (authUsed && !found) {
+          // Authenticated path requested a specific wallet but no config exists
+          return jsonResponse({ error: "not_found" }, { status: 404 });
+        }
+      } catch {
+        // fall through
+        if (authUsed && !found) {
+          return jsonResponse({ error: "not_found" }, { status: 404 });
+        }
+      }
+    }
+
+    // No wallet provided or not found: return sane defaults (not globalized)
+    return jsonResponse({ config: normalize() }, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0",
+      },
+    });
+  } catch (e: any) {
+    return jsonResponse(
+      { config: normalize(), degraded: true, reason: e?.message || "cosmos_unavailable" },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+          "Pragma": "no-cache",
+          "Expires": "0",
+        },
+      }
+    );
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json().catch(() => ({}));
+    // Admin-only: require JWT, do not allow APIM dev subscription writes
+    let caller: any;
+    try {
+      caller = await requireThirdwebAuth(req);
+    } catch {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+    const wallet = caller.wallet;
+    // CSRF for UI writes
+    try { requireCsrf(req); } catch (e: any) {
+      return NextResponse.json({ error: e?.message || "bad_origin" }, { status: e?.status || 403 });
+    }
+
+    // Build candidate from previous + updates
+    let prev: any = undefined;
+    // Prefer brand-scoped doc first when brand is configured; fallback to legacy id
+    let brandKey: string | undefined = undefined;
+    try { brandKey = resolveBrandKey(); } catch { brandKey = undefined; }
+    try {
+      const c = await getContainer();
+      if (brandKey) {
+        try {
+          const { resource } = await c.item(getDocIdForBrand(brandKey), wallet).read<any>();
+          prev = resource;
+        } catch { }
+      }
+      if (!prev) {
+        const { resource } = await c.item(DOC_ID, wallet).read<any>();
+        prev = resource;
+      }
+    } catch { }
+
+    const base = normalize(prev);
+
+    const name = typeof body.name === "string" ? String(body.name).slice(0, 64) : base.name;
+    const description = typeof body.description === "string" ? String(body.description).slice(0, 4000) : base.description;
+    const bio = typeof body.bio === "string" ? String(body.bio).slice(0, 2000) : base.bio;
+
+    let theme = base.theme;
+    if (body && typeof body.theme === "object" && body.theme) {
+      theme = normalize({ theme: body.theme }).theme;
+    }
+
+    let arrangement: InventoryArrangement = base.arrangement;
+    if (typeof body.arrangement === "string") {
+      const v = String(body.arrangement).toLowerCase();
+      arrangement = (["grid", "featured_first", "groups", "carousel"] as InventoryArrangement[]).includes(v as any)
+        ? (v as InventoryArrangement)
+        : base.arrangement;
+    }
+
+    // Loyalty: XP per $1
+    let xpPerDollar = typeof base.xpPerDollar === "number" ? base.xpPerDollar : 1;
+    if (typeof body.xpPerDollar === "number") {
+      const v = Number(body.xpPerDollar);
+      xpPerDollar = Number.isFinite(v) && v >= 0 ? Math.min(1000, v) : xpPerDollar;
+    }
+
+    // Loyalty
+    let loyalty = base.loyalty;
+    if (body.loyalty && typeof body.loyalty === "object") {
+      loyalty = {
+        // Save curve settings
+        baseXP: Number(body.loyalty.baseXP) || (base.loyalty?.baseXP ?? 100),
+        multiplier: Number(body.loyalty.multiplier) || (base.loyalty?.multiplier ?? 1.5),
+        prestige: {
+          enabled: Boolean(body.loyalty.prestige?.enabled),
+          maxLevel: Number(body.loyalty.prestige?.maxLevel) || 50,
+          maxPrestige: Number(body.loyalty.prestige?.maxPrestige) || 10,
+          ranks: Array.isArray(body.loyalty.prestige?.ranks) ? body.loyalty.prestige.ranks : (base.loyalty?.prestige?.ranks || [])
+        },
+        platformOptIn: typeof body.loyalty.platformOptIn === "boolean" ? body.loyalty.platformOptIn : (base.loyalty?.platformOptIn || false),
+        rewards: Array.isArray(body.loyalty.rewards) ? body.loyalty.rewards : (base.loyalty?.rewards || []),
+        art: body.loyalty.art ?? base.loyalty?.art
+      };
+    }
+
+    let slug = base.slug;
+    if (typeof body.slug === "string") {
+      const s = String(body.slug || "").toLowerCase().trim();
+      const cleaned = s.replace(/[^a-z0-9\-]/g, "").replace(/^-+|-+$/g, "");
+      const candidate = cleaned ? cleaned.slice(0, 32) : undefined;
+      if (candidate && isReservedSlug(candidate)) {
+        return NextResponse.json({ error: "reserved_slug" }, { status: 400 });
+      }
+      slug = candidate;
+      // Note: actual reservation/uniqueness is handled by /api/shop/slug
+    }
+
+    // Links
+    let links: LinkItem[] = Array.isArray(base.links) ? base.links : [];
+    if (Array.isArray(body.links)) {
+      links = body.links
+        .filter((x: any) => x && typeof x === "object")
+        .map((x: any) => {
+          const label = typeof x.label === "string" ? String(x.label).slice(0, 64) : "";
+          const url = typeof x.url === "string" ? String(x.url) : "";
+          return { label, url };
+        })
+        .filter((x: LinkItem) => x.url && isValidUrl(x.url));
+    }
+
+    // Industry Pack
+    let industryPack = base.industryPack;
+    let industryPackActivatedAt = base.industryPackActivatedAt;
+    if (typeof body.industryPack === "string") {
+      const validPacks: IndustryPackType[] = ["restaurant", "retail", "hotel", "freelancer", "publishing"];
+      const packType = String(body.industryPack).toLowerCase();
+      if (validPacks.includes(packType as IndustryPackType)) {
+        industryPack = packType as IndustryPackType;
+        // Only update timestamp if pack is changing
+        if (industryPack !== base.industryPack) {
+          industryPackActivatedAt = Date.now();
+        }
+      }
+    }
+
+    // Custom Domain - only allow setting the domain string here. Verification status is handled by verify endpoint.
+    // However, if domain changes, we must reset verification status.
+    let customDomain = base.customDomain;
+    let customDomainVerified = base.customDomainVerified;
+
+    if (typeof body.customDomain === "string") {
+      const cd = String(body.customDomain).trim().toLowerCase();
+      if (cd !== customDomain) {
+        customDomain = cd;
+        customDomainVerified = false; // Reset verification on change
+      }
+    } else if (body.customDomain === null || body.customDomain === "") {
+      customDomain = "";
+      customDomainVerified = false;
+    }
+
+    const now = Date.now();
+    const setupComplete = typeof body.setupComplete === "boolean" ? (body.setupComplete === true) : !!(name && slug);
+    // Write to brand-scoped doc id only for partner brands (not 'portalpay'); keep legacy id on platform to avoid disrupting existing data.
+    const docId = (brandKey && String(brandKey).toLowerCase() !== "portalpay")
+      ? getDocIdForBrand(brandKey)
+      : DOC_ID;
+
+    // Compute normalized brand key for the document
+    const normalizedBrand = String(brandKey || "portalpay").toLowerCase();
+
+    const doc: ShopConfig = {
+      id: docId,
+      wallet,
+      type: "shop_config",
+      brandKey: normalizedBrand,
+      name,
+      description,
+      bio,
+      theme,
+      arrangement,
+
+      xpPerDollar,
+      loyalty,
+      slug,
+      links,
+      industryPack,
+      industryPackActivatedAt,
+      customDomain,
+      customDomainVerified,
+      setupComplete,
+      createdAt: prev?.createdAt || now,
+      updatedAt: now,
+    };
+
+    try {
+      const c = await getContainer();
+      await c.items.upsert(doc as any);
+      return NextResponse.json({ ok: true, config: doc });
+    } catch (e: any) {
+      return NextResponse.json({ ok: true, degraded: true, reason: e?.message || "cosmos_unavailable", config: doc });
+    }
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || "failed" }, { status: 500 });
+  }
+}

@@ -1,0 +1,89 @@
+﻿{
+  "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.Resources/deployments/apim-internal-deploy",
+  "location": null,
+  "name": "apim-internal-deploy",
+  "properties": {
+    "correlationId": "d285db9b-e279-4ebc-9c7f-4c68ac7c85d8",
+    "debugSetting": null,
+    "dependencies": [],
+    "duration": "PT27M2.94809S",
+    "error": null,
+    "mode": "Incremental",
+    "onErrorDeployment": null,
+    "outputResources": [
+      {
+        "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.ApiManagement/service/apim-portalpay-prod",
+        "resourceGroup": "rg-portalpay-prod"
+      }
+    ],
+    "outputs": null,
+    "parameters": {
+      "apimName": {
+        "type": "String",
+        "value": "apim-portalpay-prod"
+      },
+      "location": {
+        "type": "String",
+        "value": "eastus2"
+      },
+      "publisherEmail": {
+        "type": "String",
+        "value": "ops@ledger1.ai"
+      },
+      "publisherName": {
+        "type": "String",
+        "value": "PortalPay"
+      },
+      "skuCapacity": {
+        "type": "Int",
+        "value": 1
+      },
+      "skuName": {
+        "type": "String",
+        "value": "Premium"
+      },
+      "subnetName": {
+        "type": "String",
+        "value": "snet-apim"
+      },
+      "vnetName": {
+        "type": "String",
+        "value": "vnet-portalpay-prod"
+      }
+    },
+    "parametersLink": null,
+    "providers": [
+      {
+        "id": null,
+        "namespace": "Microsoft.ApiManagement",
+        "providerAuthorizationConsentState": null,
+        "registrationPolicy": null,
+        "registrationState": null,
+        "resourceTypes": [
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              "eastus2"
+            ],
+            "properties": null,
+            "resourceType": "service",
+            "zoneMappings": null
+          }
+        ]
+      }
+    ],
+    "provisioningState": "Succeeded",
+    "templateHash": "5633764267899346236",
+    "templateLink": null,
+    "timestamp": "2025-10-29T00:30:40.655210+00:00",
+    "validatedResources": null
+  },
+  "resourceGroup": "rg-portalpay-prod",
+  "tags": null,
+  "type": "Microsoft.Resources/deployments"
+}

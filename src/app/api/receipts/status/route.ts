@@ -1,0 +1,276 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getContainer } from "@/lib/cosmos";
+import { updateReceiptStatus } from "@/lib/receipts-mem";
+import { requireThirdwebAuth, assertOwnershipOrAdmin } from "@/lib/auth";
+import { requireCsrf, rateLimitOrThrow, rateKey } from "@/lib/security";
+import { auditEvent } from "@/lib/audit";
+import { requireApimOrJwt } from "@/lib/gateway-auth";
+import crypto from "node:crypto";
+import { getBrandKey } from "@/config/brands";
+
+/**
+ * POST /api/receipts/status
+ * Body: { receiptId: string, wallet: string (merchant), status: string }
+ * - Updates receipt status timeline in Cosmos (partitioned by merchant wallet)
+ * - Falls back to in-memory store in degraded mode
+ */
+export async function GET(req: NextRequest) {
+  const correlationId = crypto.randomUUID();
+  try {
+    const url = new URL(req.url);
+    const receiptId = String(url.searchParams.get("receiptId") || "").trim();
+
+    if (!receiptId) {
+      return NextResponse.json(
+        { error: "receipt_id_required" },
+        { status: 400, headers: { "x-correlation-id": correlationId } }
+      );
+    }
+
+    // Developer read: APIM subscription or JWT with receipts:read scope
+    let caller: any;
+    try {
+      caller = await requireApimOrJwt(req, ["receipts:read"]);
+    } catch (e: any) {
+      return NextResponse.json(
+        { error: e?.message || "unauthorized" },
+        { status: e?.status || 401, headers: { "x-correlation-id": correlationId } }
+      );
+    }
+    const wallet = caller.wallet;
+
+    // Try Cosmos first
+    try {
+      const container = await getContainer();
+      const { resource } = await container.item(`receipt:${receiptId}`, wallet).read<any>();
+      if (resource) {
+        const payload = {
+          id: receiptId,
+          status: String(resource.status || "generated"),
+          transactionHash: typeof resource.transactionHash === "string" ? resource.transactionHash : null,
+          currency: null,
+          amount: null,
+        };
+        return NextResponse.json(payload, { headers: { "x-correlation-id": correlationId } });
+      }
+    } catch {}
+
+    // Degraded mode: attempt in-memory
+    try {
+      const { getReceipts } = await import("@/lib/receipts-mem");
+      const mem = getReceipts(undefined, wallet) as any[];
+      const found = Array.isArray(mem) ? mem.find((r) => String(r.receiptId || "") === receiptId) : undefined;
+      if (found) {
+        const payload = {
+          id: receiptId,
+          status: String(found.status || "generated"),
+          transactionHash: typeof found.transactionHash === "string" ? found.transactionHash : null,
+          currency: null,
+          amount: null,
+        };
+        return NextResponse.json(payload, { headers: { "x-correlation-id": correlationId } });
+      }
+    } catch {}
+
+    return NextResponse.json(
+      { error: "not_found" },
+      { status: 404, headers: { "x-correlation-id": correlationId } }
+    );
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e?.message || "failed" },
+      { status: 500, headers: { "x-correlation-id": correlationId } }
+    );
+  }
+}
+
+export async function POST(req: NextRequest) {
+  const correlationId = crypto.randomUUID();
+  try {
+    const body = await req.json().catch(() => ({}));
+    const receiptId = String(body.receiptId || "").trim();
+    const wallet = String(body.wallet || "").toLowerCase();
+    const status = String(body.status || "").trim();
+    const buyerWallet = typeof body.buyerWallet === "string" ? String(body.buyerWallet).toLowerCase() : undefined;
+    const shopSlug = typeof body.shopSlug === "string" ? String(body.shopSlug).toLowerCase() : undefined;
+    // Optional tx hash from client/webhook
+    const txHashIn = typeof body.txHash === "string" ? String(body.txHash).trim().toLowerCase() : undefined;
+    const txHash = txHashIn && /^0x[a-f0-9]{64}$/i.test(txHashIn) ? txHashIn : undefined;
+    const txTs = txHash ? Date.now() : undefined;
+    // Optional expected payment metadata at checkout initialization
+    const expectedToken = typeof body.expectedToken === "string" ? String(body.expectedToken).toUpperCase() : undefined;
+    const expectedAmountToken = typeof body.expectedAmountToken === "string" || typeof body.expectedAmountToken === "number" ? String(body.expectedAmountToken) : undefined;
+    const expectedUsd = typeof body.expectedUsd === "number" ? Number(body.expectedUsd) : undefined;
+    let brandKey: string | undefined = undefined;
+    try { brandKey = getBrandKey(); } catch { brandKey = undefined; }
+
+    if (!receiptId) {
+      return NextResponse.json(
+        { ok: false, error: "missing_receipt_id" },
+        { status: 400, headers: { "x-correlation-id": correlationId } }
+      );
+    }
+    if (!/^0x[a-f0-9]{40}$/i.test(wallet)) {
+      return NextResponse.json(
+        { ok: false, error: "invalid_wallet" },
+        { status: 400, headers: { "x-correlation-id": correlationId } }
+      );
+    }
+    if (!status) {
+      return NextResponse.json(
+        { ok: false, error: "missing_status" },
+        { status: 400, headers: { "x-correlation-id": correlationId } }
+      );
+    }
+
+    // AuthZ: Allow unauthenticated status updates for tracking (link_opened, buyer_logged_in, checkout_initialized)
+    // Require JWT auth only for sensitive status updates (checkout_success, refund, etc.)
+    const trackingStatuses = ["link_opened", "buyer_logged_in", "checkout_initialized"];
+    const isTrackingStatus = trackingStatuses.includes(status);
+    
+    let caller: any = null;
+    if (!isTrackingStatus) {
+      // Require auth for non-tracking statuses
+      try {
+        caller = await requireThirdwebAuth(req);
+        assertOwnershipOrAdmin(caller.wallet, wallet, caller.roles.includes("admin"));
+      } catch {
+        return NextResponse.json(
+          { ok: false, error: "forbidden" },
+          { status: 403, headers: { "x-correlation-id": correlationId } }
+        );
+      }
+    }
+
+    // CSRF and rate limiting (more lenient for tracking statuses)
+    try {
+      if (!isTrackingStatus) {
+        requireCsrf(req);
+      }
+      rateLimitOrThrow(req, rateKey(req, "receipt_status_update", wallet), isTrackingStatus ? 100 : 50, 60_000);
+    } catch (e: any) {
+      const resetAt = typeof e?.resetAt === "number" ? e.resetAt : undefined;
+      try {
+        await auditEvent(req, {
+          who: caller?.wallet || "anonymous",
+          roles: caller?.roles || [],
+          what: "receipt_status_update",
+          target: wallet,
+          correlationId,
+          ok: false,
+          metadata: { error: e?.message || "rate_limited", resetAt, receiptId, status }
+        });
+      } catch {}
+      return NextResponse.json(
+        { ok: false, error: e?.message || "rate_limited", resetAt, correlationId },
+        { status: e?.status || 429, headers: { "x-correlation-id": correlationId, "x-ratelimit-reset": resetAt ? String(resetAt) : "" } }
+      );
+    }
+
+    // Update Cosmos doc: id = receipt:{receiptId}, partition key = wallet
+    try {
+      const container = await getContainer();
+      const id = `receipt:${receiptId}`;
+      let resource: any = null;
+      try {
+        const { resource: existing } = await container.item(id, wallet).read<any>();
+        resource = existing || null;
+      } catch {
+        resource = null;
+      }
+
+      const ts = Date.now();
+      const next = resource
+        ? {
+            ...resource,
+            status,
+            statusHistory: Array.isArray(resource.statusHistory)
+              ? [...resource.statusHistory, { status, ts }]
+              : [{ status, ts }],
+            lastUpdatedAt: ts,
+            brandKey,
+            // Record buyer on settlement statuses
+            ...(buyerWallet && ["checkout_success", "paid", "tx_mined", "reconciled"].includes(status) 
+              ? { buyerWallet } 
+              : {}),
+            // Persist transaction hash on relevant statuses
+            ...(txHash && ["tx_mined", "recipient_validated", "paid", "reconciled"].includes(status)
+              ? { transactionHash: txHash, transactionTimestamp: txTs }
+              : {}),
+            // Persist expected payment metadata at checkout initialization
+            ...(status === "checkout_initialized" && (expectedToken || expectedAmountToken || typeof expectedUsd === "number")
+              ? {
+                  expectedToken,
+                  expectedAmountToken,
+                  expectedUsd
+                }
+              : {}),
+            ...(shopSlug ? { shopSlug } : {}),
+          }
+        : {
+            id,
+            type: "receipt",
+            wallet,
+            receiptId,
+            status,
+            statusHistory: [{ status, ts }],
+            createdAt: ts,
+            lastUpdatedAt: ts,
+            brandKey,
+            ...(buyerWallet && ["checkout_success", "paid", "tx_mined", "reconciled"].includes(status) 
+              ? { buyerWallet } 
+              : {}),
+            ...(txHash && ["tx_mined", "recipient_validated", "paid", "reconciled"].includes(status)
+              ? { transactionHash: txHash, transactionTimestamp: txTs }
+              : {}),
+            ...(status === "checkout_initialized" && (expectedToken || expectedAmountToken || typeof expectedUsd === "number")
+              ? {
+                  expectedToken,
+                  expectedAmountToken,
+                  expectedUsd
+                }
+              : {}),
+            ...(shopSlug ? { shopSlug } : {}),
+          };
+
+      await container.items.upsert(next as any);
+      try {
+        await auditEvent(req, {
+          who: caller?.wallet || "anonymous",
+          roles: caller?.roles || [],
+          what: "receipt_status_update",
+          target: wallet,
+          correlationId,
+          ok: true,
+          metadata: { receiptId, status, tracking: isTrackingStatus }
+        });
+      } catch {}
+      return NextResponse.json({ ok: true }, { headers: { "x-correlation-id": correlationId } });
+    } catch (e: any) {
+      // Degraded mode: update in-memory store
+      try {
+        updateReceiptStatus(receiptId, wallet, status);
+      } catch {}
+      try {
+        await auditEvent(req, {
+          who: caller?.wallet || "",
+          roles: caller?.roles || [],
+          what: "receipt_status_update",
+          target: wallet,
+          correlationId,
+          ok: true,
+          metadata: { degraded: true, reason: e?.message || "cosmos_unavailable", receiptId, status }
+        });
+      } catch {}
+      return NextResponse.json(
+        { ok: true, degraded: true, reason: e?.message || "cosmos_unavailable" },
+        { status: 200, headers: { "x-correlation-id": correlationId } }
+      );
+    }
+  } catch (e: any) {
+    return NextResponse.json(
+      { ok: false, error: e?.message || "failed" },
+      { status: 500, headers: { "x-correlation-id": crypto.randomUUID() } }
+    );
+  }
+}

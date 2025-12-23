@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "apimName": {
+      "type": "string",
+      "defaultValue": "apim-portalpay-prod"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "eastus2"
+    },
+    "publisherEmail": {
+      "type": "string",
+      "defaultValue": "ops@ledger1.ai"
+    },
+    "publisherName": {
+      "type": "string",
+      "defaultValue": "PortalPay"
+    },
+    "skuName": {
+      "type": "string",
+      "defaultValue": "Premium"
+    },
+    "skuCapacity": {
+      "type": "int",
+      "defaultValue": 1
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "vnet-portalpay-prod"
+    },
+    "subnetName": {
+      "type": "string",
+      "defaultValue": "snet-apim"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ApiManagement/service",
+      "apiVersion": "2021-08-01",
+      "name": "[parameters('apimName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('skuName')]",
+        "capacity": "[parameters('skuCapacity')]"
+      },
+      "properties": {
+        "publisherEmail": "[parameters('publisherEmail')]",
+        "publisherName": "[parameters('publisherName')]",
+        "virtualNetworkType": "External",
+        "virtualNetworkConfiguration": {
+          "subnetResourceId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnetName'))]"
+        }
+      }
+    }
+  ]
+}

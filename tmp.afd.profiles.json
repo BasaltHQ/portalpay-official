@@ -1,0 +1,22 @@
+﻿[
+  {
+    "extendedProperties": {
+      "MovedFrom": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourcegroups/Panopticon/providers/Microsoft.Cdn/profiles/afd-portalpay-prod",
+      "MovedOn": "10/29/2025 01:20:19"
+    },
+    "frontDoorId": "b4bed31c-70b0-446e-a2d8-3d6e949cb855",
+    "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourcegroups/PortalPay/providers/Microsoft.Cdn/profiles/afd-portalpay-prod",
+    "kind": "frontdoor",
+    "location": "Global",
+    "name": "afd-portalpay-prod",
+    "originResponseTimeoutSeconds": 30,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "PortalPay",
+    "resourceState": "Active",
+    "sku": {
+      "name": "Premium_AzureFrontDoor"
+    },
+    "tags": {},
+    "type": "Microsoft.Cdn/profiles"
+  }
+]

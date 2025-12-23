@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package bearrobotics.api.v0.robot;
+
+message Destination {
+  string destination_id = 1;
+}
+
+message Zone {
+  string zone_id = 1;
+}
+
+message Goal {
+  oneof goal {
+    Destination destination = 1;
+    Zone zone = 2;
+  }
+}
+
+message Mission {
+  enum Type {
+    TYPE_UNKNOWN = 0;
+    TYPE_ONEOFF = 1;
+  }
+  Type type = 1;
+  repeated Goal goals = 2;
+}
+
+message MissionCommand {
+  string mission_id = 1;
+  enum Command {
+    COMMAND_UNKNOWN = 0;
+    COMMAND_CANCEL = 1;
+  }
+  Command command = 2;
+}
+
+message MissionState {
+  string mission_id = 1;
+  enum State {
+    STATE_UNKNOWN = 0;   // Initial state when no mission has been run (e.g. empty feedback).
+    STATE_DEFAULT = 1;
+    STATE_RUNNING = 2;
+    STATE_PAUSED = 3;
+    STATE_CANCELED = 4;
+    STATE_SUCCEEDED = 5;
+    STATE_FAILED = 6;
+  }
+  State state = 2;
+  // All goals for a given mission.
+  repeated Goal goals = 3;
+}
+
+message BatteryState {
+  // State of charge percent from 0 (empty) ~ 100 (full).
+  int32 charge_percent = 1;
+  enum State {
+    STATE_UNKNOWN = 0;
+    STATE_CHARGING = 1;
+    STATE_DISCHARGING = 2;
+    STATE_FULL = 3;
+  }
+  State state = 2;
+}

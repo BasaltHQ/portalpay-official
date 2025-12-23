@@ -1,0 +1,98 @@
+﻿{
+  "etag": "AAAAAAEADl4=",
+  "extendedLocation": null,
+  "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.ApiManagement/service/apim-portalpay-prod",
+  "identity": null,
+  "kind": null,
+  "location": "East US 2",
+  "managedBy": null,
+  "name": "apim-portalpay-prod",
+  "plan": null,
+  "properties": {
+    "additionalLocations": null,
+    "apiVersionConstraint": {
+      "minApiVersion": null
+    },
+    "certificates": null,
+    "configurationApi": null,
+    "createdAtUtc": "2025-10-29T04:13:11.3227183Z",
+    "customProperties": {
+      "Microsoft.WindowsAzure.ApiManagement.Gateway.Protocols.Server.Http2": "False",
+      "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Ssl30": "False",
+      "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Tls10": "False",
+      "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Tls11": "False",
+      "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Ciphers.TripleDes168": "False",
+      "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Ssl30": "False",
+      "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls10": "False",
+      "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls11": "False"
+    },
+    "dataApiUrl": null,
+    "developerPortalStatus": "Enabled",
+    "developerPortalUrl": "https://apim-portalpay-prod.developer.azure-api.net",
+    "disableGateway": false,
+    "gatewayRegionalUrl": "https://apim-portalpay-prod-eastus2-01.regional.azure-api.net",
+    "gatewayUrl": "https://apim-portalpay-prod.azure-api.net",
+    "hostnameConfigurations": [
+      {
+        "certificate": null,
+        "certificatePassword": null,
+        "certificateSource": "BuiltIn",
+        "certificateStatus": null,
+        "defaultSslBinding": true,
+        "encodedCertificate": null,
+        "hostName": "apim-portalpay-prod.azure-api.net",
+        "identityClientId": null,
+        "keyVaultId": null,
+        "negotiateClientCertificate": false,
+        "type": "Proxy"
+      }
+    ],
+    "legacyPortalStatus": "Disabled",
+    "managementApiUrl": "https://apim-portalpay-prod.management.azure-api.net",
+    "natGatewayState": "Disabled",
+    "notificationSenderEmail": "apimgmt-noreply@mail.windowsazure.com",
+    "outboundPublicIPAddresses": [
+      "135.18.208.160"
+    ],
+    "platformVersion": "stv2.1",
+    "portalUrl": null,
+    "privateEndpointConnections": null,
+    "privateIPAddresses": null,
+    "provisioningState": "Succeeded",
+    "publicIPAddresses": [
+      "135.18.208.160"
+    ],
+    "publicIpAddressId": null,
+    "publicNetworkAccess": "Enabled",
+    "publisherEmail": "ops@ledger1.ai",
+    "publisherName": "PortalPay",
+    "scmUrl": "https://apim-portalpay-prod.scm.azure-api.net",
+    "targetProvisioningState": "",
+    "virtualNetworkConfiguration": {
+      "subnetResourceId": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.Network/virtualNetworks/vnet-portalpay-prod/subnets/snet-apim",
+      "subnetname": null,
+      "vnetid": "00000000-0000-0000-0000-000000000000"
+    },
+    "virtualNetworkType": "External"
+  },
+  "resourceGroup": "rg-portalpay-prod",
+  "sku": {
+    "capacity": 1,
+    "family": null,
+    "model": null,
+    "name": "Premium",
+    "size": null,
+    "tier": null
+  },
+  "systemData": {
+    "createdAt": "2025-10-29T04:13:11.2933054Z",
+    "createdBy": "skynetpod@live.com",
+    "createdByType": "User",
+    "lastModifiedAt": "2025-10-29T04:13:11.2933054Z",
+    "lastModifiedBy": "skynetpod@live.com",
+    "lastModifiedByType": "User"
+  },
+  "tags": {},
+  "type": "Microsoft.ApiManagement/service",
+  "zones": null
+}

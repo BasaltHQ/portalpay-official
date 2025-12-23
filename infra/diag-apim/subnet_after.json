@@ -1,0 +1,34 @@
+﻿{
+  "addressPrefix": "10.180.1.0/24",
+  "delegations": [],
+  "etag": "W/\"7986a799-ed7f-490d-9ddc-f78112b95b18\"",
+  "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.Network/virtualNetworks/vnet-portalpay-prod/subnets/snet-apim",
+  "ipConfigurations": [
+    {
+      "id": "/subscriptions/f40cf500-e94f-4a77-ac0f-4ee2170f54c9/resourceGroups/APIM-PORTALPAY-PROD-A3YKPCXMX0U8WJTZWSWAMFYXJCGJSJ/PROVIDERS/MICROSOFT.COMPUTE/VIRTUALMACHINESCALESETS/GWHOST/VIRTUALMACHINES/0/NETWORKINTERFACES/GWHOST-NIC/ipConfigurations/GWHOST-IPCONFIG",
+      "resourceGroup": "APIM-PORTALPAY-PROD-A3YKPCXMX0U8WJTZWSWAMFYXJCGJSJ"
+    },
+    {
+      "id": "/subscriptions/f40cf500-e94f-4a77-ac0f-4ee2170f54c9/resourceGroups/APIM-PORTALPAY-PROD-A3YKPCXMX0U8WJTZWSWAMFYXJCGJSJ/PROVIDERS/MICROSOFT.COMPUTE/VIRTUALMACHINESCALESETS/GWHOST/VIRTUALMACHINES/1/NETWORKINTERFACES/GWHOST-NIC/ipConfigurations/GWHOST-IPCONFIG",
+      "resourceGroup": "APIM-PORTALPAY-PROD-A3YKPCXMX0U8WJTZWSWAMFYXJCGJSJ"
+    },
+    {
+      "id": "/subscriptions/f40cf500-e94f-4a77-ac0f-4ee2170f54c9/resourceGroups/APIM-PORTALPAY-PROD-A3YKPCXMX0U8WJTZWSWAMFYXJCGJSJ/PROVIDERS/MICROSOFT.COMPUTE/VIRTUALMACHINESCALESETS/GWHOST/VIRTUALMACHINES/2/NETWORKINTERFACES/GWHOST-NIC/ipConfigurations/GWHOST-IPCONFIG",
+      "resourceGroup": "APIM-PORTALPAY-PROD-A3YKPCXMX0U8WJTZWSWAMFYXJCGJSJ"
+    },
+    {
+      "id": "/subscriptions/f40cf500-e94f-4a77-ac0f-4ee2170f54c9/resourceGroups/apim-portalpay-prod-A3ykpcXmX0U8WjTZWSwaMfYxJCgjsJ/providers/Microsoft.Network/loadBalancers/gwhostlbsd/frontendIPConfigurations/LoadBalancerFrontEnd",
+      "resourceGroup": "apim-portalpay-prod-A3ykpcXmX0U8WjTZWSwaMfYxJCgjsJ"
+    }
+  ],
+  "name": "snet-apim",
+  "networkSecurityGroup": {
+    "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-apim-portalpay",
+    "resourceGroup": "rg-portalpay-prod"
+  },
+  "privateEndpointNetworkPolicies": "Disabled",
+  "privateLinkServiceNetworkPolicies": "Enabled",
+  "provisioningState": "Succeeded",
+  "resourceGroup": "rg-portalpay-prod",
+  "type": "Microsoft.Network/virtualNetworks/subnets"
+}

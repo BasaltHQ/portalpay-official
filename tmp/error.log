@@ -1,0 +1,13 @@
+ERROR: The command failed with an unexpected error. Here is the traceback:
+ERROR: [WinError 5] Access is denied: 'C:\\Users\\skyne\\.azure\\cliextensions\\containerapp\\containerapp-1.2.0b4.dist-info'
+Traceback (most recent call last):
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\knack/cli.py", line 233, in invoke
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/__init__.py", line 520, in execute
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/__init__.py", line 484, in load_command_table
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/__init__.py", line 340, in _update_command_table_from_extensions
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/extension/__init__.py", line 157, in get_metadata
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\pkginfo/wheel.py", line 16, in __init__
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\pkginfo/distribution.py", line 115, in extractMetadata
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\pkginfo/wheel.py", line 33, in read
+PermissionError: [WinError 5] Access is denied: 'C:\\Users\\skyne\\.azure\\cliextensions\\containerapp\\containerapp-1.2.0b4.dist-info'
+To check existing issues, please visit: https://github.com/Azure/azure-cli/issues

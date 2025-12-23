@@ -1,0 +1,236 @@
+import { NextRequest, NextResponse } from "next/server";
+import { requireThirdwebAuth } from "@/lib/auth";
+import fs from "node:fs/promises";
+import path from "node:path";
+import JSZip from "jszip";
+
+export const runtime = "nodejs";
+
+function getContainerType(): "platform" | "partner" {
+    const ct = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || process.env.CONTAINER_TYPE || "platform").toLowerCase();
+    return ct === "partner" ? "partner" : "platform";
+}
+
+function getBrandKey(): string {
+    return String(process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase();
+}
+
+async function getApkBytes(appKey: string): Promise<Uint8Array | null> {
+    // Prefer Azure Blob Storage if configured
+    const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
+    const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
+    if (conn && container) {
+        try {
+            const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
+            const blobName = prefix ? `${prefix}/${appKey}-signed.apk` : `${appKey}-signed.apk`;
+            const { BlobServiceClient } = await import("@azure/storage-blob");
+            const bsc = BlobServiceClient.fromConnectionString(conn);
+            const cont = bsc.getContainerClient(container);
+            const blob = cont.getBlockBlobClient(blobName);
+            const buf = await blob.downloadToBuffer();
+            return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+        } catch {
+            // fall through to local fs
+        }
+    }
+
+    // Local filesystem fallback
+    const APP_TO_PATH: Record<string, string> = {
+        portalpay: path.join("android", "launcher", "recovered", "portalpay-signed.apk"),
+        paynex: path.join("android", "launcher", "recovered", "paynex-signed.apk"),
+    };
+    const rel = APP_TO_PATH[appKey];
+    if (!rel) return null;
+    try {
+        const filePath = path.join(process.cwd(), rel);
+        const data = await fs.readFile(filePath);
+        return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    } catch {
+        return null;
+    }
+}
+
+function buildInstallerBat(appKey: string): string {
+    // Windows .bat script to assist operator installs via adb.exe
+    // Assumes adb.exe available in PATH (Android Platform Tools)
+    const apkName = `${appKey}.apk`;
+    return [
+        "@echo off",
+        "setlocal",
+        "echo PortalPay/Paynex Installer",
+        "echo.",
+        "where adb >nul 2>nul",
+        "if %ERRORLEVEL% NEQ 0 (",
+        "  echo ERROR: adb.exe not found in PATH.",
+        "  echo Download Android Platform Tools from https://developer.android.com/tools/releases/platform-tools",
+        "  pause",
+        "  exit /b 1",
+        ")",
+        "adb start-server",
+        "echo Checking devices...",
+        "adb devices",
+        "echo Ensure USB debugging is enabled and the RSA prompt is accepted on the device.",
+        "echo.",
+        `echo Installing ${apkName} ...`,
+        `adb install -r "%~dp0${apkName}"`,
+        "if %ERRORLEVEL% NEQ 0 (",
+        "  echo Install failed. See above adb output.",
+        "  pause",
+        "  exit /b 1",
+        ")",
+        "echo Install succeeded.",
+        "echo Launch the app with network enabled to register the install on first run.",
+        "pause",
+        "endlocal",
+        ""
+    ].join("\r\n");
+}
+
+function buildInstallerSh(appKey: string): string {
+    // macOS/Linux shell script to assist operator installs via adb
+    // Assumes adb available in PATH (Android Platform Tools)
+    const apkName = `${appKey}.apk`;
+    return [
+        "#!/bin/bash",
+        "",
+        '# PortalPay/Paynex Installer for macOS/Linux',
+        'set -e',
+        "",
+        'SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"',
+        `APK_NAME="${apkName}"`,
+        "",
+        'echo "PortalPay/Paynex Installer"',
+        'echo ""',
+        "",
+        '# Check if adb is available',
+        'if ! command -v adb &> /dev/null; then',
+        '    echo "ERROR: adb not found in PATH."',
+        '    echo "Download Android Platform Tools from https://developer.android.com/tools/releases/platform-tools"',
+        '    echo "On macOS, you can also install via Homebrew: brew install android-platform-tools"',
+        '    exit 1',
+        'fi',
+        "",
+        '# Start ADB server',
+        'adb start-server',
+        "",
+        '# List connected devices',
+        'echo "Checking devices..."',
+        'adb devices',
+        'echo ""',
+        'echo "Ensure USB debugging is enabled and the RSA prompt is accepted on the device."',
+        'echo ""',
+        "",
+        '# Install the APK',
+        'echo "Installing $APK_NAME ..."',
+        'if adb install -r "$SCRIPT_DIR/$APK_NAME"; then',
+        '    echo ""',
+        '    echo "Install succeeded."',
+        '    echo "Launch the app with network enabled to register the install on first run."',
+        'else',
+        '    echo ""',
+        '    echo "Install failed. See above adb output."',
+        '    exit 1',
+        'fi',
+        ""
+    ].join("\n");
+}
+
+function buildReadme(appKey: string, brandKey: string): string {
+    const appLabel = appKey === "paynex" ? "Paynex" : "PortalPay";
+    return [
+        `PortalPay Installer Package (${appLabel})`,
+        ``,
+        `Contents:`,
+        `- ${appKey}.apk  (signed APK)`,
+        `- install_${appKey}.bat  (Windows installer script using adb)`,
+        `- install_${appKey}.sh   (macOS/Linux installer script using adb)`,
+        ``,
+        `Requirements:`,
+        `- Android Platform Tools (adb) installed and on PATH`,
+        `  - Windows: Download from https://developer.android.com/tools/releases/platform-tools`,
+        `  - macOS: brew install android-platform-tools (or download from above)`,
+        `  - Linux: apt install android-tools-adb (or download from above)`,
+        `- Device with Developer Options -> USB debugging enabled`,
+        `- Accept the RSA fingerprint prompt on first ADB connection`,
+        ``,
+        `Windows Steps:`,
+        `1) Connect the Android device via USB`,
+        `2) Double-click install_${appKey}.bat (or run in an elevated terminal)`,
+        `3) After install completes, launch the app with network connectivity`,
+        `4) On first launch, the app will phone-home to register the install for brand '${brandKey}'`,
+        ``,
+        `macOS/Linux Steps:`,
+        `1) Connect the Android device via USB`,
+        `2) Open Terminal and navigate to this folder`,
+        `3) Make the script executable: chmod +x install_${appKey}.sh`,
+        `4) Run the script: ./install_${appKey}.sh`,
+        `5) After install completes, launch the app with network connectivity`,
+        `6) On first launch, the app will phone-home to register the install for brand '${brandKey}'`,
+        ``,
+        `Note: If the device blocks ADB installs or staging, use enterprise provisioning (Device Owner) or native ADB CLI.`,
+        ``
+    ].join("\n");
+}
+
+/**
+ * GET /api/admin/apk/zips/[app]
+ * Returns a ZIP containing:
+ * - {app}.apk
+ * - install_{app}.bat
+ * - README.txt
+ *
+ * Access: Admin or Superadmin. Partner containers gated to their own brand.
+ */
+export async function GET(req: NextRequest, ctx: { params: Promise<{ app: string }> }) {
+    try {
+        const caller = await requireThirdwebAuth(req).catch(() => null);
+        const roles = Array.isArray(caller?.roles) ? caller!.roles : [];
+        if (!(roles.includes("admin") || roles.includes("superadmin"))) {
+            return NextResponse.json({ error: "forbidden" }, { status: 403 });
+        }
+
+        const containerType = getContainerType();
+        const envBrand = getBrandKey();
+
+        const { app } = await ctx.params;
+        const key = String(app || "").toLowerCase().trim();
+        if (!key) {
+            return NextResponse.json({ error: "app_key_required" }, { status: 400 });
+        }
+
+        // Partner containers can only access their own brand
+        if (containerType === "partner") {
+            if (!envBrand || key !== envBrand) {
+                return NextResponse.json({ error: "zip_not_visible" }, { status: 404 });
+            }
+        }
+
+        const apkBytes = await getApkBytes(key);
+        if (!apkBytes) {
+            return NextResponse.json({ error: "apk_not_found" }, { status: 404 });
+        }
+
+        const zip = new JSZip();
+        zip.file(`${key}.apk`, apkBytes);
+        zip.file(`install_${key}.bat`, buildInstallerBat(key));
+        zip.file(`install_${key}.sh`, buildInstallerSh(key));
+        zip.file(`README.txt`, buildReadme(key, envBrand || "portalpay"));
+
+        // Generate ZIP as ArrayBuffer for type-safe Response BodyInit
+        const arr = await zip.generateAsync({ type: "arraybuffer", compression: "DEFLATE", compressionOptions: { level: 9 } });
+        const filename = `${key}-installer.zip`;
+
+        return new Response(arr, {
+            headers: {
+                "Content-Type": "application/zip",
+                "Content-Length": String(arr.byteLength),
+                "Content-Disposition": `attachment; filename="${filename}"`,
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                Pragma: "no-cache",
+                Expires: "0",
+            },
+        });
+    } catch {
+        return NextResponse.json({ error: "zip_failed" }, { status: 500 });
+    }
+}

@@ -1,0 +1,43 @@
+﻿[
+  {
+    "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.Resources/deployments/apim-internal-deploy/operations/6775E65C112E506F",
+    "operationId": "6775E65C112E506F",
+    "properties": {
+      "duration": "PT27M2.059145S",
+      "provisioningOperation": "Create",
+      "provisioningState": "Succeeded",
+      "request": null,
+      "response": null,
+      "serviceRequestId": null,
+      "statusCode": "OK",
+      "statusMessage": null,
+      "targetResource": {
+        "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.ApiManagement/service/apim-portalpay-prod",
+        "resourceGroup": "rg-portalpay-prod",
+        "resourceName": "apim-portalpay-prod",
+        "resourceType": "Microsoft.ApiManagement/service"
+      },
+      "timestamp": "2025-10-29T00:03:38.361688+00:00",
+      "trackingId": "21a8a052-c2ef-403c-8168-7a9662791b30"
+    },
+    "resourceGroup": "rg-portalpay-prod"
+  },
+  {
+    "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.Resources/deployments/apim-internal-deploy/operations/08584399106677628759",
+    "operationId": "08584399106677628759",
+    "properties": {
+      "duration": "PT27M2.2622736S",
+      "provisioningOperation": "EvaluateDeploymentOutput",
+      "provisioningState": "Succeeded",
+      "request": null,
+      "response": null,
+      "serviceRequestId": null,
+      "statusCode": "OK",
+      "statusMessage": null,
+      "targetResource": null,
+      "timestamp": "2025-10-29T00:03:38.361688+00:00",
+      "trackingId": "d9998102-a461-45a2-9a35-632541555e64"
+    },
+    "resourceGroup": "rg-portalpay-prod"
+  }
+]

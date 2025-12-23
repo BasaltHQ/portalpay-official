@@ -1,0 +1,9 @@
+﻿{
+    "properties":  {
+                       "email":  "devtest@ledger1.ai",
+                       "state":  "active",
+                       "note":  "DevTest user",
+                       "firstName":  "Dev",
+                       "lastName":  "Test"
+                   }
+}

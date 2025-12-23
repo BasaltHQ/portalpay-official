@@ -1,0 +1,8 @@
+﻿{
+    "properties":  {
+                       "scope":  "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.ApiManagement/service/apim-portalpay-prod/products/portalpay-starter",
+                       "ownerId":  "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.ApiManagement/service/apim-portalpay-prod/users/devtest",
+                       "displayName":  "PortalPay Starter (DevTest)",
+                       "state":  "active"
+                   }
+}

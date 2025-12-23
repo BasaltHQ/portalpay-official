@@ -1,0 +1,10 @@
+{
+  "splitAddress": "0xa06b4fc513bc119ea45e559d2f7b69307ed52943",
+  "split": {
+    "address": "0xa06b4fc513bc119ea45e559d2f7b69307ed52943",
+    "recipients": [
+      { "address": "0x2da9327a02a187fef7c4a0a5b9402499fc80bb01", "sharesBps": 9950 },
+      { "address": "0x00fe4f0104a989ca65df6b825a6c1682413bca56", "sharesBps": 50 }
+    ]
+  }
+}

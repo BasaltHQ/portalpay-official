@@ -1,0 +1,37 @@
+{
+  "common": {
+    "search": "Rechercher",
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "loading": "Chargement",
+    "error": "Erreur",
+    "success": "Succès",
+    "authenticate": "S'authentifier",
+    "menu": "Menu"
+  },
+  "navbar": {
+    "console": "Console",
+    "loyalty": "Fidélité",
+    "analytics": "Analyses",
+    "leaderboard": "Classement",
+    "portalPreview": "Aperçu du portail",
+    "profile": "Profil",
+    "shop": "Boutique",
+    "admin": "Administration",
+    "searchUsers": "Rechercher des utilisateurs",
+    "filters": "Filtres"
+  },
+  "languageBar": {
+    "translatePage": "Traduire cette page",
+    "selectLanguage": "Choisir la langue"
+  },
+  "search": {
+    "search": "Recherche",
+    "domain": "Domaine",
+    "platform": "Plateforme",
+    "language": "Langue",
+    "minXp": "XP min",
+    "searching": "Recherche en cours",
+    "noMatches": "Aucun résultat"
+  }
+}

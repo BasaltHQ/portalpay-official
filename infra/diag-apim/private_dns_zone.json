@@ -1,0 +1,15 @@
+﻿{
+  "etag": "20f0dd6a-4ca3-455e-b17b-4655cdd77f9a",
+  "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.Network/privateDnsZones/privatelink.azure-api.net",
+  "location": "global",
+  "maxNumberOfRecordSets": 25000,
+  "maxNumberOfVirtualNetworkLinks": 1000,
+  "maxNumberOfVirtualNetworkLinksWithRegistration": 100,
+  "name": "privatelink.azure-api.net",
+  "numberOfRecordSets": 5,
+  "numberOfVirtualNetworkLinks": 1,
+  "numberOfVirtualNetworkLinksWithRegistration": 1,
+  "provisioningState": "Succeeded",
+  "resourceGroup": "rg-portalpay-prod",
+  "type": "Microsoft.Network/privateDnsZones"
+}

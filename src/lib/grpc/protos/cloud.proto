@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package bearrobotics.api.v0.cloud;
+
+import "common.proto";
+import "robot.proto";
+
+service CloudAPIService {
+  rpc ListRobotIDs(ListRobotIDsRequest) returns (ListRobotIDsResponse) {}
+  rpc ChargeRobot(ChargeRobotRequest) returns (ChargeRobotResponse) {}
+  rpc CreateMission(CreateMissionRequest) returns (CreateMissionResponse) {}
+  rpc UpdateMission(UpdateMissionRequest) returns (UpdateMissionResponse) {}
+  rpc SubscribeMissionStatus(SubscribeMissionStatusRequest) returns (stream SubscribeMissionStatusResponse) {}
+  rpc SubscribeBatteryStatus(SubscribeBatteryStatusRequest) returns (stream SubscribeBatteryStatusResponse) {}
+}
+
+message RobotFilter {
+  string location_id = 1;
+}
+
+message ListRobotIDsRequest {
+  RobotFilter filter = 1;
+}
+
+message ListRobotIDsResponse {
+  int32 total_robots = 1;
+  repeated string robot_ids = 2;
+}
+
+message CreateMissionRequest {
+  string robot_id = 1;
+  robot.Mission mission = 2;
+}
+
+message CreateMissionResponse {
+  string mission_id = 1;
+}
+
+message UpdateMissionRequest {
+  string robot_id = 1;
+  robot.MissionCommand mission_command = 2;
+}
+
+message UpdateMissionResponse {
+}
+
+message ChargeRobotRequest {
+  string robot_id = 1;
+}
+
+message ChargeRobotResponse {
+  string mission_id = 1;
+}
+
+message SubscribeMissionStatusRequest {
+  string robot_id = 1;
+}
+
+message SubscribeMissionStatusResponse {
+  common.EventMetadata metadata = 1;
+  robot.MissionState mission_state = 2;
+}
+
+message RobotSelector {
+  message RobotIDs {
+    repeated string ids = 1;
+  }
+  oneof target_id {
+    RobotIDs robot_ids = 1;
+    // All robots for the location.
+    string location_id = 2;
+  }
+}
+
+message SubscribeBatteryStatusRequest {
+  RobotSelector selector = 1;
+}
+
+message SubscribeBatteryStatusResponse {
+  common.EventMetadata metadata = 1;
+  string robot_id = 2;
+  robot.BatteryState battery_state = 3;
+}

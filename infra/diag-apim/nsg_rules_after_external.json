@@ -1,0 +1,42 @@
+﻿[
+  {
+    "access": "Allow",
+    "destinationAddressPrefix": "*",
+    "destinationAddressPrefixes": [],
+    "destinationPortRange": "3443",
+    "destinationPortRanges": [],
+    "direction": "Inbound",
+    "etag": "W/\"136dbcdc-012a-4041-8b24-ed0c62af0d42\"",
+    "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-apim-portalpay/securityRules/apim-allow-mgmt-3443",
+    "name": "apim-allow-mgmt-3443",
+    "priority": 1000,
+    "protocol": "Tcp",
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-portalpay-prod",
+    "sourceAddressPrefix": "AzureCloud",
+    "sourceAddressPrefixes": [],
+    "sourcePortRange": "*",
+    "sourcePortRanges": [],
+    "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+  },
+  {
+    "access": "Allow",
+    "destinationAddressPrefix": "*",
+    "destinationAddressPrefixes": [],
+    "destinationPortRange": "443",
+    "destinationPortRanges": [],
+    "direction": "Inbound",
+    "etag": "W/\"136dbcdc-012a-4041-8b24-ed0c62af0d42\"",
+    "id": "/subscriptions/0a8c8695-c09e-45cc-8a64-697faedee923/resourceGroups/rg-portalpay-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-apim-portalpay/securityRules/apim-allow-gw-443",
+    "name": "apim-allow-gw-443",
+    "priority": 1001,
+    "protocol": "Tcp",
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-portalpay-prod",
+    "sourceAddressPrefix": "ApiManagement",
+    "sourceAddressPrefixes": [],
+    "sourcePortRange": "*",
+    "sourcePortRanges": [],
+    "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+  }
+]

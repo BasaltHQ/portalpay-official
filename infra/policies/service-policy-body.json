@@ -1,0 +1,6 @@
+{
+  "properties": {
+    "format": "rawxml",
+    "value": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<policies>\n  <inbound>\n    <choose>\n      <!-- Match either /healthz or /portalpay/healthz using OriginalUrl.Path to be robust -->\n      <when condition='@(context.Request.OriginalUrl.Path.ToLower().Contains(\"/healthz\"))'>\n        <return-response>\n          <set-status code=\"200\" reason=\"OK\" />\n          <set-header name=\"Content-Type\" exists-action=\"override\">\n            <value>application/json</value>\n          </set-header>\n          <set-body>{\"status\":\"ok\"}</set-body>\n        </return-response>\n      </when>\n    </choose>\n  </inbound>\n  <backend></backend>\n  <outbound></outbound>\n  <on-error></on-error>\n</policies>\n"
+  }
+}

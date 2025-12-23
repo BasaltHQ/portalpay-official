@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature", "properties": { "region": "AMERICAS - North", "color": "#2a9d8f" }, "geometry": { "type": "Polygon", "coordinates": [[[-168,15],[-52,15],[-52,72],[-168,72],[-168,15]]] } },
+    { "type": "Feature", "properties": { "region": "AMERICAS - Central & South", "color": "#2a9d8f" }, "geometry": { "type": "Polygon", "coordinates": [[[-105,-56],[-34,-56],[-34,15],[-105,15],[-105,-56]]] } },
+    { "type": "Feature", "properties": { "region": "EUROPE - Western & Northern", "color": "#e9c46a" }, "geometry": { "type": "Polygon", "coordinates": [[[-12,45],[20,45],[20,72],[-12,72],[-12,45]]] } },
+    { "type": "Feature", "properties": { "region": "EUROPE - Eastern & Central", "color": "#e9c46a" }, "geometry": { "type": "Polygon", "coordinates": [[[20,45],[50,45],[50,70],[20,70],[20,45]]] } },
+    { "type": "Feature", "properties": { "region": "AFRICA - North", "color": "#f4a261" }, "geometry": { "type": "Polygon", "coordinates": [[[-17,20],[35,20],[35,37],[-17,37],[-17,20]]] } },
+    { "type": "Feature", "properties": { "region": "AFRICA - West", "color": "#f4a261" }, "geometry": { "type": "Polygon", "coordinates": [[[-17,5],[10,5],[10,20],[-17,20],[-17,5]]] } },
+    { "type": "Feature", "properties": { "region": "AFRICA - East", "color": "#f4a261" }, "geometry": { "type": "Polygon", "coordinates": [[[28,-10],[50,-10],[50,15],[28,15],[28,-10]]] } },
+    { "type": "Feature", "properties": { "region": "AFRICA - Central & Southern", "color": "#f4a261" }, "geometry": { "type": "Polygon", "coordinates": [[[10,-35],[40,-35],[40,5],[10,5],[10,-35]]] } },
+    { "type": "Feature", "properties": { "region": "MIDDLE EAST & WESTERN ASIA", "color": "#e76f51" }, "geometry": { "type": "Polygon", "coordinates": [[[35,15],[60,15],[60,40],[35,40],[35,15]]] } },
+    { "type": "Feature", "properties": { "region": "ASIA - South", "color": "#264653" }, "geometry": { "type": "Polygon", "coordinates": [[[60,5],[90,5],[90,30],[60,30],[60,5]]] } },
+    { "type": "Feature", "properties": { "region": "ASIA - Southeast", "color": "#264653" }, "geometry": { "type": "Polygon", "coordinates": [[[95,-10],[125,-10],[125,20],[95,20],[95,-10]]] } },
+    { "type": "Feature", "properties": { "region": "ASIA - East", "color": "#264653" }, "geometry": { "type": "Polygon", "coordinates": [[[105,20],[145,20],[145,50],[105,50],[105,20]]] } },
+    { "type": "Feature", "properties": { "region": "ASIA - Central & North", "color": "#264653" }, "geometry": { "type": "Polygon", "coordinates": [[[50,40],[100,40],[100,60],[50,60],[50,40]]] } },
+    { "type": "Feature", "properties": { "region": "OCEANIA", "color": "#8ab17d" }, "geometry": { "type": "Polygon", "coordinates": [[[130,-45],[180,-45],[180,0],[130,0],[130,-45]]] } }
+  ]
+}
+
+

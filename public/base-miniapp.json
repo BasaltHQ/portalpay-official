@@ -1,0 +1,14 @@
+{
+  "name": "Chicken Bones",
+  "short_name": "ChickenBones",
+  "description": "Live AI audio agent with ETH billing on Base.",
+  "start_url": "/",
+  "icon_url": "/android-chrome-192x192.png",
+  "splash_image_url": "/story4.png",
+  "theme_color": "#111111",
+  "background_color": "#0b0b0b",
+  "categories": ["utilities", "productivity", "audio"],
+  "related_applications": []
+}
+
+

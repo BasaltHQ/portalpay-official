@@ -1,0 +1,9 @@
+export { BasicInfoEditor } from './BasicInfoEditor';
+export { StatusEditor } from './StatusEditor';
+export { InterestsEditor } from './InterestsEditor';
+export { ContactEditor } from './ContactEditor';
+export { RelationshipEditor } from './RelationshipEditor';
+export { LinksEditor } from './LinksEditor';
+export { AppearanceEditor } from './AppearanceEditor';
+export { RolesEditor } from './RolesEditor';
+export { RingEditor } from './RingEditor';
