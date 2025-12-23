@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start -p 3001",
+    "start": "node node_modules/next/dist/bin/next start -p 3001",
     "lint": "next lint",
     "migrate:dry": "node scripts/migrate-uploads-to-blob.js --dry-run",
     "migrate": "node scripts/migrate-uploads-to-blob.js"
