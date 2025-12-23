@@ -42,7 +42,7 @@ jobs:
       - name: Prepare Standalone Build
         run: |
           cp -r public .next/standalone/public
-          mkdir .next/standalone/.next
+          mkdir -p .next/standalone/.next
           cp -r .next/static .next/standalone/.next/static
           # Ensure start command is correct for Azure Service Plan
           cd .next/standalone
