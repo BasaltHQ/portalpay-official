@@ -52,4 +52,4 @@ jobs:
           app-name: 'portalpay'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_A02A3FD7F43D4A038882462CD1E43337 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D5B0A1CB80CD44E09D5B4F327B435ED1 }}
