@@ -33,14 +33,14 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
   try {
     const u = new URL(req.url);
     const host = req.headers.get("host") || u.hostname || "";
-    
+
     // Get container identity to determine brand key for fee lookup
     const containerIdentity = getContainerIdentity(host);
     let brandKeyForFees = containerIdentity.brandKey;
     if (!brandKeyForFees) {
       try { brandKeyForFees = getBrandKey(); } catch { brandKeyForFees = ""; }
     }
-    
+
     // Pre-fetch brand config for fees (will be used at the end regardless of merchant vs global config)
     let brandFeesConfig: { platformFeeBps?: number; partnerFeeBps?: number } = {};
     try {
@@ -58,22 +58,22 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
       // Default platform fee is 50 bps (0.5%), partner fee is 0
       brandFeesConfig = { platformFeeBps: 50, partnerFeeBps: 0 };
     }
-    
+
     // Check if this is a PER-MERCHANT config (has a real wallet address)
     const cfgWallet = String((cfg as any)?.wallet || "").toLowerCase();
     const isPerMerchantConfig = /^0x[a-f0-9]{40}$/.test(cfgWallet);
-    
+
     // For per-merchant configs, check if they have customized their theme
     // If not, they should inherit partner brand defaults
     if (isPerMerchantConfig) {
       cfg.theme = cfg.theme || {};
       const savedBrandKey = String((cfg as any)?.brandKey || "").toLowerCase();
-      
+
       // Get container identity to check if this is a partner container
       const merchantContainerIdentity = getContainerIdentity(host);
       const containerBrandKey = (merchantContainerIdentity.brandKey || "").toLowerCase();
       const isPartnerMerchant = containerBrandKey && containerBrandKey !== "portalpay";
-      
+
       // Check if merchant has customized their own logo/symbol
       const hasCustomSymbol = (() => {
         const logos = (cfg.theme as any)?.logos || {};
@@ -87,7 +87,7 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
         const isDefault = /\/(ppsymbol(bg)?|cblogod|portalpay\d*|favicon-\d+x\d+)\.png$/i.test(anyLogo);
         return !isDefault;
       })();
-      
+
       // If merchant in partner container hasn't customized their theme, apply partner defaults
       if (isPartnerMerchant && !hasCustomSymbol) {
         console.log("[site/config] Per-merchant in partner container without custom theme - will apply partner defaults", {
@@ -104,7 +104,7 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
           const platBpsEff = typeof brandFeesConfig.platformFeeBps === "number" ? brandFeesConfig.platformFeeBps : 50;
           const partBpsEff = typeof brandFeesConfig.partnerFeeBps === "number" ? brandFeesConfig.partnerFeeBps : 0;
           (cfg as any).basePlatformFeePct = Math.max(0, (platBpsEff + partBpsEff) / 100);
-        } catch {}
+        } catch { }
         console.log("[site/config] Per-merchant config - returning saved theme from DB", {
           wallet: cfgWallet,
           brandKey: (cfg.theme as any).brandKey,
@@ -113,30 +113,30 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
         return cfg;
       }
     }
-    
+
     // Below this point: only process global/brand configs (no per-merchant wallet)
     const configBrandKey = String((cfg as any)?.brandKey || "").toLowerCase();
-    
+
     // Get container identity directly (no HTTP call) - reuse initial containerIdentity
     let brandKey = containerIdentity.brandKey;
-    
+
     if (!brandKey) {
       try { brandKey = getBrandKey(); } catch { brandKey = ""; }
     }
-    
+
     // Get brand config directly from Cosmos DB (no HTTP call)
     let brand: any = null;
     let overrides: any = null;
-    
+
     try {
       if (brandKey) {
         const { brand: fetchedBrand, overrides: fetchedOverrides } = await getBrandConfigFromCosmos(brandKey);
-        
+
         // Build effective brand with precedence: overrides > fetchedBrand (platform)
         const ov = (typeof fetchedOverrides === "object" && fetchedOverrides) ? fetchedOverrides : {} as any;
         const fb = (typeof fetchedBrand === "object" && fetchedBrand) ? fetchedBrand : null;
         const base: any = fb || {};
-        
+
         // Merge colors with correct precedence
         const baseColors = (base?.colors || {}) as any;
         const fbColors = ((fb as any)?.colors || {}) as any;
@@ -153,7 +153,7 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
               ? fbColors.accent
               : (typeof baseColors.accent === "string" ? baseColors.accent : undefined)),
         };
-        
+
         // Merge logos with correct precedence
         const baseLogos = (base?.logos || {}) as any;
         const fbLogos = ((fb as any)?.logos || {}) as any;
@@ -186,7 +186,7 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
             || ((baseLogos.navbarMode === "logo" || baseLogos.navbarMode === "symbol") && baseLogos.navbarMode)
             || undefined,
         };
-        
+
         brand = {
           ...base,
           // Prefer explicit names in overrides, then fetched brand, then static
@@ -201,8 +201,8 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
         };
         overrides = fetchedOverrides;
       }
-    } catch {}
-    
+    } catch { }
+
     if (!brand) {
       // Fallback to static/env-derived brand config to avoid platform defaults leaking in partner containers
       try {
@@ -213,16 +213,16 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
         brand = null;
       }
     }
-    
+
     // Only apply brand overrides for explicit partner contexts (non-portalpay brands or partner containers)
     // Global configs (no wallet) should get brand defaults applied
     const isExplicitPartner = isPartnerContext() || ((brandKey || "").toLowerCase() !== "portalpay" && !!brandKey);
-    
+
     if (isExplicitPartner) {
       cfg.theme = cfg.theme || {};
       const bLogos = (brand?.logos || {}) as any;
       const rawBrandName = String(brand?.name || "").trim();
-      
+
       // Auto-titleize brandKey when brand name is missing or generic
       const titleizedKey = brandKey ? brandKey.charAt(0).toUpperCase() + brandKey.slice(1) : "";
       const isGenericName = !rawBrandName || /^(ledger\d*|partner\d*|default|portalpay)$/i.test(rawBrandName);
@@ -279,12 +279,12 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
           (cfg.theme as any).logos = { ...curLogos, symbol: mainLogo };
           (cfg.theme as any).symbolLogoUrl = mainLogo;
         }
-      } catch {}
+      } catch { }
       try {
         const brandPartner = String(brand?.partnerWallet || "").toLowerCase();
         const brandIsHex = /^0x[a-f0-9]{40}$/i.test(brandPartner);
         (cfg as any).partnerWallet = brandIsHex ? brandPartner : (cfg as any).partnerWallet;
-      } catch {}
+      } catch { }
       const containerDefaultUrl = (host && host.endsWith(".azurewebsites.net")) ? `https://${host}` : undefined;
       const base = brand?.appUrl || containerDefaultUrl || getBaseUrl();
       try {
@@ -297,13 +297,13 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
         cfg.appUrl = base;
       }
     }
-    
+
     // Add base platform fee (platform + partner fees) as a percentage for Terminal display
     // This replaces the hardcoded 0.5% with actual brand-specific fees
     const platformBps = brandFeesConfig.platformFeeBps ?? 50;
     const partnerBps = brandFeesConfig.partnerFeeBps ?? 0;
     cfg.basePlatformFeePct = (platformBps + partnerBps) / 100; // Convert bps to percent
-    
+
     return cfg;
   } catch {
     return cfg;
@@ -458,11 +458,23 @@ function normalizeSiteConfig(raw?: any) {
     const hasSymbol = !!(t2.logos && typeof t2.logos.symbol === "string");
     if (!hasSymbol) {
       const existing = ((t2.logos || {}) as any);
-      const symbol = typeof t2.brandLogoUrl === "string" && t2.brandLogoUrl ? t2.brandLogoUrl : "/ppsymbol.png";
+      const defaultSymbol = (process.env.BRAND_KEY || "").toLowerCase() === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png";
+      // Auto-migrate legacy PortalPay symbol to BasaltSurge symbol if brand key matches
+      if (defaultSymbol === "/bssymbol.png" && (t2.brandLogoUrl === "/ppsymbol.png" || t2.brandLogoUrl === "/ppsymbolbg.png" || t2.brandLogoUrl === "/portalpay.png")) {
+        t2.brandLogoUrl = "/bssymbol.png";
+      }
+      const symbol = typeof t2.brandLogoUrl === "string" && t2.brandLogoUrl ? t2.brandLogoUrl : defaultSymbol;
       t2.logos = { ...existing, symbol };
       t2.symbolLogoUrl = symbol;
     }
-    // Clamp legacy teal defaults to brand-neutral slate/accent
+    // Clamp legacy teal defaults to brand-neutral slate/accent, OR force BasaltSurge green
+    if ((process.env.BRAND_KEY || "").toLowerCase() === "basaltsurge") {
+      t2.primaryColor = "#22C55E";
+      t2.secondaryColor = "#16A34A";
+    } else {
+      // Only clamp generic teal if NOT BasaltSurge
+      if (t2.primaryColor === '#0d9488' || t2.primaryColor === '#14b8a6') t2.primaryColor = '#0f172a';
+    }
     const defaultPrimary = "#1f2937"; // slate
     const defaultAccent = "#F54029";  // accent
     if (t2.primaryColor === "#10b981" || t2.primaryColor === "#14b8a6") {
@@ -472,7 +484,7 @@ function normalizeSiteConfig(raw?: any) {
       t2.secondaryColor = defaultAccent;
     }
     config.theme = t2;
-  } catch {}
+  } catch { }
 
   // Processing fee: clamp to >= 0
   if (typeof config.processingFeePct !== "number" || !Number.isFinite(config.processingFeePct)) {
@@ -532,7 +544,7 @@ function normalizeSiteConfig(raw?: any) {
   config.accumulationMode = config.accumulationMode === "dynamic" ? "dynamic" : "fixed";
 
   // Tax config normalization
-  ;(() => {
+  ; (() => {
     const tc = config.taxConfig && typeof config.taxConfig === "object" ? config.taxConfig : {};
     const out: any = {};
 
@@ -568,7 +580,7 @@ function normalizeSiteConfig(raw?: any) {
 
         if (!code || !name) continue;
         sanitized.push({ code, name, rate, country, type, components: (components && components.length) ? components : undefined });
-      } catch {}
+      } catch { }
     }
     out.jurisdictions = sanitized;
 
@@ -581,8 +593,8 @@ function normalizeSiteConfig(raw?: any) {
   })();
 
   // Do not apply environment defaults; rely solely on live brand config or persisted config
-  try { /* no-op */ } catch {}
-  try { /* no-op */ } catch {}
+  try { /* no-op */ } catch { }
+  try { /* no-op */ } catch { }
 
   return config;
 }
@@ -655,11 +667,11 @@ export async function GET(req: NextRequest) {
         xRecipientHeader,
         refRecipient
       });
-    } catch {}
+    } catch { }
     // Prioritize query wallet parameter for public viewing (e.g., portal theming)
     const queryWallet = String(url.searchParams.get("wallet") || "").toLowerCase();
     let wallet = /^0x[a-f0-9]{40}$/.test(queryWallet) ? queryWallet : "";
-    
+
     // Defensive portal isolation: if request originates from /portal and a recipient context is present,
     // prefer the portal recipient (from header or referer) over any provided query wallet to avoid cross-user theme fetches.
     try {
@@ -674,8 +686,8 @@ export async function GET(req: NextRequest) {
           wallet = candidate;
         }
       }
-    } catch {}
-    
+    } catch { }
+
     // If no query wallet, try authentication (for merchant's own console management)
     if (!wallet) {
       const authed = await getAuthenticatedWallet(req);
@@ -701,7 +713,7 @@ export async function GET(req: NextRequest) {
           selectedWallet: wallet
         });
       }
-    } catch {}
+    } catch { }
 
     // Terminal isolation: never resolve per-wallet/site when originating from /terminal
     // unless an explicit wallet/recipient is provided. Return brand/global defaults.
@@ -745,7 +757,7 @@ export async function GET(req: NextRequest) {
               },
             });
           }
-        } catch {}
+        } catch { }
       }
 
       // Fallback: ALWAYS try legacy doc (id="site:config") for backwards compatibility
@@ -766,7 +778,7 @@ export async function GET(req: NextRequest) {
             },
           });
         }
-      } catch {}
+      } catch { }
       // 2) If the provided wallet is actually a split contract address, map it to the owner wallet config
       try {
         const spec = {
@@ -793,7 +805,7 @@ export async function GET(req: NextRequest) {
             }
           }
         }
-      } catch {}
+      } catch { }
       // Partner wallet mapping: if in partner container and the requested wallet matches the brand's partner wallet,
       // synthesize a config tied to the partner brand even if no per-wallet site config exists.
       try {
@@ -821,7 +833,7 @@ export async function GET(req: NextRequest) {
             });
           }
         }
-      } catch {}
+      } catch { }
       // fall through to global fallback
     }
 
@@ -846,7 +858,7 @@ export async function GET(req: NextRequest) {
           });
         }
       }
-    } catch {}
+    } catch { }
     // Fallback: global singleton config
     try {
       const { resource } = await c.item(DOC_ID, DOC_ID).read<any>();
@@ -942,7 +954,7 @@ export async function POST(req: NextRequest) {
           ok: false,
           metadata: { error: e?.message || "rate_limited", resetAt }
         });
-      } catch {}
+      } catch { }
       return NextResponse.json(
         { error: e?.message || "rate_limited", resetAt, correlationId },
         { status: e?.status || 429, headers: { "x-correlation-id": correlationId, "x-ratelimit-reset": resetAt ? String(resetAt) : "" } }
@@ -963,7 +975,7 @@ export async function POST(req: NextRequest) {
         try {
           const { resource } = await c.item(getDocIdForBrand(brandKey), wallet).read<any>();
           prev = resource;
-        } catch {}
+        } catch { }
       }
       if (!prev) {
         const { resource } = await c.item(DOC_ID, wallet).read<any>();
@@ -1001,7 +1013,7 @@ export async function POST(req: NextRequest) {
         if (normalized) {
           candidate.appUrl = normalized;
         }
-      } catch {}
+      } catch { }
     }
 
     // Optional partner wallet update
@@ -1011,7 +1023,7 @@ export async function POST(req: NextRequest) {
         if (/^0x[a-f0-9]{40}$/.test(v)) {
           candidate.partnerWallet = v;
         }
-      } catch {}
+      } catch { }
     }
 
     // Optional theme update
@@ -1091,7 +1103,7 @@ export async function POST(req: NextRequest) {
           correlationId,
           ok: true
         });
-      } catch {}
+      } catch { }
       return NextResponse.json(
         { ok: true, config: doc, correlationId },
         { headers: { "x-correlation-id": correlationId } }
@@ -1107,7 +1119,7 @@ export async function POST(req: NextRequest) {
           ok: true,
           metadata: { degraded: true, reason: e?.message || 'cosmos_unavailable' }
         });
-      } catch {}
+      } catch { }
       return NextResponse.json(
         { ok: true, degraded: true, reason: e?.message || 'cosmos_unavailable', config: doc, correlationId },
         { headers: { "x-correlation-id": correlationId } }

@@ -42,11 +42,10 @@ function NavGroup({ item, currentPath }: { item: NavItem; currentPath: string })
     return (
       <Link
         href={item.href}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-          currentPath === item.href
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${currentPath === item.href
             ? 'bg-primary text-primary-foreground font-medium'
             : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-        }`}
+          }`}
       >
         {item.icon}
         <span>{item.title}</span>
@@ -72,11 +71,10 @@ function NavGroup({ item, currentPath }: { item: NavItem; currentPath: string })
             <Link
               key={child.href}
               href={child.href!}
-              className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
-                currentPath === child.href
+              className={`block px-3 py-2 text-sm rounded-lg transition-colors ${currentPath === child.href
                   ? 'bg-primary text-primary-foreground font-medium'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              }`}
+                }`}
             >
               {child.title}
             </Link>
@@ -97,7 +95,7 @@ export function DashboardSidebar({ currentPath }: { currentPath: string }) {
         {/* Logo */}
         <Link href="/developers/dashboard" className="flex items-center justify-center group p-2">
           <Image
-            src={brand?.logos?.symbol || brand?.logos?.app || brand?.logos?.favicon || "/ppsymbol.png"}
+            src={brand?.logos?.symbol || brand?.logos?.app || brand?.logos?.favicon || (String((brand as any)?.key || "").toLowerCase() === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png")}
             alt={brand?.name || "Brand"}
             width={32}
             height={32}
@@ -134,15 +132,13 @@ export function DashboardSidebar({ currentPath }: { currentPath: string }) {
                       <Link
                         href={child.href!}
                         onClick={(e) => e.stopPropagation()}
-                        className={`p-1 rounded-sm transition-colors ${
-                          currentPath === child.href
+                        className={`p-1 rounded-sm transition-colors ${currentPath === child.href
                             ? 'bg-primary'
                             : 'hover:bg-muted'
-                        }`}
+                          }`}
                       >
-                        <div className={`w-1.5 h-1.5 rounded-full ${
-                          currentPath === child.href ? 'bg-primary-foreground' : 'bg-foreground'
-                        }`} />
+                        <div className={`w-1.5 h-1.5 rounded-full ${currentPath === child.href ? 'bg-primary-foreground' : 'bg-foreground'
+                          }`} />
                       </Link>
                     </Tooltip>
                   ))}
@@ -154,7 +150,7 @@ export function DashboardSidebar({ currentPath }: { currentPath: string }) {
           ))}
         </nav>
       </div>
-      
+
       {/* Toggle Button at bottom */}
       <div className="border-t border-border p-2 flex justify-center">
         <button

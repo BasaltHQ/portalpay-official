@@ -57,6 +57,17 @@ export const BRANDS: Record<string, BrandConfig> = {
     defaultMerchantFeeBps: 0,
     apimCatalog: [], // original platform may expose full catalog elsewhere
   },
+  basaltsurge: {
+    key: "basaltsurge",
+    name: "BasaltSurge",
+    colors: { primary: "#22C55E", accent: "#16A34A" },
+    logos: { app: "/bssymbol.png", favicon: "/favicon-32x32.png", symbol: "/bssymbol.png", og: "/bssymbol.png", twitter: "/bssymbol.png" },
+    meta: { ogTitle: "BasaltSurge", ogDescription: "Payments & portals" },
+    platformFeeBps: 50,
+    partnerFeeBps: 0,
+    defaultMerchantFeeBps: 0,
+    apimCatalog: [],
+  },
   // Example second brand - provide assets under /public/brands/paynex/*
   paynex: {
     key: "paynex",
@@ -194,12 +205,12 @@ export function applyBrandDefaults(raw: BrandConfig): BrandConfig {
  */
 export function getBrandConfig(envKey?: string): BrandConfig {
   const key = (envKey || getBrandKey()).toLowerCase();
-  
+
   // For partner containers OR unknown brands, always use a neutral stub hydrated via env/Cosmos
   // This avoids needing to update the static BRANDS map for each new partner
   const isPartner = isPartnerContext();
   const isUnknownBrand = !BRANDS[key];
-  
+
   if (isPartner || isUnknownBrand) {
     // Use a neutral stub that will be hydrated from Cosmos DB at runtime
     const stub: BrandConfig = {
@@ -248,7 +259,7 @@ export function getBrandConfig(envKey?: string): BrandConfig {
 
     return configured;
   }
-  
+
   // Platform container with known brand (portalpay) - use static BRANDS entry
   return applyBrandDefaults(BRANDS[key]);
 }

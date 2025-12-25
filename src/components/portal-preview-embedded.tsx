@@ -156,11 +156,18 @@ export function PortalPreviewEmbedded({
             // Auto-titleize brandKey if brand name is missing or generic
             const titleizedKey = bk ? bk.charAt(0).toUpperCase() + bk.slice(1) : "";
             const isGenericName = !rawName || /^(ledger\d*|partner\d*|default|portalpay)$/i.test(rawName);
-            const brandName = isGenericName ? titleizedKey : rawName;
+            // Explicit casing fix for Basaltsurge
+            const brandName = bk.toLowerCase() === "basaltsurge" ? "BasaltSurge" : (isGenericName ? titleizedKey : rawName);
 
             console.log("[PORTAL-PREVIEW] Partner brand fetched:", { bk, primary, accent, logoApp, logoSymbol, brandName });
-            setPartnerPrimaryColor(primary);
-            setPartnerAccentColor(accent);
+            // FORCE Green for BasaltSurge if it comes back as default blue/green or null
+            if (bk.toLowerCase() === "basaltsurge") {
+              setPartnerPrimaryColor("#22C55E");
+              setPartnerAccentColor("#16A34A");
+            } else {
+              setPartnerPrimaryColor(primary);
+              setPartnerAccentColor(accent);
+            }
             setPartnerBrandName(brandName);
             setPartnerLogoApp(logoApp);
             setPartnerLogoSymbol(logoSymbol);
@@ -200,13 +207,16 @@ export function PortalPreviewEmbedded({
   const effectiveLogoFavicon = partnerLogoFavicon || theme.brandFaviconUrl || "";
 
   // Helper to get best logo for different contexts
+  const getBaseDefault = () => {
+    return (String(((theme as any)?.brandKey || containerBrandKey || (brandCtx as any)?.key || "")).toLowerCase() === "basaltsurge") ? "/bssymbol.png" : "/ppsymbol.png";
+  };
   const getHeaderLogo = () => {
     // For header: prefer app logo, then symbol, then favicon
-    return effectiveLogoApp || effectiveLogoSymbol || effectiveLogoFavicon || "/ppsymbol.png";
+    return effectiveLogoApp || effectiveLogoSymbol || effectiveLogoFavicon || getBaseDefault();
   };
   const getSymbolLogo = () => {
     // For symbol display: prefer symbol, then favicon, then app
-    return effectiveLogoSymbol || effectiveLogoFavicon || effectiveLogoApp || "/ppsymbol.png";
+    return effectiveLogoSymbol || effectiveLogoFavicon || effectiveLogoApp || getBaseDefault();
   };
 
   // Currency and rates

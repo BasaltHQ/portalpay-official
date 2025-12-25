@@ -107,7 +107,8 @@ export default function SiteFooter() {
       brand.logos.footer ||
       brand.logos.symbol ||
       brand.logos.app ||
-      "/ppsymbol.png"
+      brand.logos.app ||
+      (String((brand as any)?.key || containerBrandKey || "").toLowerCase() === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png")
     );
   })();
 

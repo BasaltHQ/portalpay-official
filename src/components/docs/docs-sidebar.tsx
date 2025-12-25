@@ -47,11 +47,10 @@ function NavGroup({ item, currentPath }: { item: NavItem; currentPath: string })
     return (
       <Link
         href={item.href}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap ${
-          currentPath === item.href
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap ${currentPath === item.href
             ? 'bg-primary text-primary-foreground font-medium'
             : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-        }`}
+          }`}
       >
         {item.icon}
         <span>{item.title}</span>
@@ -79,11 +78,10 @@ function NavGroup({ item, currentPath }: { item: NavItem; currentPath: string })
               <Link
                 key={child.href}
                 href={child.href!}
-                className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
-                  currentPath === child.href
+                className={`block px-3 py-2 text-sm rounded-lg transition-colors ${currentPath === child.href
                     ? 'bg-primary text-primary-foreground font-medium'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                }`}
+                  }`}
               >
                 {child.title}
               </Link>
@@ -91,17 +89,16 @@ function NavGroup({ item, currentPath }: { item: NavItem; currentPath: string })
           </div>
         )}
       </div>
-      
+
       {/* Mobile: horizontal flat list */}
       {hasChildren && item.items!.map((child) => (
         <Link
           key={child.href}
           href={child.href!}
-          className={`md:hidden flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap ${
-            currentPath === child.href
+          className={`md:hidden flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap ${currentPath === child.href
               ? 'bg-primary text-primary-foreground font-medium'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
+            }`}
         >
           <span>{child.title}</span>
         </Link>
@@ -202,7 +199,8 @@ export function DocsSidebar({ currentPath }: { currentPath: string }) {
     const sym = effectiveLogoSymbol.trim();
     const fav = effectiveLogoFavicon.trim();
     const app = effectiveLogoApp.trim();
-    return sym || fav || app || "/ppsymbol.png";
+    const defaultPlatformSymbol = String((brand as any)?.key || "").toLowerCase() === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png";
+    return sym || fav || app || defaultPlatformSymbol;
   };
 
   // Safe brand display for sidebar: if name missing or generic (ledgerN/partnerN/default), titleize brand key (prefer container brandKey)
@@ -272,15 +270,13 @@ export function DocsSidebar({ currentPath }: { currentPath: string }) {
                       <Link
                         href={child.href!}
                         onClick={(e) => e.stopPropagation()}
-                        className={`p-1 rounded-sm transition-colors ${
-                          currentPath === child.href
+                        className={`p-1 rounded-sm transition-colors ${currentPath === child.href
                             ? 'bg-primary'
                             : 'hover:bg-muted'
-                        }`}
+                          }`}
                       >
-                        <div className={`w-1.5 h-1.5 rounded-full ${
-                          currentPath === child.href ? 'bg-primary-foreground' : 'bg-foreground'
-                        }`} />
+                        <div className={`w-1.5 h-1.5 rounded-full ${currentPath === child.href ? 'bg-primary-foreground' : 'bg-foreground'
+                          }`} />
                       </Link>
                     </Tooltip>
                   ))}
@@ -313,10 +309,10 @@ export function DocsSidebar({ currentPath }: { currentPath: string }) {
                 </span>
               </div>
             </Link>
-            
+
             {/* Separator */}
             <div className="w-px h-8 bg-border shrink-0" />
-            
+
             {/* Subtopic dots */}
             {item.items?.slice(1).map((child) => (
               <Link
@@ -324,25 +320,22 @@ export function DocsSidebar({ currentPath }: { currentPath: string }) {
                 href={child.href!}
                 className="flex flex-col items-center justify-center gap-0.5 w-8 h-full"
               >
-                <div className={`p-0.5 rounded-sm transition-colors shrink-0 ${
-                  currentPath === child.href
+                <div className={`p-0.5 rounded-sm transition-colors shrink-0 ${currentPath === child.href
                     ? 'bg-primary'
                     : 'hover:bg-muted'
-                }`}>
-                  <div className={`w-1.5 h-1.5 rounded-full ${
-                    currentPath === child.href ? 'bg-primary-foreground' : 'bg-foreground'
-                  }`} />
+                  }`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${currentPath === child.href ? 'bg-primary-foreground' : 'bg-foreground'
+                    }`} />
                 </div>
                 <div className="h-5 flex items-center overflow-hidden">
-                  <span className={`text-[6px] uppercase tracking-wide text-center leading-[7px] line-clamp-2 w-full ${
-                    currentPath === child.href ? 'text-foreground font-semibold' : 'text-muted-foreground font-medium'
-                  }`}>
+                  <span className={`text-[6px] uppercase tracking-wide text-center leading-[7px] line-clamp-2 w-full ${currentPath === child.href ? 'text-foreground font-semibold' : 'text-muted-foreground font-medium'
+                    }`}>
                     {child.title}
                   </span>
                 </div>
               </Link>
             ))}
-            
+
             {/* Group separator (except last) */}
             {groupIndex < navigation.length - 1 && (
               <div className="w-0.5 h-8 bg-border/50 shrink-0" />
@@ -350,7 +343,7 @@ export function DocsSidebar({ currentPath }: { currentPath: string }) {
           </div>
         ))}
       </div>
-      
+
       {/* Toggle Button at bottom */}
       <div className="hidden md:flex border-t border-border p-2 justify-center">
         <button

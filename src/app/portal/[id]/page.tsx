@@ -180,8 +180,9 @@ export default function PortalReceiptPage() {
   const effectiveBrandName = partnerBrandName || theme.brandName || "PortalPay";
 
   // Helper functions to get the best available logo
-  const getHeaderLogo = () => effectiveLogoApp || effectiveLogoSymbol || effectiveLogoFavicon || "/ppsymbol.png";
-  const getSymbolLogo = () => effectiveLogoSymbol || effectiveLogoFavicon || effectiveLogoApp || "/ppsymbol.png";
+  const defaultPortalSymbol = theme.brandName.toLowerCase().includes("basalt") ? "/bssymbol.png" : "/ppsymbol.png";
+  const getHeaderLogo = () => effectiveLogoApp || effectiveLogoSymbol || effectiveLogoFavicon || defaultPortalSymbol;
+  const getSymbolLogo = () => effectiveLogoSymbol || effectiveLogoFavicon || effectiveLogoApp || defaultPortalSymbol;
 
   // URL params and layout/embedding detection
   const searchParams = useSearchParams();

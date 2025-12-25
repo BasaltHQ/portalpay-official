@@ -463,7 +463,7 @@ export function Navbar() {
         const t = (container.containerType || "").toLowerCase();
         if (t) return t === "partner";
         const bk = (theme.brandKey || container.brandKey || (brand as any)?.key || "").toLowerCase();
-        return !!bk && bk !== "portalpay";
+        return !!bk && bk !== "portalpay" && bk !== "basaltsurge";
     })();
     const hasBrandAssets = Boolean((theme.symbolLogoUrl || "").trim() || (theme.brandFaviconUrl || "").trim() || (theme.brandLogoUrl || "").trim());
     const effectiveBrandKey = (theme.brandKey || container.brandKey || "portalpay").toLowerCase();
@@ -483,7 +483,7 @@ export function Navbar() {
         }
         // Reject known default PortalPay assets
         const filename = (fullLogoUrl.split("/").pop() || "").toLowerCase();
-        const isDefaultAsset = /^(portalpay\d*\.png|ppsymbol(bg)?\.png|cblogod\.png|favicon-\d+x\d+\.png|next\.svg)$/i.test(filename);
+        const isDefaultAsset = /^(portalpay\d*\.png|ppsymbol(bg)?\.png|bssymbol\.png|cblogod\.png|favicon-\d+x\d+\.png|next\.svg)$/i.test(filename);
         // Accept any non-default URL
         return !isDefaultAsset;
     })();
@@ -503,7 +503,8 @@ export function Navbar() {
         // If API explicitly sets navbarMode to "symbol", trust it
         if (theme.navbarMode === "symbol") return "symbol";
         // Fallback: use "logo" for partners with a full logo, otherwise "symbol"
-        if (effectiveBrandKey && effectiveBrandKey !== "portalpay" && hasPartnerFullLogo) return "logo";
+        if (effectiveBrandKey && effectiveBrandKey !== "portalpay" && effectiveBrandKey !== "basaltsurge" && hasPartnerFullLogo) return "logo";
+        return "symbol";
         return "symbol";
     })();
 
@@ -516,6 +517,9 @@ export function Navbar() {
             /^default$/i.test(raw) ||
             (isPartnerContainer && /^portalpay$/i.test(raw));
         const key = String((theme.brandKey || container.brandKey || "")).trim();
+        const lowerKey = key.toLowerCase();
+        // explicit casing for basaltsurge
+        if (lowerKey === "basaltsurge") return "BasaltSurge";
         const titleizedKey = key ? key.charAt(0).toUpperCase() + key.slice(1) : "PortalPay";
         return (!raw || generic) ? titleizedKey : raw;
     })();
@@ -542,7 +546,8 @@ export function Navbar() {
                                 const app = (effectiveLogoApp || "").trim();
                                 const sym = (effectiveLogoSymbol || "").trim();
                                 const fav = (effectiveLogoFavicon || "").trim();
-                                return app || sym || fav || (isPartnerContainer ? "" : "/ppsymbol.png");
+                                const def = effectiveBrandKey === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png";
+                                return app || sym || fav || (isPartnerContainer ? "" : def);
                             })()}
                             alt={displayBrandName || (isPartnerContainer ? "" : "PortalPay")}
                             className={
@@ -555,7 +560,8 @@ export function Navbar() {
                                 const a = (effectiveLogoSymbol || "").trim();
                                 const b = (effectiveLogoFavicon || "").trim();
                                 const c = (effectiveLogoApp || "").trim();
-                                return a || b || c || (isPartnerContainer ? "" : "/ppsymbol.png");
+                                const def = effectiveBrandKey === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png";
+                                return a || b || c || (isPartnerContainer ? "" : def);
                             })()}
                             alt={displayBrandName || (isPartnerContainer ? "" : "PortalPay")}
                             className={

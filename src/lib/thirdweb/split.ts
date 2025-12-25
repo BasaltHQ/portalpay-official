@@ -44,7 +44,7 @@ export async function ensureSplitForWallet(account: Account | any, brandKeyOverr
               brandKey = parts[0].toLowerCase();
             }
           }
-        } catch {}
+        } catch { }
       }
     }
     if (!brandKey) {
@@ -58,7 +58,7 @@ export async function ensureSplitForWallet(account: Account | any, brandKeyOverr
             platformPct: 0.5,
           }),
         });
-      } catch {}
+      } catch { }
       return undefined;
     }
 
@@ -68,7 +68,7 @@ export async function ensureSplitForWallet(account: Account | any, brandKeyOverr
       const j = await r.json().catch(() => ({}));
       const existing = String(j?.split?.address || "").toLowerCase();
       const rc = Array.isArray(j?.split?.recipients) ? j.split.recipients.length : 0;
-      const partnerBrand = String(brandKey || "").toLowerCase() !== "portalpay";
+      const partnerBrand = String(brandKey || "").toLowerCase() !== "portalpay" && String(brandKey || "").toLowerCase() !== "basaltsurge";
       // Client-side redundancy: treat 2-recipient splits as misconfigured in partner brands
       const clientMisconfigured = partnerBrand && rc > 0 && rc < 3;
       const needsRedeploy = !!(j?.misconfiguredSplit && j.misconfiguredSplit.needsRedeploy === true) || clientMisconfigured;
@@ -99,7 +99,7 @@ export async function ensureSplitForWallet(account: Account | any, brandKeyOverr
             brandKey, // ensure server computes partner recipient for partner brands
           }),
         });
-      } catch {}
+      } catch { }
       return undefined;
     }
 
@@ -113,14 +113,14 @@ export async function ensureSplitForWallet(account: Account | any, brandKeyOverr
     } catch {
       brand = getBrandConfig(brandKey as string);
     }
-    
+
     const partner = String(brand?.partnerWallet || "").toLowerCase();
 
     const platformBps = typeof brand?.platformFeeBps === "number"
       ? Math.max(0, Math.min(10000, brand.platformFeeBps))
       : 50;
     // Platform container never has partner recipient
-    const isPartner = brandKey !== "portalpay";
+    const isPartner = brandKey !== "portalpay" && brandKey !== "basaltsurge";
     const partnerBps = !isPartner ? 0 : (isValidHexAddress(partner) && typeof brand.partnerFeeBps === "number")
       ? Math.max(0, Math.min(10000 - platformBps, brand.partnerFeeBps))
       : 0;
@@ -177,7 +177,7 @@ export async function ensureSplitForWallet(account: Account | any, brandKeyOverr
       } catch {
         return undefined;
       }
-    } catch {}
+    } catch { }
 
     return addr;
   } catch {

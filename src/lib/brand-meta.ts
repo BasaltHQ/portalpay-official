@@ -24,7 +24,7 @@ export async function buildOgTwitterForRoute(opts: {
 
   // Resolve brand + base URL - use getProductionBaseUrl to avoid localhost in production
   const APP_URL = await getProductionBaseUrl();
-  
+
   // Derive brand key from hostname and env
   let brandKeyFromHost: string | undefined;
   try {
@@ -36,11 +36,11 @@ export async function buildOgTwitterForRoute(opts: {
   } catch {
     // headers() may fail in some contexts
   }
-  
+
   // Get brand config from static defaults first
   let runtimeBrand = getBrandConfig(brandKeyFromHost);
   const env = getEnv();
-  
+
   // Hydrate with live brand config from Cosmos DB (no HTTP fetch - direct DB access)
   try {
     const baseBrandKey = (brandKeyFromHost || runtimeBrand?.key || "").toLowerCase();
@@ -55,11 +55,11 @@ export async function buildOgTwitterForRoute(opts: {
         meta: cosmosB.meta && typeof cosmosB.meta === "object" ? cosmosB.meta : runtimeBrand.meta,
       };
     }
-  } catch {}
+  } catch { }
 
   // Compute base for absolute URLs - APP_URL is already a production-safe URL from getProductionBaseUrl()
   let pageBase = APP_URL.replace(/^http:\/\//, "https://");
-  
+
   // Double-check: If pageBase is still localhost in production, try to derive from brand appUrl
   if (process.env.NODE_ENV === 'production' && isLocalhostUrl(pageBase)) {
     if (runtimeBrand.appUrl && !isLocalhostUrl(runtimeBrand.appUrl)) {
@@ -69,7 +69,7 @@ export async function buildOgTwitterForRoute(opts: {
       pageBase = 'https://pay.ledger1.ai';
     }
   }
-  
+
   const url = `${pageBase}${path}`;
   const safeBase = pageBase;
 
@@ -77,7 +77,7 @@ export async function buildOgTwitterForRoute(opts: {
   const socialDefault = (runtimeBrand as any)?.logos?.socialDefault;
   const ogImagePath = socialDefault || runtimeBrand.logos?.og || runtimeBrand.logos.app;
   const twitterImagePath = socialDefault || runtimeBrand.logos?.twitter || ogImagePath;
-  
+
   // Detect partner container more robustly:
   // 1. Check CONTAINER_TYPE env (via isPartnerContext())
   // 2. Check BRAND_KEY env directly (may be set even if CONTAINER_TYPE isn't)
@@ -86,8 +86,8 @@ export async function buildOgTwitterForRoute(opts: {
   const brandKeyFromEnv = String(process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").trim().toLowerCase();
   const containerTypeFromEnv = String(process.env.CONTAINER_TYPE || process.env.NEXT_PUBLIC_CONTAINER_TYPE || "").trim().toLowerCase();
   const runtimeBrandKey = String(runtimeBrand?.key || "").toLowerCase();
-  
-  const partner = isPartnerContext() || 
+
+  const partner = isPartnerContext() ||
     containerTypeFromEnv === "partner" ||
     (brandKeyFromEnv && brandKeyFromEnv !== "portalpay") ||
     (runtimeBrandKey && runtimeBrandKey !== "portalpay");
@@ -95,7 +95,7 @@ export async function buildOgTwitterForRoute(opts: {
   // Known platform image paths that should NOT be used for partner containers
   const KNOWN_PLATFORM_SOCIAL_IMAGES = [
     '/portalpay.png', '/portalpay2.png', '/socialbanner.jpg',
-    '/ppsymbol.png', '/ppsymbolbg.png'
+    '/ppsymbol.png', '/ppsymbolbg.png', '/bssymbol.png'
   ];
   const isPlatformImage = (url: string | undefined): boolean => {
     if (!url) return false;
@@ -142,7 +142,7 @@ export async function buildOgTwitterForRoute(opts: {
         siteMetaTitle = titleCandidate.trim();
       }
     }
-  } catch {}
+  } catch { }
 
   // Title/description fallbacks - NOW uses site config values for partner containers
   // Priority: route-specific > site config (partner) > brand config > fallback
@@ -166,16 +166,16 @@ export async function buildOgTwitterForRoute(opts: {
   // For partner containers, ONLY use their own siteSocialDefault (from site-config)
   // DO NOT fall back to platform's runtimeBrand.logos.socialDefault
   // This ensures partners show generative fallback until they set their own image
-  const effectiveSocialDefault = partner 
-    ? siteSocialDefault 
+  const effectiveSocialDefault = partner
+    ? siteSocialDefault
     : (siteSocialDefault || (runtimeBrand as any)?.logos?.socialDefault);
-  
+
   // For partners, don't fall back to platform ogImagePath/twitterImagePath
   // Force generative fallback when partners don't have their own image
-  const finalOgPath = partner 
+  const finalOgPath = partner
     ? (effectiveSocialDefault || null)  // null will trigger generative fallback for partners
     : (effectiveSocialDefault || ogImagePath);
-  const finalTwitterPath = partner 
+  const finalTwitterPath = partner
     ? (effectiveSocialDefault || null)
     : (effectiveSocialDefault || twitterImagePath);
   const isAbs = (u?: string) => !!u && /^https?:\/\//i.test(u || "");
@@ -221,7 +221,7 @@ export async function buildOgTwitterForRoute(opts: {
       description: solidDescription,
       site: twitterSite || undefined,
       creator: twitterCreator || undefined,
-      images: [ computeImageUrl(finalTwitterPath) ],
+      images: [computeImageUrl(finalTwitterPath)],
     },
   };
 }

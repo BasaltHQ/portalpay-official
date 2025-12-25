@@ -29,29 +29,29 @@ export function getEmojiColors(emoji: string): string[] {
     '🍰': ['#FFB6C1', '#FFC0CB', '#FF69B4'],
     '🚚': ['#3498DB', '#E74C3C', '#F39C12'],
     '💇': ['#9B59B6', '#8E44AD', '#E91E63'],
-    
+
     // Retail & Services
     '🛍️': ['#E91E63', '#9C27B0', '#673AB7'],
     '🏪': ['#2196F3', '#00BCD4', '#009688'],
     '🏋️': ['#FF5722', '#F44336', '#E91E63'],
     '🏨': ['#0ea5e9', '#3b82f6', '#8b5cf6'],
     '💼': ['#607D8B', '#455A64', '#37474F'],
-    
+
     // Transportation
     '🏍️': ['#FF5722', '#F44336', '#E91E63'],
     '🚕': ['#FFEB3B', '#FFC107', '#FF9800'],
     '🚤': ['#03A9F4', '#00BCD4', '#009688'],
-    
+
     // Tech & Services
     '📱': ['#2196F3', '#03A9F4', '#00BCD4'],
     '📻': ['#9C27B0', '#673AB7', '#3F51B5'],
     '💡': ['#FFEB3B', '#FFC107', '#FF9800'],
-    
+
     // Agriculture & Nature
     '🌾': ['#FDD835', '#FBC02D', '#F9A825'],
     '🎣': ['#03A9F4', '#00BCD4', '#009688'],
     '🎨': ['#E91E63', '#9C27B0', '#FF5722'],
-    
+
     // Community Services
     '💊': ['#F44336', '#E91E63', '#9C27B0'],
     '🔧': ['#607D8B', '#546E7A', '#455A64'],
@@ -64,11 +64,11 @@ export function getEmojiColors(emoji: string): string[] {
     '🎭': ['#E91E63', '#F06292', '#F48FB1'],
     '🏺': ['#D84315', '#BF360C', '#8D6E63'],
     '💵': ['#558B2F', '#689F38', '#7CB342'],
-    
+
     // Default gradients
     'default': ['#0ea5e9', '#3b82f6', '#8b5cf6'],
   };
-  
+
   return emojiColorMap[emoji] || emojiColorMap['default'];
 }
 
@@ -77,7 +77,7 @@ export function getEmojiColors(emoji: string): string[] {
  */
 export function createMeshGradient(colors: string[], width = 1200, height = 630): string {
   const [color1, color2, color3] = colors.length >= 3 ? colors : [...colors, ...colors, colors[0]];
-  
+
   return `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -413,7 +413,7 @@ export async function loadPPSymbol(size = 60): Promise<Buffer | null> {
         hasApp: !!brand?.logos?.app,
         appUrl: brand?.appUrl
       });
-      
+
       if (logoPath) {
         // Check if it's a full URL (starts with http:// or https://)
         if (/^https?:\/\//i.test(logoPath)) {
@@ -454,8 +454,9 @@ export async function loadPPSymbol(size = 60): Promise<Buffer | null> {
     if (!src) {
       // Platform default symbol (local preferred, remote fallback)
       console.log('[loadPPSymbol] Using platform default symbol');
-      const local = await loadPublicImageBuffer('ppsymbol.png');
-      src = local || await fetchWithCache('https://pay.ledger1.ai/ppsymbol.png');
+      const isBasalt = String(brand?.key || "").toLowerCase() === "basaltsurge";
+      const local = await loadPublicImageBuffer(isBasalt ? 'bssymbol.png' : 'ppsymbol.png');
+      src = local || await fetchWithCache(isBasalt ? 'https://surge.basalthq.com/bssymbol.png' : 'https://pay.ledger1.ai/ppsymbol.png');
     }
 
     if (!src) {
@@ -483,7 +484,7 @@ export async function loadTwemojiPng(emoji: string, size = 96): Promise<Buffer |
   // Convert emoji string into hyphen-separated lowercase hex codepoints
   const toCodepoints = (str: string): string => {
     const out: string[] = [];
-    for (let i = 0; i < str.length; ) {
+    for (let i = 0; i < str.length;) {
       const cp = str.codePointAt(i)!;
       out.push(cp.toString(16));
       i += cp > 0xffff ? 2 : 1;

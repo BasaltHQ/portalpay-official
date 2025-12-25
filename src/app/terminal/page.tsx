@@ -164,7 +164,7 @@ function TerminalPanel() {
     secondaryColor: string;
   }>({
     brandName: "Terminal",
-    brandLogoUrl: "/ppsymbol.png",
+    brandLogoUrl: "/ppsymbol.png", // Will be updated by effect
     primaryColor: "#1f2937",
     secondaryColor: "#F54029",
   });
@@ -446,7 +446,7 @@ function TerminalPanel() {
   }
 
   // Compute effective logo URL
-  const terminalLogoUrl = brandTheme.symbolLogoUrl || brandTheme.brandLogoUrl || "/ppsymbol.png";
+  const terminalLogoUrl = brandTheme.symbolLogoUrl || brandTheme.brandLogoUrl || ((brandTheme.brandName || "").toLowerCase().includes("basalt") ? "/bssymbol.png" : "/ppsymbol.png");
 
   return (
     <div className="glass-pane rounded-xl border p-6 space-y-4" style={{ ["--pp-primary" as any]: brandTheme.primaryColor, ["--pp-secondary" as any]: brandTheme.secondaryColor }}>

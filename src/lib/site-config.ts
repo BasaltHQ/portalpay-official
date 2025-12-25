@@ -7,7 +7,7 @@ const DOC_ID = "site:config";
 function getDocIdForBrand(brandKey?: string): string {
   try {
     const key = String(brandKey || "").toLowerCase();
-    if (!key || key === "portalpay") return DOC_ID;
+    if (!key || key === "portalpay" || key === "basaltsurge") return DOC_ID;
     return `${DOC_ID}:${key}`;
   } catch {
     return DOC_ID;
@@ -125,10 +125,10 @@ function normalize(raw?: any): SiteConfig {
   const recipientsIn = Array.isArray(base?.split?.recipients)
     ? base.split.recipients
     : Array.isArray(cfg?.split?.recipients)
-    ? cfg.split.recipients
-    : Array.isArray(cfg?.recipients)
-    ? cfg.recipients
-    : [];
+      ? cfg.split.recipients
+      : Array.isArray(cfg?.recipients)
+        ? cfg.recipients
+        : [];
 
   const recipients = recipientsIn
     .map((r: any) => {
@@ -173,12 +173,12 @@ export async function getSiteConfigForWallet(wallet?: string): Promise<SiteConfi
           const docId = getDocIdForBrand(brandKey);
           const { resource } = await c.item(docId, wallet).read<any>();
           if (resource) return normalize(resource);
-        } catch {}
+        } catch { }
       }
       // 2) Fallback to legacy per-wallet doc ("site:config" partitioned by wallet)
       // IMPORTANT: Partner containers should NOT fall back to legacy docs to prevent cross-tenant data leakage
       const partnerCtx = isPartnerContext();
-      if (!partnerCtx || !brandKey || String(brandKey).toLowerCase() === "portalpay") {
+      if (!partnerCtx || !brandKey || String(brandKey).toLowerCase() === "portalpay" || String(brandKey).toLowerCase() === "basaltsurge") {
         try {
           const { resource } = await c.item(DOC_ID, wallet).read<any>();
           if (resource) {
@@ -203,11 +203,11 @@ export async function getSiteConfigForWallet(wallet?: string): Promise<SiteConfi
               if (row2) {
                 return normalize(row2);
               }
-            } catch {}
+            } catch { }
             // No alternative with split found; return the legacy-normalized config.
             return normalizedLegacy;
           }
-        } catch {}
+        } catch { }
       }
     }
 
@@ -225,7 +225,7 @@ export async function getSiteConfigForWallet(wallet?: string): Promise<SiteConfi
       const { resources } = await c.items.query(spec).fetchAll();
       const row = Array.isArray(resources) && resources[0] ? resources[0] : null;
       if (row) return normalize(row);
-    } catch {}
+    } catch { }
 
     // 3) Global singleton fallback ("site:config" partitioned by "site:config")
     try {

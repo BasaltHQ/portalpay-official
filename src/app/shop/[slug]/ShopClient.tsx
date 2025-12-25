@@ -184,7 +184,8 @@ function Thumbnail({ src, size = 56, alt = "", fill = false, itemId = "", primar
                 src={(() => {
                     const a = String((brand?.logos?.symbol || "") as string).trim();
                     const c = String((brand?.logos?.app || "") as string).trim();
-                    return a || c || "/ppsymbol.png";
+                    const defaultSymbol = String((brand as any)?.key || "").toLowerCase() === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png";
+                    return a || c || defaultSymbol;
                 })()}
                 alt={brand?.name || "Brand"}
                 className="w-1/2 h-1/2 object-contain opacity-90"

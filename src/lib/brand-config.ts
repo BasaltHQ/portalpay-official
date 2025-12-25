@@ -58,24 +58,24 @@ export type BrandConfigDoc = {
  */
 export function deriveContainerIdentityFromHostname(host: string): ContainerIdentity | null {
   if (!host) return null;
-  
+
   // Remove port number if present (e.g., localhost:3001 -> localhost)
   const hostLower = host.toLowerCase().split(":")[0];
-  
+
   // Check if this is a main platform hostname (exact match or subdomain)
   for (const platformHost of PLATFORM_HOSTNAMES) {
     if (hostLower === platformHost || hostLower.endsWith(`.${platformHost}`)) {
       return { brandKey: "portalpay", containerType: "platform" };
     }
   }
-  
+
   // Handle localhost with subdomains for development testing
   // e.g., paynex.localhost:3001 -> brandKey: paynex, containerType: partner
   if (hostLower === "localhost" || hostLower === "127.0.0.1") {
     // Plain localhost without subdomain - use env vars (handled by caller)
     return null;
   }
-  
+
   if (hostLower.endsWith(".localhost") || hostLower.endsWith(".127.0.0.1")) {
     const parts = hostLower.split(".");
     const candidate = parts[0];
@@ -88,31 +88,31 @@ export function deriveContainerIdentityFromHostname(host: string): ContainerIden
       return { brandKey: candidate, containerType: "partner" };
     }
   }
-  
+
   // Extract potential brand key from hostname
   // Patterns: <brandKey>.azurewebsites.net, <brandKey>.payportal.co, <brandKey>.<domain>
   const parts = hostLower.split(".");
   if (parts.length >= 2) {
     const candidate = parts[0];
-    
+
     // Check known partner patterns
     if (KNOWN_PARTNER_PATTERNS[candidate]) {
       return { brandKey: KNOWN_PARTNER_PATTERNS[candidate], containerType: "partner" };
     }
-    
+
     // For Azure Container Apps and custom domains, derive from subdomain
     // e.g., paynex.azurewebsites.net -> paynex
     // e.g., xoinpay.payportal.co -> xoinpay
     if (candidate && candidate.length > 2 && !["www", "api", "admin"].includes(candidate)) {
       const isAzure = hostLower.endsWith(".azurewebsites.net") || hostLower.endsWith(".azurecontainerapps.io");
       const isPayportal = hostLower.endsWith(".payportal.co") || hostLower.endsWith(".portalpay.app");
-      
+
       if (isAzure || isPayportal) {
         return { brandKey: candidate, containerType: "partner" };
       }
     }
   }
-  
+
   return null;
 }
 
@@ -128,7 +128,7 @@ export function getContainerIdentity(host?: string): ContainerIdentity {
   // If brandKey is empty, try to derive from hostname
   if (!brandKey && host) {
     const derived = deriveContainerIdentityFromHostname(host);
-    
+
     if (derived) {
       brandKey = derived.brandKey;
       // Only override containerType if it wasn't explicitly set in env
@@ -142,7 +142,7 @@ export function getContainerIdentity(host?: string): ContainerIdentity {
   if (!containerType) {
     containerType = "platform";
   }
-  
+
   // Default brandKey to "portalpay" if still empty
   if (!brandKey) {
     brandKey = "portalpay";
@@ -180,11 +180,11 @@ export async function readBrandOverridesCached(brandKey: string): Promise<BrandC
   const key = String(brandKey || "").toLowerCase();
   const now = Date.now();
   const cached = brandConfigCache[key];
-  
+
   if (cached && (now - cached.ts) < BRAND_CONFIG_CACHE_TTL) {
     return cached.data;
   }
-  
+
   const data = await readBrandOverridesFromCosmos(key);
   brandConfigCache[key] = { data, ts: Date.now() };
   return data;
@@ -209,8 +209,8 @@ export function toEffectiveBrand(brandKey: string, overrides?: Partial<BrandConf
   const baseRaw: BrandConfig = {
     key,
     name: key ? key.charAt(0).toUpperCase() + key.slice(1) : "", // Titleized key as placeholder
-    colors: { primary: "#0a0a0a", accent: "#6b7280" }, // Neutral dark colors
-    logos: { app: "", favicon: "/api/favicon" }, // Use dynamic favicon endpoint
+    colors: key === "basaltsurge" ? { primary: "#22C55E", accent: "#16A34A" } : { primary: "#0a0a0a", accent: "#6b7280" }, // Neutral dark colors
+    logos: { app: key === "basaltsurge" ? "/bssymbol.png" : "", favicon: "/api/favicon" }, // Use dynamic favicon endpoint
     meta: {},
     appUrl: undefined,
     platformFeeBps: 50,
@@ -228,27 +228,27 @@ export function toEffectiveBrand(brandKey: string, overrides?: Partial<BrandConf
     name: typeof overrides.name === "string" ? overrides.name : withDefaults.name,
     colors: typeof overrides.colors === "object"
       ? {
-          primary: typeof overrides.colors?.primary === "string" ? overrides.colors.primary : withDefaults.colors.primary,
-          accent: typeof overrides.colors?.accent === "string" ? overrides.colors.accent! : withDefaults.colors.accent,
-        }
+        primary: typeof overrides.colors?.primary === "string" ? overrides.colors.primary : withDefaults.colors.primary,
+        accent: typeof overrides.colors?.accent === "string" ? overrides.colors.accent! : withDefaults.colors.accent,
+      }
       : withDefaults.colors,
     logos: typeof overrides.logos === "object"
       ? {
-          app: typeof overrides.logos?.app === "string" ? overrides.logos.app : withDefaults.logos.app,
-          favicon: typeof overrides.logos?.favicon === "string" ? overrides.logos.favicon : withDefaults.logos.favicon,
-          symbol: typeof overrides.logos?.symbol === "string" ? overrides.logos.symbol : withDefaults.logos.symbol,
-          footer: typeof overrides.logos?.footer === "string" ? overrides.logos.footer : withDefaults.logos.footer,
-          navbarMode:
-            (overrides.logos as any)?.navbarMode === "logo" || (overrides.logos as any)?.navbarMode === "symbol"
-              ? (overrides.logos as any).navbarMode
-              : (withDefaults as any)?.logos?.navbarMode,
-        }
+        app: typeof overrides.logos?.app === "string" ? overrides.logos.app : withDefaults.logos.app,
+        favicon: typeof overrides.logos?.favicon === "string" ? overrides.logos.favicon : withDefaults.logos.favicon,
+        symbol: typeof overrides.logos?.symbol === "string" ? overrides.logos.symbol : withDefaults.logos.symbol,
+        footer: typeof overrides.logos?.footer === "string" ? overrides.logos.footer : withDefaults.logos.footer,
+        navbarMode:
+          (overrides.logos as any)?.navbarMode === "logo" || (overrides.logos as any)?.navbarMode === "symbol"
+            ? (overrides.logos as any).navbarMode
+            : (withDefaults as any)?.logos?.navbarMode,
+      }
       : withDefaults.logos,
     meta: typeof overrides.meta === "object"
       ? {
-          ogTitle: typeof overrides.meta?.ogTitle === "string" ? overrides.meta.ogTitle : withDefaults.meta?.ogTitle,
-          ogDescription: typeof overrides.meta?.ogDescription === "string" ? overrides.meta.ogDescription : withDefaults.meta?.ogDescription,
-        }
+        ogTitle: typeof overrides.meta?.ogTitle === "string" ? overrides.meta.ogTitle : withDefaults.meta?.ogTitle,
+        ogDescription: typeof overrides.meta?.ogDescription === "string" ? overrides.meta.ogDescription : withDefaults.meta?.ogDescription,
+      }
       : withDefaults.meta,
     appUrl: overrides.appUrl ?? withDefaults.appUrl,
     platformFeeBps: typeof overrides.platformFeeBps === "number" ? overrides.platformFeeBps : withDefaults.platformFeeBps,

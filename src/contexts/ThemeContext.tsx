@@ -51,7 +51,7 @@ const defaultTheme: SiteTheme = {
 const ThemeContext = createContext<ThemeContextType>({
   theme: defaultTheme,
   isLoading: true,
-  refetch: async () => {},
+  refetch: async () => { },
 });
 
 export function useTheme() {
@@ -92,17 +92,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase()
             : '';
           isPartner = ct === 'partner';
-        } catch {}
+        } catch { }
         if (!isPartner) {
           try {
             const bk = String((brand as any)?.key || '').toLowerCase();
             isPartner = !!bk && bk !== 'portalpay';
-          } catch {}
+          } catch { }
         }
         const useWallet = wallet || (isPartner ? recipientEnv : '');
         if (useWallet) headers['x-wallet'] = useWallet;
         headers['x-theme-caller'] = 'ThemeContext:fetchTheme';
-        
+
         // Build base URL using selected wallet (if any) and append invoice=1 when requested via query (mode/layout/invoice)
         const baseUrl = useWallet ? `/api/site/config?wallet=${encodeURIComponent(useWallet)}` : `/api/site/config`;
         let urlWithParams = baseUrl;
@@ -115,7 +115,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           if (useInvoice) {
             urlWithParams = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}invoice=1`;
           }
-        } catch {}
+        } catch { }
         // Retry/backoff on transient failures to reduce console noise during dev reloads
         let j: any = {};
         let lastErr: any = null;
@@ -138,6 +138,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const tRaw = (j?.config?.theme || {}) as any;
         const t = (() => {
           const x: any = { ...tRaw };
+          // Hardcode Green for BasaltSurge if it comes back with generic colors
+          const bKey = String((brand as any)?.key || '').toLowerCase();
+          if (bKey === 'basaltsurge') {
+            x.primaryColor = '#22C55E';
+            x.secondaryColor = '#16A34A';
+            x.brandName = 'BasaltSurge';
+          }
           // Determine container type from DOM attribute set by RootLayout
           let isPartner = false;
           try {
@@ -145,10 +152,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
               ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase()
               : '';
             isPartner = ct === 'partner';
-          } catch {}
+          } catch { }
           // Replace legacy cblogod only in platform context to avoid leaking platform asset in partners
-          if (!isPartner && x.brandLogoUrl === '/cblogod.png') {
-            x.brandLogoUrl = '/ppsymbol.png';
+          const brandKey = String((brand as any)?.key || '').toLowerCase();
+          const defaultPlatformSymbol = brandKey === 'basaltsurge' ? '/bssymbol.png' : '/ppsymbol.png';
+          if (!isPartner && (x.brandLogoUrl === '/cblogod.png' || (brandKey === 'basaltsurge' && x.brandLogoUrl === '/ppsymbol.png'))) {
+            x.brandLogoUrl = defaultPlatformSymbol;
           }
           // Ensure compact symbol glyph is present; avoid platform symbol fallback in partner context
           const hasSymbol = !!(x?.logos && typeof x.logos.symbol === 'string' && x.logos.symbol);
@@ -156,7 +165,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             const symbol =
               typeof x.brandLogoUrl === 'string' && x.brandLogoUrl
                 ? x.brandLogoUrl
-                : (typeof x.brandFaviconUrl === 'string' && x.brandFaviconUrl ? x.brandFaviconUrl : (isPartner ? '' : '/ppsymbol.png'));
+                : (typeof x.brandFaviconUrl === 'string' && x.brandFaviconUrl ? x.brandFaviconUrl : (isPartner ? '' : defaultPlatformSymbol));
             x.logos = { ...(x.logos || {}), symbol };
             x.symbolLogoUrl = symbol;
           }
@@ -191,8 +200,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             typeof t.headerTextColor === 'string'
               ? t.headerTextColor
               : typeof t.textColor === 'string'
-              ? t.textColor
-              : prev.headerTextColor,
+                ? t.textColor
+                : prev.headerTextColor,
           bodyTextColor: typeof t.bodyTextColor === 'string' ? t.bodyTextColor : prev.bodyTextColor,
           brandLogoShape:
             t.brandLogoShape === 'round' || t.brandLogoShape === 'square' || t.brandLogoShape === 'unmasked'
@@ -233,7 +242,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
         return;
       }
-    } catch {}
+    } catch { }
     fetchTheme();
   }, [fetchTheme]);
 
@@ -241,14 +250,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const root = document.documentElement;
-      
+
       // CRITICAL GUARD: Never override portal/shop merchant themes
       // Check hardlock first - if merchant hardlock is set, portal/shop owns the theme
       const hardLock = root.getAttribute('data-pp-theme-hardlock');
       if (hardLock === 'merchant') {
         return; // Portal/Shop has exclusive control
       }
-      
+
       // Never override theme on Portal or Shop routes; those pages manage their theme lifecycle
       try {
         const url = new URL(window.location.href);
@@ -256,8 +265,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (path.startsWith('/portal') || path.startsWith('/shop')) {
           return;
         }
-      } catch {}
-      
+      } catch { }
+
       // Check theme lock
       const lock = root.getAttribute('data-pp-theme-lock') || 'user';
       // Allow brand theme to override unless explicitly hardlocked for merchant,
@@ -265,19 +274,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (lock === 'merchant' || (lock === 'portalpay-default' && String(brand?.key || '').toLowerCase() === 'portalpay')) {
         return; // Don't override these locks in their legitimate scopes
       }
-      
+
       // Check if merchant theme stage is active
       const stage = root.getAttribute('data-pp-theme-stage') || '';
       const merchantAvailable = root.getAttribute('data-pp-theme-merchant-available');
       if (stage === 'merchant' || merchantAvailable === '1') {
         return; // Merchant theme is active, don't override
       }
-      
+
       const setVar = (key: string, val?: string) => {
         if (!val) return;
         root.style.setProperty(key, val);
       };
-      
+
       setVar('--pp-primary', theme.primaryColor);
       setVar('--pp-secondary', theme.secondaryColor);
       setVar('--pp-text', theme.headerTextColor || theme.textColor);
@@ -286,11 +295,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setVar('--primary', theme.primaryColor);
       // Ensure text on primary surfaces uses merchant-provided contrast color
       setVar('--primary-foreground', theme.headerTextColor || theme.textColor || '#ffffff');
-      
+
       if (typeof theme.fontFamily === 'string' && theme.fontFamily.trim().length > 0) {
         setVar('--pp-font', theme.fontFamily);
       }
-    } catch {}
+    } catch { }
   }, [theme]);
 
   const value = useMemo(

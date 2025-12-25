@@ -227,7 +227,7 @@ export function middleware(req: NextRequest) {
       if (!brandKey && hostname.endsWith(".azurewebsites.net")) {
         brandKey = hostname.split(".")[0].toLowerCase();
       }
-      if (brandKey && brandKey !== "portalpay") {
+      if (brandKey && brandKey !== "portalpay" && brandKey !== "basaltsurge") {
         const rewrites: Record<string, string> = {
           "/apple-touch-icon.png": `/brands/${brandKey}/apple-touch-icon.png`,
           "/android-chrome-192x192.png": `/brands/${brandKey}/android-chrome-192x192.png`,

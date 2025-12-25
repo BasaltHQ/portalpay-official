@@ -262,7 +262,8 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
     const sym = effectiveLogoSymbol.trim();
     const fav = effectiveLogoFavicon.trim();
     const app = effectiveLogoApp.trim();
-    return sym || fav || app || "/ppsymbol.png";
+    const defaultPlatformSymbol = String((brand as any)?.key || "").toLowerCase() === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png";
+    return sym || fav || app || defaultPlatformSymbol;
   };
 
   // Safe display brand name for admin UI. If name is missing or a generic placeholder, fall back to titleized brand key.

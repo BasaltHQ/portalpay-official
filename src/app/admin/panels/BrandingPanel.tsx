@@ -49,7 +49,7 @@ export default function BrandingPanel() {
       setInfo("");
       let eff: any = {};
       let overrides: any = {};
-      const isPortalPay = String(brand.key || "").toLowerCase() === "portalpay";
+      const isPortalPay = String(brand.key || "").toLowerCase() === "portalpay" || String(brand.key || "").toLowerCase() === "basaltsurge";
       const recipientEnv = String(process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "").toLowerCase();
 
       if (isPortalPay) {
@@ -57,7 +57,7 @@ export default function BrandingPanel() {
         const walletParam = recipient ? `?wallet=${encodeURIComponent(recipient)}` : "";
         const r = await fetch(`/api/site/config${walletParam}`, {
           cache: "no-store",
-          headers: { "x-wallet": recipient || (account?.address || "") },
+          headers: { "x-wallet": recipient || "" },
         });
         const j = await r.json().catch(() => ({}));
         const cfg = j?.config || {};
@@ -114,7 +114,7 @@ export default function BrandingPanel() {
       setPartnerFeeBps(Number.isFinite(pf) ? pf : 0);
       setPlatformFeeBps(Number.isFinite(plat) ? plat : 50);
       setDefaultMerchantFeeBps(Number.isFinite(dm) ? dm : 0);
-setPartnerWallet(String(isPortalPay ? (((eff as any)?.partnerWallet || recipientEnv || "")) : ((eff as any)?.partnerWallet || "")));
+      setPartnerWallet(String(isPortalPay ? (((eff as any)?.partnerWallet || recipientEnv || "")) : ((eff as any)?.partnerWallet || "")));
       // Theme fields
       setBrandDisplayName(String(eff?.name || ""));
       try {
@@ -217,9 +217,9 @@ setPartnerWallet(String(isPortalPay ? (((eff as any)?.partnerWallet || recipient
             brandLogoShape,
           }
         }));
-      } catch {}
+      } catch { }
 
-      try { await refetch(); } catch {}
+      try { await refetch(); } catch { }
     } catch (e: any) {
       setFaviconGenerating(false);
       setError(e?.message || "Upload or favicon generation failed");
@@ -252,12 +252,12 @@ setPartnerWallet(String(isPortalPay ? (((eff as any)?.partnerWallet || recipient
       };
       let r: Response;
       let j: any;
-      const isPortalPay = String(brand.key || "").toLowerCase() === "portalpay";
+      const isPortalPay = String(brand.key || "").toLowerCase() === "portalpay" || String(brand.key || "").toLowerCase() === "basaltsurge";
 
       if (isPortalPay) {
         // Determine platform recipient upfront for this PortalPay container
-const recipientEnv = String(process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "").toLowerCase();
-const effectiveRecipient = String((partnerWallet || recipientEnv) || "").toLowerCase();
+        const recipientEnv = String(process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "").toLowerCase();
+        const effectiveRecipient = String((partnerWallet || recipientEnv) || "").toLowerCase();
 
         // Map branding fields back into site config shape
         const payload: any = {};
@@ -266,7 +266,7 @@ const effectiveRecipient = String((partnerWallet || recipientEnv) || "").toLower
         payload.partnerFeeBps = body.partnerFeeBps;
         payload.defaultMerchantFeeBps = body.defaultMerchantFeeBps;
         // For PortalPay, partnerWallet should be the platform recipient address
-payload.partnerWallet = effectiveRecipient;
+        payload.partnerWallet = effectiveRecipient;
 
         const theme: any = {};
         if (body.name) theme.brandName = body.name;
@@ -286,10 +286,10 @@ payload.partnerWallet = effectiveRecipient;
         theme.brandLogoShape = brandLogoShape;
         if (Object.keys(theme).length > 0) payload.theme = theme;
 
-const walletParam = effectiveRecipient ? `?wallet=${encodeURIComponent(effectiveRecipient)}` : "";
+        const walletParam = effectiveRecipient ? `?wallet=${encodeURIComponent(effectiveRecipient)}` : "";
         r = await fetch(`/api/site/config${walletParam}`, {
           method: "POST",
-headers: { "Content-Type": "application/json", "x-wallet": effectiveRecipient || (account?.address || "") },
+          headers: { "Content-Type": "application/json", "x-wallet": effectiveRecipient || "" },
           credentials: "include",
           body: JSON.stringify(payload),
         });
@@ -310,20 +310,20 @@ headers: { "Content-Type": "application/json", "x-wallet": effectiveRecipient ||
       }
       setInfo("Brand updated");
       // Immediately update runtime theme for current session
-          try {
-            window.dispatchEvent(new CustomEvent("pp:theme:updated", {
-              detail: {
-                primaryColor,
-                secondaryColor: accentColor,
-                brandFaviconUrl: logoFaviconUrl,
-                brandLogoUrl: logoAppUrl,
-                appleTouchIconUrl,
-                brandLogoShape,
-              }
-            }));
-          } catch {}
+      try {
+        window.dispatchEvent(new CustomEvent("pp:theme:updated", {
+          detail: {
+            primaryColor,
+            secondaryColor: accentColor,
+            brandFaviconUrl: logoFaviconUrl,
+            brandLogoUrl: logoAppUrl,
+            appleTouchIconUrl,
+            brandLogoShape,
+          }
+        }));
+      } catch { }
       // Also refresh ThemeContext cache
-      try { await refetch(); } catch {}
+      try { await refetch(); } catch { }
       // Refresh effective snapshot in panel
       await load();
     } catch (e: any) {
