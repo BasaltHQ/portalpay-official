@@ -10,6 +10,7 @@ import HeroVisualizer from "@/components/voice/HeroVisualizer";
 import { buildShopTools } from "@/agent/tools/shopTools";
 import { installShopAgentDispatcher } from "@/agent/dispatcher/shopAgentDispatcher";
 import { useBrand } from "@/contexts/BrandContext";
+import { getEffectiveBrandKey, resolveBrandSymbol } from "@/lib/branding";
 import ShopLanguageDropdown from "@/components/ShopLanguageDropdown";
 import dynamic from "next/dynamic";
 const ConnectButton = dynamic(() => import("thirdweb/react").then((m) => m.ConnectButton), { ssr: false });
@@ -184,8 +185,7 @@ function Thumbnail({ src, size = 56, alt = "", fill = false, itemId = "", primar
                 src={(() => {
                     const a = String((brand?.logos?.symbol || "") as string).trim();
                     const c = String((brand?.logos?.app || "") as string).trim();
-                    const defaultSymbol = String((brand as any)?.key || "").toLowerCase() === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png";
-                    return a || c || defaultSymbol;
+                    return resolveBrandSymbol(a || c, (brand as any)?.key);
                 })()}
                 alt={brand?.name || "Brand"}
                 className="w-1/2 h-1/2 object-contain opacity-90"
@@ -1884,7 +1884,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                         const b = String((brand?.logos?.symbol || "") as string).trim();
                                                         const c = String((brand?.logos?.favicon || "") as string).trim();
                                                         const d = String((brand?.logos?.app || "") as string).trim();
-                                                        return a || b || c || d || "/ppsymbol.png";
+                                                        return resolveBrandSymbol(a || b || c || d, (brand as any)?.key);
                                                     })()}
                                                     alt="Logo"
                                                     className="max-w-full max-h-full object-contain"
@@ -1955,7 +1955,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                                 const b = String((brand?.logos?.symbol || "") as string).trim();
                                                                 const c = String((brand?.logos?.favicon || "") as string).trim();
                                                                 const d = String((brand?.logos?.app || "") as string).trim();
-                                                                return a || b || c || d || "/ppsymbol.png";
+                                                                return resolveBrandSymbol(a || b || c || d, (brand as any)?.key);
                                                             })(),
                                                             size: "compact",
                                                             showThirdwebBranding: false,
@@ -2065,7 +2065,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                             const b = String((brand?.logos?.symbol || "") as string).trim();
                                                             const c = String((brand?.logos?.favicon || "") as string).trim();
                                                             const d = String((brand?.logos?.app || "") as string).trim();
-                                                            return a || b || c || d || "/ppsymbol.png";
+                                                            return resolveBrandSymbol(a || b || c || d, (brand as any)?.key);
                                                         })(),
                                                         size: "compact",
                                                         showThirdwebBranding: false,

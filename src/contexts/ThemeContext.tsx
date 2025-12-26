@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { useActiveAccount } from 'thirdweb/react';
 import { useBrand } from "@/contexts/BrandContext";
+import { getDefaultBrandSymbol, isBasaltSurge, resolveBrandAppLogo, resolveBrandSymbol } from "@/lib/branding";
 
 export type SiteTheme = {
   primaryColor: string;
@@ -80,6 +81,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Fetch theme from API
   const fetchTheme = useMemo(() => {
     return async () => {
+      setIsLoading(true);
       try {
         const headers: Record<string, string> = {};
         const recipientEnv = String(process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "").toLowerCase();
@@ -96,7 +98,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (!isPartner) {
           try {
             const bk = String((brand as any)?.key || '').toLowerCase();
-            isPartner = !!bk && bk !== 'portalpay';
+            isPartner = !!bk && bk !== 'portalpay' && bk !== 'basaltsurge';
           } catch { }
         }
         const useWallet = wallet || (isPartner ? recipientEnv : '');
@@ -116,6 +118,25 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             urlWithParams = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}invoice=1`;
           }
         } catch { }
+
+        // Also fetch shop config if wallet is available - shop theme takes priority for branding
+        // This is READ-ONLY - we never write to shop config here
+        let shopTheme: any = null;
+        if (useWallet) {
+          try {
+            const shopRes = await fetch(`/api/shop/config?wallet=${encodeURIComponent(useWallet)}`, { cache: 'no-store' });
+            if (shopRes.ok) {
+              const shopData = await shopRes.json();
+              const shopConfig = shopData?.config || shopData || {};
+              shopTheme = shopConfig.theme || null;
+              // Ensure name is carried over if not explicitly in theme
+              if (shopTheme && !shopTheme.brandName && shopConfig.name) {
+                shopTheme.partName = shopConfig.name; // Temporary holder
+              }
+            }
+          } catch { /* Shop config fetch is optional */ }
+        }
+
         // Retry/backoff on transient failures to reduce console noise during dev reloads
         let j: any = {};
         let lastErr: any = null;
@@ -134,17 +155,52 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (lastErr) {
           throw lastErr;
         }
-        // Client-side sanitization to kill legacy teal + cblogod fallback quickly
-        const tRaw = (j?.config?.theme || {}) as any;
+
+        // Merge site config theme with shop theme - shop theme takes priority for branding
+        const siteTheme = (j?.config?.theme || {}) as any;
+        let mergedTheme = { ...siteTheme };
+
+
+        // Detect if we're in BasaltSurge context
+        const brandKey = String((brand as any)?.key || '').toLowerCase();
+        const isBasaltSurgeContext = brandKey === 'basaltsurge';
+
+        if (shopTheme) {
+          // Shop theme overrides for branding elements
+          // STRICT OVERRIDE: If shop theme is present, it replaces site theme branding completely
+          // to avoid leaking platform (PortalPay) branding into merchant context.
+          // EXCEPTION: In BasaltSurge context, skip default platform logos (cblogod.png, ppsymbol.png etc.)
+          // to preserve the correct BasaltSurge branding.
+          const shopLogoToUse = resolveBrandAppLogo(shopTheme.brandLogoUrl || mergedTheme.brandLogoUrl, brandKey);
+
+          console.log('[ThemeContext DEBUG] shopTheme colors:', {
+            primary: shopTheme.primaryColor,
+            secondary: shopTheme.secondaryColor,
+            name: shopTheme.brandName || shopTheme.name,
+          });
+
+          mergedTheme = {
+            ...mergedTheme,
+            primaryColor: shopTheme.primaryColor || mergedTheme.primaryColor || defaultTheme.primaryColor,
+            secondaryColor: shopTheme.secondaryColor || mergedTheme.secondaryColor || defaultTheme.secondaryColor,
+            brandLogoUrl: shopLogoToUse,
+            brandFaviconUrl: shopTheme.brandFaviconUrl || mergedTheme.brandFaviconUrl || '',
+            symbolLogoUrl: shopLogoToUse,
+            brandName: shopTheme.brandName || shopTheme.name || shopTheme.partName || mergedTheme.brandName || brand.name || '',
+            textColor: shopTheme.textColor || mergedTheme.textColor || defaultTheme.textColor,
+            fontFamily: shopTheme.fontFamily || mergedTheme.fontFamily || defaultTheme.fontFamily,
+            brandLogoShape: shopTheme.logoShape || mergedTheme.brandLogoShape || defaultTheme.brandLogoShape,
+            headerTextColor: shopTheme.textColor || mergedTheme.headerTextColor || defaultTheme.headerTextColor,
+            bodyTextColor: shopTheme.textColor ? shopTheme.textColor : (mergedTheme.bodyTextColor || defaultTheme.bodyTextColor)
+
+          };
+        }
+        // Client-side sanitization using merged theme (shop takes priority)
         const t = (() => {
-          const x: any = { ...tRaw };
-          // Hardcode Green for BasaltSurge if it comes back with generic colors
+          const x: any = { ...mergedTheme };
           const bKey = String((brand as any)?.key || '').toLowerCase();
-          if (bKey === 'basaltsurge') {
-            x.primaryColor = '#22C55E';
-            x.secondaryColor = '#16A34A';
-            x.brandName = 'BasaltSurge';
-          }
+          const isBS = bKey === 'basaltsurge';
+
           // Determine container type from DOM attribute set by RootLayout
           let isPartner = false;
           try {
@@ -153,75 +209,74 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
               : '';
             isPartner = ct === 'partner';
           } catch { }
-          // Replace legacy cblogod only in platform context to avoid leaking platform asset in partners
-          const brandKey = String((brand as any)?.key || '').toLowerCase();
-          const defaultPlatformSymbol = brandKey === 'basaltsurge' ? '/bssymbol.png' : '/ppsymbol.png';
-          if (!isPartner && (x.brandLogoUrl === '/cblogod.png' || (brandKey === 'basaltsurge' && x.brandLogoUrl === '/ppsymbol.png'))) {
-            x.brandLogoUrl = defaultPlatformSymbol;
+
+          // Only force specific brand colors if NO customizations exist and it's THE GLOBAL config (landing page)
+          // (No shopTheme and NOT a per-merchant wallet means it's likely the landing page)
+          const mWallet = String((mergedTheme as any).wallet || '').toLowerCase();
+          const isPerMerchant = /^0x[a-f0-9]{40}$/.test(mWallet);
+          const isGlobal = !shopTheme && !isPerMerchant;
+
+          if (isBS && isGlobal) {
+            const p = String(x.primaryColor || '').toLowerCase();
+            const s = String(x.secondaryColor || '').toLowerCase();
+            // Force Basalt colors if it's the old defaults or empty
+            const isOldDefault = !p || p === '#1f2937' || p === '#0d9488' || p === '#14b8a6' || p === '#10b981';
+            const isOldAccent = !s || s === '#f54029' || s === '#2dd4bf' || s === '#22d3ee';
+            if (isOldDefault) x.primaryColor = '#22C55E';
+            if (isOldAccent) x.secondaryColor = '#16A34A';
+            if (!x.brandName || x.brandName === 'PortalPay' || x.brandName === 'Basaltsurge') {
+              x.brandName = 'BasaltSurge';
+            }
           }
-          // Ensure compact symbol glyph is present; avoid platform symbol fallback in partner context
-          const hasSymbol = !!(x?.logos && typeof x.logos.symbol === 'string' && x.logos.symbol);
-          if (!hasSymbol) {
-            const symbol =
-              typeof x.brandLogoUrl === 'string' && x.brandLogoUrl
-                ? x.brandLogoUrl
-                : (typeof x.brandFaviconUrl === 'string' && x.brandFaviconUrl ? x.brandFaviconUrl : (isPartner ? '' : defaultPlatformSymbol));
-            x.logos = { ...(x.logos || {}), symbol };
-            x.symbolLogoUrl = symbol;
+
+          // Replace legacy platform logos with brand default only if NOT a custom merchant logo
+          const brandKeyFinal = String((brand as any)?.key || '').toLowerCase();
+
+          // Use our robust resolvers to clean up any legacy assets
+          x.brandLogoUrl = resolveBrandAppLogo(x.brandLogoUrl, brandKeyFinal);
+          x.symbolLogoUrl = resolveBrandSymbol(x.symbolLogoUrl || x.brandLogoUrl, brandKeyFinal);
+
+          if (x.logos) {
+            x.logos.symbol = x.symbolLogoUrl;
+            x.logos.app = x.brandLogoUrl;
           }
-          // Clamp legacy teal defaults
-          if (x.primaryColor === '#10b981' || x.primaryColor === '#14b8a6') {
-            x.primaryColor = '#1f2937';
-          }
-          if (x.secondaryColor === '#2dd4bf' || x.secondaryColor === '#22d3ee') {
-            x.secondaryColor = '#F54029';
+
+          // Clamp legacy teal defaults if they are still present
+          // Only do this for global/platform defaults, NEVER for a specific shop theme (merchant might want teal)
+          const isPlatform = !brandKeyFinal || brandKeyFinal === "portalpay" || brandKeyFinal === "basaltsurge";
+          if (isPlatform && !shopTheme) {
+            const defaultPrimary = isBS ? '#22C55E' : '#1f2937';
+            const defaultAccent = isBS ? '#16A34A' : '#F54029';
+            const p = String(x.primaryColor || "").toLowerCase();
+            const s = String(x.secondaryColor || "").toLowerCase();
+
+            if (p === '#10b981' || p === '#14b8a6' || p === '#0d9488') {
+              x.primaryColor = defaultPrimary;
+            }
+            if (s === '#2dd4bf' || s === '#22d3ee') {
+              x.secondaryColor = defaultAccent;
+            }
           }
           return x;
         })();
 
-        setTheme((prev) => ({
-          primaryColor: typeof t.primaryColor === 'string' ? t.primaryColor : prev.primaryColor,
-          secondaryColor: typeof t.secondaryColor === 'string' ? t.secondaryColor : prev.secondaryColor,
-          brandLogoUrl: typeof t.brandLogoUrl === 'string' ? t.brandLogoUrl : prev.brandLogoUrl,
-          brandFaviconUrl: typeof t.brandFaviconUrl === 'string' ? t.brandFaviconUrl : prev.brandFaviconUrl,
-          symbolLogoUrl:
-            (t?.logos && typeof t.logos.symbol === 'string')
-              ? t.logos.symbol
-              : (typeof (t as any).brandSymbolUrl === 'string'
-                ? (t as any).brandSymbolUrl
-                : (typeof t.brandLogoUrl === 'string'
-                  ? t.brandLogoUrl
-                  : prev.symbolLogoUrl)),
-          brandName: typeof t.brandName === 'string' ? t.brandName : prev.brandName,
-          fontFamily: typeof t.fontFamily === 'string' ? t.fontFamily : prev.fontFamily,
-          receiptBackgroundUrl: typeof t.receiptBackgroundUrl === 'string' ? t.receiptBackgroundUrl : prev.receiptBackgroundUrl,
-          textColor: typeof t.textColor === 'string' ? t.textColor : prev.textColor,
-          headerTextColor:
-            typeof t.headerTextColor === 'string'
-              ? t.headerTextColor
-              : typeof t.textColor === 'string'
-                ? t.textColor
-                : prev.headerTextColor,
-          bodyTextColor: typeof t.bodyTextColor === 'string' ? t.bodyTextColor : prev.bodyTextColor,
-          brandLogoShape:
-            t.brandLogoShape === 'round' || t.brandLogoShape === 'square' || t.brandLogoShape === 'unmasked'
-              ? t.brandLogoShape
-              : prev.brandLogoShape,
-          navbarMode:
-            (t?.navbarMode === 'logo' || t?.navbarMode === 'symbol')
-              ? t.navbarMode
-              : ((t?.logos && (t.logos.navbarMode === 'logo' || t.logos.navbarMode === 'symbol'))
-                ? t.logos.navbarMode
-                : prev.navbarMode),
-          footerLogoUrl:
-            (t?.logos && typeof t.logos.footer === 'string')
-              ? t.logos.footer
-              : prev.footerLogoUrl,
-          brandKey:
-            typeof (t as any)?.brandKey === 'string' && (t as any).brandKey
-              ? (t as any).brandKey
-              : prev.brandKey,
-        }));
+        setTheme({
+          ...defaultTheme,
+          ...t,
+          // Explicitly ensure critical brand fields are reset if missing in t
+          primaryColor: t.primaryColor || defaultTheme.primaryColor,
+          secondaryColor: t.secondaryColor || defaultTheme.secondaryColor,
+          brandLogoUrl: resolveBrandAppLogo(t.brandLogoUrl || defaultTheme.brandLogoUrl, (brand as any).key),
+          symbolLogoUrl: resolveBrandSymbol(t.symbolLogoUrl || defaultTheme.symbolLogoUrl, (brand as any).key),
+          brandName: t.brandName || defaultTheme.brandName,
+          // Preserve container-specifics if needed, or re-calculate?
+          // navbarMode and footerLogoUrl are in t or defaultTheme
+        });
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('pp:theme:ready', { detail: t }));
+          window.dispatchEvent(new CustomEvent('pp:theme:updated', { detail: t }));
+        }
 
         setIsLoading(false);
       } catch (error) {
@@ -229,7 +284,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     };
-  }, [wallet]);
+  }, [wallet, brand.key, brand.name]);
 
   // Initial fetch
   // Do NOT fetch any theme on portal or shop routes — those pages are the sole source of truth for their themes.
@@ -296,9 +351,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       // Ensure text on primary surfaces uses merchant-provided contrast color
       setVar('--primary-foreground', theme.headerTextColor || theme.textColor || '#ffffff');
 
+      // Sync secondary colors for broader utility usage
+      setVar('--secondary', theme.secondaryColor);
+      setVar('--secondary-foreground', '#ffffff');
+
       if (typeof theme.fontFamily === 'string' && theme.fontFamily.trim().length > 0) {
         setVar('--pp-font', theme.fontFamily);
       }
+
+      // Notify external subscribers (like Thirdweb theme reactive handlers)
+      try {
+        window.dispatchEvent(new CustomEvent('pp:theme:updated', { detail: { ...theme } }));
+        window.dispatchEvent(new CustomEvent('pp:theme:ready', { detail: { ...theme } }));
+      } catch { }
     } catch { }
   }, [theme]);
 

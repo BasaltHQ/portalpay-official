@@ -11,7 +11,7 @@ const DOC_ID = "shop:config";
 function getDocIdForBrand(brandKey?: string): string {
   try {
     const key = String(brandKey || "").toLowerCase();
-    if (!key || key === "portalpay") return DOC_ID;
+    if (!key || key === "portalpay" || key === "basaltsurge") return DOC_ID;
     return `${DOC_ID}:${key}`;
   } catch {
     return DOC_ID;
@@ -97,14 +97,14 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Determine brand key for brand-scoped slug namespace
     let brandKey: string | undefined = undefined;
     try {
       brandKey = getBrandKey();
     } catch {
       brandKey = undefined;
     }
-    const normalizedBrand = String(brandKey || "portalpay").toLowerCase();
+    let normalizedBrand = String(brandKey || "portalpay").toLowerCase();
+    if (normalizedBrand === "basaltsurge") normalizedBrand = "portalpay";
 
     try {
       const c = await getContainer();
@@ -202,7 +202,8 @@ export async function POST(req: NextRequest) {
     } catch {
       brandKey = undefined;
     }
-    const normalizedBrand = String(brandKey || "portalpay").toLowerCase();
+    let normalizedBrand = String(brandKey || "portalpay").toLowerCase();
+    if (normalizedBrand === "basaltsurge") normalizedBrand = "portalpay";
     const docId = getDocIdForBrand(normalizedBrand);
 
     const c = await getContainer();

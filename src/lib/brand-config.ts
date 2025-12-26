@@ -143,9 +143,9 @@ export function getContainerIdentity(host?: string): ContainerIdentity {
     containerType = "platform";
   }
 
-  // Default brandKey to "portalpay" if still empty
+  // Default brandKey to environment variable or portalpay if still empty
   if (!brandKey) {
-    brandKey = "portalpay";
+    brandKey = String(process.env.NEXT_PUBLIC_BRAND_KEY || process.env.BRAND_KEY || "portalpay").toLowerCase();
   }
 
   return {

@@ -13,6 +13,7 @@ import AcceptedServices from "@/components/landing/AcceptedServices";
 import TechnologyPartners from "@/components/landing/TechnologyPartners";
 import SiteFooter from "@/components/landing/SiteFooter";
 import { useBrand } from "@/contexts/BrandContext";
+import { resolveBrandSymbol, resolveBrandAppLogo } from "@/lib/branding";
 import PortalPayVideo from "@/components/landing/PortalPayVideo";
 import { cachedFetch } from "@/lib/client-api-cache";
 
@@ -124,7 +125,7 @@ export default function HomeContent() {
         setContainerBrandKey(String(ci?.brandKey || "").trim());
         setContainerType(String(ci?.containerType || "").trim());
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => { cancelled = true; };
   }, []);
 
@@ -319,13 +320,7 @@ export default function HomeContent() {
               <Link href="/" className="block" aria-label={`${brand.name} Home`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={(() => {
-                    const symbol = String((brand.logos?.symbol || "")).trim();
-                    const app = String((brand.logos?.app || "")).trim();
-                    if (symbol) return symbol;
-                    if (app) return app;
-                    return "/ppsymbol.png";
-                  })()}
+                  src={resolveBrandAppLogo(brand.logos?.symbol || brand.logos?.app, (brand as any)?.key)}
                   alt={`${brand.name} Logo`}
                   className="h-16 w-auto max-w-[340px] object-contain rounded-xl"
                   style={{ backgroundColor: 'transparent' }}
@@ -372,7 +367,7 @@ export default function HomeContent() {
             <div className="mt-auto pt-2 flex flex-wrap items-center gap-3">
               <button
                 onClick={handleAdminClick}
-                className="px-5 py-3 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] font-medium transition-opacity hover:opacity-90"
+                className="px-5 py-3 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-medium transition-opacity hover:opacity-90"
               >
                 Start accepting crypto
               </button>
@@ -493,7 +488,7 @@ export default function HomeContent() {
             <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
               <button
                 onClick={handleAdminClick}
-                className="px-4 py-2 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] font-medium transition-opacity hover:opacity-90"
+                className="px-4 py-2 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-medium transition-opacity hover:opacity-90"
               >
                 Open Admin
               </button>
@@ -580,7 +575,7 @@ export default function HomeContent() {
               <div className="space-y-3">
                 <button
                   onClick={handleAdminClick}
-                  className="block w-full text-center px-4 py-3 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] font-medium transition-opacity hover:opacity-90"
+                  className="block w-full text-center px-4 py-3 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-medium transition-opacity hover:opacity-90"
                 >
                   Open Admin
                 </button>

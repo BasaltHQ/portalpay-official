@@ -95,7 +95,7 @@ export default function IndustryTabs({ slugs, initialSlug, className = '' }: Ind
                 <div className="flex flex-wrap gap-3 mb-6">
                   <Link
                     href={data.heroCTA.primaryLink}
-                    className="px-6 py-3 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold hover:opacity-90 transition"
+                    className="px-6 py-3 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-semibold hover:opacity-90 transition"
                   >
                     {data.heroCTA.primary}
                   </Link>
@@ -110,15 +110,15 @@ export default function IndustryTabs({ slugs, initialSlug, className = '' }: Ind
                 {/* Key Stats */}
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div className="rounded-md border p-3 bg-background/60">
-                    <div className="text-2xl font-bold text-[var(--primary)]">0.5-1%</div>
+                    <div className="text-2xl font-bold text-[var(--pp-secondary)]">0.5-1%</div>
                     <div className="text-muted-foreground">Processing Fee</div>
                   </div>
                   <div className="rounded-md border p-3 bg-background/60">
-                    <div className="text-2xl font-bold text-[var(--primary)]">$0</div>
+                    <div className="text-2xl font-bold text-[var(--pp-secondary)]">$0</div>
                     <div className="text-muted-foreground">Monthly Cost</div>
                   </div>
                   <div className="rounded-md border p-3 bg-background/60">
-                    <div className="text-2xl font-bold text-[var(--primary)]">70%+</div>
+                    <div className="text-2xl font-bold text-[var(--pp-secondary)]">70%+</div>
                     <div className="text-muted-foreground">Savings</div>
                   </div>
                 </div>
@@ -160,7 +160,7 @@ export default function IndustryTabs({ slugs, initialSlug, className = '' }: Ind
                     <h4 className="text-lg font-semibold mb-2">{benefit.title}</h4>
                     <p className="text-sm text-muted-foreground mb-3">{benefit.description}</p>
                     {benefit.stat && (
-                      <div className="text-sm font-semibold text-[var(--primary)]">
+                      <div className="text-sm font-semibold text-[var(--pp-secondary)]">
                         {benefit.stat}
                       </div>
                     )}
@@ -236,7 +236,7 @@ export default function IndustryTabs({ slugs, initialSlug, className = '' }: Ind
               <div className="space-y-4">
                 {data.faqs.map((faq, idx) => (
                   <details key={idx} className="glass-pane rounded-lg border p-5">
-                    <summary className="font-semibold cursor-pointer hover:text-[var(--primary)]">
+                    <summary className="font-semibold cursor-pointer hover:text-[var(--pp-secondary)]">
                       {faq.question}
                     </summary>
                     <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
@@ -282,7 +282,7 @@ export default function IndustryTabs({ slugs, initialSlug, className = '' }: Ind
               <div className="flex flex-wrap justify-center gap-4">
                 <Link
                   href="/admin"
-                  className="px-8 py-4 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] text-lg font-semibold hover:opacity-90 transition"
+                  className="px-8 py-4 rounded-md bg-pp-secondary text-[var(--primary-foreground)] text-lg font-semibold hover:opacity-90 transition"
                 >
                   Get Started Free
                 </Link>

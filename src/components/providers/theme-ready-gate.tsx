@@ -231,7 +231,7 @@ export function ThemeReadyGate() {
   const [navBlock, setNavBlock] = useState(false);
   // Navbar height and route-aware overlay offset so the spinner is centered below the visible sticky navbar on Console/Preview
   const [navH, setNavH] = useState(0);
-  const isNavUnobstructed = pathname.startsWith("/console") || pathname.startsWith("/terminal");
+  const isNavUnobstructed = pathname.startsWith("/terminal");
   // Require merchant stage only when merchant theme is explicitly available=true; unknown/unavailable will not block
   const requireMerchantStage = (merchantExpected || needMerchant) && merchantAvailable === true;
   const [qIndex, setQIndex] = useState(0);
@@ -262,7 +262,7 @@ export function ThemeReadyGate() {
         const seedIdx = Math.floor(Date.now() % arr.length);
         setQIndex(seedIdx);
       }
-    } catch {}
+    } catch { }
   }, []);
 
 
@@ -322,15 +322,15 @@ export function ThemeReadyGate() {
           "data-pp-portal-ready",
         ],
       });
-    } catch {}
+    } catch { }
     return () => {
       try {
         window.removeEventListener("pp:theme:ready", onReady as any);
         window.removeEventListener("pp:theme:updated", onUpdated as any);
         window.removeEventListener("pp:theme:merchant_ready", onUpdated as any);
         window.removeEventListener("pp:theme:console_ready", onUpdated as any);
-        if (mo) { try { mo.disconnect(); } catch {} }
-      } catch {}
+        if (mo) { try { mo.disconnect(); } catch { } }
+      } catch { }
     };
   }, []);
 
@@ -342,15 +342,15 @@ export function ThemeReadyGate() {
         const root = document.documentElement;
         root.setAttribute("data-pp-theme-ready", "1");
         root.setAttribute("data-pp-portal-ready", "1");
-      } catch {}
+      } catch { }
     };
     try {
       window.addEventListener("pp:portal:ready", onPortalReady as any);
-    } catch {}
+    } catch { }
     return () => {
       try {
         window.removeEventListener("pp:portal:ready", onPortalReady as any);
-      } catch {}
+      } catch { }
     };
   }, []);
 
@@ -411,7 +411,7 @@ export function ThemeReadyGate() {
   // Route-aware transient overlay for Console and Portal Preview
   useEffect(() => {
     try {
-      const needNavOverlay = pathname.startsWith("/console") || pathname.startsWith("/terminal");
+      const needNavOverlay = pathname.startsWith("/terminal");
       if (!needNavOverlay) { setNavBlock(false); return; }
 
       // Show overlay immediately and keep it for a minimum duration to avoid flicker
@@ -464,21 +464,21 @@ export function ThemeReadyGate() {
     const shouldBlock = gate && (!ready || (requireMerchantStage && stage !== "merchant"));
     if (!shouldBlock) return;
     // If merchant theme is explicitly unavailable and merchant theme is required in context, unblock immediately (global theme is sufficient)
-if ((merchantExpected || needMerchant) && merchantAvailable === false) {
+    if ((merchantExpected || needMerchant) && merchantAvailable === false) {
       setReady(true);
-      try { document.documentElement.setAttribute("data-pp-theme-ready", "1"); } catch {}
+      try { document.documentElement.setAttribute("data-pp-theme-ready", "1"); } catch { }
       return;
     }
     const t = setTimeout(() => {
       // Only auto-unblock non-merchant flows; merchant portals should remain gated until stage becomes "merchant".
-      if (!needMerchant) { setReady(true); try { document.documentElement.setAttribute("data-pp-theme-ready", "1"); } catch {} }
+      if (!needMerchant) { setReady(true); try { document.documentElement.setAttribute("data-pp-theme-ready", "1"); } catch { } }
       // Do not force merchant stage; wait for ThemeLoader runtime update.
     }, 9000);
     return () => clearTimeout(t);
   }, [gate, ready, requireMerchantStage, stage, merchantAvailable, needMerchant, merchantExpected]);
 
   if (!gate) return null;
-  const baseBlock = !ready || (requireMerchantStage && stage !== "merchant") || (pathname.startsWith("/console") && !consoleReady);
+  const baseBlock = !ready || (requireMerchantStage && stage !== "merchant");
   const isPortalRoute = pathname.startsWith("/portal");
   // For portal routes, show overlay ONLY until pp:portal:ready is received to avoid attribute/stage race conditions.
   // For non-portal routes, fall back to base gating.

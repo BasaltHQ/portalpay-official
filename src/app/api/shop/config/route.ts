@@ -13,11 +13,11 @@ import { isPlatformContext } from "@/lib/env";
  * Partner context uses the configured BRAND_KEY.
  */
 function resolveBrandKey(): string {
-  if (isPlatformContext()) {
-    return "portalpay";
-  }
   try {
-    return getBrandKey() || "portalpay";
+    const k = (getBrandKey() || "portalpay").toLowerCase();
+    // PortalPay and BasaltSurge are platform brands; they share data
+    if (k === "basaltsurge") return "portalpay";
+    return k === "portalpay" ? "portalpay" : k;
   } catch {
     return "portalpay";
   }
@@ -28,7 +28,7 @@ const DOC_ID = "shop:config";
 function getDocIdForBrand(brandKey?: string): string {
   try {
     const key = String(brandKey || "").toLowerCase();
-    if (!key || key === "portalpay") return DOC_ID;
+    if (!key || key === "portalpay" || key === "basaltsurge") return DOC_ID;
     return `${DOC_ID}:${key}`;
   } catch {
     return DOC_ID;
@@ -101,17 +101,19 @@ export type ShopConfig = {
   updatedAt: number;
 };
 
-function defaults(): Required<Omit<ShopConfig, "wallet" | "id" | "type" | "slug" | "brandKey" | "industryPack" | "industryPackActivatedAt">> {
+function defaults(brandKey?: string): Required<Omit<ShopConfig, "wallet" | "id" | "type" | "slug" | "brandKey" | "industryPack" | "industryPackActivatedAt">> {
+  const isBasalt = brandKey === "basaltsurge" || brandKey === "portalpay" && (process.env.BRAND_KEY === "basaltsurge" || process.env.NEXT_PUBLIC_BRAND_KEY === "basaltsurge");
+
   return {
     name: "",
     description: "",
     bio: "",
     theme: {
-      primaryColor: "#0ea5e9", // sky-500
-      secondaryColor: "#22c55e", // green-500
+      primaryColor: isBasalt ? "#22C55E" : "#0ea5e9", // Basalt Green or Portal Sky
+      secondaryColor: isBasalt ? "#16A34A" : "#22c55e", // Basalt Dark Green or Portal Green
       textColor: "#0b1020",
       accentColor: "#f59e0b", // amber-500
-      brandLogoUrl: "/cblogod.png",
+      brandLogoUrl: isBasalt ? "/bssymbol.png" : "/cblogod.png",
       coverPhotoUrl: "",
       fontFamily:
         "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
@@ -153,8 +155,8 @@ function isValidUrl(u: any): boolean {
 }
 
 // Normalizes the shop config, applying defaults and ensuring validity.
-function normalize(raw?: any): Omit<ShopConfig, "wallet" | "id" | "type"> & { slug?: string } {
-  const d = defaults();
+function normalize(raw?: any, brandKey?: string): Omit<ShopConfig, "wallet" | "id" | "type"> & { slug?: string } {
+  const d = defaults(brandKey);
   const out: any = {
     name: d.name,
     description: d.description,
@@ -349,9 +351,10 @@ export async function GET(req: NextRequest) {
     const referer = req.headers.get("referer") || "";
     const refPath = (() => { try { return referer ? (new URL(referer)).pathname : ""; } catch { return ""; } })();
     const isTerminalRef = refPath.startsWith("/terminal");
-    // For GET requests, prioritize x-wallet header for public shop viewing
+    // For GET requests, prioritize x-wallet header or wallet query param for public shop viewing
     const xWalletHeader = req.headers.get("x-wallet");
-    let targetWallet = xWalletHeader ? validateWallet(xWalletHeader) : "";
+    const queryWallet = url.searchParams.get("wallet");
+    let targetWallet = xWalletHeader ? validateWallet(xWalletHeader) : (queryWallet ? validateWallet(queryWallet) : "");
     let authUsed = false;
 
     // If no x-wallet header, try authentication (for merchant's own shop management)
@@ -396,7 +399,7 @@ export async function GET(req: NextRequest) {
       const slugParam = slugParamRaw.replace(/[^a-z0-9\-]/g, "").slice(0, 32);
       // Ignore slug-based resolution when request originates from /terminal to avoid accidental shop context
       if (isTerminalRef) {
-        return jsonResponse({ config: normalize() }, {
+        return jsonResponse({ config: normalize(undefined, brandKey) }, {
           headers: {
             "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
             "Pragma": "no-cache",
@@ -407,7 +410,7 @@ export async function GET(req: NextRequest) {
       if (slugParam) {
         // Do not resolve reserved slugs to wallets; treat as no-config/defaults to avoid hijacking top-level routes
         if (isReservedSlug(slugParam)) {
-          return jsonResponse({ config: normalize() }, {
+          return jsonResponse({ config: normalize(undefined, brandKey) }, {
             headers: {
               "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
               "Pragma": "no-cache",
@@ -430,7 +433,7 @@ export async function GET(req: NextRequest) {
               if (brandKey) {
                 const { resource } = await c.item(getDocIdForBrand(brandKey), foundWallet).read<any>();
                 if (resource) {
-                  return jsonResponse({ config: normalize(resource) }, {
+                  return jsonResponse({ config: normalize(resource, brandKey) }, {
                     headers: {
                       "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
                       "Pragma": "no-cache",
@@ -441,7 +444,7 @@ export async function GET(req: NextRequest) {
               }
             } catch { }
             // In partner containers, do NOT fallback to legacy; return defaults so shop appears unconfigured
-            if (brandKey && String(brandKey).toLowerCase() !== "portalpay") {
+            if (brandKey && String(brandKey).toLowerCase() !== "portalpay" && String(brandKey).toLowerCase() !== "basaltsurge") {
               return jsonResponse({ config: normalize() }, {
                 headers: {
                   "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
@@ -454,7 +457,7 @@ export async function GET(req: NextRequest) {
             try {
               const { resource } = await c.item(DOC_ID, foundWallet).read<any>();
               if (resource) {
-                return jsonResponse({ config: normalize(resource) }, {
+                return jsonResponse({ config: normalize(resource, brandKey) }, {
                   headers: {
                     "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
                     "Pragma": "no-cache",
@@ -480,7 +483,7 @@ export async function GET(req: NextRequest) {
           const { resource } = await c.item(getDocIdForBrand(brandKey), targetWallet).read<any>();
           if (resource) {
             found = true;
-            return jsonResponse({ config: normalize(resource) }, {
+            return jsonResponse({ config: normalize(resource, brandKey) }, {
               headers: {
                 "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
                 "Pragma": "no-cache",
@@ -492,12 +495,12 @@ export async function GET(req: NextRequest) {
       }
 
       // In partner containers, do NOT fallback to legacy; return defaults (or 404 for authenticated management)
-      if (brandKey && String(brandKey).toLowerCase() !== "portalpay") {
+      if (brandKey && String(brandKey).toLowerCase() !== "portalpay" && String(brandKey).toLowerCase() !== "basaltsurge") {
         if (authUsed && !found) {
           // Authenticated path requested a specific wallet but no config exists in this brand
           return jsonResponse({ error: "not_found" }, { status: 404 });
         }
-        return jsonResponse({ config: normalize() }, {
+        return jsonResponse({ config: normalize(undefined, brandKey) }, {
           headers: {
             "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
             "Pragma": "no-cache",
@@ -510,7 +513,7 @@ export async function GET(req: NextRequest) {
         const { resource } = await c.item(DOC_ID, targetWallet).read<any>();
         if (resource) {
           found = true;
-          return jsonResponse({ config: normalize(resource) }, {
+          return jsonResponse({ config: normalize(resource, brandKey) }, {
             headers: {
               "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
               "Pragma": "no-cache",
@@ -530,7 +533,7 @@ export async function GET(req: NextRequest) {
     }
 
     // No wallet provided or not found: return sane defaults (not globalized)
-    return jsonResponse({ config: normalize() }, {
+    return jsonResponse({ config: normalize(undefined, brandKey) }, {
       headers: {
         "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
         "Pragma": "no-cache",
@@ -538,8 +541,10 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (e: any) {
+    let brandKey: string | undefined = undefined;
+    try { brandKey = resolveBrandKey(); } catch { }
     return jsonResponse(
-      { config: normalize(), degraded: true, reason: e?.message || "cosmos_unavailable" },
+      { config: normalize(undefined, brandKey), degraded: true, reason: e?.message || "cosmos_unavailable" },
       {
         headers: {
           "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
@@ -690,7 +695,7 @@ export async function POST(req: NextRequest) {
     const now = Date.now();
     const setupComplete = typeof body.setupComplete === "boolean" ? (body.setupComplete === true) : !!(name && slug);
     // Write to brand-scoped doc id only for partner brands (not 'portalpay'); keep legacy id on platform to avoid disrupting existing data.
-    const docId = (brandKey && String(brandKey).toLowerCase() !== "portalpay")
+    const docId = (brandKey && String(brandKey).toLowerCase() !== "portalpay" && String(brandKey).toLowerCase() !== "basaltsurge")
       ? getDocIdForBrand(brandKey)
       : DOC_ID;
 

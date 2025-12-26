@@ -93,9 +93,19 @@ import { isPartnerContext, getSanitizedSplitBps } from "@/lib/env";
  * BRAND_KEY is server-only; do not expose client-side env unless necessary.
  */
 export function getBrandKey(): string {
+  // Respect public environment variable first (client-safe)
+  const pub = (process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase().trim();
+  if (pub) return pub;
+
   const raw = (process.env.BRAND_KEY || "").toLowerCase().trim();
   // Always honor the configured brand key; do not require a hardcoded entry
   if (raw) return raw;
+
+  // Fallback for browser if envs are missing
+  if (typeof window !== "undefined") {
+    const host = window.location.host || "";
+    if (host.includes("basaltsurge")) return "basaltsurge";
+  }
 
   // In partner context, no implicit fallback — brand must be provided via env/config
   // However, we do not throw here to allow RootLayout to render a fallback (so middleware can redirect to /brand-not-configured)

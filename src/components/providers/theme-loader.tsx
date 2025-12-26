@@ -33,10 +33,10 @@ export function ThemeLoader() {
       if (path.startsWith("/portal") || path.startsWith("/shop")) {
         return; // Portal/Shop components are sole theme source for their routes
       }
-      
+
       // Detect custom domain shops - if hostname is not a main platform domain, skip ThemeLoader
       const hostname = (url.hostname || "").toLowerCase();
-      const isMainDomain = 
+      const isMainDomain =
         hostname.endsWith("ledger1.ai") ||
         hostname.endsWith("portalpay.io") ||
         hostname.includes("localhost") ||
@@ -44,13 +44,13 @@ export function ThemeLoader() {
         hostname === "0.0.0.0" ||
         hostname.includes("azurewebsites.net") ||
         hostname.includes("vercel.app");
-      
+
       if (!isMainDomain && path === "/") {
         // Custom domain root - this is a shop page, let it handle its own theme/favicon
         return;
       }
-    } catch {}
-    
+    } catch { }
+
     let cancelled = false;
 
     async function load() {
@@ -65,7 +65,7 @@ export function ThemeLoader() {
             console.log("[ThemeLoader] EARLY RETURN: hardLock === merchant");
             return;
           }
-        } catch {}
+        } catch { }
         try {
           const stageNow = root.getAttribute("data-pp-theme-stage") || "";
           const availNow = root.getAttribute("data-pp-theme-merchant-available");
@@ -74,7 +74,7 @@ export function ThemeLoader() {
             console.log("[ThemeLoader] EARLY RETURN: stage=merchant or avail=1");
             return;
           }
-        } catch {}
+        } catch { }
         let lock = root.getAttribute("data-pp-theme-lock") || "user";
         let hasRecipient = false;
         let path = "";
@@ -101,16 +101,16 @@ export function ThemeLoader() {
             lock = ct === "platform" ? "portalpay-default" : lock;
           }
           root.setAttribute("data-pp-theme-lock", lock);
-        } catch {}
-        
+        } catch { }
+
         // Skip ThemeLoader entirely on merchant portal routes - portal component handles everything
         if (path.startsWith("/portal") && hasRecipient) {
           try {
             root.setAttribute("data-pp-theme-stage", "init");
-          } catch {}
+          } catch { }
           return;
         }
-        
+
         // Compute merchant expectation early to gate all var writes below
         let merchantExpected = false;
         let merchantAvailable: boolean | null = null;
@@ -119,10 +119,10 @@ export function ThemeLoader() {
           merchantExpected = expectedAttr === "1" || hasRecipient;
           const availableAttr = root.getAttribute("data-pp-theme-merchant-available");
           merchantAvailable = availableAttr === "1" ? true : (availableAttr === "0" ? false : null);
-        } catch {}
-        
+        } catch { }
+
         console.log("[ThemeLoader] lock:", lock, "merchantExpected:", merchantExpected, "merchantAvailable:", merchantAvailable, "hasRecipient:", hasRecipient);
-        
+
         if (lock === "merchant") {
           console.log("[ThemeLoader] EARLY RETURN: lock === merchant");
           try {
@@ -131,7 +131,7 @@ export function ThemeLoader() {
               root.setAttribute("data-pp-theme-ready", "1");
               window.dispatchEvent(new CustomEvent("pp:theme:ready", { detail: {} }));
             }
-          } catch {}
+          } catch { }
           return;
         }
         if (lock === "portalpay-default") {
@@ -153,10 +153,10 @@ export function ThemeLoader() {
           setVar("--primary-foreground", defaultHeader);
           root.setAttribute("data-pp-theme-stage", "init");
           root.setAttribute("data-pp-theme-ready", "1");
-          try { window.dispatchEvent(new CustomEvent("pp:theme:ready", { detail: { source: "default" } })); } catch {}
+          try { window.dispatchEvent(new CustomEvent("pp:theme:ready", { detail: { source: "default" } })); } catch { }
           return;
         }
-        
+
         // Skip applying vars AND fetching config in "user" lock when merchant theme is expected
         // This prevents ThemeLoader from loading user theme on merchant portals
         if (lock === "user" && (merchantExpected || hasRecipient) && merchantAvailable !== false) {
@@ -165,7 +165,7 @@ export function ThemeLoader() {
           // Do not mark ready yet; let merchant component signal readiness
           return;
         }
-        
+
         // Only fetch wallet config when lock is "user" AND no recipient - skip entirely on merchant portals
         const headers: Record<string, string> = {};
         if (lock === "user" && !hasRecipient) {
@@ -179,7 +179,7 @@ export function ThemeLoader() {
               const w = String((me && (me as any).wallet) || "").toLowerCase();
               if (w) headers["x-wallet"] = w;
             }
-          } catch {}
+          } catch { }
         }
         console.log("[ThemeLoader] Fetching /api/site/config...");
         const res = await fetch("/api/site/config", { cache: "no-store", headers: { ...headers, "x-theme-caller": "ThemeLoader:init" } });
@@ -218,7 +218,7 @@ export function ThemeLoader() {
           try {
             root.setAttribute("data-pp-theme-ready", "1");
             window.dispatchEvent(new CustomEvent("pp:theme:ready", { detail: { source: "default" } }));
-          } catch {}
+          } catch { }
           return;
         }
 
@@ -238,7 +238,7 @@ export function ThemeLoader() {
           let bk = String(ci?.brandKey || "").trim();
           const ct = String(ci?.containerType || "").toLowerCase();
           isPartnerContainer = ct === "partner";
-          
+
           // Fallback: derive brandKey from hostname if env-based brandKey is empty
           // (e.g., xoinpay.azurewebsites.net -> xoinpay, paynex.azurewebsites.net -> paynex)
           // Also supports localhost subdomains for development (e.g., paynex.localhost:3001 -> paynex)
@@ -247,7 +247,7 @@ export function ThemeLoader() {
               const host = window.location.hostname || "";
               const hostLower = host.toLowerCase();
               const parts = hostLower.split(".");
-              
+
               // Handle localhost with subdomains for development
               // e.g., paynex.localhost -> brandKey: paynex
               if (hostLower.endsWith(".localhost") || hostLower.endsWith(".127.0.0.1")) {
@@ -272,9 +272,9 @@ export function ThemeLoader() {
                   }
                 }
               }
-            } catch {}
+            } catch { }
           }
-          
+
           if (bk) {
             const pj = await cachedFetch(`/api/platform/brands/${encodeURIComponent(bk)}/config`, { cache: "no-store" });
             const bc = (pj?.brand?.colors || {}) as any;
@@ -290,7 +290,7 @@ export function ThemeLoader() {
         // Site-config theme colors from logged-in user
         const siteConfigPrimary = t?.primaryColor;
         const siteConfigSecondary = t?.secondaryColor;
-        
+
         console.log("[ThemeLoader] siteConfigPrimary:", siteConfigPrimary, "siteConfigSecondary:", siteConfigSecondary);
 
         // Effective colors resolution:
@@ -299,24 +299,24 @@ export function ThemeLoader() {
         // - For PLATFORM containers: user theme (site-config) → platform colors → data attrs → defaults
         let effectivePrimary: string;
         let effectiveSecondary: string;
-        
+
         // Check if site-config colors are just defaults (not user-set)
         const isSiteConfigDefaultPrimary = siteConfigPrimary === "#1f2937" || siteConfigPrimary === "#10b981" || siteConfigPrimary === "#14b8a6";
         const isSiteConfigDefaultSecondary = siteConfigSecondary === "#F54029" || siteConfigSecondary === "#2dd4bf" || siteConfigSecondary === "#22d3ee";
-        
+
         console.log("[ThemeLoader] isPartnerContainer:", isPartnerContainer, "isSiteConfigDefaultPrimary:", isSiteConfigDefaultPrimary, "isSiteConfigDefaultSecondary:", isSiteConfigDefaultSecondary);
-        
+
         if (isPartnerContainer) {
           // Partner container: brand colors from Cosmos DB take precedence over site-config defaults
           // Only use site-config if it's NOT a default value (user explicitly set it)
           effectivePrimary = String(
-            platformPrimary || 
-            (!isSiteConfigDefaultPrimary && siteConfigPrimary ? siteConfigPrimary : "") || 
+            platformPrimary ||
+            (!isSiteConfigDefaultPrimary && siteConfigPrimary ? siteConfigPrimary : "") ||
             defaultPrimary
           );
           effectiveSecondary = String(
-            platformAccent || 
-            (!isSiteConfigDefaultSecondary && siteConfigSecondary ? siteConfigSecondary : "") || 
+            platformAccent ||
+            (!isSiteConfigDefaultSecondary && siteConfigSecondary ? siteConfigSecondary : "") ||
             defaultSecondary
           );
           console.log("[ThemeLoader] Partner container - effectivePrimary:", effectivePrimary, "effectiveSecondary:", effectiveSecondary);
@@ -328,7 +328,7 @@ export function ThemeLoader() {
         }
 
         console.log("[ThemeLoader] About to call setVar with effectivePrimary:", effectivePrimary, "effectiveSecondary:", effectiveSecondary);
-        
+
         // Use a setVar that logs when it's called
         const setVarWithLog = (key: string, val?: string) => {
           console.log("[ThemeLoader] setVar called:", key, "=", val);
@@ -339,7 +339,7 @@ export function ThemeLoader() {
           root.style.setProperty(key, val);
           console.log("[ThemeLoader] setVar SUCCESS:", key, "=", val);
         };
-        
+
         setVarWithLog("--pp-primary", effectivePrimary);
         setVarWithLog("--pp-secondary", effectiveSecondary);
         setVarWithLog("--pp-text", t?.textColor || defaultText);
@@ -349,7 +349,7 @@ export function ThemeLoader() {
         // Map global --primary to effective primary so existing CSS picks up brand color
         setVarWithLog("--primary", effectivePrimary);
         setVarWithLog("--primary-foreground", t?.headerTextColor || t?.textColor || defaultText);
-        
+
         // Log final state of CSS variables
         console.log("[ThemeLoader] Final CSS vars check:", {
           "--pp-primary": root.style.getPropertyValue("--pp-primary"),
@@ -395,11 +395,11 @@ export function ThemeLoader() {
                         el.parentNode.removeChild(el);
                       }
                     }
-                  } catch {}
+                  } catch { }
                 });
-              } catch {}
+              } catch { }
             });
-          } catch {}
+          } catch { }
           // Add sizes-specific icons to aid platforms that prefer sized links
           if (typeof icon32 === "string" && icon32) {
             upsertLink('link[rel="icon"][sizes="32x32"]', { rel: "icon", type: "image/png", sizes: "32x32", href: icon32 });
@@ -414,7 +414,7 @@ export function ThemeLoader() {
           if (typeof apple === "string" && apple) {
             upsertLink('link[rel="apple-touch-icon"]', { rel: "apple-touch-icon", sizes: "180x180", href: apple });
           }
-        } catch {}
+        } catch { }
 
         // Mark theme stage and optionally ready. If a merchant theme is expected (recipient context),
         // wait to set ready until merchant stage signals.
@@ -432,7 +432,7 @@ export function ThemeLoader() {
               const w = String(url.searchParams.get("wallet") || "").trim();
               merchantExpected = /^0x[a-fA-F0-9]{40}$/.test(r) || /^0x[a-fA-F0-9]{40}$/.test(w);
             }
-          } catch {}
+          } catch { }
           const availableAttr = rootEl.getAttribute("data-pp-theme-merchant-available");
           const merchantAvailable = availableAttr === "1" ? true : (availableAttr === "0" ? false : null);
           // If merchant theme is expected:
@@ -446,7 +446,7 @@ export function ThemeLoader() {
             rootEl.setAttribute("data-pp-theme-ready", "1");
             window.dispatchEvent(new CustomEvent("pp:theme:ready", { detail: t || {} }));
           }
-        } catch {}
+        } catch { }
       } catch {
         // ignore fetch errors; CSS falls back to defaults in globals.css
       }
@@ -474,10 +474,10 @@ export function ThemeLoader() {
       if (path.startsWith("/shop")) {
         return; // Shop pages handle their own theming
       }
-      
+
       // Detect custom domain shops
       const hostname = (url.hostname || "").toLowerCase();
-      const isMainDomain = 
+      const isMainDomain =
         hostname.endsWith("ledger1.ai") ||
         hostname.endsWith("portalpay.io") ||
         hostname.includes("localhost") ||
@@ -485,12 +485,12 @@ export function ThemeLoader() {
         hostname === "0.0.0.0" ||
         hostname.includes("azurewebsites.net") ||
         hostname.includes("vercel.app");
-      
+
       if (!isMainDomain) {
         return; // Custom domain - shop page handles its own theme/favicon
       }
-    } catch {}
-    
+    } catch { }
+
     function applyVars(detail: any) {
       try {
         const root = document.documentElement;
@@ -499,7 +499,7 @@ export function ThemeLoader() {
           if (hardLock === "merchant") {
             return;
           }
-        } catch {}
+        } catch { }
         const setVar = (key: string, val?: string) => {
           if (!val) return;
           root.style.setProperty(key, val);
@@ -516,7 +516,7 @@ export function ThemeLoader() {
         if (stageNow === "merchant" || merchantAvailNow) {
           return;
         }
-        
+
         // Gate "user" var writes when merchant is expected
         const expectedAttr = root.getAttribute("data-pp-theme-merchant-expected");
         const availableAttr = root.getAttribute("data-pp-theme-merchant-available");
@@ -525,7 +525,7 @@ export function ThemeLoader() {
         if (lock === "user" && merchantExpected && merchantAvailable !== false) {
           return;
         }
-        
+
         if (!detail || typeof detail !== "object") return;
         setVar("--pp-primary", detail.primaryColor);
         setVar("--pp-secondary", detail.secondaryColor);
@@ -571,11 +571,11 @@ export function ThemeLoader() {
                         el.parentNode.removeChild(el);
                       }
                     }
-                  } catch {}
+                  } catch { }
                 });
-              } catch {}
+              } catch { }
             });
-          } catch {}
+          } catch { }
           // Add/update sized icons
           if (typeof icon32 === "string" && icon32) {
             upsertLink('link[rel="icon"][sizes="32x32"]', { rel: "icon", type: "image/png", sizes: "32x32", href: icon32 });
@@ -590,7 +590,7 @@ export function ThemeLoader() {
           if (typeof apple === "string" && apple) {
             upsertLink('link[rel="apple-touch-icon"]', { rel: "apple-touch-icon", sizes: "180x180", href: apple });
           }
-        } catch {}
+        } catch { }
 
         // Theme updated at runtime; if merchant theme is expected, defer ready until merchant stage.
         try {
@@ -603,8 +603,8 @@ export function ThemeLoader() {
             root.setAttribute("data-pp-theme-ready", "1");
             window.dispatchEvent(new CustomEvent("pp:theme:ready", { detail }));
           }
-        } catch {}
-      } catch {}
+        } catch { }
+      } catch { }
     }
     const handler = (ev: any) => applyVars(ev?.detail);
     window.addEventListener("pp:theme:updated", handler as any);
@@ -629,10 +629,10 @@ export function ThemeLoader() {
       if (path.startsWith("/shop")) {
         return; // Shop pages handle their own theming
       }
-      
+
       // Detect custom domain shops
       const hostname = (url.hostname || "").toLowerCase();
-      const isMainDomain = 
+      const isMainDomain =
         hostname.endsWith("ledger1.ai") ||
         hostname.endsWith("portalpay.io") ||
         hostname.includes("localhost") ||
@@ -640,12 +640,12 @@ export function ThemeLoader() {
         hostname === "0.0.0.0" ||
         hostname.includes("azurewebsites.net") ||
         hostname.includes("vercel.app");
-      
+
       if (!isMainDomain) {
         return; // Custom domain - shop page handles its own theme/favicon
       }
-    } catch {}
-    
+    } catch { }
+
     async function applyForWallet(w?: string) {
       try {
         const root = document.documentElement;
@@ -654,13 +654,13 @@ export function ThemeLoader() {
           if (hardLock === "merchant") {
             return;
           }
-        } catch {}
+        } catch { }
         const setVar = (key: string, val?: string) => {
           if (!val) return;
           root.style.setProperty(key, val);
         };
         const lock = root.getAttribute("data-pp-theme-lock") || "user";
-        
+
         // Hard guard: if merchant stage is active or merchant theme marked available, never override
         try {
           const stageNow = root.getAttribute("data-pp-theme-stage") || "";
@@ -669,8 +669,8 @@ export function ThemeLoader() {
           if (stageNow === "merchant" || merchantAvailNow) {
             return;
           }
-        } catch {}
-        
+        } catch { }
+
         // Double-check URL for recipient or wallet to avoid overriding merchant portals
         let urlHasMerchant = false;
         try {
@@ -678,8 +678,8 @@ export function ThemeLoader() {
           const r = String(url.searchParams.get("recipient") || "").trim();
           const w = String(url.searchParams.get("wallet") || "").trim();
           urlHasMerchant = /^0x[a-fA-F0-9]{40}$/i.test(r) || /^0x[a-fA-F0-9]{40}$/i.test(w);
-        } catch {}
-        
+        } catch { }
+
         if (lock === "merchant" || urlHasMerchant) {
           return;
         }
@@ -701,10 +701,10 @@ export function ThemeLoader() {
             rootEl.setAttribute("data-pp-theme-stage", "init");
             rootEl.setAttribute("data-pp-theme-ready", "1");
             window.dispatchEvent(new CustomEvent("pp:theme:ready", { detail: {} }));
-          } catch {}
+          } catch { }
           return;
         }
-        
+
         // Gate "user" var writes when merchant is expected
         const expectedAttr = root.getAttribute("data-pp-theme-merchant-expected");
         const availableAttr = root.getAttribute("data-pp-theme-merchant-available");
@@ -713,10 +713,28 @@ export function ThemeLoader() {
         if (lock === "user" && merchantExpected && merchantAvailable !== false) {
           return;
         }
-        
+
         const url = w ? `/api/site/config?wallet=${encodeURIComponent(String(w).toLowerCase())}` : `/api/site/config`;
         const j = await fetch(url, { cache: "no-store", headers: { "x-theme-caller": "ThemeLoader:auth" } }).then(r => r.json()).catch(() => ({}));
-        const t = j?.config?.theme || {};
+        let t = j?.config?.theme || {};
+
+        // Also fetch shop config for wallet-specific theme (shop theme takes priority)
+        if (w) {
+          try {
+            const shopRes = await fetch(`/api/shop/config?wallet=${encodeURIComponent(String(w).toLowerCase())}`, { cache: "no-store" });
+            if (shopRes.ok) {
+              const shopData = await shopRes.json();
+              const shopTheme = shopData?.config?.theme || shopData?.theme || {};
+              console.log("[ThemeLoader] applyForWallet shopTheme:", shopTheme);
+              // Merge shop theme colors over site config (shop takes priority)
+              if (shopTheme.primaryColor) t.primaryColor = shopTheme.primaryColor;
+              if (shopTheme.secondaryColor) t.secondaryColor = shopTheme.secondaryColor;
+              if (shopTheme.textColor) t.textColor = shopTheme.textColor;
+              if (shopTheme.brandLogoUrl) t.brandLogoUrl = shopTheme.brandLogoUrl;
+            }
+          } catch { /* Shop config fetch is optional */ }
+        }
+
         const defaultPrimary = "#10b981";
         const defaultSecondary = "#2dd4bf";
         const defaultText = "#ffffff";
@@ -757,8 +775,8 @@ export function ThemeLoader() {
               window.dispatchEvent(new CustomEvent("pp:theme:ready", { detail: t }));
             }
           }
-        } catch {}
-      } catch {}
+        } catch { }
+      } catch { }
     }
 
     const onLogin = (ev: any) => {
@@ -778,8 +796,8 @@ export function ThemeLoader() {
             }
           });
         }
-      } catch {}
-      
+      } catch { }
+
       // Reset theme attributes to clear merchant state
       try {
         const root = document.documentElement;
@@ -788,8 +806,8 @@ export function ThemeLoader() {
         root.setAttribute("data-pp-theme-stage", "init");
         root.setAttribute("data-pp-theme-merchant-expected", "0");
         root.setAttribute("data-pp-theme-merchant-available", "0");
-      } catch {}
-      
+      } catch { }
+
       // Apply default/user theme
       applyForWallet("");
     };

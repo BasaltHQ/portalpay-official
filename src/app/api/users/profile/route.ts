@@ -76,7 +76,12 @@ export async function GET(req: NextRequest) {
         return merged;
       }
       let brandKey: string | undefined = undefined;
-      try { brandKey = getBrandKey(); } catch { brandKey = undefined; }
+      try {
+        brandKey = getBrandKey();
+        if (brandKey === "basaltsurge") brandKey = "portalpay";
+      } catch {
+        brandKey = undefined;
+      }
       const brandId = brandKey ? `${w}:user:${String(brandKey).toLowerCase()}` : `${w}:user`;
       let resourcePrimary: Profile | undefined;
       let resourceLegacy: Profile | undefined;
@@ -161,7 +166,12 @@ export async function PUT(req: NextRequest) {
 
     // Determine brandScoped id for partner containers; fallback to legacy id.
     let brandKey: string | undefined = undefined;
-    try { brandKey = getBrandKey(); } catch { brandKey = undefined; }
+    try {
+      brandKey = getBrandKey();
+      if (brandKey === "basaltsurge") brandKey = "portalpay";
+    } catch {
+      brandKey = undefined;
+    }
     const brandScopedId = brandKey ? `${wallet}:user:${String(brandKey).toLowerCase()}` : `${wallet}:user`;
 
     const updates: Partial<Profile> = {};

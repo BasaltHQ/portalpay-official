@@ -55,8 +55,8 @@ export async function getContainer(dbId = defaultDbId, containerId = defaultCont
         { path: "/\"_etag\"/?" },
       ],
       compositeIndexes: [
-        [ { path: "/type", order: "ascending" }, { path: "/xp", order: "descending" } ],
-        [ { path: "/type", order: "ascending" }, { path: "/lastHeartbeat", order: "descending" } ],
+        [{ path: "/type", order: "ascending" }, { path: "/xp", order: "descending" }],
+        [{ path: "/type", order: "ascending" }, { path: "/lastHeartbeat", order: "descending" }],
       ],
     },
   });

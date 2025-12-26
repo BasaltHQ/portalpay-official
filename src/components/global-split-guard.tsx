@@ -122,7 +122,7 @@ export default function GlobalSplitGuard() {
 
   const brand = useBrand();
   const brandKey = String((brand as any)?.key || "portalpay").toLowerCase();
-  const partnerContext = brandKey !== "portalpay";
+  const partnerContext = brandKey !== "portalpay" && brandKey !== "basaltsurge";
   const meAddr = String(account?.address || "").toLowerCase();
   const partnerAddr = String((brand as any)?.partnerWallet || "").toLowerCase();
   const partnerValid = isValidHex(partnerAddr);
@@ -152,7 +152,7 @@ export default function GlobalSplitGuard() {
           return bestAddr as `0x${string}`;
         }
       }
-    } catch {}
+    } catch { }
     return meAddr as `0x${string}`;
   })();
 
@@ -174,7 +174,7 @@ export default function GlobalSplitGuard() {
           return others;
         }
       }
-    } catch {}
+    } catch { }
     // Fallback: sum brand partner + platform bps, clamped
     const rawPartner = (brand as any)?.partnerFeeBps;
     const partnerN = typeof rawPartner === "number" ? Math.floor(rawPartner) : 0;
@@ -201,7 +201,7 @@ export default function GlobalSplitGuard() {
           return Math.max(0, Math.min(10000, merchant));
         }
       }
-    } catch {}
+    } catch { }
     if (!partnerContext) {
       return Math.max(0, 10000 - platformBps);
     }

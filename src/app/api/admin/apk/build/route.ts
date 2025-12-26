@@ -24,15 +24,15 @@ async function checkApkExists(brandKey: string): Promise<boolean> {
     const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || "").trim();
     const container = String(process.env.PP_APK_CONTAINER || "apks").trim();
     const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
-    
+
     if (!conn) return false;
-    
+
     const { BlobServiceClient } = await import("@azure/storage-blob");
     const bsc = BlobServiceClient.fromConnectionString(conn);
     const cont = bsc.getContainerClient(container);
     const blobName = prefix ? `${prefix}/${brandKey}-signed.apk` : `${brandKey}-signed.apk`;
     const blob = cont.getBlockBlobClient(blobName);
-    
+
     return await blob.exists();
   } catch {
     return false;
@@ -46,7 +46,7 @@ async function checkBrandSourceExists(brandKey: string): Promise<boolean> {
   // Check if there's a source directory for this brand
   // This would typically be in android/launcher/recovered/src-{brandKey}/
   // For now, we check known brands
-  const knownBrands = ["portalpay", "paynex"];
+  const knownBrands = ["portalpay", "basaltsurge", "paynex"];
   return knownBrands.includes(brandKey.toLowerCase());
 }
 
@@ -62,20 +62,20 @@ async function triggerGitHubWorkflow(brandKey: string): Promise<{
   const repo = process.env.GITHUB_REPOSITORY || "GenRevo89/portalpay";
   const workflowFile = process.env.APK_BUILD_WORKFLOW || "apk.yml";
   const ref = process.env.GITHUB_REF || "main";
-  
+
   if (!token) {
     return { success: false, error: "GITHUB_TOKEN not configured" };
   }
-  
+
   const [owner, repoName] = repo.split("/");
   if (!owner || !repoName) {
     return { success: false, error: "Invalid GITHUB_REPOSITORY format" };
   }
-  
+
   try {
     // Trigger workflow dispatch
     const url = `https://api.github.com/repos/${owner}/${repoName}/actions/workflows/${workflowFile}/dispatches`;
-    
+
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -91,18 +91,18 @@ async function triggerGitHubWorkflow(brandKey: string): Promise<{
         },
       }),
     });
-    
+
     if (response.status === 204) {
       // Successfully triggered - workflow runs are created asynchronously
       const runsUrl = `https://github.com/${owner}/${repoName}/actions/workflows/${workflowFile}`;
       return { success: true, runUrl: runsUrl };
     }
-    
+
     // Try to get error details
     const errorData = await response.json().catch(() => ({}));
-    return { 
-      success: false, 
-      error: errorData?.message || `GitHub API returned ${response.status}` 
+    return {
+      success: false,
+      error: errorData?.message || `GitHub API returned ${response.status}`
     };
   } catch (e: any) {
     return { success: false, error: e?.message || "Failed to trigger workflow" };
@@ -121,14 +121,14 @@ async function triggerAzurePipeline(brandKey: string): Promise<{
   const org = process.env.AZURE_DEVOPS_ORG;
   const project = process.env.AZURE_DEVOPS_PROJECT;
   const pipelineId = process.env.APK_BUILD_PIPELINE_ID;
-  
+
   if (!pat || !org || !project || !pipelineId) {
     return { success: false, error: "Azure DevOps not configured" };
   }
-  
+
   try {
     const url = `https://dev.azure.com/${org}/${project}/_apis/pipelines/${pipelineId}/runs?api-version=7.1`;
-    
+
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -144,19 +144,19 @@ async function triggerAzurePipeline(brandKey: string): Promise<{
         },
       }),
     });
-    
+
     if (response.ok) {
       const data = await response.json();
-      return { 
-        success: true, 
-        runUrl: data?._links?.web?.href || `https://dev.azure.com/${org}/${project}/_build?definitionId=${pipelineId}` 
+      return {
+        success: true,
+        runUrl: data?._links?.web?.href || `https://dev.azure.com/${org}/${project}/_build?definitionId=${pipelineId}`
       };
     }
-    
+
     const errorData = await response.json().catch(() => ({}));
-    return { 
-      success: false, 
-      error: errorData?.message || `Azure DevOps API returned ${response.status}` 
+    return {
+      success: false,
+      error: errorData?.message || `Azure DevOps API returned ${response.status}`
     };
   } catch (e: any) {
     return { success: false, error: e?.message || "Failed to trigger pipeline" };
@@ -196,7 +196,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return json({ error: "unauthorized" }, { status: 401 });
   }
-  
+
   // Parse body
   let body: { brandKey?: string; force?: boolean };
   try {
@@ -204,14 +204,14 @@ export async function POST(req: NextRequest) {
   } catch {
     return json({ error: "invalid_body" }, { status: 400 });
   }
-  
+
   const brandKey = String(body?.brandKey || "").toLowerCase().trim();
   const force = Boolean(body?.force);
-  
+
   if (!brandKey) {
     return json({ error: "brandKey_required" }, { status: 400 });
   }
-  
+
   // Check if APK already exists (unless force rebuild)
   if (!force) {
     const exists = await checkApkExists(brandKey);
@@ -224,7 +224,7 @@ export async function POST(req: NextRequest) {
       }, { status: 409 });
     }
   }
-  
+
   // Check if we have source for this brand
   const hasSource = await checkBrandSourceExists(brandKey);
   if (!hasSource && !force) {
@@ -236,11 +236,11 @@ export async function POST(req: NextRequest) {
       hint: "New brand APKs use the same PortalPay base APK. The brand is determined at runtime via the web app, not the APK itself.",
     });
   }
-  
+
   // Try to trigger build via GitHub Actions first, then Azure DevOps
   const githubToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
   const azureDevOpsPat = process.env.AZURE_DEVOPS_PAT;
-  
+
   if (githubToken) {
     const result = await triggerGitHubWorkflow(brandKey);
     if (result.success) {
@@ -262,7 +262,7 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
   }
-  
+
   if (azureDevOpsPat) {
     const result = await triggerAzurePipeline(brandKey);
     if (result.success) {
@@ -281,7 +281,7 @@ export async function POST(req: NextRequest) {
       brandKey,
     }, { status: 500 });
   }
-  
+
   // No CI/CD configured
   return json({
     ok: false,
@@ -308,15 +308,15 @@ export async function GET(req: NextRequest) {
   } catch {
     return json({ error: "unauthorized" }, { status: 401 });
   }
-  
+
   const url = new URL(req.url);
   const brandKey = url.searchParams.get("brandKey")?.toLowerCase().trim();
-  
+
   // Check CI/CD capabilities
   const hasGitHub = Boolean(process.env.GITHUB_TOKEN || process.env.GH_TOKEN);
   const hasAzureDevOps = Boolean(process.env.AZURE_DEVOPS_PAT && process.env.AZURE_DEVOPS_ORG);
   const canBuild = hasGitHub || hasAzureDevOps;
-  
+
   const response: any = {
     canBuild,
     ciSystems: {
@@ -324,18 +324,18 @@ export async function GET(req: NextRequest) {
       azureDevOps: hasAzureDevOps,
     },
   };
-  
+
   if (brandKey) {
     const [apkExists, hasSource] = await Promise.all([
       checkApkExists(brandKey),
       checkBrandSourceExists(brandKey),
     ]);
-    
+
     response.brandKey = brandKey;
     response.apkExists = apkExists;
     response.hasSource = hasSource;
-    response.canBuildBrand = canBuild && (hasSource || brandKey === "portalpay" || brandKey === "paynex");
+    response.canBuildBrand = canBuild && (hasSource || brandKey === "portalpay" || brandKey === "basaltsurge" || brandKey === "paynex");
   }
-  
+
   return json(response);
 }

@@ -5,6 +5,7 @@ import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import { getRegionColor } from '@/lib/region-colors';
 import { getFlagColors } from '@/lib/flags';
 import { useBrand } from "@/contexts/BrandContext";
+import { resolveBrandSymbol, getDefaultBrandName } from "@/lib/branding";
 
 export type WorldRegion = 'north-america' | 'south-america' | 'europe' | 'africa' | 'middle-east' | 'asia' | 'oceania' | null;
 
@@ -59,7 +60,7 @@ const countryData: Record<string, { region: WorldRegion; name: string }> = {
   '780': { region: 'north-america', name: 'Trinidad and Tobago' },
   '092': { region: 'north-america', name: 'British Virgin Islands' },
   '850': { region: 'north-america', name: 'U.S. Virgin Islands' },
-  
+
   // South America
   '032': { region: 'south-america', name: 'Argentina' },
   '068': { region: 'south-america', name: 'Bolivia' },
@@ -74,7 +75,7 @@ const countryData: Record<string, { region: WorldRegion; name: string }> = {
   '740': { region: 'south-america', name: 'Suriname' },
   '858': { region: 'south-america', name: 'Uruguay' },
   '862': { region: 'south-america', name: 'Venezuela' },
-  
+
   // Europe
   '248': { region: 'europe', name: 'Åland Islands' },
   '008': { region: 'europe', name: 'Albania' },
@@ -129,7 +130,7 @@ const countryData: Record<string, { region: WorldRegion; name: string }> = {
   '804': { region: 'europe', name: 'Ukraine' },
   '826': { region: 'europe', name: 'United Kingdom' },
   '336': { region: 'europe', name: 'Vatican City' },
-  
+
   // Africa
   '012': { region: 'africa', name: 'Algeria' },
   '024': { region: 'africa', name: 'Angola' },
@@ -189,7 +190,7 @@ const countryData: Record<string, { region: WorldRegion; name: string }> = {
   '732': { region: 'africa', name: 'Western Sahara' },
   '894': { region: 'africa', name: 'Zambia' },
   '716': { region: 'africa', name: 'Zimbabwe' },
-  
+
   // Middle East
   '048': { region: 'middle-east', name: 'Bahrain' },
   '364': { region: 'middle-east', name: 'Iran' },
@@ -206,7 +207,7 @@ const countryData: Record<string, { region: WorldRegion; name: string }> = {
   '792': { region: 'middle-east', name: 'Turkey' },
   '784': { region: 'middle-east', name: 'United Arab Emirates' },
   '887': { region: 'middle-east', name: 'Yemen' },
-  
+
   // Asia
   '004': { region: 'asia', name: 'Afghanistan' },
   '051': { region: 'asia', name: 'Armenia' },
@@ -243,7 +244,7 @@ const countryData: Record<string, { region: WorldRegion; name: string }> = {
   '795': { region: 'asia', name: 'Turkmenistan' },
   '860': { region: 'asia', name: 'Uzbekistan' },
   '704': { region: 'asia', name: 'Vietnam' },
-  
+
   // Oceania
   '016': { region: 'oceania', name: 'American Samoa' },
   '036': { region: 'oceania', name: 'Australia' },
@@ -278,7 +279,7 @@ export default function WorldRegionMap({ selectedRegion, onRegionSelect, onCount
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
   const [logoPosition, setLogoPosition] = useState<{ x: number; y: number } | null>(null);
   const brand = useBrand();
-  
+
   const hexToRgba = (hex: string, opacity: number): string => {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
@@ -337,7 +338,7 @@ export default function WorldRegionMap({ selectedRegion, onRegionSelect, onCount
       }
     }
   };
-  
+
   const handleMouseEnter = (geo: any, evt: any) => {
     setHoveredCountry(geo.id);
     // Get the mouse position relative to the map for logo placement
@@ -457,7 +458,7 @@ export default function WorldRegionMap({ selectedRegion, onRegionSelect, onCount
               // Country flag gradients: create for hovered and selected country (deduplicated and validated)
               const selectedIso = findIsoByName(selectedCountry || null);
               const isoTargets = [...new Set([hoveredCountry, selectedIso].filter(Boolean))] as string[];
-              
+
               // Filter out any ISO codes that aren't in our countryData mapping
               const validIsoTargets = isoTargets.filter(iso => countryData[iso]);
 
@@ -556,7 +557,7 @@ export default function WorldRegionMap({ selectedRegion, onRegionSelect, onCount
               );
             })()}
           </defs>
-          
+
           <Geographies geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json">
             {({ geographies }: { geographies: any[] }) => (
               <>
@@ -564,11 +565,11 @@ export default function WorldRegionMap({ selectedRegion, onRegionSelect, onCount
                   const isoCode = geo.id;
                   const data = countryData[isoCode];
                   const geoRegion = data?.region;
-                  
+
                   // Default to dark gray for unmapped territories (blend with background)
                   let defaultFill = '#3b3b3b';
                   let hoverFill = '#4a4a4a';
-                  
+
                   if (data && geoRegion) {
                     const regionBaseColor = getRegionColor(geoRegion);
                     const isInSelectedRegion = selectedRegion === geoRegion;
@@ -597,11 +598,11 @@ export default function WorldRegionMap({ selectedRegion, onRegionSelect, onCount
                       hoverFill = '#c5c7cb';
                     }
                   }
-                  
+
                   const isSelectedCountry = selectedCountry === data?.name;
                   const isHovered = hoveredCountry === isoCode;
                   const isDisabled = data ? disabledCountries.includes(data.name) : false;
-                  
+
                   return (
                     <Geography
                       key={geo.rsmKey}
@@ -640,17 +641,17 @@ export default function WorldRegionMap({ selectedRegion, onRegionSelect, onCount
               </>
             )}
           </Geographies>
-          
-          
+
+
         </ComposableMap>
-        
+
         {/* Tooltip with PortalPay logo */}
         {hoveredCountry && countryData[hoveredCountry] && (
           <div className="absolute top-4 right-4 bg-black/90 backdrop-blur-sm rounded-lg p-3 shadow-xl border border-white/20 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center gap-2">
-              <img 
-                src={brand?.logos?.favicon || brand?.logos?.app || "/ppsymbol.png"} 
-                alt={brand?.name || "Brand"} 
+              <img
+                src={resolveBrandSymbol(brand?.logos?.favicon || brand?.logos?.app, (brand as any)?.key)}
+                alt={brand?.name || getDefaultBrandName((brand as any)?.key)}
                 className="w-10 h-10"
               />
               <div className="text-[11px] font-mono leading-tight">
@@ -665,16 +666,15 @@ export default function WorldRegionMap({ selectedRegion, onRegionSelect, onCount
           </div>
         )}
       </div>
-      
+
       {/* Legend */}
       <div className="mt-4 flex flex-wrap gap-3 text-sm justify-center">
         <button
           onClick={() => onRegionSelect(null)}
-          className={`px-3 py-1.5 rounded-md transition-colors font-medium ${
-            selectedRegion === null
-              ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm'
-              : 'bg-accent hover:bg-accent/80'
-          }`}
+          className={`px-3 py-1.5 rounded-md transition-colors font-medium ${selectedRegion === null
+            ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm'
+            : 'bg-accent hover:bg-accent/80'
+            }`}
         >
           All Regions
         </button>
@@ -690,11 +690,10 @@ export default function WorldRegionMap({ selectedRegion, onRegionSelect, onCount
           <button
             key={region.id}
             onClick={() => onRegionSelect(selectedRegion === region.id ? null : region.id)}
-            className={`px-3 py-1.5 rounded-md transition-colors font-medium ${
-              selectedRegion === region.id
-                ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm'
-                : 'bg-accent hover:bg-accent/80'
-            }`}
+            className={`px-3 py-1.5 rounded-md transition-colors font-medium ${selectedRegion === region.id
+              ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm'
+              : 'bg-accent hover:bg-accent/80'
+              }`}
             style={{
               backgroundColor: selectedRegion === region.id ? undefined : `${getRegionColor(region.id as Exclude<WorldRegion, null>)}22`,
               borderColor: selectedRegion === region.id ? undefined : `${getRegionColor(region.id as Exclude<WorldRegion, null>)}44`,

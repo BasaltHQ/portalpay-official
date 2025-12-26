@@ -39,7 +39,7 @@ export function CostCalculator({
     Object.entries(competitors).forEach(([name, pricing]) => {
       const avgTransactionSize = 50; // Assume $50 avg transaction
       const numTransactions = monthlyVolume / avgTransactionSize;
-      
+
       const processingFees = (monthlyVolume * pricing.processingFee) + (numTransactions * pricing.flatFee);
       const monthlyTotal = processingFees + pricing.monthlyFee;
       const annualTotal = (processingFees * 12) + pricing.annualSoftwareCost;
@@ -80,7 +80,7 @@ export function CostCalculator({
   return (
     <div className={`glass-pane rounded-xl border p-6 ${className}`}>
       <h3 className="text-xl font-semibold mb-4">Calculate Your Savings</h3>
-      
+
       {/* Volume Slider */}
       <div className="mb-6">
         <label className="block text-sm font-medium mb-2">
@@ -105,7 +105,7 @@ export function CostCalculator({
       </div>
 
       {/* Savings Summary */}
-      <div className="bg-[var(--primary)] text-[var(--primary-foreground)] rounded-lg p-4 mb-6">
+      <div className="bg-[var(--pp-secondary)] text-[var(--primary-foreground)] rounded-lg p-4 mb-6">
         <div className="text-sm opacity-90 mb-1">You Save with PortalPay</div>
         <div className="text-3xl font-bold mb-1">
           ${savings.annual.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -119,12 +119,12 @@ export function CostCalculator({
       {/* Cost Comparison Table */}
       <div className="space-y-3">
         <div className="text-sm font-semibold mb-2">Monthly Cost Breakdown</div>
-        
+
         {/* PortalPay Row */}
-        <div className="rounded-lg border-2 border-[var(--primary)] bg-[var(--primary)]/5 p-3">
+        <div className="rounded-lg border-2 border-[var(--pp-secondary)] bg-[var(--pp-secondary)]/5 p-3">
           <div className="flex justify-between items-center mb-1">
-            <span className="font-semibold text-[var(--primary)]">PortalPay</span>
-            <span className="text-lg font-bold text-[var(--primary)]">
+            <span className="font-semibold text-[var(--pp-secondary)]">PortalPay</span>
+            <span className="text-lg font-bold text-[var(--pp-secondary)]">
               ${calculations.portalpay.monthly.toFixed(2)}/mo
             </span>
           </div>
@@ -160,7 +160,7 @@ export function CostCalculator({
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <div className="text-muted-foreground mb-1">Annual with PortalPay</div>
-            <div className="text-xl font-bold text-[var(--primary)]">
+            <div className="text-xl font-bold text-[var(--pp-secondary)]">
               ${calculations.portalpay.annual.toLocaleString()}
             </div>
           </div>
@@ -177,7 +177,7 @@ export function CostCalculator({
       <div className="mt-6">
         <a
           href="/admin"
-          className="block w-full text-center px-6 py-3 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold hover:opacity-90 transition"
+          className="block w-full text-center px-6 py-3 rounded-md bg-[var(--pp-secondary)] text-[var(--primary-foreground)] font-semibold hover:opacity-90 transition"
         >
           Start Saving Today
         </a>

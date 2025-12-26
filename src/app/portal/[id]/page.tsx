@@ -9,6 +9,7 @@ import { client, chain, getWallets } from "@/lib/thirdweb/client";
 import { usePortalThirdwebTheme, getConnectButtonStyle, connectButtonClass } from "@/lib/thirdweb/theme";
 import { buildReceiptEndpoint, buildReceiptFetchInit } from "@/lib/receipts";
 import { useActiveAccount } from "thirdweb/react";
+import { getDefaultBrandName, getDefaultBrandSymbol, resolveBrandAppLogo, resolveBrandSymbol } from "@/lib/branding";
 import { fetchEthRates, fetchUsdRates, fetchBtcUsd, fetchXrpUsd, type EthRates } from "@/lib/eth";
 import { SUPPORTED_CURRENCIES, convertFromUsd, formatCurrency, getCurrencyFlag, roundForCurrency } from "@/lib/fx";
 
@@ -29,6 +30,7 @@ type SiteTheme = {
   headerTextColor?: string;
   bodyTextColor?: string;
   navbarMode?: "symbol" | "logo";
+  brandKey?: string;
 };
 
 type SiteConfigResponse = {
@@ -142,22 +144,27 @@ export default function PortalReceiptPage() {
   const viewerWalletLower = (account?.address || "").toLowerCase();
   const [resolvedRecipient, setResolvedRecipient] = useState<`0x${string}` | undefined>(undefined);
 
-  // Site theme (always start with defaults to avoid hydration mismatch)
-  // Partner containers should pick up brand colors from CSS variables set by ThemeLoader
-  const [theme, setTheme] = useState<SiteTheme>({
-    primaryColor: "#10b981",
-    secondaryColor: "#2dd4bf",
-    brandLogoUrl: "/ppsymbol.png",
-    brandFaviconUrl: "/favicon-32x32.png",
-    symbolLogoUrl: undefined,
-    brandName: "PortalPay",
-    fontFamily:
-      "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
-    receiptBackgroundUrl: "/watermark.png",
-    brandLogoShape: "round",
-    textColor: "#ffffff",
-    headerTextColor: "#ffffff",
-    bodyTextColor: "#e5e7eb",
+  // Site theme (seeded with brand defaults to avoid hydration flash)
+  const [theme, setTheme] = useState<SiteTheme>(() => {
+    const isBS = typeof window !== "undefined"
+      ? (window.location.host.toLowerCase().includes("basaltsurge") || (process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase() === "basaltsurge")
+      : (process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase() === "basaltsurge";
+
+    return {
+      primaryColor: isBS ? "#22C55E" : "#10b981",
+      secondaryColor: isBS ? "#16A34A" : "#2dd4bf",
+      brandLogoUrl: isBS ? "/bssymbol.png" : "/ppsymbol.png",
+      brandFaviconUrl: "/favicon-32x32.png",
+      symbolLogoUrl: isBS ? "/bssymbol.png" : undefined,
+      brandName: isBS ? "BasaltSurge" : "PortalPay",
+      fontFamily:
+        "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+      receiptBackgroundUrl: "/watermark.png",
+      brandLogoShape: "round",
+      textColor: "#ffffff",
+      headerTextColor: "#ffffff",
+      bodyTextColor: "#e5e7eb",
+    };
   });
 
   // Partner brand colors from container config (for partner containers without merchant theme)
@@ -180,7 +187,7 @@ export default function PortalReceiptPage() {
   const effectiveBrandName = partnerBrandName || theme.brandName || "PortalPay";
 
   // Helper functions to get the best available logo
-  const defaultPortalSymbol = theme.brandName.toLowerCase().includes("basalt") ? "/bssymbol.png" : "/ppsymbol.png";
+  const defaultPortalSymbol = getDefaultBrandSymbol(theme.brandKey);
   const getHeaderLogo = () => effectiveLogoApp || effectiveLogoSymbol || effectiveLogoFavicon || defaultPortalSymbol;
   const getSymbolLogo = () => effectiveLogoSymbol || effectiveLogoFavicon || effectiveLogoApp || defaultPortalSymbol;
 
@@ -353,8 +360,44 @@ export default function PortalReceiptPage() {
       }
       const p = (async () => {
         const url = `/api/site/config?wallet=${encodeURIComponent(walletHex)}`;
-        const r = await fetch(url, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant", "x-wallet": String(walletHex || "").toLowerCase(), "x-recipient": String(walletHex || "").toLowerCase() } });
-        const j: SiteConfigResponse = await r.json().catch(() => ({} as any));
+        const headers = { "x-theme-caller": "PortalPage:merchant", "x-wallet": String(walletHex || "").toLowerCase(), "x-recipient": String(walletHex || "").toLowerCase() };
+
+        // Concurrently fetch site config AND shop config (if wallet is present)
+        const [siteRes, shopConfig] = await Promise.all([
+          fetch(url, { cache: "no-store", headers }).then(r => r.json()).catch(() => ({} as any)),
+          walletHex
+            ? fetch(`/api/shop/config?wallet=${encodeURIComponent(walletHex)}`, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant:shop" } })
+              .then(r => r.ok ? r.json() : null)
+              .catch(() => null)
+            : Promise.resolve(null)
+        ]);
+
+        const j: SiteConfigResponse = siteRes || {};
+        const shopTheme = shopConfig?.config?.theme;
+        const shopName = shopConfig?.config?.name;
+
+        // Merge shop theme if present - SHOP takes priority for branding colors/logos
+        if (shopTheme) {
+          if (!j.config) j.config = {};
+          if (!j.config.theme) j.config.theme = {} as any;
+
+          const t = j.config!.theme!;
+          // Merge supported properties
+          if (shopTheme.primaryColor) t.primaryColor = shopTheme.primaryColor;
+          if (shopTheme.secondaryColor) t.secondaryColor = shopTheme.secondaryColor;
+          if (shopTheme.brandLogoUrl) {
+            t.brandLogoUrl = shopTheme.brandLogoUrl;
+            // If Shop defines a logo, use it as fallback for symbol too
+            if (!t.symbolLogoUrl) t.symbolLogoUrl = shopTheme.brandLogoUrl;
+          }
+          if (shopTheme.logoShape) t.brandLogoShape = shopTheme.logoShape;
+
+          // Shop name override if present
+          if (shopName) {
+            t.brandName = shopName;
+          }
+        }
+
         try { cfgCacheRef.current.set(normKey, j); } catch { }
         return j;
       })()
@@ -532,8 +575,9 @@ export default function PortalReceiptPage() {
           cachedTheme = JSON.parse(cached);
           try {
             if (cachedTheme && typeof cachedTheme === "object") {
-              if ((cachedTheme as any).symbolLogoUrl === "/cblogod.png") (cachedTheme as any).symbolLogoUrl = "/ppsymbol.png";
-              if ((cachedTheme as any).brandLogoUrl === "/cblogod.png") (cachedTheme as any).brandLogoUrl = "/ppsymbol.png";
+              // Replace legacy cblogod with correct platform symbol
+              if ((cachedTheme as any).symbolLogoUrl === "/cblogod.png") (cachedTheme as any).symbolLogoUrl = getDefaultBrandSymbol(cachedTheme.brandKey);
+              if ((cachedTheme as any).brandLogoUrl === "/cblogod.png") (cachedTheme as any).brandLogoUrl = getDefaultBrandSymbol(cachedTheme.brandKey);
               const bg = String((cachedTheme as any).receiptBackgroundUrl || "");
               if (/manifest\.webmanifest$/i.test(bg)) (cachedTheme as any).receiptBackgroundUrl = "/watermark.png";
               if ((cachedTheme as any).primaryColor === "#10b981" || (cachedTheme as any).primaryColor === "#14b8a6") (cachedTheme as any).primaryColor = "#1f2937";
@@ -588,7 +632,7 @@ export default function PortalReceiptPage() {
       setTheme({
         primaryColor: "#10b981",
         secondaryColor: "#2dd4bf",
-        brandLogoUrl: "/ppsymbol.png",
+        brandLogoUrl: getDefaultBrandSymbol(),
         brandFaviconUrl: "/favicon-32x32.png",
         brandName: "PortalPay",
         fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
@@ -716,7 +760,7 @@ export default function PortalReceiptPage() {
           const merchantTheme = {
             primaryColor: typeof t.primaryColor === "string" ? t.primaryColor : "#10b981",
             secondaryColor: typeof t.secondaryColor === "string" ? t.secondaryColor : "#2dd4bf",
-            brandLogoUrl: typeof t.brandLogoUrl === "string" ? t.brandLogoUrl : "/ppsymbol.png",
+            brandLogoUrl: typeof t.brandLogoUrl === "string" ? t.brandLogoUrl : getDefaultBrandSymbol(t.brandKey),
             brandFaviconUrl: typeof t.brandFaviconUrl === "string" ? t.brandFaviconUrl : "/favicon-32x32.png",
             symbolLogoUrl: typeof (t as any)?.logos?.symbol === "string" ? (t as any).logos.symbol : undefined,
             brandName: typeof t.brandName === "string" ? t.brandName : "PortalPay",
@@ -754,8 +798,8 @@ export default function PortalReceiptPage() {
             (() => {
               try {
                 const s = { ...mergedTheme } as any;
-                if (s.symbolLogoUrl === "/cblogod.png") s.symbolLogoUrl = "/ppsymbol.png";
-                if (s.brandLogoUrl === "/cblogod.png") s.brandLogoUrl = "/ppsymbol.png";
+                if (s.symbolLogoUrl === "/cblogod.png") s.symbolLogoUrl = getDefaultBrandSymbol(s.brandKey);
+                if (s.brandLogoUrl === "/cblogod.png") s.brandLogoUrl = getDefaultBrandSymbol(s.brandKey);
                 if (typeof s.receiptBackgroundUrl === "string" && /manifest\.webmanifest$/i.test(s.receiptBackgroundUrl)) s.receiptBackgroundUrl = "/watermark.png";
                 if (s.primaryColor === "#10b981" || s.primaryColor === "#14b8a6") s.primaryColor = "#1f2937";
                 if (s.secondaryColor === "#2dd4bf" || s.secondaryColor === "#22d3ee") s.secondaryColor = "#F54029";
@@ -1562,7 +1606,7 @@ export default function PortalReceiptPage() {
                 />
               </div>
               <div className="font-semibold truncate" style={{ fontFamily: theme.fontFamily }}>
-                {effectiveBrandName || "Your Brand"}
+                {effectiveBrandName || getDefaultBrandName(theme.brandKey)}
               </div>
             </>
           )}
@@ -1611,7 +1655,7 @@ export default function PortalReceiptPage() {
                     const c = (theme.brandLogoUrl || "").trim();
                     const a = (theme.symbolLogoUrl || "").trim();
                     const b = (theme.brandFaviconUrl || "").trim();
-                    return c || a || b || "/ppsymbol.png";
+                    return resolveBrandSymbol(c || a || b, (theme as any)?.brandKey || (theme as any)?.key);
                   })(),
                   size: "compact",
                 }}
@@ -1647,7 +1691,7 @@ export default function PortalReceiptPage() {
                 const c = (theme.brandLogoUrl || "").trim();
                 const a = (theme.symbolLogoUrl || "").trim();
                 const b = (theme.brandFaviconUrl || "").trim();
-                return c || a || b || "/ppsymbol.png";
+                return resolveBrandSymbol(c || a || b, (theme as any)?.brandKey || (theme as any)?.key);
               })(),
               size: "compact",
             }}
@@ -1755,7 +1799,7 @@ export default function PortalReceiptPage() {
                         />
                       </div>
                       <div>
-                        <div className="text-sm font-semibold">{effectiveBrandName || "Your Brand"}</div>
+                        <div className="text-sm font-semibold">{effectiveBrandName || getDefaultBrandName(theme.brandKey)}</div>
                         <div className="microtext text-muted-foreground">Digital Receipt</div>
                       </div>
                       <div className="ml-auto microtext text-muted-foreground">
@@ -2103,7 +2147,7 @@ export default function PortalReceiptPage() {
                     />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold">{effectiveBrandName || "Your Brand"}</div>
+                    <div className="text-sm font-semibold">{effectiveBrandName || getDefaultBrandName(theme.brandKey)}</div>
                     <div className="microtext text-muted-foreground">Digital Receipt</div>
                   </div>
                   <div className="ml-auto microtext text-muted-foreground">
@@ -2379,7 +2423,7 @@ export default function PortalReceiptPage() {
         {isClientSide && isEmbedded && (
           <div
             className="px-4 py-2 text-[11px] opacity-80 rounded-b-2xl"
-            style={{ background: effectivePrimaryColor, color: "var(--pp-text-header)", flexShrink: 0 }}
+            style={{ background: effectiveSecondaryColor, color: "var(--pp-text-header)", flexShrink: 0 }}
           >
             Trustless, permissionless on-chain settlement via PortalPay. Embedded view uses a transparent background to fit host UI.
           </div>
@@ -2390,7 +2434,7 @@ export default function PortalReceiptPage() {
       {isClientSide && !isEmbedded && (
         <div
           className="px-4 py-2 text-[11px] opacity-80 rounded-xl mt-2 mx-auto max-w-[428px]"
-          style={{ background: effectivePrimaryColor, color: "var(--pp-text-header)" }}
+          style={{ background: effectiveSecondaryColor, color: "var(--pp-text-header)" }}
         >
           Trustless, permissionless on-chain settlement via PortalPay. Full-page view applies your configured branding and theme.
         </div>

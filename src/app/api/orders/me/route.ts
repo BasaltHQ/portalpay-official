@@ -152,8 +152,8 @@ export async function GET(req: NextRequest) {
           }
 
           resources = finalList;
-        } catch {}
-      } catch {}
+        } catch { }
+      } catch { }
     } catch (e) {
       // If Cosmos unavailable or buyerWallet not yet recorded, degrade gracefully
       resources = [];
@@ -162,10 +162,10 @@ export async function GET(req: NextRequest) {
     // Partner container isolation: filter receipts to current brand when brandKey is configured
     try {
       const brandKey = getBrandKey();
-      if (brandKey && String(brandKey).toLowerCase() !== "portalpay") {
+      if (brandKey && String(brandKey).toLowerCase() !== "portalpay" && String(brandKey).toLowerCase() !== "basaltsurge") {
         resources = (resources || []).filter((r: any) => String(r?.brandKey || "").toLowerCase() === String(brandKey).toLowerCase());
       }
-    } catch {}
+    } catch { }
     // Sort by createdAt desc
     resources.sort((a, b) => {
       const ta = Number(a?.createdAt || 0);
@@ -212,8 +212,8 @@ export async function GET(req: NextRequest) {
         typeof r?.transactionHash === "string" && r.transactionHash
           ? String(r.transactionHash)
           : typeof r?.metadata?.txHash === "string" && r.metadata.txHash
-          ? String(r.metadata.txHash)
-          : "",
+            ? String(r.metadata.txHash)
+            : "",
     }));
 
     return NextResponse.json(

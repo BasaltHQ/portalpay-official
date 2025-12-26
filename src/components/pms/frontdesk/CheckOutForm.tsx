@@ -8,6 +8,7 @@
 import { useState, FormEvent } from 'react';
 import { PMSCard } from '../shared';
 import type { PMSInstance, PMSFolio } from '@/lib/pms';
+import { getDefaultBrandSymbol, getDefaultBrandName } from '@/lib/branding';
 
 interface CheckOutFormProps {
   instance: PMSInstance;
@@ -19,12 +20,12 @@ interface CheckOutFormProps {
 
 type PaymentMethod = 'cash' | 'qr_code' | 'split';
 
-export function CheckOutForm({ 
-  instance, 
-  folio, 
-  onSuccess, 
+export function CheckOutForm({
+  instance,
+  folio,
+  onSuccess,
   onCancel,
-  onSplitPayment 
+  onSplitPayment
 }: CheckOutFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -39,7 +40,7 @@ export function CheckOutForm({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (paymentMethod === 'split') {
       onSplitPayment();
       return;
@@ -52,11 +53,11 @@ export function CheckOutForm({
       if (paymentMethod === 'qr_code') {
         // Calculate number of nights
         const nights = Math.ceil((folio.checkOut - folio.checkIn) / (1000 * 60 * 60 * 24));
-        
+
         // Create order via orders API for QR code payment
         const orderRes = await fetch(`/api/orders?wallet=${instance.wallet}`, {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'x-wallet': instance.wallet,
           },
@@ -81,7 +82,7 @@ export function CheckOutForm({
         }
 
         const paymentUrl = `${window.location.origin}/portal/${receiptId}?recipient=${instance.wallet}`;
-        
+
         setPaymentUrl(paymentUrl);
         setReceiptId(receiptId);
         setShowQrModal(true);
@@ -112,8 +113,8 @@ export function CheckOutForm({
   };
 
   return (
-    <PMSCard 
-      title="Guest Checkout" 
+    <PMSCard
+      title="Guest Checkout"
       subtitle={`${folio.guestName} - Room ${folio.roomNumber}`}
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -152,11 +153,10 @@ export function CheckOutForm({
             <button
               type="button"
               onClick={() => setPaymentMethod('cash')}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                paymentMethod === 'cash'
+              className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'cash'
                   ? 'border-blue-500 bg-blue-500/10'
                   : 'border-gray-700/50 bg-gray-800/30 hover:border-gray-600'
-              }`}
+                }`}
             >
               <div className="text-center">
                 <div className="text-2xl mb-2">💵</div>
@@ -167,14 +167,13 @@ export function CheckOutForm({
             <button
               type="button"
               onClick={() => setPaymentMethod('qr_code')}
-              className={`p-4 rounded-lg border-2 transition-all relative overflow-hidden ${
-                paymentMethod === 'qr_code'
+              className={`p-4 rounded-lg border-2 transition-all relative overflow-hidden ${paymentMethod === 'qr_code'
                   ? 'border-blue-500'
                   : 'border-gray-700/50 hover:border-gray-600'
-              }`}
+                }`}
             >
               {/* 5-point mesh gradient background */}
-              <div 
+              <div
                 className="absolute inset-0 opacity-20"
                 style={{
                   background: `
@@ -188,24 +187,23 @@ export function CheckOutForm({
               />
               <div className="text-center relative z-10">
                 <div className="flex justify-center mb-2">
-                  <img 
-                    src="/ppsymbol.png" 
-                    alt="PortalPay" 
+                  <img
+                    src={getDefaultBrandSymbol()}
+                    alt={getDefaultBrandName()}
                     className="h-8 w-8"
                   />
                 </div>
-                <div className="text-sm font-medium text-white">PortalPay</div>
+                <div className="text-sm font-medium text-white">{getDefaultBrandName()}</div>
               </div>
             </button>
 
             <button
               type="button"
               onClick={() => setPaymentMethod('split')}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                paymentMethod === 'split'
+              className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === 'split'
                   ? 'border-blue-500 bg-blue-500/10'
                   : 'border-gray-700/50 bg-gray-800/30 hover:border-gray-600'
-              }`}
+                }`}
             >
               <div className="text-center">
                 <div className="text-2xl mb-2">🔀</div>
@@ -267,15 +265,15 @@ export function CheckOutForm({
               background: `linear-gradient(135deg, ${instance.branding.primaryColor}, ${instance.branding.secondaryColor})`,
             }}
           >
-            {loading 
-              ? 'Processing...' 
+            {loading
+              ? 'Processing...'
               : paymentMethod === 'split'
-              ? 'Configure Split Payment'
-              : paymentMethod === 'qr_code' && paymentUrl
-              ? 'Show QR Code'
-              : paymentMethod === 'qr_code'
-              ? 'Generate QR Code'
-              : `Process Cash $${balance.toFixed(2)}`
+                ? 'Configure Split Payment'
+                : paymentMethod === 'qr_code' && paymentUrl
+                  ? 'Show QR Code'
+                  : paymentMethod === 'qr_code'
+                    ? 'Generate QR Code'
+                    : `Process Cash $${balance.toFixed(2)}`
             }
           </button>
         </div>
@@ -301,7 +299,7 @@ export function CheckOutForm({
 
               {/* QR Code */}
               <div className="bg-white p-6 rounded-lg flex flex-col items-center">
-                <img 
+                <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentUrl)}`}
                   alt="Payment QR Code"
                   className="w-64 h-64"

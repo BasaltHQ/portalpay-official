@@ -22,7 +22,8 @@ export async function GET(req: NextRequest) {
         } catch {
             brandKey = "portalpay";
         }
-        const targetBrand = brandKey.toLowerCase();
+        let targetBrand = brandKey.toLowerCase();
+        if (targetBrand === "basaltsurge") targetBrand = "portalpay";
 
         // Query ALL shop configs for this wallet to see what's available
         // We'll filter in code to be safe and to debug

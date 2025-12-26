@@ -48,8 +48,8 @@ function NavGroup({ item, currentPath }: { item: NavItem; currentPath: string })
       <Link
         href={item.href}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap ${currentPath === item.href
-            ? 'bg-primary text-primary-foreground font-medium'
-            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          ? 'bg-primary text-primary-foreground font-medium'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           }`}
       >
         {item.icon}
@@ -79,8 +79,8 @@ function NavGroup({ item, currentPath }: { item: NavItem; currentPath: string })
                 key={child.href}
                 href={child.href!}
                 className={`block px-3 py-2 text-sm rounded-lg transition-colors ${currentPath === child.href
-                    ? 'bg-primary text-primary-foreground font-medium'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  ? 'bg-primary text-primary-foreground font-medium'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
               >
                 {child.title}
@@ -96,8 +96,8 @@ function NavGroup({ item, currentPath }: { item: NavItem; currentPath: string })
           key={child.href}
           href={child.href!}
           className={`md:hidden flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap ${currentPath === child.href
-              ? 'bg-primary text-primary-foreground font-medium'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            ? 'bg-primary text-primary-foreground font-medium'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
         >
           <span>{child.title}</span>
@@ -257,9 +257,9 @@ export function DocsSidebar({ currentPath }: { currentPath: string }) {
                     <Link
                       href={item.items?.[0]?.href || '#'}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-8 h-8 rounded-full border-2 border-[var(--primary)] flex items-center justify-center hover:bg-[var(--primary)]/10 transition-colors"
+                      className="w-8 h-8 rounded-full border-2 border-[var(--pp-secondary)] flex items-center justify-center hover:bg-[var(--pp-secondary)]/10 transition-colors"
                     >
-                      <div className="text-[var(--primary)]">
+                      <div className="text-[var(--pp-secondary)]">
                         {item.icon}
                       </div>
                     </Link>
@@ -271,8 +271,8 @@ export function DocsSidebar({ currentPath }: { currentPath: string }) {
                         href={child.href!}
                         onClick={(e) => e.stopPropagation()}
                         className={`p-1 rounded-sm transition-colors ${currentPath === child.href
-                            ? 'bg-primary'
-                            : 'hover:bg-muted'
+                          ? 'bg-primary'
+                          : 'hover:bg-muted'
                           }`}
                       >
                         <div className={`w-1.5 h-1.5 rounded-full ${currentPath === child.href ? 'bg-primary-foreground' : 'bg-foreground'
@@ -298,8 +298,8 @@ export function DocsSidebar({ currentPath }: { currentPath: string }) {
               href={item.items?.[0]?.href || '#'}
               className="flex flex-col items-center justify-center gap-0.5 w-8 h-full"
             >
-              <div className="w-4 h-4 rounded-full border border-[var(--primary)] flex items-center justify-center hover:bg-[var(--primary)]/10 transition-colors shrink-0">
-                <div className="text-[var(--primary)] scale-[0.6]">
+              <div className="w-4 h-4 rounded-full border border-[var(--pp-secondary)] flex items-center justify-center hover:bg-[var(--pp-secondary)]/10 transition-colors shrink-0">
+                <div className="text-[var(--pp-secondary)] scale-[0.6]">
                   {item.icon}
                 </div>
               </div>
@@ -321,8 +321,8 @@ export function DocsSidebar({ currentPath }: { currentPath: string }) {
                 className="flex flex-col items-center justify-center gap-0.5 w-8 h-full"
               >
                 <div className={`p-0.5 rounded-sm transition-colors shrink-0 ${currentPath === child.href
-                    ? 'bg-primary'
-                    : 'hover:bg-muted'
+                  ? 'bg-primary'
+                  : 'hover:bg-muted'
                   }`}>
                   <div className={`w-1.5 h-1.5 rounded-full ${currentPath === child.href ? 'bg-primary-foreground' : 'bg-foreground'
                     }`} />

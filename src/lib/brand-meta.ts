@@ -87,10 +87,12 @@ export async function buildOgTwitterForRoute(opts: {
   const containerTypeFromEnv = String(process.env.CONTAINER_TYPE || process.env.NEXT_PUBLIC_CONTAINER_TYPE || "").trim().toLowerCase();
   const runtimeBrandKey = String(runtimeBrand?.key || "").toLowerCase();
 
+  const isPlatformBrand = (k: string) => k === "portalpay" || k === "basaltsurge";
+
   const partner = isPartnerContext() ||
     containerTypeFromEnv === "partner" ||
-    (brandKeyFromEnv && brandKeyFromEnv !== "portalpay") ||
-    (runtimeBrandKey && runtimeBrandKey !== "portalpay");
+    (brandKeyFromEnv && !isPlatformBrand(brandKeyFromEnv)) ||
+    (runtimeBrandKey && !isPlatformBrand(runtimeBrandKey));
 
   // Known platform image paths that should NOT be used for partner containers
   const KNOWN_PLATFORM_SOCIAL_IMAGES = [

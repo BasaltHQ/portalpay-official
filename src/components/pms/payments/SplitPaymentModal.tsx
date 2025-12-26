@@ -8,6 +8,7 @@
 import { useState, FormEvent } from 'react';
 import { PMSCard } from '../shared';
 import type { PMSInstance, PMSFolio, PaymentSegment } from '@/lib/pms';
+import { getDefaultBrandSymbol, getDefaultBrandName } from '@/lib/branding';
 
 interface SplitPaymentModalProps {
   instance: PMSInstance;
@@ -23,11 +24,11 @@ interface SegmentConfig {
   receiptId?: string;
 }
 
-export function SplitPaymentModal({ 
-  instance, 
-  folio, 
-  onSuccess, 
-  onCancel 
+export function SplitPaymentModal({
+  instance,
+  folio,
+  onSuccess,
+  onCancel
 }: SplitPaymentModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -60,7 +61,7 @@ export function SplitPaymentModal({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (!isValid) {
       setError('Total allocated must equal balance due');
       return;
@@ -74,18 +75,18 @@ export function SplitPaymentModal({
       if (segments.some(s => s.method === 'qr_code' && !s.paymentUrl)) {
         const nights = Math.ceil((folio.checkOut - folio.checkIn) / (1000 * 60 * 60 * 24));
         const newSegments = [...segments];
-        
+
         // Generate orders for PortalPay segments
         for (let i = 0; i < newSegments.length; i++) {
           const segment = newSegments[i];
-          
+
           if (segment.method === 'qr_code' && !segment.paymentUrl) {
             // Calculate proportional qty based on segment amount
             const segmentQty = Math.max(1, Math.round((parseFloat(segment.amount) / balance) * nights));
-            
+
             const orderRes = await fetch(`/api/orders?wallet=${instance.wallet}`, {
               method: 'POST',
-              headers: { 
+              headers: {
                 'Content-Type': 'application/json',
                 'x-wallet': instance.wallet,
               },
@@ -109,7 +110,7 @@ export function SplitPaymentModal({
             }
 
             const paymentUrl = `${window.location.origin}/portal/${receiptId}?recipient=${instance.wallet}`;
-            
+
             newSegments[i] = {
               ...segment,
               paymentUrl,
@@ -117,7 +118,7 @@ export function SplitPaymentModal({
             };
           }
         }
-        
+
         setSegments(newSegments);
         setLoading(false);
         return;
@@ -155,8 +156,8 @@ export function SplitPaymentModal({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900/95 border border-gray-700/50 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <PMSCard 
-          title="Configure Split Payment" 
+        <PMSCard
+          title="Configure Split Payment"
           subtitle={`${folio.guestName} - Room ${folio.roomNumber}`}
         >
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -236,12 +237,12 @@ export function SplitPaymentModal({
                             disabled={loading}
                           >
                             <option value="cash">💵 Cash</option>
-                            <option value="qr_code">PortalPay</option>
+                            <option value="qr_code">{getDefaultBrandName()}</option>
                           </select>
                           {segment.method === 'qr_code' && (
-                            <img 
-                              src="/ppsymbol.png" 
-                              alt="PortalPay" 
+                            <img
+                              src={getDefaultBrandSymbol()}
+                              alt={getDefaultBrandName()}
                               className="absolute right-10 top-1/2 -translate-y-1/2 h-5 w-5 pointer-events-none"
                             />
                           )}
@@ -269,11 +270,11 @@ export function SplitPaymentModal({
             {!isValid && totalAllocated > 0 && (
               <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
                 <p className="text-sm text-yellow-400">
-                  {remaining > 0.01 
+                  {remaining > 0.01
                     ? `You need to allocate $${remaining.toFixed(2)} more`
                     : remaining < -0.01
-                    ? `You've allocated $${Math.abs(remaining).toFixed(2)} too much`
-                    : 'Allocation looks good!'
+                      ? `You've allocated $${Math.abs(remaining).toFixed(2)} too much`
+                      : 'Allocation looks good!'
                   }
                 </p>
               </div>
@@ -290,12 +291,12 @@ export function SplitPaymentModal({
             {segments.some(s => s.paymentUrl) && (
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">
-                  PortalPay Payment Links
+                  {getDefaultBrandName()} Payment Links
                 </h3>
                 {segments.map((segment, index) => segment.paymentUrl && (
                   <div key={index} className="p-4 bg-gray-800/50 border border-gray-700/50 rounded-lg">
                     <div className="flex items-center gap-4">
-                      <img 
+                      <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(segment.paymentUrl)}`}
                         alt={`QR Code ${index + 1}`}
                         className="w-24 h-24 rounded"
@@ -303,7 +304,7 @@ export function SplitPaymentModal({
                       <div className="flex-1 space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-white">
-                            PortalPay Segment {index + 1}
+                            {getDefaultBrandName()} Segment {index + 1}
                           </span>
                           <span className="text-lg font-bold text-blue-400">
                             ${parseFloat(segment.amount).toFixed(2)}
@@ -342,7 +343,7 @@ export function SplitPaymentModal({
             <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30">
               <p className="text-sm text-purple-400 font-medium mb-1">Processing Note</p>
               <p className="text-sm text-gray-300">
-                Generate QR codes for PortalPay segments. Guests scan codes on their devices to pay their portion. Cash is processed directly in PMS.
+                Generate QR codes for {getDefaultBrandName()} segments. Guests scan codes on their devices to pay their portion. Cash is processed directly in PMS.
               </p>
             </div>
 
@@ -367,7 +368,7 @@ export function SplitPaymentModal({
                   background: `linear-gradient(135deg, ${instance.branding.primaryColor}, ${instance.branding.secondaryColor})`,
                 }}
               >
-                {loading ? 'Generating...' : segments.some(s => s.paymentUrl) ? 'Complete Split Payment' : 'Generate PortalPay Links'}
+                {loading ? 'Generating...' : segments.some(s => s.paymentUrl) ? 'Complete Split Payment' : `Generate ${getDefaultBrandName()} Links`}
               </button>
             </div>
           </form>

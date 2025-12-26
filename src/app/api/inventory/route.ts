@@ -284,6 +284,7 @@ export async function GET(req: NextRequest) {
       let brandKey: string | undefined = undefined;
       try {
         brandKey = getBrandKey();
+        if (brandKey === "basaltsurge") brandKey = "portalpay";
       } catch {
         brandKey = undefined;
       }
@@ -404,6 +405,7 @@ export async function POST(req: NextRequest) {
     let brandKey: string | undefined = undefined;
     try {
       brandKey = getBrandKey();
+      if (brandKey === "basaltsurge") brandKey = "portalpay";
     } catch {
       brandKey = undefined;
     }

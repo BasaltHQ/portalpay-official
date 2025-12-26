@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ industry:
     typeof s === 'string'
       ? (isPartner ? s.replaceAll('PortalPay', brand.name) : s)
       : s;
-  
+
   if (!data) {
     return {
       title: 'Industry Not Found',
@@ -79,7 +79,7 @@ export default async function IndustryLandingPage({ params }: { params: Promise<
     typeof s === 'string'
       ? (isPartner ? s.replaceAll('PortalPay', brand.name) : s)
       : s;
-  
+
   // Check if the industry slug exists in our data
   if (!data) {
     notFound();
@@ -210,11 +210,11 @@ export default async function IndustryLandingPage({ params }: { params: Promise<
             <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
               {dePortal(data.heroSubheadline)}
             </p>
-            
+
             <div className="flex flex-wrap gap-3 mb-6">
               <Link
                 href={data.heroCTA.primaryLink}
-                className="px-6 py-3 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold hover:opacity-90 transition"
+                className="px-6 py-3 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-semibold hover:opacity-90 transition"
               >
                 {data.heroCTA.primary}
               </Link>
@@ -244,7 +244,7 @@ export default async function IndustryLandingPage({ params }: { params: Promise<
           </div>
 
           {/* Live Preview */}
-          <IndustryPortalPreview 
+          <IndustryPortalPreview
             industryReceipts={industryReceipts}
             recipient={recipient}
           />
@@ -394,7 +394,7 @@ export default async function IndustryLandingPage({ params }: { params: Promise<
           <div className="flex flex-wrap justify-center gap-4">
             <Link
               href="/admin"
-              className="px-8 py-4 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] text-lg font-semibold hover:opacity-90 transition"
+              className="px-8 py-4 rounded-md bg-pp-secondary text-[var(--primary-foreground)] text-lg font-semibold hover:opacity-90 transition"
             >
               Get Started Free
             </Link>

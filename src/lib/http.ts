@@ -35,7 +35,7 @@ export const buildApiUrl = (path: string): string => {
 export const getBrandApiBase = (brandKey: string): string => {
   try {
     const key = String(brandKey || "").toLowerCase();
-    if (key && key !== "portalpay") {
+    if (key && key !== "portalpay" && key !== "basaltsurge") {
       return `https://${key}.azurewebsites.net`;
     }
     return getApiBase();

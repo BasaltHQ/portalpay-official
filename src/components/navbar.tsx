@@ -13,9 +13,12 @@ import { AuthModal } from "./auth-modal";
 import { useTranslations } from "next-intl";
 import { cachedContainerIdentity } from "@/lib/client-api-cache";
 import { useBrand } from "@/contexts/BrandContext";
+import { getDefaultBrandSymbol, getDefaultBrandName, getEffectiveBrandKey, resolveBrandSymbol } from "@/lib/branding";
 
 // Dynamic import to avoid SSR hydration mismatch
 const ConnectButton = dynamic(() => import("thirdweb/react").then((m) => m.ConnectButton), { ssr: false });
+
+import { useTheme } from "@/contexts/ThemeContext";
 
 type NavItem = { href: string; label: string; ownerOnly?: boolean; authOnly?: boolean };
 
@@ -48,7 +51,8 @@ export function Navbar() {
             }
         } catch { }
         const key = String((brand as any)?.key || '');
-        const typeGuess = key && key.toLowerCase() !== 'portalpay' ? 'partner' : 'platform';
+        const isPlatformBrand = !key || key.toLowerCase() === 'portalpay' || key.toLowerCase() === 'basaltsurge';
+        const typeGuess = isPlatformBrand ? 'platform' : 'partner';
         return { containerType: typeGuess, brandKey: key };
     });
     const [wallets, setWallets] = useState<any[]>([]);
@@ -60,127 +64,24 @@ export function Navbar() {
         return () => { mounted = false; };
     }, []);
 
-    // Partner brand assets fetched directly from partner brand config (for proper navbarMode support)
-    const [partnerNavbarMode, setPartnerNavbarMode] = useState<"symbol" | "logo" | null>(null);
-    const [partnerLogoApp, setPartnerLogoApp] = useState<string>("");
-    const [partnerLogoSymbol, setPartnerLogoSymbol] = useState<string>("");
-    const [partnerLogoFavicon, setPartnerLogoFavicon] = useState<string>("");
-    const [partnerBrandName, setPartnerBrandName] = useState<string>("");
-
-    // Site branding from site config
-    const [theme, setTheme] = useState<{ brandLogoUrl: string; brandFaviconUrl?: string; symbolLogoUrl?: string; brandName: string; brandLogoShape?: "round" | "square" | "unmasked"; brandKey?: string; navbarMode?: "symbol" | "logo" }>(() => ({
-        brandLogoUrl: String((brand as any)?.logos?.app || ""),
-        brandFaviconUrl: String((brand as any)?.logos?.favicon || ""),
-        symbolLogoUrl: String(((brand as any)?.logos?.symbol || (brand as any)?.logos?.app || "")),
-        brandName: String((brand as any)?.name || ""),
-        brandLogoShape: "square",
-        brandKey: String((brand as any)?.key || ""),
-        navbarMode: ((brand as any)?.logos?.navbarMode === "logo" ? "logo" : "symbol"),
-    }));
-    useEffect(() => {
-        // Resolve container identity early to avoid showing default branding in partner containers
-        // Uses shared cache to prevent repeated API calls
-        let cancelled = false;
-        (async () => {
-            try {
-                const ci = await cachedContainerIdentity();
-                if (!cancelled) {
-                    setContainer({ containerType: ci.containerType || "unknown", brandKey: ci.brandKey || "" });
-                }
-            } catch { }
-        })();
-        return () => { cancelled = true; };
-    }, []);
-
-    // Fetch partner brand configuration for navbarMode when in a partner container
-    useEffect(() => {
-        const cType = (container.containerType || "").toLowerCase();
-        const bKey = (container.brandKey || "").trim();
-        if (cType !== "partner" || !bKey) return;
-        let cancelled = false;
-        (async () => {
-            try {
-                const res = await fetch(`/api/platform/brands/${encodeURIComponent(bKey)}/config`, { cache: "no-store" });
-                if (!res.ok || cancelled) return;
-                const data = await res.json();
-                const cfg = data?.config || data || {};
-                const logos = cfg?.logos || cfg?.theme?.logos || {};
-                if (!cancelled) {
-                    // navbarMode from partner config takes precedence
-                    const nm = logos?.navbarMode || cfg?.navbarMode;
-                    if (nm === "logo" || nm === "symbol") {
-                        setPartnerNavbarMode(nm);
-                    }
-                    setPartnerLogoApp(String(logos?.app || cfg?.theme?.brandLogoUrl || "").trim());
-                    setPartnerLogoSymbol(String(logos?.symbol || "").trim());
-                    setPartnerLogoFavicon(String(logos?.favicon || cfg?.theme?.brandFaviconUrl || "").trim());
-                    setPartnerBrandName(String(cfg?.name || cfg?.displayName || "").trim());
-                }
-            } catch { }
-        })();
-        return () => { cancelled = true; };
-    }, [container.containerType, container.brandKey]);
-
-    useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            try {
-                // Skip on merchant portal routes to avoid cross-wallet theme fetch
-                try {
-                    const u = new URL(window.location.href);
-                    const path = u.pathname || "";
-                    if (path.startsWith("/portal") || path.startsWith("/terminal") || path.startsWith("/pricing")) return;
-                } catch { }
-                const headers: Record<string, string> = { "x-theme-caller": "navbar:init" };
-                if (wallet) headers["x-wallet"] = wallet;
-                const r = await fetch("/api/site/config", { cache: "no-store", headers });
-                const j = await r.json().catch(() => ({}));
-                const t = j?.config?.theme;
-                const brandKey = (j?.config?.brand?.key || j?.brand?.key || "portalpay");
-                if (!cancelled && t) {
-                    setTheme({
-                        brandLogoUrl: typeof t.brandLogoUrl === "string" ? t.brandLogoUrl : "",
-                        brandFaviconUrl: typeof t.brandFaviconUrl === "string" ? t.brandFaviconUrl : "",
-                        symbolLogoUrl: (t?.logos && typeof t.logos.symbol === "string") ? t.logos.symbol : "",
-                        brandName: typeof t.brandName === "string" ? t.brandName : "PortalPay",
-                        brandLogoShape: (t.brandLogoShape === "round" || t.brandLogoShape === "square" || t.brandLogoShape === "unmasked") ? t.brandLogoShape : "square",
-                        navbarMode:
-                            (t?.navbarMode === "logo" || t?.navbarMode === "symbol")
-                                ? t.navbarMode
-                                : ((t?.logos && (t.logos.navbarMode === "logo" || t.logos.navbarMode === "symbol"))
-                                    ? t.logos.navbarMode
-                                    : "symbol"),
-                        brandKey: (typeof t.brandKey === "string" ? t.brandKey : brandKey),
-                    });
-                }
-            } catch { }
-        })();
-        return () => { cancelled = true; };
-    }, [wallet]);
-
-    // React to live theme updates (from Console or ThemeLoader) to update brand logo/name without reload
-    useEffect(() => {
-        function onThemeEvent(ev: any) {
-            try {
-                const d = ev?.detail || {};
-                if (!d || typeof d !== "object") return;
-                setTheme(prev => ({
-                    brandLogoUrl: typeof d.brandLogoUrl === "string" ? d.brandLogoUrl : prev.brandLogoUrl,
-                    brandFaviconUrl: typeof d.brandFaviconUrl === "string" ? d.brandFaviconUrl : prev.brandFaviconUrl,
-                    symbolLogoUrl: typeof d.symbolLogoUrl === "string" ? d.symbolLogoUrl : prev.symbolLogoUrl,
-                    brandName: typeof d.brandName === "string" ? d.brandName : prev.brandName,
-                    brandLogoShape: (d.brandLogoShape === "round" || d.brandLogoShape === "square" || d.brandLogoShape === "unmasked") ? d.brandLogoShape : prev.brandLogoShape,
-                    navbarMode: (d.navbarMode === "logo" || d.navbarMode === "symbol") ? d.navbarMode : prev.navbarMode,
-                }));
-            } catch { }
-        }
-        window.addEventListener("pp:theme:updated", onThemeEvent as any);
-        window.addEventListener("pp:theme:ready", onThemeEvent as any);
-        return () => {
-            window.removeEventListener("pp:theme:updated", onThemeEvent as any);
-            window.removeEventListener("pp:theme:ready", onThemeEvent as any);
+    // Site branding from dynamic ThemeContext (which now includes Shop overrides)
+    const { theme: ctxTheme } = useTheme();
+    // Helper to resolve effective branding, prioritizing partner assets if in partner container
+    const effectiveTheme = useMemo(() => {
+        const t = ctxTheme;
+        return {
+            brandLogoUrl: t.brandLogoUrl,
+            brandFaviconUrl: t.brandFaviconUrl,
+            symbolLogoUrl: t.symbolLogoUrl,
+            brandName: t.brandName,
+            brandLogoShape: t.brandLogoShape,
+            brandKey: t.brandKey,
+            navbarMode: t.navbarMode
         };
-    }, []);
+    }, [ctxTheme]);
+
+    // Use effectiveTheme instead of local state
+    const theme = effectiveTheme;
 
     // Check authentication status and auto-authenticate or show modal
     useEffect(() => {
@@ -258,7 +159,6 @@ export function Navbar() {
 
     const items = useMemo<NavItem[]>(() => {
         const base: NavItem[] = [
-            { href: "/console", label: tNavbar("console") },
             { href: "/terminal", label: "Terminal" },
         ];
         if (account?.address) base.push({ href: "/profile", label: tNavbar("profile"), authOnly: true });
@@ -453,11 +353,9 @@ export function Navbar() {
         return () => { ctrlUsers.abort(); ctrlShops.abort(); };
     }, [q, domain, platform, language, minXp, liveOnly, userSort, shopSort, shopSetupOnly, shopHasSlugOnly, shopPack]);
 
-    const consoleItem = useMemo(() => items.find(i => i.href === '/console'), [items]);
-    const otherItems = useMemo(() => items.filter(i => i.href !== '/console'), [items]);
     const socialActive = useMemo(() => pathname?.startsWith('/analytics') || pathname?.startsWith('/leaderboard'), [pathname]);
     const defiEffective = defiEnabled || (isOwner && defiOverride);
-    const navZ = (pathname?.startsWith('/console') || pathname?.startsWith('/terminal') || pathname?.startsWith('/pricing')) ? 'z-[10000]' : 'z-50';
+    const navZ = (pathname?.startsWith('/terminal') || pathname?.startsWith('/pricing')) ? 'z-[10000]' : 'z-50';
     // Compute branding readiness and whether to show skeleton in partner containers
     const isPartnerContainer = (() => {
         const t = (container.containerType || "").toLowerCase();
@@ -466,7 +364,7 @@ export function Navbar() {
         return !!bk && bk !== "portalpay" && bk !== "basaltsurge";
     })();
     const hasBrandAssets = Boolean((theme.symbolLogoUrl || "").trim() || (theme.brandFaviconUrl || "").trim() || (theme.brandLogoUrl || "").trim());
-    const effectiveBrandKey = (theme.brandKey || container.brandKey || "portalpay").toLowerCase();
+    const effectiveBrandKey = (theme.brandKey || container.brandKey || getEffectiveBrandKey()).toLowerCase();
     const showBrandSkeleton = isPartnerContainer && !hasBrandAssets;
     // Determine if a proper full-width logo exists for this brand; if not, fall back to symbol+text
     const fullLogoUrl = String((theme.brandLogoUrl || "")).trim();
@@ -475,7 +373,7 @@ export function Navbar() {
         // Detect blob storage URLs containing the brand key (case-insensitive)
         const lowerUrl = fullLogoUrl.toLowerCase();
         const lowerKey = (effectiveBrandKey || "").toLowerCase();
-        if (lowerKey && lowerKey !== "portalpay") {
+        if (lowerKey && lowerKey !== "portalpay" && lowerKey !== "basaltsurge") {
             // Check for brand key in blob storage paths (e.g., /Brands/paynex... or /brands/paynex...)
             if (lowerUrl.includes(`/brands/${lowerKey}`) || lowerUrl.includes(`/${lowerKey}`)) return true;
             // Check for blob storage URLs that contain the brand key anywhere
@@ -488,23 +386,17 @@ export function Navbar() {
         return !isDefaultAsset;
     })();
 
-    // Effective logo URLs: partner assets take precedence when available in partner containers
-    const effectiveLogoApp = (isPartnerContainer && partnerLogoApp) ? partnerLogoApp : theme.brandLogoUrl;
-    const effectiveLogoSymbol = (isPartnerContainer && partnerLogoSymbol) ? partnerLogoSymbol : theme.symbolLogoUrl;
-    const effectiveLogoFavicon = (isPartnerContainer && partnerLogoFavicon) ? partnerLogoFavicon : theme.brandFaviconUrl;
-    const effectivePartnerBrandName = (isPartnerContainer && partnerBrandName) ? partnerBrandName : "";
+    // Effective logo URLs
+    const effectiveLogoApp = theme.brandLogoUrl;
+    const effectiveLogoSymbol = theme.symbolLogoUrl;
+    const effectiveLogoFavicon = theme.brandFaviconUrl;
 
-    // Trust explicit navbarMode from partner config first, then API, then fall back to detection
+    // Trust explicit navbarMode from theme
     const navbarMode: "symbol" | "logo" = (() => {
-        // If partner config explicitly sets navbarMode, use it (partner admin configured it in Partners panel)
-        if (isPartnerContainer && partnerNavbarMode) return partnerNavbarMode;
-        // If API explicitly sets navbarMode to "logo", trust it
         if (theme.navbarMode === "logo") return "logo";
-        // If API explicitly sets navbarMode to "symbol", trust it
         if (theme.navbarMode === "symbol") return "symbol";
         // Fallback: use "logo" for partners with a full logo, otherwise "symbol"
-        if (effectiveBrandKey && effectiveBrandKey !== "portalpay" && effectiveBrandKey !== "basaltsurge" && hasPartnerFullLogo) return "logo";
-        return "symbol";
+        if (effectiveBrandKey && effectiveBrandKey !== "portalpay" && effectiveBrandKey !== "basaltsurge") return "logo";
         return "symbol";
     })();
 
@@ -546,10 +438,10 @@ export function Navbar() {
                                 const app = (effectiveLogoApp || "").trim();
                                 const sym = (effectiveLogoSymbol || "").trim();
                                 const fav = (effectiveLogoFavicon || "").trim();
-                                const def = effectiveBrandKey === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png";
-                                return app || sym || fav || (isPartnerContainer ? "" : def);
+                                const def = getDefaultBrandSymbol(effectiveBrandKey);
+                                return resolveBrandSymbol(app || sym || fav || (isPartnerContainer ? "" : def), effectiveBrandKey);
                             })()}
-                            alt={displayBrandName || (isPartnerContainer ? "" : "PortalPay")}
+                            alt={displayBrandName || (isPartnerContainer ? "" : getDefaultBrandName(effectiveBrandKey))}
                             className={
                                 "h-8 w-auto max-w-[360px] object-contain flex-shrink-0 rounded-none bg-transparent"
                             }
@@ -560,8 +452,8 @@ export function Navbar() {
                                 const a = (effectiveLogoSymbol || "").trim();
                                 const b = (effectiveLogoFavicon || "").trim();
                                 const c = (effectiveLogoApp || "").trim();
-                                const def = effectiveBrandKey === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png";
-                                return a || b || c || (isPartnerContainer ? "" : def);
+                                const def = getDefaultBrandSymbol(effectiveBrandKey);
+                                return resolveBrandSymbol(a || b || c || (isPartnerContainer ? "" : def), effectiveBrandKey);
                             })()}
                             alt={displayBrandName || (isPartnerContainer ? "" : "PortalPay")}
                             className={
@@ -584,16 +476,6 @@ export function Navbar() {
                 </Link>
                 <div className="flex items-center gap-2 flex-shrink-0">
                     <nav ref={navRef} className="relative hidden md:flex items-center gap-0.5 md:gap-1">
-                        {consoleItem ? (
-                            <Link
-                                key={consoleItem.href}
-                                href={consoleItem.href}
-                                ref={el => { linkRefs.current[consoleItem.href] = el; }}
-                                className={"px-2 py-0.5 microtext text-[9px] md:text-[9px] lg:text-[10px] rounded-md hover:bg-foreground/5 transition-colors inline-flex items-center leading-none " + (pathname?.startsWith(consoleItem.href) ? "text-foreground" : "text-foreground/80")}
-                            >
-                                {consoleItem.label}
-                            </Link>
-                        ) : null}
                         {account?.address ? (
                             <div
                                 className="relative flex items-center"
@@ -622,7 +504,7 @@ export function Navbar() {
                                 ) : null}
                             </div>
                         ) : null}
-                        {otherItems.map(it => (
+                        {items.map((it: NavItem) => (
                             <Link
                                 key={it.href}
                                 href={it.href}
@@ -648,7 +530,7 @@ export function Navbar() {
                         {/* Animated underline */}
                         {indicator.visible ? (
                             <span
-                                className="absolute bottom-0 h-[2px] rounded bg-[var(--primary)] transition-all duration-200"
+                                className="absolute bottom-0 h-[2px] rounded bg-[var(--pp-secondary)] transition-all duration-200"
                                 style={{ left: indicator.left, width: indicator.width }}
                             />
                         ) : null}
@@ -660,7 +542,7 @@ export function Navbar() {
                                 value={q}
                                 onChange={e => { setQ(e.target.value); setOpen(true); }}
                                 placeholder={tCommon("search")}
-                                className="w-48 h-9 px-3 py-1 rounded-md bg-foreground/5 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] text-sm"
+                                className="w-48 h-9 px-3 py-1 rounded-md bg-foreground/5 focus:outline-none focus:ring-2 focus:ring-[var(--pp-secondary)] text-sm"
                             />
                             <button title={tNavbar("filters")} onClick={() => setOpen(o => !o)} className="w-9 h-9 grid place-items-center rounded-md hover:bg-foreground/5">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 3H2l8 9v7l4 2v-9l8-9z" /></svg>
@@ -822,7 +704,7 @@ export function Navbar() {
                                 },
                             },
                         }}
-                        connectModal={{ title: tCommon("login"), titleIcon: showBrandSkeleton ? undefined : (() => { const a = (theme.symbolLogoUrl || "").trim(); const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return a || b || c || (isPartnerContainer ? undefined : "/ppsymbol.png"); })(), size: "compact", showThirdwebBranding: false }}
+                        connectModal={{ title: tCommon("login"), titleIcon: showBrandSkeleton ? undefined : (() => { const a = (theme.symbolLogoUrl || "").trim(); const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return a || b || c || (isPartnerContainer ? undefined : getDefaultBrandSymbol(effectiveBrandKey)); })(), size: "compact", showThirdwebBranding: false }}
                         theme={twTheme}
                         onDisconnect={async () => {
                             try {
@@ -849,9 +731,6 @@ export function Navbar() {
                     <div className="absolute inset-0 glass-backdrop" onClick={() => setMobileOpen(false)} />
                     <div className="absolute top-14 left-0 right-0 glass-float rounded-b-xl border p-3 space-y-2">
                         <nav className="flex flex-col">
-                            {consoleItem ? (
-                                <Link key={consoleItem.href} href={consoleItem.href} onClick={() => setMobileOpen(false)} className={"px-3 py-2 microtext text-[11px] rounded-md hover:bg-foreground/10 " + (pathname?.startsWith(consoleItem.href) ? "text-foreground" : "text-foreground/80")}>{consoleItem.label}</Link>
-                            ) : null}
                             {account?.address ? (
                                 <>
                                     <button onClick={() => setMobileSocialOpen(o => !o)} className="px-3 py-2 microtext text-[11px] rounded-md hover:bg-foreground/10 flex items-center justify-between">
@@ -868,7 +747,7 @@ export function Navbar() {
                                     ) : null}
                                 </>
                             ) : null}
-                            {otherItems.map(it => (
+                            {items.map((it: NavItem) => (
                                 <Link
                                     key={it.href}
                                     href={it.href}
@@ -913,6 +792,7 @@ export function Navbar() {
                                 }}
                                 detailsButton={{
                                     displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+                                    style: getConnectButtonStyle(),
                                 }}
                                 detailsModal={{
                                     payOptions: {
@@ -931,7 +811,7 @@ export function Navbar() {
                                         },
                                     },
                                 }}
-                                connectModal={{ title: tCommon("login"), titleIcon: showBrandSkeleton ? undefined : (() => { const a = (theme.symbolLogoUrl || "").trim(); const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return a || b || c || (isPartnerContainer ? undefined : "/ppsymbol.png"); })(), size: "compact", showThirdwebBranding: false }}
+                                connectModal={{ title: tCommon("login"), titleIcon: showBrandSkeleton ? undefined : (() => { const a = (theme.symbolLogoUrl || "").trim(); const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return a || b || c || (isPartnerContainer ? undefined : getDefaultBrandSymbol(effectiveBrandKey)); })(), size: "compact", showThirdwebBranding: false }}
                                 theme={twTheme}
                                 onDisconnect={async () => {
                                     try {

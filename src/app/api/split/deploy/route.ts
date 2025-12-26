@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getContainer } from "@/lib/cosmos";
+import { getSiteConfigForWallet } from "@/lib/site-config";
 import { requireApimOrJwt } from "@/lib/gateway-auth";
 import { requireThirdwebAuth } from "@/lib/auth";
 import { requireCsrf } from "@/lib/security";
@@ -25,7 +26,9 @@ import { isPartnerContext, getSanitizedSplitBps } from "@/lib/env";
 
 function getDocId(brandKey?: string): string {
   // Legacy splits (no brand) use base doc ID
-  if (!brandKey) return "site:config";
+  // Platform brands (portalpay, basaltsurge) also use base doc ID for backwards compatibility
+  const key = String(brandKey || "").toLowerCase();
+  if (!key || key === "portalpay" || key === "basaltsurge") return "site:config";
   // Brand-scoped splits use prefixed doc ID
   return `site:config:${brandKey}`;
 }
@@ -42,6 +45,12 @@ function isHexAddress(addr?: string): addr is `0x${string}` {
 function aliasBrandKey(k?: string): string {
   const key = String(k || "").toLowerCase();
   return key === "icunow" ? "icunow-store" : key;
+}
+
+/** Check if brand key represents a platform brand (portalpay or basaltsurge) */
+function isPlatformBrand(k?: string): boolean {
+  const key = String(k || "").toLowerCase();
+  return key === "portalpay" || key === "basaltsurge";
 }
 
 function toBps(percent: number): number {
@@ -118,6 +127,9 @@ export async function GET(req: NextRequest) {
           if (!bKey) {
             try { bKey = getBrandKey(); } catch { bKey = undefined; }
           }
+          // Default unauthenticated basaltsurge requests to portalpay synthesis if applicable
+          if (bKey === "basaltsurge") bKey = "portalpay";
+
           const origin = resolveOrigin(req);
           let brand: any = {};
           let overrides: any = {};
@@ -145,15 +157,13 @@ export async function GET(req: NextRequest) {
               ? envPartnerBps
               : ((fallbackPartnerBps && fallbackPartnerBps > 0) ? Math.max(0, Math.min(10000, fallbackPartnerBps)) : defaultPartnerBps));
           const platformSharesBps = resolvePlatformBpsFromBrand(bKey, brand, overrides);
-          const isPartnerBrand = !!bKey && bKey !== "portalpay";
+          const isPartnerBrand = !!bKey && !isPlatformBrand(bKey);
           // Use merchant from query param only for unauthenticated preview
           const urlWallet = new URL(req.url);
           const queryWallet = String(urlWallet.searchParams.get("wallet") || "").toLowerCase();
           const mWallet = /^0x[a-f0-9]{40}$/i.test(queryWallet) ? queryWallet : "" as any;
           const split: any = { address: undefined, recipients: [] as any[] };
-          try {
-            console.log("[split/deploy] unauthenticated_preview", { brandKey: bKey, partnerWallet, partnerFeeBps, platformRecipient, wallet: mWallet });
-          } catch { }
+
           if (isPartnerBrand && /^0x[a-f0-9]{40}$/i.test(platformRecipient) && /^0x[a-f0-9]{40}$/i.test(partnerWallet) && partnerFeeBps > 0 && /^0x[a-f0-9]{40}$/i.test(mWallet)) {
             const partnerShares = Math.max(0, Math.min(10000 - platformSharesBps, partnerFeeBps));
             const merchantShares = Math.max(0, 10000 - platformSharesBps - partnerShares);
@@ -190,433 +200,131 @@ export async function GET(req: NextRequest) {
       try {
         brandKey = getBrandKey();
       } catch {
-        brandKey = undefined;
       }
     }
-    try { console.log("[split/deploy] brandKeyResolved", { brandKey, host }); } catch { }
-    try { console.log("[split/deploy] originResolved", { origin: resolveOrigin(req) }); } catch { }
+
+    // Preserve original brandKey for response (basaltsurge should stay as basaltsurge in UI)
+    const originalBrandKey = brandKey;
+    // For document lookups, normalize basaltsurge to portalpay (they share the same Cosmos DB documents)
+    const docBrandKey = (brandKey && String(brandKey).toLowerCase() === "basaltsurge") ? "portalpay" : brandKey;
+    const resolvedBrand = docBrandKey || "portalpay";
 
     const c = await getContainer();
 
-    // ALWAYS check legacy doc first for ALL brands (legacy docs may exist without brandKey)
-    // This ensures backwards compatibility for merchants created before brand-scoping
-    let legacyDoc: any | undefined;
+    // PRIMARY: Use getSiteConfigForWallet
     try {
-      const { resource } = await c.item("site:config", wallet).read<any>();
-      if (resource) {
-        legacyDoc = resource;
-      }
-    } catch {
-      // Legacy doc not found
-    }
+      const cfg = await getSiteConfigForWallet(wallet);
+      let splitAddr = (cfg as any)?.splitAddress || (cfg as any)?.split?.address;
+      let split: any = (cfg as any)?.split;
 
-    // For platform/portalpay brand OR when legacy doc exists with splitAddress, use legacy handling
-    if (legacyDoc && (legacyDoc.splitAddress || legacyDoc.split?.address) && (!brandKey || String(brandKey).toLowerCase() === "portalpay")) {
-      const resource = legacyDoc;
-      // Legacy doc found with split data
-      const split = resource?.split || (resource?.splitAddress ? { address: resource.splitAddress } : undefined);
-      // IMPORTANT: Honor the requested brandKey parameter over the stored legacy brandKey
-      // This fixes the issue where merchants with legacy xoinpay docs get wrong brandKey on paynex
-      const payload: any = { split: (split ? { ...(split as any), brandKey: String(brandKey || resource?.brandKey || "").toLowerCase() } : split), brandKey: brandKey || resource?.brandKey, legacy: true };
-          try {
-            const origin = resolveOrigin(req);
-            const bKey = String(resource?.brandKey || brandKey || "").toLowerCase();
-            const platformRecipient = String(process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.PLATFORM_WALLET || "").toLowerCase();
-            if (bKey && bKey !== "portalpay") {
-              const bRes = await fetch(`${origin}/api/platform/brands/${encodeURIComponent(bKey)}/config`, { cache: "no-store" });
-              const bj = await bRes.json().catch(() => ({}));
-              const brand = bj?.brand || {};
-              const overrides = bj?.overrides || {};
-              const envPartnerWallet = String(process.env.PARTNER_WALLET || "").toLowerCase();
-              const partnerEffective = String((overrides as any)?.partnerWallet || brand?.partnerWallet || envPartnerWallet || "").toLowerCase();
-              const sanitized = getSanitizedSplitBps();
-              const envPartnerBps = typeof sanitized?.partner === "number" ? Math.max(0, Math.min(10000, sanitized.partner)) : 0;
-              const basePartnerBps = typeof (overrides as any)?.partnerFeeBps === "number"
-                ? Math.max(0, Math.min(10000, (overrides as any).partnerFeeBps))
-                : (typeof brand?.partnerFeeBps === "number" ? Math.max(0, Math.min(10000, brand.partnerFeeBps)) : 0);
-              const fallbackPartnerBps = 0;
-              const defaultPartnerBps = 50;
-              const partnerBps = basePartnerBps > 0
-                ? basePartnerBps
-                : (envPartnerBps > 0
-                  ? envPartnerBps
-                  : ((fallbackPartnerBps && fallbackPartnerBps > 0)
-                    ? Math.max(0, Math.min(10000, fallbackPartnerBps))
-                    : defaultPartnerBps));
-              // In partner containers, require at least 3 recipients when a split address exists
-              const baseExpected = /^0x[a-f0-9]{40}$/i.test(partnerEffective) && partnerBps > 0 ? 3 : 2;
-              const expected = isPartnerContext() ? Math.max(baseExpected, 3) : baseExpected;
-              try { console.log("[split/deploy] calc", { bKey, partnerWallet: partnerEffective, partnerBps, expected }); } catch { }
-              const actual = Array.isArray((split as any)?.recipients) ? (split as any).recipients.length : 0;
-          if (((split as any)?.address && actual < expected)) {
-            payload.misconfiguredSplit = {
-              expectedRecipients: expected,
-              actualRecipients: actual,
-              reason: "missing_partner_recipient",
-              needsRedeploy: true,
-              brandKey: bKey,
-            };
-            // Synthesize a correct 3-recipient preview for partner brands without modifying storage
-            try {
-              const platformSharesBps = resolvePlatformBpsFromBrand(bKey, brand, overrides);
-              if (isHexAddress(platformRecipient) && isHexAddress(partnerEffective) && partnerBps > 0) {
-                const partnerSharesBps = Math.max(0, Math.min(10000 - platformSharesBps, partnerBps));
-                const merchantSharesBps = Math.max(0, 10000 - platformSharesBps - partnerSharesBps);
-                const recipientsPreview = [
-                  { address: wallet, sharesBps: merchantSharesBps },
-                  { address: partnerEffective as `0x${string}`, sharesBps: partnerSharesBps },
-                  { address: platformRecipient as `0x${string}`, sharesBps: platformSharesBps },
-                ];
-                if (!payload.split) {
-                  payload.split = { address: (split as any)?.address, recipients: recipientsPreview };
-                } else {
-                  (payload.split as any).recipients = recipientsPreview;
-                }
-              }
-            } catch {}
-          }
-            }
-          } catch { }
-          try {
-            const origin2 = resolveOrigin(req);
-            const bKey2 = String(resource?.brandKey || brandKey || "").toLowerCase();
-            let brand2: any = {};
-            let overrides2: any = {};
-            if (bKey2) {
-              try {
-                const bRes2 = await fetch(`${origin2}/api/platform/brands/${encodeURIComponent(bKey2)}/config`, { cache: "no-store" });
-                const bj2 = await bRes2.json().catch(() => ({}));
-                brand2 = bj2?.brand || {};
-                overrides2 = bj2?.overrides || {};
-              } catch { }
-            }
-            const platformRecipient = String(process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.PLATFORM_WALLET || "").toLowerCase();
-            if (isHexAddress(platformRecipient)) {
-              const envPartnerWallet = String(process.env.PARTNER_WALLET || "").toLowerCase();
-              const partnerWallet2 = String((overrides2 as any)?.partnerWallet || brand2?.partnerWallet || resource?.partnerWallet || envPartnerWallet || "").toLowerCase();
-              const basePartnerBps2 = typeof (overrides2 as any)?.partnerFeeBps === "number"
-                ? Math.max(0, Math.min(10000, (overrides2 as any).partnerFeeBps))
-                : (typeof brand2?.partnerFeeBps === "number" ? Math.max(0, Math.min(10000, brand2.partnerFeeBps)) : 0);
-              const sanitized2 = getSanitizedSplitBps();
-              const envPartnerBps2 = typeof sanitized2?.partner === "number" ? Math.max(0, Math.min(10000, sanitized2.partner)) : 0;
-              const fallbackPartnerBps2 = 0;
-              const defaultPartnerBps2 = 50;
-              const partnerFeeBps2 = basePartnerBps2 > 0
-                ? basePartnerBps2
-                : (envPartnerBps2 > 0
-                  ? envPartnerBps2
-                  : ((fallbackPartnerBps2 && fallbackPartnerBps2 > 0)
-                    ? Math.max(0, Math.min(10000, fallbackPartnerBps2))
-                    : defaultPartnerBps2));
-              try {
-                console.log("[split/deploy] inputs", {
-                  brandKey: bKey2,
-                  partnerWallet: partnerWallet2,
-                  partnerFeeBps: partnerFeeBps2,
-                  platformRecipient,
-                  source: { overrides: !!overrides2, brand: !!brand2 }
-                });
-              } catch { }
-              const platformSharesBps = resolvePlatformBpsFromBrand(bKey2, brand2, overrides2);
-              const isPartnerBrand2 = bKey2 !== "portalpay";
-              if (isPartnerBrand2) {
-                if (isHexAddress(partnerWallet2) && partnerFeeBps2 > 0) {
-                  const partnerSharesBps2 = Math.max(0, Math.min(10000 - platformSharesBps, partnerFeeBps2));
-                  const merchantSharesBps2 = Math.max(0, 10000 - platformSharesBps - partnerSharesBps2);
-                  const recipients2 = [
-                    { address: wallet, sharesBps: merchantSharesBps2 },
-                    { address: partnerWallet2 as `0x${string}`, sharesBps: partnerSharesBps2 },
-                    { address: platformRecipient as `0x${string}`, sharesBps: platformSharesBps },
-                  ];
-                  if (!payload.split) payload.split = { address: undefined, recipients: recipients2 };
-                  else {
-                    const existingCount = Array.isArray((payload.split as any).recipients) ? ((payload.split as any).recipients || []).length : 0;
-                    // Override preview recipients when misconfigured (e.g., only 2 recipients) to show expected partner+platform
-                    if (existingCount === 0 || existingCount < 3) {
-                      (payload.split as any).recipients = recipients2;
-                    }
-                  }
-                  const hasAddress = !!((payload as any).split?.address) && /^0x[a-f0-9]{40}$/i.test(String((payload as any).split.address));
-                  if (!hasAddress) {
-                    (payload as any).requiresDeploy = true;
-                    (payload as any).reason = "no_split_for_partner_brand";
-                  } else {
-                    (payload as any).requiresDeploy = false;
-                    (payload as any).reason = undefined;
-                  }
-                } else {
-                  (payload as any).requiresDeploy = true;
-                  (payload as any).reason = "partner_config_missing";
-                  if (!payload.split) payload.split = { address: undefined, recipients: [] };
-                  else if (!Array.isArray((payload.split as any).recipients) || ((payload.split as any).recipients || []).length === 0) {
-                    (payload.split as any).recipients = [];
-                  } else {
-                    (payload.split as any).recipients = [];
-                  }
-                }
-              } else {
-                // Platform container: synthesize merchant + platform
-                const merchantSharesBps2 = Math.max(0, 10000 - platformSharesBps);
-                const recipients2 = [
-                  { address: wallet, sharesBps: merchantSharesBps2 },
-                  { address: platformRecipient as `0x${string}`, sharesBps: platformSharesBps },
-                ];
-                if (!payload.split) payload.split = { address: undefined, recipients: recipients2 };
-                else {
-                  const existingCount = Array.isArray((payload.split as any).recipients) ? ((payload.split as any).recipients || []).length : 0;
-                  // Override preview recipients when misconfigured (e.g., only 2 recipients) to show expected partner+platform
-                  if (existingCount === 0 || existingCount < 3) {
-                    (payload.split as any).recipients = recipients2;
-                  }
-                }
-              }
-            }
-          } catch { }
-      return NextResponse.json(payload);
-    }
-
-    // Try brand-scoped doc
-    const docId = getDocId(brandKey);
-    try {
-      const { resource } = await c.item(docId, wallet).read<any>();
-      const split = resource?.split || (resource?.splitAddress ? { address: resource.splitAddress } : undefined);
-      // IMPORTANT: Honor the requested brandKey parameter over the stored brandKey
-      const payload: any = { split: (split ? { ...(split as any), brandKey: String(brandKey || resource?.brandKey || "").toLowerCase() } : split), brandKey: brandKey || resource?.brandKey };
-      try {
-        const origin = resolveOrigin(req);
-        const bKey = String(resource?.brandKey || brandKey || "").toLowerCase();
-        if (bKey && bKey !== "portalpay") {
-          const bRes = await fetch(`${origin}/api/platform/brands/${encodeURIComponent(bKey)}/config`, { cache: "no-store" });
-          const bj = await bRes.json().catch(() => ({}));
-          const brand = bj?.brand || {};
-          const overrides3 = bj?.overrides || {};
-          const platformRecipient = String(process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.PLATFORM_WALLET || "").toLowerCase();
-          const envPartnerWallet = String(process.env.PARTNER_WALLET || "").toLowerCase();
-          const partnerEffective = String((overrides3 as any)?.partnerWallet || brand?.partnerWallet || envPartnerWallet || "").toLowerCase();
-          const sanitized3 = getSanitizedSplitBps();
-          const envPartnerBps3 = typeof sanitized3?.partner === "number" ? Math.max(0, Math.min(10000, sanitized3.partner)) : 0;
-          const basePartnerBps3 = typeof (overrides3 as any)?.partnerFeeBps === "number"
-            ? Math.max(0, Math.min(10000, (overrides3 as any).partnerFeeBps))
-            : (typeof brand?.partnerFeeBps === "number" ? Math.max(0, Math.min(10000, brand.partnerFeeBps)) : 0);
-          const fallbackPartnerBps3 = 0;
-          const defaultPartnerBps3 = 50;
-          const partnerBps = basePartnerBps3 > 0
-            ? basePartnerBps3
-            : (envPartnerBps3 > 0
-              ? envPartnerBps3
-              : ((fallbackPartnerBps3 && fallbackPartnerBps3 > 0)
-                ? Math.max(0, Math.min(10000, fallbackPartnerBps3))
-                : defaultPartnerBps3));
-          try {
-            console.log("[split/deploy] brand-scoped", {
-              brandKey: bKey,
-              partnerWallet: partnerEffective,
-              partnerFeeBps: partnerBps,
-              source: { overrides: !!overrides3, brand: !!brand }
-            });
-          } catch { }
-          const baseExpected = /^0x[a-f0-9]{40}$/i.test(partnerEffective) && partnerBps > 0 ? 3 : 2;
-          const expected = isPartnerContext() ? Math.max(baseExpected, 3) : baseExpected;
-          const actual = Array.isArray((split as any)?.recipients) ? (split as any).recipients.length : 0;
-          if (((split as any)?.address && actual < expected)) {
-            payload.misconfiguredSplit = {
-              expectedRecipients: expected,
-              actualRecipients: actual,
-              reason: "missing_partner_recipient",
-              needsRedeploy: true,
-              brandKey: bKey,
-            };
-            // Synthesize a correct 3-recipient preview for partner brands without modifying storage
-            try {
-              const platformSharesBps = resolvePlatformBpsFromBrand(bKey, brand, overrides3);
-              if (isHexAddress(platformRecipient) && isHexAddress(partnerEffective) && partnerBps > 0) {
-                const partnerSharesBps = Math.max(0, Math.min(10000 - platformSharesBps, partnerBps));
-                const merchantSharesBps = Math.max(0, 10000 - platformSharesBps - partnerSharesBps);
-                const recipientsPreview = [
-                  { address: wallet, sharesBps: merchantSharesBps },
-                  { address: partnerEffective as `0x${string}`, sharesBps: partnerSharesBps },
-                  { address: platformRecipient as `0x${string}`, sharesBps: platformSharesBps },
-                ];
-                if (!payload.split) {
-                  payload.split = { address: (split as any)?.address, recipients: recipientsPreview };
-                } else {
-                  (payload.split as any).recipients = recipientsPreview;
-                }
-              }
-            } catch {}
-          }
-          // Validate platform recipient presence and shares against expected platform bps
-          try {
-            const recs = Array.isArray((split as any)?.recipients) ? (split as any).recipients : [];
-            const expectedPlatformBps = resolvePlatformBpsFromBrand(bKey, brand, overrides3);
-            const platAddr = String(platformRecipient).toLowerCase();
-            const platRec = recs.find((r: any) => String(r?.address || "").toLowerCase() === platAddr);
-            const actualPlatBps = clampBps(Number(platRec?.sharesBps || 0));
-            if ((split as any)?.address) {
-              if (!platRec) {
-                payload.misconfiguredSplit = {
-                  expectedRecipients: Math.max(3, expected),
-                  actualRecipients: actual,
-                  reason: "missing_platform_recipient",
-                  needsRedeploy: true,
-                  brandKey: bKey,
-                  expectedPlatformBps,
-                };
-              } else if (actualPlatBps !== expectedPlatformBps) {
-                payload.misconfiguredSplit = {
-                  expectedRecipients: expected,
-                  actualRecipients: actual,
-                  reason: "platform_bps_mismatch",
-                  needsRedeploy: true,
-                  brandKey: bKey,
-                  expectedPlatformBps,
-                  actualPlatformBps: actualPlatBps,
-                };
-              }
-            }
-          } catch { }
-        }
-      } catch { }
-      // If no recipients are persisted yet (no split deployed or empty doc), synthesize brand-default recipients
-      // so client UIs (Paynex/DigiBazaar) can render the correct expected split preview.
-      try {
-        const origin2 = resolveOrigin(req);
-        const bKey2 = String(resource?.brandKey || brandKey || "").toLowerCase();
-        let brand2: any = {};
-        if (bKey2) {
-          try {
-            const bRes2 = await fetch(`${origin2}/api/platform/brands/${encodeURIComponent(bKey2)}/config`, { cache: "no-store" });
-            const bj2 = await bRes2.json().catch(() => ({}));
-            brand2 = bj2?.brand || {};
-          } catch { }
-        }
-        const platformRecipient = String(process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.PLATFORM_WALLET || "").toLowerCase();
-        if (isHexAddress(platformRecipient)) {
-          const envPartnerWallet = String(process.env.PARTNER_WALLET || "").toLowerCase();
-          const partnerWallet2 = String(brand2?.partnerWallet || resource?.partnerWallet || envPartnerWallet || "").toLowerCase();
-          const envPartnerSplitRaw2 = String(process.env.PARTNER_SPLIT_BPS || "").trim();
-          const partnerFeeBps2 = (() => {
-            const base = typeof brand2?.partnerFeeBps === "number" ? Math.max(0, Math.min(10000, brand2.partnerFeeBps)) : 0;
-            const envBps = envPartnerSplitRaw2 ? Math.max(0, Math.min(10000, Number(envPartnerSplitRaw2))) : 0;
-            return base > 0 ? base : (isPartnerContext() ? envBps : base);
-          })();
-          const platformSharesBps = resolvePlatformBpsFromBrand(bKey2, brand2, undefined);
-          const isPartnerBrand2 = bKey2 !== "portalpay";
-          if (isPartnerBrand2) {
-            if (isHexAddress(partnerWallet2) && partnerFeeBps2 > 0) {
-              const partnerSharesBps2 = Math.max(0, Math.min(10000 - platformSharesBps, partnerFeeBps2));
-              const merchantSharesBps2 = Math.max(0, 10000 - platformSharesBps - partnerSharesBps2);
-              const recipients2 = [
-                { address: wallet, sharesBps: merchantSharesBps2 },
-                { address: partnerWallet2 as `0x${string}`, sharesBps: partnerSharesBps2 },
-                { address: platformRecipient as `0x${string}`, sharesBps: platformSharesBps },
-              ];
-              const hasAddress = !!((payload as any).split?.address) && /^0x[a-f0-9]{40}$/i.test(String((payload as any).split.address));
-              if (!hasAddress) {
-                if (!payload.split) payload.split = { address: undefined, recipients: recipients2 };
-                else if (!Array.isArray((payload.split as any).recipients) || ((payload.split as any).recipients || []).length === 0) {
-                  (payload.split as any).recipients = recipients2;
-                }
-                (payload as any).requiresDeploy = true;
-                (payload as any).reason = "no_split_for_partner_brand";
-              } else {
-                // Address exists; do not override recipients. Use persisted recipients only.
-                (payload as any).requiresDeploy = false;
-                (payload as any).reason = undefined;
-              }
-            } else {
-              (payload as any).requiresDeploy = true;
-              (payload as any).reason = "partner_config_missing";
-              if (!payload.split) payload.split = { address: undefined, recipients: [] };
-              else if (!Array.isArray((payload.split as any).recipients) || ((payload.split as any).recipients || []).length === 0) {
-                (payload.split as any).recipients = [];
-              } else {
-                (payload.split as any).recipients = [];
-              }
-            }
-          } else {
-            // Platform container: synthesize merchant + platform
-            const merchantSharesBps2 = Math.max(0, 10000 - platformSharesBps);
-            const recipients2 = [
-              { address: wallet, sharesBps: merchantSharesBps2 },
-              { address: platformRecipient as `0x${string}`, sharesBps: platformSharesBps },
-            ];
-            const hasAddress = !!((payload as any).split?.address) && /^0x[a-f0-9]{40}$/i.test(String((payload as any).split.address));
-            if (!hasAddress) {
-              if (!payload.split) payload.split = { address: undefined, recipients: recipients2 };
-              else if (!Array.isArray((payload.split as any).recipients) || ((payload.split as any).recipients || []).length === 0) {
-                (payload.split as any).recipients = recipients2;
-              }
-            }
-          }
-        }
-      } catch { }
-      return NextResponse.json(payload);
-    } catch {
-      try {
-        const origin = resolveOrigin(req);
-        const bKey = String(brandKey || "").toLowerCase();
-        let brand: any = {};
-        if (bKey) {
-          try {
-            const bRes = await fetch(`${origin}/api/platform/brands/${encodeURIComponent(bKey)}/config`, { cache: "no-store" });
-            const bj = await bRes.json().catch(() => ({}));
-            brand = bj?.brand || {};
-          } catch { }
-        }
-        const platformRecipient = String(process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.PLATFORM_WALLET || "").toLowerCase();
-        const platformSharesBps = resolvePlatformBpsFromBrand(bKey, brand, undefined);
-        const envPartnerWallet = String(process.env.PARTNER_WALLET || "").toLowerCase();
-        const partnerWallet = String(brand?.partnerWallet || envPartnerWallet || "").toLowerCase();
-        const sanitized4 = getSanitizedSplitBps();
-        const envPartnerBps4 = typeof sanitized4?.partner === "number" ? Math.max(0, Math.min(10000, sanitized4.partner)) : 0;
-        const basePartnerBps4 = typeof brand?.partnerFeeBps === "number" ? Math.max(0, Math.min(10000, brand.partnerFeeBps)) : 0;
-        const fallbackPartnerBps4 = 0;
-        const defaultPartnerBps4 = 50;
-        const partnerFeeBps = basePartnerBps4 > 0
-          ? basePartnerBps4
-          : (envPartnerBps4 > 0
-            ? envPartnerBps4
-            : ((fallbackPartnerBps4 && fallbackPartnerBps4 > 0)
-              ? Math.max(0, Math.min(10000, fallbackPartnerBps4))
-              : defaultPartnerBps4));
-        const isPartnerBrand = !!bKey && bKey !== "portalpay";
+      // If no valid split address found via standard lookup, and the brand is platform (portalpay/basaltsurge),
+      // attempt to fetch the global platform default configuration explicitly.
+      // This is necessary because getSiteConfigForWallet's merge logic might be bypassed or fail in some contexts.
+      const targetBrand = String(originalBrandKey || (cfg as any)?.brandKey || "portalpay").toLowerCase();
+      if ((!splitAddr || !/^0x[a-f0-9]{40}$/i.test(splitAddr)) && (targetBrand === "portalpay" || targetBrand === "basaltsurge")) {
         try {
-          console.log("[split/deploy] synth/fallback", {
-            brandKey: bKey,
-            partnerWallet,
-            partnerFeeBps,
-            platformRecipient,
-            isPartnerBrand
-          });
-        } catch { }
-        if (isPartnerBrand) {
-          if (isHexAddress(platformRecipient) && isHexAddress(partnerWallet) && partnerFeeBps > 0) {
-            const partnerSharesBps = Math.max(0, Math.min(10000 - platformSharesBps, partnerFeeBps));
-            const merchantSharesBps = Math.max(0, 10000 - platformSharesBps - partnerSharesBps);
-            const recipients = [
-              { address: wallet, sharesBps: merchantSharesBps },
-              { address: partnerWallet as `0x${string}`, sharesBps: partnerSharesBps },
-              { address: platformRecipient as `0x${string}`, sharesBps: platformSharesBps },
-            ];
-            return NextResponse.json({ split: { address: undefined, recipients }, brandKey, requiresDeploy: true, reason: "no_split_for_partner_brand" });
-          } else {
-            return NextResponse.json({ split: { address: undefined, recipients: [] }, brandKey, requiresDeploy: true, reason: "partner_config_missing" });
+          const { resource: globalRes } = await c.item("site:config", "site:config").read<any>();
+          if (globalRes) {
+            const gAddress = globalRes.splitAddress || globalRes.split?.address;
+            if (gAddress && /^0x[a-f0-9]{40}$/i.test(gAddress)) {
+              splitAddr = gAddress;
+              split = globalRes.split || { address: splitAddr, recipients: [] };
+            }
           }
-        } else {
-          // Platform container
-          const merchantSharesBps = Math.max(0, 10000 - platformSharesBps);
-          const recipients = isHexAddress(platformRecipient)
-            ? [
-              { address: wallet, sharesBps: merchantSharesBps },
-              { address: platformRecipient as `0x${string}`, sharesBps: platformSharesBps },
-            ]
-            : [{ address: wallet, sharesBps: merchantSharesBps }];
-          return NextResponse.json({ split: { address: undefined, recipients }, brandKey });
-        }
-      } catch {
-        return NextResponse.json({ split: undefined, brandKey });
+        } catch { /* proceed without global fallback if fetch fails */ }
       }
+
+      if (splitAddr && /^0x[a-f0-9]{40}$/i.test(splitAddr)) {
+        split = split || { address: splitAddr, recipients: [] };
+        // Ensure response brand key matches the request context for consistency
+        const responseBrandKey = originalBrandKey || (cfg as any)?.brandKey || "portalpay";
+        return NextResponse.json({
+          split: { ...split, address: splitAddr, brandKey: String(responseBrandKey).toLowerCase() },
+          brandKey: responseBrandKey,
+          legacy: true,
+        });
+      }
+    } catch (e) {
+      console.error("[split/deploy] getSiteConfigForWallet failed", e);
+    }
+
+    // FALLBACK: If no split configured/found, synthesize the expected split recipients for UI preview.
+    // This does not imply deployment, but shows what WOULD be deployed.
+    try {
+      const origin = resolveOrigin(req);
+      // Use resolved docBrandKey to get correct platform/brand config
+      let brand: any = {};
+      let overrides: any = {};
+      if (resolvedBrand) {
+        try {
+          const bRes = await fetch(`${origin}/api/platform/brands/${encodeURIComponent(resolvedBrand)}/config`, { cache: "no-store" });
+          const bj = await bRes.json().catch(() => ({}));
+          brand = bj?.brand || {};
+          overrides = bj?.overrides || {};
+        } catch { }
+      }
+
+      const platformRecipient = String(process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.PLATFORM_WALLET || "").toLowerCase();
+      const platformSharesBps = resolvePlatformBpsFromBrand(resolvedBrand, brand, overrides);
+      const envPartnerWallet = String(process.env.PARTNER_WALLET || "").toLowerCase();
+      const partnerWallet = String(brand?.partnerWallet || envPartnerWallet || "").toLowerCase();
+
+      const sanitized = getSanitizedSplitBps();
+      const envPartnerBps = typeof sanitized?.partner === "number" ? Math.max(0, Math.min(10000, sanitized.partner)) : 0;
+      const basePartnerBps = typeof (overrides as any)?.partnerFeeBps === "number"
+        ? Math.max(0, Math.min(10000, (overrides as any).partnerFeeBps))
+        : (typeof brand?.partnerFeeBps === "number" ? Math.max(0, Math.min(10000, brand.partnerFeeBps)) : 0);
+
+      const defaultPartnerBps = 50;
+      const partnerFeeBps = basePartnerBps > 0
+        ? basePartnerBps
+        : (envPartnerBps > 0 ? envPartnerBps : defaultPartnerBps);
+
+      const isPartnerBrand = !!resolvedBrand && !isPlatformBrand(resolvedBrand);
+
+      if (isPartnerBrand) {
+        // Partner Brand Preview
+        if (isHexAddress(platformRecipient) && isHexAddress(partnerWallet) && partnerFeeBps > 0) {
+          const partnerShares = Math.max(0, Math.min(10000 - platformSharesBps, partnerFeeBps));
+          const merchantShares = Math.max(0, 10000 - platformSharesBps - partnerShares);
+          const recipients = [
+            { address: wallet, sharesBps: merchantShares },
+            { address: partnerWallet as `0x${string}`, sharesBps: partnerShares },
+            { address: platformRecipient as `0x${string}`, sharesBps: platformSharesBps },
+          ];
+          return NextResponse.json({
+            split: { address: undefined, recipients },
+            brandKey: originalBrandKey,
+            requiresDeploy: true,
+            reason: "no_split_for_partner_brand"
+          });
+        } else {
+          return NextResponse.json({
+            split: { address: undefined, recipients: [] },
+            brandKey: originalBrandKey,
+            requiresDeploy: true,
+            reason: "partner_config_missing"
+          });
+        }
+      } else {
+        // Platform/PortalPay Brand Preview
+        const merchantShares = Math.max(0, 10000 - platformSharesBps);
+        const recipients = isHexAddress(platformRecipient)
+          ? [
+            { address: wallet, sharesBps: merchantShares },
+            { address: platformRecipient as `0x${string}`, sharesBps: platformSharesBps }
+          ]
+          : [{ address: wallet, sharesBps: merchantShares }];
+
+        return NextResponse.json({
+          split: { address: undefined, recipients },
+          brandKey: originalBrandKey,
+          requiresDeploy: true,
+          reason: "no_split_address"
+        });
+      }
+    } catch (e) {
+      return NextResponse.json({ split: undefined, brandKey: originalBrandKey });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "failed" }, { status: 500 });
@@ -728,7 +436,7 @@ export async function POST(req: NextRequest) {
     // Platform share derived from brand config/env/static defaults
     const platformSharesBps = resolvePlatformBpsFromBrand(brandKey, brand, undefined);
     // Partner recipient present when brandKey !== 'portalpay' and partner is configured
-    const isPartnerBrand = String(brandKey || "").toLowerCase() !== "portalpay";
+    const isPartnerBrand = !isPlatformBrand(String(brandKey || "").toLowerCase());
 
     // Prepare container and read existing site config to allow partner fallback
     const c = await getContainer();

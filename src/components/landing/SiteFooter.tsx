@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useBrand } from "@/contexts/BrandContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { cachedFetch } from "@/lib/client-api-cache";
+import { getDefaultBrandSymbol, resolveBrandSymbol } from "@/lib/branding";
 
 export default function SiteFooter() {
   const brand = useBrand();
@@ -93,13 +94,13 @@ export default function SiteFooter() {
       if (pApp) return pApp;
       // If partner fetch completed but returned no logos, use fallback
       // DO NOT fall through to theme/brand context as they may be platform defaults
-      return "/ppsymbol.png";
+      return getDefaultBrandSymbol(containerBrandKey);
     }
     // For platform container, use the standard cascade
     const sym = effectiveLogoSymbol.trim();
     const fav = effectiveLogoFavicon.trim();
     const app = effectiveLogoApp.trim();
-    return (
+    const rawIcon = (
       (theme as any)?.logos?.footer ||
       sym ||
       fav ||
@@ -107,9 +108,9 @@ export default function SiteFooter() {
       brand.logos.footer ||
       brand.logos.symbol ||
       brand.logos.app ||
-      brand.logos.app ||
-      (String((brand as any)?.key || containerBrandKey || "").toLowerCase() === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png")
+      getDefaultBrandSymbol(containerBrandKey || (brand as any)?.key)
     );
+    return resolveBrandSymbol(rawIcon, containerBrandKey || (brand as any)?.key);
   })();
 
   // Brand name fallback: prefer partner brand name for partner containers

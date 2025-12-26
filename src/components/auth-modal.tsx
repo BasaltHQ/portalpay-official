@@ -199,7 +199,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, onError, isSocialLogin =
               <button
                 onClick={handleSign}
                 disabled={signing}
-                className="w-full h-10 rounded-lg bg-[var(--primary)] text-primary-foreground microtext text-[10px] font-semibold uppercase tracking-wide hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-10 rounded-lg bg-[var(--pp-secondary)] text-primary-foreground microtext text-[10px] font-semibold uppercase tracking-wide hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {signing ? (
                   <span className="flex items-center justify-center gap-2">

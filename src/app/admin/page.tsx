@@ -25,6 +25,7 @@ import PMSPanel from "@/components/admin/PMSPanel";
 import { ReserveTabs } from "@/components/admin/reserve";
 import { Modal } from "@/components/ui/modal";
 import { useBrand } from "@/contexts/BrandContext";
+import { getDefaultBrandName } from "@/lib/branding";
 import BrandingPanelExt from "@/app/admin/panels/BrandingPanel";
 import { Thumbnail, type ReserveBalancesResponse, type SiteConfig, type TaxCatalogEntry } from "@/app/admin/panels/common";
 import PartnerManagementPanelExt from "@/app/admin/panels/PartnerManagementPanel";
@@ -952,14 +953,14 @@ function WhitelabelInstructionsPanel() {
       </div>
 
       <div className="microtext text-muted-foreground">
-        The Console lets you configure theme and branding to fully whitelabel the buyer and merchant experience.
+        The Shop page lets you configure theme and branding to fully whitelabel the buyer and merchant experience.
       </div>
 
       <ol className="list-decimal pl-5 space-y-1 text-sm">
         <li>
-          Open the Console.
+          Configure your shop.
           <div className="microtext">
-            Visit <a href="/console" className="underline">/console</a> to configure theme & branding, upload logos, set colors, and preview changes live.
+            Visit <a href="/shop" className="underline">/shop</a> to configure your branding, upload logos, set colors, and preview changes live.
           </div>
         </li>
         <li>
@@ -8031,7 +8032,7 @@ function OrdersPanel() {
   const [selectedQty, setSelectedQty] = useState<Record<string, number>>({});
   const [jurisdictionCode, setJurisdictionCode] = useState("");
   const [taxRateOverride, setTaxRateOverride] = useState<string>("");
-  const [brandName, setBrandName] = useState<string>("Your Brand");
+  const [brandName, setBrandName] = useState<string>(() => getDefaultBrandName((brand as any)?.key));
   const [jurisdictions, setJurisdictions] = useState<TaxCatalogEntry[]>([]);
   const [selectedComponents, setSelectedComponents] = useState<string[]>([]);
   const [result, setResult] = useState<any>(null);
@@ -8136,7 +8137,7 @@ function OrdersPanel() {
     try {
       const r = await fetch("/api/site/config", { headers: { "x-wallet": account?.address || "" } });
       const j = await r.json().catch(() => ({}));
-      setBrandName(j?.config?.theme?.brandName || "Your Brand");
+      setBrandName(j?.config?.theme?.brandName || getDefaultBrandName((brand as any)?.key));
       setProcessingFeePct(Math.max(0, Number(j?.config?.processingFeePct || 0)));
       setBasePlatformFeePct(typeof j?.config?.basePlatformFeePct === "number" ? Number(j.config.basePlatformFeePct) : 0.5);
       const list: TaxCatalogEntry[] = Array.isArray(j?.config?.taxConfig?.jurisdictions) ? j.config.taxConfig.jurisdictions : [];

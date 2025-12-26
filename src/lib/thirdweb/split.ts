@@ -171,7 +171,7 @@ export async function ensureSplitForWallet(account: Account | any, brandKeyOverr
         const j3 = await r3.json().catch(() => ({}));
         const a3 = String(j3?.split?.address || "").toLowerCase();
         const rc3 = Array.isArray(j3?.split?.recipients) ? j3.split.recipients.length : 0;
-        const partnerBrand3 = String(brandKey || "").toLowerCase() !== "portalpay";
+        const partnerBrand3 = String(brandKey || "").toLowerCase() !== "portalpay" && String(brandKey || "").toLowerCase() !== "basaltsurge";
         if (!isValidHexAddress(a3)) return undefined;
         if (partnerBrand3 && rc3 > 0 && rc3 < 3) return undefined;
       } catch {

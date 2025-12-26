@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import React from "react";
-import { 
-  Volume2, 
-  VolumeX, 
-  DollarSign, 
-  Palette, 
-  Zap, 
+import {
+  Volume2,
+  VolumeX,
+  DollarSign,
+  Palette,
+  Zap,
   BarChart3,
   CheckCircle2
 } from "lucide-react";
@@ -35,7 +35,7 @@ export default function GetStartedPage() {
         setContainerBrandKey(String(ci?.brandKey || "").trim());
         setContainerType(String(ci?.containerType || "").trim());
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => { cancelled = true; };
   }, []);
 
@@ -67,23 +67,23 @@ export default function GetStartedPage() {
 
   const toggleMute = async () => {
     if (!videoRef.current) return;
-    
+
     try {
       const newMutedState = !isMuted;
-      
+
       // Set volume to full when unmuting
       if (!newMutedState) {
         videoRef.current.volume = 1.0;
       }
-      
+
       videoRef.current.muted = newMutedState;
       setIsMuted(newMutedState);
-      
+
       // Ensure video is playing
       if (videoRef.current.paused) {
         await videoRef.current.play();
       }
-      
+
       console.log('Video muted:', newMutedState, 'Volume:', videoRef.current.volume);
     } catch (error) {
       console.error('Toggle mute failed:', error);
@@ -93,10 +93,10 @@ export default function GetStartedPage() {
   React.useEffect(() => {
     const handleScroll = () => {
       if (!heroRef.current) return;
-      
+
       const heroHeight = heroRef.current.offsetHeight;
       const scrollY = window.scrollY;
-      
+
       // Calculate progress as a value from 0 to 1 based on scroll through hero section
       const progress = Math.min(scrollY / (heroHeight * 0.75), 1);
       setScrollProgress(progress);
@@ -104,23 +104,23 @@ export default function GetStartedPage() {
 
     window.addEventListener("scroll", handleScroll);
     handleScroll(); // Initial call
-    
+
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Calculate different animation stages based on scroll progress
   // Stage 1 (0-0.2): Fade in hero content
   const contentOpacity = Math.min(scrollProgress / 0.2, 1);
-  
+
   // Stage 2 (0.2-0.5): Scale up content slightly
   const contentScale = 1 + (Math.min(Math.max(scrollProgress - 0.2, 0) / 0.3, 1) * 0.15);
-  
+
   // Stage 3 (0.5-0.8): Fade out content
   const contentFadeOut = 1 - Math.min(Math.max(scrollProgress - 0.5, 0) / 0.3, 1);
-  
+
   // Stage 4 (0-1): Increase blur gradually throughout
   const blurAmount = scrollProgress * 20;
-  
+
   // Overlay darkness increases with scroll
   const overlayOpacity = scrollProgress * 0.7;
 
@@ -161,7 +161,7 @@ export default function GetStartedPage() {
         )}
 
         {/* Overlay */}
-        <div 
+        <div
           className="absolute inset-0 bg-black transition-opacity duration-300"
           style={{ opacity: overlayOpacity }}
         />
@@ -183,57 +183,57 @@ export default function GetStartedPage() {
       )}
 
       {/* Hero Section */}
-      <section 
+      <section
         ref={heroRef}
         className="relative h-[200vh] w-full -mt-20"
       >
         {/* Hero Content */}
-        <div 
+        <div
           className="fixed top-0 left-0 w-full h-screen flex flex-col items-center justify-center text-center px-4 transition-all duration-300 z-10"
           style={{
             opacity: contentOpacity * contentFadeOut,
             transform: `scale(${contentScale})`,
           }}
         >
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 shadow-2xl mb-8">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={(() => {
-                  // Prefer platform/container symbol, then app logo; never use favicon
-                  const symbol = String((brand.logos?.symbol || "")).trim();
-                  const app = String((brand.logos?.app || "")).trim();
-                  if (symbol) return symbol;
-                  if (app) return app;
-                  // Fallback to platform symbol asset
-                  return "/ppsymbol.png";
-                })()}
-                alt={`${brand.name} Logo`}
-                className="w-16 h-16 rounded-lg object-cover"
-              />
-            </div>
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 shadow-2xl mb-8">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={(() => {
+                // Prefer platform/container symbol, then app logo; never use favicon
+                const symbol = String((brand.logos?.symbol || "")).trim();
+                const app = String((brand.logos?.app || "")).trim();
+                if (symbol) return symbol;
+                if (app) return app;
+                // Fallback to platform symbol asset
+                return "/ppsymbol.png";
+              })()}
+              alt={`${brand.name} Logo`}
+              className="w-16 h-16 rounded-lg object-cover"
+            />
+          </div>
 
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 text-white max-w-4xl">
-              Accept crypto at the point of sale
-            </h1>
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 text-white max-w-4xl">
+            Accept crypto at the point of sale
+          </h1>
 
-            <p className="text-xl md:text-2xl text-white/90 mb-12 max-w-3xl leading-relaxed">
-              Scan. Pay. Settled. Give customers a secure web3‑native checkout and get instant,
-              programmable settlement in stablecoins or tokens.
-            </p>
+          <p className="text-xl md:text-2xl text-white/90 mb-12 max-w-3xl leading-relaxed">
+            Scan. Pay. Settled. Give customers a secure web3‑native checkout and get instant,
+            programmable settlement in stablecoins or tokens.
+          </p>
 
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <Link
-                href="/admin"
-                className="px-8 py-4 text-lg rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity shadow-xl"
-              >
-                Start accepting crypto
-              </Link>
-              <Link
-                href="/terminal"
-                className="px-8 py-4 text-lg rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-colors"
-              >
-                Try the portal
-              </Link>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href="/admin"
+              className="px-8 py-4 text-lg rounded-lg bg-pp-secondary text-[var(--primary-foreground)] hover:opacity-90 transition-opacity shadow-xl"
+            >
+              Start accepting crypto
+            </Link>
+            <Link
+              href="/terminal"
+              className="px-8 py-4 text-lg rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-colors"
+            >
+              Try the portal
+            </Link>
           </div>
         </div>
       </section>
@@ -499,7 +499,7 @@ export default function GetStartedPage() {
               <div className="flex flex-wrap items-center justify-center gap-4">
                 <Link
                   href="/admin"
-                  className="px-8 py-4 text-lg rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+                  className="px-8 py-4 text-lg rounded-lg bg-pp-secondary text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
                 >
                   Open Admin Panel
                 </Link>

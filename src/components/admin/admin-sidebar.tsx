@@ -24,6 +24,7 @@ import {
 import { useBrand } from '@/contexts/BrandContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cachedFetch } from '@/lib/client-api-cache';
+import { getDefaultBrandSymbol, resolveBrandSymbol, getEffectiveBrandKey } from '@/lib/branding';
 
 type AdminTabKey =
   | 'terminal'
@@ -98,7 +99,7 @@ function NavGroup({ item, activeTab, onChangeTab }: { item: NavItem; activeTab: 
       <button
         type="button"
         onClick={() => onChangeTab(item.key!)}
-        className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap ${isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+        className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap ${isActive ? 'bg-[var(--pp-secondary)] text-white font-medium shadow-md shadow-[var(--pp-secondary)]/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           }`}
       >
         {item.icon}
@@ -133,7 +134,7 @@ function NavGroup({ item, activeTab, onChangeTab }: { item: NavItem; activeTab: 
                   key={child.key}
                   type="button"
                   onClick={() => onChangeTab(child.key)}
-                  className={`block w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  className={`block w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${isActive ? 'bg-[var(--pp-secondary)] text-white font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     }`}
                 >
                   {child.title}
@@ -153,7 +154,7 @@ function NavGroup({ item, activeTab, onChangeTab }: { item: NavItem; activeTab: 
               key={child.key}
               type="button"
               onClick={() => onChangeTab(child.key)}
-              className={`md:hidden flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap ${isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              className={`md:hidden flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap ${isActive ? 'bg-[var(--pp-secondary)] text-white font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
             >
               <span>{child.title}</span>
@@ -253,17 +254,18 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
       const pSym = partnerLogoSymbol.trim();
       const pFav = partnerLogoFavicon.trim();
       const pApp = partnerLogoApp.trim();
-      if (pSym) return pSym;
-      if (pFav) return pFav;
-      if (pApp) return pApp;
-      return "/ppsymbol.png"; // Don't fall through to theme/brand context
+      if (pSym) return resolveBrandSymbol(pSym, containerBrandKey);
+      if (pFav) return resolveBrandSymbol(pFav, containerBrandKey);
+      if (pApp) return resolveBrandSymbol(pApp, containerBrandKey);
+      return getDefaultBrandSymbol(containerBrandKey); // Don't fall through to theme/brand context
     }
     // Platform container - use standard cascade with theme values
     const sym = effectiveLogoSymbol.trim();
     const fav = effectiveLogoFavicon.trim();
     const app = effectiveLogoApp.trim();
-    const defaultPlatformSymbol = String((brand as any)?.key || "").toLowerCase() === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png";
-    return sym || fav || app || defaultPlatformSymbol;
+    const defaultPlatformSymbol = getDefaultBrandSymbol(getEffectiveBrandKey());
+    const effectiveKey = containerBrandKey || theme?.brandKey || getEffectiveBrandKey();
+    return resolveBrandSymbol(sym || fav || app || defaultPlatformSymbol, effectiveKey);
   };
 
   // Safe display brand name for admin UI. If name is missing or a generic placeholder, fall back to titleized brand key.
@@ -422,11 +424,11 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
                         if (first) onChangeTab(first.key);
                       } catch { }
                     }}
-                    className="w-8 h-8 rounded-full border-2 border-[var(--primary)] flex items-center justify-center hover:bg-[var(--primary)]/10 transition-colors"
+                    className="w-8 h-8 rounded-full border-2 border-[var(--pp-secondary)] flex items-center justify-center hover:bg-[var(--pp-secondary)]/10 transition-colors"
                     title={item.title}
                     aria-label={item.title}
                   >
-                    <div className="text-[var(--primary)]">
+                    <div className="text-[var(--pp-secondary)]">
                       {item.icon}
                     </div>
                   </button>
@@ -438,11 +440,11 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
                         key={child.key}
                         type="button"
                         onClick={() => onChangeTab(child.key)}
-                        className={`p-1 rounded-sm transition-colors ${isActive ? 'bg-primary' : 'hover:bg-muted'}`}
+                        className={`p-1 rounded-sm transition-colors ${isActive ? 'bg-[var(--pp-secondary)]' : 'hover:bg-muted'}`}
                         title={child.title}
                         aria-label={child.title}
                       >
-                        <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-primary-foreground' : 'bg-foreground'}`} />
+                        <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-foreground'}`} />
                       </button>
                     );
                   })}
@@ -468,10 +470,10 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
                   if (first) onChangeTab(first.key);
                 } catch { }
               }}
-              className="w-10 h-10 rounded-full border-2 border-[var(--primary)] flex items-center justify-center hover:bg-[var(--primary)]/10 transition-colors"
+              className="w-10 h-10 rounded-full border-2 border-[var(--pp-secondary)] flex items-center justify-center hover:bg-[var(--pp-secondary)]/10 transition-colors"
               title={group.title}
             >
-              <div className="text-[var(--primary)]">
+              <div className="text-[var(--pp-secondary)]">
                 {group.icon}
               </div>
             </button>
@@ -485,7 +487,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
                     key={child.key}
                     type="button"
                     onClick={() => onChangeTab(child.key)}
-                    className={`text-sm whitespace-nowrap transition-colors ${isActive ? 'font-bold text-primary' : 'text-muted-foreground'}`}
+                    className={`text-sm whitespace-nowrap transition-colors ${isActive ? 'font-bold text-[var(--pp-secondary)]' : 'text-muted-foreground'}`}
                   >
                     {child.title}
                   </button>

@@ -124,7 +124,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const brandKey = String(getBrandKey() || "").toLowerCase();
+    let brandKey = String(getBrandKey() || "").toLowerCase();
+    if (brandKey === "basaltsurge") brandKey = "portalpay";
     const itemsBody: OrderItemBody[] = Array.isArray(body?.items) ? body.items : [];
     if (!itemsBody.length) {
       return NextResponse.json(
@@ -192,7 +193,7 @@ export async function POST(req: NextRequest) {
       // Require a bound split address only when the resolved brand is not 'portalpay'.
       // This keeps partner brands strict (must have split) and allows portalpay merchants to proceed
       // even if their site config hasn't bound an address yet.
-      const requireSplit = !!brandKeyResolved && brandKeyResolved !== "portalpay";
+      const requireSplit = !!brandKeyResolved && brandKeyResolved !== "portalpay" && brandKeyResolved !== "basaltsurge";
       if (requireSplit && !/^0x[a-f0-9]{40}$/i.test(String(splitAddr))) {
         return NextResponse.json(
           { error: "split_required", message: "Split contract not configured for this merchant" },

@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 type ViewKey = "terminal" | "compact" | "wide" | "invoice";
 
 export function TerminalViewBar({ className = "" }: { className?: string }) {
+  const { theme } = useTheme();
   const pathname = usePathname() || "";
   const sp = useSearchParams();
 
@@ -42,7 +44,10 @@ export function TerminalViewBar({ className = "" }: { className?: string }) {
   if (!show) return null;
 
   return (
-    <div className={`w-full border-b bg-[var(--primary)]/10 backdrop-blur-md relative z-40 ${className}`}>
+    <div
+      className={`w-full border-b backdrop-blur-md relative z-40 ${className}`}
+      style={{ backgroundColor: `${theme.primaryColor}40` }}
+    >
       <div className="max-w-5xl mx-auto px-4 h-7 flex items-center justify-between">
         <nav className="flex items-center gap-1">
           <Link href={hrefFor("terminal")} className={ITEM_CLS("terminal")}>Terminal</Link>

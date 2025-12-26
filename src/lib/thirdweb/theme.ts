@@ -33,14 +33,14 @@ export function getPortalThirdwebTheme() {
     colors: {
       // Blurred glass aesthetic (aligns with .glass-float palette in globals.css)
       modalBg: "hsl(220 18% 7% / 0.86)",
-      borderColor: primary, // use primary on borders/animations
+      borderColor: secondary, // Use secondary for merchant highlights
       primaryText,
       secondaryText,
       // Ensure any "accent" text also renders white per requirement
       accentText: whiteText,
-      accentButtonBg: primary,
+      accentButtonBg: secondary,
       accentButtonText: headerText,
-      primaryButtonBg: primary,
+      primaryButtonBg: secondary,
       primaryButtonText: headerText,
       connectedButtonBg: "rgba(255,255,255,0.04)",
       connectedButtonBgHover: "rgba(255,255,255,0.08)",
@@ -90,13 +90,13 @@ export function getConnectButtonStyle(): React.CSSProperties {
       transition: "border-color .2s ease, background-color .2s ease, box-shadow .2s ease",
     };
   }
-  
+
   // Client-side: read actual CSS variable values
   // Text color is always white regardless of brand theme
-  const primary = getCssVar("--pp-primary", "#0f172a");
+  const secondary = getCssVar("--pp-secondary", "#F54029");
   return {
     backgroundColor: "transparent",
-    border: `1px solid ${primary}`,
+    border: `1px solid ${secondary}`,
     color: "#ffffff",
     padding: "6px 10px",
     lineHeight: "1",
@@ -112,4 +112,4 @@ export function getConnectButtonStyle(): React.CSSProperties {
  * Note: removed plain "border" utility to avoid neutral border colors; explicit border set via inline styles.
  */
 export const connectButtonClass =
-  "px-3 py-1.5 rounded-md microtext hover:bg-foreground/5 focus:outline-none transition-all hover:ring-1 hover:ring-[var(--pp-primary)] focus:ring-2 focus:ring-[var(--pp-primary)]";
+  "px-3 py-1.5 rounded-md microtext hover:bg-foreground/5 focus:outline-none transition-all hover:ring-1 hover:ring-[var(--pp-secondary)] focus:ring-2 focus:ring-[var(--pp-secondary)]";

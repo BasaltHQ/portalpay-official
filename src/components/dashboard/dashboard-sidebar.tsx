@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { ChevronDown, ChevronRight, LayoutDashboard, Box, ScrollText, KeyRound, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { Tooltip } from '../docs/tooltip';
 import { useBrand } from "@/contexts/BrandContext";
+import { resolveBrandSymbol, getDefaultBrandName } from "@/lib/branding";
 
 interface NavItem {
   title: string;
@@ -43,8 +44,8 @@ function NavGroup({ item, currentPath }: { item: NavItem; currentPath: string })
       <Link
         href={item.href}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${currentPath === item.href
-            ? 'bg-primary text-primary-foreground font-medium'
-            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          ? 'bg-primary text-primary-foreground font-medium'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           }`}
       >
         {item.icon}
@@ -72,8 +73,8 @@ function NavGroup({ item, currentPath }: { item: NavItem; currentPath: string })
               key={child.href}
               href={child.href!}
               className={`block px-3 py-2 text-sm rounded-lg transition-colors ${currentPath === child.href
-                  ? 'bg-primary text-primary-foreground font-medium'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                ? 'bg-primary text-primary-foreground font-medium'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
             >
               {child.title}
@@ -95,8 +96,8 @@ export function DashboardSidebar({ currentPath }: { currentPath: string }) {
         {/* Logo */}
         <Link href="/developers/dashboard" className="flex items-center justify-center group p-2">
           <Image
-            src={brand?.logos?.symbol || brand?.logos?.app || brand?.logos?.favicon || (String((brand as any)?.key || "").toLowerCase() === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png")}
-            alt={brand?.name || "Brand"}
+            src={resolveBrandSymbol(brand?.logos?.symbol || brand?.logos?.app || brand?.logos?.favicon, (brand as any)?.key)}
+            alt={brand?.name || getDefaultBrandName((brand as any)?.key)}
             width={32}
             height={32}
             className="transition-transform group-hover:scale-110"
@@ -119,9 +120,9 @@ export function DashboardSidebar({ currentPath }: { currentPath: string }) {
                     <Link
                       href={item.items?.[0]?.href || '#'}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-8 h-8 rounded-full border-2 border-[var(--primary)] flex items-center justify-center hover:bg-[var(--primary)]/10 transition-colors"
+                      className="w-8 h-8 rounded-full border-2 border-[var(--pp-secondary)] flex items-center justify-center hover:bg-[var(--pp-secondary)]/10 transition-colors"
                     >
-                      <div className="text-[var(--primary)]">
+                      <div className="text-[var(--pp-secondary)]">
                         {item.icon}
                       </div>
                     </Link>
@@ -133,8 +134,8 @@ export function DashboardSidebar({ currentPath }: { currentPath: string }) {
                         href={child.href!}
                         onClick={(e) => e.stopPropagation()}
                         className={`p-1 rounded-sm transition-colors ${currentPath === child.href
-                            ? 'bg-primary'
-                            : 'hover:bg-muted'
+                          ? 'bg-primary'
+                          : 'hover:bg-muted'
                           }`}
                       >
                         <div className={`w-1.5 h-1.5 rounded-full ${currentPath === child.href ? 'bg-primary-foreground' : 'bg-foreground'

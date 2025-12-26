@@ -22,12 +22,12 @@ function guessContentTypeFromPath(p: string): string {
 function deriveBrandKeyFromHost(host: string): string | undefined {
   if (!host) return undefined;
   const hostLower = host.toLowerCase().split(":")[0];
-  
+
   // Azure subdomain pattern
   if (hostLower.endsWith(".azurewebsites.net")) {
     return hostLower.split(".")[0];
   }
-  
+
   return undefined;
 }
 
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     // Check for shop parameter - explicit shop favicon request
     const url = new URL(req.url);
     let shopSlug: string | undefined = url.searchParams.get("shop")?.toLowerCase()?.trim() || undefined;
-    
+
     // Also check referer as fallback for shop route requests
     if (!shopSlug) {
       const referer = req.headers.get("referer") || "";
@@ -48,14 +48,14 @@ export async function GET(req: NextRequest) {
             shopSlug = pathMatch[1].toLowerCase();
           }
         }
-      } catch {}
+      } catch { }
     }
 
     // If on a shop page, try to get merchant's favicon
     if (shopSlug) {
       try {
         const container = await getContainer();
-        
+
         // Get shop config to find the merchant's wallet
         // Query by slug OR customDomain - for favicon, also allow unverified domains
         // since favicon doesn't have the same security requirements as page content
@@ -68,9 +68,9 @@ export async function GET(req: NextRequest) {
           .fetchAll();
 
         const shopConfig = shopConfigs[0] as { theme?: { brandFaviconUrl?: string; brandLogoUrl?: string; logos?: { favicon?: string; app?: string; symbol?: string } }; wallet?: string; slug?: string; customDomain?: string } | undefined;
-        
+
         let merchantFavicon: string | undefined;
-        
+
         // PRIORITY 1: Try merchant's site:config document first (this is the merchant's branded favicon)
         // Use the proper getSiteConfigForWallet function which handles brand-scoped and legacy docs
         if (shopConfig?.wallet) {
@@ -85,15 +85,15 @@ export async function GET(req: NextRequest) {
                 merchantFavicon = favicon;
               }
             }
-          } catch {}
+          } catch { }
         }
-        
+
         // PRIORITY 2: Fall back to shop config theme if no site config favicon found
         if (!merchantFavicon && shopConfig?.theme) {
           const t = shopConfig.theme;
           merchantFavicon = t.brandFaviconUrl || t.logos?.favicon || t.logos?.symbol || t.logos?.app || t.brandLogoUrl;
         }
-        
+
         if (merchantFavicon && typeof merchantFavicon === "string" && merchantFavicon.trim()) {
           const faviconUrl = merchantFavicon.trim();
           // Fetch merchant's favicon
@@ -130,23 +130,23 @@ export async function GET(req: NextRequest) {
                 });
               }
             }
-          } catch {}
+          } catch { }
         }
-      } catch {}
+      } catch { }
       // Fall through to default favicon if merchant favicon not found
     }
 
     // Resolve brand key from HOST first (subdomain), then container env, then env.
     // NO HTTP FETCHES - use direct access to avoid startup deadlock
     let activeBrandKey: string | undefined;
-    
+
     // Try hostname first
     try {
       const u = new URL(req.url);
       const host = u.hostname || "";
       activeBrandKey = deriveBrandKeyFromHost(host);
-    } catch {}
-    
+    } catch { }
+
     // Try container identity from env (no HTTP)
     if (!activeBrandKey) {
       try {
@@ -157,12 +157,12 @@ export async function GET(req: NextRequest) {
         if (bk && (ct === "partner" || !activeBrandKey)) {
           activeBrandKey = bk;
         }
-      } catch {}
+      } catch { }
     }
-    
+
     // Fallback to env
     if (!activeBrandKey) {
-      try { activeBrandKey = getBrandKey(); } catch {}
+      try { activeBrandKey = getBrandKey(); } catch { }
     }
 
     // Resolve runtime brand logos first (env-injected in partner containers)
@@ -170,7 +170,7 @@ export async function GET(req: NextRequest) {
     const runtimeBrandLogo: string | undefined = (() => { const v = String(runtimeBrand?.logos?.app || "").trim(); return v || undefined; })();
     const runtimeBrandFavicon: string | undefined = (() => { const v = String(runtimeBrand?.logos?.favicon || "").trim(); return v || undefined; })();
     const containerType = String((getEnv().CONTAINER_TYPE || "") as string).toLowerCase();
-    const isPartner = containerType === "partner" || (activeBrandKey && activeBrandKey !== "portalpay");
+    const isPartner = containerType === "partner" || (activeBrandKey && activeBrandKey !== "portalpay" && activeBrandKey !== "basaltsurge");
 
     // Brand-scoped favicon fallback - use DIRECT Cosmos read (no HTTP)
     let brandKey: string | undefined = activeBrandKey;
@@ -185,7 +185,7 @@ export async function GET(req: NextRequest) {
           if (typeof logos.app === "string" && logos.app.trim()) brandLogo = logos.app.trim();
           if (typeof logos.favicon === "string" && logos.favicon.trim()) brandFavicon = logos.favicon.trim();
         }
-      } catch {}
+      } catch { }
     }
 
     // Candidate order prioritizes runtime partner assets to prevent incorrect platform overrides:
@@ -199,17 +199,17 @@ export async function GET(req: NextRequest) {
     // Fetch first available candidate (remote or relative paths that are NOT static fallbacks)
     let buf: ArrayBuffer | null = null;
     let contentType: string = "image/png";
-    
+
     // List of static paths that should be read directly from filesystem to avoid middleware rewrite loop
     const staticFallbacks = ["/favicon-32x32.png", "/favicon-16x16.png", "/favicon.ico"];
-    
+
     // For remote URLs only - fetch external images
     // For local paths, read from filesystem to avoid HTTP deadlock
     for (const p of candidates) {
       try {
         // Skip static paths in HTTP loop - they'll be tried from filesystem below
         if (staticFallbacks.includes(p)) continue;
-        
+
         // Only fetch remote URLs
         if (p.startsWith("http")) {
           const r = await fetch(p, { cache: "no-store" });
@@ -230,12 +230,12 @@ export async function GET(req: NextRequest) {
             break;
           }
         }
-      } catch {}
+      } catch { }
     }
-    
+
     // If no favicon found from brand sources, try reading static file directly from filesystem
     if (!buf) {
-      const isPlatformPortal = containerType === "platform" || activeBrandKey === "portalpay";
+      const isPlatformPortal = containerType === "platform" || activeBrandKey === "portalpay" || activeBrandKey === "basaltsurge";
       if (isPlatformPortal) {
         const publicDir = path.join(process.cwd(), "public");
         const staticFiles = [
@@ -252,7 +252,7 @@ export async function GET(req: NextRequest) {
               contentType = type;
               break;
             }
-          } catch {}
+          } catch { }
         }
       }
     }

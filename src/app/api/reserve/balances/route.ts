@@ -72,7 +72,9 @@ export async function GET(req: NextRequest) {
         if (cookie) headers["cookie"] = cookie;
         if (authorization) headers["authorization"] = authorization;
 
-        const r = await fetch(`${origin}/api/split/deploy?wallet=${encodeURIComponent(wallet)}`, {
+        // Include brandKey in the fallback request so split/deploy knows the brand context
+        const brandKeyParam = queryBrandKey || "";
+        const r = await fetch(`${origin}/api/split/deploy?wallet=${encodeURIComponent(wallet)}${brandKeyParam ? `&brandKey=${encodeURIComponent(brandKeyParam)}` : ""}`, {
           cache: "no-store",
           headers,
         });

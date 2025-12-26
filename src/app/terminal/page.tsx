@@ -12,6 +12,8 @@ import { SUPPORTED_CURRENCIES, convertFromUsd, formatCurrency, getCurrencyFlag, 
 import { buildPortalUrlForTest } from "@/lib/receipts";
 import { QRCodeCanvas } from "qrcode.react";
 import { createPortal } from "react-dom";
+import { getEffectiveBrandKey, getDefaultBrandName, getDefaultBrandSymbol, resolveBrandAppLogo, resolveBrandSymbol, isBasaltSurge } from "@/lib/branding";
+import { useTheme } from "@/contexts/ThemeContext";
 
 /**
  * Terminal page composed of:
@@ -133,6 +135,7 @@ function getEnvRecipient(): `0x${string}` | undefined {
 function TerminalPanel() {
   const account = useActiveAccount();
   const operatorWallet = (account?.address || "").toLowerCase();
+  const { theme } = useTheme();
   const [wallets, setWallets] = useState<any[]>([]);
   useEffect(() => {
     let mounted = true;
@@ -155,127 +158,20 @@ function TerminalPanel() {
   const [rates, setRates] = useState<Record<string, number>>({});
   const [usdRates, setUsdRates] = useState<Record<string, number>>({});
 
-  // Brand theme state for container-specific branding (PortalPay vs Paynex vs XoinPay etc.)
-  const [brandTheme, setBrandTheme] = useState<{
-    brandName: string;
-    brandLogoUrl: string;
-    symbolLogoUrl?: string;
-    primaryColor: string;
-    secondaryColor: string;
-  }>({
-    brandName: "Terminal",
-    brandLogoUrl: "/ppsymbol.png", // Will be updated by effect
-    primaryColor: "#1f2937",
-    secondaryColor: "#F54029",
-  });
-
   const pathname = usePathname();
   const isPricing = pathname?.startsWith("/pricing");
 
-  const [siteMeta, setSiteMeta] = useState<{ processingFeePct: number; basePlatformFeePct: number; taxRate: number; hasDefault: boolean; storeCurrency?: string }>({
-    processingFeePct: 0,
-    basePlatformFeePct: 0.5, // Default platform+partner fee (50 bps = 0.5%)
+  const siteMeta = {
+    processingFeePct: 0, // In terminals/standalone views, we typically use platform defaults unless specified
+    basePlatformFeePct: 0.5,
     taxRate: 0,
     hasDefault: false,
-  });
+  };
 
-  async function fetchSiteMeta(walletAddr?: string): Promise<{ processingFeePct: number; basePlatformFeePct: number; taxRate: number; hasDefault: boolean; storeCurrency?: string; theme?: any }> {
-    try {
-      // Build URL with wallet parameter when available to get merchant-specific config
-      // When no wallet provided, returns brand defaults for the container (platform or partner)
-      const baseUrl = walletAddr && /^0x[a-f0-9]{40}$/i.test(walletAddr)
-        ? `/api/site/config?wallet=${encodeURIComponent(walletAddr.toLowerCase())}`
-        : "/api/site/config";
-      const r = await fetch(baseUrl, { cache: "no-store", credentials: "include", headers: { "x-theme-caller": "terminal", "x-wallet": walletAddr || "" } });
-      const j = await r.json().catch(() => ({}));
-      const cfg: any = j?.config || {};
-      const processingFeePct = Math.max(0, Number(cfg?.processingFeePct || 0));
-      const taxCfg: any = cfg?.taxConfig || {};
-      const defCode = typeof taxCfg?.defaultJurisdictionCode === "string" ? taxCfg.defaultJurisdictionCode : "";
-      const list: any[] = Array.isArray(taxCfg?.jurisdictions) ? taxCfg.jurisdictions : [];
-      let rate = 0;
-      const hasDefault = !!defCode;
-      if (defCode) {
-        const jur: any = list.find((x: any) => x.code === defCode);
-        if (jur) {
-          const comps: any[] = Array.isArray(jur.components) ? jur.components : [];
-          if (comps.length) rate = comps.reduce((s, c) => s + Math.max(0, Math.min(1, Number(c.rate || 0))), 0);
-          else rate = Math.max(0, Math.min(1, Number(jur.rate || 0)));
-        }
-      }
-      const storeCurrency = typeof cfg?.storeCurrency === "string" ? cfg.storeCurrency : undefined;
-      // Extract base platform fee (platform + partner fees) from API response
-      let basePlatformFeePct = typeof cfg?.basePlatformFeePct === "number" ? cfg.basePlatformFeePct : 0.5;
-      // Extract theme for brand display
-      const theme = cfg?.theme || undefined;
-      // Sanity-correct basePlatformFeePct for partner brands when API defaults to 0.5%
-      try {
-        const bKey = String((theme as any)?.brandKey || "").toLowerCase();
-        if (bKey && bKey !== "portalpay" && basePlatformFeePct <= 0.5) {
-          const origin = typeof window !== "undefined" ? window.location.origin : "";
-          const r2 = await fetch(`${origin}/api/platform/brands/${encodeURIComponent(bKey)}/config`, { cache: "no-store" });
-          const j2 = await r2.json().catch(() => ({}));
-          const brand = j2?.brand || {};
-          const overrides = j2?.overrides || {};
-          const platBps = typeof overrides?.platformFeeBps === "number" ? overrides.platformFeeBps
-            : (typeof brand?.platformFeeBps === "number" ? brand.platformFeeBps : 50);
-          const partBps = typeof overrides?.partnerFeeBps === "number" ? overrides.partnerFeeBps
-            : (typeof brand?.partnerFeeBps === "number" ? brand.partnerFeeBps : 0);
-          basePlatformFeePct = Math.max(0, (platBps + partBps) / 100);
-        }
-      } catch { }
-      return { processingFeePct, basePlatformFeePct, taxRate: rate, hasDefault, storeCurrency, theme };
-    } catch {
-      return { processingFeePct: 0, basePlatformFeePct: 0.5, taxRate: 0, hasDefault: false };
-    }
-  }
-
-  // Fetch brand defaults immediately on mount (for container branding), then refetch if user logs in
+  // Sync terminal currency if applicable (can be enhanced if storeCurrency is in ThemeContext)
   useEffect(() => {
-    (async () => {
-      // First fetch: brand defaults for the container (no wallet = brand defaults)
-      const meta = await fetchSiteMeta();
-      setSiteMeta(meta);
-      // Update brand theme from site config response
-      if (meta.theme) {
-        const t = meta.theme;
-        const logos = (t as any)?.logos || {};
-        setBrandTheme({
-          brandName: typeof t.brandName === "string" ? t.brandName : brandTheme.brandName,
-          brandLogoUrl: typeof t.brandLogoUrl === "string" && t.brandLogoUrl ? t.brandLogoUrl : brandTheme.brandLogoUrl,
-          symbolLogoUrl: typeof logos.symbol === "string" ? logos.symbol : (typeof t.brandLogoUrl === "string" ? t.brandLogoUrl : undefined),
-          primaryColor: typeof t.primaryColor === "string" ? t.primaryColor : brandTheme.primaryColor,
-          secondaryColor: typeof t.secondaryColor === "string" ? t.secondaryColor : brandTheme.secondaryColor,
-        });
-      }
-    })();
-  }, []); // Empty dependency - fetch brand defaults on mount
-
-  // If user logs in with a wallet, fetch their specific config for processing fees/tax/currency
-  // The API already handles brand defaults vs custom themes server-side in applyPartnerOverrides:
-  // - Merchants without custom themes in partner containers get partner brand defaults applied
-  // - Merchants with custom themes get their saved theme returned
-  // So we always update brandTheme from the API response - it already has the correct theme
-  useEffect(() => {
-    if (!operatorWallet || !/^0x[a-f0-9]{40}$/i.test(operatorWallet)) return;
-    (async () => {
-      const meta = await fetchSiteMeta(operatorWallet);
-      setSiteMeta(meta);
-      // Update brand theme from API response - server already applies brand defaults for merchants
-      // without custom themes, so we always use what the API returns
-      if (meta.theme) {
-        const t = meta.theme;
-        const logos = (t as any)?.logos || {};
-        setBrandTheme({
-          brandName: typeof t.brandName === "string" && t.brandName ? t.brandName : brandTheme.brandName,
-          brandLogoUrl: typeof t.brandLogoUrl === "string" && t.brandLogoUrl ? t.brandLogoUrl : brandTheme.brandLogoUrl,
-          symbolLogoUrl: typeof logos.symbol === "string" && logos.symbol ? logos.symbol : (typeof t.brandLogoUrl === "string" && t.brandLogoUrl ? t.brandLogoUrl : brandTheme.symbolLogoUrl),
-          primaryColor: typeof t.primaryColor === "string" && t.primaryColor ? t.primaryColor : brandTheme.primaryColor,
-          secondaryColor: typeof t.secondaryColor === "string" && t.secondaryColor ? t.secondaryColor : brandTheme.secondaryColor,
-        });
-      }
-    })();
-  }, [operatorWallet]);
+    // Optional: add storeCurrency to ThemeContext if needed for deeper Terminal integration
+  }, []);
 
   useEffect(() => {
     try {
@@ -445,17 +341,17 @@ function TerminalPanel() {
     }
   }
 
-  // Compute effective logo URL
-  const terminalLogoUrl = brandTheme.symbolLogoUrl || brandTheme.brandLogoUrl || ((brandTheme.brandName || "").toLowerCase().includes("basalt") ? "/bssymbol.png" : "/ppsymbol.png");
+  // Compute effective logo URL using global theme
+  const terminalLogoUrl = theme.symbolLogoUrl || theme.brandLogoUrl || (isBasaltSurge(theme.brandKey || "") ? "/bssymbol.png" : "/ppsymbol.png");
 
   return (
-    <div className="glass-pane rounded-xl border p-6 space-y-4" style={{ ["--pp-primary" as any]: brandTheme.primaryColor, ["--pp-secondary" as any]: brandTheme.secondaryColor }}>
+    <div className="glass-pane rounded-xl border p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center overflow-hidden">
             <img src={terminalLogoUrl} alt="Logo" className="max-h-8 max-w-8 object-contain" />
           </div>
-          <h2 className={(isPricing ? "text-base md:text-xl " : "text-xl ") + "font-semibold"}>{brandTheme.brandName || "Terminal"}</h2>
+          <h2 className={(isPricing ? "text-base md:text-xl " : "text-xl ") + "font-semibold"}>{theme.brandName || "Terminal"}</h2>
         </div>
         <div className={isPricing ? "flex items-center ml-2 md:ml-3 px-1 md:px-2 microtext text-muted-foreground" : "flex items-center microtext text-muted-foreground"}>
           <span className={isPricing ? "text-[10px] md:text-xs" : ""}>Wizard: amount → QR → pay → print</span>
@@ -657,16 +553,19 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
   const account = useActiveAccount();
   const loggedIn = !!account?.address;
   const [invoiceFullScreen, setInvoiceFullScreen] = useState(false);
+  const { theme } = useTheme();
   const [thirdwebReady, setThirdwebReady] = useState(false);
   const [thirdwebChunkError, setThirdwebChunkError] = useState(false);
-
-  const [previewMode, setPreviewMode] = useState<PreviewMode>(forcedMode);
   const searchParams = useSearchParams();
+  const [previewMode, setPreviewMode] = useState<PreviewMode>(forcedMode);
+
   useEffect(() => { setPreviewMode(forcedMode); }, [forcedMode]);
 
   useEffect(() => {
     const inv = String(searchParams?.get("invoice") || "").toLowerCase();
+    const view = String(searchParams?.get("view") || "").toLowerCase();
     if (inv === "1" || inv === "true") setPreviewMode("invoice");
+    else if (view === "invoice" || view === "wide" || view === "compact") setPreviewMode(view as PreviewMode);
   }, [searchParams]);
 
   useEffect(() => {
@@ -680,53 +579,6 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
     return () => window.removeEventListener("resize", handler);
   }, [previewMode]);
 
-  const [themeLoaded, setThemeLoaded] = useState(false);
-  const [theme, setTheme] = useState<SiteTheme>({
-    primaryColor: "#0f172a",
-    secondaryColor: "#F54029",
-    brandLogoUrl: "/ppsymbol.png",
-    brandFaviconUrl: "/favicon-32x32.png",
-    brandName: "Your Brand",
-    fontFamily:
-      "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
-    receiptBackgroundUrl: "/watermark.png",
-    textColor: "#ffffff",
-    headerTextColor: "#ffffff",
-    bodyTextColor: "#e5e7eb",
-  });
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const invParam = String(searchParams?.get("invoice") || "").toLowerCase();
-        const useInvoice = previewMode === "invoice" || invParam === "1" || invParam === "true";
-        const recipientParam = String(searchParams?.get("recipient") || "").toLowerCase();
-        const walletForTheme = isValidHexAddress(recipientParam) ? (recipientParam as `0x${string}`) : (account?.address as `0x${string}` | undefined);
-        const baseUrl = walletForTheme ? `/api/site/config?wallet=${encodeURIComponent(walletForTheme)}` : "/api/site/config";
-        const url = useInvoice ? `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}invoice=1` : baseUrl;
-        const r = await fetch(url, { cache: "no-store", credentials: "omit", headers: { "x-theme-caller": "terminal" } });
-        const j: SiteConfigResponse = await r.json().catch(() => ({} as any));
-        const t = j?.config?.theme;
-        if (!cancelled && t) {
-          setTheme({
-            primaryColor: typeof t.primaryColor === "string" ? t.primaryColor : theme.primaryColor,
-            secondaryColor: typeof t.secondaryColor === "string" ? t.secondaryColor : theme.secondaryColor,
-            brandLogoUrl: typeof t.brandLogoUrl === "string" ? t.brandLogoUrl : theme.brandLogoUrl,
-            brandFaviconUrl: typeof t.brandFaviconUrl === "string" ? t.brandFaviconUrl : theme.brandFaviconUrl,
-            symbolLogoUrl: typeof (t as any)?.logos?.symbol === "string" ? (t as any).logos.symbol : (theme as any)?.symbolLogoUrl,
-            brandName: typeof t.brandName === "string" ? t.brandName : theme.brandName,
-            fontFamily: typeof t.fontFamily === "string" ? t.fontFamily : theme.fontFamily,
-            receiptBackgroundUrl: typeof t.receiptBackgroundUrl === "string" ? t.receiptBackgroundUrl : theme.receiptBackgroundUrl,
-            textColor: typeof (t as any)?.textColor === "string" ? (t as any).textColor : (theme.textColor || "#ffffff"),
-            headerTextColor: typeof (t as any)?.headerTextColor === "string" ? (t as any).headerTextColor : (typeof (t as any)?.textColor === "string" ? (t as any).textColor : (theme.headerTextColor || theme.textColor || "#ffffff")),
-            bodyTextColor: typeof (t as any)?.bodyTextColor === "string" ? (t as any).bodyTextColor : (theme.bodyTextColor || "#e5e7eb"),
-          });
-          setThemeLoaded(true);
-        }
-      } catch { }
-    })();
-    return () => { cancelled = true; };
-  }, [account?.address, previewMode, searchParams]);
 
   const previewStyle = useMemo(() => {
     return {
@@ -758,28 +610,6 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    if (!themeLoaded) return;
-    try {
-      const root = document.documentElement;
-      const setVar = (key: string, val?: string) => { if (!val) return; root.style.setProperty(key, val); };
-      setVar("--pp-primary", theme.primaryColor);
-      setVar("--pp-secondary", theme.secondaryColor);
-      setVar("--pp-text", theme.headerTextColor || theme.textColor || "#ffffff");
-      setVar("--pp-text-header", theme.headerTextColor || theme.textColor || "#ffffff");
-      setVar("--pp-text-body", theme.bodyTextColor || "#e5e7eb");
-      setVar("--primary", theme.primaryColor);
-      if (typeof theme.fontFamily === "string" && theme.fontFamily.trim().length > 0) {
-        setVar("--pp-font", theme.fontFamily);
-      }
-      try {
-        root.setAttribute("data-pp-theme-stage", "init");
-        root.setAttribute("data-pp-theme-ready", "1");
-        window.dispatchEvent(new CustomEvent("pp:theme:updated", { detail: { ...theme } }));
-        window.dispatchEvent(new CustomEvent("pp:theme:ready", { detail: { ...theme } }));
-      } catch { }
-    } catch { }
-  }, [themeLoaded, theme.primaryColor, theme.secondaryColor, theme.headerTextColor, theme.textColor, theme.bodyTextColor, theme.fontFamily]);
 
   const [processingFeePct, setProcessingFeePct] = useState<number>(0);
   const [basePlatformFeePct, setBasePlatformFeePct] = useState<number>(0.5);
@@ -1041,7 +871,7 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
   const LogoImg = () => (
     <img
       alt="logo"
-      src={(() => { const a = (theme as any)?.symbolLogoUrl ? String((theme as any).symbolLogoUrl).trim() : ""; const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return a || b || c || "/ppsymbol.png"; })()}
+      src={(() => { const a = (theme as any)?.symbolLogoUrl ? String((theme as any).symbolLogoUrl).trim() : ""; const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return resolveBrandSymbol(a || b || c, (theme as any)?.brandKey || (theme as any)?.key); })()}
       className="max-h-9 object-contain"
     />
   );
@@ -1051,7 +881,7 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
       <div className="w-9 h-9 rounded-md bg-white/10 flex items-center justify-center overflow-hidden">
         <LogoImg />
       </div>
-      <div className="font-semibold truncate" style={{ fontFamily: theme.fontFamily }}>{theme.brandName || "Your Brand"}</div>
+      <div className="font-semibold truncate" style={{ fontFamily: theme.fontFamily }}>{theme.brandName || getDefaultBrandName(theme.brandKey)}</div>
       <div className="ml-auto flex items-center gap-2">
         {/* No login required on dummy terminal */}
       </div>
@@ -1097,10 +927,10 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
     <div className="mt-4 rounded-2xl border p-4 bg-background/70">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-foreground/5 overflow-hidden grid place-items-center">
-          <img src={(() => { const a = (theme as any)?.symbolLogoUrl ? String((theme as any).symbolLogoUrl).trim() : ""; const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return a || b || c || "/ppsymbol.png"; })()} alt="Logo" className="w-10 h-10 object-contain" />
+          <img src={(() => { const a = (theme as any)?.symbolLogoUrl ? String((theme as any).symbolLogoUrl).trim() : ""; const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return resolveBrandSymbol(a || b || c, (theme as any)?.brandKey || (theme as any)?.key); })()} alt="Logo" className="w-10 h-10 object-contain" />
         </div>
         <div>
-          <div className="text-sm font-semibold">{theme.brandName || "Your Brand"}</div>
+          <div className="text-sm font-semibold">{theme.brandName || getDefaultBrandName(theme.brandKey)}</div>
           <div className="microtext text-muted-foreground">Digital Receipt</div>
         </div>
         <div className="ml-auto microtext text-muted-foreground">{rightStatus}</div>
@@ -1189,7 +1019,7 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
         />
       ) : (
         <div className="w-full flex flex-col items-center justify-center gap-3 py-8 text-center min-h-[240px]">
-          <img src={(() => { const a = (theme as any)?.symbolLogoUrl ? String((theme as any).symbolLogoUrl).trim() : ""; const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return a || b || c || "/ppsymbol.png"; })()} alt="Logo" className="w-16 h-16 rounded-lg object-contain" />
+          <img src={(() => { const a = (theme as any)?.symbolLogoUrl ? String((theme as any).symbolLogoUrl).trim() : ""; const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return resolveBrandSymbol(a || b || c, (theme as any)?.brandKey || (theme as any)?.key); })()} alt="Logo" className="w-16 h-16 rounded-lg object-contain" />
           <div className="text-sm text-muted-foreground">{totalUsd <= 0 ? "Invalid amount" : "Enter amount to continue checkout"}</div>
 
         </div>
@@ -1300,10 +1130,10 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
                 <div className="mt-2">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-foreground/5 overflow-hidden grid place-items-center">
-                      <img src={(() => { const a = (theme as any)?.symbolLogoUrl ? String((theme as any).symbolLogoUrl).trim() : ""; const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return a || b || c || "/ppsymbol.png"; })()} alt="Logo" className="w-10 h-10 object-contain" />
+                      <img src={(() => { const a = (theme as any)?.symbolLogoUrl ? String((theme as any).symbolLogoUrl).trim() : ""; const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return resolveBrandSymbol(a || b || c, (theme as any)?.brandKey || (theme as any)?.key); })()} alt="Logo" className="w-10 h-10 object-contain" />
                     </div>
                     <div>
-                      <div className="text-sm font-semibold">{theme.brandName || "Your Brand"}</div>
+                      <div className="text-sm font-semibold">{theme.brandName || getDefaultBrandName(theme.brandKey)}</div>
                       <div className="microtext text-muted-foreground">Digital Receipt</div>
                     </div>
                     <div className="ml-auto microtext text-muted-foreground">Demo</div>
@@ -1449,6 +1279,7 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
  */
 type ActiveTab = "terminal" | "compact" | "wide" | "invoice";
 function TerminalPageInner() {
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<ActiveTab>("terminal");
   const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
@@ -1510,29 +1341,33 @@ function TerminalPageInner() {
           <div className="inline-flex items-center gap-2 rounded-lg border bg-background/70 p-1">
             <button
               type="button"
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold ${activeTab === "terminal" ? "bg-[var(--pp-secondary)] text-white" : "hover:bg-foreground/5"}`}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold ${activeTab === "terminal" ? "bg-pp-secondary text-white border-transparent" : "hover:bg-foreground/5"}`}
               onClick={() => setActiveTab("terminal")}
+              style={{ backgroundColor: activeTab === "terminal" ? theme.secondaryColor : undefined }}
             >
               Terminal
             </button>
             <button
               type="button"
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold ${activeTab === "compact" ? "bg-[var(--pp-secondary)] text-white" : "hover:bg-foreground/5"}`}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold ${activeTab === "compact" ? "bg-pp-secondary text-white border-transparent" : "hover:bg-foreground/5"}`}
               onClick={() => setActiveTab("compact")}
+              style={{ backgroundColor: activeTab === "compact" ? theme.secondaryColor : undefined }}
             >
               Compact
             </button>
             <button
               type="button"
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold hidden md:inline-flex ${activeTab === "wide" ? "bg-[var(--pp-secondary)] text-white" : "hover:bg-foreground/5"}`}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold hidden md:inline-flex ${activeTab === "wide" ? "bg-pp-secondary text-white border-transparent" : "hover:bg-foreground/5"}`}
               onClick={() => setActiveTab("wide")}
+              style={{ backgroundColor: activeTab === "wide" ? theme.secondaryColor : undefined }}
             >
               Wide
             </button>
             <button
               type="button"
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold hidden md:inline-flex ${activeTab === "invoice" ? "bg-[var(--pp-secondary)] text-white" : "hover:bg-foreground/5"}`}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold hidden md:inline-flex ${activeTab === "invoice" ? "bg-pp-secondary text-white border-transparent" : "hover:bg-foreground/5"}`}
               onClick={() => setActiveTab("invoice")}
+              style={{ backgroundColor: activeTab === "invoice" ? theme.secondaryColor : undefined }}
             >
               Invoice
             </button>

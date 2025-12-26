@@ -7,7 +7,8 @@ const DOC_ID = "site:config";
 function getDocIdForBrand(brandKey?: string): string {
   try {
     const key = String(brandKey || "").toLowerCase();
-    if (!key || key === "portalpay" || key === "basaltsurge") return DOC_ID;
+    // Legacy mapping: portalpay and basaltsurge share the 'site:config:portalpay' document ID
+    if (!key || key === "portalpay" || key === "basaltsurge") return "site:config:portalpay";
     return `${DOC_ID}:${key}`;
   } catch {
     return DOC_ID;
@@ -44,13 +45,16 @@ export type SiteConfig = {
 };
 
 function defaultTheme(): SiteTheme {
+  const brandKey = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "portalpay").toLowerCase();
+  const isBasalt = brandKey === "basaltsurge";
+
   return {
-    primaryColor: "#1f2937", // slate-800
-    secondaryColor: "#F54029", // brand accent
+    primaryColor: isBasalt ? "#22C55E" : "#1f2937",
+    secondaryColor: isBasalt ? "#16A34A" : "#F54029",
     // Neutral defaults to prevent PortalPay takeover; actual logos injected from BrandContext or site-config
     brandLogoUrl: "",
     brandFaviconUrl: "/favicon-32x32.png",
-    brandName: "Your Brand",
+    brandName: isBasalt ? "BasaltSurge" : "PortalPay",
     fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
     receiptBackgroundUrl: "/watermark.png",
   };
@@ -161,18 +165,33 @@ export async function getSiteConfigForWallet(wallet?: string): Promise<SiteConfi
     let brandKey: string | undefined = undefined;
     try {
       brandKey = getBrandKey();
+      // Explicitly alias basaltsurge to portalpay to ensure it shares the exact same config/split logic
+      // This forces the lookup to treat basaltsurge exactly like the main portalpay instance
+      if (brandKey && String(brandKey).toLowerCase() === "basaltsurge") {
+        brandKey = "portalpay";
+      }
     } catch {
       // brand not configured (e.g., platform container w/ legacy merchants) — continue with legacy flow
       brandKey = undefined;
     }
 
     if (wallet && typeof wallet === "string" && wallet.length > 0) {
+      // console.log("[site-config] lookup", { wallet, brandKey });
       // 1) Try brand-scoped doc first (e.g., "site:config:<brandKey>")
       if (brandKey) {
         try {
           const docId = getDocIdForBrand(brandKey);
+          // console.log("[site-config] step1 try", { docId, wallet });
           const { resource } = await c.item(docId, wallet).read<any>();
-          if (resource) return normalize(resource);
+          if (resource) {
+            const n = normalize(resource);
+            const hasSplit = n.splitAddress || n.split?.address;
+            // console.log("[site-config] step1 found", { id: resource.id, brandKey: resource.brandKey, hasSplit, splitAddr: n.splitAddress });
+            const normalizedBrand = (brandKey || "").toLowerCase();
+            const isPlatform = normalizedBrand === "portalpay" || normalizedBrand === "basaltsurge";
+            if (hasSplit || !isPlatform) return n;
+            // platform brand without split in brand-scoped doc: continue to legacy/global search
+          }
         } catch { }
       }
       // 2) Fallback to legacy per-wallet doc ("site:config" partitioned by wallet)
@@ -186,8 +205,24 @@ export async function getSiteConfigForWallet(wallet?: string): Promise<SiteConfi
             const hasSplitLegacy =
               /^0x[a-fA-F0-9]{40}$/.test(String((normalizedLegacy as any)?.splitAddress || "")) ||
               /^0x[a-fA-F0-9]{40}$/.test(String((normalizedLegacy as any)?.split?.address || ""));
+            // console.log("[site-config] step2 legacy found", { id: resource.id, hasSplitLegacy, splitAddr: normalizedLegacy.splitAddress });
             if (hasSplitLegacy) {
               return normalizedLegacy;
+            }
+            // Legacy doc exists but no split bound — inherit from global if platform brand
+            const normalizedBrand = (brandKey || "").toLowerCase();
+            if (normalizedBrand === "portalpay" || normalizedBrand === "basaltsurge") {
+              try {
+                const { resource: globalRes } = await c.item(DOC_ID, DOC_ID).read<any>();
+                if (globalRes) {
+                  const g = normalize(globalRes);
+                  if (g.splitAddress || g.split?.address) {
+                    normalizedLegacy.splitAddress = g.splitAddress || g.split?.address;
+                    normalizedLegacy.split = g.split;
+                    return normalizedLegacy;
+                  }
+                }
+              } catch { }
             }
             // Legacy doc exists but no split bound — look for any brand-scoped doc with a split for this wallet.
             try {
@@ -201,6 +236,7 @@ export async function getSiteConfigForWallet(wallet?: string): Promise<SiteConfi
               const { resources: rows2 } = await c.items.query(spec2).fetchAll();
               const row2 = Array.isArray(rows2) && rows2[0] ? rows2[0] : null;
               if (row2) {
+                // console.log("[site-config] step2 query found", { id: row2.id, splitAddr: row2.splitAddress });
                 return normalize(row2);
               }
             } catch { }
@@ -224,7 +260,10 @@ export async function getSiteConfigForWallet(wallet?: string): Promise<SiteConfi
       } as { query: string; parameters: { name: string; value: any }[] };
       const { resources } = await c.items.query(spec).fetchAll();
       const row = Array.isArray(resources) && resources[0] ? resources[0] : null;
-      if (row) return normalize(row);
+      if (row) {
+        // console.log("[site-config] step2.5 query found", { id: row.id });
+        return normalize(row);
+      }
     } catch { }
 
     // 3) Global singleton fallback ("site:config" partitioned by "site:config")

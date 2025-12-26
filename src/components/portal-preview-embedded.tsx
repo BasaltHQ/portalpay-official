@@ -10,6 +10,7 @@ import { fetchEthRates, fetchUsdRates, fetchBtcUsd, fetchXrpUsd, fetchSolUsd, ty
 import { SUPPORTED_CURRENCIES, convertFromUsd, formatCurrency, getCurrencyFlag, roundForCurrency } from "@/lib/fx";
 import { useBrand } from "@/contexts/BrandContext";
 import { cachedFetch } from "@/lib/client-api-cache";
+import { getDefaultBrandSymbol, resolveBrandAppLogo, resolveBrandSymbol, getDefaultBrandName } from "@/lib/branding";
 
 type SiteTheme = {
   primaryColor: string;
@@ -123,100 +124,39 @@ export function PortalPreviewEmbedded({
     }).catch(() => setWallets([]));
     return () => { mounted = false; };
   }, []);
-  // Pull container brandKey and partner brand colors/logos to avoid relying solely on BrandContext (which may be platform default)
-  const [containerBrandKey, setContainerBrandKey] = useState<string>("");
-  const [partnerPrimaryColor, setPartnerPrimaryColor] = useState<string | null>(null);
-  const [partnerAccentColor, setPartnerAccentColor] = useState<string | null>(null);
-  const [partnerBrandName, setPartnerBrandName] = useState<string | null>(null);
-  const [partnerLogoApp, setPartnerLogoApp] = useState<string | null>(null);
-  const [partnerLogoSymbol, setPartnerLogoSymbol] = useState<string | null>(null);
-  const [partnerLogoFavicon, setPartnerLogoFavicon] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const ci = await cachedFetch("/api/site/container", { cache: "no-store" });
-        if (cancelled) return;
-        const bk = String(ci?.brandKey || "").trim();
-        const ct = String(ci?.containerType || "").toLowerCase();
-        setContainerBrandKey(bk);
-
-        // For partner containers, also fetch brand colors and logos
-        if (bk && ct === "partner") {
-          const pj = await cachedFetch(`/api/platform/brands/${encodeURIComponent(bk)}/config`, { cache: "no-store" });
-          if (!cancelled) {
-            const bc = (pj?.brand?.colors || {}) as any;
-            const bl = (pj?.brand?.logos || {}) as any;
-            const primary = typeof bc.primary === "string" ? bc.primary : null;
-            const accent = typeof bc.accent === "string" ? bc.accent : null;
-            const logoApp = typeof bl.app === "string" && bl.app ? bl.app : null;
-            const logoSymbol = typeof bl.symbol === "string" && bl.symbol ? bl.symbol : null;
-            const logoFavicon = typeof bl.favicon === "string" && bl.favicon ? bl.favicon : null;
-            const rawName = String(pj?.brand?.name || "").trim();
-            // Auto-titleize brandKey if brand name is missing or generic
-            const titleizedKey = bk ? bk.charAt(0).toUpperCase() + bk.slice(1) : "";
-            const isGenericName = !rawName || /^(ledger\d*|partner\d*|default|portalpay)$/i.test(rawName);
-            // Explicit casing fix for Basaltsurge
-            const brandName = bk.toLowerCase() === "basaltsurge" ? "BasaltSurge" : (isGenericName ? titleizedKey : rawName);
-
-            console.log("[PORTAL-PREVIEW] Partner brand fetched:", { bk, primary, accent, logoApp, logoSymbol, brandName });
-            // FORCE Green for BasaltSurge if it comes back as default blue/green or null
-            if (bk.toLowerCase() === "basaltsurge") {
-              setPartnerPrimaryColor("#22C55E");
-              setPartnerAccentColor("#16A34A");
-            } else {
-              setPartnerPrimaryColor(primary);
-              setPartnerAccentColor(accent);
-            }
-            setPartnerBrandName(brandName);
-            setPartnerLogoApp(logoApp);
-            setPartnerLogoSymbol(logoSymbol);
-            setPartnerLogoFavicon(logoFavicon);
-          }
-        }
-      } catch (e) {
-        console.error("[PORTAL-PREVIEW] Error fetching container/brand info:", e);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-  // Brand name fallback: if theme.brandName is missing or looks generic, titleize brand key (prefer theme.brandKey or container brandKey)
-  const keyForDisplay = String(((theme as any)?.brandKey || containerBrandKey || (brandCtx as any)?.key || "")).trim();
-  const titleizedKey = keyForDisplay ? keyForDisplay.charAt(0).toUpperCase() + keyForDisplay.slice(1) : "PortalPay";
+  // No longer fetching partner info redundantly - we rely on the dynamic theme prop
   const rawThemeName = String(theme?.brandName || "").trim();
+  const keyForDisplay = String(((theme as any)?.brandKey || (brandCtx as any)?.key || "")).trim();
+  const titleizedKey = keyForDisplay ? keyForDisplay.charAt(0).toUpperCase() + keyForDisplay.slice(1) : "PortalPay";
+
   // Detect partner container from HTML attribute to treat 'PortalPay' as generic placeholder in partner envs
   const isPartnerContainerNow =
     typeof document !== "undefined" &&
     ((document.documentElement.getAttribute("data-pp-container-type") || "").toLowerCase() === "partner");
+
   const isGenericThemeName =
     /^ledger\d*$/i.test(rawThemeName) ||
     /^partner\d*$/i.test(rawThemeName) ||
     /^default$/i.test(rawThemeName) ||
     (isPartnerContainerNow && /^portalpay$/i.test(rawThemeName));
+
   const displayBrandName = (!rawThemeName || isGenericThemeName) ? titleizedKey : rawThemeName;
-  const wallet = (account?.address || "").toLowerCase();
 
-  // Compute effective colors: prefer partner brand colors over theme prop for partner containers
-  const effectivePrimaryColor = partnerPrimaryColor || theme.primaryColor;
-  const effectiveSecondaryColor = partnerAccentColor || theme.secondaryColor;
-
-  // Compute effective logos: prefer partner logos over theme prop for partner containers
-  const effectiveBrandName = partnerBrandName || displayBrandName;
-  const effectiveLogoApp = partnerLogoApp || (theme as any)?.brandLogoUrl || "";
-  const effectiveLogoSymbol = partnerLogoSymbol || (theme as any)?.symbolLogoUrl || "";
-  const effectiveLogoFavicon = partnerLogoFavicon || theme.brandFaviconUrl || "";
+  const effectivePrimaryColor = theme.primaryColor;
+  const effectiveSecondaryColor = theme.secondaryColor;
+  const effectiveBrandName = theme.brandName || displayBrandName;
+  const effectiveLogoApp = theme.brandLogoUrl;
+  const effectiveLogoSymbol = theme.symbolLogoUrl;
+  const effectiveLogoFavicon = theme.brandFaviconUrl;
 
   // Helper to get best logo for different contexts
-  const getBaseDefault = () => {
-    return (String(((theme as any)?.brandKey || containerBrandKey || (brandCtx as any)?.key || "")).toLowerCase() === "basaltsurge") ? "/bssymbol.png" : "/ppsymbol.png";
-  };
   const getHeaderLogo = () => {
-    // For header: prefer app logo, then symbol, then favicon
-    return effectiveLogoApp || effectiveLogoSymbol || effectiveLogoFavicon || getBaseDefault();
+    const key = (theme as any)?.brandKey || (brandCtx as any)?.key;
+    return resolveBrandAppLogo(theme.brandLogoUrl || theme.symbolLogoUrl || theme.brandFaviconUrl, key);
   };
   const getSymbolLogo = () => {
-    // For symbol display: prefer symbol, then favicon, then app
-    return effectiveLogoSymbol || effectiveLogoFavicon || effectiveLogoApp || getBaseDefault();
+    const key = (theme as any)?.brandKey || (brandCtx as any)?.key;
+    return resolveBrandSymbol(theme.symbolLogoUrl || theme.brandFaviconUrl || theme.brandLogoUrl, key);
   };
 
   // Currency and rates
@@ -804,7 +744,7 @@ export function PortalPreviewEmbedded({
               />
             </div>
             <div>
-              <div className="text-sm font-semibold">{effectiveBrandName || "Your Brand"}</div>
+              <div className="text-sm font-semibold">{effectiveBrandName || getDefaultBrandName((theme as any)?.brandKey || (brandCtx as any)?.key)}</div>
               <div className="microtext text-muted-foreground">Digital Receipt</div>
             </div>
             <div className="ml-auto microtext text-muted-foreground">

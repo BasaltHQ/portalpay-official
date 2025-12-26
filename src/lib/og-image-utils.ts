@@ -401,7 +401,8 @@ export async function loadPPSymbol(size = 60): Promise<Buffer | null> {
 
   try {
     const brand = getBrandConfig();
-    const isPartner = isPartnerContext() || (String((brand as any)?.key || '').toLowerCase() !== 'portalpay');
+    const isPlatformBrand = String((brand as any)?.key || '').toLowerCase() === 'portalpay' || String((brand as any)?.key || '').toLowerCase() === 'basaltsurge';
+    const isPartner = isPartnerContext() || !isPlatformBrand;
 
     if (isPartner) {
       // Prefer brand-specific compact symbol (or app logo) in partner containers

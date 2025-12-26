@@ -4,6 +4,8 @@ import "./globals.css";
 import Script from "next/script";
 import { cache } from "react";
 import { HideableNavbar } from "@/components/hideable-navbar";
+import { FaviconUpdater } from "@/components/favicon-updater";
+import { TitleUpdater } from "@/components/title-updater";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { HydrationSanitizer } from "@/components/providers/hydration-sanitizer";
 import { ThirdwebAppProvider } from "@/components/providers/thirdweb-app-provider";
@@ -20,6 +22,7 @@ import { BrandProvider } from "@/contexts/BrandContext";
 import { getContainer } from "@/lib/cosmos";
 import { getEnv } from "@/lib/env";
 import { getBrandConfigFromCosmos, getContainerIdentity } from "@/lib/brand-config";
+import { resolveBrandAppLogo, resolveBrandSymbol } from "@/lib/branding";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,29 +62,30 @@ const PLATFORM_HOSTNAMES = [
 
 function deriveBrandKeyFromHostname(host: string): { brandKey: string; containerType: string } | null {
   if (!host) return null;
-  
+
   // Remove port number if present (e.g., localhost:3001 -> localhost)
   const hostLower = host.toLowerCase().split(":")[0];
-  
+
   // Check custom partner domains first (exact match)
   if (KNOWN_PARTNER_DOMAINS[hostLower]) {
     return { brandKey: KNOWN_PARTNER_DOMAINS[hostLower], containerType: "partner" };
   }
-  
+
   // Check if this is a main platform hostname (exact match or subdomain)
   for (const platformHost of PLATFORM_HOSTNAMES) {
     if (hostLower === platformHost || hostLower.endsWith(`.${platformHost}`)) {
-      return { brandKey: "portalpay", containerType: "platform" };
+      const bk = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "portalpay").toLowerCase();
+      return { brandKey: bk, containerType: "platform" };
     }
   }
-  
+
   // Handle localhost with subdomains for development testing
   // e.g., paynex.localhost:3001 -> brandKey: paynex, containerType: partner
   if (hostLower === "localhost" || hostLower === "127.0.0.1") {
     // Plain localhost without subdomain - use env vars (handled by caller)
     return null;
   }
-  
+
   if (hostLower.endsWith(".localhost") || hostLower.endsWith(".127.0.0.1")) {
     const parts = hostLower.split(".");
     const candidate = parts[0];
@@ -94,31 +98,31 @@ function deriveBrandKeyFromHostname(host: string): { brandKey: string; container
       return { brandKey: candidate, containerType: "partner" };
     }
   }
-  
+
   // Extract potential brand key from hostname
   // Patterns: <brandKey>.azurewebsites.net, <brandKey>.payportal.co, <brandKey>.<domain>
   const parts = hostLower.split(".");
   if (parts.length >= 2) {
     const candidate = parts[0];
-    
+
     // Check known partner patterns
     if (KNOWN_PARTNER_PATTERNS[candidate]) {
       return { brandKey: KNOWN_PARTNER_PATTERNS[candidate], containerType: "partner" };
     }
-    
+
     // For Azure Container Apps and custom domains, derive from subdomain
     // e.g., paynex.azurewebsites.net -> paynex
     // e.g., xoinpay.payportal.co -> xoinpay
     if (candidate && candidate.length > 2 && !["www", "api", "admin"].includes(candidate)) {
       const isAzure = hostLower.endsWith(".azurewebsites.net") || hostLower.endsWith(".azurecontainerapps.io");
       const isPayportal = hostLower.endsWith(".payportal.co") || hostLower.endsWith(".portalpay.app");
-      
+
       if (isAzure || isPayportal) {
         return { brandKey: candidate, containerType: "partner" };
       }
     }
   }
-  
+
   return null;
 }
 
@@ -130,7 +134,7 @@ function deriveBrandKeyFromHostname(host: string): { brandKey: string; container
 async function getContainerIdentityDirect(): Promise<{ brandKey: string; containerType: string }> {
   let containerType = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || process.env.CONTAINER_TYPE || "").toLowerCase();
   let brandKey = String(process.env.NEXT_PUBLIC_BRAND_KEY || process.env.BRAND_KEY || "").toLowerCase();
-  
+
   // If brandKey is empty, try to derive from hostname
   if (!brandKey) {
     try {
@@ -138,7 +142,7 @@ async function getContainerIdentityDirect(): Promise<{ brandKey: string; contain
       const headersList = await headers();
       const host = headersList.get("x-forwarded-host") || headersList.get("host") || "";
       const derived = deriveBrandKeyFromHostname(host);
-      
+
       if (derived) {
         brandKey = derived.brandKey;
         // Only override containerType if it wasn't explicitly set in env
@@ -150,12 +154,12 @@ async function getContainerIdentityDirect(): Promise<{ brandKey: string; contain
       // headers() may fail in some contexts; continue with env values
     }
   }
-  
+
   // Default containerType to "platform" if still empty
   if (!containerType) {
     containerType = "platform";
   }
-  
+
   return { containerType, brandKey };
 }
 
@@ -165,7 +169,7 @@ async function getContainerIdentityDirect(): Promise<{ brandKey: string; contain
  */
 const getBrandConfigDirect = cache(async (brandKey: string): Promise<any> => {
   if (!brandKey) return null;
-  
+
   try {
     // Direct Cosmos DB read - no HTTP fetch needed
     const { brand } = await getBrandConfigFromCosmos(brandKey);
@@ -201,9 +205,9 @@ export async function generateMetadata(): Promise<Metadata> {
     if (!brandKeyFromHost) {
       try {
         brandKeyFromHost = getBrandKey();
-      } catch {}
+      } catch { }
     }
-  } catch {}
+  } catch { }
   const baseBrand = getBrandConfig(brandKeyFromHost);
   let runtimeBrand = baseBrand;
   const envMeta = getEnv();
@@ -211,7 +215,7 @@ export async function generateMetadata(): Promise<Metadata> {
   let containerIdentityForMeta: { containerType: string; brandKey: string } = { containerType: "platform", brandKey: "" };
   try {
     containerIdentityForMeta = await getContainerIdentityDirect();
-  } catch {}
+  } catch { }
   const isPlatformPortalpay = String(envMeta.CONTAINER_TYPE || "").toLowerCase() === "platform" && baseBrand.key === "portalpay";
 
   // Prefer site-config theme.meta for OG title/description (runtime editable in Admin > Branding)
@@ -248,9 +252,9 @@ export async function generateMetadata(): Promise<Metadata> {
             siteLogosSocialDefault = v;
           }
         }
-      } catch {}
+      } catch { }
     }
-  } catch {}
+  } catch { }
 
   // Fallback to platform brand config meta if site-config meta is missing
   let platformMetaTitle: string | undefined;
@@ -286,12 +290,13 @@ export async function generateMetadata(): Promise<Metadata> {
         meta: b.meta && typeof b.meta === "object" ? b.meta : baseBrand.meta,
       };
     }
-  } catch {}
+  } catch { }
 
   // Detect partner container for brand name sanitization (use hostname-derived containerType)
+  const isPlatformBrandKey = (k: string) => k.toLowerCase() === "portalpay" || k.toLowerCase() === "basaltsurge";
   const isPartnerContainerForMeta = String(containerIdentityForMeta.containerType || envMeta.CONTAINER_TYPE || "").toLowerCase() === "partner" ||
-    (brandKeyFromHost && brandKeyFromHost.toLowerCase() !== "portalpay") ||
-    (containerIdentityForMeta.brandKey && containerIdentityForMeta.brandKey.toLowerCase() !== "portalpay");
+    (brandKeyFromHost && !isPlatformBrandKey(brandKeyFromHost)) ||
+    (containerIdentityForMeta.brandKey && !isPlatformBrandKey(containerIdentityForMeta.brandKey));
   const sanitizedName = (() => {
     const nm = String(runtimeBrand?.name || "").trim();
     // In partner containers, treat "PortalPay" as a generic placeholder
@@ -300,7 +305,7 @@ export async function generateMetadata(): Promise<Metadata> {
     if (!nm || generic) {
       // Prefer hostname-derived brandKey, containerIdentity brandKey, then runtimeBrand.key for titleize
       const k = String(brandKeyFromHost || containerIdentityForMeta.brandKey || (runtimeBrand as any)?.key || "").trim();
-      return k && k.toLowerCase() !== "portalpay" ? k.charAt(0).toUpperCase() + k.slice(1) : (nm || "PortalPay");
+      return k && !isPlatformBrandKey(k) ? k.charAt(0).toUpperCase() + k.slice(1) : (nm || "PortalPay");
     }
     return nm;
   })();
@@ -349,7 +354,7 @@ export async function generateMetadata(): Promise<Metadata> {
   if (siteAppUrl && siteAppUrl.length && !isLocalhostUrl(siteAppUrl)) {
     metadataBaseUrl = siteAppUrl;
   }
-  
+
   // If metadataBaseUrl is still localhost in production, try to derive from brand appUrl or request headers
   if (process.env.NODE_ENV === 'production' && isLocalhostUrl(metadataBaseUrl)) {
     // Try brand appUrl first
@@ -395,7 +400,7 @@ export async function generateMetadata(): Promise<Metadata> {
     if (lower.includes('/portalpay') || lower.includes('portalpay.')) return true;
     return false;
   };
-  
+
   // For partners: filter out platform images from siteLogosSocialDefault
   const effectiveSiteLogosSocialDefault = (() => {
     if (!siteLogosSocialDefault) return undefined;
@@ -405,7 +410,7 @@ export async function generateMetadata(): Promise<Metadata> {
     }
     return siteLogosSocialDefault;
   })();
-  
+
   const ogImagePath = (() => {
     // If partner container and no valid siteLogosSocialDefault was set in their site-config,
     // return empty to force generative fallback
@@ -485,7 +490,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
       site: twitterSite || undefined,
       creator: twitterCreator || undefined,
-      images: [ (twitterImagePath && twitterImagePath !== '/' ? (/^https?:\/\//i.test(twitterImagePath) ? twitterImagePath : `${safeMetadataBase}${twitterImagePath}`) : `${safeMetadataBase}/api/og-image/fallback?title=${encodeURIComponent(ogTitle)}&brand=${encodeURIComponent(brandNameForTitle)}&desc=${encodeURIComponent(description)}`) ],
+      images: [(twitterImagePath && twitterImagePath !== '/' ? (/^https?:\/\//i.test(twitterImagePath) ? twitterImagePath : `${safeMetadataBase}${twitterImagePath}`) : `${safeMetadataBase}/api/og-image/fallback?title=${encodeURIComponent(ogTitle)}&brand=${encodeURIComponent(brandNameForTitle)}&desc=${encodeURIComponent(description)}`)],
     },
     appLinks: {
       web: { url: safeMetadataBase },
@@ -564,9 +569,9 @@ export default async function RootLayout({
     if (!brandKeyFromHost) {
       try {
         brandKeyFromHost = getBrandKey();
-      } catch {}
+      } catch { }
     }
-  } catch {}
+  } catch { }
   const baseBrand = getBrandConfig(brandKeyFromHost);
   let runtimeBrand = baseBrand;
   const envLayout = getEnv();
@@ -582,10 +587,13 @@ export default async function RootLayout({
         ...baseBrand,
         name: typeof b.name === "string" && b.name ? b.name : baseBrand.name,
         colors: b.colors && typeof b.colors === "object" ? b.colors : baseBrand.colors,
-        // Preserve partner logos in layout; avoid platform override replacing favicon/app logo
-        logos: isPartnerLayout
-          ? baseBrand.logos
-          : (b.logos && typeof b.logos === "object" ? { ...baseBrand.logos, ...b.logos } : baseBrand.logos),
+        // Sanitize logos from Cosmos DB to ensure legacy assets are replaced in Basalt context
+        logos: {
+          ...baseBrand.logos,
+          ...(b.logos || {}),
+          app: resolveBrandAppLogo(b.logos?.app || baseBrand.logos.app, effectiveBrandKeyForFetch),
+          symbol: resolveBrandSymbol(b.logos?.symbol || b.logos?.app || baseBrand.logos.symbol || baseBrand.logos.app, effectiveBrandKeyForFetch),
+        },
         appUrl: typeof b.appUrl === "string" && b.appUrl ? b.appUrl : baseBrand.appUrl,
         partnerFeeBps: typeof b.partnerFeeBps === "number" ? b.partnerFeeBps : baseBrand.partnerFeeBps,
         defaultMerchantFeeBps: typeof b.defaultMerchantFeeBps === "number" ? b.defaultMerchantFeeBps : baseBrand.defaultMerchantFeeBps,
@@ -594,7 +602,7 @@ export default async function RootLayout({
         meta: b.meta && typeof b.meta === "object" ? b.meta : baseBrand.meta,
       };
     }
-  } catch {}
+  } catch { }
   const brand = runtimeBrand;
   const pageBase = (brand.appUrl || APP_URL).replace(/^http:\/\//, "https://");
   // Compute safe brand name for layout scope (avoid generic placeholders)
@@ -710,7 +718,7 @@ export default async function RootLayout({
           } catch {}
         `}</Script>
         {process.env.NODE_ENV !== "production" && (<>
-        <Script id="pp-suppress-nested-button-error" strategy="beforeInteractive">{`
+          <Script id="pp-suppress-nested-button-error" strategy="beforeInteractive">{`
           try {
             // Suppress React DEV warning: "In HTML, <button> cannot be a descendant of <button>" from third-party modals
             // Only intercept when the message matches exactly to avoid hiding other errors
@@ -761,7 +769,7 @@ export default async function RootLayout({
             }, true);
           } catch {}
         `}</Script>
-        <Script id="pp-filter-react-nested-button" strategy="beforeInteractive">{`
+          <Script id="pp-filter-react-nested-button" strategy="beforeInteractive">{`
           try {
             (function(){
               var origError = console.error;
@@ -823,7 +831,7 @@ export default async function RootLayout({
             })();
           } catch {}
         `}</Script>
-        <Script id="pp-fix-thirdweb-nested-buttons" strategy="afterInteractive">{`
+          <Script id="pp-fix-thirdweb-nested-buttons" strategy="afterInteractive">{`
           try {
             (function(){
               function patchRoot(root){
@@ -898,7 +906,7 @@ export default async function RootLayout({
             })();
           } catch {}
         `}</Script>
-        <Script id="pp-reassert-console-filters" strategy="afterInteractive">{`
+          <Script id="pp-reassert-console-filters" strategy="afterInteractive">{`
           try {
             (function(){
               var patterns = [
@@ -995,6 +1003,8 @@ export default async function RootLayout({
               <QueryProvider>
                 <I18nProvider messages={messages}>
                   <AutoTranslateProvider>
+                    <TitleUpdater />
+                    <FaviconUpdater />
                     <HideableNavbar />
                     {/* Mobile spacer below navbar to avoid content crowding */}
                     <div id="mobile-navbar-spacer" className="sm:hidden h-2" />

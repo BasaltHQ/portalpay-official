@@ -17,7 +17,8 @@ const DOC_ID = "site:config";
 function getDocIdForBrand(brandKey?: string): string {
   try {
     const key = String(brandKey || "").toLowerCase();
-    if (!key || key === "portalpay") return DOC_ID;
+    // Legacy mapping: portalpay and basaltsurge share the 'site:config:portalpay' document ID
+    if (!key || key === "portalpay" || key === "basaltsurge") return "site:config:portalpay";
     return `${DOC_ID}:${key}`;
   } catch {
     return DOC_ID;
@@ -39,6 +40,10 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
     let brandKeyForFees = containerIdentity.brandKey;
     if (!brandKeyForFees) {
       try { brandKeyForFees = getBrandKey(); } catch { brandKeyForFees = ""; }
+    }
+    // Normalize basaltsurge to portalpay - they are the same platform
+    if (brandKeyForFees && String(brandKeyForFees).toLowerCase() === "basaltsurge") {
+      brandKeyForFees = "portalpay";
     }
 
     // Pre-fetch brand config for fees (will be used at the end regardless of merchant vs global config)
@@ -72,7 +77,7 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
       // Get container identity to check if this is a partner container
       const merchantContainerIdentity = getContainerIdentity(host);
       const containerBrandKey = (merchantContainerIdentity.brandKey || "").toLowerCase();
-      const isPartnerMerchant = containerBrandKey && containerBrandKey !== "portalpay";
+      const isPartnerMerchant = containerBrandKey && containerBrandKey !== "portalpay" && containerBrandKey !== "basaltsurge";
 
       // Check if merchant has customized their own logo/symbol
       const hasCustomSymbol = (() => {
@@ -98,18 +103,15 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
         // Continue to partner override logic below (don't return early)
       } else {
         // Merchant has customized their theme OR is on main platform - return AS-IS
-        (cfg.theme as any).brandKey = savedBrandKey || containerBrandKey || "portalpay";
+        // Use saved brandKey if present, otherwise use containerBrandKey (no forced default)
+        // This allows legacy merchants to have no brandKey so the correct config loads
+        (cfg.theme as any).brandKey = savedBrandKey || containerBrandKey || "";
         // Ensure basePlatformFeePct is present for Terminal/UI fee calculations
         try {
           const platBpsEff = typeof brandFeesConfig.platformFeeBps === "number" ? brandFeesConfig.platformFeeBps : 50;
           const partBpsEff = typeof brandFeesConfig.partnerFeeBps === "number" ? brandFeesConfig.partnerFeeBps : 0;
           (cfg as any).basePlatformFeePct = Math.max(0, (platBpsEff + partBpsEff) / 100);
         } catch { }
-        console.log("[site/config] Per-merchant config - returning saved theme from DB", {
-          wallet: cfgWallet,
-          brandKey: (cfg.theme as any).brandKey,
-          hasCustomSymbol
-        });
         return cfg;
       }
     }
@@ -123,6 +125,8 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
     if (!brandKey) {
       try { brandKey = getBrandKey(); } catch { brandKey = ""; }
     }
+    // Note: Do NOT normalize basaltsurge to portalpay here - we need basaltsurge for correct brand config lookup
+    // Document ID normalization is handled by getDocIdForBrand() which includes basaltsurge as a platform brand
 
     // Get brand config directly from Cosmos DB (no HTTP call)
     let brand: any = null;
@@ -216,7 +220,7 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
 
     // Only apply brand overrides for explicit partner contexts (non-portalpay brands or partner containers)
     // Global configs (no wallet) should get brand defaults applied
-    const isExplicitPartner = isPartnerContext() || ((brandKey || "").toLowerCase() !== "portalpay" && !!brandKey);
+    const isExplicitPartner = isPartnerContext() || ((brandKey || "").toLowerCase() !== "portalpay" && (brandKey || "").toLowerCase() !== "basaltsurge" && !!brandKey);
 
     if (isExplicitPartner) {
       cfg.theme = cfg.theme || {};
@@ -231,55 +235,109 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
       // Use brand name from Cosmos DB (fetched brand config) with auto-titleized fallback
       (cfg.theme as any).brandName = brandName || String((cfg.theme as any).brandName || titleizedKey || "");
 
-      // Prefer partner configuration from Cosmos DB; preserve existing symbols if brand doesn't have explicit overrides
+      // Helper to detect legacy platform logos that should NOT override the correct BasaltSurge logo
+      const isLegacyPlatformLogo = (url: string) => {
+        const s = String(url || "").toLowerCase();
+        // NEVER treat Basalt symbols as legacy/overridable
+        if (s.includes("bssymbol") || s.includes("basalthq")) return false;
+        // Check for known legacy platform filenames
+        const filename = s.split("/").pop() || "";
+        const isDefaultFile = /^(portalpay\d*|ppsymbol(bg)?|cblogod|pplogo|next)\.(png|svg|ico)$/i.test(filename);
+        return isDefaultFile || s.includes("cblogod") || s.includes("ppsymbol") || (s.includes("portalpay.png") && !s.includes("/brands/"));
+      };
+
+      // Detect if we're in BasaltSurge context to preserve the correct logo set by normalizeSiteConfig
+      const currentBrandKeyLower = String(brandKey || "").toLowerCase();
+      const isBasaltSurgeContext = currentBrandKeyLower === "basaltsurge";
+
+      // CRITICAL: Determine if merchant has a custom logo that should be protected
+      const hasCustomMerchantLogo = isPerMerchantConfig && (() => {
+        const t = cfg.theme || {};
+        const current = String(t.brandLogoUrl || "").toLowerCase();
+        if (!current) return false;
+        // It's custom if it's NOT a legacy platform logo AND not the target Basalt logo
+        return !isLegacyPlatformLogo(current) && !current.includes("bssymbol");
+      })();
+
+      // Prefer partner configuration from Cosmos DB; preserve existing symbols if brand doesn't have explicit overrides or merchant has custom logo
       const existingLogos = ((cfg.theme as any)?.logos || {}) as any;
       const existingSymbol = existingLogos.symbol || (cfg.theme as any)?.symbolLogoUrl;
-      (cfg.theme as any).logos = {
-        app: bLogos.app || existingLogos.app || undefined,
-        favicon: bLogos.favicon || "/api/favicon",
-        symbol: bLogos.symbol || bLogos.app || existingSymbol || undefined,
-        socialDefault: (typeof (bLogos as any)?.socialDefault === "string" && (bLogos as any).socialDefault)
-          ? (bLogos as any).socialDefault
-          : (typeof existingLogos.socialDefault === "string" ? existingLogos.socialDefault : undefined),
-        footer: (typeof (bLogos as any)?.footer === "string" && (bLogos as any).footer) ? (bLogos as any).footer : existingLogos.footer || undefined,
-        navbarMode:
-          (bLogos.navbarMode === "logo" || bLogos.navbarMode === "symbol")
-            ? bLogos.navbarMode
-            : undefined,
-      };
-      // Propagate brand key for clients to avoid relying on compile-time NEXT_PUBLIC_BRAND_KEY
-      (cfg.theme as any).brandKey = String(brandKey || "");
-      // Propagate navbarMode at top level so clients (Navbar) can read t.navbarMode directly
-      if ((bLogos.navbarMode === "logo" || bLogos.navbarMode === "symbol")) {
-        (cfg.theme as any).navbarMode = bLogos.navbarMode;
-      }
-      // Force top-level logo and favicon to partner assets from Cosmos DB
-      if (typeof bLogos.app === "string" && bLogos.app) {
-        (cfg.theme as any).brandLogoUrl = bLogos.app;
-      } else {
-        (cfg.theme as any).brandLogoUrl = undefined;
-      }
-      if (typeof bLogos.favicon === "string" && bLogos.favicon) {
-        (cfg.theme as any).brandFaviconUrl = bLogos.favicon;
-      } else {
-        (cfg.theme as any).brandFaviconUrl = "/api/favicon";
-      }
-      // Use live brand colors from Platform Admin when available; otherwise retain existing theme colors
-      const brandColors = (brand?.colors || {}) as any;
-      const brandPrimary = typeof brandColors.primary === "string" ? brandColors.primary : "";
-      const brandAccent = typeof brandColors.accent === "string" ? brandColors.accent : "";
-      const candidatePrimary = brandPrimary || (cfg.theme as any)?.primaryColor;
-      const candidateAccent = brandAccent || (cfg.theme as any)?.secondaryColor;
-      if (candidatePrimary) (cfg.theme as any).primaryColor = candidatePrimary;
-      if (candidateAccent) (cfg.theme as any).secondaryColor = candidateAccent;
-      try {
-        const mainLogo = bLogos.app;
-        const curLogos = ((cfg.theme as any).logos || {}) as any;
-        if (mainLogo && !curLogos.symbol) {
-          (cfg.theme as any).logos = { ...curLogos, symbol: mainLogo };
-          (cfg.theme as any).symbolLogoUrl = mainLogo;
+
+      if (!hasCustomMerchantLogo) {
+        (cfg.theme as any).logos = {
+          app: bLogos.app || existingLogos.app || undefined,
+          favicon: bLogos.favicon || "/api/favicon",
+          symbol: bLogos.symbol || bLogos.app || existingSymbol || undefined,
+          socialDefault: (typeof (bLogos as any)?.socialDefault === "string" && (bLogos as any).socialDefault)
+            ? (bLogos as any).socialDefault
+            : (typeof existingLogos.socialDefault === "string" ? existingLogos.socialDefault : undefined),
+          footer: (typeof (bLogos as any)?.footer === "string" && (bLogos as any).footer) ? (bLogos as any).footer : existingLogos.footer || undefined,
+          navbarMode:
+            (bLogos.navbarMode === "logo" || bLogos.navbarMode === "symbol")
+              ? bLogos.navbarMode
+              : undefined,
+        };
+        // Propagate brand key for clients to avoid relying on compile-time NEXT_PUBLIC_BRAND_KEY
+        (cfg.theme as any).brandKey = String(brandKey || "");
+        // Propagate navbarMode at top level so clients (Navbar) can read t.navbarMode directly
+        if ((bLogos.navbarMode === "logo" || bLogos.navbarMode === "symbol")) {
+          (cfg.theme as any).navbarMode = bLogos.navbarMode;
         }
-      } catch { }
+
+        // Force top-level logo and favicon to partner assets from Cosmos DB
+        if (typeof bLogos.app === "string" && bLogos.app) {
+          // EXCEPTION: In BasaltSurge context, skip legacy platform logos to preserve bssymbol.png
+          if (isBasaltSurgeContext && isLegacyPlatformLogo(bLogos.app)) {
+            // Don't override - keep the logo set by normalizeSiteConfig (bssymbol.png)
+          } else {
+            (cfg.theme as any).brandLogoUrl = bLogos.app;
+          }
+        } else {
+          (cfg.theme as any).brandLogoUrl = undefined;
+        }
+
+        if (typeof bLogos.favicon === "string" && bLogos.favicon) {
+          (cfg.theme as any).brandFaviconUrl = bLogos.favicon;
+        } else {
+          (cfg.theme as any).brandFaviconUrl = "/api/favicon";
+        }
+
+        // Use live brand colors from Platform Admin when available; otherwise retain existing theme colors
+        const brandColors = (brand?.colors || {}) as any;
+        const brandPrimary = typeof brandColors.primary === "string" ? brandColors.primary : "";
+        const brandAccent = typeof brandColors.accent === "string" ? brandColors.accent : "";
+
+        // For per-merchant configs, only override if THEY don't have custom colors
+        const merchantHasCustomColors = isPerMerchantConfig && (() => {
+          const theme = cfg.theme || {};
+          const p = String(theme.primaryColor || "").toLowerCase();
+          const s = String(theme.secondaryColor || "").toLowerCase();
+          const defaultPlatformColors = ['#0a0a0a', '#000000', '#1f2937', '#0d9488', '#14b8a6', '#10b981', '#6b7280', '#f54029', '#2dd4bf', '#22d3ee', '#22c55e', '#16a34a'];
+          return (p && !defaultPlatformColors.includes(p)) || (s && !defaultPlatformColors.includes(s));
+        })();
+
+        if (!merchantHasCustomColors) {
+          const candidatePrimary = brandPrimary || (cfg.theme as any)?.primaryColor;
+          const candidateAccent = brandAccent || (cfg.theme as any)?.secondaryColor;
+          if (candidatePrimary) (cfg.theme as any).primaryColor = candidatePrimary;
+          if (candidateAccent) (cfg.theme as any).secondaryColor = candidateAccent;
+        }
+
+        try {
+          const mainLogo = bLogos.app;
+          const curLogos = ((cfg.theme as any).logos || {}) as any;
+          // Also protect symbol logo from legacy platform assets in BasaltSurge context
+          if (mainLogo && !curLogos.symbol) {
+            if (isBasaltSurgeContext && isLegacyPlatformLogo(mainLogo)) {
+              // Don't override
+            } else {
+              (cfg.theme as any).logos = { ...curLogos, symbol: mainLogo };
+              (cfg.theme as any).symbolLogoUrl = mainLogo;
+            }
+          }
+        } catch { }
+      }
+
       try {
         const brandPartner = String(brand?.partnerWallet || "").toLowerCase();
         const brandIsHex = /^0x[a-f0-9]{40}$/i.test(brandPartner);
@@ -304,6 +362,21 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
     const partnerBps = brandFeesConfig.partnerFeeBps ?? 0;
     cfg.basePlatformFeePct = (platformBps + partnerBps) / 100; // Convert bps to percent
 
+    // Platform / BasaltSurge merchants should inherit the global split if they don't have one
+    if (!isExplicitPartner && !cfg.splitAddress && !cfg.split?.address) {
+      try {
+        const c = await getContainer();
+        const { resource: globalRes } = await c.item("site:config", "site:config").read<any>();
+        if (globalRes) {
+          cfg.splitAddress = globalRes.splitAddress || globalRes.split?.address || undefined;
+          cfg.split = globalRes.split || undefined;
+          if (globalRes.taxConfig && (!cfg.taxConfig || !cfg.taxConfig.jurisdictions || cfg.taxConfig.jurisdictions.length === 0)) {
+            cfg.taxConfig = globalRes.taxConfig;
+          }
+        }
+      } catch { }
+    }
+
     return cfg;
   } catch {
     return cfg;
@@ -317,12 +390,12 @@ function normalizeSiteConfig(raw?: any) {
     // PortalPay: default DeFi disabled
     defiEnabled: false,
     theme: {
-      primaryColor: "#1f2937",
-      secondaryColor: "#F54029",
+      primaryColor: (process.env.BRAND_KEY === 'basaltsurge' || process.env.NEXT_PUBLIC_BRAND_KEY === 'basaltsurge') ? "#22C55E" : "#1f2937",
+      secondaryColor: (process.env.BRAND_KEY === 'basaltsurge' || process.env.NEXT_PUBLIC_BRAND_KEY === 'basaltsurge') ? "#16A34A" : "#F54029",
       brandLogoUrl: "",
       brandFaviconUrl: "/favicon-32x32.png",
       appleTouchIconUrl: "/apple-touch-icon.png",
-      brandName: "Your Brand",
+      brandName: (process.env.BRAND_KEY === 'basaltsurge' || process.env.NEXT_PUBLIC_BRAND_KEY === 'basaltsurge') ? "BasaltSurge" : "PortalPay",
       brandLogoShape: "round",
       textColor: "#ffffff",
       headerTextColor: "#ffffff",
@@ -450,38 +523,119 @@ function normalizeSiteConfig(raw?: any) {
   // Legacy PortalPay asset/color sanitization to avoid teal + cblogod defaults
   try {
     const t2 = (config.theme as any) || {};
-    // Replace legacy cblogod.png with ppsymbol.png
-    if (t2.brandLogoUrl === "/cblogod.png") {
-      t2.brandLogoUrl = "/ppsymbol.png";
-    }
-    // Ensure a symbol glyph is present (prefer brand logo if available)
-    const hasSymbol = !!(t2.logos && typeof t2.logos.symbol === "string");
-    if (!hasSymbol) {
-      const existing = ((t2.logos || {}) as any);
-      const defaultSymbol = (process.env.BRAND_KEY || "").toLowerCase() === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png";
-      // Auto-migrate legacy PortalPay symbol to BasaltSurge symbol if brand key matches
-      if (defaultSymbol === "/bssymbol.png" && (t2.brandLogoUrl === "/ppsymbol.png" || t2.brandLogoUrl === "/ppsymbolbg.png" || t2.brandLogoUrl === "/portalpay.png")) {
+
+    // Determine default symbol based on brand key
+    const currentBrandKey = (process.env.BRAND_KEY || "").toLowerCase();
+    const defaultSymbol = currentBrandKey === "basaltsurge" ? "/bssymbol.png" : "/ppsymbol.png";
+
+    // Unconditionally migrate legacy PortalPay assets to BasaltSurge if it's the active platform brand
+    // UNLESS the merchant has explicitly saved brandKey: 'portalpay' (they want PortalPay branding)
+    // OR has any customizations (custom logo, colors) - indicating they configured their theme
+    // OR has a config loaded from DB (has wallet) - legacy merchants who saved before brandKey existed
+    // NOTE: brandKey may be at root level (config.brandKey) OR inside theme (t2.brandKey)
+    const rootBrandKey = String((config as any).brandKey || "").toLowerCase();
+    const themeBrandKey = String(t2.brandKey || "").toLowerCase();
+    const merchantBrandKey = rootBrandKey || themeBrandKey;
+    const configWallet = String((config as any).wallet || "").toLowerCase();
+    const isLoadedFromDb = /^0x[a-f0-9]{40}$/.test(configWallet);
+    const isExplicitPortalPayMerchant = merchantBrandKey === "portalpay" && isLoadedFromDb;
+
+    // Check if merchant has ANY customizations (even without brandKey set)
+    // This respects legacy merchants who customized before brandKey was added
+    const hasCustomLogo = (() => {
+      const logos = t2.logos || {};
+      const sym = String(logos.symbol || "").trim();
+      const app = String(logos.app || "").trim();
+      const brandLogo = String(t2.brandLogoUrl || "").trim();
+      const anyLogo = sym || app || brandLogo;
+      if (!anyLogo) return false;
+      // Reject known default platform assets - these don't count as "custom"
+      // We check for the filename part to be host-agnostic
+      const filename = anyLogo.split("/").pop()?.split("?")[0] || "";
+      const isDefaultAsset = /^(portalpay\d*|ppsymbol(bg)?|cblogod|pplogo|bssymbol|favicon-\d+x\d+|next)\.(png|svg|ico|jpg|jpeg|webp)$/i.test(filename) ||
+        anyLogo.includes("portalpayassets.blob.core.windows.net/public/");
+      return !isDefaultAsset;
+    })();
+    const hasCustomColors = (() => {
+      const defaultColors = ['#0a0a0a', '#000000', '#1f2937', '#0d9488', '#14b8a6', '#10b981', '#6b7280', '#F54029', '#2dd4bf', '#22d3ee', '#22C55E', '#16A34A'];
+      const p = String(t2.primaryColor || "").trim();
+      const s = String(t2.secondaryColor || "").trim();
+      return (p && !defaultColors.includes(p)) || (s && !defaultColors.includes(s));
+    })();
+
+    // Skip migration if: explicit PortalPay merchant OR has explicit customizations (logo/colors)
+    const isMerchantWithCustomizations = isExplicitPortalPayMerchant || hasCustomLogo || hasCustomColors;
+
+    if (currentBrandKey === "basaltsurge" && !isMerchantWithCustomizations) {
+      const isLegacyAsset = (url: any) => {
+        const s = String(url || "").toLowerCase();
+        if (s.includes("bssymbol") || s.includes("basalthq")) return false;
+        const filename = s.split("/").pop()?.split("?")[0] || "";
+        const isDefaultFile = /^(portalpay\d*|ppsymbol(bg)?|cblogod|pplogo|next)\.(png|svg|ico)$/i.test(filename);
+        return isDefaultFile || s.includes("cblogod") || s.includes("ppsymbol") || (s.includes("portalpay") && !s.includes("/brands/"));
+      };
+
+      if (!t2.brandLogoUrl || isLegacyAsset(t2.brandLogoUrl)) {
         t2.brandLogoUrl = "/bssymbol.png";
       }
-      const symbol = typeof t2.brandLogoUrl === "string" && t2.brandLogoUrl ? t2.brandLogoUrl : defaultSymbol;
-      t2.logos = { ...existing, symbol };
-      t2.symbolLogoUrl = symbol;
+
+      // Sync logos block
+      t2.logos = t2.logos || {};
+      if (!t2.logos.symbol || isLegacyAsset(t2.logos.symbol)) {
+        t2.logos.symbol = "/bssymbol.png";
+      }
+      if (!t2.logos.app || isLegacyAsset(t2.logos.app)) {
+        t2.logos.app = "/bssymbol.png";
+      }
+      t2.symbolLogoUrl = t2.logos.symbol;
+      // Only set brandKey to basaltsurge if merchant has NO explicit brandKey saved
+      // This preserves deliberately-set brandKeys (e.g., "portalpay" for legacy merchants)
+      if (!t2.brandKey) {
+        t2.brandKey = "basaltsurge";
+      }
+    } else if (currentBrandKey !== "basaltsurge") {
+      // Regular PortalPay sanitization
+      if (t2.brandLogoUrl === "/cblogod.png") {
+        t2.brandLogoUrl = "/ppsymbol.png";
+      }
+      // Ensure a symbol glyph is present (prefer brand logo if available)
+      const hasSymbol = !!(t2.logos && typeof t2.logos.symbol === "string");
+      if (!hasSymbol) {
+        const existing = ((t2.logos || {}) as any);
+        const symbol = typeof t2.brandLogoUrl === "string" && t2.brandLogoUrl ? t2.brandLogoUrl : defaultSymbol;
+        t2.logos = { ...existing, symbol };
+        t2.symbolLogoUrl = symbol;
+      }
     }
-    // Clamp legacy teal defaults to brand-neutral slate/accent, OR force BasaltSurge green
-    if ((process.env.BRAND_KEY || "").toLowerCase() === "basaltsurge") {
-      t2.primaryColor = "#22C55E";
-      t2.secondaryColor = "#16A34A";
-    } else {
-      // Only clamp generic teal if NOT BasaltSurge
-      if (t2.primaryColor === '#0d9488' || t2.primaryColor === '#14b8a6') t2.primaryColor = '#0f172a';
+    // Clamp legacy teal defaults to brand-neutral slate/accent
+    // Skip color migration for merchants with any customizations
+    const currentPlatformBrand = (process.env.BRAND_KEY || "").toLowerCase();
+    const isBasalt = currentPlatformBrand === "basaltsurge";
+
+    // Determine if this is the global config (not a merchant config)
+    const isGlobalConfig = !isLoadedFromDb;
+
+    // Only force specific brand colors if NO custom colors exist and it's THE GLOBAL config (landing page)
+    if (isBasalt && isGlobalConfig) {
+      const p = String(t2.primaryColor || "").toLowerCase();
+      const s = String(t2.secondaryColor || "").toLowerCase();
+      // Only override if it's the old slate/red or teals
+      const isOldDefault = !p || p === '#1f2937' || p === '#0d9488' || p === '#14b8a6' || p === '#10b981';
+      const isOldAccent = !s || s === '#f54029' || s === '#2dd4bf' || s === '#22d3ee';
+
+      if (isOldDefault) t2.primaryColor = "#22C55E";
+      if (isOldAccent) t2.secondaryColor = "#16A34A";
     }
-    const defaultPrimary = "#1f2937"; // slate
-    const defaultAccent = "#F54029";  // accent
-    if (t2.primaryColor === "#10b981" || t2.primaryColor === "#14b8a6") {
-      t2.primaryColor = defaultPrimary;
+
+    // Default clamps for legacy teal/azure surfaces - apply these to everyone to clean up UI teals
+    // but avoid overriding if it's already basalt green
+    const pCol = String(t2.primaryColor || "").toLowerCase();
+    const sCol = String(t2.secondaryColor || "").toLowerCase();
+    if (pCol === "#10b981" || pCol === "#14b8a6" || pCol === "#0d9488") {
+      t2.primaryColor = isBasalt ? "#22C55E" : "#1f2937";
     }
-    if (t2.secondaryColor === "#2dd4bf" || t2.secondaryColor === "#22d3ee") {
-      t2.secondaryColor = defaultAccent;
+    if (sCol === "#2dd4bf" || sCol === "#22d3ee") {
+      t2.secondaryColor = isBasalt ? "#16A34A" : "#F54029";
     }
     config.theme = t2;
   } catch { }
@@ -694,6 +848,11 @@ export async function GET(req: NextRequest) {
       wallet = /^0x[a-f0-9]{40}$/.test(String(authed || "")) ? String(authed) : "";
     }
 
+    // If still no wallet, try the x-wallet header (for client-side theme fetches)
+    if (!wallet && /^0x[a-f0-9]{40}$/.test(headerWalletIn)) {
+      wallet = headerWalletIn;
+    }
+
     try {
       console.log("[site/config][GET] wallet_selected", {
         correlationId,
@@ -844,6 +1003,7 @@ export async function GET(req: NextRequest) {
       const containerIdentity = getContainerIdentity(host);
       let brandKey = containerIdentity.brandKey;
       if (!brandKey) { try { brandKey = getBrandKey(); } catch { brandKey = ""; } }
+      // getDocIdForBrand handles basaltsurge as platform brand - no need to normalize here
       if (brandKey) {
         const { resource } = await c.item(getDocIdForBrand(brandKey), DOC_ID).read<any>();
         if (resource) {
@@ -1079,7 +1239,7 @@ export async function POST(req: NextRequest) {
     let brandKey: string | undefined = undefined;
     try { brandKey = getBrandKey(); } catch { brandKey = undefined; }
     const normalizedBrand = String(brandKey || "portalpay").toLowerCase();
-    const docId = (brandKey && normalizedBrand !== "portalpay")
+    const docId = (brandKey && normalizedBrand !== "portalpay" && normalizedBrand !== "basaltsurge")
       ? getDocIdForBrand(brandKey)
       : DOC_ID;
 
