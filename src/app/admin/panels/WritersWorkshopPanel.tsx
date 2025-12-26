@@ -1641,8 +1641,22 @@ export default function WritersWorkshopPanel() {
 
                                     return (
                                         <div key={item.id} className="bg-background border rounded-lg p-4 flex gap-6 hover:shadow-md transition-shadow">
-                                            <div className="w-24 h-auto min-h-[9rem] bg-muted shrink-0 shadow-sm border rounded overflow-hidden relative">
-                                                {cover ? <img src={cover} className="w-full h-auto object-contain bg-black/5 dark:bg-white/5" /> : <div className="w-full h-24 flex items-center justify-center text-muted-foreground text-xs text-center p-1">No Cover</div>}
+                                            <div className="h-48 w-32 bg-muted/20 backdrop-blur-md shrink-0 shadow-sm border rounded-md overflow-hidden relative flex items-center justify-center group-hover:shadow-md transition-all">
+                                                {cover ? (
+                                                    <img
+                                                        src={cover}
+                                                        className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                                                        alt={item.name}
+                                                        loading="lazy"
+                                                    />
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center text-muted-foreground gap-2 p-2 text-center h-full w-full">
+                                                        <div className="w-8 h-8 rounded-full bg-foreground/5 flex items-center justify-center">
+                                                            <Book className="w-4 h-4 opacity-50" />
+                                                        </div>
+                                                        <span className="text-[10px] font-medium leading-tight">No Cover</span>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="flex-1 py-1">
                                                 <div className="flex items-start justify-between gap-4">

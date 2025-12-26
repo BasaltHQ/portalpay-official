@@ -61,6 +61,8 @@ export function Thumbnail({
   itemId = "",
   primaryColor,
   secondaryColor,
+  className,
+  style,
 }: {
   src?: string | null;
   size?: number;
@@ -68,6 +70,8 @@ export function Thumbnail({
   itemId?: string;
   primaryColor?: string;
   secondaryColor?: string;
+  className?: string;
+  style?: React.CSSProperties; // Add style prop
 }) {
   const s = Math.max(16, Math.floor(size));
   const brand = useBrand();
@@ -78,9 +82,10 @@ export function Thumbnail({
       if (typeof src === "string" && src.startsWith("/uploads/") && src.endsWith(".webp")) {
         display = src.replace(/\.webp$/, "_thumb.webp");
       }
-    } catch {}
+    } catch { }
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={display} alt={alt} style={{ height: s, width: s }} className="rounded-md object-cover border flex-shrink-0" />;
+    // Merge passed className with default styles
+    return <img src={display} alt={alt} style={{ height: s, width: s, ...style }} className={`rounded-md object-cover border flex-shrink-0 ${className || ''}`} />;
   }
 
   const generateColors = (id: string, primary: string, secondary: string): string[] => {
@@ -100,24 +105,39 @@ export function Thumbnail({
   };
 
   const colors = generateColors(itemId || alt || "default", primaryColor || "#0ea5e9", secondaryColor || "#22c55e");
-  const gradientStyle: React.CSSProperties = {
-    background: `
-      radial-gradient(at 0% 0%, ${colors[0]} 0px, transparent 50%),
-      radial-gradient(at 100% 0%, ${colors[1]} 0px, transparent 50%),
-      radial-gradient(at 100% 100%, ${colors[2]} 0px, transparent 50%),
-      radial-gradient(at 0% 100%, ${colors[3]} 0px, transparent 50%),
-      radial-gradient(at 50% 50%, ${colors[4]} 0px, transparent 50%)
-    `,
-    backgroundColor: colors[0],
-  };
-
   return (
-    <div style={{ ...{ height: s, width: s }, ...gradientStyle }} className="rounded-md border flex items-center justify-center flex-shrink-0 relative overflow-hidden">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
+    <div style={{ height: s, width: s, ...style }} className={`rounded-md border flex items-center justify-center flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-background/60 to-background/20 ${className || ''}`}>
+      <div className="absolute -inset-[50%] opacity-80">
+        {colors.map((c, i) => {
+          const positions = [
+            { top: '5%', left: '10%' },
+            { top: '10%', right: '5%' },
+            { bottom: '5%', left: '15%' },
+            { bottom: '10%', right: '10%' },
+            { top: '35%', left: '40%' },
+          ];
+          const pos = positions[i % positions.length];
+          return (
+            <span
+              key={i}
+              className={`absolute rounded-full filter blur-[20px] mix-blend-screen animate-pulse`}
+              style={{
+                background: c,
+                width: '60%',
+                height: '60%',
+                animationDuration: `${10 + i * 2}s`,
+                ...pos
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Logo overlay */}
       <img
         src={brand?.logos?.symbol || brand?.logos?.app || "/ppsymbol.png"}
         alt={brand?.name || "Brand"}
-        className="w-1/2 h-1/2 object-contain opacity-90"
+        className="relative z-10 w-1/2 h-1/2 object-contain opacity-90 drop-shadow-md"
       />
     </div>
   );

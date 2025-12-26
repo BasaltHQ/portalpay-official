@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import { sendTransaction, prepareTransaction, getContract, prepareContractCall, readContract } from "thirdweb";
 import { client, chain } from "@/lib/thirdweb/client";
 import { fetchEthRates, fetchUsdRates } from "@/lib/eth";
-import { ImagePlus, Trash2, Star, StarOff, Link as LinkIcon, Plus, Wand2, Infinity as InfinityIcon, Copy, ExternalLink, Download } from "lucide-react";
+import { ImagePlus, Trash2, Star, StarOff, Link as LinkIcon, Plus, Wand2, Infinity as InfinityIcon, Copy, ExternalLink, Download, LayoutGrid, List } from "lucide-react";
 import TruncatedAddress from "@/components/truncated-address";
 import { SUPPORTED_CURRENCIES, formatCurrency, convertFromUsd, convertToUsd, roundForCurrency } from "@/lib/fx";
 import { RestaurantFields, type ModifierGroup } from "@/components/inventory/RestaurantFields";
@@ -5341,6 +5341,21 @@ function InventoryPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // View mode state (List vs Grid) - default to Grid on mobile
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setViewMode("grid");
+      }
+    };
+    // Initial check
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Industry pack detection - default to 'general' so fields always render
   const [activeIndustryPack, setActiveIndustryPack] = useState<string>('general');
 
@@ -6469,6 +6484,22 @@ function InventoryPanel() {
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-semibold">Inventory</h2>
           <div className="flex items-center gap-2">
+            <div className="flex items-center bg-muted/20 rounded-lg border p-1 mr-2">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-1.5 rounded-md transition-all ${viewMode === "grid" ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
+                title="Grid View"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-1.5 rounded-md transition-all ${viewMode === "list" ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
+                title="List View"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
             <button
               type="button"
               onClick={openAdd}
@@ -6688,83 +6719,130 @@ function InventoryPanel() {
           </div>
         </div>
 
-        <div className="overflow-auto rounded-md border">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="bg-foreground/5">
-                <th className="text-left px-3 py-2 font-medium">SKU</th>
-                <th className="text-left px-3 py-2 font-medium">Name</th>
-                <th className="text-left px-3 py-2 font-medium">Price ({storeCurrency})</th>
-                <th className="text-left px-3 py-2 font-medium">Stock</th>
-                <th className="text-left px-3 py-2 font-medium">Category</th>
-                <th className="text-left px-3 py-2 font-medium">Pack</th>
-                <th className="text-left px-3 py-2 font-medium">Taxable</th>
-                <th className="text-left px-3 py-2 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(items || []).map((it) => (
-                <tr key={it.id} className="border-t">
-                  <td className="px-3 py-2 font-mono">{it.sku}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <Thumbnail src={(Array.isArray(it.images) && it.images.length ? it.images[0] : undefined)} alt="" size={32} />
-                      <span>{it.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2">{(() => {
-                    const usdPrice = Number(it.priceUsd || 0);
-                    const itemCurrency = it.currency || storeCurrency;
-                    if (itemCurrency === "USD") return `$${usdPrice.toFixed(2)}`;
-                    const usdRate = Number(usdRates[itemCurrency] || 0);
-                    const converted = usdRate > 0
-                      ? roundForCurrency(usdPrice * usdRate, itemCurrency)
-                      : convertFromUsd(usdPrice, itemCurrency, rates);
-                    const display = converted > 0 ? formatCurrency(converted, itemCurrency) : `$${usdPrice.toFixed(2)}`;
-                    return itemCurrency !== "USD" ? (
-                      <span title={`USD equivalent: $${usdPrice.toFixed(2)}`}>{display}</span>
-                    ) : display;
-                  })()}</td>
-                  <td className="px-3 py-2">{Number(it.stockQty) === -1 ? "∞" : Number(it.stockQty || 0)}</td>
-                  <td className="px-3 py-2">{it.category || "—"}</td>
-                  <td className="px-3 py-2">
+        {viewMode === "grid" ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {(items || []).map((it) => (
+              <div key={it.id} className="group relative bg-muted/40 backdrop-blur-md rounded-xl border p-3 hover:shadow-lg hover:border-primary/20 transition-all flex flex-col">
+                <div className="aspect-square w-full bg-muted/20 rounded-lg mb-2 overflow-hidden relative border flex items-center justify-center">
+                  <Thumbnail src={(Array.isArray(it.images) && it.images.length ? it.images[0] : undefined)} alt="" size={400} style={{ width: "100%", height: "100%" }} className="w-full h-full object-contain transition-transform group-hover:scale-105" />
+                  {Number(it.stockQty) === 0 && !Number(it.stockQty) && (
+                    <div className="absolute top-2 right-2 px-2 py-0.5 bg-red-500/90 text-white text-xs font-bold rounded-full">Out of Stock</div>
+                  )}
+                </div>
+                <div className="flex justify-between items-start mb-1">
+                  <div>
+                    <h3 className="font-bold text-sm line-clamp-1" title={it.name}>{it.name}</h3>
+                    <p className="text-xs text-muted-foreground font-mono">{it.sku}</p>
+                  </div>
+                  <button
+                    onClick={() => openEditItem(it)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-background border rounded-md shadow-sm hover:text-primary"
+                    title="Edit"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </button>
+                </div>
+                <div className="mt-auto pt-2 border-t flex justify-between items-center text-sm">
+                  <span className="font-bold">
                     {(() => {
-                      const pack = String(it.industryPack || "general");
-                      const colors: Record<string, string> = {
-                        general: "bg-gray-100 text-gray-700 border-gray-200",
-                        restaurant: "bg-orange-100 text-orange-700 border-orange-200",
-                        retail: "bg-blue-100 text-blue-700 border-blue-200",
-                        hotel: "bg-purple-100 text-purple-700 border-purple-200",
-                        freelancer: "bg-green-100 text-green-700 border-green-200",
-                        publishing: "bg-pink-100 text-pink-700 border-pink-200",
-                      };
-                      const colorClass = colors[pack] || colors.general;
-                      return (
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${colorClass}`}>
-                          {pack}
-                        </span>
-                      );
+                      const usdPrice = Number(it.priceUsd || 0);
+                      const itemCurrency = it.currency || storeCurrency;
+                      if (itemCurrency === "USD") return `$${usdPrice.toFixed(2)}`;
+                      // ... simpler conversion display for grid
+                      return `$${usdPrice.toFixed(2)}`;
                     })()}
-                  </td>
-                  <td className="px-3 py-2">{it.taxable ? "Yes" : "No"}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <button className="px-2 py-1 rounded-md border text-xs" onClick={() => openEditItem(it)}>Edit</button>
-                      <button className="px-2 py-1 rounded-md border text-xs" onClick={() => deleteItem(it.id)}>Delete</button>
-                    </div>
-                  </td>
+                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full border ${Number(it.stockQty) > 0 || Number(it.stockQty) === -1 ? "bg-green-500/10 text-green-600 border-green-500/20" : "bg-red-500/10 text-red-600 border-red-500/20"}`}>
+                    {Number(it.stockQty) === -1 ? "∞" : `${it.stockQty} Left`}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {(items || []).length === 0 && (
+              <div className="col-span-full py-20 text-center text-muted-foreground">
+                No items found.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-auto rounded-md border">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b bg-background/40 backdrop-blur-md transition-colors hover:bg-muted/60 data-[state=selected]:bg-muted">
+                  <th className="text-left px-3 py-2 font-medium">SKU</th>
+                  <th className="text-left px-3 py-2 font-medium">Name</th>
+                  <th className="text-left px-3 py-2 font-medium">Price ({storeCurrency})</th>
+                  <th className="text-left px-3 py-2 font-medium">Stock</th>
+                  <th className="text-left px-3 py-2 font-medium">Category</th>
+                  <th className="text-left px-3 py-2 font-medium">Pack</th>
+                  <th className="text-left px-3 py-2 font-medium">Taxable</th>
+                  <th className="text-left px-3 py-2 font-medium">Actions</th>
                 </tr>
-              ))}
-              {(!items || items.length === 0) && (
-                <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
-                    No inventory items yet. Use the form above to add items.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {(items || []).map((it) => (
+                  <tr key={it.id} className="border-b transition-colors hover:bg-primary/5 data-[state=selected]:bg-muted group">
+                    <td className="px-3 py-2 font-mono">{it.sku}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <Thumbnail src={(Array.isArray(it.images) && it.images.length ? it.images[0] : undefined)} alt="" size={40} />
+                        <span>{it.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">{(() => {
+                      const usdPrice = Number(it.priceUsd || 0);
+                      const itemCurrency = it.currency || storeCurrency;
+                      if (itemCurrency === "USD") return `$${usdPrice.toFixed(2)}`;
+                      const usdRate = Number(usdRates[itemCurrency] || 0);
+                      const converted = usdRate > 0
+                        ? roundForCurrency(usdPrice * usdRate, itemCurrency)
+                        : convertFromUsd(usdPrice, itemCurrency, rates);
+                      const display = converted > 0 ? formatCurrency(converted, itemCurrency) : `$${usdPrice.toFixed(2)}`;
+                      return itemCurrency !== "USD" ? (
+                        <span title={`USD equivalent: $${usdPrice.toFixed(2)}`}>{display}</span>
+                      ) : display;
+                    })()}</td>
+                    <td className="px-3 py-2">{Number(it.stockQty) === -1 ? "∞" : Number(it.stockQty || 0)}</td>
+                    <td className="px-3 py-2">{it.category || "—"}</td>
+                    <td className="px-3 py-2">
+                      {(() => {
+                        const pack = String(it.industryPack || "general");
+                        const colors: Record<string, string> = {
+                          general: "bg-gray-100 text-gray-700 border-gray-200",
+                          restaurant: "bg-orange-100 text-orange-700 border-orange-200",
+                          retail: "bg-blue-100 text-blue-700 border-blue-200",
+                          hotel: "bg-purple-100 text-purple-700 border-purple-200",
+                          freelancer: "bg-green-100 text-green-700 border-green-200",
+                          publishing: "bg-pink-100 text-pink-700 border-pink-200",
+                        };
+                        const colorClass = colors[pack] || colors.general;
+                        return (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${colorClass}`}>
+                            {pack}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-3 py-2">{it.taxable ? "Yes" : "No"}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <button className="px-2 py-1 rounded-md border text-xs" onClick={() => openEditItem(it)}>Edit</button>
+                        <button className="px-2 py-1 rounded-md border text-xs" onClick={() => deleteItem(it.id)}>Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {(!items || items.length === 0) && (
+                  <tr>
+                    <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
+                      No inventory items yet. Use the form above to add items.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
       {addOpen && typeof window !== "undefined"
         ? createPortal(
@@ -8028,6 +8106,7 @@ function TerminalPanel() {
 // ---------------- Orders Tab ----------------
 function OrdersPanel() {
   const account = useActiveAccount();
+  const brand = useBrand();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [selectedQty, setSelectedQty] = useState<Record<string, number>>({});
   const [jurisdictionCode, setJurisdictionCode] = useState("");
@@ -8806,7 +8885,7 @@ export default function AdminPage() {
 
   return (
     <div className={`mx-auto pl-4 pr-4 space-y-6 pt-[204px] md:pt-[148px] pb-10 transition-all duration-300 ${isSidebarCollapsed ? 'md:pl-24' : 'md:pl-72'
-      } ${isSupportTab ? '' : 'max-w-6xl'}`}>
+      } ${isSupportTab ? '' : 'max-w-full'}`}>
       <AdminHero />
       <AdminSidebar
         activeTab={activeTab}

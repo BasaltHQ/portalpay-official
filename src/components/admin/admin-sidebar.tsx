@@ -352,9 +352,8 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
           title: 'Platform',
           icon: <Building2 className="w-4 h-4" />,
           items: [
-            // Add Publications for platform level review
             { title: 'Publications', key: 'publications' as AdminTabKey },
-            ...(isSuperadmin && (brand?.key === 'portalpay')
+            ...(isSuperadmin
               ? [
                 { title: 'Loyalty Config', key: 'loyaltyConfig' as AdminTabKey },
                 { title: 'Applications', key: 'applications' as AdminTabKey },

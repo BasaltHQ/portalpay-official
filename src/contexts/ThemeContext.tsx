@@ -184,7 +184,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             primaryColor: shopTheme.primaryColor || mergedTheme.primaryColor || defaultTheme.primaryColor,
             secondaryColor: shopTheme.secondaryColor || mergedTheme.secondaryColor || defaultTheme.secondaryColor,
             brandLogoUrl: shopLogoToUse,
-            brandFaviconUrl: shopTheme.brandFaviconUrl || mergedTheme.brandFaviconUrl || '',
+            brandFaviconUrl: shopTheme.brandFaviconUrl || shopTheme.symbolLogoUrl || shopTheme.brandLogoUrl || mergedTheme.brandFaviconUrl || '',
             symbolLogoUrl: shopLogoToUse,
             brandName: shopTheme.brandName || shopTheme.name || shopTheme.partName || mergedTheme.brandName || brand.name || '',
             textColor: shopTheme.textColor || mergedTheme.textColor || defaultTheme.textColor,
