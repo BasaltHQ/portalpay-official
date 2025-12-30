@@ -94,7 +94,7 @@ export function DashboardSidebar({ currentPath }: { currentPath: string }) {
   const isWideLogo = theme?.navbarMode === 'logo';
 
   return (
-    <aside className={`fixed top-[148px] bottom-0 left-0 border-r border-border bg-background z-10 transition-all duration-300 flex flex-col ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <aside className={`fixed top-[176px] bottom-0 left-0 border-r border-border bg-background z-10 transition-all duration-300 flex flex-col ${isCollapsed ? 'w-16' : 'w-64'}`}>
       <div className="flex-1 overflow-y-auto p-2 space-y-2">
         {/* Logo */}
         <Link href="/developers/dashboard" className="flex items-center justify-center group p-2">

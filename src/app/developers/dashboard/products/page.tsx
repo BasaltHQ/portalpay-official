@@ -594,7 +594,7 @@ export default function ProductsPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header with Documentation | Dashboard tabs */}
-      <header className="fixed top-[84px] left-0 right-0 z-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="fixed top-[112px] left-0 right-0 z-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center">
@@ -632,7 +632,7 @@ export default function ProductsPage() {
       <DashboardSidebar currentPath="/developers/dashboard/products" />
 
       {/* Main Content - centered with equal sidebar spacing */}
-      <main className="pt-[148px] transition-all duration-300">
+      <main className="pt-[176px] transition-all duration-300">
         <div className="mx-auto max-w-4xl px-8 py-12 md:ml-64 xl:mr-64">
           {/* Breadcrumb */}
           <nav className="mb-8 flex items-center gap-2 text-sm text-muted-foreground">

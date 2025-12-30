@@ -229,9 +229,9 @@ export function DocsSidebar({ currentPath }: { currentPath: string }) {
   return (
     <aside className={`
       fixed z-10 bg-background transition-all duration-300
-      md:top-[148px] md:bottom-0 md:left-0 md:border-r md:flex-col
+      md:top-[176px] md:bottom-0 md:left-0 md:border-r md:flex-col
       ${isCollapsed ? 'md:w-16' : 'md:w-64'}
-      top-[148px] left-0 right-0 border-b md:border-b-0 border-border
+      top-[176px] left-0 right-0 border-b md:border-b-0 border-border
       max-md:h-14 max-md:overflow-x-auto max-md:overflow-y-hidden
       flex
     `}>

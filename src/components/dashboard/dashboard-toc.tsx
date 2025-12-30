@@ -20,13 +20,13 @@ export function DashboardTOC({ sections = [] }: DashboardTOCProps) {
   if (sections.length === 0) return null;
 
   return (
-    <aside className="hidden xl:block fixed top-[148px] bottom-0 right-0 w-64 border-l border-border bg-background">
+    <aside className="hidden xl:block fixed top-[176px] bottom-0 right-0 w-64 border-l border-border bg-background">
       <div className="p-6 space-y-6 overflow-y-auto h-full">
         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           <Info className="w-3 h-3" />
           <span>Guide</span>
         </div>
-        
+
         {sections.map((section, sectionIdx) => (
           <div key={sectionIdx} className="space-y-3">
             <h3 className="text-sm font-semibold">{section.title}</h3>

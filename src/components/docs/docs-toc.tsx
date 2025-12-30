@@ -64,7 +64,7 @@ export function DocsTOC() {
   if (headings.length === 0) return null;
 
   return (
-    <aside className={`hidden xl:flex fixed top-[148px] bottom-0 right-0 border-l border-border bg-background z-10 transition-all duration-300 flex-col ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <aside className={`hidden xl:flex fixed top-[176px] bottom-0 right-0 border-l border-border bg-background z-10 transition-all duration-300 flex-col ${isCollapsed ? 'w-16' : 'w-64'}`}>
       <div className="flex-1 overflow-y-auto p-2 space-y-2">
         <div className={`flex items-center gap-2 text-sm font-semibold text-foreground p-2 ${isCollapsed ? 'justify-center' : ''}`}>
           <List className="w-4 h-4" />
@@ -75,25 +75,23 @@ export function DocsTOC() {
             const content = (
               <a
                 href={`#${heading.id}`}
-                className={`transition-colors ${
-                  isCollapsed 
+                className={`transition-colors ${isCollapsed
                     ? heading.level === 2
                       ? 'w-8 h-8 rounded-full border-2 flex items-center justify-center'
                       : 'p-1 rounded-sm'
                     : `text-sm px-3 py-1.5 block rounded-md ${heading.level === 3 ? 'pl-6' : ''}`
-                } ${
-                  activeId === heading.id
+                  } ${activeId === heading.id
                     ? isCollapsed
                       ? heading.level === 2
                         ? 'bg-primary border-primary'
                         : 'bg-primary'
                       : 'bg-primary text-primary-foreground font-medium'
                     : isCollapsed
-                    ? heading.level === 2
-                      ? 'border-[var(--primary)] hover:bg-[var(--primary)]/10'
-                      : 'hover:bg-muted'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
+                      ? heading.level === 2
+                        ? 'border-[var(--primary)] hover:bg-[var(--primary)]/10'
+                        : 'hover:bg-muted'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
                 onClick={(e) => {
                   e.preventDefault();
                   document.getElementById(heading.id)?.scrollIntoView({
@@ -103,13 +101,12 @@ export function DocsTOC() {
                 }}
               >
                 {isCollapsed ? (
-                  <div className={`rounded-full ${heading.level === 2 ? 'w-2 h-2' : 'w-1.5 h-1.5'} ${
-                    activeId === heading.id 
-                      ? 'bg-primary-foreground' 
-                      : heading.level === 2 
-                      ? 'bg-[var(--primary)]' 
-                      : 'bg-foreground'
-                  }`} />
+                  <div className={`rounded-full ${heading.level === 2 ? 'w-2 h-2' : 'w-1.5 h-1.5'} ${activeId === heading.id
+                      ? 'bg-primary-foreground'
+                      : heading.level === 2
+                        ? 'bg-[var(--primary)]'
+                        : 'bg-foreground'
+                    }`} />
                 ) : (
                   heading.text
                 )}
@@ -126,7 +123,7 @@ export function DocsTOC() {
           })}
         </nav>
       </div>
-      
+
       {/* Toggle Button at bottom */}
       <div className="border-t border-border p-2 flex justify-center">
         <button
