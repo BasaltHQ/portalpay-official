@@ -48,7 +48,7 @@ function isValidHexAddress(addr: string): boolean {
   }
 }
 
-function getAvailableTokens(): TokenDef[] {
+function getBuildTimeTokens(): TokenDef[] {
   const tokens: TokenDef[] = [];
   tokens.push({ symbol: "ETH", type: "native" });
 
@@ -307,7 +307,7 @@ export function PortalPreviewEmbedded({
   }, []);
 
   // Tokens and optional extra rates
-  const availableTokens = useMemo(() => getAvailableTokens(), []);
+  const [availableTokens, setAvailableTokens] = useState<TokenDef[]>(() => getBuildTimeTokens());
   const [token, setToken] = useState<"ETH" | "USDC" | "USDT" | "cbBTC" | "cbXRP" | "SOL">("ETH");
   const tokenDef = useMemo(() => availableTokens.find((t) => t.symbol === token), [availableTokens, token]);
 
@@ -342,9 +342,17 @@ export function PortalPreviewEmbedded({
         if (tokenInitialized.current) return;
         tokenInitialized.current = true;
         const cfg = j?.config || {};
+
+        let currentTokens = availableTokens;
+        if (cfg?.tokens && Array.isArray(cfg.tokens) && cfg.tokens.length > 0) {
+          const runtimeTokens = cfg.tokens as TokenDef[];
+          setAvailableTokens(runtimeTokens);
+          currentTokens = runtimeTokens;
+        }
+
         const t = cfg?.defaultPaymentToken;
         if (typeof t === "string") {
-          const avail = availableTokens.find((x) => x.symbol === t);
+          const avail = currentTokens.find((x) => x.symbol === t);
           const ok = t === "ETH" || (!!avail?.address && isValidHexAddress(String(avail.address)));
           setToken(ok ? (t as any) : "ETH");
         }

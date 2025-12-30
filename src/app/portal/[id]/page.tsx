@@ -38,6 +38,7 @@ type SiteConfigResponse = {
     theme?: SiteTheme;
     defaultPaymentToken?: "ETH" | "USDC" | "USDT" | "cbBTC" | "cbXRP" | "SOL";
     processingFeePct?: number;
+    tokens?: TokenDef[];
   };
   degraded?: boolean;
   reason?: string;
@@ -70,7 +71,7 @@ type TokenDef = {
   decimals?: number;
 };
 
-function getAvailableTokens(): TokenDef[] {
+function getBuildTimeTokens(): TokenDef[] {
   const tokens: TokenDef[] = [];
   tokens.push({ symbol: "ETH", type: "native" });
 
@@ -1161,7 +1162,7 @@ export default function PortalReceiptPage() {
   }, []);
 
   const [token, setToken] = useState<"ETH" | "USDC" | "USDT" | "cbBTC" | "cbXRP" | "SOL">("ETH");
-  const availableTokens = useMemo(() => getAvailableTokens(), []);
+  const [availableTokens, setAvailableTokens] = useState<TokenDef[]>(() => getBuildTimeTokens());
 
   // Consolidated site-config fetch (single call) to set fee, default token, and seller/split address
   useEffect(() => {
@@ -1171,6 +1172,12 @@ export default function PortalReceiptPage() {
       .then((j: SiteConfigResponse) => {
         if (cancelled) return;
         const cfg = j?.config || {};
+
+        // Merge runtime tokens if present (preserves ETH, adds/updates others)
+        if (cfg?.tokens && Array.isArray(cfg.tokens) && cfg.tokens.length > 0) {
+          const runtimeTokens = cfg.tokens as TokenDef[];
+          if (!cancelled) setAvailableTokens(runtimeTokens);
+        }
 
         // processingFeePct
         if (typeof cfg.processingFeePct === "number") {
