@@ -1876,7 +1876,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                 <div className="flex-1">
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="flex items-center gap-3 min-w-0">
-                                            <div className={`w-12 h-12 ${cfg?.theme?.logoShape === "circle" ? "rounded-full" : "rounded-lg"} overflow-hidden border bg-white flex items-center justify-center flex-shrink-0`}>
+                                            <div className={`w-16 h-16 ${cfg?.theme?.logoShape === "circle" ? "rounded-full" : "rounded-lg"} overflow-hidden flex items-center justify-center flex-shrink-0`}>
                                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                                 <img
                                                     src={(() => {
