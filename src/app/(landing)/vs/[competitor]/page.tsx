@@ -31,7 +31,7 @@ export async function generateMetadata({
     typeof s === 'string'
       ? (isPartner ? s.replaceAll('PortalPay', brand.name) : s)
       : s;
-  
+
   if (!data) {
     return {
       title: 'Comparison Not Found',
@@ -76,14 +76,14 @@ export default async function ComparisonPage({
     typeof s === 'string'
       ? (isPartner ? s.replaceAll('PortalPay', brand.name) : s)
       : s;
-  
+
   if (!data) {
     notFound();
   }
 
   // Calculate example savings
   const exampleVolume = 10000;
-  const competitorMonthlyCost = (exampleVolume * data.pricing.processingFee) + 
+  const competitorMonthlyCost = (exampleVolume * data.pricing.processingFee) +
     (200 * data.pricing.flatFee) + // Assume 200 transactions
     data.pricing.monthlyFee;
   const portalPayMonthlyCost = (exampleVolume * 0.0075); // 0.75% average
@@ -130,7 +130,7 @@ export default async function ComparisonPage({
           <p className="text-lg text-muted-foreground mb-6 max-w-3xl mx-auto">
             {dePortal(data.subheadline)}
           </p>
-          
+
           {/* Quick Stats */}
           <div className="glass-pane rounded-xl border p-6 max-w-4xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
@@ -174,15 +174,15 @@ export default async function ComparisonPage({
                     <tr key={idx} className={`border-b ${feature.advantage ? 'bg-green-500/5' : ''}`}>
                       <td className="p-4 font-medium">{feature.feature}</td>
                       <td className="p-4 text-center">
-                        {typeof feature.portalpay === 'boolean' ? (
-                          feature.portalpay ? (
+                        {typeof feature.basaltsurge === 'boolean' ? (
+                          feature.basaltsurge ? (
                             <span className="text-green-500 text-xl">✓</span>
                           ) : (
                             <span className="text-red-500 text-xl">✗</span>
                           )
                         ) : (
                           <span className={feature.advantage ? 'font-semibold text-[var(--primary)]' : ''}>
-                            {dePortal(feature.portalpay as any)}
+                            {dePortal(feature.basaltsurge as any)}
                           </span>
                         )}
                       </td>
@@ -212,7 +212,7 @@ export default async function ComparisonPage({
             {data.useCases.map((useCase, idx) => (
               <div key={idx} className="glass-pane rounded-xl border p-6">
                 <h3 className="text-xl font-semibold mb-4">{useCase.scenario}</h3>
-                
+
                 <div className="space-y-3 mb-4">
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">With {data.name}:</span>
@@ -223,7 +223,7 @@ export default async function ComparisonPage({
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">With {brand.name}:</span>
                     <span className="font-semibold text-[var(--primary)]">
-                      ${useCase.portalpayCost.toLocaleString()}/year
+                      ${useCase.basaltsurgeCost.toLocaleString()}/year
                     </span>
                   </div>
                   <div className="pt-3 border-t flex justify-between items-center">
@@ -366,8 +366,8 @@ export default async function ComparisonPage({
                 Will my customers need crypto wallets?
               </summary>
               <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-                No. While crypto enthusiasts can pay directly with their wallets, any customer can pay using 
-                credit/debit cards, Apple Pay, or Google Pay through our onramp. We handle the crypto conversion 
+                No. While crypto enthusiasts can pay directly with their wallets, any customer can pay using
+                credit/debit cards, Apple Pay, or Google Pay through our onramp. We handle the crypto conversion
                 instantly. Your customers won't even know it's crypto - they just see a simple payment experience.
               </p>
             </details>
@@ -377,8 +377,8 @@ export default async function ComparisonPage({
                 How much will I really save?
               </summary>
               <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-                On average, businesses save 70-85% on total payment processing costs. The exact savings depend on 
-                your monthly volume and current {data.name} plan. Use our cost calculator above to see your specific 
+                On average, businesses save 70-85% on total payment processing costs. The exact savings depend on
+                your monthly volume and current {data.name} plan. Use our cost calculator above to see your specific
                 savings. Most businesses save between $2,000-10,000 annually.
               </p>
             </details>
@@ -388,8 +388,8 @@ export default async function ComparisonPage({
                 Do I need a bank account to use {brand.name}?
               </summary>
               <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-                No! This is a major advantage over {data.name}. Payments go directly to your crypto wallet. You can 
-                hold as crypto, convert to stablecoins, or cash out to your local currency. Perfect for international 
+                No! This is a major advantage over {data.name}. Payments go directly to your crypto wallet. You can
+                hold as crypto, convert to stablecoins, or cash out to your local currency. Perfect for international
                 businesses or new companies that struggle with traditional banking.
               </p>
             </details>
@@ -399,8 +399,8 @@ export default async function ComparisonPage({
                 What about features I use in {data.name}?
               </summary>
               <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-                {brand.name} includes all essential features for your industry - and they're all free. We have specialized 
-                POS systems for restaurants, retail, hotels, and more. Check the feature comparison table above to see 
+                {brand.name} includes all essential features for your industry - and they're all free. We have specialized
+                POS systems for restaurants, retail, hotels, and more. Check the feature comparison table above to see
                 specific capabilities. In most cases, you'll get more features than {data.name} offers, at no extra cost.
               </p>
             </details>
@@ -410,8 +410,8 @@ export default async function ComparisonPage({
                 Is settlement really instant?
               </summary>
               <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-                Yes! Crypto transactions settle in seconds, not days. Compare this to {data.name}'s 1-3 business day 
-                wait. You have immediate access to your funds for restocking, payroll, or any other needs. No more 
+                Yes! Crypto transactions settle in seconds, not days. Compare this to {data.name}'s 1-3 business day
+                wait. You have immediate access to your funds for restocking, payroll, or any other needs. No more
                 waiting for batch processing or dealing with hold times.
               </p>
             </details>
@@ -424,7 +424,7 @@ export default async function ComparisonPage({
             Ready to Save ${(annualSavings / 1000).toFixed(1)}k+ Per Year?
           </h2>
           <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Join thousands of businesses that switched from {data.name} to {brand.name} and never looked back. 
+            Join thousands of businesses that switched from {data.name} to {brand.name} and never looked back.
             Lower fees, better features, instant settlement.
           </p>
           <div className="flex flex-wrap justify-center gap-4">

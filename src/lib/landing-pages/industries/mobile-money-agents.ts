@@ -95,7 +95,7 @@ export const mobileMoneyAgents: IndustryLandingData = {
       monthlyFee: 0,
       annualSoftwareCost: 0,
     },
-    'PortalPay (Crypto)': {
+    'BasaltSurge (Crypto)': {
       processingFee: 0.5,
       flatFee: 0,
       monthlyFee: 0,

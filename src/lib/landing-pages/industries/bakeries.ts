@@ -5,7 +5,7 @@ export const bakeries: IndustryLandingData = {
     name: 'Bakeries',
     icon: '🥖',
     
-    title: 'Accept Crypto Payments for Bakeries | 0.5-1% Fee | PortalPay',
+    title: 'Accept Crypto Payments for Bakeries | 0.5-1% Fee | BasaltSurge',
     metaDescription: 'Bakery crypto payment processing. Save 70% vs Square. Free POS with pre-orders, custom cakes, and inventory tracking. Perfect for retail bakeries.',
     keywords: [
       'bakery crypto payments',

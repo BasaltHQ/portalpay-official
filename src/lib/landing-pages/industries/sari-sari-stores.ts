@@ -5,7 +5,7 @@ export const sariSariStores: IndustryLandingData = {
   name: 'Sari-Sari Stores (Philippines)',
   icon: '🧃',
 
-  title: 'Accept Crypto and Local Wallets for Sari-Sari Stores | QR Checkout | PortalPay',
+  title: 'Accept Crypto and Local Wallets for Sari-Sari Stores | QR Checkout | BasaltSurge',
   metaDescription:
     'Sari-sari store payments with QR checkout. Accept crypto or local cards via onramp, track “lista” credit, and settle daily. Pay 0.5–1% vs 2%+ typical. Works alongside GCash, Maya, and cash.',
   keywords: [
@@ -196,7 +196,7 @@ export const sariSariStores: IndustryLandingData = {
     {
       question: 'Can customers pay with GCash/Maya?',
       answer:
-        'Most customers can pay with their cards or Apple/Google Pay via our onramp. It converts instantly to crypto so you get low fees and instant settlement. You can keep GCash/Maya and cash alongside PortalPay.',
+        'Most customers can pay with their cards or Apple/Google Pay via our onramp. It converts instantly to crypto so you get low fees and instant settlement. You can keep GCash/Maya and cash alongside BasaltSurge.',
       category: 'Payments',
     },
     {

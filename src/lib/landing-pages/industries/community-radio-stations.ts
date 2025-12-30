@@ -7,9 +7,9 @@ export const communityRadioStations: IndustryLandingData = {
   icon: '📻',
 
   // SEO
-  title: 'Crypto Payments for Community Radio Stations | PortalPay',
+  title: 'Crypto Payments for Community Radio Stations | BasaltSurge',
   metaDescription:
-    'Accept donations, sponsorships, and airtime payments. Run fund drives, split payouts for shows, and handle offline pledges with PortalPay for community radio.',
+    'Accept donations, sponsorships, and airtime payments. Run fund drives, split payouts for shows, and handle offline pledges with BasaltSurge for community radio.',
   keywords: [
     'community radio payments',
     'radio donations crypto',

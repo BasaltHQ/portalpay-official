@@ -5,7 +5,7 @@ export const streetFoodVendors: IndustryLandingData = {
   name: 'Street Food Vendors',
   icon: '🍢',
 
-  title: 'Accept Crypto or Local Cards for Street Food | QR Tip Jar | Offline Tally | PortalPay',
+  title: 'Accept Crypto or Local Cards for Street Food | QR Tip Jar | Offline Tally | BasaltSurge',
   metaDescription:
     'Street food vendor payments with QR checkout and tip jar. Works for tiny tickets, festival pop-ups, and roaming carts. 0.5–1% fees vs 2%+. Offline tally, split payouts, and instant settlement.',
   keywords: [

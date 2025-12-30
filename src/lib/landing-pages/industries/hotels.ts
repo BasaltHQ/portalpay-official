@@ -5,7 +5,7 @@ export const hotels: IndustryLandingData = {
     name: 'Hotels',
     icon: '🏨',
     
-    title: 'Hotel Crypto Payment Processing | PMS Included Free | PortalPay',
+    title: 'Hotel Crypto Payment Processing | PMS Included Free | BasaltSurge',
     metaDescription: 'Accept crypto payments for hotel bookings. 0.5-1% processing fee vs 2.9%+. Free PMS with room management, housekeeping, and guest profiles. No bank account required. Save $5,000+ yearly.',
     keywords: [
       'hotel crypto payments',
@@ -202,7 +202,7 @@ export const hotels: IndustryLandingData = {
         category: 'International',
       },
       {
-        question: 'Do I need a bank account to run my hotel with PortalPay?',
+        question: 'Do I need a bank account to run my hotel with BasaltSurge?',
         answer: 'No! This is revolutionary for boutique hotels and international properties. Payments go to your crypto wallet. Hold crypto, convert to stablecoins, or cash out to local currency via any exchange. No traditional banking relationship required. Perfect for properties in emerging markets or new hotels without banking history.',
         category: 'Setup',
       },
@@ -223,7 +223,7 @@ export const hotels: IndustryLandingData = {
       },
       {
         question: 'How do you calculate savings vs traditional processors?',
-        answer: 'Example: Hotel processing $30k/month. Traditional (2.9% + 30¢ + $299/mo PMS): $870 fees + $299 PMS = $1,169/mo ($14,028/yr). PortalPay (0.75% avg): $225/mo + $0 PMS = $225/mo ($2,700/yr). Annual savings: $11,328. Real number depends on your volume and current processor.',
+        answer: 'Example: Hotel processing $30k/month. Traditional (2.9% + 30¢ + $299/mo PMS): $870 fees + $299 PMS = $1,169/mo ($14,028/yr). BasaltSurge (0.75% avg): $225/mo + $0 PMS = $225/mo ($2,700/yr). Annual savings: $11,328. Real number depends on your volume and current processor.',
         category: 'Pricing',
       },
       {
@@ -235,7 +235,7 @@ export const hotels: IndustryLandingData = {
     
     testimonials: [
       {
-        quote: 'We were paying Cloudbeds $299/month plus 2.9% on all bookings. PortalPay gave us a better PMS completely free and cut our processing to 0.7%. Saving over $10k/year.',
+        quote: 'We were paying Cloudbeds $299/month plus 2.9% on all bookings. BasaltSurge gave us a better PMS completely free and cut our processing to 0.7%. Saving over $10k/year.',
         author: 'David Park',
         business: 'Coastal Inn, San Diego',
         savings: '$10,800/year',

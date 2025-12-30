@@ -7,7 +7,7 @@ export const villageSavingsGroups: IndustryLandingData = {
   icon: '👥',
 
   // SEO
-  title: 'Crypto Payments for Village Savings & Loan Groups (VSLA) | PortalPay',
+  title: 'Crypto Payments for Village Savings & Loan Groups (VSLA) | BasaltSurge',
   metaDescription:
     'Collect meeting contributions via QR, track loans and repayments, issue share-out receipts, and split stipends for treasurers. Offline-first with audit-ready ledgers.',
   keywords: [

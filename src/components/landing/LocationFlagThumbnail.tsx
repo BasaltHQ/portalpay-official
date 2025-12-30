@@ -62,7 +62,7 @@ export default function LocationFlagThumbnail({
       <div className="relative z-10 h-full flex items-center justify-center">
         <div className="flex items-center justify-center rounded-xl bg-background/50 backdrop-blur-sm border aspect-square p-3">
           <Image
-            src={brand?.logos?.symbol || brand?.logos?.favicon || brand?.logos?.app || "/ppsymbol.png"}
+            src={brand?.key === 'basaltsurge' ? "/BasaltSurgeD.png" : (brand?.logos?.symbol || brand?.logos?.favicon || brand?.logos?.app || "/ppsymbol.png")}
             alt={brand?.name || "Brand"}
             width={Math.floor(size * 0.5)}
             height={Math.floor(size * 0.5)}

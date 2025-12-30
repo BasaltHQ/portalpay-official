@@ -16,6 +16,7 @@ import { useBrand } from "@/contexts/BrandContext";
 import { resolveBrandSymbol, resolveBrandAppLogo, getEffectiveBrandKey } from "@/lib/branding";
 import PortalPayVideo from "@/components/landing/PortalPayVideo";
 import { cachedFetch } from "@/lib/client-api-cache";
+import RebrandingHero from "@/components/landing/RebrandingHero";
 
 type Metrics = {
   totalUsers: number;
@@ -334,8 +335,14 @@ export default function HomeContent() {
   const recipient = getRecipientAddress();
 
   return (
-    <div className="min-h-screen p-6 md:p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen">
+
+      {/* Rebranding Announcement Hero - Full Width with negative bottom margin to blend */}
+      <div className="w-full">
+        <RebrandingHero />
+      </div>
+
+      <div className="max-w-6xl mx-auto p-6 md:p-8 relative z-10 w-full">
         <style dangerouslySetInnerHTML={{
           __html: `
           @keyframes bg-pan {
@@ -345,7 +352,7 @@ export default function HomeContent() {
         `}} />
 
         {/* Hero: Value Prop + Live Preview */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-stretch">
+        <section id="main-value-prop" className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-stretch">
           {/* Left: Messaging + CTAs */}
           <div className="glass-pane rounded-2xl border p-8 lg:p-10 flex flex-col">
             <div className="mb-6">

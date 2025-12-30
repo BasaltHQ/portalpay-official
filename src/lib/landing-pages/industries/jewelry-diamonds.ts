@@ -5,7 +5,7 @@ export const jewelryDiamonds: IndustryLandingData = {
   name: 'Jewelry & Diamonds',
   icon: '💎',
   
-  title: 'Accept Crypto for Fine Jewelry & Diamonds | Instant Settlement | PortalPay',
+  title: 'Accept Crypto for Fine Jewelry & Diamonds | Instant Settlement | BasaltSurge',
   metaDescription: 'Jewelry & diamond crypto payments. Instant settlement for high-value pieces, enhanced privacy for VIP clients, blockchain-linked certification.',
   keywords: [
     'jewelry crypto payments',
@@ -149,7 +149,7 @@ export const jewelryDiamonds: IndustryLandingData = {
   ],
   
   setupSteps: [
-    'Create PortalPay account and connect boutique wallet',
+    'Create BasaltSurge account and connect boutique wallet',
     'Set up luxury-branded payment portal',
     'Configure item-specific payment links and certificate uploads',
     'Share QR codes or links for in-store and private showings',
@@ -164,7 +164,7 @@ export const jewelryDiamonds: IndustryLandingData = {
       category: 'Market',
     },
     {
-      question: 'How do certificates and appraisals work with PortalPay?',
+      question: 'How do certificates and appraisals work with BasaltSurge?',
       answer: 'Attach PDF or reference IDs for GIA/IGI certificates and appraisals. The receipt links to these records, and the on-chain payment record becomes part of the provenance.',
       category: 'Certification',
     },

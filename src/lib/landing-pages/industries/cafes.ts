@@ -5,7 +5,7 @@ export const cafes: IndustryLandingData = {
     name: 'Cafes & Coffee Shops',
     icon: '☕',
     
-    title: 'Accept Crypto Payments for Cafes | 0.5-1% Fee | PortalPay',
+    title: 'Accept Crypto Payments for Cafes | 0.5-1% Fee | BasaltSurge',
     metaDescription: 'Coffee shop crypto payment processing. Save 70% vs Square. Free POS with menu management, modifiers, and analytics. Perfect for cafes and coffee shops.',
     keywords: [
       'cafe crypto payments',
@@ -190,7 +190,7 @@ export const cafes: IndustryLandingData = {
       },
       {
         question: 'How much faster is this than traditional POS?',
-        answer: 'During rush hours, 30-40% faster. Traditional: Customer waits in line → Orders verbally → Cashier enters order → Customer pays → Moves to pickup. With PortalPay: Customer scans QR while in line → Orders on phone → Pays immediately → Order already at barista station when customer reaches counter. Eliminates the order+payment bottleneck.',
+        answer: 'During rush hours, 30-40% faster. Traditional: Customer waits in line → Orders verbally → Cashier enters order → Customer pays → Moves to pickup. With BasaltSurge: Customer scans QR while in line → Orders on phone → Pays immediately → Order already at barista station when customer reaches counter. Eliminates the order+payment bottleneck.',
         category: 'Efficiency',
       },
       {
@@ -225,7 +225,7 @@ export const cafes: IndustryLandingData = {
       },
       {
         question: 'How much do I really save vs Square?',
-        answer: 'Typical small cafe: $7,000/month revenue. Square: $182 fees (2.6% + 10¢) + $60 POS = $242/mo ($2,904/year). PortalPay: $52.50 fees (0.75% avg) + $0 POS = $52.50/mo ($630/year). Annual savings: $2,274. Plus faster lines means more customers served during rush = additional revenue.',
+        answer: 'Typical small cafe: $7,000/month revenue. Square: $182 fees (2.6% + 10¢) + $60 POS = $242/mo ($2,904/year). BasaltSurge: $52.50 fees (0.75% avg) + $0 POS = $52.50/mo ($630/year). Annual savings: $2,274. Plus faster lines means more customers served during rush = additional revenue.',
         category: 'Pricing',
       },
     ],

@@ -5,7 +5,7 @@ export const foodTrucks: IndustryLandingData = {
     name: 'Food Trucks',
     icon: '🚚',
     
-    title: 'Accept Crypto Payments for Food Trucks | Mobile POS | PortalPay',
+    title: 'Accept Crypto Payments for Food Trucks | Mobile POS | BasaltSurge',
     metaDescription: 'Food truck crypto payment processing. Save 70% vs Square. Free mobile POS with offline mode, location tracking, and menu management. Perfect for mobile vendors.',
     keywords: [
       'food truck crypto payments',

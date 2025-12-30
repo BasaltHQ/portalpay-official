@@ -93,7 +93,7 @@ export const marketStallVendors: IndustryLandingData = {
       monthlyFee: 10,
       annualSoftwareCost: 0,
     },
-    'PortalPay (Crypto)': {
+    'BasaltSurge (Crypto)': {
       processingFee: 0.5,
       flatFee: 0,
       monthlyFee: 0,

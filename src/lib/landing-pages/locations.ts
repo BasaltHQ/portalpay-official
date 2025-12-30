@@ -13,7 +13,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     country: 'Kenya',
 
     // SEO
-    title: 'Crypto Payments in Nairobi, Kenya | PortalPay',
+    title: 'Crypto Payments in Nairobi, Kenya | BasaltSurge',
     metaDescription:
       'Adopt ultra-low fee crypto payments in Nairobi. Ideal for internet cafés, repair kiosks, and community groups. Instant settlement, offline support, and split payouts.',
 
@@ -39,7 +39,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     city: 'Lagos',
     country: 'Nigeria',
 
-    title: 'Crypto Payments in Lagos, Nigeria | PortalPay',
+    title: 'Crypto Payments in Lagos, Nigeria | BasaltSurge',
     metaDescription:
       'Lower fees for Lagos SMEs. Accept QR payments across markets, ferries, and repair services. Instant settlement, split payouts, and offline-first modes.',
     localContext:
@@ -61,7 +61,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     city: 'Manila',
     country: 'Philippines',
 
-    title: 'Crypto Payments in Manila, Philippines | PortalPay',
+    title: 'Crypto Payments in Manila, Philippines | BasaltSurge',
     metaDescription:
       'Adopt QR payments for neighborhood stores, repair kiosks, and craft markets. Save on fees with instant settlement and offline support.',
     localContext:
@@ -83,7 +83,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     city: 'Medellín',
     country: 'Colombia',
 
-    title: 'Crypto Payments in Medellín, Colombia | PortalPay',
+    title: 'Crypto Payments in Medellín, Colombia | BasaltSurge',
     metaDescription:
       'Save on fees for cafés, artisan shops, and local co-ops. QR receipts, split payouts, and transparent offline operations.',
     localContext:
@@ -105,7 +105,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     city: 'Dhaka',
     country: 'Bangladesh',
 
-    title: 'Crypto Payments in Dhaka, Bangladesh | PortalPay',
+    title: 'Crypto Payments in Dhaka, Bangladesh | BasaltSurge',
     metaDescription:
       'Implement QR deposits, split payouts, and offline-first sales for tailors, markets, and repair kiosks. Ideal for dense urban operations.',
     localContext:
@@ -127,7 +127,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     city: 'Kathmandu',
     country: 'Nepal',
 
-    title: 'Crypto Payments in Kathmandu, Nepal | PortalPay',
+    title: 'Crypto Payments in Kathmandu, Nepal | BasaltSurge',
     metaDescription:
       'Tourism, crafts, and transport operators adopt QR ticketing, split payouts, and offline-first operations with instant settlement.',
     localContext:
@@ -149,7 +149,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     city: 'Accra',
     country: 'Ghana',
 
-    title: 'Crypto Payments in Accra, Ghana | PortalPay',
+    title: 'Crypto Payments in Accra, Ghana | BasaltSurge',
     metaDescription:
       'Lower payment costs for cafés, internet labs, and transport. QR vouchers, session tracking, and split payouts with offline-first.',
     localContext:
@@ -171,7 +171,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cairo',
     city: 'Cairo',
     country: 'Egypt',
-    title: 'Crypto Payments in Cairo, Egypt | PortalPay',
+    title: 'Crypto Payments in Cairo, Egypt | BasaltSurge',
     metaDescription:
       'Bring instant, low-fee crypto payments to Cairo’s repair hubs, cafés, and Nile transport with offline-first operations.',
     localContext:
@@ -192,7 +192,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Addis Ababa',
     city: 'Addis Ababa',
     country: 'Ethiopia',
-    title: 'Crypto Payments in Addis Ababa, Ethiopia | PortalPay',
+    title: 'Crypto Payments in Addis Ababa, Ethiopia | BasaltSurge',
     metaDescription:
       'QR payments and split payouts for cafés, repair shops, and co-op savings groups with offline support.',
     localContext:
@@ -213,7 +213,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kampala',
     city: 'Kampala',
     country: 'Uganda',
-    title: 'Crypto Payments in Kampala, Uganda | PortalPay',
+    title: 'Crypto Payments in Kampala, Uganda | BasaltSurge',
     metaDescription:
       'Adopt QR payments and instant settlement for repair kiosks, cafés, ferries, and savings groups.',
     localContext:
@@ -234,7 +234,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Dar es Salaam',
     city: 'Dar es Salaam',
     country: 'Tanzania',
-    title: 'Crypto Payments in Dar es Salaam, Tanzania | PortalPay',
+    title: 'Crypto Payments in Dar es Salaam, Tanzania | BasaltSurge',
     metaDescription:
       'Instant settlement and offline-first QR payments for coastal ferries, cafés, and repair hubs.',
     localContext:
@@ -255,7 +255,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Abidjan',
     city: 'Abidjan',
     country: 'Côte d’Ivoire',
-    title: 'Crypto Payments in Abidjan, Côte d’Ivoire | PortalPay',
+    title: 'Crypto Payments in Abidjan, Côte d’Ivoire | BasaltSurge',
     metaDescription:
       'Low-fee QR payments and split payouts for cafés, repair kiosks, and artisan vendors.',
     localContext:
@@ -276,7 +276,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Dakar',
     city: 'Dakar',
     country: 'Senegal',
-    title: 'Crypto Payments in Dakar, Senegal | PortalPay',
+    title: 'Crypto Payments in Dakar, Senegal | BasaltSurge',
     metaDescription:
       'QR payments and instant settlement for coastal transport, artisan vendors, and internet cafés.',
     localContext:
@@ -297,7 +297,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kigali',
     city: 'Kigali',
     country: 'Rwanda',
-    title: 'Crypto Payments in Kigali, Rwanda | PortalPay',
+    title: 'Crypto Payments in Kigali, Rwanda | BasaltSurge',
     metaDescription:
       'Transparent QR receipts, inventory tagging, and split payouts for cafés, repair hubs, and savings groups.',
     localContext:
@@ -318,7 +318,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Lusaka',
     city: 'Lusaka',
     country: 'Zambia',
-    title: 'Crypto Payments in Lusaka, Zambia | PortalPay',
+    title: 'Crypto Payments in Lusaka, Zambia | BasaltSurge',
     metaDescription:
       'Adopt offline-first QR payments and instant settlement for cafés, repair hubs, and savings groups.',
     localContext:
@@ -339,7 +339,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Harare',
     city: 'Harare',
     country: 'Zimbabwe',
-    title: 'Crypto Payments in Harare, Zimbabwe | PortalPay',
+    title: 'Crypto Payments in Harare, Zimbabwe | BasaltSurge',
     metaDescription:
       'QR receipts, instant settlement, and split payouts for artisan vendors, cafés, and repair shops.',
     localContext:
@@ -360,7 +360,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Maputo',
     city: 'Maputo',
     country: 'Mozambique',
-    title: 'Crypto Payments in Maputo, Mozambique | PortalPay',
+    title: 'Crypto Payments in Maputo, Mozambique | BasaltSurge',
     metaDescription:
       'Instant settlement for coastal ferries, cafés, and repair hubs with offline-first QR payments.',
     localContext:
@@ -382,7 +382,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mumbai',
     city: 'Mumbai',
     country: 'India',
-    title: 'Crypto Payments in Mumbai, India | PortalPay',
+    title: 'Crypto Payments in Mumbai, India | BasaltSurge',
     metaDescription:
       'Scale QR payments for cafés, repair kiosks, and savings groups with instant settlement and offline support.',
     localContext:
@@ -403,7 +403,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Delhi',
     city: 'Delhi',
     country: 'India',
-    title: 'Crypto Payments in Delhi, India | PortalPay',
+    title: 'Crypto Payments in Delhi, India | BasaltSurge',
     metaDescription:
       'Low-fee QR payments and transparent receipts for repair hubs, cafés, and artisan markets.',
     localContext:
@@ -424,7 +424,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Karachi',
     city: 'Karachi',
     country: 'Pakistan',
-    title: 'Crypto Payments in Karachi, Pakistan | PortalPay',
+    title: 'Crypto Payments in Karachi, Pakistan | BasaltSurge',
     metaDescription:
       'Bring instant settlement to coastal ferries, repair kiosks, and cafés with offline-first QR payments.',
     localContext:
@@ -445,7 +445,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Lahore',
     city: 'Lahore',
     country: 'Pakistan',
-    title: 'Crypto Payments in Lahore, Pakistan | PortalPay',
+    title: 'Crypto Payments in Lahore, Pakistan | BasaltSurge',
     metaDescription:
       'QR receipts and split payouts for artisan vendors, cafés, and repair hubs.',
     localContext:
@@ -466,7 +466,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Colombo',
     city: 'Colombo',
     country: 'Sri Lanka',
-    title: 'Crypto Payments in Colombo, Sri Lanka | PortalPay',
+    title: 'Crypto Payments in Colombo, Sri Lanka | BasaltSurge',
     metaDescription:
       'Instant settlement and QR ticketing for coastal ferries, cafés, and repair kiosks.',
     localContext:
@@ -488,7 +488,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Jakarta',
     city: 'Jakarta',
     country: 'Indonesia',
-    title: 'Crypto Payments in Jakarta, Indonesia | PortalPay',
+    title: 'Crypto Payments in Jakarta, Indonesia | BasaltSurge',
     metaDescription:
       'Bring QR payments and instant settlement to cafés, repair hubs, and coastal services.',
     localContext:
@@ -509,7 +509,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Surabaya',
     city: 'Surabaya',
     country: 'Indonesia',
-    title: 'Crypto Payments in Surabaya, Indonesia | PortalPay',
+    title: 'Crypto Payments in Surabaya, Indonesia | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for ports, cafés, and repair districts.',
     localContext:
@@ -530,7 +530,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Hanoi',
     city: 'Hanoi',
     country: 'Vietnam',
-    title: 'Crypto Payments in Hanoi, Vietnam | PortalPay',
+    title: 'Crypto Payments in Hanoi, Vietnam | BasaltSurge',
     metaDescription:
       'QR payments and instant settlement for artisan districts, cafés, and repair kiosks.',
     localContext:
@@ -551,7 +551,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ho Chi Minh City',
     city: 'Ho Chi Minh City',
     country: 'Vietnam',
-    title: 'Crypto Payments in Ho Chi Minh City, Vietnam | PortalPay',
+    title: 'Crypto Payments in Ho Chi Minh City, Vietnam | BasaltSurge',
     metaDescription:
       'Instant settlement and offline-first QR payments for cafés, repair hubs, and artisan vendors.',
     localContext:
@@ -572,7 +572,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Phnom Penh',
     city: 'Phnom Penh',
     country: 'Cambodia',
-    title: 'Crypto Payments in Phnom Penh, Cambodia | PortalPay',
+    title: 'Crypto Payments in Phnom Penh, Cambodia | BasaltSurge',
     metaDescription:
       'QR ticketing for ferries and instant settlement for cafés and repair shops. Offline-first by default.',
     localContext:
@@ -593,7 +593,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Vientiane',
     city: 'Vientiane',
     country: 'Laos',
-    title: 'Crypto Payments in Vientiane, Laos | PortalPay',
+    title: 'Crypto Payments in Vientiane, Laos | BasaltSurge',
     metaDescription:
       'Low-fee QR payments with instant settlement for cafés, repair hubs, and savings groups.',
     localContext:
@@ -614,7 +614,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Yangon',
     city: 'Yangon',
     country: 'Myanmar',
-    title: 'Crypto Payments in Yangon, Myanmar | PortalPay',
+    title: 'Crypto Payments in Yangon, Myanmar | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for repair hubs, cafés, and coastal ferry services.',
     localContext:
@@ -636,7 +636,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'São Paulo',
     city: 'São Paulo',
     country: 'Brazil',
-    title: 'Crypto Payments in São Paulo, Brazil | PortalPay',
+    title: 'Crypto Payments in São Paulo, Brazil | BasaltSurge',
     metaDescription:
       'Scale low-fee QR payments for cafés, repair hubs, and artisan vendors with instant settlement.',
     localContext:
@@ -657,7 +657,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Rio de Janeiro',
     city: 'Rio de Janeiro',
     country: 'Brazil',
-    title: 'Crypto Payments in Rio de Janeiro, Brazil | PortalPay',
+    title: 'Crypto Payments in Rio de Janeiro, Brazil | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for coastal transport, cafés, and repair districts.',
     localContext:
@@ -678,7 +678,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Lima',
     city: 'Lima',
     country: 'Peru',
-    title: 'Crypto Payments in Lima, Peru | PortalPay',
+    title: 'Crypto Payments in Lima, Peru | BasaltSurge',
     metaDescription:
       'Adopt QR payments and instant settlement for artisan vendors, cafés, and repair shops.',
     localContext:
@@ -699,7 +699,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bogotá',
     city: 'Bogotá',
     country: 'Colombia',
-    title: 'Crypto Payments in Bogotá, Colombia | PortalPay',
+    title: 'Crypto Payments in Bogotá, Colombia | BasaltSurge',
     metaDescription:
       'Bring instant settlement to cafés, repair hubs, and artisan vendors with QR receipts.',
     localContext:
@@ -720,7 +720,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cali',
     city: 'Cali',
     country: 'Colombia',
-    title: 'Crypto Payments in Cali, Colombia | PortalPay',
+    title: 'Crypto Payments in Cali, Colombia | BasaltSurge',
     metaDescription:
       'Low-fee QR payments and instant settlement for artisan markets and cafés.',
     localContext:
@@ -741,7 +741,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Quito',
     city: 'Quito',
     country: 'Ecuador',
-    title: 'Crypto Payments in Quito, Ecuador | PortalPay',
+    title: 'Crypto Payments in Quito, Ecuador | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for artisan vendors, cafés, and repair kiosks.',
     localContext:
@@ -762,7 +762,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Guayaquil',
     city: 'Guayaquil',
     country: 'Ecuador',
-    title: 'Crypto Payments in Guayaquil, Ecuador | PortalPay',
+    title: 'Crypto Payments in Guayaquil, Ecuador | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and repair hubs.',
     localContext:
@@ -783,7 +783,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'La Paz',
     city: 'La Paz',
     country: 'Bolivia',
-    title: 'Crypto Payments in La Paz, Bolivia | PortalPay',
+    title: 'Crypto Payments in La Paz, Bolivia | BasaltSurge',
     metaDescription:
       'Offline-first QR payments for high-altitude artisan vendors, cafés, and repair kiosks.',
     localContext:
@@ -804,7 +804,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Santa Cruz',
     city: 'Santa Cruz',
     country: 'Bolivia',
-    title: 'Crypto Payments in Santa Cruz, Bolivia | PortalPay',
+    title: 'Crypto Payments in Santa Cruz, Bolivia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and artisan vendors.',
     localContext:
@@ -825,7 +825,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Santiago',
     city: 'Santiago',
     country: 'Chile',
-    title: 'Crypto Payments in Santiago, Chile | PortalPay',
+    title: 'Crypto Payments in Santiago, Chile | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, repair hubs, and artisan markets.',
     localContext:
@@ -846,7 +846,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Buenos Aires',
     city: 'Buenos Aires',
     country: 'Argentina',
-    title: 'Crypto Payments in Buenos Aires, Argentina | PortalPay',
+    title: 'Crypto Payments in Buenos Aires, Argentina | BasaltSurge',
     metaDescription:
       'Adopt low-fee QR payments with instant settlement for cafés, repair kiosks, and artisan vendors.',
     localContext:
@@ -867,7 +867,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mexico City',
     city: 'Mexico City',
     country: 'Mexico',
-    title: 'Crypto Payments in Mexico City, Mexico | PortalPay',
+    title: 'Crypto Payments in Mexico City, Mexico | BasaltSurge',
     metaDescription:
       'Scale QR receipts and instant settlement for cafés, repair hubs, and artisan markets.',
     localContext:
@@ -888,7 +888,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Guadalajara',
     city: 'Guadalajara',
     country: 'Mexico',
-    title: 'Crypto Payments in Guadalajara, Mexico | PortalPay',
+    title: 'Crypto Payments in Guadalajara, Mexico | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, repair shops, and artisan vendors.',
     localContext:
@@ -910,7 +910,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Amman',
     city: 'Amman',
     country: 'Jordan',
-    title: 'Crypto Payments in Amman, Jordan | PortalPay',
+    title: 'Crypto Payments in Amman, Jordan | BasaltSurge',
     metaDescription:
       'QR receipts, instant settlement, and offline-first for cafés, repair hubs, and artisan vendors.',
     localContext:
@@ -931,7 +931,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Beirut',
     city: 'Beirut',
     country: 'Lebanon',
-    title: 'Crypto Payments in Beirut, Lebanon | PortalPay',
+    title: 'Crypto Payments in Beirut, Lebanon | BasaltSurge',
     metaDescription:
       'Low-fee QR payments and instant settlement for cafés, repair hubs, and artisan vendors.',
     localContext:
@@ -952,7 +952,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ramallah',
     city: 'Ramallah',
     country: 'Palestine',
-    title: 'Crypto Payments in Ramallah, Palestine | PortalPay',
+    title: 'Crypto Payments in Ramallah, Palestine | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, repair kiosks, and artisan vendors.',
     localContext:
@@ -973,7 +973,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Casablanca',
     city: 'Casablanca',
     country: 'Morocco',
-    title: 'Crypto Payments in Casablanca, Morocco | PortalPay',
+    title: 'Crypto Payments in Casablanca, Morocco | BasaltSurge',
     metaDescription:
       'QR payments and instant settlement for cafés, repair hubs, and artisan markets.',
     localContext:
@@ -994,7 +994,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Marrakesh',
     city: 'Marrakesh',
     country: 'Morocco',
-    title: 'Crypto Payments in Marrakesh, Morocco | PortalPay',
+    title: 'Crypto Payments in Marrakesh, Morocco | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan souks, cafés, and repair kiosks.',
     localContext:
@@ -1015,7 +1015,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tunis',
     city: 'Tunis',
     country: 'Tunisia',
-    title: 'Crypto Payments in Tunis, Tunisia | PortalPay',
+    title: 'Crypto Payments in Tunis, Tunisia | BasaltSurge',
     metaDescription:
       'Instant settlement and offline-first QR payments for cafés, repair hubs, and artisan vendors.',
     localContext:
@@ -1036,7 +1036,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Algiers',
     city: 'Algiers',
     country: 'Algeria',
-    title: 'Crypto Payments in Algiers, Algeria | PortalPay',
+    title: 'Crypto Payments in Algiers, Algeria | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and coastal services.',
     localContext:
@@ -1057,7 +1057,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Yerevan',
     city: 'Yerevan',
     country: 'Armenia',
-    title: 'Crypto Payments in Yerevan, Armenia | PortalPay',
+    title: 'Crypto Payments in Yerevan, Armenia | BasaltSurge',
     metaDescription:
       'Low-fee QR payments and instant settlement for cafés, repair hubs, and artisan vendors.',
     localContext:
@@ -1078,7 +1078,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tashkent',
     city: 'Tashkent',
     country: 'Uzbekistan',
-    title: 'Crypto Payments in Tashkent, Uzbekistan | PortalPay',
+    title: 'Crypto Payments in Tashkent, Uzbekistan | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair shops, and artisan vendors.',
     localContext:
@@ -1099,7 +1099,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Almaty',
     city: 'Almaty',
     country: 'Kazakhstan',
-    title: 'Crypto Payments in Almaty, Kazakhstan | PortalPay',
+    title: 'Crypto Payments in Almaty, Kazakhstan | BasaltSurge',
     metaDescription:
       'Instant settlement and offline-first QR payments for cafés, repair hubs, and artisan vendors.',
     localContext:
@@ -1121,7 +1121,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Istanbul',
     city: 'Istanbul',
     country: 'Türkiye',
-    title: 'Crypto Payments in Istanbul, Türkiye | PortalPay',
+    title: 'Crypto Payments in Istanbul, Türkiye | BasaltSurge',
     metaDescription:
       'Scale QR receipts and instant settlement for ferries, repair hubs, cafés, and artisan vendors.',
     localContext:
@@ -1142,7 +1142,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tbilisi',
     city: 'Tbilisi',
     country: 'Georgia',
-    title: 'Crypto Payments in Tbilisi, Georgia | PortalPay',
+    title: 'Crypto Payments in Tbilisi, Georgia | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, repair hubs, and artisan vendors.',
     localContext:
@@ -1163,7 +1163,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kyiv',
     city: 'Kyiv',
     country: 'Ukraine',
-    title: 'Crypto Payments in Kyiv, Ukraine | PortalPay',
+    title: 'Crypto Payments in Kyiv, Ukraine | BasaltSurge',
     metaDescription:
       'QR receipts, instant settlement, and offline-first support for cafés, repair hubs, and artisan vendors.',
     localContext:
@@ -1184,7 +1184,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Belgrade',
     city: 'Belgrade',
     country: 'Serbia',
-    title: 'Crypto Payments in Belgrade, Serbia | PortalPay',
+    title: 'Crypto Payments in Belgrade, Serbia | BasaltSurge',
     metaDescription:
       'Instant settlement and QR payments for cafés, repair hubs, and artisan markets.',
     localContext:
@@ -1205,7 +1205,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tirana',
     city: 'Tirana',
     country: 'Albania',
-    title: 'Crypto Payments in Tirana, Albania | PortalPay',
+    title: 'Crypto Payments in Tirana, Albania | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair kiosks, and artisan vendors.',
     localContext:
@@ -1226,7 +1226,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Port of Spain',
     city: 'Port of Spain',
     country: 'Trinidad and Tobago',
-    title: 'Crypto Payments in Port of Spain, Trinidad | PortalPay',
+    title: 'Crypto Payments in Port of Spain, Trinidad | BasaltSurge',
     metaDescription:
       'Instant settlement and QR ticketing for coastal services, cafés, and repair hubs.',
     localContext:
@@ -1247,7 +1247,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kingston',
     city: 'Kingston',
     country: 'Jamaica',
-    title: 'Crypto Payments in Kingston, Jamaica | PortalPay',
+    title: 'Crypto Payments in Kingston, Jamaica | BasaltSurge',
     metaDescription:
       'Adopt QR receipts and instant settlement for coastal ferries, cafés, and repair shops.',
     localContext:
@@ -1267,7 +1267,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Johannesburg',
     city: 'Johannesburg',
     country: 'South Africa',
-    title: 'Crypto Payments in Johannesburg, South Africa | PortalPay',
+    title: 'Crypto Payments in Johannesburg, South Africa | BasaltSurge',
     metaDescription:
       'Low-fee QR payments for markets, cafés, and repair hubs in Johannesburg. Instant settlement and offline-first support.',
     localContext:
@@ -1288,7 +1288,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cape Town',
     city: 'Cape Town',
     country: 'South Africa',
-    title: 'Crypto Payments in Cape Town, South Africa | PortalPay',
+    title: 'Crypto Payments in Cape Town, South Africa | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, ferries, and artisan vendors across Cape Town.',
     localContext:
@@ -1309,7 +1309,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Durban',
     city: 'Durban',
     country: 'South Africa',
-    title: 'Crypto Payments in Durban, South Africa | PortalPay',
+    title: 'Crypto Payments in Durban, South Africa | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, markets, and repair hubs in Durban.',
     localContext:
@@ -1330,7 +1330,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Alexandria',
     city: 'Alexandria',
     country: 'Egypt',
-    title: 'Crypto Payments in Alexandria, Egypt | PortalPay',
+    title: 'Crypto Payments in Alexandria, Egypt | BasaltSurge',
     metaDescription:
       'Bring instant, low-fee QR payments to Alexandria’s cafés, ferries, and repair kiosks.',
     localContext:
@@ -1351,7 +1351,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Rabat',
     city: 'Rabat',
     country: 'Morocco',
-    title: 'Crypto Payments in Rabat, Morocco | PortalPay',
+    title: 'Crypto Payments in Rabat, Morocco | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, artisan souks, and repair hubs in Rabat.',
     localContext:
@@ -1372,7 +1372,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Fes',
     city: 'Fes',
     country: 'Morocco',
-    title: 'Crypto Payments in Fes, Morocco | PortalPay',
+    title: 'Crypto Payments in Fes, Morocco | BasaltSurge',
     metaDescription:
       'Modern QR payments for historic artisan quarters, cafés, and repair shops in Fes.',
     localContext:
@@ -1393,7 +1393,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mombasa',
     city: 'Mombasa',
     country: 'Kenya',
-    title: 'Crypto Payments in Mombasa, Kenya | PortalPay',
+    title: 'Crypto Payments in Mombasa, Kenya | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal ferries, markets, and repair hubs.',
     localContext:
@@ -1414,7 +1414,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kisumu',
     city: 'Kisumu',
     country: 'Kenya',
-    title: 'Crypto Payments in Kisumu, Kenya | PortalPay',
+    title: 'Crypto Payments in Kisumu, Kenya | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for lakeside transport, cafés, and repair kiosks.',
     localContext:
@@ -1435,7 +1435,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Stone Town',
     city: 'Stone Town',
     country: 'Tanzania',
-    title: 'Crypto Payments in Stone Town, Tanzania | PortalPay',
+    title: 'Crypto Payments in Stone Town, Tanzania | BasaltSurge',
     metaDescription:
       'QR ticketing for boats, instant settlement for cafés and craft vendors in Zanzibar’s Stone Town.',
     localContext:
@@ -1456,7 +1456,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kumasi',
     city: 'Kumasi',
     country: 'Ghana',
-    title: 'Crypto Payments in Kumasi, Ghana | PortalPay',
+    title: 'Crypto Payments in Kumasi, Ghana | BasaltSurge',
     metaDescription:
       'QR receipts and split payouts for Kejetia market vendors, cafés, and repair hubs.',
     localContext:
@@ -1477,7 +1477,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Abuja',
     city: 'Abuja',
     country: 'Nigeria',
-    title: 'Crypto Payments in Abuja, Nigeria | PortalPay',
+    title: 'Crypto Payments in Abuja, Nigeria | BasaltSurge',
     metaDescription:
       'Low-fee QR payments with instant settlement for cafés, repair hubs, and training labs.',
     localContext:
@@ -1498,7 +1498,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kano',
     city: 'Kano',
     country: 'Nigeria',
-    title: 'Crypto Payments in Kano, Nigeria | PortalPay',
+    title: 'Crypto Payments in Kano, Nigeria | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for market vendors, cafés, and repair kiosks.',
     localContext:
@@ -1519,7 +1519,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Port Harcourt',
     city: 'Port Harcourt',
     country: 'Nigeria',
-    title: 'Crypto Payments in Port Harcourt, Nigeria | PortalPay',
+    title: 'Crypto Payments in Port Harcourt, Nigeria | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for ferries, markets, and cafés in Port Harcourt.',
     localContext:
@@ -1540,7 +1540,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kinshasa',
     city: 'Kinshasa',
     country: 'DR Congo',
-    title: 'Crypto Payments in Kinshasa, DR Congo | PortalPay',
+    title: 'Crypto Payments in Kinshasa, DR Congo | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for river transport, cafés, and repair hubs.',
     localContext:
@@ -1561,7 +1561,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Douala',
     city: 'Douala',
     country: 'Cameroon',
-    title: 'Crypto Payments in Douala, Cameroon | PortalPay',
+    title: 'Crypto Payments in Douala, Cameroon | BasaltSurge',
     metaDescription:
       'Low-fee QR payments and instant settlement for ports, cafés, and repair hubs in Douala.',
     localContext:
@@ -1582,7 +1582,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Windhoek',
     city: 'Windhoek',
     country: 'Namibia',
-    title: 'Crypto Payments in Windhoek, Namibia | PortalPay',
+    title: 'Crypto Payments in Windhoek, Namibia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and community groups.',
     localContext:
@@ -1603,7 +1603,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Antananarivo',
     city: 'Antananarivo',
     country: 'Madagascar',
-    title: 'Crypto Payments in Antananarivo, Madagascar | PortalPay',
+    title: 'Crypto Payments in Antananarivo, Madagascar | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for craft markets, cafés, and repair kiosks.',
     localContext:
@@ -1624,7 +1624,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bangalore',
     city: 'Bangalore',
     country: 'India',
-    title: 'Crypto Payments in Bangalore, India | PortalPay',
+    title: 'Crypto Payments in Bangalore, India | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair kiosks, and co-ops in Bangalore.',
     localContext:
@@ -1645,7 +1645,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Hyderabad',
     city: 'Hyderabad',
     country: 'India',
-    title: 'Crypto Payments in Hyderabad, India | PortalPay',
+    title: 'Crypto Payments in Hyderabad, India | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, repair hubs, and market vendors.',
     localContext:
@@ -1666,7 +1666,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Chennai',
     city: 'Chennai',
     country: 'India',
-    title: 'Crypto Payments in Chennai, India | PortalPay',
+    title: 'Crypto Payments in Chennai, India | BasaltSurge',
     metaDescription:
       'QR payments and offline-first support for coastal ferries, cafés, and repair kiosks.',
     localContext:
@@ -1687,7 +1687,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kolkata',
     city: 'Kolkata',
     country: 'India',
-    title: 'Crypto Payments in Kolkata, India | PortalPay',
+    title: 'Crypto Payments in Kolkata, India | BasaltSurge',
     metaDescription:
       'Instant-settlement QR receipts for markets, cafés, and repair hubs.',
     localContext:
@@ -1708,7 +1708,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Islamabad',
     city: 'Islamabad',
     country: 'Pakistan',
-    title: 'Crypto Payments in Islamabad, Pakistan | PortalPay',
+    title: 'Crypto Payments in Islamabad, Pakistan | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair kiosks, and artisan vendors.',
     localContext:
@@ -1729,7 +1729,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Chittagong',
     city: 'Chittagong',
     country: 'Bangladesh',
-    title: 'Crypto Payments in Chittagong, Bangladesh | PortalPay',
+    title: 'Crypto Payments in Chittagong, Bangladesh | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for port services, cafés, and repair hubs.',
     localContext:
@@ -1750,7 +1750,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bangkok',
     city: 'Bangkok',
     country: 'Thailand',
-    title: 'Crypto Payments in Bangkok, Thailand | PortalPay',
+    title: 'Crypto Payments in Bangkok, Thailand | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair kiosks in Bangkok.',
     localContext:
@@ -1771,7 +1771,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Chiang Mai',
     city: 'Chiang Mai',
     country: 'Thailand',
-    title: 'Crypto Payments in Chiang Mai, Thailand | PortalPay',
+    title: 'Crypto Payments in Chiang Mai, Thailand | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for artisan markets, cafés, and repair hubs.',
     localContext:
@@ -1792,7 +1792,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kuala Lumpur',
     city: 'Kuala Lumpur',
     country: 'Malaysia',
-    title: 'Crypto Payments in Kuala Lumpur, Malaysia | PortalPay',
+    title: 'Crypto Payments in Kuala Lumpur, Malaysia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs.',
     localContext:
@@ -1813,7 +1813,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Penang',
     city: 'Penang',
     country: 'Malaysia',
-    title: 'Crypto Payments in Penang, Malaysia | PortalPay',
+    title: 'Crypto Payments in Penang, Malaysia | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for hawker stalls, cafés, and repair kiosks.',
     localContext:
@@ -1834,7 +1834,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cebu City',
     city: 'Cebu City',
     country: 'Philippines',
-    title: 'Crypto Payments in Cebu City, Philippines | PortalPay',
+    title: 'Crypto Payments in Cebu City, Philippines | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for ferry routes, cafés, and repair kiosks.',
     localContext:
@@ -1855,7 +1855,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Denpasar (Bali)',
     city: 'Denpasar',
     country: 'Indonesia',
-    title: 'Crypto Payments in Denpasar (Bali), Indonesia | PortalPay',
+    title: 'Crypto Payments in Denpasar (Bali), Indonesia | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for tourism, artisan vendors, and cafés in Bali.',
     localContext:
@@ -1876,7 +1876,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bandung',
     city: 'Bandung',
     country: 'Indonesia',
-    title: 'Crypto Payments in Bandung, Indonesia | PortalPay',
+    title: 'Crypto Payments in Bandung, Indonesia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and craft markets.',
     localContext:
@@ -1897,7 +1897,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Da Nang',
     city: 'Da Nang',
     country: 'Vietnam',
-    title: 'Crypto Payments in Da Nang, Vietnam | PortalPay',
+    title: 'Crypto Payments in Da Nang, Vietnam | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, ferries, and repair hubs.',
     localContext:
@@ -1918,7 +1918,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Montevideo',
     city: 'Montevideo',
     country: 'Uruguay',
-    title: 'Crypto Payments in Montevideo, Uruguay | PortalPay',
+    title: 'Crypto Payments in Montevideo, Uruguay | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, artisan vendors, and repair kiosks.',
     localContext:
@@ -1939,7 +1939,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Asunción',
     city: 'Asunción',
     country: 'Paraguay',
-    title: 'Crypto Payments in Asunción, Paraguay | PortalPay',
+    title: 'Crypto Payments in Asunción, Paraguay | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair hubs.',
     localContext:
@@ -1960,7 +1960,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Valparaíso',
     city: 'Valparaíso',
     country: 'Chile',
-    title: 'Crypto Payments in Valparaíso, Chile | PortalPay',
+    title: 'Crypto Payments in Valparaíso, Chile | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and artisan vendors.',
     localContext:
@@ -1981,7 +1981,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Córdoba',
     city: 'Córdoba',
     country: 'Argentina',
-    title: 'Crypto Payments in Córdoba, Argentina | PortalPay',
+    title: 'Crypto Payments in Córdoba, Argentina | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, markets, and repair kiosks.',
     localContext:
@@ -2002,7 +2002,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Rosario',
     city: 'Rosario',
     country: 'Argentina',
-    title: 'Crypto Payments in Rosario, Argentina | PortalPay',
+    title: 'Crypto Payments in Rosario, Argentina | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and craft vendors.',
     localContext:
@@ -2023,7 +2023,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Fortaleza',
     city: 'Fortaleza',
     country: 'Brazil',
-    title: 'Crypto Payments in Fortaleza, Brazil | PortalPay',
+    title: 'Crypto Payments in Fortaleza, Brazil | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, cafés, and repair hubs.',
     localContext:
@@ -2044,7 +2044,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Recife',
     city: 'Recife',
     country: 'Brazil',
-    title: 'Crypto Payments in Recife, Brazil | PortalPay',
+    title: 'Crypto Payments in Recife, Brazil | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair kiosks.',
     localContext:
@@ -2065,7 +2065,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Belo Horizonte',
     city: 'Belo Horizonte',
     country: 'Brazil',
-    title: 'Crypto Payments in Belo Horizonte, Brazil | PortalPay',
+    title: 'Crypto Payments in Belo Horizonte, Brazil | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, repair hubs, and artisan vendors.',
     localContext:
@@ -2086,7 +2086,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Brasília',
     city: 'Brasília',
     country: 'Brazil',
-    title: 'Crypto Payments in Brasília, Brazil | PortalPay',
+    title: 'Crypto Payments in Brasília, Brazil | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair kiosks.',
     localContext:
@@ -2107,7 +2107,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Manaus',
     city: 'Manaus',
     country: 'Brazil',
-    title: 'Crypto Payments in Manaus, Brazil | PortalPay',
+    title: 'Crypto Payments in Manaus, Brazil | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for river transport, cafés, and repair hubs.',
     localContext:
@@ -2128,7 +2128,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Curitiba',
     city: 'Curitiba',
     country: 'Brazil',
-    title: 'Crypto Payments in Curitiba, Brazil | PortalPay',
+    title: 'Crypto Payments in Curitiba, Brazil | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, markets, and repair kiosks.',
     localContext:
@@ -2149,7 +2149,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Barranquilla',
     city: 'Barranquilla',
     country: 'Colombia',
-    title: 'Crypto Payments in Barranquilla, Colombia | PortalPay',
+    title: 'Crypto Payments in Barranquilla, Colombia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for coastal services, cafés, and repair hubs.',
     localContext:
@@ -2170,7 +2170,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cartagena',
     city: 'Cartagena',
     country: 'Colombia',
-    title: 'Crypto Payments in Cartagena, Colombia | PortalPay',
+    title: 'Crypto Payments in Cartagena, Colombia | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for tourism, artisan vendors, and cafés in Cartagena.',
     localContext:
@@ -2191,7 +2191,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Dubai',
     city: 'Dubai',
     country: 'United Arab Emirates',
-    title: 'Crypto Payments in Dubai, UAE | PortalPay',
+    title: 'Crypto Payments in Dubai, UAE | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs in Dubai.',
     localContext:
@@ -2212,7 +2212,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Abu Dhabi',
     city: 'Abu Dhabi',
     country: 'United Arab Emirates',
-    title: 'Crypto Payments in Abu Dhabi, UAE | PortalPay',
+    title: 'Crypto Payments in Abu Dhabi, UAE | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, artisan vendors, and repair kiosks.',
     localContext:
@@ -2233,7 +2233,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Doha',
     city: 'Doha',
     country: 'Qatar',
-    title: 'Crypto Payments in Doha, Qatar | PortalPay',
+    title: 'Crypto Payments in Doha, Qatar | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs.',
     localContext:
@@ -2254,7 +2254,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Muscat',
     city: 'Muscat',
     country: 'Oman',
-    title: 'Crypto Payments in Muscat, Oman | PortalPay',
+    title: 'Crypto Payments in Muscat, Oman | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, cafés, and repair kiosks.',
     localContext:
@@ -2275,7 +2275,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Baku',
     city: 'Baku',
     country: 'Azerbaijan',
-    title: 'Crypto Payments in Baku, Azerbaijan | PortalPay',
+    title: 'Crypto Payments in Baku, Azerbaijan | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs.',
     localContext:
@@ -2296,7 +2296,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bishkek',
     city: 'Bishkek',
     country: 'Kyrgyzstan',
-    title: 'Crypto Payments in Bishkek, Kyrgyzstan | PortalPay',
+    title: 'Crypto Payments in Bishkek, Kyrgyzstan | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair kiosks.',
     localContext:
@@ -2317,7 +2317,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Dushanbe',
     city: 'Dushanbe',
     country: 'Tajikistan',
-    title: 'Crypto Payments in Dushanbe, Tajikistan | PortalPay',
+    title: 'Crypto Payments in Dushanbe, Tajikistan | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs.',
     localContext:
@@ -2338,7 +2338,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Panama City',
     city: 'Panama City',
     country: 'Panama',
-    title: 'Crypto Payments in Panama City, Panama | PortalPay',
+    title: 'Crypto Payments in Panama City, Panama | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair kiosks.',
     localContext:
@@ -2358,7 +2358,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Guatemala City',
     city: 'Guatemala City',
     country: 'Guatemala',
-    title: 'Crypto Payments in Guatemala City, Guatemala | PortalPay',
+    title: 'Crypto Payments in Guatemala City, Guatemala | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair hubs in Guatemala City.',
     localContext:
@@ -2379,7 +2379,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'San Salvador',
     city: 'San Salvador',
     country: 'El Salvador',
-    title: 'Crypto Payments in San Salvador, El Salvador | PortalPay',
+    title: 'Crypto Payments in San Salvador, El Salvador | BasaltSurge',
     metaDescription:
       'Low-fee QR payments for markets, cafés, and repair kiosks in San Salvador.',
     localContext:
@@ -2400,7 +2400,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tegucigalpa',
     city: 'Tegucigalpa',
     country: 'Honduras',
-    title: 'Crypto Payments in Tegucigalpa, Honduras | PortalPay',
+    title: 'Crypto Payments in Tegucigalpa, Honduras | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -2421,7 +2421,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Managua',
     city: 'Managua',
     country: 'Nicaragua',
-    title: 'Crypto Payments in Managua, Nicaragua | PortalPay',
+    title: 'Crypto Payments in Managua, Nicaragua | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair kiosks.',
     localContext:
@@ -2442,7 +2442,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'San José',
     city: 'San José',
     country: 'Costa Rica',
-    title: 'Crypto Payments in San José, Costa Rica | PortalPay',
+    title: 'Crypto Payments in San José, Costa Rica | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs.',
     localContext:
@@ -2463,7 +2463,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Santo Domingo',
     city: 'Santo Domingo',
     country: 'Dominican Republic',
-    title: 'Crypto Payments in Santo Domingo, Dominican Republic | PortalPay',
+    title: 'Crypto Payments in Santo Domingo, Dominican Republic | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, cafés, and repair hubs.',
     localContext:
@@ -2484,7 +2484,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Port-au-Prince',
     city: 'Port-au-Prince',
     country: 'Haiti',
-    title: 'Crypto Payments in Port-au-Prince, Haiti | PortalPay',
+    title: 'Crypto Payments in Port-au-Prince, Haiti | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair kiosks.',
     localContext:
@@ -2505,7 +2505,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Havana',
     city: 'Havana',
     country: 'Cuba',
-    title: 'Crypto Payments in Havana, Cuba | PortalPay',
+    title: 'Crypto Payments in Havana, Cuba | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan vendors, cafés, and repair hubs.',
     localContext:
@@ -2526,7 +2526,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Georgetown',
     city: 'Georgetown',
     country: 'Guyana',
-    title: 'Crypto Payments in Georgetown, Guyana | PortalPay',
+    title: 'Crypto Payments in Georgetown, Guyana | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair hubs.',
     localContext:
@@ -2547,7 +2547,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Paramaribo',
     city: 'Paramaribo',
     country: 'Suriname',
-    title: 'Crypto Payments in Paramaribo, Suriname | PortalPay',
+    title: 'Crypto Payments in Paramaribo, Suriname | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair kiosks.',
     localContext:
@@ -2568,7 +2568,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Sofia',
     city: 'Sofia',
     country: 'Bulgaria',
-    title: 'Crypto Payments in Sofia, Bulgaria | PortalPay',
+    title: 'Crypto Payments in Sofia, Bulgaria | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs.',
     localContext:
@@ -2589,7 +2589,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bucharest',
     city: 'Bucharest',
     country: 'Romania',
-    title: 'Crypto Payments in Bucharest, Romania | PortalPay',
+    title: 'Crypto Payments in Bucharest, Romania | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, markets, and repair kiosks.',
     localContext:
@@ -2610,7 +2610,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Chișinău',
     city: 'Chișinău',
     country: 'Moldova',
-    title: 'Crypto Payments in Chișinău, Moldova | PortalPay',
+    title: 'Crypto Payments in Chișinău, Moldova | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, artisan vendors, and repair hubs.',
     localContext:
@@ -2631,7 +2631,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Sarajevo',
     city: 'Sarajevo',
     country: 'Bosnia and Herzegovina',
-    title: 'Crypto Payments in Sarajevo, Bosnia and Herzegovina | PortalPay',
+    title: 'Crypto Payments in Sarajevo, Bosnia and Herzegovina | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, markets, and repair kiosks.',
     localContext:
@@ -2652,7 +2652,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Skopje',
     city: 'Skopje',
     country: 'North Macedonia',
-    title: 'Crypto Payments in Skopje, North Macedonia | PortalPay',
+    title: 'Crypto Payments in Skopje, North Macedonia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs.',
     localContext:
@@ -2673,7 +2673,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Pristina',
     city: 'Pristina',
     country: 'Kosovo',
-    title: 'Crypto Payments in Pristina, Kosovo | PortalPay',
+    title: 'Crypto Payments in Pristina, Kosovo | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, markets, and repair kiosks.',
     localContext:
@@ -2694,7 +2694,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Podgorica',
     city: 'Podgorica',
     country: 'Montenegro',
-    title: 'Crypto Payments in Podgorica, Montenegro | PortalPay',
+    title: 'Crypto Payments in Podgorica, Montenegro | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs.',
     localContext:
@@ -2715,7 +2715,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Astana',
     city: 'Astana',
     country: 'Kazakhstan',
-    title: 'Crypto Payments in Astana, Kazakhstan | PortalPay',
+    title: 'Crypto Payments in Astana, Kazakhstan | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, markets, and repair hubs.',
     localContext:
@@ -2736,7 +2736,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ashgabat',
     city: 'Ashgabat',
     country: 'Turkmenistan',
-    title: 'Crypto Payments in Ashgabat, Turkmenistan | PortalPay',
+    title: 'Crypto Payments in Ashgabat, Turkmenistan | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair kiosks.',
     localContext:
@@ -2757,7 +2757,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ulaanbaatar',
     city: 'Ulaanbaatar',
     country: 'Mongolia',
-    title: 'Crypto Payments in Ulaanbaatar, Mongolia | PortalPay',
+    title: 'Crypto Payments in Ulaanbaatar, Mongolia | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair hubs.',
     localContext:
@@ -2778,7 +2778,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Suva',
     city: 'Suva',
     country: 'Fiji',
-    title: 'Crypto Payments in Suva, Fiji | PortalPay',
+    title: 'Crypto Payments in Suva, Fiji | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and repair hubs.',
     localContext:
@@ -2799,7 +2799,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Apia',
     city: 'Apia',
     country: 'Samoa',
-    title: 'Crypto Payments in Apia, Samoa | PortalPay',
+    title: 'Crypto Payments in Apia, Samoa | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, markets, and cafés.',
     localContext:
@@ -2820,7 +2820,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Port Moresby',
     city: 'Port Moresby',
     country: 'Papua New Guinea',
-    title: 'Crypto Payments in Port Moresby, Papua New Guinea | PortalPay',
+    title: 'Crypto Payments in Port Moresby, Papua New Guinea | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for coastal services, markets, and repair hubs.',
     localContext:
@@ -2841,7 +2841,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Monrovia',
     city: 'Monrovia',
     country: 'Liberia',
-    title: 'Crypto Payments in Monrovia, Liberia | PortalPay',
+    title: 'Crypto Payments in Monrovia, Liberia | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair kiosks.',
     localContext:
@@ -2862,7 +2862,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Freetown',
     city: 'Freetown',
     country: 'Sierra Leone',
-    title: 'Crypto Payments in Freetown, Sierra Leone | PortalPay',
+    title: 'Crypto Payments in Freetown, Sierra Leone | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and repair hubs.',
     localContext:
@@ -2883,7 +2883,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Conakry',
     city: 'Conakry',
     country: 'Guinea',
-    title: 'Crypto Payments in Conakry, Guinea | PortalPay',
+    title: 'Crypto Payments in Conakry, Guinea | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair kiosks.',
     localContext:
@@ -2904,7 +2904,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bamako',
     city: 'Bamako',
     country: 'Mali',
-    title: 'Crypto Payments in Bamako, Mali | PortalPay',
+    title: 'Crypto Payments in Bamako, Mali | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -2925,7 +2925,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ouagadougou',
     city: 'Ouagadougou',
     country: 'Burkina Faso',
-    title: 'Crypto Payments in Ouagadougou, Burkina Faso | PortalPay',
+    title: 'Crypto Payments in Ouagadougou, Burkina Faso | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair kiosks.',
     localContext:
@@ -2946,7 +2946,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Niamey',
     city: 'Niamey',
     country: 'Niger',
-    title: 'Crypto Payments in Niamey, Niger | PortalPay',
+    title: 'Crypto Payments in Niamey, Niger | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -2967,7 +2967,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Lomé',
     city: 'Lomé',
     country: 'Togo',
-    title: 'Crypto Payments in Lomé, Togo | PortalPay',
+    title: 'Crypto Payments in Lomé, Togo | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, markets, and cafés.',
     localContext:
@@ -2988,7 +2988,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cotonou',
     city: 'Cotonou',
     country: 'Benin',
-    title: 'Crypto Payments in Cotonou, Benin | PortalPay',
+    title: 'Crypto Payments in Cotonou, Benin | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair kiosks.',
     localContext:
@@ -3009,7 +3009,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Gaborone',
     city: 'Gaborone',
     country: 'Botswana',
-    title: 'Crypto Payments in Gaborone, Botswana | PortalPay',
+    title: 'Crypto Payments in Gaborone, Botswana | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, markets, and repair hubs.',
     localContext:
@@ -3030,7 +3030,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Maseru',
     city: 'Maseru',
     country: 'Lesotho',
-    title: 'Crypto Payments in Maseru, Lesotho | PortalPay',
+    title: 'Crypto Payments in Maseru, Lesotho | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair kiosks.',
     localContext:
@@ -3051,7 +3051,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mbabane',
     city: 'Mbabane',
     country: 'Eswatini',
-    title: 'Crypto Payments in Mbabane, Eswatini | PortalPay',
+    title: 'Crypto Payments in Mbabane, Eswatini | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, markets, and repair hubs.',
     localContext:
@@ -3072,7 +3072,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: "Sana'a",
     city: "Sana'a",
     country: 'Yemen',
-    title: "Crypto Payments in Sana'a, Yemen | PortalPay",
+    title: "Crypto Payments in Sana'a, Yemen | BasaltSurge",
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair kiosks.',
     localContext:
@@ -3093,7 +3093,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Aden',
     city: 'Aden',
     country: 'Yemen',
-    title: 'Crypto Payments in Aden, Yemen | PortalPay',
+    title: 'Crypto Payments in Aden, Yemen | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, markets, and cafés.',
     localContext:
@@ -3114,7 +3114,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bandar Seri Begawan',
     city: 'Bandar Seri Begawan',
     country: 'Brunei',
-    title: 'Crypto Payments in Bandar Seri Begawan, Brunei | PortalPay',
+    title: 'Crypto Payments in Bandar Seri Begawan, Brunei | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs.',
     localContext:
@@ -3135,7 +3135,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Dili',
     city: 'Dili',
     country: 'Timor-Leste',
-    title: 'Crypto Payments in Dili, Timor-Leste | PortalPay',
+    title: 'Crypto Payments in Dili, Timor-Leste | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, markets, and cafés.',
     localContext:
@@ -3155,7 +3155,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Luanda',
     city: 'Luanda',
     country: 'Angola',
-    title: 'Crypto Payments in Luanda, Angola | PortalPay',
+    title: 'Crypto Payments in Luanda, Angola | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for ports, markets, and cafés in Luanda.',
     localContext:
@@ -3176,7 +3176,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Libreville',
     city: 'Libreville',
     country: 'Gabon',
-    title: 'Crypto Payments in Libreville, Gabon | PortalPay',
+    title: 'Crypto Payments in Libreville, Gabon | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs.',
     localContext:
@@ -3197,7 +3197,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Yaoundé',
     city: 'Yaoundé',
     country: 'Cameroon',
-    title: 'Crypto Payments in Yaoundé, Cameroon | PortalPay',
+    title: 'Crypto Payments in Yaoundé, Cameroon | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair kiosks.',
     localContext:
@@ -3218,7 +3218,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Brazzaville',
     city: 'Brazzaville',
     country: 'Republic of the Congo',
-    title: 'Crypto Payments in Brazzaville, Republic of the Congo | PortalPay',
+    title: 'Crypto Payments in Brazzaville, Republic of the Congo | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for river services, cafés, and repair hubs.',
     localContext:
@@ -3239,7 +3239,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bangui',
     city: 'Bangui',
     country: 'Central African Republic',
-    title: 'Crypto Payments in Bangui, Central African Republic | PortalPay',
+    title: 'Crypto Payments in Bangui, Central African Republic | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -3260,7 +3260,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Lilongwe',
     city: 'Lilongwe',
     country: 'Malawi',
-    title: 'Crypto Payments in Lilongwe, Malawi | PortalPay',
+    title: 'Crypto Payments in Lilongwe, Malawi | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair kiosks.',
     localContext:
@@ -3281,7 +3281,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Blantyre',
     city: 'Blantyre',
     country: 'Malawi',
-    title: 'Crypto Payments in Blantyre, Malawi | PortalPay',
+    title: 'Crypto Payments in Blantyre, Malawi | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs.',
     localContext:
@@ -3302,7 +3302,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Nouakchott',
     city: 'Nouakchott',
     country: 'Mauritania',
-    title: 'Crypto Payments in Nouakchott, Mauritania | PortalPay',
+    title: 'Crypto Payments in Nouakchott, Mauritania | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, markets, and cafés.',
     localContext:
@@ -3323,7 +3323,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bissau',
     city: 'Bissau',
     country: 'Guinea-Bissau',
-    title: 'Crypto Payments in Bissau, Guinea-Bissau | PortalPay',
+    title: 'Crypto Payments in Bissau, Guinea-Bissau | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and repair hubs.',
     localContext:
@@ -3344,7 +3344,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Praia',
     city: 'Praia',
     country: 'Cape Verde',
-    title: 'Crypto Payments in Praia, Cape Verde | PortalPay',
+    title: 'Crypto Payments in Praia, Cape Verde | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, cafés, and artisan vendors.',
     localContext:
@@ -3365,7 +3365,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tripoli',
     city: 'Tripoli',
     country: 'Libya',
-    title: 'Crypto Payments in Tripoli, Libya | PortalPay',
+    title: 'Crypto Payments in Tripoli, Libya | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -3386,7 +3386,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Khartoum',
     city: 'Khartoum',
     country: 'Sudan',
-    title: 'Crypto Payments in Khartoum, Sudan | PortalPay',
+    title: 'Crypto Payments in Khartoum, Sudan | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair kiosks.',
     localContext:
@@ -3407,7 +3407,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Erbil',
     city: 'Erbil',
     country: 'Iraq',
-    title: 'Crypto Payments in Erbil, Iraq | PortalPay',
+    title: 'Crypto Payments in Erbil, Iraq | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs.',
     localContext:
@@ -3428,7 +3428,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Baghdad',
     city: 'Baghdad',
     country: 'Iraq',
-    title: 'Crypto Payments in Baghdad, Iraq | PortalPay',
+    title: 'Crypto Payments in Baghdad, Iraq | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair kiosks.',
     localContext:
@@ -3449,7 +3449,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Riyadh',
     city: 'Riyadh',
     country: 'Saudi Arabia',
-    title: 'Crypto Payments in Riyadh, Saudi Arabia | PortalPay',
+    title: 'Crypto Payments in Riyadh, Saudi Arabia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, retail, and repair hubs.',
     localContext:
@@ -3470,7 +3470,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Jeddah',
     city: 'Jeddah',
     country: 'Saudi Arabia',
-    title: 'Crypto Payments in Jeddah, Saudi Arabia | PortalPay',
+    title: 'Crypto Payments in Jeddah, Saudi Arabia | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, cafés, and repair hubs.',
     localContext:
@@ -3491,7 +3491,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Manama',
     city: 'Manama',
     country: 'Bahrain',
-    title: 'Crypto Payments in Manama, Bahrain | PortalPay',
+    title: 'Crypto Payments in Manama, Bahrain | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, artisan vendors, and repair kiosks.',
     localContext:
@@ -3512,7 +3512,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kuwait City',
     city: 'Kuwait City',
     country: 'Kuwait',
-    title: 'Crypto Payments in Kuwait City, Kuwait | PortalPay',
+    title: 'Crypto Payments in Kuwait City, Kuwait | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, retail, and repair hubs.',
     localContext:
@@ -3533,7 +3533,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Pune',
     city: 'Pune',
     country: 'India',
-    title: 'Crypto Payments in Pune, India | PortalPay',
+    title: 'Crypto Payments in Pune, India | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and bakeries.',
     localContext:
@@ -3554,7 +3554,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ahmedabad',
     city: 'Ahmedabad',
     country: 'India',
-    title: 'Crypto Payments in Ahmedabad, India | PortalPay',
+    title: 'Crypto Payments in Ahmedabad, India | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and artisan vendors.',
     localContext:
@@ -3575,7 +3575,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Jaipur',
     city: 'Jaipur',
     country: 'India',
-    title: 'Crypto Payments in Jaipur, India | PortalPay',
+    title: 'Crypto Payments in Jaipur, India | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan bazaars, cafés, and repair kiosks.',
     localContext:
@@ -3596,7 +3596,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Surat',
     city: 'Surat',
     country: 'India',
-    title: 'Crypto Payments in Surat, India | PortalPay',
+    title: 'Crypto Payments in Surat, India | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair hubs.',
     localContext:
@@ -3617,7 +3617,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Peshawar',
     city: 'Peshawar',
     country: 'Pakistan',
-    title: 'Crypto Payments in Peshawar, Pakistan | PortalPay',
+    title: 'Crypto Payments in Peshawar, Pakistan | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair kiosks.',
     localContext:
@@ -3638,7 +3638,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Quetta',
     city: 'Quetta',
     country: 'Pakistan',
-    title: 'Crypto Payments in Quetta, Pakistan | PortalPay',
+    title: 'Crypto Payments in Quetta, Pakistan | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair hubs.',
     localContext:
@@ -3659,7 +3659,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Faisalabad',
     city: 'Faisalabad',
     country: 'Pakistan',
-    title: 'Crypto Payments in Faisalabad, Pakistan | PortalPay',
+    title: 'Crypto Payments in Faisalabad, Pakistan | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for hardware, markets, and repair hubs.',
     localContext:
@@ -3680,7 +3680,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Multan',
     city: 'Multan',
     country: 'Pakistan',
-    title: 'Crypto Payments in Multan, Pakistan | PortalPay',
+    title: 'Crypto Payments in Multan, Pakistan | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair hubs.',
     localContext:
@@ -3701,7 +3701,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Pokhara',
     city: 'Pokhara',
     country: 'Nepal',
-    title: 'Crypto Payments in Pokhara, Nepal | PortalPay',
+    title: 'Crypto Payments in Pokhara, Nepal | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for tours, cafés, and artisan vendors.',
     localContext:
@@ -3722,7 +3722,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Sylhet',
     city: 'Sylhet',
     country: 'Bangladesh',
-    title: 'Crypto Payments in Sylhet, Bangladesh | PortalPay',
+    title: 'Crypto Payments in Sylhet, Bangladesh | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair hubs.',
     localContext:
@@ -3743,7 +3743,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Rajshahi',
     city: 'Rajshahi',
     country: 'Bangladesh',
-    title: 'Crypto Payments in Rajshahi, Bangladesh | PortalPay',
+    title: 'Crypto Payments in Rajshahi, Bangladesh | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan vendors, cafés, and repair hubs.',
     localContext:
@@ -3764,7 +3764,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mandalay',
     city: 'Mandalay',
     country: 'Myanmar',
-    title: 'Crypto Payments in Mandalay, Myanmar | PortalPay',
+    title: 'Crypto Payments in Mandalay, Myanmar | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, artisan vendors, and repair hubs.',
     localContext:
@@ -3785,7 +3785,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Luang Prabang',
     city: 'Luang Prabang',
     country: 'Laos',
-    title: 'Crypto Payments in Luang Prabang, Laos | PortalPay',
+    title: 'Crypto Payments in Luang Prabang, Laos | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, artisan markets, and repair kiosks.',
     localContext:
@@ -3806,7 +3806,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Siem Reap',
     city: 'Siem Reap',
     country: 'Cambodia',
-    title: 'Crypto Payments in Siem Reap, Cambodia | PortalPay',
+    title: 'Crypto Payments in Siem Reap, Cambodia | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for tourism, cafés, and artisan vendors.',
     localContext:
@@ -3827,7 +3827,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Medan',
     city: 'Medan',
     country: 'Indonesia',
-    title: 'Crypto Payments in Medan, Indonesia | PortalPay',
+    title: 'Crypto Payments in Medan, Indonesia | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for ports, cafés, and repair hubs.',
     localContext:
@@ -3848,7 +3848,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Makassar',
     city: 'Makassar',
     country: 'Indonesia',
-    title: 'Crypto Payments in Makassar, Indonesia | PortalPay',
+    title: 'Crypto Payments in Makassar, Indonesia | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, cafés, and repair hubs.',
     localContext:
@@ -3869,7 +3869,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Huế',
     city: 'Huế',
     country: 'Vietnam',
-    title: 'Crypto Payments in Huế, Vietnam | PortalPay',
+    title: 'Crypto Payments in Huế, Vietnam | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan vendors, cafés, and repair hubs.',
     localContext:
@@ -3890,7 +3890,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kota Kinabalu',
     city: 'Kota Kinabalu',
     country: 'Malaysia',
-    title: 'Crypto Payments in Kota Kinabalu, Malaysia | PortalPay',
+    title: 'Crypto Payments in Kota Kinabalu, Malaysia | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for ferries, cafés, and repair hubs.',
     localContext:
@@ -3911,7 +3911,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Johor Bahru',
     city: 'Johor Bahru',
     country: 'Malaysia',
-    title: 'Crypto Payments in Johor Bahru, Malaysia | PortalPay',
+    title: 'Crypto Payments in Johor Bahru, Malaysia | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, retail, and repair hubs.',
     localContext:
@@ -3932,7 +3932,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Davao City',
     city: 'Davao City',
     country: 'Philippines',
-    title: 'Crypto Payments in Davao City, Philippines | PortalPay',
+    title: 'Crypto Payments in Davao City, Philippines | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for ferries, sari-sari stores, and repair hubs.',
     localContext:
@@ -3953,7 +3953,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Monterrey',
     city: 'Monterrey',
     country: 'Mexico',
-    title: 'Crypto Payments in Monterrey, Mexico | PortalPay',
+    title: 'Crypto Payments in Monterrey, Mexico | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, hardware, and repair hubs.',
     localContext:
@@ -3974,7 +3974,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Puebla',
     city: 'Puebla',
     country: 'Mexico',
-    title: 'Crypto Payments in Puebla, Mexico | PortalPay',
+    title: 'Crypto Payments in Puebla, Mexico | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and artisan vendors.',
     localContext:
@@ -3995,7 +3995,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tijuana',
     city: 'Tijuana',
     country: 'Mexico',
-    title: 'Crypto Payments in Tijuana, Mexico | PortalPay',
+    title: 'Crypto Payments in Tijuana, Mexico | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, retail, and repair hubs.',
     localContext:
@@ -4016,7 +4016,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Arequipa',
     city: 'Arequipa',
     country: 'Peru',
-    title: 'Crypto Payments in Arequipa, Peru | PortalPay',
+    title: 'Crypto Payments in Arequipa, Peru | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan vendors, cafés, and repair hubs.',
     localContext:
@@ -4037,7 +4037,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Concepción',
     city: 'Concepción',
     country: 'Chile',
-    title: 'Crypto Payments in Concepción, Chile | PortalPay',
+    title: 'Crypto Payments in Concepción, Chile | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, markets, and repair hubs.',
     localContext:
@@ -4058,7 +4058,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mendoza',
     city: 'Mendoza',
     country: 'Argentina',
-    title: 'Crypto Payments in Mendoza, Argentina | PortalPay',
+    title: 'Crypto Payments in Mendoza, Argentina | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan vendors, cafés, and repair hubs.',
     localContext:
@@ -4079,7 +4079,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cuenca',
     city: 'Cuenca',
     country: 'Ecuador',
-    title: 'Crypto Payments in Cuenca, Ecuador | PortalPay',
+    title: 'Crypto Payments in Cuenca, Ecuador | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for artisan markets, cafés, and repair hubs.',
     localContext:
@@ -4100,7 +4100,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cochabamba',
     city: 'Cochabamba',
     country: 'Bolivia',
-    title: 'Crypto Payments in Cochabamba, Bolivia | PortalPay',
+    title: 'Crypto Payments in Cochabamba, Bolivia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -4121,7 +4121,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ciudad del Este',
     city: 'Ciudad del Este',
     country: 'Paraguay',
-    title: 'Crypto Payments in Ciudad del Este, Paraguay | PortalPay',
+    title: 'Crypto Payments in Ciudad del Este, Paraguay | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for border markets, cafés, and repair hubs.',
     localContext:
@@ -4142,7 +4142,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Nassau',
     city: 'Nassau',
     country: 'Bahamas',
-    title: 'Crypto Payments in Nassau, Bahamas | PortalPay',
+    title: 'Crypto Payments in Nassau, Bahamas | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and repair hubs.',
     localContext:
@@ -4163,7 +4163,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bridgetown',
     city: 'Bridgetown',
     country: 'Barbados',
-    title: 'Crypto Payments in Bridgetown, Barbados | PortalPay',
+    title: 'Crypto Payments in Bridgetown, Barbados | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for tourism, cafés, and repair kiosks.',
     localContext:
@@ -4184,7 +4184,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Castries',
     city: 'Castries',
     country: 'St. Lucia',
-    title: 'Crypto Payments in Castries, St. Lucia | PortalPay',
+    title: 'Crypto Payments in Castries, St. Lucia | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and repair hubs.',
     localContext:
@@ -4205,7 +4205,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: "St. George's",
     city: "St. George's",
     country: 'Grenada',
-    title: "Crypto Payments in St. George's, Grenada | PortalPay",
+    title: "Crypto Payments in St. George's, Grenada | BasaltSurge",
     metaDescription:
       'Instant-settlement QR payments for coastal services, markets, and cafés.',
     localContext:
@@ -4226,7 +4226,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Port Vila',
     city: 'Port Vila',
     country: 'Vanuatu',
-    title: 'Crypto Payments in Port Vila, Vanuatu | PortalPay',
+    title: 'Crypto Payments in Port Vila, Vanuatu | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and repair hubs.',
     localContext:
@@ -4247,7 +4247,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Honiara',
     city: 'Honiara',
     country: 'Solomon Islands',
-    title: 'Crypto Payments in Honiara, Solomon Islands | PortalPay',
+    title: 'Crypto Payments in Honiara, Solomon Islands | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, markets, and cafés.',
     localContext:
@@ -4268,7 +4268,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: "Nuku'alofa",
     city: "Nuku'alofa",
     country: 'Tonga',
-    title: "Crypto Payments in Nuku'alofa, Tonga | PortalPay",
+    title: "Crypto Payments in Nuku'alofa, Tonga | BasaltSurge",
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and repair hubs.',
     localContext:
@@ -4289,7 +4289,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Port Louis',
     city: 'Port Louis',
     country: 'Mauritius',
-    title: 'Crypto Payments in Port Louis, Mauritius | PortalPay',
+    title: 'Crypto Payments in Port Louis, Mauritius | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, cafés, and artisan vendors.',
     localContext:
@@ -4310,7 +4310,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Malé',
     city: 'Malé',
     country: 'Maldives',
-    title: 'Crypto Payments in Malé, Maldives | PortalPay',
+    title: 'Crypto Payments in Malé, Maldives | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and repair hubs.',
     localContext:
@@ -4331,7 +4331,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'San Juan',
     city: 'San Juan',
     country: 'Puerto Rico',
-    title: 'Crypto Payments in San Juan, Puerto Rico | PortalPay',
+    title: 'Crypto Payments in San Juan, Puerto Rico | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, cafés, and artisan vendors.',
     localContext:
@@ -4352,7 +4352,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Belize City',
     city: 'Belize City',
     country: 'Belize',
-    title: 'Crypto Payments in Belize City, Belize | PortalPay',
+    title: 'Crypto Payments in Belize City, Belize | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, markets, and cafés.',
     localContext:
@@ -4372,7 +4372,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ibadan',
     city: 'Ibadan',
     country: 'Nigeria',
-    title: 'Crypto Payments in Ibadan, Nigeria | PortalPay',
+    title: 'Crypto Payments in Ibadan, Nigeria | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair hubs in Ibadan.',
     localContext:
@@ -4393,7 +4393,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Benin City',
     city: 'Benin City',
     country: 'Nigeria',
-    title: 'Crypto Payments in Benin City, Nigeria | PortalPay',
+    title: 'Crypto Payments in Benin City, Nigeria | BasaltSurge',
     metaDescription:
       'Low-fee QR payments for markets, cafés, and repair hubs in Benin City.',
     localContext:
@@ -4414,7 +4414,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Aba',
     city: 'Aba',
     country: 'Nigeria',
-    title: 'Crypto Payments in Aba, Nigeria | PortalPay',
+    title: 'Crypto Payments in Aba, Nigeria | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for hardware, markets, and repair hubs.',
     localContext:
@@ -4435,7 +4435,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Onitsha',
     city: 'Onitsha',
     country: 'Nigeria',
-    title: 'Crypto Payments in Onitsha, Nigeria | PortalPay',
+    title: 'Crypto Payments in Onitsha, Nigeria | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for market vendors, cafés, and repair kiosks.',
     localContext:
@@ -4456,7 +4456,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Eldoret',
     city: 'Eldoret',
     country: 'Kenya',
-    title: 'Crypto Payments in Eldoret, Kenya | PortalPay',
+    title: 'Crypto Payments in Eldoret, Kenya | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -4477,7 +4477,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Gulu',
     city: 'Gulu',
     country: 'Uganda',
-    title: 'Crypto Payments in Gulu, Uganda | PortalPay',
+    title: 'Crypto Payments in Gulu, Uganda | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair kiosks.',
     localContext:
@@ -4498,7 +4498,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mwanza',
     city: 'Mwanza',
     country: 'Tanzania',
-    title: 'Crypto Payments in Mwanza, Tanzania | PortalPay',
+    title: 'Crypto Payments in Mwanza, Tanzania | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for lake ferries, markets, and cafés.',
     localContext:
@@ -4519,7 +4519,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ndola',
     city: 'Ndola',
     country: 'Zambia',
-    title: 'Crypto Payments in Ndola, Zambia | PortalPay',
+    title: 'Crypto Payments in Ndola, Zambia | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for hardware, markets, and cafés.',
     localContext:
@@ -4540,7 +4540,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bulawayo',
     city: 'Bulawayo',
     country: 'Zimbabwe',
-    title: 'Crypto Payments in Bulawayo, Zimbabwe | PortalPay',
+    title: 'Crypto Payments in Bulawayo, Zimbabwe | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan vendors, cafés, and repair hubs.',
     localContext:
@@ -4561,7 +4561,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Pretoria',
     city: 'Pretoria',
     country: 'South Africa',
-    title: 'Crypto Payments in Pretoria, South Africa | PortalPay',
+    title: 'Crypto Payments in Pretoria, South Africa | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, repair hubs, and retail corridors.',
     localContext:
@@ -4582,7 +4582,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Gqeberha',
     city: 'Gqeberha',
     country: 'South Africa',
-    title: 'Crypto Payments in Gqeberha, South Africa | PortalPay',
+    title: 'Crypto Payments in Gqeberha, South Africa | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and repair hubs.',
     localContext:
@@ -4603,7 +4603,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bloemfontein',
     city: 'Bloemfontein',
     country: 'South Africa',
-    title: 'Crypto Payments in Bloemfontein, South Africa | PortalPay',
+    title: 'Crypto Payments in Bloemfontein, South Africa | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, repair hubs, and artisan vendors.',
     localContext:
@@ -4624,7 +4624,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Lucknow',
     city: 'Lucknow',
     country: 'India',
-    title: 'Crypto Payments in Lucknow, India | PortalPay',
+    title: 'Crypto Payments in Lucknow, India | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -4645,7 +4645,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kanpur',
     city: 'Kanpur',
     country: 'India',
-    title: 'Crypto Payments in Kanpur, India | PortalPay',
+    title: 'Crypto Payments in Kanpur, India | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for hardware, markets, and cafés.',
     localContext:
@@ -4666,7 +4666,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Indore',
     city: 'Indore',
     country: 'India',
-    title: 'Crypto Payments in Indore, India | PortalPay',
+    title: 'Crypto Payments in Indore, India | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, markets, and repair hubs.',
     localContext:
@@ -4687,7 +4687,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Nagpur',
     city: 'Nagpur',
     country: 'India',
-    title: 'Crypto Payments in Nagpur, India | PortalPay',
+    title: 'Crypto Payments in Nagpur, India | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for hardware, markets, and cafés.',
     localContext:
@@ -4708,7 +4708,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Coimbatore',
     city: 'Coimbatore',
     country: 'India',
-    title: 'Crypto Payments in Coimbatore, India | PortalPay',
+    title: 'Crypto Payments in Coimbatore, India | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and hardware.',
     localContext:
@@ -4729,7 +4729,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kochi',
     city: 'Kochi',
     country: 'India',
-    title: 'Crypto Payments in Kochi, India | PortalPay',
+    title: 'Crypto Payments in Kochi, India | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for backwater ferries, cafés, and repair hubs.',
     localContext:
@@ -4750,7 +4750,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Visakhapatnam',
     city: 'Visakhapatnam',
     country: 'India',
-    title: 'Crypto Payments in Visakhapatnam, India | PortalPay',
+    title: 'Crypto Payments in Visakhapatnam, India | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for ports, cafés, and repair hubs.',
     localContext:
@@ -4771,7 +4771,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Khulna',
     city: 'Khulna',
     country: 'Bangladesh',
-    title: 'Crypto Payments in Khulna, Bangladesh | PortalPay',
+    title: 'Crypto Payments in Khulna, Bangladesh | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -4792,7 +4792,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cần Thơ',
     city: 'Cần Thơ',
     country: 'Vietnam',
-    title: 'Crypto Payments in Cần Thơ, Vietnam | PortalPay',
+    title: 'Crypto Payments in Cần Thơ, Vietnam | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for Mekong ferries, cafés, and repair hubs.',
     localContext:
@@ -4813,7 +4813,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Hải Phòng',
     city: 'Hải Phòng',
     country: 'Vietnam',
-    title: 'Crypto Payments in Hải Phòng, Vietnam | PortalPay',
+    title: 'Crypto Payments in Hải Phòng, Vietnam | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for ports, cafés, and repair hubs.',
     localContext:
@@ -4834,7 +4834,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Iloilo City',
     city: 'Iloilo City',
     country: 'Philippines',
-    title: 'Crypto Payments in Iloilo City, Philippines | PortalPay',
+    title: 'Crypto Payments in Iloilo City, Philippines | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for ferries, sari-sari stores, and repair hubs.',
     localContext:
@@ -4855,7 +4855,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cagayan de Oro',
     city: 'Cagayan de Oro',
     country: 'Philippines',
-    title: 'Crypto Payments in Cagayan de Oro, Philippines | PortalPay',
+    title: 'Crypto Payments in Cagayan de Oro, Philippines | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for ferries, markets, and cafés.',
     localContext:
@@ -4876,7 +4876,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Semarang',
     city: 'Semarang',
     country: 'Indonesia',
-    title: 'Crypto Payments in Semarang, Indonesia | PortalPay',
+    title: 'Crypto Payments in Semarang, Indonesia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for ports, cafés, and repair hubs.',
     localContext:
@@ -4897,7 +4897,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Palembang',
     city: 'Palembang',
     country: 'Indonesia',
-    title: 'Crypto Payments in Palembang, Indonesia | PortalPay',
+    title: 'Crypto Payments in Palembang, Indonesia | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for river ferries, markets, and cafés.',
     localContext:
@@ -4918,7 +4918,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Balikpapan',
     city: 'Balikpapan',
     country: 'Indonesia',
-    title: 'Crypto Payments in Balikpapan, Indonesia | PortalPay',
+    title: 'Crypto Payments in Balikpapan, Indonesia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for ports, cafés, and repair hubs.',
     localContext:
@@ -4939,7 +4939,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mérida',
     city: 'Mérida',
     country: 'Mexico',
-    title: 'Crypto Payments in Mérida, Mexico | PortalPay',
+    title: 'Crypto Payments in Mérida, Mexico | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for artisan vendors, cafés, and repair hubs.',
     localContext:
@@ -4960,7 +4960,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Oaxaca',
     city: 'Oaxaca',
     country: 'Mexico',
-    title: 'Crypto Payments in Oaxaca, Mexico | PortalPay',
+    title: 'Crypto Payments in Oaxaca, Mexico | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan markets, cafés, and repair hubs.',
     localContext:
@@ -4981,7 +4981,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cusco',
     city: 'Cusco',
     country: 'Peru',
-    title: 'Crypto Payments in Cusco, Peru | PortalPay',
+    title: 'Crypto Payments in Cusco, Peru | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for tours, artisan vendors, and cafés.',
     localContext:
@@ -5002,7 +5002,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'El Alto',
     city: 'El Alto',
     country: 'Bolivia',
-    title: 'Crypto Payments in El Alto, Bolivia | PortalPay',
+    title: 'Crypto Payments in El Alto, Bolivia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for high-altitude markets, cafés, and repair hubs.',
     localContext:
@@ -5023,7 +5023,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Antofagasta',
     city: 'Antofagasta',
     country: 'Chile',
-    title: 'Crypto Payments in Antofagasta, Chile | PortalPay',
+    title: 'Crypto Payments in Antofagasta, Chile | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for ports, cafés, and repair hubs.',
     localContext:
@@ -5044,7 +5044,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Batumi',
     city: 'Batumi',
     country: 'Georgia',
-    title: 'Crypto Payments in Batumi, Georgia | PortalPay',
+    title: 'Crypto Payments in Batumi, Georgia | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and repair hubs.',
     localContext:
@@ -5065,7 +5065,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Lviv',
     city: 'Lviv',
     country: 'Ukraine',
-    title: 'Crypto Payments in Lviv, Ukraine | PortalPay',
+    title: 'Crypto Payments in Lviv, Ukraine | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, artisan vendors, and repair hubs.',
     localContext:
@@ -5086,7 +5086,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tangier',
     city: 'Tangier',
     country: 'Morocco',
-    title: 'Crypto Payments in Tangier, Morocco | PortalPay',
+    title: 'Crypto Payments in Tangier, Morocco | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and artisan vendors.',
     localContext:
@@ -5107,7 +5107,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Oran',
     city: 'Oran',
     country: 'Algeria',
-    title: 'Crypto Payments in Oran, Algeria | PortalPay',
+    title: 'Crypto Payments in Oran, Algeria | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for ports, cafés, and repair hubs.',
     localContext:
@@ -5128,7 +5128,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Sfax',
     city: 'Sfax',
     country: 'Tunisia',
-    title: 'Crypto Payments in Sfax, Tunisia | PortalPay',
+    title: 'Crypto Payments in Sfax, Tunisia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -5150,7 +5150,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'New York',
     city: 'New York',
     country: 'United States',
-    title: 'Crypto Payments in New York, USA | PortalPay',
+    title: 'Crypto Payments in New York, USA | BasaltSurge',
     metaDescription:
       'Ultra-low fees for NYC cafés, repair shops, and artisan vendors with instant settlement.',
     localContext:
@@ -5171,7 +5171,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Los Angeles',
     city: 'Los Angeles',
     country: 'United States',
-    title: 'Crypto Payments in Los Angeles, USA | PortalPay',
+    title: 'Crypto Payments in Los Angeles, USA | BasaltSurge',
     metaDescription:
       'Save on payment fees for LA cafés, repair shops, and street vendors with instant crypto settlement.',
     localContext:
@@ -5192,7 +5192,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Chicago',
     city: 'Chicago',
     country: 'United States',
-    title: 'Crypto Payments in Chicago, USA | PortalPay',
+    title: 'Crypto Payments in Chicago, USA | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Chicago cafés, repair shops, and neighborhood stores.',
     localContext:
@@ -5213,7 +5213,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Houston',
     city: 'Houston',
     country: 'United States',
-    title: 'Crypto Payments in Houston, USA | PortalPay',
+    title: 'Crypto Payments in Houston, USA | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Houston cafés, repair shops, and retail.',
     localContext:
@@ -5234,7 +5234,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Toronto',
     city: 'Toronto',
     country: 'Canada',
-    title: 'Crypto Payments in Toronto, Canada | PortalPay',
+    title: 'Crypto Payments in Toronto, Canada | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Toronto cafés, repair shops, and neighborhood stores.',
     localContext:
@@ -5255,7 +5255,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Vancouver',
     city: 'Vancouver',
     country: 'Canada',
-    title: 'Crypto Payments in Vancouver, Canada | PortalPay',
+    title: 'Crypto Payments in Vancouver, Canada | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Vancouver cafés, repair shops, and coastal services.',
     localContext:
@@ -5276,7 +5276,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Montreal',
     city: 'Montreal',
     country: 'Canada',
-    title: 'Crypto Payments in Montreal, Canada | PortalPay',
+    title: 'Crypto Payments in Montreal, Canada | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Montreal cafés, bakeries, and repair shops.',
     localContext:
@@ -5298,7 +5298,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'San Francisco',
     city: 'San Francisco',
     country: 'United States',
-    title: 'Crypto Payments in San Francisco, USA | PortalPay',
+    title: 'Crypto Payments in San Francisco, USA | BasaltSurge',
     metaDescription:
       'Instant settlement and low-fee crypto payments for SF cafés, repair shops, and startups.',
     localContext:
@@ -5318,7 +5318,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'San Diego',
     city: 'San Diego',
     country: 'United States',
-    title: 'Crypto Payments in San Diego, USA | PortalPay',
+    title: 'Crypto Payments in San Diego, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for coastal cafés, repair shops, and food trucks.',
     localContext:
@@ -5338,7 +5338,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'San Jose',
     city: 'San Jose',
     country: 'United States',
-    title: 'Crypto Payments in San Jose, USA | PortalPay',
+    title: 'Crypto Payments in San Jose, USA | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Silicon Valley cafés, repair hubs, and freelancers.',
     localContext:
@@ -5358,7 +5358,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Seattle',
     city: 'Seattle',
     country: 'United States',
-    title: 'Crypto Payments in Seattle, USA | PortalPay',
+    title: 'Crypto Payments in Seattle, USA | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for café culture, ferries, and repair hubs.',
     localContext:
@@ -5378,7 +5378,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Boston',
     city: 'Boston',
     country: 'United States',
-    title: 'Crypto Payments in Boston, USA | PortalPay',
+    title: 'Crypto Payments in Boston, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for student cafés, bakeries, and repair shops.',
     localContext:
@@ -5398,7 +5398,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Washington, DC',
     city: 'Washington',
     country: 'United States',
-    title: 'Crypto Payments in Washington, DC, USA | PortalPay',
+    title: 'Crypto Payments in Washington, DC, USA | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for DC cafés, freelancers, and repair hubs with instant settlement.',
     localContext:
@@ -5418,7 +5418,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Philadelphia',
     city: 'Philadelphia',
     country: 'United States',
-    title: 'Crypto Payments in Philadelphia, USA | PortalPay',
+    title: 'Crypto Payments in Philadelphia, USA | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, food trucks, and repair shops across Philly.',
     localContext:
@@ -5438,7 +5438,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Phoenix',
     city: 'Phoenix',
     country: 'United States',
-    title: 'Crypto Payments in Phoenix, USA | PortalPay',
+    title: 'Crypto Payments in Phoenix, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for auto repair, cafés, and contractors.',
     localContext:
@@ -5458,7 +5458,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'San Antonio',
     city: 'San Antonio',
     country: 'United States',
-    title: 'Crypto Payments in San Antonio, USA | PortalPay',
+    title: 'Crypto Payments in San Antonio, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, bakeries, and home services across San Antonio.',
     localContext:
@@ -5478,7 +5478,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Dallas',
     city: 'Dallas',
     country: 'United States',
-    title: 'Crypto Payments in Dallas, USA | PortalPay',
+    title: 'Crypto Payments in Dallas, USA | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for cafés, repair hubs, and blue-collar services.',
     localContext:
@@ -5498,7 +5498,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Austin',
     city: 'Austin',
     country: 'United States',
-    title: 'Crypto Payments in Austin, USA | PortalPay',
+    title: 'Crypto Payments in Austin, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for food trucks, cafés, and freelancers in Austin.',
     localContext:
@@ -5518,7 +5518,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Miami',
     city: 'Miami',
     country: 'United States',
-    title: 'Crypto Payments in Miami, USA | PortalPay',
+    title: 'Crypto Payments in Miami, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, travel, and repair hubs in Miami.',
     localContext:
@@ -5538,7 +5538,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Orlando',
     city: 'Orlando',
     country: 'United States',
-    title: 'Crypto Payments in Orlando, USA | PortalPay',
+    title: 'Crypto Payments in Orlando, USA | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for tourism, cafés, and timeshares in Orlando.',
     localContext:
@@ -5558,7 +5558,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tampa',
     city: 'Tampa',
     country: 'United States',
-    title: 'Crypto Payments in Tampa, USA | PortalPay',
+    title: 'Crypto Payments in Tampa, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for coastal services, cafés, and repair shops.',
     localContext:
@@ -5578,7 +5578,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Atlanta',
     city: 'Atlanta',
     country: 'United States',
-    title: 'Crypto Payments in Atlanta, USA | PortalPay',
+    title: 'Crypto Payments in Atlanta, USA | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, contractors, and repair hubs.',
     localContext:
@@ -5598,7 +5598,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Denver',
     city: 'Denver',
     country: 'United States',
-    title: 'Crypto Payments in Denver, USA | PortalPay',
+    title: 'Crypto Payments in Denver, USA | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for cafés, cannabis retailers, and repair hubs.',
     localContext:
@@ -5618,7 +5618,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Las Vegas',
     city: 'Las Vegas',
     country: 'United States',
-    title: 'Crypto Payments in Las Vegas, USA | PortalPay',
+    title: 'Crypto Payments in Las Vegas, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for casinos, nightlife, cafés, and repair hubs in Las Vegas.',
     localContext:
@@ -5638,7 +5638,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Portland',
     city: 'Portland',
     country: 'United States',
-    title: 'Crypto Payments in Portland, USA | PortalPay',
+    title: 'Crypto Payments in Portland, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, artisans, and repair shops.',
     localContext:
@@ -5658,7 +5658,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Detroit',
     city: 'Detroit',
     country: 'United States',
-    title: 'Crypto Payments in Detroit, USA | PortalPay',
+    title: 'Crypto Payments in Detroit, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for auto repair, hardware, and cafés in Detroit.',
     localContext:
@@ -5678,7 +5678,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Minneapolis',
     city: 'Minneapolis',
     country: 'United States',
-    title: 'Crypto Payments in Minneapolis, USA | PortalPay',
+    title: 'Crypto Payments in Minneapolis, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, bakeries, and contractors.',
     localContext:
@@ -5698,7 +5698,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Charlotte',
     city: 'Charlotte',
     country: 'United States',
-    title: 'Crypto Payments in Charlotte, USA | PortalPay',
+    title: 'Crypto Payments in Charlotte, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, repair hubs, and home services in Charlotte.',
     localContext:
@@ -5718,7 +5718,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Raleigh',
     city: 'Raleigh',
     country: 'United States',
-    title: 'Crypto Payments in Raleigh, USA | PortalPay',
+    title: 'Crypto Payments in Raleigh, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for research triangle cafés and repair shops.',
     localContext:
@@ -5738,7 +5738,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Nashville',
     city: 'Nashville',
     country: 'United States',
-    title: 'Crypto Payments in Nashville, USA | PortalPay',
+    title: 'Crypto Payments in Nashville, USA | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, music venues, and repair hubs.',
     localContext:
@@ -5758,7 +5758,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'New Orleans',
     city: 'New Orleans',
     country: 'United States',
-    title: 'Crypto Payments in New Orleans, USA | PortalPay',
+    title: 'Crypto Payments in New Orleans, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for tourism, cafés, and repair shops.',
     localContext:
@@ -5778,7 +5778,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Pittsburgh',
     city: 'Pittsburgh',
     country: 'United States',
-    title: 'Crypto Payments in Pittsburgh, USA | PortalPay',
+    title: 'Crypto Payments in Pittsburgh, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, bakeries, and hardware in Pittsburgh.',
     localContext:
@@ -5798,7 +5798,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cleveland',
     city: 'Cleveland',
     country: 'United States',
-    title: 'Crypto Payments in Cleveland, USA | PortalPay',
+    title: 'Crypto Payments in Cleveland, USA | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for cafés, auto repair, and home services.',
     localContext:
@@ -5818,7 +5818,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Columbus',
     city: 'Columbus',
     country: 'United States',
-    title: 'Crypto Payments in Columbus, USA | PortalPay',
+    title: 'Crypto Payments in Columbus, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for student cafés, bakeries, and repair hubs.',
     localContext:
@@ -5838,7 +5838,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Indianapolis',
     city: 'Indianapolis',
     country: 'United States',
-    title: 'Crypto Payments in Indianapolis, USA | PortalPay',
+    title: 'Crypto Payments in Indianapolis, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, contractors, and repair hubs.',
     localContext:
@@ -5858,7 +5858,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kansas City',
     city: 'Kansas City',
     country: 'United States',
-    title: 'Crypto Payments in Kansas City, USA | PortalPay',
+    title: 'Crypto Payments in Kansas City, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, BBQ, and repair shops.',
     localContext:
@@ -5878,7 +5878,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'St. Louis',
     city: 'St. Louis',
     country: 'United States',
-    title: 'Crypto Payments in St. Louis, USA | PortalPay',
+    title: 'Crypto Payments in St. Louis, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, repair hubs, and home services.',
     localContext:
@@ -5898,7 +5898,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cincinnati',
     city: 'Cincinnati',
     country: 'United States',
-    title: 'Crypto Payments in Cincinnati, USA | PortalPay',
+    title: 'Crypto Payments in Cincinnati, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, bakeries, and repair shops.',
     localContext:
@@ -5918,7 +5918,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Milwaukee',
     city: 'Milwaukee',
     country: 'United States',
-    title: 'Crypto Payments in Milwaukee, USA | PortalPay',
+    title: 'Crypto Payments in Milwaukee, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, bakeries, and repair hubs in Milwaukee.',
     localContext:
@@ -5938,7 +5938,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Salt Lake City',
     city: 'Salt Lake City',
     country: 'United States',
-    title: 'Crypto Payments in Salt Lake City, USA | PortalPay',
+    title: 'Crypto Payments in Salt Lake City, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, outdoor retail, and repair hubs.',
     localContext:
@@ -5958,7 +5958,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Sacramento',
     city: 'Sacramento',
     country: 'United States',
-    title: 'Crypto Payments in Sacramento, USA | PortalPay',
+    title: 'Crypto Payments in Sacramento, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, contractors, and repair shops.',
     localContext:
@@ -5978,7 +5978,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Baltimore',
     city: 'Baltimore',
     country: 'United States',
-    title: 'Crypto Payments in Baltimore, USA | PortalPay',
+    title: 'Crypto Payments in Baltimore, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for harbor services, cafés, and repair hubs.',
     localContext:
@@ -5998,7 +5998,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Jacksonville',
     city: 'Jacksonville',
     country: 'United States',
-    title: 'Crypto Payments in Jacksonville, USA | PortalPay',
+    title: 'Crypto Payments in Jacksonville, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for coastal services, cafés, and repair shops.',
     localContext:
@@ -6020,7 +6020,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Albuquerque',
     city: 'Albuquerque',
     country: 'United States',
-    title: 'Crypto Payments in Albuquerque, USA | PortalPay',
+    title: 'Crypto Payments in Albuquerque, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, food trucks, and repair hubs across Albuquerque.',
     localContext:
@@ -6040,7 +6040,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Santa Fe',
     city: 'Santa Fe',
     country: 'United States',
-    title: 'Crypto Payments in Santa Fe, USA | PortalPay',
+    title: 'Crypto Payments in Santa Fe, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan markets, cafés, and galleries.',
     localContext:
@@ -6060,7 +6060,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Las Cruces',
     city: 'Las Cruces',
     country: 'United States',
-    title: 'Crypto Payments in Las Cruces, USA | PortalPay',
+    title: 'Crypto Payments in Las Cruces, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for markets, cafés, and repair hubs in Las Cruces.',
     localContext:
@@ -6080,7 +6080,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Rio Rancho',
     city: 'Rio Rancho',
     country: 'United States',
-    title: 'Crypto Payments in Rio Rancho, USA | PortalPay',
+    title: 'Crypto Payments in Rio Rancho, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, contractors, and repair shops.',
     localContext:
@@ -6100,7 +6100,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tucson',
     city: 'Tucson',
     country: 'United States',
-    title: 'Crypto Payments in Tucson, USA | PortalPay',
+    title: 'Crypto Payments in Tucson, USA | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cafés, food trucks, and repair hubs.',
     localContext:
@@ -6120,7 +6120,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mesa',
     city: 'Mesa',
     country: 'United States',
-    title: 'Crypto Payments in Mesa, USA | PortalPay',
+    title: 'Crypto Payments in Mesa, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, contractors, and repair hubs.',
     localContext:
@@ -6140,7 +6140,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Scottsdale',
     city: 'Scottsdale',
     country: 'United States',
-    title: 'Crypto Payments in Scottsdale, USA | PortalPay',
+    title: 'Crypto Payments in Scottsdale, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, retail, and freelancers in Scottsdale.',
     localContext:
@@ -6160,7 +6160,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tempe',
     city: 'Tempe',
     country: 'United States',
-    title: 'Crypto Payments in Tempe, USA | PortalPay',
+    title: 'Crypto Payments in Tempe, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for student cafés, food trucks, and repair hubs.',
     localContext:
@@ -6180,7 +6180,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Chandler',
     city: 'Chandler',
     country: 'United States',
-    title: 'Crypto Payments in Chandler, USA | PortalPay',
+    title: 'Crypto Payments in Chandler, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, repair hubs, and contractors.',
     localContext:
@@ -6200,7 +6200,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Glendale',
     city: 'Glendale',
     country: 'United States',
-    title: 'Crypto Payments in Glendale, USA | PortalPay',
+    title: 'Crypto Payments in Glendale, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, auto repair, and home services.',
     localContext:
@@ -6220,7 +6220,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Flagstaff',
     city: 'Flagstaff',
     country: 'United States',
-    title: 'Crypto Payments in Flagstaff, USA | PortalPay',
+    title: 'Crypto Payments in Flagstaff, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for tourism, cafés, and repair hubs in Flagstaff.',
     localContext:
@@ -6240,7 +6240,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Yuma',
     city: 'Yuma',
     country: 'United States',
-    title: 'Crypto Payments in Yuma, USA | PortalPay',
+    title: 'Crypto Payments in Yuma, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, auto repair, and street vendors.',
     localContext:
@@ -6260,7 +6260,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'El Paso',
     city: 'El Paso',
     country: 'United States',
-    title: 'Crypto Payments in El Paso, USA | PortalPay',
+    title: 'Crypto Payments in El Paso, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for border retail, cafés, and repair hubs in El Paso.',
     localContext:
@@ -6280,7 +6280,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Reno',
     city: 'Reno',
     country: 'United States',
-    title: 'Crypto Payments in Reno, USA | PortalPay',
+    title: 'Crypto Payments in Reno, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for casinos, cafés, and repair hubs.',
     localContext:
@@ -6300,7 +6300,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Henderson',
     city: 'Henderson',
     country: 'United States',
-    title: 'Crypto Payments in Henderson, USA | PortalPay',
+    title: 'Crypto Payments in Henderson, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, retail, and repair hubs in Henderson.',
     localContext:
@@ -6320,7 +6320,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'North Las Vegas',
     city: 'North Las Vegas',
     country: 'United States',
-    title: 'Crypto Payments in North Las Vegas, USA | PortalPay',
+    title: 'Crypto Payments in North Las Vegas, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and home services.',
     localContext:
@@ -6340,7 +6340,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Provo',
     city: 'Provo',
     country: 'United States',
-    title: 'Crypto Payments in Provo, USA | PortalPay',
+    title: 'Crypto Payments in Provo, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, bakeries, and freelancers in Provo.',
     localContext:
@@ -6360,7 +6360,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ogden',
     city: 'Ogden',
     country: 'United States',
-    title: 'Crypto Payments in Ogden, USA | PortalPay',
+    title: 'Crypto Payments in Ogden, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, hardware, and repair hubs.',
     localContext:
@@ -6380,7 +6380,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'St. George',
     city: 'St. George',
     country: 'United States',
-    title: 'Crypto Payments in St. George, USA | PortalPay',
+    title: 'Crypto Payments in St. George, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for tourism, cafés, and repair hubs in St. George.',
     localContext:
@@ -6400,7 +6400,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Colorado Springs',
     city: 'Colorado Springs',
     country: 'United States',
-    title: 'Crypto Payments in Colorado Springs, USA | PortalPay',
+    title: 'Crypto Payments in Colorado Springs, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, hardware, and repair hubs.',
     localContext:
@@ -6420,7 +6420,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Fort Collins',
     city: 'Fort Collins',
     country: 'United States',
-    title: 'Crypto Payments in Fort Collins, USA | PortalPay',
+    title: 'Crypto Payments in Fort Collins, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, bakeries, and repair hubs in Fort Collins.',
     localContext:
@@ -6440,7 +6440,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Boulder',
     city: 'Boulder',
     country: 'United States',
-    title: 'Crypto Payments in Boulder, USA | PortalPay',
+    title: 'Crypto Payments in Boulder, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, galleries, and freelancers.',
     localContext:
@@ -6460,7 +6460,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Amarillo',
     city: 'Amarillo',
     country: 'United States',
-    title: 'Crypto Payments in Amarillo, USA | PortalPay',
+    title: 'Crypto Payments in Amarillo, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, auto repair, and hardware in Amarillo.',
     localContext:
@@ -6480,7 +6480,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Midland',
     city: 'Midland',
     country: 'United States',
-    title: 'Crypto Payments in Midland, USA | PortalPay',
+    title: 'Crypto Payments in Midland, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, hardware, and repair hubs.',
     localContext:
@@ -6500,7 +6500,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Odessa',
     city: 'Odessa',
     country: 'United States',
-    title: 'Crypto Payments in Odessa, USA | PortalPay',
+    title: 'Crypto Payments in Odessa, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, hardware, and repair hubs in Odessa.',
     localContext:
@@ -6520,7 +6520,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Lubbock',
     city: 'Lubbock',
     country: 'United States',
-    title: 'Crypto Payments in Lubbock, USA | PortalPay',
+    title: 'Crypto Payments in Lubbock, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, food trucks, and repair hubs.',
     localContext:
@@ -6540,7 +6540,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Palm Springs',
     city: 'Palm Springs',
     country: 'United States',
-    title: 'Crypto Payments in Palm Springs, USA | PortalPay',
+    title: 'Crypto Payments in Palm Springs, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for tourism, cafés, and galleries in Palm Springs.',
     localContext:
@@ -6562,7 +6562,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Calgary',
     city: 'Calgary',
     country: 'Canada',
-    title: 'Crypto Payments in Calgary, Canada | PortalPay',
+    title: 'Crypto Payments in Calgary, Canada | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, repair hubs, and contractors in Calgary.',
     localContext:
@@ -6582,7 +6582,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Edmonton',
     city: 'Edmonton',
     country: 'Canada',
-    title: 'Crypto Payments in Edmonton, Canada | PortalPay',
+    title: 'Crypto Payments in Edmonton, Canada | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and home services.',
     localContext:
@@ -6602,7 +6602,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ottawa',
     city: 'Ottawa',
     country: 'Canada',
-    title: 'Crypto Payments in Ottawa, Canada | PortalPay',
+    title: 'Crypto Payments in Ottawa, Canada | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, bakeries, and repair shops across Ottawa.',
     localContext:
@@ -6622,7 +6622,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Quebec City',
     city: 'Quebec City',
     country: 'Canada',
-    title: 'Crypto Payments in Quebec City, Canada | PortalPay',
+    title: 'Crypto Payments in Quebec City, Canada | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, bakeries, and tourism.',
     localContext:
@@ -6642,7 +6642,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Winnipeg',
     city: 'Winnipeg',
     country: 'Canada',
-    title: 'Crypto Payments in Winnipeg, Canada | PortalPay',
+    title: 'Crypto Payments in Winnipeg, Canada | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, repair hubs, and contractors.',
     localContext:
@@ -6662,7 +6662,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Hamilton',
     city: 'Hamilton',
     country: 'Canada',
-    title: 'Crypto Payments in Hamilton, Canada | PortalPay',
+    title: 'Crypto Payments in Hamilton, Canada | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, bakeries, and repair shops.',
     localContext:
@@ -6682,7 +6682,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mississauga',
     city: 'Mississauga',
     country: 'Canada',
-    title: 'Crypto Payments in Mississauga, Canada | PortalPay',
+    title: 'Crypto Payments in Mississauga, Canada | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, repair hubs, and contractors.',
     localContext:
@@ -6702,7 +6702,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Brampton',
     city: 'Brampton',
     country: 'Canada',
-    title: 'Crypto Payments in Brampton, Canada | PortalPay',
+    title: 'Crypto Payments in Brampton, Canada | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, bakeries, and home services.',
     localContext:
@@ -6722,7 +6722,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Surrey',
     city: 'Surrey',
     country: 'Canada',
-    title: 'Crypto Payments in Surrey, Canada | PortalPay',
+    title: 'Crypto Payments in Surrey, Canada | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, contractors, and repair hubs in Surrey.',
     localContext:
@@ -6742,7 +6742,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Halifax',
     city: 'Halifax',
     country: 'Canada',
-    title: 'Crypto Payments in Halifax, Canada | PortalPay',
+    title: 'Crypto Payments in Halifax, Canada | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for coastal services, cafés, and repair hubs.',
     localContext:
@@ -6762,7 +6762,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Victoria',
     city: 'Victoria',
     country: 'Canada',
-    title: 'Crypto Payments in Victoria, Canada | PortalPay',
+    title: 'Crypto Payments in Victoria, Canada | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, ferries, and repair shops in Victoria.',
     localContext:
@@ -6782,7 +6782,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Saskatoon',
     city: 'Saskatoon',
     country: 'Canada',
-    title: 'Crypto Payments in Saskatoon, Canada | PortalPay',
+    title: 'Crypto Payments in Saskatoon, Canada | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and contractors.',
     localContext:
@@ -6802,7 +6802,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Regina',
     city: 'Regina',
     country: 'Canada',
-    title: 'Crypto Payments in Regina, Canada | PortalPay',
+    title: 'Crypto Payments in Regina, Canada | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, repair shops, and contractors.',
     localContext:
@@ -6822,7 +6822,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Laval',
     city: 'Laval',
     country: 'Canada',
-    title: 'Crypto Payments in Laval, Canada | PortalPay',
+    title: 'Crypto Payments in Laval, Canada | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, bakeries, and repair hubs.',
     localContext:
@@ -6842,7 +6842,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Gatineau',
     city: 'Gatineau',
     country: 'Canada',
-    title: 'Crypto Payments in Gatineau, Canada | PortalPay',
+    title: 'Crypto Payments in Gatineau, Canada | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, bakeries, and repair shops.',
     localContext:
@@ -6862,7 +6862,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kitchener–Waterloo',
     city: 'Kitchener–Waterloo',
     country: 'Canada',
-    title: 'Crypto Payments in Kitchener–Waterloo, Canada | PortalPay',
+    title: 'Crypto Payments in Kitchener–Waterloo, Canada | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and freelancers.',
     localContext:
@@ -6882,7 +6882,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'London',
     city: 'London',
     country: 'Canada',
-    title: 'Crypto Payments in London, Canada | PortalPay',
+    title: 'Crypto Payments in London, Canada | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, bakeries, and repair shops in London, Ontario.',
     localContext:
@@ -6904,7 +6904,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cancún',
     city: 'Cancún',
     country: 'Mexico',
-    title: 'Crypto Payments in Cancún, Mexico | PortalPay',
+    title: 'Crypto Payments in Cancún, Mexico | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for tourism, cafés, and timeshares in Cancún.',
     localContext:
@@ -6924,7 +6924,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Playa del Carmen',
     city: 'Playa del Carmen',
     country: 'Mexico',
-    title: 'Crypto Payments in Playa del Carmen, Mexico | PortalPay',
+    title: 'Crypto Payments in Playa del Carmen, Mexico | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for tourism, cafés, and artisan vendors.',
     localContext:
@@ -6944,7 +6944,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'León',
     city: 'León',
     country: 'Mexico',
-    title: 'Crypto Payments in León, Mexico | PortalPay',
+    title: 'Crypto Payments in León, Mexico | BasaltSurge',
     metaDescription:
       'Instant settlement for leather markets, cafés, and repair hubs in León.',
     localContext:
@@ -6964,7 +6964,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Querétaro',
     city: 'Querétaro',
     country: 'Mexico',
-    title: 'Crypto Payments in Querétaro, Mexico | PortalPay',
+    title: 'Crypto Payments in Querétaro, Mexico | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and hardware.',
     localContext:
@@ -6984,7 +6984,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Toluca',
     city: 'Toluca',
     country: 'Mexico',
-    title: 'Crypto Payments in Toluca, Mexico | PortalPay',
+    title: 'Crypto Payments in Toluca, Mexico | BasaltSurge',
     metaDescription:
       'Instant settlement for markets, cafés, and repair hubs in Toluca.',
     localContext:
@@ -7004,7 +7004,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Veracruz',
     city: 'Veracruz',
     country: 'Mexico',
-    title: 'Crypto Payments in Veracruz, Mexico | PortalPay',
+    title: 'Crypto Payments in Veracruz, Mexico | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for port services, cafés, and repair hubs.',
     localContext:
@@ -7024,7 +7024,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Chihuahua',
     city: 'Chihuahua',
     country: 'Mexico',
-    title: 'Crypto Payments in Chihuahua, Mexico | PortalPay',
+    title: 'Crypto Payments in Chihuahua, Mexico | BasaltSurge',
     metaDescription:
       'Instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -7044,7 +7044,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ciudad Juárez',
     city: 'Ciudad Juárez',
     country: 'Mexico',
-    title: 'Crypto Payments in Ciudad Juárez, Mexico | PortalPay',
+    title: 'Crypto Payments in Ciudad Juárez, Mexico | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for border retail, cafés, and repair hubs.',
     localContext:
@@ -7064,7 +7064,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Hermosillo',
     city: 'Hermosillo',
     country: 'Mexico',
-    title: 'Crypto Payments in Hermosillo, Mexico | PortalPay',
+    title: 'Crypto Payments in Hermosillo, Mexico | BasaltSurge',
     metaDescription:
       'Instant settlement for markets, cafés, and repair hubs in Hermosillo.',
     localContext:
@@ -7084,7 +7084,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Culiacán',
     city: 'Culiacán',
     country: 'Mexico',
-    title: 'Crypto Payments in Culiacán, Mexico | PortalPay',
+    title: 'Crypto Payments in Culiacán, Mexico | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair shops.',
     localContext:
@@ -7104,7 +7104,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Morelia',
     city: 'Morelia',
     country: 'Mexico',
-    title: 'Crypto Payments in Morelia, Mexico | PortalPay',
+    title: 'Crypto Payments in Morelia, Mexico | BasaltSurge',
     metaDescription:
       'Instant settlement for artisan vendors, cafés, and repair hubs.',
     localContext:
@@ -7124,7 +7124,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Aguascalientes',
     city: 'Aguascalientes',
     country: 'Mexico',
-    title: 'Crypto Payments in Aguascalientes, Mexico | PortalPay',
+    title: 'Crypto Payments in Aguascalientes, Mexico | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -7144,7 +7144,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'San Luis Potosí',
     city: 'San Luis Potosí',
     country: 'Mexico',
-    title: 'Crypto Payments in San Luis Potosí, Mexico | PortalPay',
+    title: 'Crypto Payments in San Luis Potosí, Mexico | BasaltSurge',
     metaDescription:
       'Instant settlement for industrial corridors, cafés, and repair hubs.',
     localContext:
@@ -7166,7 +7166,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'London',
     city: 'London',
     country: 'United Kingdom',
-    title: 'Crypto Payments in London, UK | PortalPay',
+    title: 'Crypto Payments in London, UK | BasaltSurge',
     metaDescription:
       'Ultra-low fees for London cafés, markets, and repair shops with instant crypto settlement.',
     localContext:
@@ -7187,7 +7187,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Manchester',
     city: 'Manchester',
     country: 'United Kingdom',
-    title: 'Crypto Payments in Manchester, UK | PortalPay',
+    title: 'Crypto Payments in Manchester, UK | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Manchester cafés, repair shops, and markets.',
     localContext:
@@ -7208,7 +7208,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Berlin',
     city: 'Berlin',
     country: 'Germany',
-    title: 'Crypto Payments in Berlin, Germany | PortalPay',
+    title: 'Crypto Payments in Berlin, Germany | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Berlin cafés, repair shops, and artisan markets.',
     localContext:
@@ -7229,7 +7229,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Munich',
     city: 'Munich',
     country: 'Germany',
-    title: 'Crypto Payments in Munich, Germany | PortalPay',
+    title: 'Crypto Payments in Munich, Germany | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Munich cafés, bakeries, and repair shops.',
     localContext:
@@ -7250,7 +7250,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Paris',
     city: 'Paris',
     country: 'France',
-    title: 'Crypto Payments in Paris, France | PortalPay',
+    title: 'Crypto Payments in Paris, France | BasaltSurge',
     metaDescription:
       'Ultra-low fees for Parisian cafés, bakeries, and artisan vendors with instant crypto settlement.',
     localContext:
@@ -7271,7 +7271,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Lyon',
     city: 'Lyon',
     country: 'France',
-    title: 'Crypto Payments in Lyon, France | PortalPay',
+    title: 'Crypto Payments in Lyon, France | BasaltSurge',
     metaDescription:
       'Instant settlement for Lyon cafés, bakeries, and repair shops.',
     localContext:
@@ -7292,7 +7292,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Amsterdam',
     city: 'Amsterdam',
     country: 'Netherlands',
-    title: 'Crypto Payments in Amsterdam, Netherlands | PortalPay',
+    title: 'Crypto Payments in Amsterdam, Netherlands | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Amsterdam cafés, markets, and repair shops.',
     localContext:
@@ -7313,7 +7313,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Rome',
     city: 'Rome',
     country: 'Italy',
-    title: 'Crypto Payments in Rome, Italy | PortalPay',
+    title: 'Crypto Payments in Rome, Italy | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Roman cafés, artisan vendors, and repair shops.',
     localContext:
@@ -7334,7 +7334,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Milan',
     city: 'Milan',
     country: 'Italy',
-    title: 'Crypto Payments in Milan, Italy | PortalPay',
+    title: 'Crypto Payments in Milan, Italy | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Milanese cafés, fashion boutiques, and repair shops.',
     localContext:
@@ -7355,7 +7355,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Madrid',
     city: 'Madrid',
     country: 'Spain',
-    title: 'Crypto Payments in Madrid, Spain | PortalPay',
+    title: 'Crypto Payments in Madrid, Spain | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Madrid cafés, tapas bars, and repair shops.',
     localContext:
@@ -7376,7 +7376,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Barcelona',
     city: 'Barcelona',
     country: 'Spain',
-    title: 'Crypto Payments in Barcelona, Spain | PortalPay',
+    title: 'Crypto Payments in Barcelona, Spain | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Barcelona cafés, markets, and artisan vendors.',
     localContext:
@@ -7397,7 +7397,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Lisbon',
     city: 'Lisbon',
     country: 'Portugal',
-    title: 'Crypto Payments in Lisbon, Portugal | PortalPay',
+    title: 'Crypto Payments in Lisbon, Portugal | BasaltSurge',
     metaDescription:
       'Instant settlement for Lisbon cafés, bakeries, and coastal services.',
     localContext:
@@ -7418,7 +7418,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Vienna',
     city: 'Vienna',
     country: 'Austria',
-    title: 'Crypto Payments in Vienna, Austria | PortalPay',
+    title: 'Crypto Payments in Vienna, Austria | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Viennese cafés, bakeries, and repair shops.',
     localContext:
@@ -7439,7 +7439,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Zürich',
     city: 'Zürich',
     country: 'Switzerland',
-    title: 'Crypto Payments in Zürich, Switzerland | PortalPay',
+    title: 'Crypto Payments in Zürich, Switzerland | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Zürich cafés, bakeries, and repair shops.',
     localContext:
@@ -7460,7 +7460,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Brussels',
     city: 'Brussels',
     country: 'Belgium',
-    title: 'Crypto Payments in Brussels, Belgium | PortalPay',
+    title: 'Crypto Payments in Brussels, Belgium | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Brussels cafés, chocolate shops, and repair hubs.',
     localContext:
@@ -7481,7 +7481,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Copenhagen',
     city: 'Copenhagen',
     country: 'Denmark',
-    title: 'Crypto Payments in Copenhagen, Denmark | PortalPay',
+    title: 'Crypto Payments in Copenhagen, Denmark | BasaltSurge',
     metaDescription:
       'Instant settlement for Copenhagen cafés, bakeries, and coastal services.',
     localContext:
@@ -7502,7 +7502,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Stockholm',
     city: 'Stockholm',
     country: 'Sweden',
-    title: 'Crypto Payments in Stockholm, Sweden | PortalPay',
+    title: 'Crypto Payments in Stockholm, Sweden | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Stockholm cafés, archipelago ferries, and repair shops.',
     localContext:
@@ -7523,7 +7523,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Helsinki',
     city: 'Helsinki',
     country: 'Finland',
-    title: 'Crypto Payments in Helsinki, Finland | PortalPay',
+    title: 'Crypto Payments in Helsinki, Finland | BasaltSurge',
     metaDescription:
       'Instant settlement for Helsinki cafés, ferries, and repair shops.',
     localContext:
@@ -7544,7 +7544,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Oslo',
     city: 'Oslo',
     country: 'Norway',
-    title: 'Crypto Payments in Oslo, Norway | PortalPay',
+    title: 'Crypto Payments in Oslo, Norway | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Oslo cafés, fjord ferries, and repair shops.',
     localContext:
@@ -7565,7 +7565,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Reykjavik',
     city: 'Reykjavik',
     country: 'Iceland',
-    title: 'Crypto Payments in Reykjavik, Iceland | PortalPay',
+    title: 'Crypto Payments in Reykjavik, Iceland | BasaltSurge',
     metaDescription:
       'Instant settlement for Reykjavik cafés, bakeries, and coastal services.',
     localContext:
@@ -7586,7 +7586,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Dublin',
     city: 'Dublin',
     country: 'Ireland',
-    title: 'Crypto Payments in Dublin, Ireland | PortalPay',
+    title: 'Crypto Payments in Dublin, Ireland | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Dublin cafés, pubs, and repair shops.',
     localContext:
@@ -7607,7 +7607,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Edinburgh',
     city: 'Edinburgh',
     country: 'United Kingdom',
-    title: 'Crypto Payments in Edinburgh, UK | PortalPay',
+    title: 'Crypto Payments in Edinburgh, UK | BasaltSurge',
     metaDescription:
       'Instant settlement for Edinburgh cafés, artisan vendors, and repair shops.',
     localContext:
@@ -7628,7 +7628,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Warsaw',
     city: 'Warsaw',
     country: 'Poland',
-    title: 'Crypto Payments in Warsaw, Poland | PortalPay',
+    title: 'Crypto Payments in Warsaw, Poland | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Warsaw cafés, markets, and repair shops.',
     localContext:
@@ -7649,7 +7649,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Prague',
     city: 'Prague',
     country: 'Czech Republic',
-    title: 'Crypto Payments in Prague, Czech Republic | PortalPay',
+    title: 'Crypto Payments in Prague, Czech Republic | BasaltSurge',
     metaDescription:
       'Instant settlement for Prague cafés, artisan markets, and repair shops.',
     localContext:
@@ -7670,7 +7670,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Athens',
     city: 'Athens',
     country: 'Greece',
-    title: 'Crypto Payments in Athens, Greece | PortalPay',
+    title: 'Crypto Payments in Athens, Greece | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Athens cafés, markets, and coastal services.',
     localContext:
@@ -7692,7 +7692,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tokyo',
     city: 'Tokyo',
     country: 'Japan',
-    title: 'Crypto Payments in Tokyo, Japan | PortalPay',
+    title: 'Crypto Payments in Tokyo, Japan | BasaltSurge',
     metaDescription:
       'Ultra-low fees for Tokyo cafés, repair shops, and neighborhood stores with instant settlement.',
     localContext:
@@ -7713,7 +7713,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Osaka',
     city: 'Osaka',
     country: 'Japan',
-    title: 'Crypto Payments in Osaka, Japan | PortalPay',
+    title: 'Crypto Payments in Osaka, Japan | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Osaka street food, cafés, and repair shops.',
     localContext:
@@ -7734,7 +7734,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Seoul',
     city: 'Seoul',
     country: 'South Korea',
-    title: 'Crypto Payments in Seoul, South Korea | PortalPay',
+    title: 'Crypto Payments in Seoul, South Korea | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Seoul cafés, repair shops, and street vendors.',
     localContext:
@@ -7755,7 +7755,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Busan',
     city: 'Busan',
     country: 'South Korea',
-    title: 'Crypto Payments in Busan, South Korea | PortalPay',
+    title: 'Crypto Payments in Busan, South Korea | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Busan coastal services, cafés, and markets.',
     localContext:
@@ -7776,7 +7776,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Singapore',
     city: 'Singapore',
     country: 'Singapore',
-    title: 'Crypto Payments in Singapore | PortalPay',
+    title: 'Crypto Payments in Singapore | BasaltSurge',
     metaDescription:
       'Ultra-low fees for Singapore cafés, hawker centers, and repair shops with instant settlement.',
     localContext:
@@ -7797,7 +7797,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Hong Kong',
     city: 'Hong Kong',
     country: 'Hong Kong',
-    title: 'Crypto Payments in Hong Kong | PortalPay',
+    title: 'Crypto Payments in Hong Kong | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Hong Kong cafés, markets, and ferry services.',
     localContext:
@@ -7818,7 +7818,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Sydney',
     city: 'Sydney',
     country: 'Australia',
-    title: 'Crypto Payments in Sydney, Australia | PortalPay',
+    title: 'Crypto Payments in Sydney, Australia | BasaltSurge',
     metaDescription:
       'Ultra-low fees for Sydney cafés, ferry services, and repair shops with instant settlement.',
     localContext:
@@ -7839,7 +7839,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Melbourne',
     city: 'Melbourne',
     country: 'Australia',
-    title: 'Crypto Payments in Melbourne, Australia | PortalPay',
+    title: 'Crypto Payments in Melbourne, Australia | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Melbourne cafés, markets, and repair shops.',
     localContext:
@@ -7860,7 +7860,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Auckland',
     city: 'Auckland',
     country: 'New Zealand',
-    title: 'Crypto Payments in Auckland, New Zealand | PortalPay',
+    title: 'Crypto Payments in Auckland, New Zealand | BasaltSurge',
     metaDescription:
       'Instant settlement for Auckland cafés, ferry services, and repair shops.',
     localContext:
@@ -7881,7 +7881,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Wellington',
     city: 'Wellington',
     country: 'New Zealand',
-    title: 'Crypto Payments in Wellington, New Zealand | PortalPay',
+    title: 'Crypto Payments in Wellington, New Zealand | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Wellington cafés, ferries, and repair shops.',
     localContext:
@@ -7902,7 +7902,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Beijing',
     city: 'Beijing',
     country: 'China',
-    title: 'Crypto Payments in Beijing, China | PortalPay',
+    title: 'Crypto Payments in Beijing, China | BasaltSurge',
     metaDescription:
       'Ultra-low fees for Beijing cafés, markets, and repair shops with instant settlement.',
     localContext:
@@ -7923,7 +7923,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Shanghai',
     city: 'Shanghai',
     country: 'China',
-    title: 'Crypto Payments in Shanghai, China | PortalPay',
+    title: 'Crypto Payments in Shanghai, China | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Shanghai cafés, markets, and repair shops.',
     localContext:
@@ -7944,7 +7944,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Shenzhen',
     city: 'Shenzhen',
     country: 'China',
-    title: 'Crypto Payments in Shenzhen, China | PortalPay',
+    title: 'Crypto Payments in Shenzhen, China | BasaltSurge',
     metaDescription:
       'Instant settlement for Shenzhen cafés, electronics repair, and hardware shops.',
     localContext:
@@ -7965,7 +7965,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Guangzhou',
     city: 'Guangzhou',
     country: 'China',
-    title: 'Crypto Payments in Guangzhou, China | PortalPay',
+    title: 'Crypto Payments in Guangzhou, China | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Guangzhou markets, cafés, and repair shops.',
     localContext:
@@ -7986,7 +7986,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Taipei',
     city: 'Taipei',
     country: 'Taiwan',
-    title: 'Crypto Payments in Taipei, Taiwan | PortalPay',
+    title: 'Crypto Payments in Taipei, Taiwan | BasaltSurge',
     metaDescription:
       'Instant settlement for Taipei night markets, cafés, and repair shops.',
     localContext:
@@ -8008,7 +8008,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Moscow',
     city: 'Moscow',
     country: 'Russia',
-    title: 'Crypto Payments in Moscow, Russia | PortalPay',
+    title: 'Crypto Payments in Moscow, Russia | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Moscow cafés, markets, and repair shops with instant settlement.',
     localContext:
@@ -8029,7 +8029,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'St. Petersburg',
     city: 'St. Petersburg',
     country: 'Russia',
-    title: 'Crypto Payments in St. Petersburg, Russia | PortalPay',
+    title: 'Crypto Payments in St. Petersburg, Russia | BasaltSurge',
     metaDescription:
       'Instant settlement for St. Petersburg cafés, canal ferries, and repair shops.',
     localContext:
@@ -8051,7 +8051,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Willemstad',
     city: 'Willemstad',
     country: 'Curaçao',
-    title: 'Crypto Payments in Willemstad, Curaçao | PortalPay',
+    title: 'Crypto Payments in Willemstad, Curaçao | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and repair hubs in Curaçao.',
     localContext:
@@ -8072,7 +8072,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Oranjestad',
     city: 'Oranjestad',
     country: 'Aruba',
-    title: 'Crypto Payments in Oranjestad, Aruba | PortalPay',
+    title: 'Crypto Payments in Oranjestad, Aruba | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for tourism, cafés, and coastal services.',
     localContext:
@@ -8093,7 +8093,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Roseau',
     city: 'Roseau',
     country: 'Dominica',
-    title: 'Crypto Payments in Roseau, Dominica | PortalPay',
+    title: 'Crypto Payments in Roseau, Dominica | BasaltSurge',
     metaDescription:
       'QR ticketing for coastal services and instant settlement for cafés.',
     localContext:
@@ -8114,7 +8114,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Basseterre',
     city: 'Basseterre',
     country: 'Saint Kitts and Nevis',
-    title: 'Crypto Payments in Basseterre, Saint Kitts and Nevis | PortalPay',
+    title: 'Crypto Payments in Basseterre, Saint Kitts and Nevis | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for tourism and coastal services.',
     localContext:
@@ -8135,7 +8135,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: "St. John's",
     city: "St. John's",
     country: 'Antigua and Barbuda',
-    title: "Crypto Payments in St. John's, Antigua and Barbuda | PortalPay",
+    title: "Crypto Payments in St. John's, Antigua and Barbuda | BasaltSurge",
     metaDescription:
       'QR ticketing and instant settlement for island ferries and tourism.',
     localContext:
@@ -8156,7 +8156,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kingstown',
     city: 'Kingstown',
     country: 'Saint Vincent and the Grenadines',
-    title: 'Crypto Payments in Kingstown, Saint Vincent and the Grenadines | PortalPay',
+    title: 'Crypto Payments in Kingstown, Saint Vincent and the Grenadines | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for ferries, markets, and cafés.',
     localContext:
@@ -8178,7 +8178,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Pago Pago',
     city: 'Pago Pago',
     country: 'American Samoa',
-    title: 'Crypto Payments in Pago Pago, American Samoa | PortalPay',
+    title: 'Crypto Payments in Pago Pago, American Samoa | BasaltSurge',
     metaDescription:
       'QR ticketing for coastal services and instant settlement for markets.',
     localContext:
@@ -8199,7 +8199,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Nouméa',
     city: 'Nouméa',
     country: 'New Caledonia',
-    title: 'Crypto Payments in Nouméa, New Caledonia | PortalPay',
+    title: 'Crypto Payments in Nouméa, New Caledonia | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services and tourism.',
     localContext:
@@ -8220,7 +8220,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Papeete',
     city: 'Papeete',
     country: 'French Polynesia',
-    title: 'Crypto Payments in Papeete, French Polynesia | PortalPay',
+    title: 'Crypto Payments in Papeete, French Polynesia | BasaltSurge',
     metaDescription:
       'QR ticketing for island ferries and instant settlement for tourism.',
     localContext:
@@ -8241,7 +8241,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Majuro',
     city: 'Majuro',
     country: 'Marshall Islands',
-    title: 'Crypto Payments in Majuro, Marshall Islands | PortalPay',
+    title: 'Crypto Payments in Majuro, Marshall Islands | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for ferries, markets, and cafés.',
     localContext:
@@ -8262,7 +8262,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Palikir',
     city: 'Palikir',
     country: 'Micronesia',
-    title: 'Crypto Payments in Palikir, Micronesia | PortalPay',
+    title: 'Crypto Payments in Palikir, Micronesia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for island markets and cafés.',
     localContext:
@@ -8283,7 +8283,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ngerulmud',
     city: 'Ngerulmud',
     country: 'Palau',
-    title: 'Crypto Payments in Ngerulmud, Palau | PortalPay',
+    title: 'Crypto Payments in Ngerulmud, Palau | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for tourism and coastal services.',
     localContext:
@@ -8305,7 +8305,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Andorra la Vella',
     city: 'Andorra la Vella',
     country: 'Andorra',
-    title: 'Crypto Payments in Andorra la Vella, Andorra | PortalPay',
+    title: 'Crypto Payments in Andorra la Vella, Andorra | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for mountain resort cafés and repair shops.',
     localContext:
@@ -8326,7 +8326,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Vaduz',
     city: 'Vaduz',
     country: 'Liechtenstein',
-    title: 'Crypto Payments in Vaduz, Liechtenstein | PortalPay',
+    title: 'Crypto Payments in Vaduz, Liechtenstein | BasaltSurge',
     metaDescription:
       'Instant settlement for boutique cafés, artisan vendors, and repair shops.',
     localContext:
@@ -8347,7 +8347,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Monaco',
     city: 'Monaco',
     country: 'Monaco',
-    title: 'Crypto Payments in Monaco | PortalPay',
+    title: 'Crypto Payments in Monaco | BasaltSurge',
     metaDescription:
       'Ultra-low fees for Monaco cafés, luxury boutiques, and repair shops.',
     localContext:
@@ -8368,7 +8368,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Valletta',
     city: 'Valletta',
     country: 'Malta',
-    title: 'Crypto Payments in Valletta, Malta | PortalPay',
+    title: 'Crypto Payments in Valletta, Malta | BasaltSurge',
     metaDescription:
       'QR ticketing for harbor ferries and instant settlement for cafés.',
     localContext:
@@ -8389,7 +8389,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'San Marino',
     city: 'San Marino',
     country: 'San Marino',
-    title: 'Crypto Payments in San Marino | PortalPay',
+    title: 'Crypto Payments in San Marino | BasaltSurge',
     metaDescription:
       'Instant settlement for mountain cafés, artisan vendors, and repair shops.',
     localContext:
@@ -8410,7 +8410,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Vatican City',
     city: 'Vatican City',
     country: 'Vatican City',
-    title: 'Crypto Payments in Vatican City | PortalPay',
+    title: 'Crypto Payments in Vatican City | BasaltSurge',
     metaDescription:
       'QR receipts for artisan vendors and gift shops serving pilgrims.',
     localContext:
@@ -8432,7 +8432,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Moroni',
     city: 'Moroni',
     country: 'Comoros',
-    title: 'Crypto Payments in Moroni, Comoros | PortalPay',
+    title: 'Crypto Payments in Moroni, Comoros | BasaltSurge',
     metaDescription:
       'QR ticketing for island ferries and instant settlement for markets.',
     localContext:
@@ -8453,7 +8453,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Djibouti City',
     city: 'Djibouti City',
     country: 'Djibouti',
-    title: 'Crypto Payments in Djibouti City, Djibouti | PortalPay',
+    title: 'Crypto Payments in Djibouti City, Djibouti | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for ports, markets, and cafés.',
     localContext:
@@ -8474,7 +8474,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Malabo',
     city: 'Malabo',
     country: 'Equatorial Guinea',
-    title: 'Crypto Payments in Malabo, Equatorial Guinea | PortalPay',
+    title: 'Crypto Payments in Malabo, Equatorial Guinea | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for island markets and cafés.',
     localContext:
@@ -8495,7 +8495,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Asmara',
     city: 'Asmara',
     country: 'Eritrea',
-    title: 'Crypto Payments in Asmara, Eritrea | PortalPay',
+    title: 'Crypto Payments in Asmara, Eritrea | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair hubs.',
     localContext:
@@ -8516,7 +8516,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Banjul',
     city: 'Banjul',
     country: 'Gambia',
-    title: 'Crypto Payments in Banjul, Gambia | PortalPay',
+    title: 'Crypto Payments in Banjul, Gambia | BasaltSurge',
     metaDescription:
       'QR ticketing for river ferries and instant settlement for markets.',
     localContext:
@@ -8537,7 +8537,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Victoria',
     city: 'Victoria',
     country: 'Seychelles',
-    title: 'Crypto Payments in Victoria, Seychelles | PortalPay',
+    title: 'Crypto Payments in Victoria, Seychelles | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for island ferries, tourism, and cafés.',
     localContext:
@@ -8558,7 +8558,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'São Tomé',
     city: 'São Tomé',
     country: 'Sao Tome and Principe',
-    title: 'Crypto Payments in São Tomé, Sao Tome and Principe | PortalPay',
+    title: 'Crypto Payments in São Tomé, Sao Tome and Principe | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for island markets and cafés.',
     localContext:
@@ -8579,7 +8579,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mogadishu',
     city: 'Mogadishu',
     country: 'Somalia',
-    title: 'Crypto Payments in Mogadishu, Somalia | PortalPay',
+    title: 'Crypto Payments in Mogadishu, Somalia | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair hubs.',
     localContext:
@@ -8600,7 +8600,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Juba',
     city: 'Juba',
     country: 'South Sudan',
-    title: 'Crypto Payments in Juba, South Sudan | PortalPay',
+    title: 'Crypto Payments in Juba, South Sudan | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -8622,7 +8622,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tehran',
     city: 'Tehran',
     country: 'Iran',
-    title: 'Crypto Payments in Tehran, Iran | PortalPay',
+    title: 'Crypto Payments in Tehran, Iran | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Tehran bazaars, cafés, and repair hubs.',
     localContext:
@@ -8643,7 +8643,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tel Aviv',
     city: 'Tel Aviv',
     country: 'Israel',
-    title: 'Crypto Payments in Tel Aviv, Israel | PortalPay',
+    title: 'Crypto Payments in Tel Aviv, Israel | BasaltSurge',
     metaDescription:
       'Instant settlement for Tel Aviv cafés, tech startups, and repair shops.',
     localContext:
@@ -8664,7 +8664,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Jerusalem',
     city: 'Jerusalem',
     country: 'Israel',
-    title: 'Crypto Payments in Jerusalem, Israel | PortalPay',
+    title: 'Crypto Payments in Jerusalem, Israel | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Old City vendors and cafés.',
     localContext:
@@ -8685,7 +8685,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Damascus',
     city: 'Damascus',
     country: 'Syria',
-    title: 'Crypto Payments in Damascus, Syria | PortalPay',
+    title: 'Crypto Payments in Damascus, Syria | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for markets, cafés, and repair hubs.',
     localContext:
@@ -8706,7 +8706,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ankara',
     city: 'Ankara',
     country: 'Turkey',
-    title: 'Crypto Payments in Ankara, Turkey | PortalPay',
+    title: 'Crypto Payments in Ankara, Turkey | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Ankara cafés, markets, and repair shops.',
     localContext:
@@ -8728,7 +8728,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kabul',
     city: 'Kabul',
     country: 'Afghanistan',
-    title: 'Crypto Payments in Kabul, Afghanistan | PortalPay',
+    title: 'Crypto Payments in Kabul, Afghanistan | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -8749,7 +8749,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Thimphu',
     city: 'Thimphu',
     country: 'Bhutan',
-    title: 'Crypto Payments in Thimphu, Bhutan | PortalPay',
+    title: 'Crypto Payments in Thimphu, Bhutan | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for mountain cafés and artisan vendors.',
     localContext:
@@ -8770,7 +8770,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Macau',
     city: 'Macau',
     country: 'Macau',
-    title: 'Crypto Payments in Macau | PortalPay',
+    title: 'Crypto Payments in Macau | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Macau cafés, markets, and repair shops.',
     localContext:
@@ -8792,7 +8792,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cayenne',
     city: 'Cayenne',
     country: 'French Guiana',
-    title: 'Crypto Payments in Cayenne, French Guiana | PortalPay',
+    title: 'Crypto Payments in Cayenne, French Guiana | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and coastal services.',
     localContext:
@@ -8814,7 +8814,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Riga',
     city: 'Riga',
     country: 'Latvia',
-    title: 'Crypto Payments in Riga, Latvia | PortalPay',
+    title: 'Crypto Payments in Riga, Latvia | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Riga cafés, markets, and coastal services.',
     localContext:
@@ -8835,7 +8835,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Vilnius',
     city: 'Vilnius',
     country: 'Lithuania',
-    title: 'Crypto Payments in Vilnius, Lithuania | PortalPay',
+    title: 'Crypto Payments in Vilnius, Lithuania | BasaltSurge',
     metaDescription:
       'Instant settlement for Vilnius cafés, artisan vendors, and repair shops.',
     localContext:
@@ -8856,7 +8856,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tallinn',
     city: 'Tallinn',
     country: 'Estonia',
-    title: 'Crypto Payments in Tallinn, Estonia | PortalPay',
+    title: 'Crypto Payments in Tallinn, Estonia | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Tallinn cafés, ferry services, and repair shops.',
     localContext:
@@ -8877,7 +8877,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ljubljana',
     city: 'Ljubljana',
     country: 'Slovenia',
-    title: 'Crypto Payments in Ljubljana, Slovenia | PortalPay',
+    title: 'Crypto Payments in Ljubljana, Slovenia | BasaltSurge',
     metaDescription:
       'Instant settlement for Ljubljana cafés, artisan markets, and repair shops.',
     localContext:
@@ -8898,7 +8898,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Zagreb',
     city: 'Zagreb',
     country: 'Croatia',
-    title: 'Crypto Payments in Zagreb, Croatia | PortalPay',
+    title: 'Crypto Payments in Zagreb, Croatia | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Zagreb cafés, markets, and repair shops.',
     localContext:
@@ -8919,7 +8919,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bratislava',
     city: 'Bratislava',
     country: 'Slovakia',
-    title: 'Crypto Payments in Bratislava, Slovakia | PortalPay',
+    title: 'Crypto Payments in Bratislava, Slovakia | BasaltSurge',
     metaDescription:
       'Instant settlement for Bratislava cafés, markets, and repair hubs.',
     localContext:
@@ -8940,7 +8940,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Budapest',
     city: 'Budapest',
     country: 'Hungary',
-    title: 'Crypto Payments in Budapest, Hungary | PortalPay',
+    title: 'Crypto Payments in Budapest, Hungary | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Budapest cafés, thermal baths, and repair shops.',
     localContext:
@@ -8961,7 +8961,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Minsk',
     city: 'Minsk',
     country: 'Belarus',
-    title: 'Crypto Payments in Minsk, Belarus | PortalPay',
+    title: 'Crypto Payments in Minsk, Belarus | BasaltSurge',
     metaDescription:
       'Instant settlement for Minsk cafés, markets, and repair hubs.',
     localContext:
@@ -8982,7 +8982,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Nicosia',
     city: 'Nicosia',
     country: 'Cyprus',
-    title: 'Crypto Payments in Nicosia, Cyprus | PortalPay',
+    title: 'Crypto Payments in Nicosia, Cyprus | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Nicosia cafés, markets, and repair shops.',
     localContext:
@@ -9004,7 +9004,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Rarotonga',
     city: 'Rarotonga',
     country: 'Cook Islands',
-    title: 'Crypto Payments in Rarotonga, Cook Islands | PortalPay',
+    title: 'Crypto Payments in Rarotonga, Cook Islands | BasaltSurge',
     metaDescription:
       'QR ticketing for island ferries and instant settlement for tourism.',
     localContext:
@@ -9025,7 +9025,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tarawa',
     city: 'Tarawa',
     country: 'Kiribati',
-    title: 'Crypto Payments in Tarawa, Kiribati | PortalPay',
+    title: 'Crypto Payments in Tarawa, Kiribati | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for island markets and coastal services.',
     localContext:
@@ -9046,7 +9046,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Yaren',
     city: 'Yaren',
     country: 'Nauru',
-    title: 'Crypto Payments in Yaren, Nauru | PortalPay',
+    title: 'Crypto Payments in Yaren, Nauru | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for island markets and cafés.',
     localContext:
@@ -9067,7 +9067,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Funafuti',
     city: 'Funafuti',
     country: 'Tuvalu',
-    title: 'Crypto Payments in Funafuti, Tuvalu | PortalPay',
+    title: 'Crypto Payments in Funafuti, Tuvalu | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for atoll markets and cafés.',
     localContext:
@@ -9088,7 +9088,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Hagåtña',
     city: 'Hagåtña',
     country: 'Guam',
-    title: 'Crypto Payments in Hagåtña, Guam | PortalPay',
+    title: 'Crypto Payments in Hagåtña, Guam | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for tourism, cafés, and repair hubs.',
     localContext:
@@ -9109,7 +9109,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Saipan',
     city: 'Saipan',
     country: 'Northern Mariana Islands',
-    title: 'Crypto Payments in Saipan, Northern Mariana Islands | PortalPay',
+    title: 'Crypto Payments in Saipan, Northern Mariana Islands | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for tourism and coastal services.',
     localContext:
@@ -9131,7 +9131,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: "N'Djamena",
     city: "N'Djamena",
     country: 'Chad',
-    title: "Crypto Payments in N'Djamena, Chad | PortalPay",
+    title: "Crypto Payments in N'Djamena, Chad | BasaltSurge",
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs.',
     localContext:
@@ -9152,7 +9152,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bujumbura',
     city: 'Bujumbura',
     country: 'Burundi',
-    title: 'Crypto Payments in Bujumbura, Burundi | PortalPay',
+    title: 'Crypto Payments in Bujumbura, Burundi | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for lakeside markets and cafés.',
     localContext:
@@ -9174,7 +9174,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Nuuk',
     city: 'Nuuk',
     country: 'Greenland',
-    title: 'Crypto Payments in Nuuk, Greenland | PortalPay',
+    title: 'Crypto Payments in Nuuk, Greenland | BasaltSurge',
     metaDescription:
       'QR ticketing for Arctic ferries and instant settlement for cafés.',
     localContext:
@@ -9195,7 +9195,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Hamilton',
     city: 'Hamilton',
     country: 'Bermuda',
-    title: 'Crypto Payments in Hamilton, Bermuda | PortalPay',
+    title: 'Crypto Payments in Hamilton, Bermuda | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for ferries, cafés, and repair shops.',
     localContext:
@@ -9216,7 +9216,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Road Town',
     city: 'Road Town',
     country: 'British Virgin Islands',
-    title: 'Crypto Payments in Road Town, British Virgin Islands | PortalPay',
+    title: 'Crypto Payments in Road Town, British Virgin Islands | BasaltSurge',
     metaDescription:
       'QR ticketing for yacht charters and instant settlement for tourism.',
     localContext:
@@ -9237,7 +9237,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Charlotte Amalie',
     city: 'Charlotte Amalie',
     country: 'U.S. Virgin Islands',
-    title: 'Crypto Payments in Charlotte Amalie, U.S. Virgin Islands | PortalPay',
+    title: 'Crypto Payments in Charlotte Amalie, U.S. Virgin Islands | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cruise ports, cafés, and artisan vendors.',
     localContext:
@@ -9258,7 +9258,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'George Town',
     city: 'George Town',
     country: 'Cayman Islands',
-    title: 'Crypto Payments in George Town, Cayman Islands | PortalPay',
+    title: 'Crypto Payments in George Town, Cayman Islands | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Grand Cayman cafés and tourism services.',
     localContext:
@@ -9279,7 +9279,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Philipsburg',
     city: 'Philipsburg',
     country: 'Sint Maarten',
-    title: 'Crypto Payments in Philipsburg, Sint Maarten | PortalPay',
+    title: 'Crypto Payments in Philipsburg, Sint Maarten | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for cruise tourism and coastal services.',
     localContext:
@@ -9300,7 +9300,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Marigot',
     city: 'Marigot',
     country: 'Saint Martin',
-    title: 'Crypto Payments in Marigot, Saint Martin | PortalPay',
+    title: 'Crypto Payments in Marigot, Saint Martin | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for French side tourism and cafés.',
     localContext:
@@ -9321,7 +9321,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Gustavia',
     city: 'Gustavia',
     country: 'Saint Barthélemy',
-    title: 'Crypto Payments in Gustavia, Saint Barthélemy | PortalPay',
+    title: 'Crypto Payments in Gustavia, Saint Barthélemy | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for luxury tourism and coastal services.',
     localContext:
@@ -9342,7 +9342,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Plymouth',
     city: 'Plymouth',
     country: 'Montserrat',
-    title: 'Crypto Payments in Plymouth, Montserrat | PortalPay',
+    title: 'Crypto Payments in Plymouth, Montserrat | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for island markets and cafés.',
     localContext:
@@ -9363,7 +9363,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'The Valley',
     city: 'The Valley',
     country: 'Anguilla',
-    title: 'Crypto Payments in The Valley, Anguilla | PortalPay',
+    title: 'Crypto Payments in The Valley, Anguilla | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for island tourism and coastal services.',
     localContext:
@@ -9384,7 +9384,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kralendijk',
     city: 'Kralendijk',
     country: 'Caribbean Netherlands',
-    title: 'Crypto Payments in Kralendijk, Caribbean Netherlands | PortalPay',
+    title: 'Crypto Payments in Kralendijk, Caribbean Netherlands | BasaltSurge',
     metaDescription:
       'QR ticketing for diving tours and instant settlement for cafés.',
     localContext:
@@ -9405,7 +9405,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Fort-de-France',
     city: 'Fort-de-France',
     country: 'Martinique',
-    title: 'Crypto Payments in Fort-de-France, Martinique | PortalPay',
+    title: 'Crypto Payments in Fort-de-France, Martinique | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for coastal services, cafés, and markets.',
     localContext:
@@ -9426,7 +9426,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Basse-Terre',
     city: 'Basse-Terre',
     country: 'Guadeloupe',
-    title: 'Crypto Payments in Basse-Terre, Guadeloupe | PortalPay',
+    title: 'Crypto Payments in Basse-Terre, Guadeloupe | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for island markets and cafés.',
     localContext:
@@ -9448,7 +9448,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tórshavn',
     city: 'Tórshavn',
     country: 'Faroe Islands',
-    title: 'Crypto Payments in Tórshavn, Faroe Islands | PortalPay',
+    title: 'Crypto Payments in Tórshavn, Faroe Islands | BasaltSurge',
     metaDescription:
       'QR ticketing for island ferries and instant settlement for cafés.',
     localContext:
@@ -9469,7 +9469,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Longyearbyen',
     city: 'Longyearbyen',
     country: 'Svalbard and Jan Mayen',
-    title: 'Crypto Payments in Longyearbyen, Svalbard | PortalPay',
+    title: 'Crypto Payments in Longyearbyen, Svalbard | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for Arctic tourism and cafés.',
     localContext:
@@ -9490,7 +9490,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Douglas',
     city: 'Douglas',
     country: 'Isle of Man',
-    title: 'Crypto Payments in Douglas, Isle of Man | PortalPay',
+    title: 'Crypto Payments in Douglas, Isle of Man | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Douglas cafés, ferries, and repair shops.',
     localContext:
@@ -9511,7 +9511,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'St. Helier',
     city: 'St. Helier',
     country: 'Jersey',
-    title: 'Crypto Payments in St. Helier, Jersey | PortalPay',
+    title: 'Crypto Payments in St. Helier, Jersey | BasaltSurge',
     metaDescription:
       'Instant settlement for Jersey cafés, markets, and coastal services.',
     localContext:
@@ -9532,7 +9532,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'St. Peter Port',
     city: 'St. Peter Port',
     country: 'Guernsey',
-    title: 'Crypto Payments in St. Peter Port, Guernsey | PortalPay',
+    title: 'Crypto Payments in St. Peter Port, Guernsey | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Guernsey cafés, ferries, and repair shops.',
     localContext:
@@ -9553,7 +9553,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Gibraltar',
     city: 'Gibraltar',
     country: 'Gibraltar',
-    title: 'Crypto Payments in Gibraltar | PortalPay',
+    title: 'Crypto Payments in Gibraltar | BasaltSurge',
     metaDescription:
       'Instant settlement for Gibraltar cafés, markets, and ferry services.',
     localContext:
@@ -9574,7 +9574,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mariehamn',
     city: 'Mariehamn',
     country: 'Åland Islands',
-    title: 'Crypto Payments in Mariehamn, Åland Islands | PortalPay',
+    title: 'Crypto Payments in Mariehamn, Åland Islands | BasaltSurge',
     metaDescription:
       'QR ticketing for Baltic ferries and instant settlement for cafés.',
     localContext:
@@ -9596,7 +9596,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Alofi',
     city: 'Alofi',
     country: 'Niue',
-    title: 'Crypto Payments in Alofi, Niue | PortalPay',
+    title: 'Crypto Payments in Alofi, Niue | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for island markets and cafés.',
     localContext:
@@ -9617,7 +9617,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Fakaofo',
     city: 'Fakaofo',
     country: 'Tokelau',
-    title: 'Crypto Payments in Fakaofo, Tokelau | PortalPay',
+    title: 'Crypto Payments in Fakaofo, Tokelau | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for atoll markets and cafés.',
     localContext:
@@ -9638,7 +9638,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mata-Utu',
     city: 'Mata-Utu',
     country: 'Wallis and Futuna',
-    title: 'Crypto Payments in Mata-Utu, Wallis and Futuna | PortalPay',
+    title: 'Crypto Payments in Mata-Utu, Wallis and Futuna | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for island markets and cafés.',
     localContext:
@@ -9659,7 +9659,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kingston',
     city: 'Kingston',
     country: 'Norfolk Island',
-    title: 'Crypto Payments in Kingston, Norfolk Island | PortalPay',
+    title: 'Crypto Payments in Kingston, Norfolk Island | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for island tourism and cafés.',
     localContext:
@@ -9680,7 +9680,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Adamstown',
     city: 'Adamstown',
     country: 'Pitcairn Islands',
-    title: 'Crypto Payments in Adamstown, Pitcairn Islands | PortalPay',
+    title: 'Crypto Payments in Adamstown, Pitcairn Islands | BasaltSurge',
     metaDescription:
       'QR receipts for the world\'s most remote island community.',
     localContext:
@@ -9701,7 +9701,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Jamestown',
     city: 'Jamestown',
     country: 'Saint Helena',
-    title: 'Crypto Payments in Jamestown, Saint Helena | PortalPay',
+    title: 'Crypto Payments in Jamestown, Saint Helena | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for Atlantic island tourism and cafés.',
     localContext:
@@ -9722,7 +9722,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'El Aaiún',
     city: 'El Aaiún',
     country: 'Western Sahara',
-    title: 'Crypto Payments in El Aaiún, Western Sahara | PortalPay',
+    title: 'Crypto Payments in El Aaiún, Western Sahara | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for desert markets and repair hubs.',
     localContext:
@@ -9743,7 +9743,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mamoudzou',
     city: 'Mamoudzou',
     country: 'Mayotte',
-    title: 'Crypto Payments in Mamoudzou, Mayotte | PortalPay',
+    title: 'Crypto Payments in Mamoudzou, Mayotte | BasaltSurge',
     metaDescription:
       'Instant-settlement QR payments for island ferries, markets, and cafés.',
     localContext:
@@ -9764,7 +9764,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Saint-Denis',
     city: 'Saint-Denis',
     country: 'Réunion',
-    title: 'Crypto Payments in Saint-Denis, Réunion | PortalPay',
+    title: 'Crypto Payments in Saint-Denis, Réunion | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for volcanic island cafés and markets.',
     localContext:
@@ -9786,7 +9786,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Pyongyang',
     city: 'Pyongyang',
     country: 'North Korea',
-    title: 'Crypto Payments in Pyongyang, North Korea | PortalPay',
+    title: 'Crypto Payments in Pyongyang, North Korea | BasaltSurge',
     metaDescription:
       'Decentralized payments for the day the people take control. QR receipts for underground markets and secret cafés.',
     localContext:
@@ -9808,7 +9808,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Yokohama',
     city: 'Yokohama',
     country: 'Japan',
-    title: 'Crypto Payments in Yokohama, Japan | PortalPay',
+    title: 'Crypto Payments in Yokohama, Japan | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Yokohama cafés, bakeries, and repair hubs.',
     localContext:
@@ -9828,7 +9828,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Nagoya',
     city: 'Nagoya',
     country: 'Japan',
-    title: 'Crypto Payments in Nagoya, Japan | PortalPay',
+    title: 'Crypto Payments in Nagoya, Japan | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Nagoya cafés, repair shops, and hardware vendors.',
     localContext:
@@ -9848,7 +9848,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Sapporo',
     city: 'Sapporo',
     country: 'Japan',
-    title: 'Crypto Payments in Sapporo, Japan | PortalPay',
+    title: 'Crypto Payments in Sapporo, Japan | BasaltSurge',
     metaDescription:
       'Instant settlement and offline-first QR receipts for cafés, bakeries, and repair hubs.',
     localContext:
@@ -9868,7 +9868,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Fukuoka',
     city: 'Fukuoka',
     country: 'Japan',
-    title: 'Crypto Payments in Fukuoka, Japan | PortalPay',
+    title: 'Crypto Payments in Fukuoka, Japan | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for street food, cafés, and repair hubs in Fukuoka.',
     localContext:
@@ -9888,7 +9888,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kobe',
     city: 'Kobe',
     country: 'Japan',
-    title: 'Crypto Payments in Kobe, Japan | PortalPay',
+    title: 'Crypto Payments in Kobe, Japan | BasaltSurge',
     metaDescription:
       'Instant settlement for Kobe cafés, bakeries, and coastal services.',
     localContext:
@@ -9908,7 +9908,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kyoto',
     city: 'Kyoto',
     country: 'Japan',
-    title: 'Crypto Payments in Kyoto, Japan | PortalPay',
+    title: 'Crypto Payments in Kyoto, Japan | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan markets, cafés, and repair hubs in Kyoto.',
     localContext:
@@ -9930,7 +9930,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Hamburg',
     city: 'Hamburg',
     country: 'Germany',
-    title: 'Crypto Payments in Hamburg, Germany | PortalPay',
+    title: 'Crypto Payments in Hamburg, Germany | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for harbor ferries, cafés, and repair hubs in Hamburg.',
     localContext:
@@ -9950,7 +9950,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cologne',
     city: 'Cologne',
     country: 'Germany',
-    title: 'Crypto Payments in Cologne, Germany | PortalPay',
+    title: 'Crypto Payments in Cologne, Germany | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Cologne cafés, bakeries, and repair shops.',
     localContext:
@@ -9970,7 +9970,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Frankfurt',
     city: 'Frankfurt',
     country: 'Germany',
-    title: 'Crypto Payments in Frankfurt, Germany | PortalPay',
+    title: 'Crypto Payments in Frankfurt, Germany | BasaltSurge',
     metaDescription:
       'Instant settlement for Frankfurt cafés, retail, and repair hubs.',
     localContext:
@@ -9990,7 +9990,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Stuttgart',
     city: 'Stuttgart',
     country: 'Germany',
-    title: 'Crypto Payments in Stuttgart, Germany | PortalPay',
+    title: 'Crypto Payments in Stuttgart, Germany | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for hardware, cafés, and auto repair.',
     localContext:
@@ -10010,7 +10010,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Düsseldorf',
     city: 'Düsseldorf',
     country: 'Germany',
-    title: 'Crypto Payments in Düsseldorf, Germany | PortalPay',
+    title: 'Crypto Payments in Düsseldorf, Germany | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Düsseldorf cafés, retail, and repair hubs.',
     localContext:
@@ -10030,7 +10030,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Leipzig',
     city: 'Leipzig',
     country: 'Germany',
-    title: 'Crypto Payments in Leipzig, Germany | PortalPay',
+    title: 'Crypto Payments in Leipzig, Germany | BasaltSurge',
     metaDescription:
       'Instant settlement for Leipzig cafés, artisan vendors, and repair shops.',
     localContext:
@@ -10052,7 +10052,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Birmingham',
     city: 'Birmingham',
     country: 'United Kingdom',
-    title: 'Crypto Payments in Birmingham, UK | PortalPay',
+    title: 'Crypto Payments in Birmingham, UK | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Birmingham cafés, markets, and repair hubs.',
     localContext:
@@ -10072,7 +10072,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Leeds',
     city: 'Leeds',
     country: 'United Kingdom',
-    title: 'Crypto Payments in Leeds, UK | PortalPay',
+    title: 'Crypto Payments in Leeds, UK | BasaltSurge',
     metaDescription:
       'Instant settlement for Leeds cafés, bakeries, and repair shops.',
     localContext:
@@ -10092,7 +10092,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Glasgow',
     city: 'Glasgow',
     country: 'United Kingdom',
-    title: 'Crypto Payments in Glasgow, UK | PortalPay',
+    title: 'Crypto Payments in Glasgow, UK | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Glasgow cafés, markets, and repair hubs.',
     localContext:
@@ -10112,7 +10112,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bristol',
     city: 'Bristol',
     country: 'United Kingdom',
-    title: 'Crypto Payments in Bristol, UK | PortalPay',
+    title: 'Crypto Payments in Bristol, UK | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Bristol cafés, markets, and repair shops.',
     localContext:
@@ -10132,7 +10132,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Liverpool',
     city: 'Liverpool',
     country: 'United Kingdom',
-    title: 'Crypto Payments in Liverpool, UK | PortalPay',
+    title: 'Crypto Payments in Liverpool, UK | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Liverpool cafés, markets, and coastal services.',
     localContext:
@@ -10154,7 +10154,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Marseille',
     city: 'Marseille',
     country: 'France',
-    title: 'Crypto Payments in Marseille, France | PortalPay',
+    title: 'Crypto Payments in Marseille, France | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for Marseille coastal services, cafés, and repair hubs.',
     localContext:
@@ -10174,7 +10174,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Toulouse',
     city: 'Toulouse',
     country: 'France',
-    title: 'Crypto Payments in Toulouse, France | PortalPay',
+    title: 'Crypto Payments in Toulouse, France | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, bakeries, and hardware corridors.',
     localContext:
@@ -10194,7 +10194,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Nice',
     city: 'Nice',
     country: 'France',
-    title: 'Crypto Payments in Nice, France | PortalPay',
+    title: 'Crypto Payments in Nice, France | BasaltSurge',
     metaDescription:
       'Instant settlement for Nice cafés, tourism, and coastal services.',
     localContext:
@@ -10214,7 +10214,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bordeaux',
     city: 'Bordeaux',
     country: 'France',
-    title: 'Crypto Payments in Bordeaux, France | PortalPay',
+    title: 'Crypto Payments in Bordeaux, France | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Bordeaux cafés, artisan vendors, and repair shops.',
     localContext:
@@ -10234,7 +10234,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Lille',
     city: 'Lille',
     country: 'France',
-    title: 'Crypto Payments in Lille, France | PortalPay',
+    title: 'Crypto Payments in Lille, France | BasaltSurge',
     metaDescription:
       'Instant settlement for Lille cafés, markets, and repair hubs.',
     localContext:
@@ -10256,7 +10256,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Naples',
     city: 'Naples',
     country: 'Italy',
-    title: 'Crypto Payments in Naples, Italy | PortalPay',
+    title: 'Crypto Payments in Naples, Italy | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for coastal services, cafés, and repair hubs in Naples.',
     localContext:
@@ -10276,7 +10276,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Turin',
     city: 'Turin',
     country: 'Italy',
-    title: 'Crypto Payments in Turin, Italy | PortalPay',
+    title: 'Crypto Payments in Turin, Italy | BasaltSurge',
     metaDescription:
       'Instant settlement for Turin hardware, cafés, and repair hubs.',
     localContext:
@@ -10296,7 +10296,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Palermo',
     city: 'Palermo',
     country: 'Italy',
-    title: 'Crypto Payments in Palermo, Italy | PortalPay',
+    title: 'Crypto Payments in Palermo, Italy | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Palermo cafés, coastal services, and repair shops.',
     localContext:
@@ -10316,7 +10316,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bologna',
     city: 'Bologna',
     country: 'Italy',
-    title: 'Crypto Payments in Bologna, Italy | PortalPay',
+    title: 'Crypto Payments in Bologna, Italy | BasaltSurge',
     metaDescription:
       'Instant settlement for Bologna cafés, markets, and repair hubs.',
     localContext:
@@ -10336,7 +10336,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Florence',
     city: 'Florence',
     country: 'Italy',
-    title: 'Crypto Payments in Florence, Italy | PortalPay',
+    title: 'Crypto Payments in Florence, Italy | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Florence artisan vendors, cafés, and repair shops.',
     localContext:
@@ -10356,7 +10356,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Genoa',
     city: 'Genoa',
     country: 'Italy',
-    title: 'Crypto Payments in Genoa, Italy | PortalPay',
+    title: 'Crypto Payments in Genoa, Italy | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Genoa coastal services, cafés, and repair hubs.',
     localContext:
@@ -10378,7 +10378,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Incheon',
     city: 'Incheon',
     country: 'South Korea',
-    title: 'Crypto Payments in Incheon, South Korea | PortalPay',
+    title: 'Crypto Payments in Incheon, South Korea | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Incheon ports, cafés, and repair shops.',
     localContext:
@@ -10398,7 +10398,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Daegu',
     city: 'Daegu',
     country: 'South Korea',
-    title: 'Crypto Payments in Daegu, South Korea | PortalPay',
+    title: 'Crypto Payments in Daegu, South Korea | BasaltSurge',
     metaDescription:
       'Instant settlement for Daegu street food, cafés, and hardware corridors.',
     localContext:
@@ -10418,7 +10418,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Daejeon',
     city: 'Daejeon',
     country: 'South Korea',
-    title: 'Crypto Payments in Daejeon, South Korea | PortalPay',
+    title: 'Crypto Payments in Daejeon, South Korea | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and labs.',
     localContext:
@@ -10438,7 +10438,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Gwangju',
     city: 'Gwangju',
     country: 'South Korea',
-    title: 'Crypto Payments in Gwangju, South Korea | PortalPay',
+    title: 'Crypto Payments in Gwangju, South Korea | BasaltSurge',
     metaDescription:
       'Instant settlement for Gwangju cafés, street vendors, and repair hubs.',
     localContext:
@@ -10458,7 +10458,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ulsan',
     city: 'Ulsan',
     country: 'South Korea',
-    title: 'Crypto Payments in Ulsan, South Korea | PortalPay',
+    title: 'Crypto Payments in Ulsan, South Korea | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for hardware, auto repair, and cafés.',
     localContext:
@@ -10480,7 +10480,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Chengdu',
     city: 'Chengdu',
     country: 'China',
-    title: 'Crypto Payments in Chengdu, China | PortalPay',
+    title: 'Crypto Payments in Chengdu, China | BasaltSurge',
     metaDescription:
       'Instant settlement for Chengdu street food, cafés, and repair hubs.',
     localContext:
@@ -10500,7 +10500,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Chongqing',
     city: 'Chongqing',
     country: 'China',
-    title: 'Crypto Payments in Chongqing, China | PortalPay',
+    title: 'Crypto Payments in Chongqing, China | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Chongqing markets, cafés, and repair shops.',
     localContext:
@@ -10520,7 +10520,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Wuhan',
     city: 'Wuhan',
     country: 'China',
-    title: 'Crypto Payments in Wuhan, China | PortalPay',
+    title: 'Crypto Payments in Wuhan, China | BasaltSurge',
     metaDescription:
       'Instant settlement for Wuhan hardware, cafés, and repair hubs.',
     localContext:
@@ -10540,7 +10540,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: "Xi'an",
     city: "Xi'an",
     country: 'China',
-    title: "Crypto Payments in Xi'an, China | PortalPay",
+    title: "Crypto Payments in Xi'an, China | BasaltSurge",
     metaDescription:
       'QR receipts and instant settlement for artisan vendors, cafés, and street food.',
     localContext:
@@ -10560,7 +10560,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Hangzhou',
     city: 'Hangzhou',
     country: 'China',
-    title: 'Crypto Payments in Hangzhou, China | PortalPay',
+    title: 'Crypto Payments in Hangzhou, China | BasaltSurge',
     metaDescription:
       'Instant settlement for Hangzhou cafés, tech repair, and bakeries.',
     localContext:
@@ -10580,7 +10580,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Nanjing',
     city: 'Nanjing',
     country: 'China',
-    title: 'Crypto Payments in Nanjing, China | PortalPay',
+    title: 'Crypto Payments in Nanjing, China | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Nanjing cafés, markets, and repair hubs.',
     localContext:
@@ -10600,7 +10600,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tianjin',
     city: 'Tianjin',
     country: 'China',
-    title: 'Crypto Payments in Tianjin, China | PortalPay',
+    title: 'Crypto Payments in Tianjin, China | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for Tianjin coastal services, cafés, and repair hubs.',
     localContext:
@@ -10620,7 +10620,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Suzhou',
     city: 'Suzhou',
     country: 'China',
-    title: 'Crypto Payments in Suzhou, China | PortalPay',
+    title: 'Crypto Payments in Suzhou, China | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Suzhou hardware, cafés, and repair hubs.',
     localContext:
@@ -10642,7 +10642,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Brisbane',
     city: 'Brisbane',
     country: 'Australia',
-    title: 'Crypto Payments in Brisbane, Australia | PortalPay',
+    title: 'Crypto Payments in Brisbane, Australia | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for Brisbane ferries, cafés, and repair hubs.',
     localContext:
@@ -10662,7 +10662,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Perth',
     city: 'Perth',
     country: 'Australia',
-    title: 'Crypto Payments in Perth, Australia | PortalPay',
+    title: 'Crypto Payments in Perth, Australia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Perth cafés, coastal services, and repair hubs.',
     localContext:
@@ -10682,7 +10682,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Adelaide',
     city: 'Adelaide',
     country: 'Australia',
-    title: 'Crypto Payments in Adelaide, Australia | PortalPay',
+    title: 'Crypto Payments in Adelaide, Australia | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Adelaide cafés, artisan vendors, and repair shops.',
     localContext:
@@ -10704,7 +10704,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Valencia',
     city: 'Valencia',
     country: 'Spain',
-    title: 'Crypto Payments in Valencia, Spain | PortalPay',
+    title: 'Crypto Payments in Valencia, Spain | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for Valencia coastal services, cafés, and repair hubs.',
     localContext:
@@ -10724,7 +10724,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Seville',
     city: 'Seville',
     country: 'Spain',
-    title: 'Crypto Payments in Seville, Spain | PortalPay',
+    title: 'Crypto Payments in Seville, Spain | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Seville cafés, markets, and repair hubs.',
     localContext:
@@ -10744,7 +10744,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Málaga',
     city: 'Málaga',
     country: 'Spain',
-    title: 'Crypto Payments in Málaga, Spain | PortalPay',
+    title: 'Crypto Payments in Málaga, Spain | BasaltSurge',
     metaDescription:
       'Instant settlement for Málaga coastal services, cafés, and repair shops.',
     localContext:
@@ -10764,7 +10764,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bilbao',
     city: 'Bilbao',
     country: 'Spain',
-    title: 'Crypto Payments in Bilbao, Spain | PortalPay',
+    title: 'Crypto Payments in Bilbao, Spain | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Bilbao cafés, artisan vendors, and repair hubs.',
     localContext:
@@ -10784,7 +10784,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Zaragoza',
     city: 'Zaragoza',
     country: 'Spain',
-    title: 'Crypto Payments in Zaragoza, Spain | PortalPay',
+    title: 'Crypto Payments in Zaragoza, Spain | BasaltSurge',
     metaDescription:
       'Instant settlement for Zaragoza cafés, markets, and repair shops.',
     localContext:
@@ -10806,7 +10806,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Rotterdam',
     city: 'Rotterdam',
     country: 'Netherlands',
-    title: 'Crypto Payments in Rotterdam, Netherlands | PortalPay',
+    title: 'Crypto Payments in Rotterdam, Netherlands | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for Rotterdam coastal services, cafés, and repair hubs.',
     localContext:
@@ -10826,7 +10826,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'The Hague',
     city: 'The Hague',
     country: 'Netherlands',
-    title: 'Crypto Payments in The Hague, Netherlands | PortalPay',
+    title: 'Crypto Payments in The Hague, Netherlands | BasaltSurge',
     metaDescription:
       'Instant settlement for Hague cafés, bakeries, and repair shops.',
     localContext:
@@ -10846,7 +10846,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Utrecht',
     city: 'Utrecht',
     country: 'Netherlands',
-    title: 'Crypto Payments in Utrecht, Netherlands | PortalPay',
+    title: 'Crypto Payments in Utrecht, Netherlands | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Utrecht cafés, artisan vendors, and repair hubs.',
     localContext:
@@ -10866,7 +10866,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Eindhoven',
     city: 'Eindhoven',
     country: 'Netherlands',
-    title: 'Crypto Payments in Eindhoven, Netherlands | PortalPay',
+    title: 'Crypto Payments in Eindhoven, Netherlands | BasaltSurge',
     metaDescription:
       'Instant settlement for Eindhoven hardware, cafés, and repair hubs.',
     localContext:
@@ -10886,7 +10886,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Groningen',
     city: 'Groningen',
     country: 'Netherlands',
-    title: 'Crypto Payments in Groningen, Netherlands | PortalPay',
+    title: 'Crypto Payments in Groningen, Netherlands | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Groningen cafés, student markets, and repair hubs.',
     localContext:
@@ -10908,7 +10908,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Dammam',
     city: 'Dammam',
     country: 'Saudi Arabia',
-    title: 'Crypto Payments in Dammam, Saudi Arabia | PortalPay',
+    title: 'Crypto Payments in Dammam, Saudi Arabia | BasaltSurge',
     metaDescription:
       'Instant settlement for Dammam retail, cafés, and repair hubs.',
     localContext:
@@ -10928,7 +10928,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mecca',
     city: 'Mecca',
     country: 'Saudi Arabia',
-    title: 'Crypto Payments in Mecca, Saudi Arabia | PortalPay',
+    title: 'Crypto Payments in Mecca, Saudi Arabia | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Mecca retail, cafés, and market vendors.',
     localContext:
@@ -10948,7 +10948,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Medina',
     city: 'Medina',
     country: 'Saudi Arabia',
-    title: 'Crypto Payments in Medina, Saudi Arabia | PortalPay',
+    title: 'Crypto Payments in Medina, Saudi Arabia | BasaltSurge',
     metaDescription:
       'Instant settlement for Medina retail, cafés, and repair shops.',
     localContext:
@@ -10970,7 +10970,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Izmir',
     city: 'Izmir',
     country: 'Turkey',
-    title: 'Crypto Payments in Izmir, Turkey | PortalPay',
+    title: 'Crypto Payments in Izmir, Turkey | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for Izmir coastal services, cafés, and repair hubs.',
     localContext:
@@ -10990,7 +10990,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bursa',
     city: 'Bursa',
     country: 'Turkey',
-    title: 'Crypto Payments in Bursa, Turkey | PortalPay',
+    title: 'Crypto Payments in Bursa, Turkey | BasaltSurge',
     metaDescription:
       'Instant settlement for Bursa hardware, cafés, and repair hubs.',
     localContext:
@@ -11010,7 +11010,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Antalya',
     city: 'Antalya',
     country: 'Turkey',
-    title: 'Crypto Payments in Antalya, Turkey | PortalPay',
+    title: 'Crypto Payments in Antalya, Turkey | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Antalya tourism, cafés, and repair hubs.',
     localContext:
@@ -11032,7 +11032,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kaohsiung',
     city: 'Kaohsiung',
     country: 'Taiwan',
-    title: 'Crypto Payments in Kaohsiung, Taiwan | PortalPay',
+    title: 'Crypto Payments in Kaohsiung, Taiwan | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for Kaohsiung coastal services, cafés, and repair hubs.',
     localContext:
@@ -11052,7 +11052,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Taichung',
     city: 'Taichung',
     country: 'Taiwan',
-    title: 'Crypto Payments in Taichung, Taiwan | PortalPay',
+    title: 'Crypto Payments in Taichung, Taiwan | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Taichung hardware, cafés, and street food.',
     localContext:
@@ -11072,7 +11072,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tainan',
     city: 'Tainan',
     country: 'Taiwan',
-    title: 'Crypto Payments in Tainan, Taiwan | PortalPay',
+    title: 'Crypto Payments in Tainan, Taiwan | BasaltSurge',
     metaDescription:
       'Instant settlement for Tainan street food, cafés, and artisan vendors.',
     localContext:
@@ -11092,7 +11092,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Hsinchu',
     city: 'Hsinchu',
     country: 'Taiwan',
-    title: 'Crypto Payments in Hsinchu, Taiwan | PortalPay',
+    title: 'Crypto Payments in Hsinchu, Taiwan | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Hsinchu hardware, cafés, and repair hubs.',
     localContext:
@@ -11114,7 +11114,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Geneva',
     city: 'Geneva',
     country: 'Switzerland',
-    title: 'Crypto Payments in Geneva, Switzerland | PortalPay',
+    title: 'Crypto Payments in Geneva, Switzerland | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for Geneva lakeside ferries, cafés, and repair hubs.',
     localContext:
@@ -11134,7 +11134,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Basel',
     city: 'Basel',
     country: 'Switzerland',
-    title: 'Crypto Payments in Basel, Switzerland | PortalPay',
+    title: 'Crypto Payments in Basel, Switzerland | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Basel cafés, artisan vendors, and repair shops.',
     localContext:
@@ -11156,7 +11156,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kraków',
     city: 'Kraków',
     country: 'Poland',
-    title: 'Crypto Payments in Kraków, Poland | PortalPay',
+    title: 'Crypto Payments in Kraków, Poland | BasaltSurge',
     metaDescription:
       'Instant settlement for Kraków cafés, artisan vendors, and repair shops.',
     localContext:
@@ -11176,7 +11176,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Wrocław',
     city: 'Wrocław',
     country: 'Poland',
-    title: 'Crypto Payments in Wrocław, Poland | PortalPay',
+    title: 'Crypto Payments in Wrocław, Poland | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Wrocław cafés, markets, and repair hubs.',
     localContext:
@@ -11196,7 +11196,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Gdańsk',
     city: 'Gdańsk',
     country: 'Poland',
-    title: 'Crypto Payments in Gdańsk, Poland | PortalPay',
+    title: 'Crypto Payments in Gdańsk, Poland | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for Gdańsk coastal services, cafés, and repair hubs.',
     localContext:
@@ -11216,7 +11216,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Poznań',
     city: 'Poznań',
     country: 'Poland',
-    title: 'Crypto Payments in Poznań, Poland | PortalPay',
+    title: 'Crypto Payments in Poznań, Poland | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Poznań cafés, hardware, and repair shops.',
     localContext:
@@ -11238,7 +11238,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Salvador',
     city: 'Salvador',
     country: 'Brazil',
-    title: 'Crypto Payments in Salvador, Brazil | PortalPay',
+    title: 'Crypto Payments in Salvador, Brazil | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for Salvador coastal services, street food, and cafés.',
     localContext:
@@ -11258,7 +11258,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Porto Alegre',
     city: 'Porto Alegre',
     country: 'Brazil',
-    title: 'Crypto Payments in Porto Alegre, Brazil | PortalPay',
+    title: 'Crypto Payments in Porto Alegre, Brazil | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Porto Alegre cafés, bakeries, and repair hubs.',
     localContext:
@@ -11278,7 +11278,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Belém',
     city: 'Belém',
     country: 'Brazil',
-    title: 'Crypto Payments in Belém, Brazil | PortalPay',
+    title: 'Crypto Payments in Belém, Brazil | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for Belém river services, street food, and cafés.',
     localContext:
@@ -11298,7 +11298,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Goiânia',
     city: 'Goiânia',
     country: 'Brazil',
-    title: 'Crypto Payments in Goiânia, Brazil | PortalPay',
+    title: 'Crypto Payments in Goiânia, Brazil | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Goiânia cafés, hardware, and repair shops.',
     localContext:
@@ -11322,7 +11322,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Honolulu',
     city: 'Honolulu',
     country: 'United States',
-    title: 'Crypto Payments in Honolulu, USA | PortalPay',
+    title: 'Crypto Payments in Honolulu, USA | BasaltSurge',
     metaDescription:
       'QR ticketing for island ferries and instant settlement for cafés, tourism, and repair hubs.',
     localContext:
@@ -11342,7 +11342,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Anchorage',
     city: 'Anchorage',
     country: 'United States',
-    title: 'Crypto Payments in Anchorage, USA | PortalPay',
+    title: 'Crypto Payments in Anchorage, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Alaska cafés, hardware, and repair hubs.',
     localContext:
@@ -11362,7 +11362,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Boise',
     city: 'Boise',
     country: 'United States',
-    title: 'Crypto Payments in Boise, USA | PortalPay',
+    title: 'Crypto Payments in Boise, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, bakeries, and repair hubs.',
     localContext:
@@ -11382,7 +11382,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Spokane',
     city: 'Spokane',
     country: 'United States',
-    title: 'Crypto Payments in Spokane, USA | PortalPay',
+    title: 'Crypto Payments in Spokane, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, repair hubs, and contractors.',
     localContext:
@@ -11402,7 +11402,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tacoma',
     city: 'Tacoma',
     country: 'United States',
-    title: 'Crypto Payments in Tacoma, USA | PortalPay',
+    title: 'Crypto Payments in Tacoma, USA | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for Tacoma coastal services, cafés, and repair hubs.',
     localContext:
@@ -11422,7 +11422,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Richmond',
     city: 'Richmond',
     country: 'United States',
-    title: 'Crypto Payments in Richmond, USA | PortalPay',
+    title: 'Crypto Payments in Richmond, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Richmond cafés, bakeries, and repair shops.',
     localContext:
@@ -11442,7 +11442,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Lexington',
     city: 'Lexington',
     country: 'United States',
-    title: 'Crypto Payments in Lexington, USA | PortalPay',
+    title: 'Crypto Payments in Lexington, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, hardware, and repair hubs.',
     localContext:
@@ -11462,7 +11462,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Louisville',
     city: 'Louisville',
     country: 'United States',
-    title: 'Crypto Payments in Louisville, USA | PortalPay',
+    title: 'Crypto Payments in Louisville, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Louisville cafés, bakeries, and repair shops.',
     localContext:
@@ -11482,7 +11482,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Memphis',
     city: 'Memphis',
     country: 'United States',
-    title: 'Crypto Payments in Memphis, USA | PortalPay',
+    title: 'Crypto Payments in Memphis, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, BBQ, and repair hubs.',
     localContext:
@@ -11502,7 +11502,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Buffalo',
     city: 'Buffalo',
     country: 'United States',
-    title: 'Crypto Payments in Buffalo, USA | PortalPay',
+    title: 'Crypto Payments in Buffalo, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Buffalo cafés, bakeries, and repair hubs.',
     localContext:
@@ -11522,7 +11522,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Rochester',
     city: 'Rochester',
     country: 'United States',
-    title: 'Crypto Payments in Rochester, USA | PortalPay',
+    title: 'Crypto Payments in Rochester, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, hardware, and repair shops.',
     localContext:
@@ -11542,7 +11542,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Syracuse',
     city: 'Syracuse',
     country: 'United States',
-    title: 'Crypto Payments in Syracuse, USA | PortalPay',
+    title: 'Crypto Payments in Syracuse, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Syracuse cafés, bakeries, and repair hubs.',
     localContext:
@@ -11562,7 +11562,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Albany',
     city: 'Albany',
     country: 'United States',
-    title: 'Crypto Payments in Albany, USA | PortalPay',
+    title: 'Crypto Payments in Albany, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, contractors, and repair hubs.',
     localContext:
@@ -11582,7 +11582,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Hartford',
     city: 'Hartford',
     country: 'United States',
-    title: 'Crypto Payments in Hartford, USA | PortalPay',
+    title: 'Crypto Payments in Hartford, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Hartford cafés, bakeries, and repair shops.',
     localContext:
@@ -11602,7 +11602,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Providence',
     city: 'Providence',
     country: 'United States',
-    title: 'Crypto Payments in Providence, USA | PortalPay',
+    title: 'Crypto Payments in Providence, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, artisan vendors, and repair hubs.',
     localContext:
@@ -11622,7 +11622,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Newark',
     city: 'Newark',
     country: 'United States',
-    title: 'Crypto Payments in Newark, USA | PortalPay',
+    title: 'Crypto Payments in Newark, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Newark cafés, repair hubs, and contractors.',
     localContext:
@@ -11642,7 +11642,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Jersey City',
     city: 'Jersey City',
     country: 'United States',
-    title: 'Crypto Payments in Jersey City, USA | PortalPay',
+    title: 'Crypto Payments in Jersey City, USA | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for Jersey City ferries, cafés, and repair hubs.',
     localContext:
@@ -11662,7 +11662,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Virginia Beach',
     city: 'Virginia Beach',
     country: 'United States',
-    title: 'Crypto Payments in Virginia Beach, USA | PortalPay',
+    title: 'Crypto Payments in Virginia Beach, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Virginia Beach tourism, cafés, and repair shops.',
     localContext:
@@ -11682,7 +11682,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Norfolk',
     city: 'Norfolk',
     country: 'United States',
-    title: 'Crypto Payments in Norfolk, USA | PortalPay',
+    title: 'Crypto Payments in Norfolk, USA | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for Norfolk coastal services, cafés, and repair hubs.',
     localContext:
@@ -11702,7 +11702,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Omaha',
     city: 'Omaha',
     country: 'United States',
-    title: 'Crypto Payments in Omaha, USA | PortalPay',
+    title: 'Crypto Payments in Omaha, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Omaha cafés, bakeries, and repair hubs.',
     localContext:
@@ -11722,7 +11722,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Tulsa',
     city: 'Tulsa',
     country: 'United States',
-    title: 'Crypto Payments in Tulsa, USA | PortalPay',
+    title: 'Crypto Payments in Tulsa, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, hardware, and repair shops.',
     localContext:
@@ -11742,7 +11742,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Oklahoma City',
     city: 'Oklahoma City',
     country: 'United States',
-    title: 'Crypto Payments in Oklahoma City, USA | PortalPay',
+    title: 'Crypto Payments in Oklahoma City, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for OKC cafés, contractors, and repair hubs.',
     localContext:
@@ -11762,7 +11762,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Wichita',
     city: 'Wichita',
     country: 'United States',
-    title: 'Crypto Payments in Wichita, USA | PortalPay',
+    title: 'Crypto Payments in Wichita, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, hardware, and repair hubs.',
     localContext:
@@ -11782,7 +11782,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Des Moines',
     city: 'Des Moines',
     country: 'United States',
-    title: 'Crypto Payments in Des Moines, USA | PortalPay',
+    title: 'Crypto Payments in Des Moines, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Des Moines cafés, bakeries, and repair shops.',
     localContext:
@@ -11802,7 +11802,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Little Rock',
     city: 'Little Rock',
     country: 'United States',
-    title: 'Crypto Payments in Little Rock, USA | PortalPay',
+    title: 'Crypto Payments in Little Rock, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, contractors, and repair hubs.',
     localContext:
@@ -11822,7 +11822,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Birmingham',
     city: 'Birmingham',
     country: 'United States',
-    title: 'Crypto Payments in Birmingham, USA | PortalPay',
+    title: 'Crypto Payments in Birmingham, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Birmingham cafés, BBQ, and repair shops.',
     localContext:
@@ -11842,7 +11842,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Jackson',
     city: 'Jackson',
     country: 'United States',
-    title: 'Crypto Payments in Jackson, USA | PortalPay',
+    title: 'Crypto Payments in Jackson, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, repair hubs, and contractors.',
     localContext:
@@ -11862,7 +11862,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Baton Rouge',
     city: 'Baton Rouge',
     country: 'United States',
-    title: 'Crypto Payments in Baton Rouge, USA | PortalPay',
+    title: 'Crypto Payments in Baton Rouge, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Baton Rouge cafés, food trucks, and repair hubs.',
     localContext:
@@ -11882,7 +11882,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Shreveport',
     city: 'Shreveport',
     country: 'United States',
-    title: 'Crypto Payments in Shreveport, USA | PortalPay',
+    title: 'Crypto Payments in Shreveport, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, casinos, and repair shops.',
     localContext:
@@ -11902,7 +11902,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mobile',
     city: 'Mobile',
     country: 'United States',
-    title: 'Crypto Payments in Mobile, USA | PortalPay',
+    title: 'Crypto Payments in Mobile, USA | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for Mobile coastal services, cafés, and repair hubs.',
     localContext:
@@ -11922,7 +11922,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Charleston',
     city: 'Charleston',
     country: 'United States',
-    title: 'Crypto Payments in Charleston, USA | PortalPay',
+    title: 'Crypto Payments in Charleston, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Charleston coastal services, cafés, and artisan vendors.',
     localContext:
@@ -11942,7 +11942,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Savannah',
     city: 'Savannah',
     country: 'United States',
-    title: 'Crypto Payments in Savannah, USA | PortalPay',
+    title: 'Crypto Payments in Savannah, USA | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for Savannah coastal services, cafés, and tourism.',
     localContext:
@@ -11962,7 +11962,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Columbia',
     city: 'Columbia',
     country: 'United States',
-    title: 'Crypto Payments in Columbia, USA | PortalPay',
+    title: 'Crypto Payments in Columbia, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Columbia cafés, bakeries, and repair shops.',
     localContext:
@@ -11982,7 +11982,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Greenville',
     city: 'Greenville',
     country: 'United States',
-    title: 'Crypto Payments in Greenville, USA | PortalPay',
+    title: 'Crypto Payments in Greenville, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, hardware, and repair hubs.',
     localContext:
@@ -12002,7 +12002,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Knoxville',
     city: 'Knoxville',
     country: 'United States',
-    title: 'Crypto Payments in Knoxville, USA | PortalPay',
+    title: 'Crypto Payments in Knoxville, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Knoxville cafés, bakeries, and repair shops.',
     localContext:
@@ -12022,7 +12022,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Chattanooga',
     city: 'Chattanooga',
     country: 'United States',
-    title: 'Crypto Payments in Chattanooga, USA | PortalPay',
+    title: 'Crypto Payments in Chattanooga, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, hardware, and repair hubs.',
     localContext:
@@ -12042,7 +12042,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Fresno',
     city: 'Fresno',
     country: 'United States',
-    title: 'Crypto Payments in Fresno, USA | PortalPay',
+    title: 'Crypto Payments in Fresno, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Fresno markets, cafés, and repair shops.',
     localContext:
@@ -12062,7 +12062,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bakersfield',
     city: 'Bakersfield',
     country: 'United States',
-    title: 'Crypto Payments in Bakersfield, USA | PortalPay',
+    title: 'Crypto Payments in Bakersfield, USA | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, hardware, and repair hubs.',
     localContext:
@@ -12082,7 +12082,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Stockton',
     city: 'Stockton',
     country: 'United States',
-    title: 'Crypto Payments in Stockton, USA | PortalPay',
+    title: 'Crypto Payments in Stockton, USA | BasaltSurge',
     metaDescription:
       'Instant settlement for Stockton markets, cafés, and repair shops.',
     localContext:
@@ -12103,7 +12103,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Porto',
     city: 'Porto',
     country: 'Portugal',
-    title: 'Crypto Payments in Porto, Portugal | PortalPay',
+    title: 'Crypto Payments in Porto, Portugal | BasaltSurge',
     metaDescription:
       'Instant settlement for cafés, bakeries, and Douro waterfront services with QR receipts and split payouts.',
     localContext:
@@ -12124,7 +12124,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Antwerp',
     city: 'Antwerp',
     country: 'Belgium',
-    title: 'Crypto Payments in Antwerp, Belgium | PortalPay',
+    title: 'Crypto Payments in Antwerp, Belgium | BasaltSurge',
     metaDescription:
       'QR receipts and low-fee crypto for cafés, bakeries, and diamond district repair hubs with instant settlement.',
     localContext:
@@ -12145,7 +12145,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Qingdao',
     city: 'Qingdao',
     country: 'China',
-    title: 'Crypto Payments in Qingdao, China | PortalPay',
+    title: 'Crypto Payments in Qingdao, China | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for coastal services, street food, and repair hubs across Qingdao.',
     localContext:
@@ -12166,7 +12166,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Xiamen',
     city: 'Xiamen',
     country: 'China',
-    title: 'Crypto Payments in Xiamen, China | PortalPay',
+    title: 'Crypto Payments in Xiamen, China | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, ferries, and repair hubs around Xiamen’s island districts.',
     localContext:
@@ -12187,7 +12187,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Canberra',
     city: 'Canberra',
     country: 'Australia',
-    title: 'Crypto Payments in Canberra, Australia | PortalPay',
+    title: 'Crypto Payments in Canberra, Australia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for cafés, bakeries, and repair hubs in Australia’s capital.',
     localContext:
@@ -12208,7 +12208,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Sharjah',
     city: 'Sharjah',
     country: 'United Arab Emirates',
-    title: 'Crypto Payments in Sharjah, UAE | PortalPay',
+    title: 'Crypto Payments in Sharjah, UAE | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, markets, and repair hubs across Sharjah.',
     localContext:
@@ -12229,7 +12229,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Caracas',
     city: 'Caracas',
     country: 'Venezuela',
-    title: 'Crypto Payments in Caracas, Venezuela | PortalPay',
+    title: 'Crypto Payments in Caracas, Venezuela | BasaltSurge',
     metaDescription:
       'Low-fee QR payments and instant settlement for cafés, street vendors, and repair hubs in Caracas.',
     localContext:
@@ -12250,7 +12250,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Enugu',
     city: 'Enugu',
     country: 'Nigeria',
-    title: 'Crypto Payments in Enugu, Nigeria | PortalPay',
+    title: 'Crypto Payments in Enugu, Nigeria | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for markets, cafés, and repair hubs across Enugu.',
     localContext:
@@ -12271,7 +12271,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mekelle',
     city: 'Mekelle',
     country: 'Ethiopia',
-    title: 'Crypto Payments in Mekelle, Ethiopia | PortalPay',
+    title: 'Crypto Payments in Mekelle, Ethiopia | BasaltSurge',
     metaDescription:
       'Instant settlement for artisan vendors, cafés, and repair hubs in Mekelle with offline-first support.',
     localContext:
@@ -12292,7 +12292,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kuching',
     city: 'Kuching',
     country: 'Malaysia',
-    title: 'Crypto Payments in Kuching, Malaysia | PortalPay',
+    title: 'Crypto Payments in Kuching, Malaysia | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for Sarawak river services, hawker stalls, and repair hubs.',
     localContext:
@@ -12314,7 +12314,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Thessaloniki',
     city: 'Thessaloniki',
     country: 'Greece',
-    title: 'Crypto Payments in Thessaloniki, Greece | PortalPay',
+    title: 'Crypto Payments in Thessaloniki, Greece | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, markets, and ferry services in Thessaloniki.',
     localContext:
@@ -12335,7 +12335,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Nantes',
     city: 'Nantes',
     country: 'France',
-    title: 'Crypto Payments in Nantes, France | PortalPay',
+    title: 'Crypto Payments in Nantes, France | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Nantes cafés, bakeries, and artisan vendors.',
     localContext:
@@ -12356,7 +12356,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ghent',
     city: 'Ghent',
     country: 'Belgium',
-    title: 'Crypto Payments in Ghent, Belgium | PortalPay',
+    title: 'Crypto Payments in Ghent, Belgium | BasaltSurge',
     metaDescription:
       'Instant settlement for Ghent cafés, artisan markets, and repair hubs.',
     localContext:
@@ -12377,7 +12377,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cork',
     city: 'Cork',
     country: 'Ireland',
-    title: 'Crypto Payments in Cork, Ireland | PortalPay',
+    title: 'Crypto Payments in Cork, Ireland | BasaltSurge',
     metaDescription:
       'Low-fee crypto payments for Cork cafés, markets, and coastal services with instant settlement.',
     localContext:
@@ -12398,7 +12398,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Christchurch',
     city: 'Christchurch',
     country: 'New Zealand',
-    title: 'Crypto Payments in Christchurch, New Zealand | PortalPay',
+    title: 'Crypto Payments in Christchurch, New Zealand | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, repair hubs, and coastal services in Christchurch.',
     localContext:
@@ -12419,7 +12419,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kandy',
     city: 'Kandy',
     country: 'Sri Lanka',
-    title: 'Crypto Payments in Kandy, Sri Lanka | PortalPay',
+    title: 'Crypto Payments in Kandy, Sri Lanka | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan vendors, cafés, and tour operators in Kandy.',
     localContext:
@@ -12440,7 +12440,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Yogyakarta',
     city: 'Yogyakarta',
     country: 'Indonesia',
-    title: 'Crypto Payments in Yogyakarta, Indonesia | PortalPay',
+    title: 'Crypto Payments in Yogyakarta, Indonesia | BasaltSurge',
     metaDescription:
       'Instant settlement for craft markets, cafés, and repair hubs across Yogyakarta.',
     localContext:
@@ -12461,7 +12461,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Phuket',
     city: 'Phuket',
     country: 'Thailand',
-    title: 'Crypto Payments in Phuket, Thailand | PortalPay',
+    title: 'Crypto Payments in Phuket, Thailand | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for island ferries, cafés, and tourism in Phuket.',
     localContext:
@@ -12482,7 +12482,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Trujillo',
     city: 'Trujillo',
     country: 'Peru',
-    title: 'Crypto Payments in Trujillo, Peru | PortalPay',
+    title: 'Crypto Payments in Trujillo, Peru | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for markets, cafés, and repair hubs in Trujillo.',
     localContext:
@@ -12503,7 +12503,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Mar del Plata',
     city: 'Mar del Plata',
     country: 'Argentina',
-    title: 'Crypto Payments in Mar del Plata, Argentina | PortalPay',
+    title: 'Crypto Payments in Mar del Plata, Argentina | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and artisan vendors in Mar del Plata.',
     localContext:
@@ -12525,7 +12525,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Heraklion',
     city: 'Heraklion',
     country: 'Greece',
-    title: 'Crypto Payments in Heraklion, Greece | PortalPay',
+    title: 'Crypto Payments in Heraklion, Greece | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for ferries, cafés, and artisan vendors in Heraklion.',
     localContext:
@@ -12546,7 +12546,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Gothenburg',
     city: 'Gothenburg',
     country: 'Sweden',
-    title: 'Crypto Payments in Gothenburg, Sweden | PortalPay',
+    title: 'Crypto Payments in Gothenburg, Sweden | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for coastal services, cafés, and repair hubs in Gothenburg.',
     localContext:
@@ -12567,7 +12567,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Alicante',
     city: 'Alicante',
     country: 'Spain',
-    title: 'Crypto Payments in Alicante, Spain | PortalPay',
+    title: 'Crypto Payments in Alicante, Spain | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for coastal services, cafés, and artisan vendors in Alicante.',
     localContext:
@@ -12588,7 +12588,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Natal',
     city: 'Natal',
     country: 'Brazil',
-    title: 'Crypto Payments in Natal, Brazil | PortalPay',
+    title: 'Crypto Payments in Natal, Brazil | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for coastal services, street food, and cafés in Natal.',
     localContext:
@@ -12609,7 +12609,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Florianópolis',
     city: 'Florianópolis',
     country: 'Brazil',
-    title: 'Crypto Payments in Florianópolis, Brazil | PortalPay',
+    title: 'Crypto Payments in Florianópolis, Brazil | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for island ferries, cafés, and repair hubs in Florianópolis.',
     localContext:
@@ -12630,7 +12630,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Valencia',
     city: 'Valencia',
     country: 'Venezuela',
-    title: 'Crypto Payments in Valencia, Venezuela | PortalPay',
+    title: 'Crypto Payments in Valencia, Venezuela | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, repair hubs, and street vendors in Valencia.',
     localContext:
@@ -12651,7 +12651,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Harbin',
     city: 'Harbin',
     country: 'China',
-    title: 'Crypto Payments in Harbin, China | PortalPay',
+    title: 'Crypto Payments in Harbin, China | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for night markets, cafés, and repair hubs across Harbin.',
     localContext:
@@ -12672,7 +12672,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Shenyang',
     city: 'Shenyang',
     country: 'China',
-    title: 'Crypto Payments in Shenyang, China | PortalPay',
+    title: 'Crypto Payments in Shenyang, China | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for hardware, cafés, and repair hubs across Shenyang.',
     localContext:
@@ -12693,7 +12693,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ningbo',
     city: 'Ningbo',
     country: 'China',
-    title: 'Crypto Payments in Ningbo, China | PortalPay',
+    title: 'Crypto Payments in Ningbo, China | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for coastal services, cafés, and repair hubs in Ningbo.',
     localContext:
@@ -12714,7 +12714,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bacolod City',
     city: 'Bacolod City',
     country: 'Philippines',
-    title: 'Crypto Payments in Bacolod City, Philippines | PortalPay',
+    title: 'Crypto Payments in Bacolod City, Philippines | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for sari-sari stores, cafés, and repair hubs in Bacolod.',
     localContext:
@@ -12736,7 +12736,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Patras',
     city: 'Patras',
     country: 'Greece',
-    title: 'Crypto Payments in Patras, Greece | PortalPay',
+    title: 'Crypto Payments in Patras, Greece | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for ferries, cafés, and artisan vendors in Patras.',
     localContext:
@@ -12757,7 +12757,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Malmö',
     city: 'Malmö',
     country: 'Sweden',
-    title: 'Crypto Payments in Malmö, Sweden | PortalPay',
+    title: 'Crypto Payments in Malmö, Sweden | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Öresund ferries, cafés, and repair hubs in Malmö.',
     localContext:
@@ -12778,7 +12778,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Las Palmas',
     city: 'Las Palmas',
     country: 'Spain',
-    title: 'Crypto Payments in Las Palmas, Spain | PortalPay',
+    title: 'Crypto Payments in Las Palmas, Spain | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for island ferries, cafés, and artisan markets in Las Palmas.',
     localContext:
@@ -12799,7 +12799,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Maceió',
     city: 'Maceió',
     country: 'Brazil',
-    title: 'Crypto Payments in Maceió, Brazil | PortalPay',
+    title: 'Crypto Payments in Maceió, Brazil | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for coastal services, street food, and cafés in Maceió.',
     localContext:
@@ -12820,7 +12820,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Salta',
     city: 'Salta',
     country: 'Argentina',
-    title: 'Crypto Payments in Salta, Argentina | PortalPay',
+    title: 'Crypto Payments in Salta, Argentina | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan markets, cafés, and repair hubs in Salta.',
     localContext:
@@ -12841,7 +12841,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Maracaibo',
     city: 'Maracaibo',
     country: 'Venezuela',
-    title: 'Crypto Payments in Maracaibo, Venezuela | PortalPay',
+    title: 'Crypto Payments in Maracaibo, Venezuela | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, hardware, and street vendors in Maracaibo.',
     localContext:
@@ -12862,7 +12862,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Dalian',
     city: 'Dalian',
     country: 'China',
-    title: 'Crypto Payments in Dalian, China | PortalPay',
+    title: 'Crypto Payments in Dalian, China | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for coastal services, cafés, and repair hubs in Dalian.',
     localContext:
@@ -12883,7 +12883,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Fuzhou',
     city: 'Fuzhou',
     country: 'China',
-    title: 'Crypto Payments in Fuzhou, China | PortalPay',
+    title: 'Crypto Payments in Fuzhou, China | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for street food, cafés, and repair hubs in Fuzhou.',
     localContext:
@@ -12904,7 +12904,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Zamboanga City',
     city: 'Zamboanga City',
     country: 'Philippines',
-    title: 'Crypto Payments in Zamboanga City, Philippines | PortalPay',
+    title: 'Crypto Payments in Zamboanga City, Philippines | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for ferries, sari-sari stores, and cafés in Zamboanga.',
     localContext:
@@ -12925,7 +12925,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Darwin',
     city: 'Darwin',
     country: 'Australia',
-    title: 'Crypto Payments in Darwin, Australia | PortalPay',
+    title: 'Crypto Payments in Darwin, Australia | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for coastal services, cafés, and repair hubs in Darwin.',
     localContext:
@@ -12947,7 +12947,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Santa Cruz de Tenerife',
     city: 'Santa Cruz de Tenerife',
     country: 'Spain',
-    title: 'Crypto Payments in Santa Cruz de Tenerife, Spain | PortalPay',
+    title: 'Crypto Payments in Santa Cruz de Tenerife, Spain | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for island ferries, cafés, and artisan markets in Santa Cruz de Tenerife.',
     localContext:
@@ -12968,7 +12968,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Murcia',
     city: 'Murcia',
     country: 'Spain',
-    title: 'Crypto Payments in Murcia, Spain | PortalPay',
+    title: 'Crypto Payments in Murcia, Spain | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, artisan vendors, and repair hubs in Murcia.',
     localContext:
@@ -12989,7 +12989,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Funchal',
     city: 'Funchal',
     country: 'Portugal',
-    title: 'Crypto Payments in Funchal, Portugal | PortalPay',
+    title: 'Crypto Payments in Funchal, Portugal | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for Madeira ferries, cafés, and artisan vendors in Funchal.',
     localContext:
@@ -13010,7 +13010,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Split',
     city: 'Split',
     country: 'Croatia',
-    title: 'Crypto Payments in Split, Croatia | PortalPay',
+    title: 'Crypto Payments in Split, Croatia | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for Adriatic ferries, cafés, and artisan vendors in Split.',
     localContext:
@@ -13031,7 +13031,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Plovdiv',
     city: 'Plovdiv',
     country: 'Bulgaria',
-    title: 'Crypto Payments in Plovdiv, Bulgaria | PortalPay',
+    title: 'Crypto Payments in Plovdiv, Bulgaria | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for artisan markets, cafés, and repair hubs in Plovdiv.',
     localContext:
@@ -13052,7 +13052,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Maribor',
     city: 'Maribor',
     country: 'Slovenia',
-    title: 'Crypto Payments in Maribor, Slovenia | PortalPay',
+    title: 'Crypto Payments in Maribor, Slovenia | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for cafés, artisan vendors, and repair hubs in Maribor.',
     localContext:
@@ -13073,7 +13073,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Rhodes',
     city: 'Rhodes',
     country: 'Greece',
-    title: 'Crypto Payments in Rhodes, Greece | PortalPay',
+    title: 'Crypto Payments in Rhodes, Greece | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for island ferries, cafés, and artisan vendors in Rhodes.',
     localContext:
@@ -13094,7 +13094,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Palma de Mallorca',
     city: 'Palma de Mallorca',
     country: 'Spain',
-    title: 'Crypto Payments in Palma de Mallorca, Spain | PortalPay',
+    title: 'Crypto Payments in Palma de Mallorca, Spain | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for Balearic ferries, cafés, and artisan markets in Palma.',
     localContext:
@@ -13115,7 +13115,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Santander',
     city: 'Santander',
     country: 'Spain',
-    title: 'Crypto Payments in Santander, Spain | PortalPay',
+    title: 'Crypto Payments in Santander, Spain | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for coastal services, cafés, and repair hubs in Santander.',
     localContext:
@@ -13136,7 +13136,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Trieste',
     city: 'Trieste',
     country: 'Italy',
-    title: 'Crypto Payments in Trieste, Italy | PortalPay',
+    title: 'Crypto Payments in Trieste, Italy | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for port services, cafés, and repair hubs in Trieste.',
     localContext:
@@ -13158,7 +13158,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Catania',
     city: 'Catania',
     country: 'Italy',
-    title: 'Crypto Payments in Catania, Italy | PortalPay',
+    title: 'Crypto Payments in Catania, Italy | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for coastal services, cafés, and artisan vendors in Catania.',
     localContext:
@@ -13179,7 +13179,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cagliari',
     city: 'Cagliari',
     country: 'Italy',
-    title: 'Crypto Payments in Cagliari, Italy | PortalPay',
+    title: 'Crypto Payments in Cagliari, Italy | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Sardinian ferries, cafés, and repair hubs in Cagliari.',
     localContext:
@@ -13200,7 +13200,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Corfu (Kerkyra)',
     city: 'Corfu',
     country: 'Greece',
-    title: 'Crypto Payments in Corfu, Greece | PortalPay',
+    title: 'Crypto Payments in Corfu, Greece | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for Ionian ferries, cafés, and artisan vendors in Corfu.',
     localContext:
@@ -13221,7 +13221,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Chania',
     city: 'Chania',
     country: 'Greece',
-    title: 'Crypto Payments in Chania, Greece | PortalPay',
+    title: 'Crypto Payments in Chania, Greece | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Crete charters, cafés, and artisan markets in Chania.',
     localContext:
@@ -13242,7 +13242,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ajaccio',
     city: 'Ajaccio',
     country: 'France',
-    title: 'Crypto Payments in Ajaccio, France | PortalPay',
+    title: 'Crypto Payments in Ajaccio, France | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for Corsican ferries, cafés, and artisan vendors in Ajaccio.',
     localContext:
@@ -13263,7 +13263,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Bari',
     city: 'Bari',
     country: 'Italy',
-    title: 'Crypto Payments in Bari, Italy | PortalPay',
+    title: 'Crypto Payments in Bari, Italy | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Adriatic ferries, cafés, and repair hubs in Bari.',
     localContext:
@@ -13284,7 +13284,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Ancona',
     city: 'Ancona',
     country: 'Italy',
-    title: 'Crypto Payments in Ancona, Italy | PortalPay',
+    title: 'Crypto Payments in Ancona, Italy | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for ferries, cafés, and repair hubs in Ancona.',
     localContext:
@@ -13305,7 +13305,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Zadar',
     city: 'Zadar',
     country: 'Croatia',
-    title: 'Crypto Payments in Zadar, Croatia | PortalPay',
+    title: 'Crypto Payments in Zadar, Croatia | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Dalmatian ferries, cafés, and artisan vendors in Zadar.',
     localContext:
@@ -13326,7 +13326,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Kotor',
     city: 'Kotor',
     country: 'Montenegro',
-    title: 'Crypto Payments in Kotor, Montenegro | PortalPay',
+    title: 'Crypto Payments in Kotor, Montenegro | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for bay tours, cafés, and artisan vendors in Kotor.',
     localContext:
@@ -13347,7 +13347,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Varna',
     city: 'Varna',
     country: 'Bulgaria',
-    title: 'Crypto Payments in Varna, Bulgaria | PortalPay',
+    title: 'Crypto Payments in Varna, Bulgaria | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Black Sea ferries, cafés, and repair hubs in Varna.',
     localContext:
@@ -13368,7 +13368,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Livorno',
     city: 'Livorno',
     country: 'Italy',
-    title: 'Crypto Payments in Livorno, Italy | PortalPay',
+    title: 'Crypto Payments in Livorno, Italy | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for Tuscan ferries, cafés, and repair hubs in Livorno.',
     localContext:
@@ -13389,7 +13389,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'La Spezia',
     city: 'La Spezia',
     country: 'Italy',
-    title: 'Crypto Payments in La Spezia, Italy | PortalPay',
+    title: 'Crypto Payments in La Spezia, Italy | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Cinque Terre ferries, cafés, and artisan vendors in La Spezia.',
     localContext:
@@ -13410,7 +13410,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Taranto',
     city: 'Taranto',
     country: 'Italy',
-    title: 'Crypto Payments in Taranto, Italy | PortalPay',
+    title: 'Crypto Payments in Taranto, Italy | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for port services, cafés, and repair hubs in Taranto.',
     localContext:
@@ -13431,7 +13431,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Civitavecchia',
     city: 'Civitavecchia',
     country: 'Italy',
-    title: 'Crypto Payments in Civitavecchia, Italy | PortalPay',
+    title: 'Crypto Payments in Civitavecchia, Italy | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for cruise ferries, cafés, and vendors near Rome in Civitavecchia.',
     localContext:
@@ -13452,7 +13452,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Brindisi',
     city: 'Brindisi',
     country: 'Italy',
-    title: 'Crypto Payments in Brindisi, Italy | PortalPay',
+    title: 'Crypto Payments in Brindisi, Italy | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Adriatic ferries, cafés, and repair hubs in Brindisi.',
     localContext:
@@ -13473,7 +13473,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Messina',
     city: 'Messina',
     country: 'Italy',
-    title: 'Crypto Payments in Messina, Italy | PortalPay',
+    title: 'Crypto Payments in Messina, Italy | BasaltSurge',
     metaDescription:
       'QR ticketing and instant settlement for Strait of Messina ferries, cafés, and vendors.',
     localContext:
@@ -13494,7 +13494,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Dubrovnik',
     city: 'Dubrovnik',
     country: 'Croatia',
-    title: 'Crypto Payments in Dubrovnik, Croatia | PortalPay',
+    title: 'Crypto Payments in Dubrovnik, Croatia | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for Adriatic ferries, cafés, and artisan vendors in Dubrovnik.',
     localContext:
@@ -13515,7 +13515,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Pula',
     city: 'Pula',
     country: 'Croatia',
-    title: 'Crypto Payments in Pula, Croatia | PortalPay',
+    title: 'Crypto Payments in Pula, Croatia | BasaltSurge',
     metaDescription:
       'QR receipts and instant settlement for Istrian ferries, cafés, and artisan markets in Pula.',
     localContext:
@@ -13536,7 +13536,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Piraeus',
     city: 'Piraeus',
     country: 'Greece',
-    title: 'Crypto Payments in Piraeus, Greece | PortalPay',
+    title: 'Crypto Payments in Piraeus, Greece | BasaltSurge',
     metaDescription:
       'Instant settlement and QR tickets for Aegean ferries, cafés, and repair hubs in Piraeus.',
     localContext:
@@ -13557,7 +13557,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Cádiz',
     city: 'Cádiz',
     country: 'Spain',
-    title: 'Crypto Payments in Cádiz, Spain | PortalPay',
+    title: 'Crypto Payments in Cádiz, Spain | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for Bay of Cádiz ferries, cafés, and artisan vendors.',
     localContext:
@@ -13578,7 +13578,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Algeciras',
     city: 'Algeciras',
     country: 'Spain',
-    title: 'Crypto Payments in Algeciras, Spain | PortalPay',
+    title: 'Crypto Payments in Algeciras, Spain | BasaltSurge',
     metaDescription:
       'Instant settlement and QR receipts for Strait of Gibraltar ferries, cafés, and repair hubs.',
     localContext:
@@ -13599,7 +13599,7 @@ export const LOCATION_DATA: Record<string, LocationData> = {
     name: 'Constanța',
     city: 'Constanța',
     country: 'Romania',
-    title: 'Crypto Payments in Constanța, Romania | PortalPay',
+    title: 'Crypto Payments in Constanța, Romania | BasaltSurge',
     metaDescription:
       'QR tickets and instant settlement for Black Sea ferries, cafés, and repair hubs in Constanța.',
     localContext:
@@ -13624,3 +13624,4 @@ export function getLocationData(slug: string): LocationData | null {
 export function getAllLocations(): LocationData[] {
   return Object.values(LOCATION_DATA);
 }
+

@@ -5,7 +5,7 @@ export const artGalleries: IndustryLandingData = {
   name: 'Art Galleries',
   icon: '🎨',
   
-  title: 'Accept Crypto for Art Sales | Instant Global Transactions | PortalPay',
+  title: 'Accept Crypto for Art Sales | Instant Global Transactions | BasaltSurge',
   metaDescription: 'Art gallery crypto payments. Instant settlement for paintings, sculptures, limited editions. Perfect for international collectors and auction houses.',
   keywords: [
     'art gallery crypto payments',
@@ -149,7 +149,7 @@ export const artGalleries: IndustryLandingData = {
   ],
   
   setupSteps: [
-    'Create PortalPay account and connect gallery wallet',
+    'Create BasaltSurge account and connect gallery wallet',
     'Set up art gallery-branded payment portal',
     'Configure artwork-specific payment amounts',
     'Generate payment links for individual artworks',
@@ -175,7 +175,7 @@ export const artGalleries: IndustryLandingData = {
     },
     {
       question: 'What about gallery commissions and artist splits?',
-      answer: 'PortalPay supports automatic payment splitting. Set percentages for gallery commission and artist payment. Funds distribute instantly upon sale.',
+      answer: 'BasaltSurge supports automatic payment splitting. Set percentages for gallery commission and artist payment. Funds distribute instantly upon sale.',
       category: 'Splits',
     },
     {

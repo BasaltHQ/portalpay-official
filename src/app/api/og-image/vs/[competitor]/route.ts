@@ -23,7 +23,7 @@ async function loadBrandLogo(size = 96): Promise<Buffer | null> {
       // Prefer brand-specific app logo in partner containers
       const logoPath = String(brand?.logos?.app || brand?.logos?.symbol || '');
       console.log('[loadBrandLogo] Partner context - logoPath:', logoPath);
-      
+
       if (logoPath) {
         // Check if it's a full URL (starts with http:// or https://)
         if (/^https?:\/\//i.test(logoPath)) {
@@ -32,7 +32,7 @@ async function loadBrandLogo(size = 96): Promise<Buffer | null> {
           // Local path - try loading from public directory
           const rel = logoPath.replace(/^[/\\]+/, '');
           src = await loadPublicImageBuffer(rel);
-          
+
           // Fallback to remote brand asset if local not present and brand.appUrl known
           if (!src && brand?.appUrl) {
             const base = String(brand.appUrl).replace(/\/+$/, '');
@@ -85,7 +85,7 @@ export async function GET(
     const backgroundSvg = createMeshGradient(colors);
     let imageBuffer = await sharp(Buffer.from(backgroundSvg)).resize(1200, 630).png().toBuffer();
 
-const ppSymbolOverlay: Buffer | null = await loadPPSymbol(80);
+    const ppSymbolOverlay: Buffer | null = await loadPPSymbol(80);
     // Brand accent color for table highlights (use brand's accent or fall back to teal)
     const BRAND_ACCENT = brand.colors?.accent || brand.colors?.primary || '#2EE5C8';
 
@@ -96,11 +96,11 @@ const ppSymbolOverlay: Buffer | null = await loadPPSymbol(80);
     const tableY = 130;
     const colWidth = 210; // Wider columns for balance
     const containerPadding = 20;
-const tableContainerWidth = colWidth * 2 + containerPadding * 2; // 460
-const tableContainerHeight = 418; // fixed card height
-const rowHeight = 58;
-// Header above logos (outside card)
-const headerY = tableY - 96;
+    const tableContainerWidth = colWidth * 2 + containerPadding * 2; // 460
+    const tableContainerHeight = 418; // fixed card height
+    const rowHeight = 58;
+    // Header above logos (outside card)
+    const headerY = tableY - 96;
 
     // Left pane content
     const eyebrowText = `${String(brand.name || '').toUpperCase()} VS`;
@@ -115,7 +115,7 @@ const headerY = tableY - 96;
     const subtitleText = subheadline || 'Lower fees, instant settlement, and free enterprise features';
     const descFontSize = 18;
     const descStartY = 348;
-const descLines = wrapTextToLines(subtitleText, 500, descFontSize, 6);
+    const descLines = wrapTextToLines(subtitleText, 500, descFontSize, 6);
     const descLinesSvg = descLines
       .map(
         (ln, idx) =>
@@ -199,53 +199,53 @@ const descLines = wrapTextToLines(subtitleText, 500, descFontSize, 6);
       .slice(0, 6)
       .map((f) => ({
         feature: f.feature,
-        portalpay: typeof f.portalpay === 'boolean' ? (f.portalpay ? '✓' : '✗') : String(f.portalpay),
+        basaltsurge: typeof f.basaltsurge === 'boolean' ? (f.basaltsurge ? '✓' : '✗') : String(f.basaltsurge),
         competitor: typeof f.competitor === 'boolean' ? (f.competitor ? '✓' : '✗') : String(f.competitor),
       }));
 
-/**
- * Fixed-height rows. Shrink text to fit up to 2 lines per cell.
- * Left column: Competitor. Right column: PortalPay.
- */
-const labelFontSize = 13;
-const baseValueSize = 14;
-const maxLines = 2;
-const lineGap = 14;
-const colInnerWidth = colWidth - 24;
+    /**
+     * Fixed-height rows. Shrink text to fit up to 2 lines per cell.
+     * Left column: Competitor. Right column: PortalPay.
+     */
+    const labelFontSize = 13;
+    const baseValueSize = 14;
+    const maxLines = 2;
+    const lineGap = 14;
+    const colInnerWidth = colWidth - 24;
 
-function fitTextToCell(text: string, baseSize: number) {
-  let size = baseSize;
-  let lines = wrapTextToLines(String(text), colInnerWidth, size, 10);
-  while (lines.length > maxLines && size > 10) {
-    size -= 1;
-    lines = wrapTextToLines(String(text), colInnerWidth, size, 10);
-  }
-  return { size, lines };
-}
+    function fitTextToCell(text: string, baseSize: number) {
+      let size = baseSize;
+      let lines = wrapTextToLines(String(text), colInnerWidth, size, 10);
+      while (lines.length > maxLines && size > 10) {
+        size -= 1;
+        lines = wrapTextToLines(String(text), colInnerWidth, size, 10);
+      }
+      return { size, lines };
+    }
 
-const tableRowsSvg = tableFeatures
-  .map((row, idx) => {
-    const y = tableY + 50 + idx * rowHeight; // fixed spacing
-    const isEven = idx % 2 === 0;
+    const tableRowsSvg = tableFeatures
+      .map((row, idx) => {
+        const y = tableY + 50 + idx * rowHeight; // fixed spacing
+        const isEven = idx % 2 === 0;
 
-    const leftXText = tableX + containerPadding + 12; // competitor column
-    const rightXText = tableX + containerPadding + colWidth + 12; // PortalPay column
+        const leftXText = tableX + containerPadding + 12; // competitor column
+        const rightXText = tableX + containerPadding + colWidth + 12; // PortalPay column
 
-    const featureLabelY = y + 18;
-    const valuesStartY = y + 36;
+        const featureLabelY = y + 18;
+        const valuesStartY = y + 36;
 
-    const compFit = fitTextToCell(row.competitor, baseValueSize);
-    const portalFit = fitTextToCell(row.portalpay, baseValueSize);
+        const compFit = fitTextToCell(row.competitor, baseValueSize);
+        const portalFit = fitTextToCell(row.basaltsurge, baseValueSize);
 
-    const competitorValueSvg = `<text x="${leftXText}" y="${valuesStartY}" font-family="Arial, sans-serif" font-size="${compFit.size}" font-weight="700" fill="rgba(255,255,255,0.85)">
+        const competitorValueSvg = `<text x="${leftXText}" y="${valuesStartY}" font-family="Arial, sans-serif" font-size="${compFit.size}" font-weight="700" fill="rgba(255,255,255,0.85)">
       ${compFit.lines.map((ln, i) => `<tspan x="${leftXText}" dy="${i === 0 ? 0 : lineGap}">${escapeForSvg(ln)}</tspan>`).join('')}
     </text>`;
 
-    const portalValueSvg = `<text x="${rightXText}" y="${valuesStartY}" font-family="Arial, sans-serif" font-size="${portalFit.size}" font-weight="800" fill="${BRAND_ACCENT}" filter="url(#softShadow)">
+        const portalValueSvg = `<text x="${rightXText}" y="${valuesStartY}" font-family="Arial, sans-serif" font-size="${portalFit.size}" font-weight="800" fill="${BRAND_ACCENT}" filter="url(#softShadow)">
       ${portalFit.lines.map((ln, i) => `<tspan x="${rightXText}" dy="${i === 0 ? 0 : lineGap}">${escapeForSvg(ln)}</tspan>`).join('')}
     </text>`;
 
-    return `
+        return `
       <!-- Row background inside container -->
       <rect x="${tableX + containerPadding}" y="${y}" width="${colWidth * 2}" height="${rowHeight}" fill="rgba(255,255,255,${isEven ? '0.08' : '0.05'})" rx="12"/>
       <!-- Vertical column divider -->
@@ -259,8 +259,8 @@ const tableRowsSvg = tableFeatures
       ${competitorValueSvg}
       ${portalValueSvg}
     `;
-  })
-  .join('');
+      })
+      .join('');
 
     const textSvg = `
       <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">

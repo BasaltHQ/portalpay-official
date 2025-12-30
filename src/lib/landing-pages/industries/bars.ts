@@ -5,7 +5,7 @@ export const bars: IndustryLandingData = {
     name: 'Bars & Nightclubs',
     icon: '🍺',
     
-    title: 'Accept Crypto Payments for Bars | 0.5-1% Fee | PortalPay',
+    title: 'Accept Crypto Payments for Bars | 0.5-1% Fee | BasaltSurge',
     metaDescription: 'Bar crypto payment processing. Save 70% vs Square. Free POS with tab management, happy hour pricing, and analytics. Perfect for bars, pubs, and nightclubs.',
     keywords: [
       'bar crypto payments',
@@ -211,7 +211,7 @@ export const bars: IndustryLandingData = {
       },
       {
         question: 'How much do I really save vs Square?',
-        answer: 'Typical bar: $10,000/month revenue. Square: $260 fees (2.6% + 10¢) + $60 POS = $320/mo ($3,840/year). PortalPay: $75 fees (0.75%) + $0 POS = $75/mo ($900/year). Annual savings: $2,940. Plus eliminate $300/month in chargebacks = extra $3,600/year. Total savings: $6,540/year.',
+        answer: 'Typical bar: $10,000/month revenue. Square: $260 fees (2.6% + 10¢) + $60 POS = $320/mo ($3,840/year). BasaltSurge: $75 fees (0.75%) + $0 POS = $75/mo ($900/year). Annual savings: $2,940. Plus eliminate $300/month in chargebacks = extra $3,600/year. Total savings: $6,540/year.',
         category: 'Pricing',
       },
       {

@@ -5,7 +5,7 @@ export const medical: IndustryLandingData = {
     name: 'Medical & Healthcare',
     icon: '⚕️',
     
-    title: 'Accept Crypto Payments for Medical Practices | HIPAA Compliant | PortalPay',
+    title: 'Accept Crypto Payments for Medical Practices | HIPAA Compliant | BasaltSurge',
     metaDescription: 'Medical practice crypto payments. 0.5-1% vs 2.9%. HIPAA compliant. Free practice management. Patient billing, appointments, no insurance needed. Perfect for global healthcare.',
     keywords: [
       'medical crypto payments',
@@ -208,7 +208,7 @@ export const medical: IndustryLandingData = {
     
     testimonials: [
       {
-        quote: 'We do cosmetic procedures for international patients. Currency conversion was costing us thousands. PortalPay solved it - patients pay easily from any country, we save 70% on fees.',
+        quote: 'We do cosmetic procedures for international patients. Currency conversion was costing us thousands. BasaltSurge solved it - patients pay easily from any country, we save 70% on fees.',
         author: 'Dr. Sarah Kim',
         business: 'Aesthetic Medical Center, Seoul',
         savings: '$8,400/year',

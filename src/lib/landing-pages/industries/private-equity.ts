@@ -5,7 +5,7 @@ export const privateEquity: IndustryLandingData = {
   name: 'Private Equity',
   icon: '🏦',
   
-  title: 'Accept Crypto for Private Equity Deals | Instant Settlement | PortalPay',
+  title: 'Accept Crypto for Private Equity Deals | Instant Settlement | BasaltSurge',
   metaDescription: 'Private equity crypto payment processing. Instant buyout financing, transparent on-chain records, global LP access. Perfect for buyouts, growth capital, and distressed assets.',
   keywords: [
     'private equity crypto payments',
@@ -149,7 +149,7 @@ export const privateEquity: IndustryLandingData = {
   ],
   
   setupSteps: [
-    'Create PortalPay account and connect fund wallet',
+    'Create BasaltSurge account and connect fund wallet',
     'Set up branded portal with PE firm branding',
     'Configure capital call and distribution workflows',
     'Generate payment links for LP capital calls',

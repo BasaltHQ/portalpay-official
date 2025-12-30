@@ -5,7 +5,7 @@ export const aircraftSales: IndustryLandingData = {
   name: 'Aircraft Sales',
   icon: '✈️',
   
-  title: 'Accept Crypto for Aircraft Sales | Instant Settlement | PortalPay',
+  title: 'Accept Crypto for Aircraft Sales | Instant Settlement | BasaltSurge',
   metaDescription: 'Aircraft sales crypto payment processing. Instant transactions for private jets, helicopters, fractional shares. Global buyers, no wire delays, blockchain verification.',
   keywords: [
     'aircraft crypto payments',
@@ -149,7 +149,7 @@ export const aircraftSales: IndustryLandingData = {
   ],
   
   setupSteps: [
-    'Create PortalPay account and connect company wallet',
+    'Create BasaltSurge account and connect company wallet',
     'Set up aviation-branded payment portal',
     'Configure aircraft-specific payment workflows',
     'Generate payment links for listings or deposits',

@@ -8,12 +8,12 @@ export interface IndustryLandingData {
   slug: string;
   name: string;
   icon: string;
-  
+
   // SEO
   title: string;
   metaDescription: string;
   keywords: string[];
-  
+
   // Hero Section
   heroHeadline: string;
   heroSubheadline: string;
@@ -23,11 +23,11 @@ export interface IndustryLandingData {
     secondary: string;
     secondaryLink: string;
   };
-  
+
   // Value Props
   painPoints: string[];
   solutions: string[];
-  
+
   // Benefits
   benefits: Array<{
     icon: string;
@@ -35,7 +35,7 @@ export interface IndustryLandingData {
     description: string;
     stat?: string;
   }>;
-  
+
   // Cost Comparison
   avgMonthlyVolume: number;
   competitorComparison: {
@@ -46,7 +46,7 @@ export interface IndustryLandingData {
       annualSoftwareCost: number;
     };
   };
-  
+
   // Use Cases
   useCases: Array<{
     title: string;
@@ -54,7 +54,7 @@ export interface IndustryLandingData {
     example: string;
     savings?: string;
   }>;
-  
+
   // Features
   industryFeatures: string[];
   includedFeatures: Array<{
@@ -62,17 +62,17 @@ export interface IndustryLandingData {
     description: string;
     usualCost?: string;
   }>;
-  
+
   // Setup Steps
   setupSteps: string[];
-  
+
   // FAQ
   faqs: Array<{
     question: string;
     answer: string;
     category?: string;
   }>;
-  
+
   // Social Proof
   testimonials?: Array<{
     quote: string;
@@ -80,7 +80,7 @@ export interface IndustryLandingData {
     business: string;
     savings?: string;
   }>;
-  
+
   // Related
   relatedIndustries: string[];
   relatedUseCases: string[];
@@ -90,15 +90,15 @@ export interface ComparisonData {
   slug: string;
   name: string;
   logo?: string;
-  
+
   // SEO
   title: string;
   metaDescription: string;
-  
+
   // Hero
   headline: string;
   subheadline: string;
-  
+
   // Comparison
   pricing: {
     processingFee: number;
@@ -106,22 +106,22 @@ export interface ComparisonData {
     monthlyFee: number;
     annualSoftwareCost: number;
   };
-  
+
   features: Array<{
     feature: string;
-    portalpay: string | boolean;
+    basaltsurge: string | boolean;
     competitor: string | boolean;
     advantage?: boolean;
   }>;
-  
+
   // Migration
   migrationSteps?: string[];
-  
+
   // Use Cases
   useCases: Array<{
     scenario: string;
     competitorCost: number;
-    portalpayCost: number;
+    basaltsurgeCost: number;
     savings: number;
   }>;
 }
@@ -129,35 +129,35 @@ export interface ComparisonData {
 export interface UseCaseData {
   slug: string;
   name: string;
-  
+
   // SEO
   title: string;
   metaDescription: string;
-  
+
   // Hero
   headline: string;
   subheadline: string;
-  
+
   // Content
   benefits: Array<{
     icon: string;
     title: string;
     description: string;
   }>;
-  
+
   howItWorks: string[];
-  
+
   useCases: Array<{
     title: string;
     description: string;
     example: string;
   }>;
-  
+
   faqs: Array<{
     question: string;
     answer: string;
   }>;
-  
+
   relatedIndustries: string[];
 }
 
@@ -167,15 +167,15 @@ export interface LocationData {
   city: string;
   state?: string;
   country: string;
-  
+
   // SEO
   title: string;
   metaDescription: string;
-  
+
   // Content
   localContext?: string;
   popularIndustries: string[];
-  
+
   // Stats
   population?: number;
   businessCount?: number;
@@ -185,15 +185,15 @@ export interface TokenData {
   slug: string;
   name: string;
   symbol: string;
-  
+
   // SEO
   title: string;
   metaDescription: string;
-  
+
   // Content
   benefits: string[];
   useCases: string[];
-  
+
   // Technical
   network: string;
   isStablecoin: boolean;

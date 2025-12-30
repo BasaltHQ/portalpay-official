@@ -9,7 +9,7 @@ import { isPartnerContext } from "@/lib/env";
 
 // Document ID pattern: seo:pages:<brandKey>
 function getDocId(brandKey: string): string {
-  const key = String(brandKey || "portalpay").toLowerCase();
+  const key = String(brandKey || "basaltsurge").toLowerCase();
   return `seo:pages:${key}`;
 }
 
@@ -30,9 +30,9 @@ export async function getSEOPagesSettings(brandKeyOverride?: string): Promise<SE
   try {
     let brandKey = brandKeyOverride;
     if (!brandKey) {
-      try { brandKey = getBrandKey(); } catch { brandKey = "portalpay"; }
+      try { brandKey = getBrandKey(); } catch { brandKey = "basaltsurge"; }
     }
-    brandKey = String(brandKey || "portalpay").toLowerCase();
+    brandKey = String(brandKey || "basaltsurge").toLowerCase();
 
     const docId = getDocId(brandKey);
     const c = await getContainer();
@@ -102,19 +102,19 @@ export async function isPageEnabled(
 ): Promise<boolean> {
   // Match admin panel's page ID format: "industry-slug", "comparison-slug", "location-slug"
   const pageKey = `${pageType}-${slug}`;
-  
+
   try {
     // Determine brand key for debugging
     let brandKey = brandKeyOverride;
     if (!brandKey) {
-      try { brandKey = getBrandKey(); } catch { brandKey = "portalpay"; }
+      try { brandKey = getBrandKey(); } catch { brandKey = "basaltsurge"; }
     }
-    brandKey = String(brandKey || "portalpay").toLowerCase();
-    
+    brandKey = String(brandKey || "basaltsurge").toLowerCase();
+
     console.log(`[seo-settings] Checking page: ${pageKey} for brand: ${brandKey}`);
-    
+
     const settings = await getSEOPagesSettings(brandKeyOverride);
-    
+
     // No settings document - default to enabled
     if (!settings) {
       console.log(`[seo-settings] No settings document found for brand: ${brandKey} - defaulting to enabled`);
@@ -122,7 +122,7 @@ export async function isPageEnabled(
     }
 
     console.log(`[seo-settings] Found settings with ${Object.keys(settings.pageStatuses).length} page statuses`);
-    
+
     const status = settings.pageStatuses[pageKey];
 
     // No explicit setting for this page - default to enabled

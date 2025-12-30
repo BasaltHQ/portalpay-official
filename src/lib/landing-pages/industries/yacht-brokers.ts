@@ -5,7 +5,7 @@ export const yachtBrokers: IndustryLandingData = {
   name: 'Yacht Brokers',
   icon: '⛵',
   
-  title: 'Accept Crypto for Yacht Sales | Instant Global Transactions | PortalPay',
+  title: 'Accept Crypto for Yacht Sales | Instant Global Transactions | BasaltSurge',
   metaDescription: 'Yacht broker crypto payments. Instant settlement for motor yachts, sailing yachts, superyachts. Global buyers, no wire delays, blockchain verification.',
   keywords: [
     'yacht crypto payments',
@@ -149,7 +149,7 @@ export const yachtBrokers: IndustryLandingData = {
   ],
   
   setupSteps: [
-    'Create PortalPay account and connect brokerage wallet',
+    'Create BasaltSurge account and connect brokerage wallet',
     'Set up marine-branded payment portal',
     'Configure yacht-specific payment workflows',
     'Generate payment links for listings or surveys',

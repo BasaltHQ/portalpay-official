@@ -7,7 +7,7 @@ export const internetCafes: IndustryLandingData = {
   icon: '🖥️',
 
   // SEO
-  title: 'Crypto Payments for Internet Cafés | PortalPay',
+  title: 'Crypto Payments for Internet Cafés | BasaltSurge',
   metaDescription:
     'Sell time vouchers via QR, manage printing and peripherals, track session usage, and split payouts for attendants. Offline-first with ultra-low fees.',
   keywords: [

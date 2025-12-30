@@ -10,7 +10,7 @@ export const plumbingServices: IndustryLandingData = {
   name: 'Plumbing Services',
   icon: '🚰',
 
-  title: 'Accept Crypto Payments for Plumbing Services | PortalPay',
+  title: 'Accept Crypto Payments for Plumbing Services | BasaltSurge',
   metaDescription:
     'Plumbing services crypto payment processing with lower fees, instant settlement, and modern POS features. Switch from card processors and save.',
   keywords: [
@@ -85,7 +85,7 @@ export const plumbingServices: IndustryLandingData = {
   ],
 
   setupSteps: [
-    'Create your free PortalPay account',
+    'Create your free BasaltSurge account',
     'Add business profile and logo',
     'Set up service items and rates',
     'Share QR codes and payment links',
@@ -111,7 +111,7 @@ export const hvacServices: IndustryLandingData = {
   name: 'HVAC Services',
   icon: '❄️',
 
-  title: 'Accept Crypto Payments for HVAC Services | PortalPay',
+  title: 'Accept Crypto Payments for HVAC Services | BasaltSurge',
   metaDescription:
     'HVAC services crypto payment processing with lower fees, instant settlement, and modern POS features. Switch from card processors and save.',
   keywords: [
@@ -183,7 +183,7 @@ export const electricalContractors: IndustryLandingData = {
   name: 'Electrical Contractors',
   icon: '🔌',
 
-  title: 'Accept Crypto Payments for Electrical Contractors | PortalPay',
+  title: 'Accept Crypto Payments for Electrical Contractors | BasaltSurge',
   metaDescription:
     'Electrical contractors crypto payment processing with lower fees, instant settlement, and modern POS features. Switch from card processors and save.',
   keywords: ['electrician crypto payments', 'electrical bitcoin payments', 'contractor payment processor', 'home services pos', 'low fee payments'],
@@ -236,7 +236,7 @@ export const roofingContractors: IndustryLandingData = {
   name: 'Roofing Contractors',
   icon: '🏠',
 
-  title: 'Accept Crypto Payments for Roofing Contractors | PortalPay',
+  title: 'Accept Crypto Payments for Roofing Contractors | BasaltSurge',
   metaDescription:
     'Roofing contractors crypto payment processing with lower fees, instant settlement, and modern POS features. Switch from card processors and save.',
   keywords: ['roofing crypto payments', 'roofer bitcoin payments', 'contractor payment processor', 'home services pos', 'low fee payments'],
@@ -289,7 +289,7 @@ export const landscapingServices: IndustryLandingData = {
   name: 'Landscaping Services',
   icon: '🌿',
 
-  title: 'Accept Crypto Payments for Landscaping Services | PortalPay',
+  title: 'Accept Crypto Payments for Landscaping Services | BasaltSurge',
   metaDescription:
     'Landscaping services crypto payment processing with lower fees, instant settlement, and modern POS features. Switch from card processors and save.',
   keywords: ['landscaping crypto payments', 'landscaper bitcoin payments', 'yard care payment processor', 'home services pos', 'low fee payments'],
@@ -342,7 +342,7 @@ export const generalContractors: IndustryLandingData = {
   name: 'General Contractors',
   icon: '🏗️',
 
-  title: 'Accept Crypto Payments for General Contractors | PortalPay',
+  title: 'Accept Crypto Payments for General Contractors | BasaltSurge',
   metaDescription:
     'General contractors crypto payment processing with lower fees, instant settlement, and modern POS features. Switch from card processors and save.',
   keywords: ['general contractor crypto payments', 'construction bitcoin payments', 'contractor payment processor', 'home services pos', 'low fee payments'],
@@ -395,7 +395,7 @@ export const carpentry: IndustryLandingData = {
   name: 'Carpentry',
   icon: '🪚',
 
-  title: 'Accept Crypto Payments for Carpentry | PortalPay',
+  title: 'Accept Crypto Payments for Carpentry | BasaltSurge',
   metaDescription:
     'Carpentry services crypto payment processing with lower fees, instant settlement, and modern POS features. Switch from card processors and save.',
   keywords: ['carpentry crypto payments', 'carpenter bitcoin payments', 'home services payment processor', 'pos for carpenters', 'low fee payments'],
@@ -448,7 +448,7 @@ export const painters: IndustryLandingData = {
   name: 'Painters',
   icon: '🎨',
 
-  title: 'Accept Crypto Payments for Painters | PortalPay',
+  title: 'Accept Crypto Payments for Painters | BasaltSurge',
   metaDescription:
     'Painting services crypto payment processing with lower fees, instant settlement, and modern POS features. Switch from card processors and save.',
   keywords: ['painters crypto payments', 'painting bitcoin payments', 'home services payment processor', 'pos for painters', 'low fee payments'],
@@ -501,7 +501,7 @@ export const pestControl: IndustryLandingData = {
   name: 'Pest Control',
   icon: '🐜',
 
-  title: 'Accept Crypto Payments for Pest Control | PortalPay',
+  title: 'Accept Crypto Payments for Pest Control | BasaltSurge',
   metaDescription:
     'Pest control services crypto payment processing with lower fees, instant settlement, and modern POS features. Switch from card processors and save.',
   keywords: ['pest control crypto payments', 'exterminator bitcoin payments', 'home services payment processor', 'pos for pest control', 'low fee payments'],
@@ -554,7 +554,7 @@ export const locksmiths: IndustryLandingData = {
   name: 'Locksmiths',
   icon: '🔑',
 
-  title: 'Accept Crypto Payments for Locksmiths | PortalPay',
+  title: 'Accept Crypto Payments for Locksmiths | BasaltSurge',
   metaDescription:
     'Locksmith services crypto payment processing with lower fees, instant settlement, and modern POS features. Switch from card processors and save.',
   keywords: ['locksmith crypto payments', 'locksmith bitcoin payments', 'home services payment processor', 'pos for locksmiths', 'low fee payments'],
@@ -607,7 +607,7 @@ export const applianceRepair: IndustryLandingData = {
   name: 'Appliance Repair',
   icon: '🔧',
 
-  title: 'Accept Crypto Payments for Appliance Repair | PortalPay',
+  title: 'Accept Crypto Payments for Appliance Repair | BasaltSurge',
   metaDescription:
     'Appliance repair crypto payment processing with lower fees, instant settlement, and modern POS features. Switch from card processors and save.',
   keywords: ['appliance repair crypto payments', 'repair bitcoin payments', 'home services payment processor', 'pos for appliance repair', 'low fee payments'],
@@ -660,7 +660,7 @@ export const cleaningServices: IndustryLandingData = {
   name: 'Cleaning Services',
   icon: '🧼',
 
-  title: 'Accept Crypto Payments for Cleaning Services | PortalPay',
+  title: 'Accept Crypto Payments for Cleaning Services | BasaltSurge',
   metaDescription:
     'Cleaning services crypto payment processing with lower fees, instant settlement, and modern POS features. Switch from card processors and save.',
   keywords: ['cleaning services crypto payments', 'cleaners bitcoin payments', 'home services payment processor', 'pos for cleaners', 'low fee payments'],

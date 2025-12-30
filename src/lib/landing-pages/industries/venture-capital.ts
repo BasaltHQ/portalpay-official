@@ -5,7 +5,7 @@ export const ventureCapital: IndustryLandingData = {
   name: 'Venture Capital',
   icon: '💼',
   
-  title: 'Accept Crypto for Venture Capital Investments | Instant Settlement | PortalPay',
+  title: 'Accept Crypto for Venture Capital Investments | Instant Settlement | BasaltSurge',
   metaDescription: 'Venture capital crypto payment processing. Instant investment transfers, transparent on-chain records, global LP access. Perfect for seed rounds, Series A, and bridge financing.',
   keywords: [
     'venture capital crypto payments',
@@ -151,7 +151,7 @@ export const ventureCapital: IndustryLandingData = {
   ],
   
   setupSteps: [
-    'Create PortalPay account and connect fund wallet',
+    'Create BasaltSurge account and connect fund wallet',
     'Set up branded investment portal with fund branding',
     'Configure accepted tokens and investment minimums',
     'Generate unique payment links for each LP or round',

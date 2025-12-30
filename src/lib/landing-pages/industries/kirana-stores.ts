@@ -5,7 +5,7 @@ export const kiranaStores: IndustryLandingData = {
   name: 'Kirana Stores (India)',
   icon: '🧺',
 
-  title: 'Accept Crypto and Local Cards for Kirana Stores | Ultra-Low Fees | PortalPay',
+  title: 'Accept Crypto and Local Cards for Kirana Stores | Ultra-Low Fees | BasaltSurge',
   metaDescription:
     'Kirana store payments with crypto or local cards. QR checkout, daily settlement, and inventory tools. Pay 0.5–1% vs 2–3%+ with traditional POS. Works alongside UPI and cash.',
   keywords: [
@@ -196,7 +196,7 @@ export const kiranaStores: IndustryLandingData = {
     {
       question: 'Will this work alongside UPI and cash?',
       answer:
-        'Yes. Many shops keep UPI and cash. PortalPay adds a low-fee digital option with better reconciliation and instant settlement.',
+        'Yes. Many shops keep UPI and cash. BasaltSurge adds a low-fee digital option with better reconciliation and instant settlement.',
       category: 'Compatibility',
     },
     {

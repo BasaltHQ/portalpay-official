@@ -7,7 +7,7 @@ export const artisanPotters: IndustryLandingData = {
   icon: '🫙',
 
   // SEO
-  title: 'Crypto Payments for Artisan Potters | PortalPay',
+  title: 'Crypto Payments for Artisan Potters | BasaltSurge',
   metaDescription:
     'Accept deposits for custom pottery, track kiln batches and glazing, tag materials to orders, and split payouts for studio assistants with ultra-low fees.',
   keywords: [

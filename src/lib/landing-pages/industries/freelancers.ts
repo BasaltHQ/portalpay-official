@@ -5,7 +5,7 @@ export const freelancers: IndustryLandingData = {
     name: 'Freelancers & Consultants',
     icon: '💼',
     
-    title: 'Accept Crypto Payments as a Freelancer | International Clients | PortalPay',
+    title: 'Accept Crypto Payments as a Freelancer | International Clients | BasaltSurge',
     metaDescription: 'Freelancer crypto payment processing. Accept international payments instantly. 0.5-1% fee vs PayPal 5.4%. No bank account needed. Perfect for global freelancers.',
     keywords: [
       'freelancer crypto payments',
@@ -191,7 +191,7 @@ export const freelancers: IndustryLandingData = {
       },
       {
         question: 'How much do I really save vs PayPal?',
-        answer: 'PayPal international: 5.4% + 3-5% currency conversion = 8-10% total. On $5,000/month, that\'s $400-500/month ($4,800-6,000/year). PortalPay: 0.75% average = $37.50/month ($450/year). Annual savings: $4,350-5,550. Plus instant settlement instead of 3-5 day holds.',
+        answer: 'PayPal international: 5.4% + 3-5% currency conversion = 8-10% total. On $5,000/month, that\'s $400-500/month ($4,800-6,000/year). BasaltSurge: 0.75% average = $37.50/month ($450/year). Annual savings: $4,350-5,550. Plus instant settlement instead of 3-5 day holds.',
         category: 'Savings',
       },
       {
@@ -208,7 +208,7 @@ export const freelancers: IndustryLandingData = {
     
     testimonials: [
       {
-        quote: 'I\'m a developer in India working with US clients. PayPal was taking 8% total with fees and conversion. PortalPay costs me under 1%. I\'m keeping $350 more per month.',
+        quote: 'I\'m a developer in India working with US clients. PayPal was taking 8% total with fees and conversion. BasaltSurge costs me under 1%. I\'m keeping $350 more per month.',
         author: 'Raj Patel',
         business: 'Full-Stack Developer, Mumbai',
         savings: '$4,200/year',

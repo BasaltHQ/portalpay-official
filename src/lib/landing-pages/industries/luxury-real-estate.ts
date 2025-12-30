@@ -5,7 +5,7 @@ export const luxuryRealEstate: IndustryLandingData = {
   name: 'Luxury Real Estate',
   icon: '🏰',
   
-  title: 'Accept Crypto for Luxury Property Sales | Instant Global Transactions | PortalPay',
+  title: 'Accept Crypto for Luxury Property Sales | Instant Global Transactions | BasaltSurge',
   metaDescription: 'Luxury real estate crypto payments. Instant settlement for penthouses, villas, estates. Perfect for ultra-high-net-worth buyers and international transactions.',
   keywords: [
     'luxury real estate crypto',
@@ -149,7 +149,7 @@ export const luxuryRealEstate: IndustryLandingData = {
   ],
   
   setupSteps: [
-    'Create PortalPay account and connect wallet',
+    'Create BasaltSurge account and connect wallet',
     'Set up luxury-branded payment portal',
     'Configure property-specific payment amounts',
     'Generate secure payment links for listings',

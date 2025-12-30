@@ -7,7 +7,7 @@ export const microGridOperators: IndustryLandingData = {
   icon: '⚡',
 
   // SEO
-  title: 'Crypto Payments for Micro-Grid Operators | PortalPay',
+  title: 'Crypto Payments for Micro-Grid Operators | BasaltSurge',
   metaDescription:
     'Prepaid energy tokens via QR, tiered tariffs, load management, maintenance funds, and split payouts to community and operators with ultra-low fees.',
   keywords: [

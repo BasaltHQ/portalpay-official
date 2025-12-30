@@ -5,7 +5,7 @@ export const investmentFunds: IndustryLandingData = {
   name: 'Investment Funds',
   icon: '📈',
   
-  title: 'Accept Crypto for Investment Fund Subscriptions | PortalPay',
+  title: 'Accept Crypto for Investment Fund Subscriptions | BasaltSurge',
   metaDescription: 'Investment fund crypto payment processing. Instant subscriptions, transparent on-chain records, global investor access. Perfect for mutual funds, ETFs, and hedge funds.',
   keywords: [
     'investment fund crypto payments',
@@ -149,7 +149,7 @@ export const investmentFunds: IndustryLandingData = {
   ],
   
   setupSteps: [
-    'Create PortalPay account and connect fund wallet',
+    'Create BasaltSurge account and connect fund wallet',
     'Set up branded subscription portal',
     'Configure minimum investments and accepted tokens',
     'Generate payment links for subscriptions',
@@ -175,7 +175,7 @@ export const investmentFunds: IndustryLandingData = {
     },
     {
       question: 'What about investor verification and KYC?',
-      answer: 'You maintain your existing KYC/AML processes. PortalPay is simply the payment method - all investor verification requirements remain the same. The blockchain records provide additional transparency.',
+      answer: 'You maintain your existing KYC/AML processes. BasaltSurge is simply the payment method - all investor verification requirements remain the same. The blockchain records provide additional transparency.',
       category: 'Compliance',
     },
     {

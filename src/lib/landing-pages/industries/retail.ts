@@ -5,7 +5,7 @@ export const retail: IndustryLandingData = {
     name: 'Retail Stores',
     icon: '🛍️',
     
-    title: 'Accept Crypto Payments for Retail | 0.5-1% Fee | PortalPay',
+    title: 'Accept Crypto Payments for Retail | 0.5-1% Fee | BasaltSurge',
     metaDescription: 'Retail crypto payment processing. Save 70% vs Square/Clover. Free POS with inventory, variations, and analytics. Accept cards without a bank account.',
     keywords: [
       'retail crypto payments',
@@ -191,7 +191,7 @@ export const retail: IndustryLandingData = {
       },
       {
         question: 'How much can I save compared to Square or Clover?',
-        answer: 'Example: Retail store processing $10,000/month. Square charges $260 in fees + $60/mo software = $320/mo ($3,840/year). Clover charges $230 fees + $100/mo = $330/mo ($3,960/year). PortalPay charges $50-100 fees + $0/mo = $50-100/mo ($600-1,200/year). You save $2,640-3,360 annually. Actual savings scale with volume.',
+        answer: 'Example: Retail store processing $10,000/month. Square charges $260 in fees + $60/mo software = $320/mo ($3,840/year). Clover charges $230 fees + $100/mo = $330/mo ($3,960/year). BasaltSurge charges $50-100 fees + $0/mo = $50-100/mo ($600-1,200/year). You save $2,640-3,360 annually. Actual savings scale with volume.',
         category: 'Pricing',
       },
       {

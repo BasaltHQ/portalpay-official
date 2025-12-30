@@ -7,9 +7,9 @@ export const mobilePhoneRepair: IndustryLandingData = {
   icon: '📱',
 
   // SEO
-  title: 'Crypto Payments for Mobile Phone Repair Shops | PortalPay',
+  title: 'Crypto Payments for Mobile Phone Repair Shops | BasaltSurge',
   metaDescription:
-    'Accept crypto payments for diagnostics, parts, and repairs. Track IMEI, warranty notes, parts tags, and split payouts between owner and technician with PortalPay.',
+    'Accept crypto payments for diagnostics, parts, and repairs. Track IMEI, warranty notes, parts tags, and split payouts between owner and technician with BasaltSurge.',
   keywords: [
     'phone repair crypto payments',
     'mobile repair shop payments',

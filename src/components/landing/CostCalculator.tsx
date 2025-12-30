@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { getBrandConfig } from '@/config/brands';
 
 interface CompetitorPricing {
   processingFee: number;
@@ -23,16 +24,17 @@ export function CostCalculator({
   className = '',
 }: CostCalculatorProps) {
   const [monthlyVolume, setMonthlyVolume] = useState(defaultVolume);
+  const brand = getBrandConfig();
 
   const calculations = useMemo(() => {
     const results: Record<string, { monthly: number; annual: number; breakdown: string }> = {};
 
     // PortalPay calculation (0.5-1%, we'll use 0.75% average)
-    const portalPayFee = monthlyVolume * 0.0075;
-    results.portalpay = {
-      monthly: portalPayFee,
-      annual: portalPayFee * 12,
-      breakdown: `${monthlyVolume.toLocaleString()} × 0.75% = $${portalPayFee.toFixed(2)}`,
+    const basaltsurgeFee = monthlyVolume * 0.0075;
+    results.basaltsurge = {
+      monthly: basaltsurgeFee,
+      annual: basaltsurgeFee * 12,
+      breakdown: `${monthlyVolume.toLocaleString()} × 0.75% = $${basaltsurgeFee.toFixed(2)}`,
     };
 
     // Competitor calculations
@@ -61,11 +63,11 @@ export function CostCalculator({
     // Calculate average competitor cost
     const avgCompetitorAnnual =
       Object.values(calculations)
-        .filter((_, idx) => idx > 0) // Skip portalpay
+        .filter((_, idx) => idx > 0) // Skip basaltsurge
         .reduce((sum, calc) => sum + calc.annual, 0) / competitorNames.length;
 
-    const portalPayAnnual = calculations.portalpay.annual;
-    const annualSavings = avgCompetitorAnnual - portalPayAnnual;
+    const basaltsurgeAnnual = calculations.basaltsurge.annual;
+    const annualSavings = avgCompetitorAnnual - basaltsurgeAnnual;
     const monthlySavings = annualSavings / 12;
     const percentage = (annualSavings / avgCompetitorAnnual) * 100;
 
@@ -123,9 +125,9 @@ export function CostCalculator({
         {/* PortalPay Row */}
         <div className="rounded-lg border-2 border-[var(--pp-secondary)] bg-[var(--pp-secondary)]/5 p-3">
           <div className="flex justify-between items-center mb-1">
-            <span className="font-semibold text-[var(--pp-secondary)]">PortalPay</span>
+            <span className="font-semibold text-[var(--pp-secondary)]">{brand.name || 'BasaltSurge'}</span>
             <span className="text-lg font-bold text-[var(--pp-secondary)]">
-              ${calculations.portalpay.monthly.toFixed(2)}/mo
+              ${calculations.basaltsurge.monthly.toFixed(2)}/mo
             </span>
           </div>
           <div className="text-xs text-muted-foreground">
@@ -159,15 +161,15 @@ export function CostCalculator({
       <div className="mt-6 pt-6 border-t">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <div className="text-muted-foreground mb-1">Annual with PortalPay</div>
+            <div className="text-muted-foreground mb-1">Annual with {brand.name || 'BasaltSurge'}</div>
             <div className="text-xl font-bold text-[var(--pp-secondary)]">
-              ${calculations.portalpay.annual.toLocaleString()}
+              ${calculations.basaltsurge.annual.toLocaleString()}
             </div>
           </div>
           <div>
             <div className="text-muted-foreground mb-1">Annual with Others</div>
             <div className="text-xl font-bold line-through opacity-50">
-              ${(calculations.portalpay.annual + savings.annual).toLocaleString()}
+              ${(calculations.basaltsurge.annual + savings.annual).toLocaleString()}
             </div>
           </div>
         </div>

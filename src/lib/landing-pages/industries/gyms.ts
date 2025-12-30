@@ -211,7 +211,7 @@ export const gyms: IndustryLandingData = {
       },
       {
         question: 'How much do I really save vs MindBody?',
-        answer: 'Gym with 100 members at $150/month = $15,000 MRR. MindBody: $435 processing fees (2.9%) + $129 software = $564/mo ($6,768/year). PortalPay: $112.50 processing (0.75%) + $0 software = $112.50/mo ($1,350/year). Annual savings: $5,418. Plus reduce churn = more MRR retained.',
+        answer: 'Gym with 100 members at $150/month = $15,000 MRR. MindBody: $435 processing fees (2.9%) + $129 software = $564/mo ($6,768/year). BasaltSurge: $112.50 processing (0.75%) + $0 software = $112.50/mo ($1,350/year). Annual savings: $5,418. Plus reduce churn = more MRR retained.',
         category: 'Pricing',
       },
       {

@@ -7,7 +7,7 @@ export const cryptidTourOperators: IndustryLandingData = {
   icon: '🦕',
 
   // SEO
-  title: 'Crypto Payments for Cryptid Tour Operators | PortalPay',
+  title: 'Crypto Payments for Cryptid Tour Operators | BasaltSurge',
   metaDescription:
     'Sell night safari tickets via QR, manage permits and guide splits, track merch, and operate offline in remote habitats. Transparent receipts with disclaimers.',
   keywords: [

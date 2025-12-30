@@ -5,7 +5,7 @@ export const ecommerce: IndustryLandingData = {
     name: 'E-commerce Stores',
     icon: '🛒',
     
-    title: 'Accept Crypto for E-commerce | Global Checkout | PortalPay',
+    title: 'Accept Crypto for E-commerce | Global Checkout | BasaltSurge',
     metaDescription: 'E-commerce crypto payments. Accept global orders instantly. 0.5-1% vs Shopify 2.9%. Free checkout widget. No chargebacks. International customers love it.',
     keywords: [
       'ecommerce crypto payments',
@@ -201,7 +201,7 @@ export const ecommerce: IndustryLandingData = {
       },
       {
         question: 'Can I still use Shopify/WooCommerce?',
-        answer: 'Yes! PortalPay works alongside your existing platform. Keep your store exactly as is. Just add crypto payment option. Or migrate to our hosted solution to save the $79/month Shopify fee too. Your choice.',
+        answer: 'Yes! BasaltSurge works alongside your existing platform. Keep your store exactly as is. Just add crypto payment option. Or migrate to our hosted solution to save the $79/month Shopify fee too. Your choice.',
         category: 'Platform',
       },
     ],

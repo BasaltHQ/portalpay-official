@@ -5,7 +5,7 @@ export const bodaBodaOperators: IndustryLandingData = {
   name: 'Boda Boda Operators (East Africa)',
   icon: '🛵',
 
-  title: 'Accept Crypto or Local Cards for Boda Boda | QR Fares, Tips, and Split Payouts | PortalPay',
+  title: 'Accept Crypto or Local Cards for Boda Boda | QR Fares, Tips, and Split Payouts | BasaltSurge',
   metaDescription:
     'Boda boda fare collection with QR checkout and instant settlement. Low fees (0.5–1%), tip support, partner splits, and offline tally. Works for individual riders and stage groups in Kenya, Uganda, Tanzania.',
   keywords: [

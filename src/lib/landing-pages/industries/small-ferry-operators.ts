@@ -7,7 +7,7 @@ export const smallFerryOperators: IndustryLandingData = {
   icon: '⛴️',
 
   // SEO
-  title: 'Crypto Payments for Small Ferry Operators | PortalPay',
+  title: 'Crypto Payments for Small Ferry Operators | BasaltSurge',
   metaDescription:
     'Sell QR tickets, manage passenger manifests and cargo fees, allocate harbor dues and fuel reserves, and split payouts to owner, captain, and crew with ultra-low fees.',
   keywords: [

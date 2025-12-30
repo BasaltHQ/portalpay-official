@@ -5,7 +5,7 @@ export const restaurants: IndustryLandingData = {
     name: 'Restaurants',
     icon: '🍽️',
     
-    title: 'Accept Crypto Payments for Restaurants | 0.5-1% Fee | PortalPay',
+    title: 'Accept Crypto Payments for Restaurants | 0.5-1% Fee | BasaltSurge',
     metaDescription: 'Restaurant crypto payment processing. Pay only 0.5-1% vs 2.9%+. Free POS with kitchen display, table management, menu builder. Accept cards without a bank account. Save $3,000+ annually.',
     keywords: [
       'restaurant crypto payments',
@@ -193,11 +193,11 @@ export const restaurants: IndustryLandingData = {
       },
       {
         question: 'How much can I really save compared to Square or Toast?',
-        answer: 'On average, restaurants save 70-85% on total costs. Example: Restaurant processing $15,000/month with Toast pays $374 in fees + $165 monthly software = $539/mo ($6,468/year). With PortalPay: $75-150 in fees + $0 monthly = $75-150/mo ($900-1,800/year). Annual savings: $4,668-5,568. Plus you get better features completely free.',
+        answer: 'On average, restaurants save 70-85% on total costs. Example: Restaurant processing $15,000/month with Toast pays $374 in fees + $165 monthly software = $539/mo ($6,468/year). With BasaltSurge: $75-150 in fees + $0 monthly = $75-150/mo ($900-1,800/year). Annual savings: $4,668-5,568. Plus you get better features completely free.',
         category: 'Pricing',
       },
       {
-        question: 'Do I need a traditional bank account to use PortalPay?',
+        question: 'Do I need a traditional bank account to use BasaltSurge?',
         answer: 'No! This is a major advantage for international restaurants or new businesses. You only need a crypto wallet (we can help you create one in minutes). Payments settle directly to your wallet. You can hold crypto, convert to stablecoins, or cash out to your local currency using any crypto exchange. This eliminates banking barriers for merchants worldwide.',
         category: 'Setup',
       },
@@ -245,13 +245,13 @@ export const restaurants: IndustryLandingData = {
     
     testimonials: [
       {
-        quote: 'We were paying Square $340/month in fees plus $60 for their restaurant POS. PortalPay cut our costs to under $100/month and gave us better features. The kitchen display is amazing.',
+        quote: 'We were paying Square $340/month in fees plus $60 for their restaurant POS. BasaltSurge cut our costs to under $100/month and gave us better features. The kitchen display is amazing.',
         author: 'Maria Chen',
         business: 'Fusion Bistro, San Francisco',
         savings: '$3,480/year',
       },
       {
-        quote: 'As a new restaurant, getting approved for traditional payment processing was a nightmare. PortalPay let us start accepting payments in one day, no bank account needed. Now we save thousands on fees.',
+        quote: 'As a new restaurant, getting approved for traditional payment processing was a nightmare. BasaltSurge let us start accepting payments in one day, no bank account needed. Now we save thousands on fees.',
         author: 'Carlos Rodriguez',
         business: 'Taqueria Moderna, Austin',
         savings: '$4,200/year',

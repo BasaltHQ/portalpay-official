@@ -5,7 +5,7 @@ export const rareCollectibles: IndustryLandingData = {
   name: 'Rare Collectibles',
   icon: '🏎️',
   
-  title: 'Accept Crypto for Rare Collectibles | Instant Global Transactions | PortalPay',
+  title: 'Accept Crypto for Rare Collectibles | Instant Global Transactions | BasaltSurge',
   metaDescription: 'Rare collectibles crypto payments. Instant settlement for vintage cars, rare coins, fine wine, and memorabilia. Perfect for global collectors and auction houses.',
   keywords: [
     'rare collectibles crypto payments',
@@ -149,7 +149,7 @@ export const rareCollectibles: IndustryLandingData = {
   ],
   
   setupSteps: [
-    'Create PortalPay account and connect company wallet',
+    'Create BasaltSurge account and connect company wallet',
     'Set up collectibles-branded payment portal',
     'Configure item-specific payment links and certificates',
     'Share QR codes or links for auctions and private sales',
@@ -180,7 +180,7 @@ export const rareCollectibles: IndustryLandingData = {
     },
     {
       question: 'Can we split payment between consignor and house?',
-      answer: 'Yes. Configure split percentages and PortalPay will distribute funds instantly upon settlement.',
+      answer: 'Yes. Configure split percentages and BasaltSurge will distribute funds instantly upon settlement.',
       category: 'Splits',
     },
   ],

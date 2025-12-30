@@ -5,7 +5,7 @@ export const autoRepair: IndustryLandingData = {
   name: 'Auto Repair Shops',
   icon: '🛠️',
 
-  title: 'Accept Crypto Payments for Auto Repair | Lower Fees | PortalPay',
+  title: 'Accept Crypto Payments for Auto Repair | Lower Fees | BasaltSurge',
   metaDescription:
     'Auto repair crypto payment processing with 50-70% lower fees than card processors. Instant settlement, approve-by-text estimates, deposit holds, and modern POS for service shops.',
   keywords: [

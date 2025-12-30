@@ -5,7 +5,7 @@ export const veterinarians: IndustryLandingData = {
   name: 'Veterinary Clinics',
   icon: '🐾',
 
-  title: 'Accept Crypto Payments for Veterinarians | Deposits, Prescriptions, Boarding | PortalPay',
+  title: 'Accept Crypto Payments for Veterinarians | Deposits, Prescriptions, Boarding | BasaltSurge',
   metaDescription:
     'Veterinary crypto payment processing. Collect deposits, charge after-hours emergency care, and bill prescriptions with 0.5-1% fees vs 2.9%+. Free clinic management, appointment scheduling, and client portal.',
   keywords: [

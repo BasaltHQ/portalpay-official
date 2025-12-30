@@ -5,7 +5,7 @@ export const salons: IndustryLandingData = {
     name: 'Salons & Spas',
     icon: '💇',
     
-    title: 'Accept Crypto Payments for Salons | Booking System Included | PortalPay',
+    title: 'Accept Crypto Payments for Salons | Booking System Included | BasaltSurge',
     metaDescription: 'Salon crypto payment processing. Save 70% vs Square. Free booking system with appointments, service packages, and client management. Perfect for salons and spas.',
     keywords: [
       'salon crypto payments',

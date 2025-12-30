@@ -5,7 +5,7 @@ export const realEstate: IndustryLandingData = {
   name: 'Real Estate',
   icon: '🏢',
   
-  title: 'Accept Crypto Payments for Real Estate | Instant Settlement | PortalPay',
+  title: 'Accept Crypto Payments for Real Estate | Instant Settlement | BasaltSurge',
   metaDescription: 'Real estate crypto payment processing. Instant cross-border transactions, no wire delays, reduced fees. Perfect for property down payments, deposits, and international buyers.',
   keywords: [
     'real estate crypto payments',
@@ -151,7 +151,7 @@ export const realEstate: IndustryLandingData = {
   ],
   
   setupSteps: [
-    'Create your PortalPay account and connect wallet',
+    'Create your BasaltSurge account and connect wallet',
     'Set up branded payment portal with your real estate company branding',
     'Configure accepted tokens (USDC, USDT, BTC, ETH, XRP)',
     'Generate payment links for specific properties or amounts',
