@@ -46,6 +46,7 @@ type SiteConfigResponse = {
     processingFeePct?: number;
     splitAddress?: string;
     split?: { address?: string };
+    tokens?: TokenDef[];
   };
   degraded?: boolean;
   reason?: string;
@@ -60,7 +61,7 @@ type TokenDef = {
 
 const CURRENCIES = SUPPORTED_CURRENCIES;
 
-function getAvailableTokens(): TokenDef[] {
+function getBuildTimeTokens(): TokenDef[] {
   const tokens: TokenDef[] = [];
   tokens.push({ symbol: "ETH", type: "native" });
 
@@ -686,7 +687,8 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
   }, []);
 
   const [token, setToken] = useState<"ETH" | "USDC" | "USDT" | "cbBTC" | "cbXRP" | "SOL">("ETH");
-  const availableTokens = useMemo(() => getAvailableTokens(), []);
+  const [availableTokens, setAvailableTokens] = useState<TokenDef[]>(() => getBuildTimeTokens());
+
   const recipientParam = String(useSearchParams()?.get("recipient") || "").toLowerCase();
   // Prefer connected operator wallet when logged in; otherwise allow explicit recipient param, else fallback to NEXT_PUBLIC_RECIPIENT_* for dummy terminal
   const operatorAddr = (account?.address || "").toLowerCase();
@@ -713,6 +715,11 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
         const r = await fetch(url, { cache: "no-store", credentials: "omit", headers: { "x-theme-caller": "terminal" } });
         const j: SiteConfigResponse = await r.json().catch(() => ({} as any));
         const t = j?.config?.defaultPaymentToken;
+        // Merge runtime tokens if present (preserves ETH, adds/updates others)
+        if (j?.config?.tokens && Array.isArray(j.config.tokens) && j.config.tokens.length > 0) {
+          const runtimeTokens = j.config.tokens as TokenDef[];
+          if (!cancelled) setAvailableTokens(runtimeTokens);
+        }
         if (!cancelled && typeof t === "string") setToken(t as any);
       } catch { }
     })();

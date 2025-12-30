@@ -377,6 +377,42 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
       } catch { }
     }
 
+    // Inject runtime token configuration from server environment variables
+    // This allows the client to receive these values even if they weren't present at build time
+    (cfg as any).tokens = [
+      { symbol: "ETH", type: "native" },
+      ...(process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS ? [{
+        symbol: "USDC",
+        type: "erc20",
+        address: process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS,
+        decimals: Number(process.env.NEXT_PUBLIC_BASE_USDC_DECIMALS || 6)
+      }] : []),
+      ...(process.env.NEXT_PUBLIC_BASE_USDT_ADDRESS ? [{
+        symbol: "USDT",
+        type: "erc20",
+        address: process.env.NEXT_PUBLIC_BASE_USDT_ADDRESS,
+        decimals: Number(process.env.NEXT_PUBLIC_BASE_USDT_DECIMALS || 6)
+      }] : []),
+      ...(process.env.NEXT_PUBLIC_BASE_CBBTC_ADDRESS ? [{
+        symbol: "cbBTC",
+        type: "erc20",
+        address: process.env.NEXT_PUBLIC_BASE_CBBTC_ADDRESS,
+        decimals: Number(process.env.NEXT_PUBLIC_BASE_CBBTC_DECIMALS || 8)
+      }] : []),
+      ...(process.env.NEXT_PUBLIC_BASE_CBXRP_ADDRESS ? [{
+        symbol: "cbXRP",
+        type: "erc20",
+        address: process.env.NEXT_PUBLIC_BASE_CBXRP_ADDRESS,
+        decimals: Number(process.env.NEXT_PUBLIC_BASE_CBXRP_DECIMALS || 6)
+      }] : []),
+      ...(process.env.NEXT_PUBLIC_BASE_SOL_ADDRESS ? [{
+        symbol: "SOL",
+        type: "erc20",
+        address: process.env.NEXT_PUBLIC_BASE_SOL_ADDRESS,
+        decimals: Number(process.env.NEXT_PUBLIC_BASE_SOL_DECIMALS || 9)
+      }] : [])
+    ];
+
     return cfg;
   } catch {
     return cfg;
