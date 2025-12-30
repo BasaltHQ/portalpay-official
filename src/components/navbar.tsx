@@ -436,13 +436,13 @@ export function Navbar() {
 
     return (
         <header className={`w-full sticky top-0 ${navZ} backdrop-blur bg-background/70 border-b`}>
-            <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+            <div className="max-w-5xl mx-auto px-4 h-20 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-2 min-w-0 relative z-50">
                     {showBrandSkeleton ? (
                         <span
                             aria-hidden="true"
                             className={
-                                "w-8 h-8 flex-shrink-0 bg-foreground/10 brand-skeleton " +
+                                "w-8 h-12 flex-shrink-0 bg-foreground/10 brand-skeleton " +
                                 (theme.brandLogoShape === "round"
                                     ? "rounded-full"
                                     : theme.brandLogoShape === "unmasked"
@@ -461,7 +461,7 @@ export function Navbar() {
                             })()}
                             alt={displayBrandName || (isPartnerContainer ? "" : getDefaultBrandName(effectiveBrandKey))}
                             className={
-                                "h-8 w-auto max-w-[360px] object-contain flex-shrink-0 rounded-none bg-transparent drop-shadow-md"
+                                "h-14 w-auto max-w-[360px] object-contain flex-shrink-0 rounded-none bg-transparent drop-shadow-md"
                             }
                         />
                     ) : (
@@ -475,7 +475,7 @@ export function Navbar() {
                             })()}
                             alt={displayBrandName || (isPartnerContainer ? "" : "PortalPay")}
                             className={
-                                "w-8 h-8 object-contain bg-foreground/5 flex-shrink-0 drop-shadow-md " +
+                                "w-12 h-12 object-contain bg-foreground/5 flex-shrink-0 drop-shadow-md " +
                                 (theme.brandLogoShape === "round"
                                     ? "rounded-full"
                                     : theme.brandLogoShape === "unmasked"
@@ -486,7 +486,7 @@ export function Navbar() {
                     )}
                     {theme.brandLogoShape === "unmasked" ? null : (
                         showBrandSkeleton || navbarMode !== 'symbol' ? null : (
-                            <span className="hidden sm:inline text-sm md:text-xs font-semibold leading-none">
+                            <span className="hidden sm:inline text-sm md:text-lg font-semibold leading-none">
                                 {displayBrandName || (isPartnerContainer ? "" : "PortalPay")}
                             </span>
                         )

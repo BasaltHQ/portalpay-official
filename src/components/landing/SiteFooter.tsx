@@ -138,9 +138,9 @@ export default function SiteFooter() {
       <div className="max-w-6xl mx-auto px-6 md:px-8 py-8 flex flex-col sm:flex-row items-center justify-center gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={footerIcon}
+          src="/bssymbol.png"
           alt={`${footerName} symbol`}
-          className="h-6 w-6 rounded-sm object-contain"
+          className="h-10 w-10 rounded-sm object-contain"
         />
         <span className="microtext text-muted-foreground">
           © {new Date().getFullYear()} {footerName}. All rights reserved.

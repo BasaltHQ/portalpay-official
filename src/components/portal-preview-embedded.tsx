@@ -659,7 +659,7 @@ export function PortalPreviewEmbedded({
           }}
         />
 
-        <div className="relative z-10 w-auto min-w-[200px]">
+        <div className="relative z-10 w-auto min-w-[200px] flex items-center gap-2">
           {effectiveNavbarMode === "logo" ? (
             // Full-width logo (no text)
             // eslint-disable-next-line @next/next/no-img-element
@@ -672,15 +672,15 @@ export function PortalPreviewEmbedded({
           ) : (
             // Symbol + Text
             <>
-              <div className={`w-9 h-9 relative z-10 ${theme.brandLogoShape === "round" ? "rounded-full" : (theme.brandLogoShape === "unmasked" ? "rounded-none" : "rounded-md")} bg-white/10 flex items-center justify-center overflow-visible`}>
+              <div className={`w-10 h-10 relative z-10 ${theme.brandLogoShape === "round" ? "rounded-full" : (theme.brandLogoShape === "unmasked" ? "rounded-none" : "rounded-md")} bg-white/10 flex items-center justify-center overflow-visible`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   alt={effectiveBrandName || "Logo"}
                   src={getSymbolLogo()}
-                  className="max-h-9 object-contain drop-shadow-md relative z-10"
+                  className="max-h-10 object-contain drop-shadow-md relative z-10"
                 />
               </div>
-              <div className="font-semibold truncate z-10 relative pl-2" style={{ fontFamily: theme.fontFamily }}>
+              <div className="font-semibold truncate z-10 relative" style={{ fontFamily: theme.fontFamily }}>
                 {effectiveBrandName}
               </div>
             </>
