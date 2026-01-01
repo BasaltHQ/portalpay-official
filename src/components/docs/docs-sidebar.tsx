@@ -10,6 +10,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { docsNavigation } from './docs-nav';
 import { cachedFetch } from "@/lib/client-api-cache";
 import { resolveBrandAppLogo } from "@/lib/branding";
+import { useDocsSidebar } from "@/contexts/DocsSidebarContext";
 
 interface NavItem {
   title: string;
@@ -109,7 +110,7 @@ function NavGroup({ item, currentPath }: { item: NavItem; currentPath: string })
 }
 
 export function DocsSidebar({ currentPath }: { currentPath: string }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, setIsCollapsed } = useDocsSidebar();
   const brand = useBrand();
   const { theme } = useTheme();
   const [containerBrandKey, setContainerBrandKey] = useState<string>("");

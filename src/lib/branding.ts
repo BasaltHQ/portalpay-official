@@ -39,6 +39,35 @@ export function getDefaultBrandName(key?: string): string {
 }
 
 /**
+ * Normalizes a brand name to its proper display format with correct capitalization.
+ * Handles known brands like "BasaltSurge" and "PortalPay" which have specific casing.
+ */
+export function normalizeBrandName(name?: string | null, key?: string): string {
+    const k = (key || "").toLowerCase().trim();
+    const n = (name || "").trim();
+
+    // Known brand mappings with proper capitalization
+    const brandMap: Record<string, string> = {
+        "basaltsurge": "BasaltSurge",
+        "portalpay": "PortalPay",
+    };
+
+    // Check if key matches a known brand
+    if (k && brandMap[k]) {
+        return brandMap[k];
+    }
+
+    // Check if name (lowercase) matches a known brand
+    const nLower = n.toLowerCase();
+    if (brandMap[nLower]) {
+        return brandMap[nLower];
+    }
+
+    // Return original name if no match found, or derive from key
+    return n || getDefaultBrandName(k);
+}
+
+/**
  * Resolves a logo source, falling back to the correct brand default.
  * Two-state model: Trust the source URL if provided, otherwise return brand default.
  * No blocking - the data source (site config or shop config) is responsible for correct values.

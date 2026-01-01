@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "vox";
+  src: url("/fonts/vox-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "vox";
+  src: url("/fonts/vox-light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
 html {
   color-scheme: dark;
   scroll-behavior: smooth;
@@ -57,6 +73,9 @@ html[data-pp-theme-lock="portalpay-default"] {
   --font-mono: var(--font-geist-mono);
 }
 
+.font-vox {
+  font-family: "vox", sans-serif !important;
+}
 
 body {
   background: var(--background);
@@ -64,6 +83,13 @@ body {
   /* Prefer configured font family via ThemeLoader, fallback to app font */
   font-family: var(--pp-font, var(--font-geist-sans)), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
+  /* No global padding-top - pages with navbar apply it via .with-global-navbar */
+}
+
+/* Pages with the global navbar visible should apply this class to their main content */
+body.with-global-navbar {
+  padding-top: 112px;
+  /* Adjusted to meet the header animation line */
 }
 
 /* Route-scoped guard: hide app-level global gradient layer on portal routes to avoid duplication */
@@ -724,4 +750,82 @@ html[data-pp-theme-ready="0"] body::after {
 .tw-modal button:hover,
 .tw-connect button:hover {
   border-color: var(--pp-primary) !important;
+}
+
+/* ========================================
+   BasaltCRM Theme Animations & Effects
+   ======================================== */
+@keyframes gleam {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+
+  20% {
+    transform: translateX(150%) skewX(-20deg);
+  }
+
+  100% {
+    transform: translateX(150%) skewX(-20deg);
+  }
+}
+
+.gleam-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.gleam-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transform: translateX(-150%) skewX(-20deg);
+  animation: gleam 5s infinite;
+  pointer-events: none;
+}
+
+.shield-gleam-container {
+  position: absolute;
+  inset: 0;
+  mask-image: url('/Surge.png');
+  /* Adapted to current logo */
+  -webkit-mask-image: url('/Surge.png');
+  mask-size: contain;
+  -webkit-mask-size: contain;
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-position: center;
+  pointer-events: none;
+}
+
+.shield-gleam-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  transform: translateX(-150%) skewX(-20deg);
+  animation: gleam 5s infinite;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }

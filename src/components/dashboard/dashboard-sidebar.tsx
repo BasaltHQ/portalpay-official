@@ -8,6 +8,7 @@ import { Tooltip } from '../docs/tooltip';
 import { useBrand } from "@/contexts/BrandContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { resolveBrandSymbol, getDefaultBrandName, resolveBrandAppLogo } from "@/lib/branding";
+import { useDocsSidebar } from "@/contexts/DocsSidebarContext";
 
 interface NavItem {
   title: string;
@@ -88,7 +89,7 @@ function NavGroup({ item, currentPath }: { item: NavItem; currentPath: string })
 }
 
 export function DashboardSidebar({ currentPath }: { currentPath: string }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, setIsCollapsed } = useDocsSidebar();
   const brand = useBrand();
   const { theme } = useTheme();
   const isWideLogo = theme?.navbarMode === 'logo';
@@ -112,7 +113,7 @@ export function DashboardSidebar({ currentPath }: { currentPath: string }) {
               alt={theme?.brandName || brand?.name || getDefaultBrandName((brand as any)?.key)}
               width={40}
               height={40}
-              className="transition-transform group-hover:scale-110 h-10 w-10"
+              className="transition-transform group-hover:scale-110 h-10 w-10 object-contain"
             />
           )}
           {!isCollapsed && !isWideLogo && (

@@ -11,6 +11,8 @@ import { DashboardTOC } from "@/components/dashboard/dashboard-toc";
 import { Modal } from "@/components/ui/modal";
 import { useBrand } from "@/contexts/BrandContext";
 import { resolveBrandAppLogo } from "@/lib/branding";
+import { DocsSidebarProvider } from "@/contexts/DocsSidebarContext";
+import { DashboardContentWrapper } from "@/components/dashboard/dashboard-content-wrapper";
 
 
 type ApiKey = {
@@ -182,10 +184,10 @@ function APIKeysContent() {
         </div>
       </header>
 
-      <DashboardSidebar currentPath="/developers/dashboard/api-keys" />
+      <DocsSidebarProvider>
+        <DashboardSidebar currentPath="/developers/dashboard/api-keys" />
 
-      <main className="pt-[176px] transition-all duration-300">
-        <div className="mx-auto max-w-5xl px-8 py-12 md:ml-64 xl:mr-64">
+        <DashboardContentWrapper>
           {/* Breadcrumb */}
           <nav className="mb-8 flex items-center gap-2 text-sm text-muted-foreground">
             <Link href="/developers/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link>
@@ -222,8 +224,8 @@ function APIKeysContent() {
             <SubscriptionView keys={keys} onRegenerate={confirmRegenerate} onShow={handleShowKey} />
           )}
 
-        </div>
-      </main>
+        </DashboardContentWrapper>
+      </DocsSidebarProvider>
 
       <DashboardTOC sections={tocSections} />
 

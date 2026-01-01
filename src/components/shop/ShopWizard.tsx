@@ -73,7 +73,7 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
     };
 
     return (
-        <div className="fixed inset-x-0 top-[112px] z-[9999] flex bg-background overflow-hidden" style={{ height: 'calc(100vh - 112px)' }}>
+        <div className="fixed inset-0 z-[9999] flex bg-background overflow-hidden">
             {/* Left Sidebar: Form */}
             <div className="w-full md:w-[450px] flex flex-col border-r bg-background h-full shadow-2xl z-10">
                 {/* Header */}

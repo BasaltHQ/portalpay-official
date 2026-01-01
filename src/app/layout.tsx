@@ -22,7 +22,7 @@ import { BrandProvider } from "@/contexts/BrandContext";
 import { getContainer } from "@/lib/cosmos";
 import { getEnv } from "@/lib/env";
 import { getBrandConfigFromCosmos, getContainerIdentity } from "@/lib/brand-config";
-import { resolveBrandAppLogo, resolveBrandSymbol } from "@/lib/branding";
+import { normalizeBrandName, resolveBrandAppLogo, resolveBrandSymbol, getDefaultBrandName } from "@/lib/branding";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -297,18 +297,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const isPartnerContainerForMeta = String(containerIdentityForMeta.containerType || envMeta.CONTAINER_TYPE || "").toLowerCase() === "partner" ||
     (brandKeyFromHost && !isPlatformBrandKey(brandKeyFromHost)) ||
     (containerIdentityForMeta.brandKey && !isPlatformBrandKey(containerIdentityForMeta.brandKey));
-  const sanitizedName = (() => {
-    const nm = String(runtimeBrand?.name || "").trim();
-    // In partner containers, treat "PortalPay" as a generic placeholder
-    const generic = /^ledger\d*$/i.test(nm) || /^partner\d*$/i.test(nm) || /^default$/i.test(nm) ||
-      (isPartnerContainerForMeta && /^portalpay$/i.test(nm));
-    if (!nm || generic) {
-      // Prefer hostname-derived brandKey, containerIdentity brandKey, then runtimeBrand.key for titleize
-      const k = String(brandKeyFromHost || containerIdentityForMeta.brandKey || (runtimeBrand as any)?.key || "").trim();
-      return k && !isPlatformBrandKey(k) ? k.charAt(0).toUpperCase() + k.slice(1) : (nm || "PortalPay");
-    }
-    return nm;
-  })();
+  const sanitizedName = normalizeBrandName(runtimeBrand?.name, brandKeyFromHost || containerIdentityForMeta.brandKey || (runtimeBrand as any)?.key);
   // In partner containers, skip platform ogTitle if it says "PortalPay" to avoid wrong branding
   const filteredOgTitle = (() => {
     if (isPartnerContainerForMeta && /^portalpay$/i.test(String(runtimeBrand.meta?.ogTitle || "").trim())) {
@@ -610,10 +599,7 @@ export default async function RootLayout({
     const nm = String(brand?.name || "").trim();
     return /^ledger\d*$/i.test(nm) || /^partner\d*$/i.test(nm) || /^default$/i.test(nm);
   })();
-  const titleizedKeyLayout = (() => {
-    const k = String(brand?.key || "").trim();
-    return k ? k.charAt(0).toUpperCase() + k.slice(1) : "PortalPay";
-  })();
+  const titleizedKeyLayout = getDefaultBrandName(brand?.key);
   const displayBrandNameLayout = (!String(brand?.name || "").trim() || isGenericBrandLayout)
     ? titleizedKeyLayout
     : String(brand?.name || "").trim();
@@ -631,10 +617,12 @@ export default async function RootLayout({
       data-pp-admin-wallets={(getEnv().ADMIN_WALLETS || []).join(",")}
       data-pp-brand-primary={brand.colors.primary}
       data-pp-brand-accent={brand.colors.accent}
-      data-pp-brand-header="#ffffff"
       data-pp-brand-body="#e5e7eb"
       suppressHydrationWarning
     >
+      <head>
+        <link rel="stylesheet" href="https://use.typekit.net/eur3bvn.css" />
+      </head>
       <body
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

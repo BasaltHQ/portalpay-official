@@ -32,6 +32,17 @@ function deriveBrandKeyFromHost(host: string): string | undefined {
 }
 
 export async function GET(req: NextRequest) {
+  // Blocked favicon URLs that should be replaced with fallback
+  const BLOCKED_FAVICON_URLS = [
+    "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/uploads/a311dcf8-e6de-4eca-a39c-907b347dff11.png",
+  ];
+  const BLOCKED_FAVICON_REPLACEMENT = "/cblogod.png";
+
+  function isBlockedFavicon(url: string): boolean {
+    const normalized = url.trim().toLowerCase();
+    return BLOCKED_FAVICON_URLS.some(blocked => normalized === blocked.toLowerCase());
+  }
+
   try {
     // Check for shop parameter - explicit shop favicon request
     const url = new URL(req.url);
@@ -95,7 +106,11 @@ export async function GET(req: NextRequest) {
         }
 
         if (merchantFavicon && typeof merchantFavicon === "string" && merchantFavicon.trim()) {
-          const faviconUrl = merchantFavicon.trim();
+          let faviconUrl = merchantFavicon.trim();
+          // Check if this favicon is blocked and replace with fallback
+          if (isBlockedFavicon(faviconUrl)) {
+            faviconUrl = BLOCKED_FAVICON_REPLACEMENT;
+          }
           // Fetch merchant's favicon
           try {
             if (faviconUrl.startsWith("http")) {
@@ -167,6 +182,7 @@ export async function GET(req: NextRequest) {
 
     // Resolve runtime brand logos first (env-injected in partner containers)
     const runtimeBrand = getBrandConfig(activeBrandKey);
+    const runtimeBrandSymbol: string | undefined = (() => { const v = String(runtimeBrand?.logos?.symbol || "").trim(); return v || undefined; })();
     const runtimeBrandLogo: string | undefined = (() => { const v = String(runtimeBrand?.logos?.app || "").trim(); return v || undefined; })();
     const runtimeBrandFavicon: string | undefined = (() => { const v = String(runtimeBrand?.logos?.favicon || "").trim(); return v || undefined; })();
     const containerType = String((getEnv().CONTAINER_TYPE || "") as string).toLowerCase();
@@ -189,12 +205,16 @@ export async function GET(req: NextRequest) {
     }
 
     // Candidate order prioritizes runtime partner assets to prevent incorrect platform overrides:
-    // runtime brand favicon -> runtime brand app logo -> platform brand favicon -> platform brand app logo -> platform fallback (only on platform)
-    const candidates: string[] = [];
-    if (runtimeBrandFavicon) candidates.push(runtimeBrandFavicon);
+    // runtime brand favicon -> runtime brand symbol -> runtime brand app logo -> platform brand favicon -> platform brand symbol -> platform brand app logo -> platform fallback (only on platform)
+    let candidates: string[] = [];
+    if (runtimeBrandFavicon && !runtimeBrandFavicon.includes("favicon-32x32") && !runtimeBrandFavicon.includes("favicon-16x16")) candidates.push(runtimeBrandFavicon);
+    if (runtimeBrandSymbol) candidates.push(runtimeBrandSymbol);
     if (runtimeBrandLogo) candidates.push(runtimeBrandLogo);
-    if (brandFavicon) candidates.push(brandFavicon);
+    if (brandFavicon && !brandFavicon.includes("favicon-32x32") && !brandFavicon.includes("favicon-16x16")) candidates.push(brandFavicon);
     if (brandLogo) candidates.push(brandLogo);
+
+    // Filter out blocked favicon URLs and replace with fallback
+    candidates = candidates.map(c => isBlockedFavicon(c) ? BLOCKED_FAVICON_REPLACEMENT : c);
 
     // Fetch first available candidate (remote or relative paths that are NOT static fallbacks)
     let buf: ArrayBuffer | null = null;

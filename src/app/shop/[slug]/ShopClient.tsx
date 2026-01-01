@@ -137,7 +137,7 @@ function linkIcon(url: string, label: string): React.ReactElement {
     return <Icon name={kind} />;
 }
 
-function Thumbnail({ src, size = 56, alt = "", fill = false, itemId = "", primaryColor, secondaryColor }: { src?: string | null; size?: number; alt?: string; fill?: boolean; itemId?: string; primaryColor?: string; secondaryColor?: string; }) {
+function Thumbnail({ src, size = 56, alt = "", fill = false, itemId = "", primaryColor, secondaryColor, logoUrl }: { src?: string | null; size?: number; alt?: string; fill?: boolean; itemId?: string; primaryColor?: string; secondaryColor?: string; logoUrl?: string; }) {
     const s = Math.max(16, Math.floor(size));
     const style: React.CSSProperties = fill ? { height: "100%", width: "100%" } : { height: s, width: s };
     const brand = useBrand();
@@ -185,7 +185,7 @@ function Thumbnail({ src, size = 56, alt = "", fill = false, itemId = "", primar
         <div style={{ ...style, ...gradientStyle }} className="rounded-md flex items-center justify-center flex-shrink-0 relative overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-                src={(() => {
+                src={logoUrl || (() => {
                     const a = String((brand?.logos?.symbol || "") as string).trim();
                     const c = String((brand?.logos?.app || "") as string).trim();
                     return resolveBrandSymbol(a || c, (brand as any)?.key);
@@ -1357,7 +1357,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                         />
                     )}
                     <div className="w-24 h-24 rounded-md overflow-hidden flex-shrink-0">
-                        <Thumbnail src={img} fill alt={it.name} itemId={it.id} primaryColor={cfg?.theme?.primaryColor} secondaryColor={cfg?.theme?.secondaryColor} />
+                        <Thumbnail src={img} fill alt={it.name} itemId={it.id} primaryColor={cfg?.theme?.primaryColor} secondaryColor={cfg?.theme?.secondaryColor} logoUrl={cfg?.theme?.brandLogoUrl} />
                     </div>
                     <div className="flex-1 min-w-0">
                         <h3 className="text-base md:text-lg font-semibold break-words">{it.name}</h3>
@@ -1459,7 +1459,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                     />
                 )}
                 <div className="w-full aspect-square rounded-md overflow-hidden">
-                    <Thumbnail src={img} fill alt={it.name} itemId={it.id} primaryColor={cfg?.theme?.primaryColor} secondaryColor={cfg?.theme?.secondaryColor} />
+                    <Thumbnail src={img} fill alt={it.name} itemId={it.id} primaryColor={cfg?.theme?.primaryColor} secondaryColor={cfg?.theme?.secondaryColor} logoUrl={cfg?.theme?.brandLogoUrl} />
                 </div>
                 <div className="flex-1 flex flex-col">
                     <h3 className={`mt-2 ${sizeClasses.titleSize} font-semibold break-words ${sizeClasses.titleLines}`}>{it.name}</h3>
@@ -1560,7 +1560,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                     />
                 )}
                 <div className="w-full aspect-square rounded-md overflow-hidden">
-                    <Thumbnail src={img} fill alt={it.name} itemId={it.id} primaryColor={cfg?.theme?.primaryColor} secondaryColor={cfg?.theme?.secondaryColor} />
+                    <Thumbnail src={img} fill alt={it.name} itemId={it.id} primaryColor={cfg?.theme?.primaryColor} secondaryColor={cfg?.theme?.secondaryColor} logoUrl={cfg?.theme?.brandLogoUrl} />
                 </div>
                 <div className="flex-1 flex flex-col">
                     <h3 className={`mt-2 ${sizeClasses.titleSize} font-semibold break-words ${sizeClasses.titleLines}`}>{it.name}</h3>
@@ -1658,162 +1658,163 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
         return <div className={`grid ${gridCols} gap-3 md:gap-4`}>{list.map((it) => renderProductCard(it))}</div>;
     }
 
-    const CartContent = ({ compact = false }: { compact?: boolean }) => (
-        <>
-            <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base md:text-lg font-semibold">Cart ({cartList.length})</h3>
-                <button className="px-2 py-1 rounded-md border text-xs md:text-sm" onClick={clearCart} disabled={cart.length === 0}>
-                    Clear
-                </button>
-            </div>
-            <div className={`space-y-2 ${compact ? "max-h-64 overflow-y-auto" : ""}`}>
-                {cartList.map((it, idx) => {
-                    const { appliedDiscount, savings, originalUnitPrice, unitPrice } = it;
+    function renderCartContent(compact = false) {
+        return (
+            <>
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base md:text-lg font-semibold">Cart ({cartList.length})</h3>
+                    <button className="px-2 py-1 rounded-md border text-xs md:text-sm" onClick={clearCart} disabled={cart.length === 0}>
+                        Clear
+                    </button>
+                </div>
+                <div className={`space-y-2 ${compact ? "max-h-64 overflow-y-auto" : ""}`}>
+                    {cartList.map((it, idx) => {
+                        const { appliedDiscount, savings, originalUnitPrice, unitPrice } = it;
 
-                    return (
-                        <div key={`${it.id}-${idx}`} className="flex items-center gap-2 rounded-md border p-2 bg-background/50">
-                            <Thumbnail
-                                src={Array.isArray(it.images) && it.images.length ? it.images[0] : undefined}
-                                size={40}
-                                alt={it.name}
-                                itemId={it.id}
-                                primaryColor={cfg?.theme?.primaryColor}
-                                secondaryColor={cfg?.theme?.secondaryColor}
-                            />
-                            <div className="flex-1 min-w-0">
-                                <div className="text-sm font-semibold truncate">{it.name}</div>
-                                <div className="text-xs text-muted-foreground">
-                                    {savings > 0 ? (
-                                        <>
-                                            <span className="line-through mr-1 text-[10px]">${originalUnitPrice.toFixed(2)}</span>
-                                            <span className="text-green-600 font-medium text-[10px]">${unitPrice.toFixed(2)}</span>
-                                        </>
-                                    ) : (
-                                        <>${unitPrice.toFixed(2)}</>
-                                    )}
-                                    {it.selectedModifiers && it.selectedModifiers.length ? " • with modifiers" : ""}
-                                </div>
-                                {savings > 0 && (
-                                    <div className="text-[0.65rem] text-green-600 font-medium flex items-center gap-0.5 whitespace-nowrap">
-                                        <Sparkles className="w-2.5 h-2.5 flex-shrink-0" />
-                                        Save ${savings.toFixed(2)}
+                        return (
+                            <div key={`${it.id}-${idx}`} className="flex items-center gap-2 rounded-md border p-2 bg-background/50">
+                                <Thumbnail
+                                    src={Array.isArray(it.images) && it.images.length ? it.images[0] : undefined}
+                                    fill
+                                    itemId={it.id}
+                                    primaryColor={cfg?.theme?.primaryColor}
+                                    secondaryColor={cfg?.theme?.secondaryColor}
+                                    logoUrl={cfg?.theme?.brandLogoUrl}
+                                />
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-semibold truncate">{it.name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {savings > 0 ? (
+                                            <>
+                                                <span className="line-through mr-1 text-[10px]">${originalUnitPrice.toFixed(2)}</span>
+                                                <span className="text-green-600 font-medium text-[10px]">${unitPrice.toFixed(2)}</span>
+                                            </>
+                                        ) : (
+                                            <>${unitPrice.toFixed(2)}</>
+                                        )}
+                                        {it.selectedModifiers && it.selectedModifiers.length ? " • with modifiers" : ""}
                                     </div>
+                                    {savings > 0 && (
+                                        <div className="text-[0.65rem] text-green-600 font-medium flex items-center gap-0.5 whitespace-nowrap">
+                                            <Sparkles className="w-2.5 h-2.5 flex-shrink-0" />
+                                            Save ${savings.toFixed(2)}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-1 ml-2">
+                                    <button
+                                        className="h-7 w-7 rounded-md border text-sm"
+                                        onClick={() => updateQtyAt(idx, Math.max(0, it.qty - 1))}
+                                        aria-label="Decrease quantity"
+                                    >
+                                        −
+                                    </button>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        step={1}
+                                        className="h-7 w-12 px-1 border rounded-md bg-background text-xs text-center"
+                                        value={it.qty}
+                                        onChange={(e) => updateQtyAt(idx, Math.max(0, Math.floor(Number(e.target.value || 0))))}
+                                    />
+                                    <button className="h-7 w-7 rounded-md border text-sm" onClick={() => updateQtyAt(idx, it.qty + 1)} aria-label="Increase quantity">
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    })}
+                    {cartList.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Your cart is empty</p>}
+                </div>
+                <div className="border-t mt-3 pt-3 space-y-3">
+                    {/* Coupon Code Input */}
+                    <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
+                            <div className="flex gap-2 min-w-0">
+                                <input
+                                    type="text"
+                                    placeholder="Coupon code"
+                                    className="flex-1 h-9 px-3 border rounded-md bg-background text-sm font-mono uppercase min-w-0"
+                                    value={couponCode}
+                                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                    disabled={!!appliedCoupon}
+                                />
+                                {appliedCoupon ? (
+                                    <button
+                                        onClick={() => { setAppliedCoupon(null); setCouponCode(''); }}
+                                        className="px-3 py-1 border rounded-md text-sm hover:bg-muted"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => applyCouponCode(couponCode)}
+                                        className="px-4 py-2 rounded-md text-sm font-medium transition-opacity disabled:opacity-50 whitespace-nowrap"
+                                        style={{ background: "var(--shop-secondary)", color: "#fff" }}
+                                        disabled={!couponCode.trim()}
+                                    >
+                                        Apply
+                                    </button>
                                 )}
                             </div>
-                            <div className="flex items-center gap-1 ml-2">
-                                <button
-                                    className="h-7 w-7 rounded-md border text-sm"
-                                    onClick={() => updateQtyAt(idx, Math.max(0, it.qty - 1))}
-                                    aria-label="Decrease quantity"
-                                >
-                                    −
-                                </button>
-                                <input
-                                    type="number"
-                                    min={0}
-                                    step={1}
-                                    className="h-7 w-12 px-1 border rounded-md bg-background text-xs text-center"
-                                    value={it.qty}
-                                    onChange={(e) => updateQtyAt(idx, Math.max(0, Math.floor(Number(e.target.value || 0))))}
-                                />
-                                <button className="h-7 w-7 rounded-md border text-sm" onClick={() => updateQtyAt(idx, it.qty + 1)} aria-label="Increase quantity">
-                                    +
-                                </button>
+                        </div>
+                        {couponError && <p className="text-xs text-red-500">{couponError}</p>}
+                        {appliedCoupon && (
+                            <div className="flex items-center gap-2 text-xs text-green-600">
+                                <Ticket className="w-3 h-3" />
+                                <span>{appliedCoupon.title} applied!</span>
                             </div>
-                        </div>
-                    )
-                })}
-                {cartList.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Your cart is empty</p>}
-            </div>
-            <div className="border-t mt-3 pt-3 space-y-3">
-                {/* Coupon Code Input */}
-                <div className="space-y-2">
-                    <div className="flex flex-col gap-2">
-                        <div className="flex gap-2 min-w-0">
-                            <input
-                                type="text"
-                                placeholder="Coupon code"
-                                className="flex-1 h-9 px-3 border rounded-md bg-background text-sm font-mono uppercase"
-                                value={couponCode}
-                                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                                disabled={!!appliedCoupon}
-                            />
-                            {appliedCoupon && (
-                                <button
-                                    onClick={() => { setAppliedCoupon(null); setCouponCode(''); }}
-                                    className="px-3 py-1 border rounded-md text-sm hover:bg-muted"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            )}
-                        </div>
-                        {!appliedCoupon && (
-                            <button
-                                onClick={() => applyCouponCode(couponCode)}
-                                className="w-full px-4 py-2 rounded-md text-sm font-medium transition-opacity disabled:opacity-50"
-                                style={{ background: "var(--shop-secondary)", color: "#fff" }}
-                                disabled={!couponCode.trim()}
-                            >
-                                Apply Coupon
-                            </button>
                         )}
                     </div>
-                    {couponError && <p className="text-xs text-red-500">{couponError}</p>}
-                    {appliedCoupon && (
-                        <div className="flex items-center gap-2 text-xs text-green-600">
-                            <Ticket className="w-3 h-3" />
-                            <span>{appliedCoupon.title} applied!</span>
-                        </div>
-                    )}
-                </div>
 
-                <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Subtotal</span>
-                    <span className="text-sm">${cartList.reduce((acc, item) => acc + (item.originalUnitPrice * item.qty), 0).toFixed(2)}</span>
-                </div>
-                {(() => {
-                    const grossSubtotal = cartList.reduce((acc, item) => acc + (item.originalUnitPrice * item.qty), 0);
-                    // item.savings is already the total savings for the line item (unit savings * qty)
-                    // So we should NOT multiply by qty again here.
-                    const itemSavings = cartList.reduce((acc, item) => acc + (item.savings), 0);
-                    const currentSubtotal = cartList.reduce((acc, item) => acc + (item.unitPrice * item.qty), 0);
-                    const couponSavings = calculateDiscountAmount(currentSubtotal);
-                    const totalSavings = itemSavings + couponSavings;
-                    const finalTotal = currentSubtotal - couponSavings;
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Subtotal</span>
+                        <span className="text-sm">${cartList.reduce((acc, item) => acc + (item.originalUnitPrice * item.qty), 0).toFixed(2)}</span>
+                    </div>
+                    {(() => {
+                        const grossSubtotal = cartList.reduce((acc, item) => acc + (item.originalUnitPrice * item.qty), 0);
+                        // item.savings is already the total savings for the line item (unit savings * qty)
+                        // So we should NOT multiply by qty again here.
+                        const itemSavings = cartList.reduce((acc, item) => acc + (item.savings), 0);
+                        const currentSubtotal = cartList.reduce((acc, item) => acc + (item.unitPrice * item.qty), 0);
+                        const couponSavings = calculateDiscountAmount(currentSubtotal);
+                        const totalSavings = itemSavings + couponSavings;
+                        const finalTotal = currentSubtotal - couponSavings;
 
-                    return (
-                        <>
-                            {totalSavings > 0 && (
-                                <div className="flex items-center justify-between text-green-600">
-                                    <span className="text-sm flex items-center gap-1">
-                                        <Sparkles className="w-3 h-3" />
-                                        Total Savings
-                                        {appliedCoupon && <span className="text-xs opacity-80">({appliedCoupon.code})</span>}
-                                    </span>
-                                    <span className="text-sm">-${totalSavings.toFixed(2)}</span>
+                        return (
+                            <>
+                                {totalSavings > 0 && (
+                                    <div className="flex items-center justify-between text-green-600">
+                                        <span className="text-sm flex items-center gap-1">
+                                            <Sparkles className="w-3 h-3" />
+                                            Total Savings
+                                            {appliedCoupon && <span className="text-xs opacity-80">({appliedCoupon.code})</span>}
+                                        </span>
+                                        <span className="text-sm">-${totalSavings.toFixed(2)}</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center justify-between border-t pt-2">
+                                    <span className="text-base font-semibold">Total</span>
+                                    <span className="text-lg font-bold">${finalTotal.toFixed(2)}</span>
                                 </div>
-                            )}
-                            <div className="flex items-center justify-between border-t pt-2">
-                                <span className="text-base font-semibold">Total</span>
-                                <span className="text-lg font-bold">${finalTotal.toFixed(2)}</span>
-                            </div>
-                        </>
-                    );
-                })()}
-                <p className="text-xs text-muted-foreground">Taxes and fees calculated at checkout</p>
-                {checkoutError && <p className="text-xs text-red-500">{checkoutError}</p>}
-                <button
-                    className="w-full px-4 py-3 rounded-lg text-base font-semibold disabled:opacity-50 transition-opacity"
-                    style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); checkout(); }}
-                    disabled={checkingOut || cartList.length === 0 || !merchantWallet}
-                >
-                    {checkingOut ? "Processing..." : "Checkout"}
-                </button>
-            </div>
-        </>
-    );
+                            </>
+                        );
+                    })()}
+                    <p className="text-xs text-muted-foreground">Taxes and fees calculated at checkout</p>
+                    {checkoutError && <p className="text-xs text-red-500">{checkoutError}</p>}
+                    <button
+                        className="w-full px-4 py-3 rounded-lg text-base font-semibold disabled:opacity-50 transition-opacity"
+                        style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); checkout(); }}
+                        disabled={checkingOut || cartList.length === 0 || !merchantWallet}
+                    >
+                        {checkingOut ? "Processing..." : "Checkout"}
+                    </button>
+                </div>
+            </>
+        );
+    }
 
     if (!merchantWallet) {
         return (
@@ -1834,122 +1835,233 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
     return (
         <VoiceAgentProvider>
             <AutoTranslateProvider>
-                <div className="max-w-7xl mx-auto px-4 py-6 md:py-10 space-y-6 pb-24 md:pb-10" style={varStyle}>
+                <div style={varStyle}>
                     <ShopThemeAuditor expected={cfg?.theme || {}} />
-                    <div className={`rounded-t-2xl border shadow transition-all duration-500 ${heroCollapsed ? "h-auto" : ""}`} style={{ borderColor: "var(--shop-primary)" }}>
-                        {!heroCollapsed && coverUrl && !useSideLayout && layoutMode !== "minimalist" && (
-                            <div className="w-full overflow-hidden rounded-t-2xl">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src={coverUrl}
-                                    alt="Cover"
-                                    className="block w-full h-auto"
-                                    decoding="async"
-                                    onLoad={onCoverLoad}
-                                />
-                            </div>
-                        )}
-                        {!heroCollapsed && !cfg?.theme?.coverPhotoUrl && <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden rounded-t-2xl" />}
-                        <div className={`p-4 relative ${heroCollapsed ? "rounded-t-2xl" : ""}`} style={{ background: shopPrimary, color: poweredTextColor }}>
-                            <div className="absolute inset-0 flex items-end pointer-events-none z-0">
-                                {layoutMode !== "minimalist" && (
-                                    <HeroVisualizer
-                                        primaryColor={shopPrimary}
-                                        secondaryColor={cfg?.theme?.secondaryColor || "#22c55e"}
-                                        bars={48}
-                                        height="100%"
-                                        borderRadius={heroCollapsed ? "1rem" : 0}
+                    <div className="max-w-7xl mx-auto px-4 pt-6 pb-24 md:pb-10 space-y-6">
+                        <div className={`rounded-t-2xl border shadow transition-all duration-500 ${heroCollapsed ? "h-auto" : ""}`} style={{ borderColor: "var(--shop-primary)" }}>
+                            {!heroCollapsed && coverUrl && !useSideLayout && layoutMode !== "minimalist" && (
+                                <div className="w-full overflow-hidden rounded-t-2xl">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={coverUrl || undefined}
+                                        alt="Cover"
+                                        className="block w-full h-auto"
+                                        decoding="async"
+                                        onLoad={onCoverLoad}
                                     />
-                                )}
-                            </div>
-                            {!heroCollapsed && !useSideLayout && (
-                                <button
-                                    onClick={() => setHeroCollapsed(true)}
-                                    className="absolute -top-10 right-4 h-8 w-8 rounded-full border border-white/30 flex items-center justify-center transition-colors bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white"
-                                    aria-label="Collapse hero"
-                                    title="Collapse hero"
-                                >
-                                    <ChevronUp size={16} />
-                                </button>
+                                </div>
                             )}
-                            <div className={`relative z-10 ${useSideLayout ? "md:flex md:items-start md:gap-4" : ""}`}>
-                                {useSideLayout && (
-                                    <div
-                                        className="hidden md:block rounded-xl overflow-hidden border flex-shrink-0"
-                                        style={{ width: "clamp(280px, 33vw, 520px)" }}
-                                    >
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={coverUrl!}
-                                            alt="Cover"
-                                            className="block w-full h-auto"
-                                            decoding="async"
-                                            onLoad={onCoverLoad}
+                            {!heroCollapsed && !cfg?.theme?.coverPhotoUrl && <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden rounded-t-2xl" />}
+                            <div className={`p-4 relative ${heroCollapsed ? "rounded-t-2xl" : ""}`} style={{ background: shopPrimary, color: poweredTextColor }}>
+                                <div className="absolute inset-0 flex items-end pointer-events-none z-0">
+                                    {layoutMode !== "minimalist" && (
+                                        <HeroVisualizer
+                                            primaryColor={shopPrimary}
+                                            secondaryColor={cfg?.theme?.secondaryColor || "#22c55e"}
+                                            bars={48}
+                                            height="100%"
+                                            borderRadius={heroCollapsed ? "1rem" : 0}
                                         />
-                                    </div>
+                                    )}
+                                </div>
+                                {!heroCollapsed && !useSideLayout && (
+                                    <button
+                                        onClick={() => setHeroCollapsed(true)}
+                                        className="absolute -top-10 right-4 h-8 w-8 rounded-full border border-white/30 flex items-center justify-center transition-colors bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white"
+                                        aria-label="Collapse hero"
+                                        title="Collapse hero"
+                                    >
+                                        <ChevronUp size={16} />
+                                    </button>
                                 )}
-                                <div className="flex-1">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div className={`w-16 h-16 ${cfg?.theme?.logoShape === "circle" ? "rounded-full" : "rounded-lg"} overflow-hidden flex items-center justify-center flex-shrink-0`}>
-                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img
-                                                    src={(() => {
-                                                        const a = String(cfg?.theme?.brandLogoUrl || "").trim();
-                                                        const b = String((brand?.logos?.symbol || "") as string).trim();
-                                                        const c = String((brand?.logos?.favicon || "") as string).trim();
-                                                        const d = String((brand?.logos?.app || "") as string).trim();
-                                                        return resolveBrandSymbol(a || b || c || d, (brand as any)?.key);
-                                                    })()}
-                                                    alt="Logo"
-                                                    className="max-w-full max-h-full object-contain"
-                                                />
+                                <div className={`relative z-10 ${useSideLayout ? "md:flex md:items-start md:gap-4" : ""}`}>
+                                    {useSideLayout && (
+                                        <div
+                                            className="hidden md:block rounded-xl overflow-hidden border flex-shrink-0"
+                                            style={{ width: "clamp(280px, 33vw, 520px)" }}
+                                        >
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={coverUrl!}
+                                                alt="Cover"
+                                                className="block w-full h-auto"
+                                                decoding="async"
+                                                onLoad={onCoverLoad}
+                                            />
+                                        </div>
+                                    )}
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className={`w-16 h-16 ${cfg?.theme?.logoShape === "circle" ? "rounded-full" : "rounded-lg"} overflow-hidden flex items-center justify-center flex-shrink-0`}>
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img
+                                                        src={(() => {
+                                                            const a = String(cfg?.theme?.brandLogoUrl || "").trim();
+                                                            const b = String((brand?.logos?.symbol || "") as string).trim();
+                                                            const c = String((brand?.logos?.favicon || "") as string).trim();
+                                                            const d = String((brand?.logos?.app || "") as string).trim();
+                                                            return resolveBrandSymbol(a || b || c || d, (brand as any)?.key);
+                                                        })()}
+                                                        alt="Logo"
+                                                        className="max-w-full max-h-full object-contain"
+                                                    />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="text-base md:text-lg font-semibold truncate">{cfg?.name || "Shop"}</div>
+                                                    <div className="text-xs md:text-sm flex items-center gap-2">
+                                                        <span className="truncate max-w-[50vw] md:max-w-[42ch]">{cfg?.description || ""}</span>
+                                                        {String(cfg?.description || "").length > 120 && (
+                                                            <button
+                                                                type="button"
+                                                                className="microtext underline opacity-80 hover:opacity-100"
+                                                                onClick={() => setShowDescModal(true)}
+                                                            >
+                                                                Read more
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div
+                                                        className={`flex items-center gap-2 mt-1 ${heroCollapsed && !useSideLayout ? "text-lg" : ""}`}
+                                                        title={
+                                                            Array.isArray(reviews) && (reviews.length > 0)
+                                                                ? `${(shopAvgRating || 0).toFixed(2)} based on ${reviews.length} review${reviews.length === 1 ? "" : "s"}`
+                                                                : "Buy from this merchant to give the first review!"
+                                                        }
+                                                    >
+                                                        {Array.from({ length: 5 }).map((_, i) => (
+                                                            <span key={i} className={i < Math.round(shopAvgRating || 0) ? "text-amber-500" : "text-muted-foreground"}>
+                                                                ★
+                                                            </span>
+                                                        ))}
+                                                        <span className="microtext text-muted-foreground">({(shopAvgRating || 0).toFixed(2)})</span>
+                                                    </div>
+                                                </div>
+                                                {heroCollapsed && !useSideLayout && (
+                                                    <button
+                                                        onClick={() => setHeroCollapsed(false)}
+                                                        className="h-8 w-8 rounded-full border-2 flex items-center justify-center transition-colors hover:bg-white/10 ml-2"
+                                                        style={{ borderColor: poweredTextColor, color: poweredTextColor }}
+                                                        aria-label="Expand hero"
+                                                        title="Expand hero"
+                                                    >
+                                                        <ChevronDown size={16} />
+                                                    </button>
+                                                )}
                                             </div>
-                                            <div className="min-w-0">
-                                                <div className="text-base md:text-lg font-semibold truncate">{cfg?.name || "Shop"}</div>
-                                                <div className="text-xs md:text-sm flex items-center gap-2">
-                                                    <span className="truncate max-w-[50vw] md:max-w-[42ch]">{cfg?.description || ""}</span>
-                                                    {String(cfg?.description || "").length > 120 && (
-                                                        <button
-                                                            type="button"
-                                                            className="microtext underline opacity-80 hover:opacity-100"
-                                                            onClick={() => setShowDescModal(true)}
-                                                        >
-                                                            Read more
-                                                        </button>
-                                                    )}
+                                            <div className="hidden md:flex flex-col items-end gap-3 relative z-[1200]">
+                                                <div className="min-h-8 relative z-[1200]">
+                                                    <ClientOnly fallback={<div style={{ height: "32px", width: "165px" }} />}>
+                                                        <ConnectButton
+                                                            client={client}
+                                                            chain={chain}
+                                                            wallets={wallets}
+                                                            theme={twTheme}
+                                                            connectButton={{
+                                                                label: "Login",
+                                                                className: connectButtonClass,
+                                                                style: getConnectButtonStyle(),
+                                                            }}
+                                                            detailsButton={{
+                                                                displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+                                                            }}
+                                                            connectModal={{
+                                                                title: "Login",
+                                                                titleIcon: (() => {
+                                                                    const a = String(cfg?.theme?.brandLogoUrl || "").trim();
+                                                                    const b = String((brand?.logos?.symbol || "") as string).trim();
+                                                                    const c = String((brand?.logos?.favicon || "") as string).trim();
+                                                                    const d = String((brand?.logos?.app || "") as string).trim();
+                                                                    return resolveBrandSymbol(a || b || c || d, (brand as any)?.key);
+                                                                })(),
+                                                                size: "compact",
+                                                                showThirdwebBranding: false,
+                                                            }}
+                                                        />
+                                                    </ClientOnly>
+                                                </div>
+                                                <ShopLanguageDropdown />
+                                            </div>
+                                        </div>
+
+                                        {!heroCollapsed && cfg?.bio && (
+                                            <>
+                                                <div
+                                                    className={`relative z-10 font-semibold mt-3 ${(() => {
+                                                        const size = cfg?.theme?.heroFontSize || "medium";
+                                                        switch (size) {
+                                                            case "microtext":
+                                                                return "microtext";
+                                                            case "small":
+                                                                return "text-sm md:text-base";
+                                                            case "medium":
+                                                                return "text-sm md:text-base";
+                                                            case "large":
+                                                                return "text-base md:text-lg";
+                                                            case "xlarge":
+                                                                return "text-lg md:text-xl";
+                                                            default:
+                                                                return "text-sm md:text-base";
+                                                        }
+                                                    })()
+                                                        }`}
+                                                >
+                                                    About
                                                 </div>
                                                 <div
-                                                    className={`flex items-center gap-2 mt-1 ${heroCollapsed && !useSideLayout ? "text-lg" : ""}`}
-                                                    title={
-                                                        Array.isArray(reviews) && (reviews.length > 0)
-                                                            ? `${(shopAvgRating || 0).toFixed(2)} based on ${reviews.length} review${reviews.length === 1 ? "" : "s"}`
-                                                            : "Buy from this merchant to give the first review!"
-                                                    }
+                                                    className={`relative z-10 whitespace-pre-wrap mt-1 break-words ${(() => {
+                                                        const size = cfg?.theme?.heroFontSize || "medium";
+                                                        // Side pane layout allows more text since there's horizontal space
+                                                        if (useSideLayout) {
+                                                            switch (size) {
+                                                                case "microtext":
+                                                                    return "microtext line-clamp-6 md:line-clamp-none";
+                                                                case "small":
+                                                                    return "text-xs md:text-sm line-clamp-6 md:line-clamp-none";
+                                                                case "medium":
+                                                                    return "text-xs md:text-sm line-clamp-6 md:line-clamp-none";
+                                                                case "large":
+                                                                    return "text-sm md:text-base line-clamp-6 md:line-clamp-none";
+                                                                case "xlarge":
+                                                                    return "text-base md:text-lg line-clamp-6 md:line-clamp-none";
+                                                                default:
+                                                                    return "text-xs md:text-sm line-clamp-6 md:line-clamp-none";
+                                                            }
+                                                        }
+                                                        switch (size) {
+                                                            case "microtext":
+                                                                return "microtext line-clamp-3 md:line-clamp-4";
+                                                            case "small":
+                                                                return "text-xs md:text-sm line-clamp-3 md:line-clamp-4";
+                                                            case "medium":
+                                                                return "text-xs md:text-sm line-clamp-3 md:line-clamp-4";
+                                                            case "large":
+                                                                return "text-sm md:text-base line-clamp-3 md:line-clamp-5";
+                                                            case "xlarge":
+                                                                return "text-base md:text-lg line-clamp-3 md:line-clamp-5";
+                                                            default:
+                                                                return "text-xs md:text-sm line-clamp-3 md:line-clamp-4";
+                                                        }
+                                                    })()
+                                                        }`}
                                                 >
-                                                    {Array.from({ length: 5 }).map((_, i) => (
-                                                        <span key={i} className={i < Math.round(shopAvgRating || 0) ? "text-amber-500" : "text-muted-foreground"}>
-                                                            ★
-                                                        </span>
-                                                    ))}
-                                                    <span className="microtext text-muted-foreground">({(shopAvgRating || 0).toFixed(2)})</span>
+                                                    {cfg.bio}
                                                 </div>
-                                            </div>
-                                            {heroCollapsed && !useSideLayout && (
-                                                <button
-                                                    onClick={() => setHeroCollapsed(false)}
-                                                    className="h-8 w-8 rounded-full border-2 flex items-center justify-center transition-colors hover:bg-white/10 ml-2"
-                                                    style={{ borderColor: poweredTextColor, color: poweredTextColor }}
-                                                    aria-label="Expand hero"
-                                                    title="Expand hero"
-                                                >
-                                                    <ChevronDown size={16} />
-                                                </button>
-                                            )}
-                                        </div>
-                                        <div className="hidden md:flex flex-col items-end gap-3 relative z-[1200]">
-                                            <div className="min-h-8 relative z-[1200]">
-                                                <ClientOnly fallback={<div style={{ height: "32px", width: "165px" }} />}>
+                                                {String(cfg?.bio || "").length > 240 && !useSideLayout && (
+                                                    <button
+                                                        type="button"
+                                                        className="relative z-10 microtext underline opacity-80 hover:opacity-100 mt-1"
+                                                        onClick={() => setShowBioModal(true)}
+                                                    >
+                                                        Read more
+                                                    </button>
+                                                )}
+                                            </>
+                                        )}
+
+                                        <div className="md:hidden relative z-[1200] mt-3 flex flex-col items-stretch gap-3">
+                                            <div className="w-full h-9">
+                                                <ClientOnly fallback={<div style={{ height: "36px", width: "100%" }} />}>
                                                     <ConnectButton
                                                         client={client}
                                                         chain={chain}
@@ -1958,7 +2070,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                         connectButton={{
                                                             label: "Login",
                                                             className: connectButtonClass,
-                                                            style: getConnectButtonStyle(),
+                                                            style: { ...getConnectButtonStyle(), width: "100%" },
                                                         }}
                                                         detailsButton={{
                                                             displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
@@ -1981,247 +2093,141 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                             <ShopLanguageDropdown />
                                         </div>
                                     </div>
-
-                                    {!heroCollapsed && cfg?.bio && (
-                                        <>
-                                            <div
-                                                className={`relative z-10 font-semibold mt-3 ${(() => {
-                                                    const size = cfg?.theme?.heroFontSize || "medium";
-                                                    switch (size) {
-                                                        case "microtext":
-                                                            return "microtext";
-                                                        case "small":
-                                                            return "text-sm md:text-base";
-                                                        case "medium":
-                                                            return "text-sm md:text-base";
-                                                        case "large":
-                                                            return "text-base md:text-lg";
-                                                        case "xlarge":
-                                                            return "text-lg md:text-xl";
-                                                        default:
-                                                            return "text-sm md:text-base";
-                                                    }
-                                                })()
-                                                    }`}
-                                            >
-                                                About
-                                            </div>
-                                            <div
-                                                className={`relative z-10 whitespace-pre-wrap mt-1 break-words ${(() => {
-                                                    const size = cfg?.theme?.heroFontSize || "medium";
-                                                    // Side pane layout allows more text since there's horizontal space
-                                                    if (useSideLayout) {
-                                                        switch (size) {
-                                                            case "microtext":
-                                                                return "microtext line-clamp-6 md:line-clamp-none";
-                                                            case "small":
-                                                                return "text-xs md:text-sm line-clamp-6 md:line-clamp-none";
-                                                            case "medium":
-                                                                return "text-xs md:text-sm line-clamp-6 md:line-clamp-none";
-                                                            case "large":
-                                                                return "text-sm md:text-base line-clamp-6 md:line-clamp-none";
-                                                            case "xlarge":
-                                                                return "text-base md:text-lg line-clamp-6 md:line-clamp-none";
-                                                            default:
-                                                                return "text-xs md:text-sm line-clamp-6 md:line-clamp-none";
-                                                        }
-                                                    }
-                                                    switch (size) {
-                                                        case "microtext":
-                                                            return "microtext line-clamp-3 md:line-clamp-4";
-                                                        case "small":
-                                                            return "text-xs md:text-sm line-clamp-3 md:line-clamp-4";
-                                                        case "medium":
-                                                            return "text-xs md:text-sm line-clamp-3 md:line-clamp-4";
-                                                        case "large":
-                                                            return "text-sm md:text-base line-clamp-3 md:line-clamp-5";
-                                                        case "xlarge":
-                                                            return "text-base md:text-lg line-clamp-3 md:line-clamp-5";
-                                                        default:
-                                                            return "text-xs md:text-sm line-clamp-3 md:line-clamp-4";
-                                                    }
-                                                })()
-                                                    }`}
-                                            >
-                                                {cfg.bio}
-                                            </div>
-                                            {String(cfg?.bio || "").length > 240 && !useSideLayout && (
-                                                <button
-                                                    type="button"
-                                                    className="relative z-10 microtext underline opacity-80 hover:opacity-100 mt-1"
-                                                    onClick={() => setShowBioModal(true)}
-                                                >
-                                                    Read more
-                                                </button>
-                                            )}
-                                        </>
-                                    )}
-
-                                    <div className="md:hidden relative z-[1200] mt-3 flex flex-col items-stretch gap-3">
-                                        <div className="w-full h-9">
-                                            <ClientOnly fallback={<div style={{ height: "36px", width: "100%" }} />}>
-                                                <ConnectButton
-                                                    client={client}
-                                                    chain={chain}
-                                                    wallets={wallets}
-                                                    theme={twTheme}
-                                                    connectButton={{
-                                                        label: "Login",
-                                                        className: connectButtonClass,
-                                                        style: { ...getConnectButtonStyle(), width: "100%" },
-                                                    }}
-                                                    detailsButton={{
-                                                        displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
-                                                    }}
-                                                    connectModal={{
-                                                        title: "Login",
-                                                        titleIcon: (() => {
-                                                            const a = String(cfg?.theme?.brandLogoUrl || "").trim();
-                                                            const b = String((brand?.logos?.symbol || "") as string).trim();
-                                                            const c = String((brand?.logos?.favicon || "") as string).trim();
-                                                            const d = String((brand?.logos?.app || "") as string).trim();
-                                                            return resolveBrandSymbol(a || b || c || d, (brand as any)?.key);
-                                                        })(),
-                                                        size: "compact",
-                                                        showThirdwebBranding: false,
-                                                    }}
-                                                />
-                                            </ClientOnly>
-                                        </div>
-                                        <ShopLanguageDropdown />
-                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="relative z-10 -mt-6 border-x border-b rounded-b-xl overflow-hidden" style={{ borderColor: shopPrimary }}>
-                        <div className="w-full border-b" style={{ borderColor: shopPrimary }}>
-                            <ShopVoiceAgentButton variant="rectangular" primaryColor={shopPrimary} secondaryColor={cfg?.theme?.secondaryColor || "#22c55e"} />
-                        </div>
-                        <div className="grid grid-cols-3">
-                            {merchantWallet && (
-                                <a
-                                    href={`/u/${merchantWallet}`}
-                                    className="microtext py-2 text-center bg-black hover:bg-black/80 transition-colors border-r flex flex-col items-center justify-center gap-1"
-                                    style={{ borderColor: shopPrimary }}
-                                >
-                                    <User size={14} style={{ color: cfg?.theme?.secondaryColor || "#22c55e" }} />
-                                    <span style={{ color: "#fff" }}>Visit Profile</span>
-                                </a>
-                            )}
-                            <button
-                                className="microtext py-2 bg-black hover:bg-black/80 transition-colors border-r disabled:opacity-40 flex flex-col items-center justify-center gap-1"
-                                style={{ borderColor: shopPrimary }}
-                                onClick={() => setMsgOpen(true)}
-                                disabled={!merchantWallet}
-                                title="Send a message to this merchant"
-                            >
-                                <MessageSquare size={14} style={{ color: cfg?.theme?.secondaryColor || "#22c55e" }} />
-                                <span style={{ color: "#fff" }}>Message</span>
-                            </button>
-                            <button
-                                className="microtext py-2 bg-black hover:bg-black/80 transition-colors flex flex-col items-center justify-center gap-1"
-                                onClick={openWriteReviewForShop}
-                                title="Write a public review (requires a completed receipt ID)"
-                            >
-                                <Star size={14} style={{ color: cfg?.theme?.secondaryColor || "#22c55e" }} />
-                                <span style={{ color: "#fff" }}>Write Review</span>
-                            </button>
-                        </div>
-                        {isOwner && (
-                            <div className="border-t" style={{ borderColor: shopPrimary }}>
-                                <Link
-                                    href="/shop"
-                                    className="microtext block py-2 text-center bg-black hover:bg-black/80 transition-colors flex flex-col items-center justify-center gap-1"
-                                >
-                                    <Settings size={14} style={{ color: cfg?.theme?.secondaryColor || "#22c55e" }} />
-                                    <span style={{ color: "#fff" }}>Edit Shop</span>
-                                </Link>
+                        <div className="relative z-10 -mt-6 border-x border-b rounded-b-xl overflow-hidden" style={{ borderColor: shopPrimary }}>
+                            <div className="w-full border-b" style={{ borderColor: shopPrimary }}>
+                                <ShopVoiceAgentButton variant="rectangular" primaryColor={shopPrimary} secondaryColor={cfg?.theme?.secondaryColor || "#22c55e"} />
                             </div>
-                        )}
-                    </div>
-
-                    {/* Tab Navigation */}
-                    <div className="glass-pane rounded-xl border overflow-hidden">
-                        <div className="grid grid-cols-2">
-                            <button
-                                onClick={() => setActiveTab("shop")}
-                                className="microtext py-2 text-center backdrop-blur-md bg-white/10 hover:bg-white/20 transition-colors border-r font-medium"
-                                style={activeTab === "shop" ? { background: shopPrimary, color: poweredTextColor, borderColor: shopPrimary } : { background: "#000", color: "#fff", borderColor: shopPrimary }}
-                            >
-                                Shop ({filteredAndSortedItems.length})
-                            </button>
-                            <button
-                                onClick={() => setActiveTab("reviews")}
-                                className="microtext py-2 text-center backdrop-blur-md bg-white/10 hover:bg-white/20 transition-colors font-medium"
-                                style={activeTab === "reviews" ? { background: shopPrimary, color: poweredTextColor, borderColor: shopPrimary } : { background: "#000", color: "#fff", borderColor: shopPrimary }}
-                            >
-                                Reviews ({reviews.length})
-                            </button>
+                            <div className="grid grid-cols-3">
+                                {merchantWallet && (
+                                    <a
+                                        href={`/u/${merchantWallet}`}
+                                        className="microtext py-2 text-center bg-black hover:bg-black/80 transition-colors border-r flex flex-col items-center justify-center gap-1"
+                                        style={{ borderColor: shopPrimary }}
+                                    >
+                                        <User size={14} style={{ color: cfg?.theme?.secondaryColor || "#22c55e" }} />
+                                        <span style={{ color: "#fff" }}>Visit Profile</span>
+                                    </a>
+                                )}
+                                <button
+                                    className="microtext py-2 bg-black hover:bg-black/80 transition-colors border-r disabled:opacity-40 flex flex-col items-center justify-center gap-1"
+                                    style={{ borderColor: shopPrimary }}
+                                    onClick={() => setMsgOpen(true)}
+                                    disabled={!merchantWallet}
+                                    title="Send a message to this merchant"
+                                >
+                                    <MessageSquare size={14} style={{ color: cfg?.theme?.secondaryColor || "#22c55e" }} />
+                                    <span style={{ color: "#fff" }}>Message</span>
+                                </button>
+                                <button
+                                    className="microtext py-2 bg-black hover:bg-black/80 transition-colors flex flex-col items-center justify-center gap-1"
+                                    onClick={openWriteReviewForShop}
+                                    title="Write a public review (requires a completed receipt ID)"
+                                >
+                                    <Star size={14} style={{ color: cfg?.theme?.secondaryColor || "#22c55e" }} />
+                                    <span style={{ color: "#fff" }}>Write Review</span>
+                                </button>
+                            </div>
+                            {isOwner && (
+                                <div className="border-t" style={{ borderColor: shopPrimary }}>
+                                    <Link
+                                        href="/shop"
+                                        className="microtext block py-2 text-center bg-black hover:bg-black/80 transition-colors flex flex-col items-center justify-center gap-1"
+                                    >
+                                        <Settings size={14} style={{ color: cfg?.theme?.secondaryColor || "#22c55e" }} />
+                                        <span style={{ color: "#fff" }}>Edit Shop</span>
+                                    </Link>
+                                </div>
+                            )}
                         </div>
-                    </div>
 
-                    {activeTab === "shop" && (
-                        <>
-                            {cfg.theme.layoutMode === "maximalist" && (
-                                <div className="space-y-6 mb-6">
-                                    {/* Maximalist Banner - Always show placeholder or image */}
-                                    <div className="w-full aspect-[21/9] md:aspect-[32/9] rounded-xl overflow-hidden shadow-2xl relative group bg-zinc-900 border border-white/5">
-                                        {cfg.theme.maximalistBannerUrl ? (
-                                            <>
-                                                <img
-                                                    src={cfg.theme.maximalistBannerUrl}
-                                                    alt="Shop Banner"
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60"></div>
-                                            </>
-                                        ) : (
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground bg-white/5">
-                                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 animate-pulse"></div>
-                                                <span className="text-4xl font-thin opacity-20 relative z-10">BANNER AREA</span>
-                                                <span className="text-sm opacity-40 mt-2 relative z-10">Upload a banner in settings</span>
-                                            </div>
-                                        )}
-                                    </div>
+                        {/* Tab Navigation */}
+                        <div className="glass-pane rounded-xl border overflow-hidden">
+                            <div className="grid grid-cols-2">
+                                <button
+                                    onClick={() => setActiveTab("shop")}
+                                    className="microtext py-2 text-center backdrop-blur-md bg-white/10 hover:bg-white/20 transition-colors border-r font-medium"
+                                    style={activeTab === "shop" ? { background: shopPrimary, color: poweredTextColor, borderColor: shopPrimary } : { background: "#000", color: "#fff", borderColor: shopPrimary }}
+                                >
+                                    Shop ({filteredAndSortedItems.length})
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab("reviews")}
+                                    className="microtext py-2 text-center backdrop-blur-md bg-white/10 hover:bg-white/20 transition-colors font-medium"
+                                    style={activeTab === "reviews" ? { background: shopPrimary, color: poweredTextColor, borderColor: shopPrimary } : { background: "#000", color: "#fff", borderColor: shopPrimary }}
+                                >
+                                    Reviews ({reviews.length})
+                                </button>
+                            </div>
+                        </div>
 
-                                    {/* Maximalist Gallery Carousel - Auto-scrolling Marquee */}
-                                    <div className="relative overflow-hidden mask-linear-fade">
-                                        <div className="flex gap-4 animate-marquee hover:pause-animation">
-                                            {/* Duplicate array for smooth infinite scroll */}
-                                            {[...Array(2)].map((_, i) => (
-                                                <div key={i} className="flex gap-4 flex-nowrap">
-                                                    {[0, 1, 2, 3, 4].map((idx) => {
-                                                        const img = cfg.theme.galleryImages?.[idx];
-                                                        return (
-                                                            <div key={`${i}-${idx}`} className="flex-shrink-0 w-[280px] md:w-[360px] aspect-video rounded-lg overflow-hidden border border-white/10 shadow-lg relative group bg-zinc-900/50 backdrop-blur-sm">
-                                                                {img ? (
-                                                                    <>
-                                                                        <img
-                                                                            src={img}
-                                                                            alt={`Gallery ${idx + 1}`}
-                                                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                                                        />
-                                                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
-                                                                    </>
-                                                                ) : (
-                                                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground bg-white/5">
-                                                                        <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 via-teal-500/5 to-emerald-500/5"></div>
-                                                                        <span className="text-2xl font-thin opacity-20">SLOT {idx + 1}</span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
+                        {activeTab === "shop" && (
+                            <>
+                                {cfg.theme.layoutMode === "maximalist" && (
+                                    <div className="space-y-6 mb-6">
+                                        {/* Maximalist Banner - Always show placeholder or image */}
+                                        <div className="w-full aspect-[21/9] md:aspect-[32/9] rounded-xl overflow-hidden shadow-2xl relative group bg-zinc-900 border border-white/5">
+                                            {cfg.theme.maximalistBannerUrl ? (
+                                                <>
+                                                    <img
+                                                        src={cfg.theme.maximalistBannerUrl}
+                                                        alt="Shop Banner"
+                                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60"></div>
+                                                </>
+                                            ) : (
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground bg-white/5">
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 animate-pulse"></div>
+                                                    <span className="text-4xl font-thin opacity-20 relative z-10">BANNER AREA</span>
+                                                    <span className="text-sm opacity-40 mt-2 relative z-10">Upload a banner in settings</span>
                                                 </div>
-                                            ))}
+                                            )}
                                         </div>
-                                        <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-background to-transparent z-10"></div>
-                                        <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent z-10"></div>
-                                    </div>
 
-                                    <style jsx>{`
+                                        {/* Maximalist Gallery Carousel - Auto-scrolling Marquee */}
+                                        <div className="relative overflow-hidden mask-linear-fade">
+                                            <div className="flex gap-4 animate-marquee hover:pause-animation">
+                                                {/* Duplicate array for smooth infinite scroll */}
+                                                {[...Array(2)].map((_, i) => (
+                                                    <div key={i} className="flex gap-4 flex-nowrap">
+                                                        {[0, 1, 2, 3, 4].map((idx) => {
+                                                            const img = cfg.theme.galleryImages?.[idx];
+                                                            return (
+                                                                <div key={`${i}-${idx}`} className="flex-shrink-0 w-[280px] md:w-[360px] aspect-video rounded-lg overflow-hidden border border-white/10 shadow-lg relative group bg-zinc-900/50 backdrop-blur-sm">
+                                                                    {img ? (
+                                                                        <>
+                                                                            <img
+                                                                                src={img}
+                                                                                alt={`Gallery ${idx + 1}`}
+                                                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                                            />
+                                                                            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
+                                                                        </>
+                                                                    ) : (
+                                                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground bg-white/5 p-8">
+                                                                            <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 via-teal-500/5 to-emerald-500/5"></div>
+                                                                            {cfg.theme.brandLogoUrl ? (
+                                                                                <img src={cfg.theme.brandLogoUrl} alt="Shop Logo" className="w-1/3 h-1/3 object-contain opacity-20 relative z-10" />
+                                                                            ) : (
+                                                                                <span className="text-2xl font-thin opacity-20 relative z-10 text-center">SLOT {idx + 1}</span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-background to-transparent z-10"></div>
+                                            <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent z-10"></div>
+                                        </div>
+
+                                        <style jsx>{`
                                         @keyframes marquee {
                                             0% { transform: translateX(0); }
                                             100% { transform: translateX(-50%); }
@@ -2233,503 +2239,443 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                             animation-play-state: paused;
                                         }
                                     `}</style>
-                                </div>
-                            )}
+                                    </div>
+                                )}
 
-                            <div className="glass-pane rounded-xl border p-3 md:p-4">
-                                <div className="flex flex-col md:flex-row gap-3">
-                                    <div className="flex-1 relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                                        <input type="text" placeholder="Search products..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full h-10 pl-10 pr-3 border rounded-lg bg-background" />
-                                    </div>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <button onClick={() => setViewMode("grid")} className={`h-10 w-10 rounded-md border flex items-center justify-center ${viewMode === "grid" ? "bg-foreground/10" : ""}`} aria-label="Grid view">
-                                            <Grid3x3 size={18} />
-                                        </button>
-                                        <button onClick={() => setViewMode("list")} className={`h-10 w-10 rounded-md border flex items-center justify-center ${viewMode === "list" ? "bg-foreground/10" : ""}`} aria-label="List view">
-                                            <List size={18} />
-                                        </button>
-                                        <button onClick={() => setViewMode("category")} className={`h-10 w-10 rounded-md border flex items-center justify-center ${viewMode === "category" ? "bg-foreground/10" : ""}`} aria-label="Category view">
-                                            <Tag size={18} />
-                                        </button>
-                                        {(viewMode === "grid" || viewMode === "category") && (
-                                            <select value={cardSize} onChange={(e) => setCardSize(e.target.value as "small" | "medium" | "large")} className="h-10 px-3 border rounded-md bg-background text-sm">
-                                                <option value="small">Small Cards</option>
-                                                <option value="medium">Medium Cards</option>
-                                                <option value="large">Large Cards</option>
-                                            </select>
-                                        )}
-                                        <select value={sortOption} onChange={(e) => setSortOption(e.target.value as SortOption)} className="h-10 px-3 border rounded-md bg-background">
-                                            <option value="name-asc">Name (A-Z)</option>
-                                            <option value="name-desc">Name (Z-A)</option>
-                                            <option value="price-asc">Price (Low)</option>
-                                            <option value="price-desc">Price (High)</option>
-                                            <option value="recent">Recently Added</option>
-                                        </select>
-                                        <button onClick={() => setShowFilters(!showFilters)} className={`h-10 px-3 rounded-md border flex items-center gap-2 ${showFilters ? "bg-foreground/10" : ""}`}>
-                                            <SlidersHorizontal size={18} />
-                                            <span className="hidden md:inline">Filters</span>
-                                        </button>
-                                    </div>
-                                </div>
-                                {/* Category Tabs */}
-                                {allCategories.length > 0 && (
-                                    <div className="mt-3 overflow-x-auto">
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                className={`px-3 py-2 rounded-full border text-sm font-medium whitespace-nowrap ${selectedCategories.length === 0 ? "bg-foreground/10" : ""}`}
-                                                onClick={() => setSelectedCategories([])}
-                                                style={selectedCategories.length === 0 ? { borderColor: shopPrimary, color: shopPrimary } : {}}
-                                            >
-                                                All
+                                <div className="glass-pane rounded-xl border p-3 md:p-4">
+                                    <div className="flex flex-col md:flex-row gap-3">
+                                        <div className="flex-1 relative">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                                            <input type="text" placeholder="Search products..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full h-10 pl-10 pr-3 border rounded-lg bg-background" />
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <button onClick={() => setViewMode("grid")} className={`h-10 w-10 rounded-md border flex items-center justify-center ${viewMode === "grid" ? "bg-foreground/10" : ""}`} aria-label="Grid view">
+                                                <Grid3x3 size={18} />
                                             </button>
-                                            {allCategories.map((cat, index, array) => {
-                                                const c = getCategoryColor(index, array.length);
-                                                const active = selectedCategories.length === 1 && selectedCategories[0] === cat;
-                                                return (
-                                                    <button
-                                                        key={cat}
-                                                        className="px-3 py-2 rounded-full border text-sm font-medium whitespace-nowrap"
-                                                        onClick={() => setSelectedCategories([cat])}
-                                                        style={{ borderColor: c, color: active ? "#fff" : c, background: active ? c : "transparent" }}
-                                                    >
-                                                        {cat}
-                                                    </button>
-                                                );
-                                            })}
+                                            <button onClick={() => setViewMode("list")} className={`h-10 w-10 rounded-md border flex items-center justify-center ${viewMode === "list" ? "bg-foreground/10" : ""}`} aria-label="List view">
+                                                <List size={18} />
+                                            </button>
+                                            <button onClick={() => setViewMode("category")} className={`h-10 w-10 rounded-md border flex items-center justify-center ${viewMode === "category" ? "bg-foreground/10" : ""}`} aria-label="Category view">
+                                                <Tag size={18} />
+                                            </button>
+                                            {(viewMode === "grid" || viewMode === "category") && (
+                                                <select value={cardSize} onChange={(e) => setCardSize(e.target.value as "small" | "medium" | "large")} className="h-10 px-3 border rounded-md bg-background text-sm">
+                                                    <option value="small">Small Cards</option>
+                                                    <option value="medium">Medium Cards</option>
+                                                    <option value="large">Large Cards</option>
+                                                </select>
+                                            )}
+                                            <select value={sortOption} onChange={(e) => setSortOption(e.target.value as SortOption)} className="h-10 px-3 border rounded-md bg-background">
+                                                <option value="name-asc">Name (A-Z)</option>
+                                                <option value="name-desc">Name (Z-A)</option>
+                                                <option value="price-asc">Price (Low)</option>
+                                                <option value="price-desc">Price (High)</option>
+                                                <option value="recent">Recently Added</option>
+                                            </select>
+                                            <button onClick={() => setShowFilters(!showFilters)} className={`h-10 px-3 rounded-md border flex items-center gap-2 ${showFilters ? "bg-foreground/10" : ""}`}>
+                                                <SlidersHorizontal size={18} />
+                                                <span className="hidden md:inline">Filters</span>
+                                            </button>
                                         </div>
                                     </div>
-                                )}
-                                {showFilters && (
-                                    <div className="mt-3 pt-3 border-t grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        {allCategories.length > 0 && (
-                                            <div>
-                                                <div className="text-sm font-semibold mb-2">Categories</div>
-                                                <div className="space-y-1">
-                                                    {allCategories.map((cat) => (
-                                                        <label key={cat} className="flex items-center gap-2 text-sm cursor-pointer">
-                                                            <input type="checkbox" checked={selectedCategories.includes(cat)} onChange={() => toggleCategory(cat)} className="rounded" />
-                                                            <span>{cat}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div>
-                                            <div className="text-sm font-semibold mb-2">Price Range</div>
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-2">
-                                                    <input type="number" value={priceRange[0]} onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])} className="w-full h-9 px-2 border rounded-md bg-background text-sm" min={0} />
-                                                    <span className="text-sm text-muted-foreground">to</span>
-                                                    <input type="number" value={priceRange[1]} onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])} className="w-full h-9 px-2 border rounded-md bg-background text-sm" min={0} />
-                                                </div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    Range: ${actualPriceRange[0]} - ${actualPriceRange[1]}
-                                                </div>
+                                    {/* Category Tabs */}
+                                    {allCategories.length > 0 && (
+                                        <div className="mt-3 overflow-x-auto">
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    className={`px-3 py-2 rounded-full border text-sm font-medium whitespace-nowrap ${selectedCategories.length === 0 ? "bg-foreground/10" : ""}`}
+                                                    onClick={() => setSelectedCategories([])}
+                                                    style={selectedCategories.length === 0 ? { borderColor: shopPrimary, color: shopPrimary } : {}}
+                                                >
+                                                    All
+                                                </button>
+                                                {allCategories.map((cat, index, array) => {
+                                                    const c = getCategoryColor(index, array.length);
+                                                    const active = selectedCategories.length === 1 && selectedCategories[0] === cat;
+                                                    return (
+                                                        <button
+                                                            key={cat}
+                                                            className="px-3 py-2 rounded-full border text-sm font-medium whitespace-nowrap"
+                                                            onClick={() => setSelectedCategories([cat])}
+                                                            style={{ borderColor: c, color: active ? "#fff" : c, background: active ? c : "transparent" }}
+                                                        >
+                                                            {cat}
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
-                                        <div>
-                                            <div className="text-sm font-semibold mb-2">Stock</div>
-                                            <label className="flex items-center gap-2 text-sm cursor-pointer">
-                                                <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="rounded" />
-                                                <span>In stock only</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </>
-                    )}
-
-                    {activeTab === "shop" && (
-                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-
-                            <div className={`${heroCollapsed ? "lg:col-span-4" : "lg:col-span-3"} space-y-4`}>
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-xl md:text-2xl font-bold">Products ({filteredAndSortedItems.length})</h2>
-                                    <button onClick={loadInventory} disabled={loadingItems} className="px-3 py-1.5 rounded-md border text-sm">
-                                        {loadingItems ? "Loading..." : "Refresh"}
-                                    </button>
-                                </div>
-                                <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
-                                    {loadingItems ? (
-                                        <div className={`grid ${cardSize === "small" ? "grid-cols-3 md:grid-cols-4 lg:grid-cols-5" :
-                                            cardSize === "large" ? "grid-cols-1 md:grid-cols-2" :
-                                                "grid-cols-2 md:grid-cols-3"
-                                            } gap-3 md:gap-4 animate-pulse`}>
-                                            {[...Array(6)].map((_, i) => (
-                                                <div key={i} className="h-80 bg-foreground/5 rounded-lg" />
-                                            ))}
-                                        </div>
-                                    ) : filteredAndSortedItems.length === 0 ? (
-                                        <div className="text-center py-12">
-                                            <p className="text-lg text-muted-foreground">No products found</p>
-                                            <p className="text-sm text-muted-foreground mt-1">Try adjusting your filters</p>
-                                        </div>
-                                    ) : (
-                                        renderInventory(filteredAndSortedItems)
                                     )}
-                                </div>
-                            </div>
-
-                            {!heroCollapsed && (
-                                <div className="hidden lg:block">
-                                    <div className="sticky top-4 rounded-xl border p-4 glass-pane" style={{ borderColor: "var(--shop-primary)" }}>
-                                        <CartContent />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {activeTab === "reviews" && (
-                        <div className="glass-pane rounded-xl border p-4 space-y-3">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm font-medium">Shop Reviews ({reviews.length})</div>
-                                <button
-                                    className="px-2 py-1 rounded-md border text-xs"
-                                    onClick={async () => {
-                                        try {
-                                            setReviewsLoading(true);
-                                            const r = await fetch(`/api/reviews?subjectType=shop&subjectId=${encodeURIComponent(cleanSlug)}`, { cache: "no-store" });
-                                            const j = await r.json().catch(() => ({}));
-                                            if (!r.ok || j?.ok !== true) {
-                                                setReviewsError(j?.error || "Failed to refresh reviews");
-                                            } else {
-                                                setReviews(Array.isArray(j?.items) ? j.items : []);
-                                            }
-                                        } finally {
-                                            setReviewsLoading(false);
-                                        }
-                                    }}
-                                    disabled={reviewsLoading}
-                                >
-                                    {reviewsLoading ? "Refreshing…" : "Refresh"}
-                                </button>
-                            </div>
-                            {reviewsError && <div className="microtext text-red-500">{reviewsError}</div>}
-                            <div className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto pr-2">
-                                {(reviews || []).map((rv: any) => (
-                                    <div key={rv.id} className="rounded-md border p-3 bg-background/50">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="microtext text-muted-foreground">{new Date(Number(rv.createdAt || 0)).toLocaleString()}</div>
-                                            <div className="flex items-center gap-1">
-                                                {Array.from({ length: 5 }).map((_, i) => (
-                                                    <span key={i} className={i < Math.round(Number(rv.rating || 0)) ? "text-amber-500" : "text-muted-foreground"}>
-                                                        ★
-                                                    </span>
-                                                ))}
-                                                <span className="microtext text-muted-foreground ml-1">({Number(rv.rating || 0).toFixed(2)})</span>
+                                    {showFilters && (
+                                        <div className="mt-3 pt-3 border-t grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            {allCategories.length > 0 && (
+                                                <div>
+                                                    <div className="text-sm font-semibold mb-2">Categories</div>
+                                                    <div className="space-y-1">
+                                                        {allCategories.map((cat) => (
+                                                            <label key={cat} className="flex items-center gap-2 text-sm cursor-pointer">
+                                                                <input type="checkbox" checked={selectedCategories.includes(cat)} onChange={() => toggleCategory(cat)} className="rounded" />
+                                                                <span>{cat}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div>
+                                                <div className="text-sm font-semibold mb-2">Price Range</div>
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <input type="number" value={priceRange[0]} onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])} className="w-full h-9 px-2 border rounded-md bg-background text-sm" min={0} />
+                                                        <span className="text-sm text-muted-foreground">to</span>
+                                                        <input type="number" value={priceRange[1]} onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])} className="w-full h-9 px-2 border rounded-md bg-background text-sm" min={0} />
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        Range: ${actualPriceRange[0]} - ${actualPriceRange[1]}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-semibold mb-2">Stock</div>
+                                                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                                    <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="rounded" />
+                                                    <span>In stock only</span>
+                                                </label>
                                             </div>
                                         </div>
-                                        {rv.title && <div className="text-sm font-semibold mt-2">{rv.title}</div>}
-                                        {rv.body && <div className="text-sm mt-1 whitespace-pre-wrap break-words">{rv.body}</div>}
-                                    </div>
-                                ))}
-                                {(reviews || []).length === 0 && !reviewsLoading && (
-                                    <div className="text-center py-12">
-                                        <p className="text-lg text-muted-foreground">No reviews yet</p>
-                                        <p className="text-sm text-muted-foreground mt-1">Be the first to review this shop!</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className={`fixed bottom-0 left-0 right-0 z-50 lg:${heroCollapsed ? "block" : "hidden"} block`}>
-                        {!mobileCartOpen && (
-                            <>
-                                <button onClick={() => setMobileCartOpen(true)} className="w-full pl-16 pr-16 py-3 flex items-center justify-between text-left font-semibold" style={{ background: shopPrimary, color: poweredTextColor }}>
-                                    <span>Cart ({cartList.length} items)</span>
-                                    <span className="flex items-center gap-2">
-                                        ${subtotal.toFixed(2)} <ChevronUp size={20} />
-                                    </span>
-                                </button>
-                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
-                                    <ShopVoiceAgentButton variant="compact" primaryColor={shopPrimary} secondaryColor={cfg?.theme?.secondaryColor || "#22c55e"} />
+                                    )}
                                 </div>
                             </>
                         )}
-                        {mobileCartOpen && (
-                            <div className="bg-background border-t shadow-lg max-h-[70vh] overflow-y-auto">
-                                <div className="sticky top-0 bg-background border-b px-4 py-3 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <h3 className="text-lg font-semibold">Your Cart</h3>
-                                        <ShopVoiceAgentButton variant="compact" primaryColor={shopPrimary} secondaryColor={cfg?.theme?.secondaryColor || "#22c55e"} />
+
+                        {activeTab === "shop" && (
+                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+                                <div className={`${heroCollapsed ? "lg:col-span-4" : "lg:col-span-3"} space-y-4`}>
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-xl md:text-2xl font-bold">Products ({filteredAndSortedItems.length})</h2>
+                                        <button onClick={loadInventory} disabled={loadingItems} className="px-3 py-1.5 rounded-md border text-sm">
+                                            {loadingItems ? "Loading..." : "Refresh"}
+                                        </button>
                                     </div>
-                                    <button onClick={() => setMobileCartOpen(false)} className="h-8 w-8 rounded-full border flex items-center justify-center">
-                                        <ChevronDown size={18} />
+                                    <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
+                                        {loadingItems ? (
+                                            <div className={`grid ${cardSize === "small" ? "grid-cols-3 md:grid-cols-4 lg:grid-cols-5" :
+                                                cardSize === "large" ? "grid-cols-1 md:grid-cols-2" :
+                                                    "grid-cols-2 md:grid-cols-3"
+                                                } gap-3 md:gap-4 animate-pulse`}>
+                                                {[...Array(6)].map((_, i) => (
+                                                    <div key={i} className="h-80 bg-foreground/5 rounded-lg" />
+                                                ))}
+                                            </div>
+                                        ) : filteredAndSortedItems.length === 0 ? (
+                                            <div className="text-center py-12">
+                                                <p className="text-lg text-muted-foreground">No products found</p>
+                                                <p className="text-sm text-muted-foreground mt-1">Try adjusting your filters</p>
+                                            </div>
+                                        ) : (
+                                            renderInventory(filteredAndSortedItems)
+                                        )}
+                                    </div>
+                                </div>
+
+                                {!heroCollapsed && (
+                                    <div className="hidden lg:block">
+                                        <div className="sticky top-4 rounded-xl border p-4 glass-pane" style={{ borderColor: "var(--shop-primary)" }}>
+                                            {renderCartContent()}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === "reviews" && (
+                            <div className="glass-pane rounded-xl border p-4 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="text-sm font-medium">Shop Reviews ({reviews.length})</div>
+                                    <button
+                                        className="px-2 py-1 rounded-md border text-xs"
+                                        onClick={async () => {
+                                            try {
+                                                setReviewsLoading(true);
+                                                const r = await fetch(`/api/reviews?subjectType=shop&subjectId=${encodeURIComponent(cleanSlug)}`, { cache: "no-store" });
+                                                const j = await r.json().catch(() => ({}));
+                                                if (!r.ok || j?.ok !== true) {
+                                                    setReviewsError(j?.error || "Failed to refresh reviews");
+                                                } else {
+                                                    setReviews(Array.isArray(j?.items) ? j.items : []);
+                                                }
+                                            } finally {
+                                                setReviewsLoading(false);
+                                            }
+                                        }}
+                                        disabled={reviewsLoading}
+                                    >
+                                        {reviewsLoading ? "Refreshing…" : "Refresh"}
                                     </button>
                                 </div>
-                                <div className="p-4">
-                                    <CartContent compact />
+                                {reviewsError && <div className="microtext text-red-500">{reviewsError}</div>}
+                                <div className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto pr-2">
+                                    {(reviews || []).map((rv: any) => (
+                                        <div key={rv.id} className="rounded-md border p-3 bg-background/50">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="microtext text-muted-foreground">{new Date(Number(rv.createdAt || 0)).toLocaleString()}</div>
+                                                <div className="flex items-center gap-1">
+                                                    {Array.from({ length: 5 }).map((_, i) => (
+                                                        <span key={i} className={i < Math.round(Number(rv.rating || 0)) ? "text-amber-500" : "text-muted-foreground"}>
+                                                            ★
+                                                        </span>
+                                                    ))}
+                                                    <span className="microtext text-muted-foreground ml-1">({Number(rv.rating || 0).toFixed(2)})</span>
+                                                </div>
+                                            </div>
+                                            {rv.title && <div className="text-sm font-semibold mt-2">{rv.title}</div>}
+                                            {rv.body && <div className="text-sm mt-1 whitespace-pre-wrap break-words">{rv.body}</div>}
+                                        </div>
+                                    ))}
+                                    {(reviews || []).length === 0 && !reviewsLoading && (
+                                        <div className="text-center py-12">
+                                            <p className="text-lg text-muted-foreground">No reviews yet</p>
+                                            <p className="text-sm text-muted-foreground mt-1">Be the first to review this shop!</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
-                    </div>
 
-                    {selectedItem && (
-                        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
-                            {selectedItem.industryPack === 'publishing' ? (
-                                // --- BOOK LAYOUT (Unique Split Design) ---
-                                <div className="w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-xl border bg-background relative flex flex-col md:flex-row shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                                    {/* Left: Cover Image (Full Resolution, No Crop) */}
-                                    <div className="w-full md:w-5/12 bg-zinc-100 dark:bg-zinc-900/50 relative flex items-center justify-center p-8 border-b md:border-b-0 md:border-r">
-                                        {/* Close button (Mobile only) */}
-                                        <button
-                                            className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-black/10 hover:bg-black/20 text-foreground md:hidden flex items-center justify-center transition-colors"
-                                            onClick={() => setSelectedItem(null)}
-                                        >
-                                            ×
-                                        </button>
-
-                                        <div className="relative w-full shadow-xl rounded-sm overflow-hidden transform md:scale-95 transition-transform hover:scale-100 duration-500">
-                                            {/* Prioritize bookCoverUrl from attributes, fallback to first image */}
-                                            {(selectedItem as any).bookCoverUrl || (selectedItem.attributes as any)?.bookCoverUrl || (Array.isArray(selectedItem.images) && selectedItem.images.length) ? (
-                                                <img
-                                                    src={(selectedItem as any).bookCoverUrl || (selectedItem.attributes as any)?.bookCoverUrl || selectedItem.images?.[0]}
-                                                    alt={selectedItem.name}
-                                                    className="w-full h-auto max-h-[80vh] object-contain mx-auto"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-96 bg-muted flex items-center justify-center text-muted-foreground">No Cover</div>
-                                            )}
-                                        </div>
+                        <div className={`fixed bottom-0 left-0 right-0 z-50 lg:${heroCollapsed ? "block" : "hidden"} block`}>
+                            {!mobileCartOpen && (
+                                <>
+                                    <button onClick={() => setMobileCartOpen(true)} className="w-full pl-16 pr-16 py-3 flex items-center justify-between text-left font-semibold" style={{ background: shopPrimary, color: poweredTextColor }}>
+                                        <span>Cart ({cartList.length} items)</span>
+                                        <span className="flex items-center gap-2">
+                                            ${subtotal.toFixed(2)} <ChevronUp size={20} />
+                                        </span>
+                                    </button>
+                                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
+                                        <ShopVoiceAgentButton variant="compact" primaryColor={shopPrimary} secondaryColor={cfg?.theme?.secondaryColor || "#22c55e"} />
                                     </div>
+                                </>
+                            )}
+                            {mobileCartOpen && (
+                                <div className="bg-background border-t shadow-lg max-h-[70vh] overflow-y-auto">
+                                    <div className="sticky top-0 bg-background border-b px-4 py-3 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <h3 className="text-lg font-semibold">Your Cart</h3>
+                                            <ShopVoiceAgentButton variant="compact" primaryColor={shopPrimary} secondaryColor={cfg?.theme?.secondaryColor || "#22c55e"} />
+                                        </div>
+                                        <button onClick={() => setMobileCartOpen(false)} className="h-8 w-8 rounded-full border flex items-center justify-center">
+                                            <ChevronDown size={18} />
+                                        </button>
+                                    </div>
+                                    <div className="p-4">
+                                        {renderCartContent(true)}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
-                                    {/* Right: Details & Content */}
-                                    <div className="w-full md:w-7/12 flex flex-col h-[50vh] md:h-auto bg-background">
-                                        {/* Header */}
-                                        <div className="flex-shrink-0 p-6 pb-2 relative">
-                                            <button
-                                                className="absolute top-4 right-4 z-10 h-8 w-8 rounded-full bg-muted hover:bg-muted/80 text-foreground hidden md:flex items-center justify-center transition-colors"
-                                                onClick={() => setSelectedItem(null)}
-                                            >
-                                                ×
-                                            </button>
-
-                                            <div className="flex flex-col gap-1">
-                                                {/* Series Badge Header */}
-                                                {(selectedItem as any).contentDetails?.series && (
-                                                    <div className="text-sm font-bold text-primary flex items-center gap-1.5 mb-1">
-                                                        <Library className="w-3.5 h-3.5" />
-                                                        <span>{(selectedItem as any).contentDetails.series}</span>
-                                                        <span className="opacity-50">|</span>
-                                                        <span className="text-muted-foreground font-normal">Vol. {(selectedItem as any).contentDetails?.seriesOrder || "?"}</span>
-                                                    </div>
-                                                )}
-                                                <h2 className="text-2xl md:text-3xl font-bold leading-tight">{selectedItem.name}</h2>
-                                                {(selectedItem as any).contentDetails?.subtitle && (
-                                                    <p className="text-lg text-muted-foreground font-medium">{(selectedItem as any).contentDetails.subtitle}</p>
-                                                )}
-                                                <div className="flex items-center gap-2 mt-2">
-                                                    <span className="text-xl font-bold text-primary">${Number(selectedItem.priceUsd || 0).toFixed(2)}</span>
-                                                    {(selectedItem as any).contentDetails?.pages && (
-                                                        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">{(selectedItem as any).contentDetails.pages} Pages</span>
+                        {selectedItem && (
+                            <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
+                                {(() => {
+                                    if (!selectedItem) return null;
+                                    return selectedItem.industryPack === 'publishing' ? (
+                                        // --- BOOK LAYOUT ---
+                                        <div className="w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-xl border bg-background relative flex flex-col md:flex-row shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                                            {/* Left: Cover Image */}
+                                            <div className="w-full md:w-5/12 bg-zinc-100 dark:bg-zinc-900/50 relative flex items-center justify-center p-8 border-b md:border-b-0 md:border-r">
+                                                <button
+                                                    className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-black/10 hover:bg-black/20 text-foreground md:hidden flex items-center justify-center transition-colors"
+                                                    onClick={() => setSelectedItem(null)}
+                                                >
+                                                    ×
+                                                </button>
+                                                <div className="relative w-full shadow-xl rounded-sm overflow-hidden transform md:scale-95 transition-transform hover:scale-100 duration-500">
+                                                    {(selectedItem as any).bookCoverUrl || (selectedItem.attributes as any)?.bookCoverUrl || (Array.isArray(selectedItem.images) && selectedItem.images.length) ? (
+                                                        <img
+                                                            src={(selectedItem as any).bookCoverUrl || (selectedItem.attributes as any)?.bookCoverUrl || selectedItem.images?.[0]}
+                                                            alt={selectedItem.name}
+                                                            className="w-full h-auto max-h-[80vh] object-contain mx-auto"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-96 bg-muted flex items-center justify-center text-muted-foreground">No Cover</div>
                                                     )}
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        {/* Scrollable Body */}
-                                        <div className="flex-1 overflow-y-auto flex flex-col">
-                                            {/* Tab Navigation (only if series exists) */}
-                                            {(selectedItem as any).contentDetails?.series && (
-                                                <div className="flex items-center border-b px-6 bg-background sticky top-0 z-10">
+                                            {/* Right: Details */}
+                                            <div className="w-full md:w-7/12 flex flex-col h-[50vh] md:h-auto bg-background">
+                                                <div className="flex-shrink-0 p-6 pb-2 relative">
                                                     <button
-                                                        onClick={() => setModalTab("details")}
-                                                        className={`py-3 px-4 text-sm font-bold border-b-2 transition-colors ${modalTab === "details" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                                                        className="absolute top-4 right-4 z-10 h-8 w-8 rounded-full bg-muted hover:bg-muted/80 text-foreground hidden md:flex items-center justify-center transition-colors"
+                                                        onClick={() => setSelectedItem(null)}
                                                     >
-                                                        Details
+                                                        ×
                                                     </button>
-                                                    <button
-                                                        onClick={() => setModalTab("series")}
-                                                        className={`py-3 px-4 text-sm font-bold border-b-2 transition-colors ${modalTab === "series" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-                                                    >
-                                                        Series Info
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            <div className="p-6 pt-4 space-y-6">
-                                                {modalTab === "details" ? (
-                                                    <>
-                                                        {selectedItem.description && (
-                                                            <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-                                                                <p className="whitespace-pre-wrap">{selectedItem.description}</p>
+                                                    <div className="flex flex-col gap-1">
+                                                        {(selectedItem as any).contentDetails?.series && (
+                                                            <div className="text-sm font-bold text-primary flex items-center gap-1.5 mb-1">
+                                                                <Library className="w-3.5 h-3.5" />
+                                                                <span>{(selectedItem as any).contentDetails.series}</span>
+                                                                <span className="opacity-50">|</span>
+                                                                <span className="text-muted-foreground font-normal">Vol. {(selectedItem as any).contentDetails?.seriesOrder || "?"}</span>
                                                             </div>
                                                         )}
-
-                                                        {selectedItem.industryPack === 'publishing' && (
-                                                            <PublishingDetails
-                                                                attributes={{
-                                                                    ...(selectedItem.attributes as PublishingItemAttributes),
-                                                                    downloadUrl: (() => {
-                                                                        const attrs = selectedItem.attributes as PublishingItemAttributes;
-                                                                        if (!attrs?.downloadUrl) return undefined;
-                                                                        if (Number(selectedItem.priceUsd || 0) === 0) return attrs.downloadUrl;
-                                                                        const isPurchased = (myReceipts || []).some(r =>
-                                                                            (r.lineItems || []).some((li: any) => String(li.itemId) === String(selectedItem.id))
-                                                                        );
-                                                                        return isPurchased ? attrs.downloadUrl : undefined;
-                                                                    })()
-                                                                }}
-                                                                primaryColor={cfg?.theme?.primaryColor}
-                                                            />
+                                                        <h2 className="text-2xl md:text-3xl font-bold leading-tight">{selectedItem.name}</h2>
+                                                        {(selectedItem as any).contentDetails?.subtitle && (
+                                                            <p className="text-lg text-muted-foreground font-medium">{(selectedItem as any).contentDetails.subtitle}</p>
                                                         )}
-                                                    </>
-                                                ) : (
-                                                    <div className="space-y-6 animate-in fade-in duration-300">
-                                                        <div className="p-4 bg-muted/30 rounded-lg border">
-                                                            <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-                                                                <Library className="w-5 h-5 text-primary" />
-                                                                {(selectedItem as any).contentDetails?.series}
-                                                            </h3>
-                                                            <p className="text-sm text-muted-foreground leading-relaxed">
-                                                                {(selectedItem as any).contentDetails?.seriesDescription || "No description available for this series."}
-                                                            </p>
-                                                        </div>
-
-                                                        <div>
-                                                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Other Volumes</h4>
-                                                            <div className="space-y-2">
-                                                                {items
-                                                                    .filter(i => (i as any).contentDetails?.series === (selectedItem as any).contentDetails?.series)
-                                                                    .sort((a, b) => ((a as any).contentDetails?.seriesOrder || 0) - ((b as any).contentDetails?.seriesOrder || 0))
-                                                                    .map(book => {
-                                                                        const isCurrent = book.id === selectedItem.id;
-                                                                        return (
-                                                                            <div
-                                                                                key={book.id}
-                                                                                onClick={() => !isCurrent && setSelectedItem(book)}
-                                                                                className={`flex items-center p-3 rounded-lg border transition-colors ${isCurrent ? "bg-primary/5 border-primary" : "hover:bg-muted cursor-pointer"}`}
-                                                                            >
-                                                                                <div className="w-10 h-14 bg-muted rounded overflow-hidden mr-3 shrink-0">
-                                                                                    <Thumbnail src={Array.isArray(book.images) ? book.images[0] : undefined} fill itemId={book.id} />
-                                                                                </div>
-                                                                                <div className="flex-1 min-w-0">
-                                                                                    <div className="flex justify-between items-start">
-                                                                                        <h5 className={`font-semibold text-sm truncate ${isCurrent ? "text-primary" : ""}`}>{book.name}</h5>
-                                                                                        <span className="text-xs font-mono opacity-50 ml-2">Vol. {(book as any).contentDetails?.seriesOrder || "?"}</span>
-                                                                                    </div>
-                                                                                </div>
-                                                                                {isCurrent && <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary text-primary-foreground">CURRENT</span>}
-                                                                            </div>
-                                                                        );
-                                                                    })
-                                                                }
-                                                            </div>
+                                                        <div className="flex items-center gap-2 mt-2">
+                                                            <span className="text-xl font-bold text-primary">${Number(selectedItem.priceUsd || 0).toFixed(2)}</span>
+                                                            {(selectedItem as any).contentDetails?.pages && (
+                                                                <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">{(selectedItem as any).contentDetails.pages} Pages</span>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Footer Action */}
-                                        <div className="flex-shrink-0 p-6 border-t bg-background/50 backdrop-blur-sm">
-                                            <button
-                                                className="w-full px-4 py-3 rounded-lg text-base font-semibold flex items-center justify-center gap-2 shadow-lg transform transition-all active:scale-[0.98]"
-                                                style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
-                                                onClick={() => {
-                                                    addToCart(selectedItem.id, 1);
-                                                    setSelectedItem(null);
-                                                }}
-                                            >
-                                                <span>Add to Cart</span>
-                                                <span className="opacity-90">•</span>
-                                                <span className="font-bold">${(Number(selectedItem.priceUsd || 0)).toFixed(2)}</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                // --- STANDARD LAYOUT (Existing) ---
-                                <div className="w-full max-w-lg max-h-[90vh] overflow-hidden rounded-xl border bg-background relative flex flex-col" onClick={(e) => e.stopPropagation()}>
-                                    {/* Cover Image Header */}
-                                    <div className="relative flex-shrink-0">
-                                        <div className="relative aspect-[16/9] bg-gradient-to-br from-muted to-muted/50 overflow-hidden">
-                                            {Array.isArray(selectedItem.images) && selectedItem.images.length ? (
-                                                <Thumbnail
-                                                    src={selectedItem.images[0]}
-                                                    fill
-                                                    alt={selectedItem.name}
-                                                    itemId={selectedItem.id}
-                                                    primaryColor={cfg?.theme?.primaryColor}
-                                                    secondaryColor={cfg?.theme?.secondaryColor}
-                                                />
-                                            ) : (
-                                                <Thumbnail
-                                                    src={undefined}
-                                                    fill
-                                                    alt={selectedItem.name}
-                                                    itemId={selectedItem.id}
-                                                    primaryColor={cfg?.theme?.primaryColor}
-                                                    secondaryColor={cfg?.theme?.secondaryColor}
-                                                />
-                                            )}
-                                            {/* Gradient overlay */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                                            {/* Close button */}
-                                            <button
-                                                className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm flex items-center justify-center transition-colors"
-                                                onClick={() => setSelectedItem(null)}
-                                                aria-label="Close"
-                                            >
-                                                ×
-                                            </button>
-                                            {/* Name and price overlay */}
-                                            <div className="absolute bottom-0 left-0 right-0 p-4">
-                                                <h2 className="text-xl font-bold text-white drop-shadow-lg line-clamp-2">{selectedItem.name}</h2>
-                                                <div className="mt-1 flex items-baseline gap-1">
-                                                    <span
-                                                        className="text-2xl font-bold drop-shadow-lg"
-                                                        style={{ color: cfg?.theme?.primaryColor || '#0ea5e9' }}
+                                                </div>
+                                                <div className="flex-1 overflow-y-auto flex flex-col">
+                                                    {(selectedItem as any).contentDetails?.series && (
+                                                        <div className="flex items-center border-b px-6 bg-background sticky top-0 z-10">
+                                                            <button
+                                                                onClick={() => setModalTab("details")}
+                                                                className={`py-3 px-4 text-sm font-bold border-b-2 transition-colors ${modalTab === "details" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                                                            >
+                                                                Details
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setModalTab("series")}
+                                                                className={`py-3 px-4 text-sm font-bold border-b-2 transition-colors ${modalTab === "series" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                                                            >
+                                                                Series Info
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                    <div className="p-6 pt-4 space-y-6">
+                                                        {modalTab === "details" ? (
+                                                            <>
+                                                                {selectedItem.description && (
+                                                                    <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+                                                                        <p className="whitespace-pre-wrap">{selectedItem.description}</p>
+                                                                    </div>
+                                                                )}
+                                                                <PublishingDetails
+                                                                    attributes={{
+                                                                        ...(selectedItem.attributes as PublishingItemAttributes),
+                                                                        downloadUrl: (() => {
+                                                                            const attrs = selectedItem.attributes as PublishingItemAttributes;
+                                                                            if (!attrs?.downloadUrl) return undefined;
+                                                                            if (Number(selectedItem.priceUsd || 0) === 0) return attrs.downloadUrl;
+                                                                            const isPurchased = (myReceipts || []).some(r =>
+                                                                                (r.lineItems || []).some((li: any) => String(li.itemId) === String(selectedItem.id))
+                                                                            );
+                                                                            return isPurchased ? attrs.downloadUrl : undefined;
+                                                                        })()
+                                                                    }}
+                                                                    primaryColor={cfg?.theme?.primaryColor}
+                                                                />
+                                                            </>
+                                                        ) : (
+                                                            <div className="space-y-6 animate-in fade-in duration-300">
+                                                                <div className="p-4 bg-muted/30 rounded-lg border">
+                                                                    <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+                                                                        <Library className="w-5 h-5 text-primary" />
+                                                                        {(selectedItem as any).contentDetails?.series}
+                                                                    </h3>
+                                                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                                                        {(selectedItem as any).contentDetails?.seriesDescription || "No description available for this series."}
+                                                                    </p>
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Other Volumes</h4>
+                                                                    <div className="space-y-2">
+                                                                        {items
+                                                                            .filter(i => (i as any).contentDetails?.series === (selectedItem as any).contentDetails?.series)
+                                                                            .sort((a, b) => ((a as any).contentDetails?.seriesOrder || 0) - ((b as any).contentDetails?.seriesOrder || 0))
+                                                                            .map(book => {
+                                                                                const isCurrent = book.id === selectedItem.id;
+                                                                                return (
+                                                                                    <div
+                                                                                        key={book.id}
+                                                                                        onClick={() => !isCurrent && setSelectedItem(book)}
+                                                                                        className={`flex items-center p-3 rounded-lg border transition-colors ${isCurrent ? "bg-primary/5 border-primary" : "hover:bg-muted cursor-pointer"}`}
+                                                                                    >
+                                                                                        <div className="w-10 h-14 bg-muted rounded overflow-hidden mr-3 shrink-0">
+                                                                                            <Thumbnail src={Array.isArray(book.images) ? book.images[0] : undefined} fill itemId={book.id} logoUrl={cfg?.theme?.brandLogoUrl} />
+                                                                                        </div>
+                                                                                        <div className="flex-1 min-w-0">
+                                                                                            <div className="flex justify-between items-start">
+                                                                                                <h5 className={`font-semibold text-sm truncate ${isCurrent ? "text-primary" : ""}`}>{book.name}</h5>
+                                                                                                <span className="text-xs font-mono opacity-50 ml-2">Vol. {(book as any).contentDetails?.seriesOrder || "?"}</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        {isCurrent && <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary text-primary-foreground">CURRENT</span>}
+                                                                                    </div>
+                                                                                );
+                                                                            })
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex-shrink-0 p-6 border-t bg-background/50 backdrop-blur-sm">
+                                                    <button
+                                                        className="w-full px-4 py-3 rounded-lg text-base font-semibold flex items-center justify-center gap-2 shadow-lg transform transition-all active:scale-[0.98]"
+                                                        style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
+                                                        onClick={() => {
+                                                            addToCart(selectedItem.id, 1);
+                                                            setSelectedItem(null);
+                                                        }}
                                                     >
-                                                        ${Number(selectedItem.priceUsd || 0).toFixed(2)}
-                                                    </span>
+                                                        <span>Add to Cart</span>
+                                                        <span className="opacity-90">•</span>
+                                                        <span className="font-bold">${(Number(selectedItem.priceUsd || 0)).toFixed(2)}</span>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {/* Scrollable Content */}
-                                    <div className="flex-1 overflow-y-auto flex flex-col">
-                                        {/* Tab Navigation (only if series exists) */}
-                                        {(selectedItem as any).contentDetails?.series && (
-                                            <div className="flex items-center border-b px-4 bg-background sticky top-0 z-10">
-                                                <button
-                                                    onClick={() => setModalTab("details")}
-                                                    className={`py-3 px-4 text-sm font-bold border-b-2 transition-colors ${modalTab === "details" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-                                                >
-                                                    Details
-                                                </button>
-                                                <button
-                                                    onClick={() => setModalTab("series")}
-                                                    className={`py-3 px-4 text-sm font-bold border-b-2 transition-colors ${modalTab === "series" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-                                                >
-                                                    Series Info
-                                                </button>
+                                    ) : (
+                                        // --- STANDARD LAYOUT ---
+                                        <div className="w-full max-w-lg max-h-[90vh] overflow-hidden rounded-xl border bg-background relative flex flex-col" onClick={(e) => e.stopPropagation()}>
+                                            <div className="relative flex-shrink-0">
+                                                <div className="relative aspect-[16/9] bg-gradient-to-br from-muted to-muted/50 overflow-hidden">
+                                                    <Thumbnail
+                                                        src={Array.isArray(selectedItem.images) && selectedItem.images.length ? selectedItem.images[0] : undefined}
+                                                        fill
+                                                        alt={selectedItem.name}
+                                                        itemId={selectedItem.id}
+                                                        primaryColor={cfg?.theme?.primaryColor}
+                                                        secondaryColor={cfg?.theme?.secondaryColor}
+                                                        logoUrl={cfg?.theme?.brandLogoUrl}
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                                                    <button
+                                                        className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm flex items-center justify-center transition-colors"
+                                                        onClick={() => setSelectedItem(null)}
+                                                        aria-label="Close"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                                                        <h2 className="text-xl font-bold text-white drop-shadow-lg line-clamp-2">{selectedItem.name}</h2>
+                                                        <div className="mt-1 flex items-baseline gap-1">
+                                                            <span
+                                                                className="text-2xl font-bold drop-shadow-lg"
+                                                                style={{ color: cfg?.theme?.primaryColor || '#0ea5e9' }}
+                                                            >
+                                                                ${(Number(selectedItem.priceUsd || 0) + selectedModifiers.reduce((sum, m) => sum + (m.priceAdjustment || 0) * (m.quantity || 1), 0)).toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        )}
-
-                                        {modalTab === "details" ? (
-                                            <div className="p-4 space-y-4">
+                                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                                 {selectedItem.description && (
                                                     <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{selectedItem.description}</p>
                                                 )}
                                                 {selectedItem.category && (
                                                     <span className="inline-block px-3 py-1 rounded-md border text-sm bg-background/50">{selectedItem.category}</span>
                                                 )}
-                                                {Array.isArray(selectedItem.tags) && selectedItem.tags.length > 0 && (
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {selectedItem.tags.map((t, i) => (
-                                                            <span key={i} className="px-2 py-1 rounded-md border text-xs bg-background/50">
-                                                                {String(t)}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                {restaurantAttrs?.modifierGroups && restaurantAttrs.modifierGroups.length > 0 ? (
+                                                {restaurantAttrs?.modifierGroups && restaurantAttrs.modifierGroups.length > 0 && (
                                                     <div>
                                                         <RestaurantModifierSelector
                                                             groups={restaurantAttrs.modifierGroups}
@@ -2743,210 +2689,100 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                             <div className="microtext text-red-500 mt-2">Please complete required selections.</div>
                                                         )}
                                                     </div>
-                                                ) : null}
-
-                                                {(selectedItem as any).industryPack === 'publishing' && (
-                                                    <PublishingDetails
-                                                        attributes={{
-                                                            ...(selectedItem.attributes as PublishingItemAttributes),
-                                                            downloadUrl: (() => {
-                                                                // Security: Only show download link if free or purchased
-                                                                const attrs = selectedItem.attributes as PublishingItemAttributes;
-                                                                if (!attrs?.downloadUrl) return undefined;
-
-                                                                // Free item?
-                                                                if (Number(selectedItem.priceUsd || 0) === 0) return attrs.downloadUrl;
-
-                                                                // Purchased?
-                                                                const isPurchased = (myReceipts || []).some(r =>
-                                                                    (r.lineItems || []).some((li: any) => String(li.itemId) === String(selectedItem.id))
-                                                                );
-
-                                                                return isPurchased ? attrs.downloadUrl : undefined;
-                                                            })()
-                                                        }}
-                                                        primaryColor={cfg?.theme?.primaryColor}
-                                                    />
                                                 )}
                                             </div>
-                                        ) : (
-                                            // Fallback for standard items with series (unlikely but safe)
-                                            <div className="p-4">Series info...</div>
-                                        )}
-                                    </div>
+                                            <div className="flex-shrink-0 p-4 border-t bg-background">
+                                                <button
+                                                    className="w-full px-4 py-3 rounded-lg text-base font-semibold flex items-center justify-center gap-2"
+                                                    style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
+                                                    onClick={() => {
+                                                        if (!modifiersValid) return;
+                                                        addToCart(selectedItem.id, 1, selectedModifiers);
+                                                        setSelectedItem(null);
+                                                    }}
+                                                    disabled={!modifiersValid}
+                                                >
+                                                    <span>Add to Cart</span>
+                                                    <span className="opacity-90">•</span>
+                                                    <span className="font-bold">
+                                                        ${(Number(selectedItem.priceUsd || 0) + selectedModifiers.reduce((sum, m) => sum + (m.priceAdjustment || 0) * (m.quantity || 1), 0)).toFixed(2)}
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        )}
 
-                                    {/* Footer with Add to Cart */}
-                                    <div className="flex-shrink-0 p-4 border-t bg-background">
-                                        <button
-                                            className="w-full px-4 py-3 rounded-lg text-base font-semibold flex items-center justify-center gap-2"
-                                            style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
-                                            onClick={() => {
-                                                if (!modifiersValid) return;
-                                                addToCart(selectedItem.id, 1, selectedModifiers);
-                                                setSelectedItem(null);
-                                            }}
-                                            disabled={!modifiersValid}
-                                        >
-                                            <span>Add to Cart</span>
-                                            <span className="opacity-90">•</span>
-                                            <span className="font-bold">
-                                                ${(Number(selectedItem.priceUsd || 0) + selectedModifiers.reduce((sum, m) => sum + (m.priceAdjustment || 0) * (m.quantity || 1), 0)).toFixed(2)}
-                                            </span>
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {embeddedCheckout && (
-                        <div
-                            className="fixed inset-0 z-[2147483647] bg-black/80 backdrop-blur-sm flex items-center justify-center p-0 md:p-4"
-                            role="dialog"
-                            aria-modal="true"
-                            tabIndex={-1}
-                            onKeyDown={(e) => {
-                                if (e.key === "Escape") {
-                                    try {
-                                        closeEmbeddedCheckout();
-                                    } catch { }
-                                }
-                            }}
-                            onClick={(e) => {
-                                if (e.target === e.currentTarget) {
-                                    try {
-                                        closeEmbeddedCheckout();
-                                    } catch { }
-                                }
-                            }}
-                        >
+                        {embeddedCheckout && (
                             <div
-                                className="relative overflow-hidden rounded-none border-0 shadow-none bg-transparent"
-                                style={{
-                                    width: "min(100vw, 880px)",
-                                    height: portalPreferredHeight
-                                        ? `${portalPreferredHeight}px`
-                                        : portalLayout === "wide"
-                                            ? "min(88vh, 700px)"
-                                            : "min(100svh, 740px)",
+                                className="fixed inset-0 z-[2147483647] bg-black/80 backdrop-blur-sm flex items-center justify-center p-0 md:p-4"
+                                role="dialog"
+                                aria-modal="true"
+                                tabIndex={-1}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Escape") {
+                                        try {
+                                            closeEmbeddedCheckout();
+                                        } catch { }
+                                    }
                                 }}
-                                onClick={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                    if (e.target === e.currentTarget) {
+                                        try {
+                                            closeEmbeddedCheckout();
+                                        } catch { }
+                                    }
+                                }}
                             >
-                                {/* <button
+                                <div
+                                    className="relative overflow-hidden rounded-none border-0 shadow-none bg-transparent"
+                                    style={{
+                                        width: "min(100vw, 880px)",
+                                        height: portalPreferredHeight
+                                            ? `${portalPreferredHeight}px`
+                                            : portalLayout === "wide"
+                                                ? "min(88vh, 700px)"
+                                                : "min(100svh, 740px)",
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    {/* <button
                                     className="absolute top-4 right-4 md:-top-10 md:right-0 h-10 w-10 rounded-md bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10 text-2xl"
                                     onClick={closeEmbeddedCheckout}
                                     aria-label="Close checkout"
                                 >
                                     ×
                                 </button> */}
-                                <iframe
-                                    src={`/portal/${encodeURIComponent(embeddedCheckout.receiptId)}?${portalQuery}`}
-                                    className="w-full h-full border-0 block"
-                                    title="Payment Portal"
-                                    allow="payment; clipboard-write"
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Message Modal - unified aesthetic */}
-                    {msgOpen && typeof window !== "undefined" ? (
-                        <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4" role="dialog" aria-modal="true">
-                            <div className="w-full max-w-md rounded-xl border bg-background p-0 relative shadow-xl">
-                                <div className="p-4 border-b bg-gradient-to-r from-foreground/10 to-transparent rounded-t-xl">
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-lg font-semibold">Message Merchant</div>
-                                        <button onClick={() => setMsgOpen(false)} className="h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center" title="Close" aria-label="Close">
-                                            ✕
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="p-4">
-                                    <div className="microtext text-muted-foreground mb-2">Optionally reference a specific receipt.</div>
-                                    <div className="mb-2">
-                                        <label className="microtext text-muted-foreground">Reference Receipt (optional)</label>
-                                        <select className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={selectedReceiptId} onChange={(e) => setSelectedReceiptId(e.target.value)}>
-                                            <option value="">No receipt selected</option>
-                                            {(myReceipts || []).map((r) => (
-                                                <option key={r.receiptId} value={r.receiptId}>
-                                                    {r.receiptId} {r.shopSlug ? `• ${r.shopSlug}` : ""}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {myReceiptsLoading && <div className="microtext text-muted-foreground mt-1">Loading your receipts…</div>}
-                                    </div>
-                                    <textarea className="mt-1 w-full h-24 px-3 py-2 border rounded-md bg-background" value={msgBody} onChange={(e) => setMsgBody(e.target.value)} placeholder="Type your message…" />
-                                    {msgError && <div className="microtext text-red-500 mt-2">{msgError}</div>}
-                                    <div className="mt-3 flex items-center justify-end gap-2">
-                                        <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => setMsgOpen(false)}>
-                                            Cancel
-                                        </button>
-                                        <button className="px-3 py-1.5 rounded-md border text-sm" onClick={sendMessage} disabled={msgSending || !msgBody.trim()}>
-                                            {msgSending ? "Sending…" : "Send"}
-                                        </button>
-                                    </div>
+                                    <iframe
+                                        src={`/portal/${encodeURIComponent(embeddedCheckout.receiptId)}?${portalQuery}`}
+                                        className="w-full h-full border-0 block"
+                                        title="Payment Portal"
+                                        allow="payment; clipboard-write"
+                                    />
                                 </div>
                             </div>
-                        </div>
-                    ) : null}
+                        )}
 
-                    {/* Read more modals */}
-                    {showDescModal && (
-                        <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4" role="dialog" aria-modal="true">
-                            <div className="w-full max-w-lg rounded-xl border bg-background p-0 relative shadow-xl">
-                                <div className="p-4 border-b flex items-center justify-between">
-                                    <div className="text-lg font-semibold">Description</div>
-                                    <button
-                                        onClick={() => setShowDescModal(false)}
-                                        className="h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
-                                        title="Close"
-                                        aria-label="Close"
-                                    >
-                                        ✕
-                                    </button>
-                                </div>
-                                <div className="p-4 text-sm whitespace-pre-wrap break-words">{cfg?.description || ""}</div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showBioModal && (
-                        <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4" role="dialog" aria-modal="true">
-                            <div className="w-full max-w-lg rounded-xl border bg-background p-0 relative shadow-xl">
-                                <div className="p-4 border-b flex items-center justify-between">
-                                    <div className="text-lg font-semibold">About</div>
-                                    <button
-                                        onClick={() => setShowBioModal(false)}
-                                        className="h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
-                                        title="Close"
-                                        aria-label="Close"
-                                    >
-                                        ✕
-                                    </button>
-                                </div>
-                                <div className="p-4 text-sm whitespace-pre-wrap break-words">{cfg?.bio || ""}</div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Write Review Modal - unified aesthetic */}
-                    {reviewOpen && typeof window !== "undefined" ? (
-                        <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4" role="dialog" aria-modal="true">
-                            <div className="w-full max-w-md rounded-xl border bg-background p-0 relative shadow-xl">
-                                <div className="p-4 border-b bg-gradient-to-r from-foreground/10 to-transparent rounded-t-xl">
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-lg font-semibold">Write a Review</div>
-                                        <button onClick={() => setReviewOpen(false)} className="h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center" title="Close" aria-label="Close">
-                                            ✕
-                                        </button>
+                        {/* Message Modal - unified aesthetic */}
+                        {msgOpen && typeof window !== "undefined" ? (
+                            <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4" role="dialog" aria-modal="true">
+                                <div className="w-full max-w-md rounded-xl border bg-background p-0 relative shadow-xl">
+                                    <div className="p-4 border-b bg-gradient-to-r from-foreground/10 to-transparent rounded-t-xl">
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-lg font-semibold">Message Merchant</div>
+                                            <button onClick={() => setMsgOpen(false)} className="h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center" title="Close" aria-label="Close">
+                                                ✕
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="p-4">
-                                    <div className="space-y-2">
-                                        <div>
-                                            <label className="microtext text-muted-foreground">Select Receipt</label>
-                                            <select className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={reviewReceiptId} onChange={(e) => setReviewReceiptId(e.target.value)}>
-                                                <option value="">Select a receipt...</option>
+                                    <div className="p-4">
+                                        <div className="microtext text-muted-foreground mb-2">Optionally reference a specific receipt.</div>
+                                        <div className="mb-2">
+                                            <label className="microtext text-muted-foreground">Reference Receipt (optional)</label>
+                                            <select className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={selectedReceiptId} onChange={(e) => setSelectedReceiptId(e.target.value)}>
+                                                <option value="">No receipt selected</option>
                                                 {(myReceipts || []).map((r) => (
                                                     <option key={r.receiptId} value={r.receiptId}>
                                                         {r.receiptId} {r.shopSlug ? `• ${r.shopSlug}` : ""}
@@ -2955,81 +2791,162 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                             </select>
                                             {myReceiptsLoading && <div className="microtext text-muted-foreground mt-1">Loading your receipts…</div>}
                                         </div>
-                                        <div>
-                                            <label className="microtext text-muted-foreground">Scope</label>
-                                            <div className="mt-1 flex items-center gap-3">
-                                                <label className="flex items-center gap-2 microtext">
-                                                    <input type="radio" checked={reviewScope === "shop"} onChange={() => setReviewScope("shop")} />
-                                                    Entire Order (Shop)
-                                                </label>
-                                                <label className="flex items-center gap-2 microtext">
-                                                    <input type="radio" checked={reviewScope === "inventory"} onChange={() => setReviewScope("inventory")} />
-                                                    Specific Item
-                                                </label>
-                                            </div>
+                                        <textarea className="mt-1 w-full h-24 px-3 py-2 border rounded-md bg-background" value={msgBody} onChange={(e) => setMsgBody(e.target.value)} placeholder="Type your message…" />
+                                        {msgError && <div className="microtext text-red-500 mt-2">{msgError}</div>}
+                                        <div className="mt-3 flex items-center justify-end gap-2">
+                                            <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => setMsgOpen(false)}>
+                                                Cancel
+                                            </button>
+                                            <button className="px-3 py-1.5 rounded-md border text-sm" onClick={sendMessage} disabled={msgSending || !msgBody.trim()}>
+                                                {msgSending ? "Sending…" : "Send"}
+                                            </button>
                                         </div>
-                                        {reviewScope === "inventory" && (
-                                            <div>
-                                                <label className="microtext text-muted-foreground">Select Item</label>
-                                                <select className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={reviewItemId} onChange={(e) => setReviewItemId(e.target.value)} disabled={!selectedReviewReceipt}>
-                                                    <option value="">Select an item...</option>
-                                                    {Array.isArray(selectedReviewReceipt?.lineItems) &&
-                                                        (selectedReviewReceipt!.lineItems || [])
-                                                            .filter((li: any) => !!li?.itemId)
-                                                            .map((li: any, idx: number) => (
-                                                                <option key={idx} value={String(li.itemId)}>
-                                                                    {li.label || li.sku || String(li.itemId)}
-                                                                </option>
-                                                            ))}
-                                                </select>
-                                            </div>
-                                        )}
-                                        <div>
-                                            <label className="microtext text-muted-foreground">Rating</label>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                {Array.from({ length: 5 }).map((_, i) => (
-                                                    <button
-                                                        key={i}
-                                                        type="button"
-                                                        className={`h-7 w-7 rounded-md border grid place-items-center ${i < reviewRating ? "bg-amber-100 border-amber-300" : "bg-background"}`}
-                                                        onClick={() => setReviewRating(i + 1)}
-                                                        aria-label={`Set rating ${i + 1}`}
-                                                        title={`Set rating ${i + 1}`}
-                                                    >
-                                                        <span className={i < reviewRating ? "text-amber-500" : "text-muted-foreground"}>★</span>
-                                                    </button>
-                                                ))}
-                                                <span className="microtext text-muted-foreground">({Number(reviewRating).toFixed(2)})</span>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="microtext text-muted-foreground">Title (optional)</label>
-                                            <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} placeholder="e.g., Great experience" />
-                                        </div>
-                                        <div>
-                                            <label className="microtext text-muted-foreground">Review</label>
-                                            <textarea className="mt-1 w-full h-24 px-3 py-2 border rounded-md bg-background" value={reviewBody} onChange={(e) => setReviewBody(e.target.value)} placeholder="Share details about your experience…" />
-                                        </div>
-                                        {reviewError && <div className="microtext text-red-500">{reviewError}</div>}
-                                    </div>
-                                    <div className="mt-3 flex items-center justify-end gap-2">
-                                        <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => setReviewOpen(false)}>
-                                            Cancel
-                                        </button>
-                                        <button className="px-3 py-1.5 rounded-md border text-sm" onClick={submitReview} disabled={reviewSaving || !reviewReceiptId.trim()}>
-                                            {reviewSaving ? "Submitting…" : "Submit Review"}
-                                        </button>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ) : null}
+                        ) : null}
 
-                    {error && <div className="rounded-md border p-3 text-sm text-red-600">{error}</div>}
+                        {/* Read more modals */}
+                        {showDescModal && (
+                            <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4" role="dialog" aria-modal="true">
+                                <div className="w-full max-w-lg rounded-xl border bg-background p-0 relative shadow-xl">
+                                    <div className="p-4 border-b flex items-center justify-between">
+                                        <div className="text-lg font-semibold">Description</div>
+                                        <button
+                                            onClick={() => setShowDescModal(false)}
+                                            className="h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                                            title="Close"
+                                            aria-label="Close"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                    <div className="p-4 text-sm whitespace-pre-wrap break-words">{cfg?.description || ""}</div>
+                                </div>
+                            </div>
+                        )}
 
-                    <div className={`${isPreview ? "sticky bottom-0 mt-auto" : "fixed bottom-0 left-0 right-0"} h-8 z-30 pointer-events-none`} style={{ background: shopPrimary }}>
-                        <div className="max-w-7xl mx-auto h-full flex items-center justify-center px-3">
-                            <span className="text-xs font-semibold tracking-widest" style={{ color: poweredTextColor, letterSpacing: "0.2em" }}>{`POWERED BY ${(brand?.name || "").toUpperCase() || "BRAND"}`}</span>
+                        {showBioModal && (
+                            <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4" role="dialog" aria-modal="true">
+                                <div className="w-full max-w-lg rounded-xl border bg-background p-0 relative shadow-xl">
+                                    <div className="p-4 border-b flex items-center justify-between">
+                                        <div className="text-lg font-semibold">About</div>
+                                        <button
+                                            onClick={() => setShowBioModal(false)}
+                                            className="h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                                            title="Close"
+                                            aria-label="Close"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                    <div className="p-4 text-sm whitespace-pre-wrap break-words">{cfg?.bio || ""}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Write Review Modal - unified aesthetic */}
+                        {reviewOpen && typeof window !== "undefined" ? (
+                            <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4" role="dialog" aria-modal="true">
+                                <div className="w-full max-w-md rounded-xl border bg-background p-0 relative shadow-xl">
+                                    <div className="p-4 border-b bg-gradient-to-r from-foreground/10 to-transparent rounded-t-xl">
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-lg font-semibold">Write a Review</div>
+                                            <button onClick={() => setReviewOpen(false)} className="h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center" title="Close" aria-label="Close">
+                                                ✕
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="p-4">
+                                        <div className="space-y-2">
+                                            <div>
+                                                <label className="microtext text-muted-foreground">Select Receipt</label>
+                                                <select className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={reviewReceiptId} onChange={(e) => setReviewReceiptId(e.target.value)}>
+                                                    <option value="">Select a receipt...</option>
+                                                    {(myReceipts || []).map((r) => (
+                                                        <option key={r.receiptId} value={r.receiptId}>
+                                                            {r.receiptId} {r.shopSlug ? `• ${r.shopSlug}` : ""}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {myReceiptsLoading && <div className="microtext text-muted-foreground mt-1">Loading your receipts…</div>}
+                                            </div>
+                                            <div>
+                                                <label className="microtext text-muted-foreground">Scope</label>
+                                                <div className="mt-1 flex items-center gap-3">
+                                                    <label className="flex items-center gap-2 microtext">
+                                                        <input type="radio" checked={reviewScope === "shop"} onChange={() => setReviewScope("shop")} />
+                                                        Entire Order (Shop)
+                                                    </label>
+                                                    <label className="flex items-center gap-2 microtext">
+                                                        <input type="radio" checked={reviewScope === "inventory"} onChange={() => setReviewScope("inventory")} />
+                                                        Specific Item
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {reviewScope === "inventory" && (
+                                                <div>
+                                                    <label className="microtext text-muted-foreground">Select Item</label>
+                                                    <select className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={reviewItemId} onChange={(e) => setReviewItemId(e.target.value)} disabled={!selectedReviewReceipt}>
+                                                        <option value="">Select an item...</option>
+                                                        {Array.isArray(selectedReviewReceipt?.lineItems) &&
+                                                            (selectedReviewReceipt!.lineItems || [])
+                                                                .filter((li: any) => !!li?.itemId)
+                                                                .map((li: any, idx: number) => (
+                                                                    <option key={idx} value={String(li.itemId)}>
+                                                                        {li.label || li.sku || String(li.itemId)}
+                                                                    </option>
+                                                                ))}
+                                                    </select>
+                                                </div>
+                                            )}
+                                            <div>
+                                                <label className="microtext text-muted-foreground">Rating</label>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    {Array.from({ length: 5 }).map((_, i) => (
+                                                        <button
+                                                            key={i}
+                                                            type="button"
+                                                            className={`h-7 w-7 rounded-md border grid place-items-center ${i < reviewRating ? "bg-amber-100 border-amber-300" : "bg-background"}`}
+                                                            onClick={() => setReviewRating(i + 1)}
+                                                            aria-label={`Set rating ${i + 1}`}
+                                                            title={`Set rating ${i + 1}`}
+                                                        >
+                                                            <span className={i < reviewRating ? "text-amber-500" : "text-muted-foreground"}>★</span>
+                                                        </button>
+                                                    ))}
+                                                    <span className="microtext text-muted-foreground">({Number(reviewRating).toFixed(2)})</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="microtext text-muted-foreground">Title (optional)</label>
+                                                <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} placeholder="e.g., Great experience" />
+                                            </div>
+                                            <div>
+                                                <label className="microtext text-muted-foreground">Review</label>
+                                                <textarea className="mt-1 w-full h-24 px-3 py-2 border rounded-md bg-background" value={reviewBody} onChange={(e) => setReviewBody(e.target.value)} placeholder="Share details about your experience…" />
+                                            </div>
+                                            {reviewError && <div className="microtext text-red-500">{reviewError}</div>}
+                                        </div>
+                                        <div className="mt-3 flex items-center justify-end gap-2">
+                                            <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => setReviewOpen(false)}>
+                                                Cancel
+                                            </button>
+                                            <button className="px-3 py-1.5 rounded-md border text-sm" onClick={submitReview} disabled={reviewSaving || !reviewReceiptId.trim()}>
+                                                {reviewSaving ? "Submitting…" : "Submit Review"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {error && <div className="rounded-md border p-3 text-sm text-red-600">{error}</div>}
+
+                        <div className={`${isPreview ? "sticky bottom-0 mt-auto" : "fixed bottom-0 left-0 right-0"} h-8 z-30 pointer-events-none`} style={{ background: shopPrimary }}>
+                            <div className="max-w-7xl mx-auto h-full flex items-center justify-center px-3">
+                                <span className="text-xs font-semibold tracking-widest" style={{ color: poweredTextColor, letterSpacing: "0.2em" }}>{`POWERED BY ${(brand?.name || "").toUpperCase() || "BRAND"}`}</span>
+                            </div>
                         </div>
                     </div>
                 </div>

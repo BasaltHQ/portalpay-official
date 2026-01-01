@@ -12,7 +12,9 @@ import LoginGateLink from '@/components/login-gate-link';
 import { getBaseUrl } from '@/lib/base-url';
 import { getBrandConfig } from '@/config/brands';
 import { isPartnerContext } from '@/lib/env';
-import { resolveBrandAppLogo } from "@/lib/branding";
+import { resolveBrandAppLogo, getDefaultBrandName } from "@/lib/branding";
+import { DocsSidebarProvider } from "@/contexts/DocsSidebarContext";
+import { DocsContentWrapper } from "@/components/docs/docs-content-wrapper";
 
 export async function generateStaticParams() {
   return [
@@ -39,14 +41,14 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug?: string[] }> }) {
   // Resolve partner brand key from container and hydrate with live Platform Admin config
-  const _siteBase = getBaseUrl();
+  const siteBase = getBaseUrl();
   let runtimeBrand = getBrandConfig();
   try {
-    const ciRes = await fetch(`/api/site/container`, { cache: "no-store" });
+    const ciRes = await fetch(`${siteBase}/api/site/container`, { cache: "no-store" });
     const ci = await ciRes.json().catch(() => ({} as any));
     const key = String(ci?.brandKey || runtimeBrand?.key || "").toLowerCase();
     runtimeBrand = getBrandConfig(key);
-    const pbRes = await fetch(`/api/platform/brands/${encodeURIComponent(key || runtimeBrand.key)}/config`, { cache: "no-store" });
+    const pbRes = await fetch(`${siteBase}/api/platform/brands/${encodeURIComponent(key || runtimeBrand.key)}/config`, { cache: "no-store" });
     const pb = await pbRes.json().catch(() => ({} as any));
     const b = pb?.brand || null;
     const ov = pb?.overrides || null;
@@ -75,12 +77,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
   const ogImage = `${baseUrl}/api/og-image/docs${ogSuffix}`;
   const twitterImage = `${baseUrl}/api/og-image/docs${ogSuffix}`;
 
-  // Titleize brand key as fallback if name is missing or looks generic (avoids showing ledger1)
   const metaBrandKey = String((runtimeBrand as any)?.key || "").trim();
-  const titleizedMetaKey = metaBrandKey ? metaBrandKey.charAt(0).toUpperCase() + metaBrandKey.slice(1) : "PortalPay";
   const nm = String(runtimeBrand?.name || "").trim();
   const metaGeneric = /^ledger\d*$/i.test(nm) || /^partner\d*$/i.test(nm) || /^default$/i.test(nm);
-  const displayNameMeta = (!nm || metaGeneric) ? titleizedMetaKey : nm;
+  const displayNameMeta = (!nm || metaGeneric) ? getDefaultBrandName(metaBrandKey) : nm;
 
   return {
     title: `${title} | ${displayNameMeta} Docs`,
@@ -254,12 +254,12 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
         </div>
       </header>
 
-      {/* Sidebar */}
-      <DocsSidebar currentPath={currentPath} />
+      <DocsSidebarProvider>
+        {/* Sidebar */}
+        <DocsSidebar currentPath={currentPath} />
 
-      {/* Main Content - centered with equal sidebar spacing */}
-      <main className="pt-[232px] md:pt-[176px] transition-all duration-300">
-        <div className="mx-auto max-w-7xl px-4 md:px-8 py-12 md:pl-64 xl:pr-64">
+        {/* Main Content - centered with equal sidebar spacing */}
+        <DocsContentWrapper>
           {/* Breadcrumb */}
           {slug.length > 0 && (
             <nav className="mb-8 flex items-center gap-2 text-sm text-muted-foreground">
@@ -356,8 +356,8 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
               </div>
             </div>
           </footer>
-        </div>
-      </main>
+        </DocsContentWrapper>
+      </DocsSidebarProvider>
 
       {/* Table of Contents */}
       <DocsTOC />

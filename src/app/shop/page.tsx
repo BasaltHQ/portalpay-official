@@ -133,6 +133,9 @@ export default function ShopBuilderPage() {
   }, [isConnected]);
 
   const [saving, setSaving] = useState(false);
+  const [activeUploads, setActiveUploads] = useState(0);
+  const onUploadStart = () => setActiveUploads(prev => prev + 1);
+  const onUploadEnd = () => setActiveUploads(prev => Math.max(0, prev - 1));
   const [error, setError] = useState("");
   const [slugChecking, setSlugChecking] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
@@ -855,6 +858,8 @@ export default function ShopBuilderPage() {
               label="Cover Photo"
               value={cfg.theme.coverPhotoUrl || ""}
               onChange={(url) => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, coverPhotoUrl: Array.isArray(url) ? url[0] : url } }))}
+              onUploadStart={onUploadStart}
+              onUploadEnd={onUploadEnd}
               target="cover_photo"
               guidance="Wide banner image. 1920x400 recommended."
               previewSize={160}
@@ -877,6 +882,8 @@ export default function ShopBuilderPage() {
               label="Maximalist Banner"
               value={cfg.theme.maximalistBannerUrl || ""}
               onChange={(url) => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, maximalistBannerUrl: Array.isArray(url) ? url[0] : url } }))}
+              onUploadStart={onUploadStart}
+              onUploadEnd={onUploadEnd}
               target="maximalist_banner"
               guidance="Ultra-wide banner (32:9 aspect ratio recommended). This appears as the hero background."
               previewSize={160}
@@ -899,6 +906,8 @@ export default function ShopBuilderPage() {
                       newImages[idx] = Array.isArray(url) ? url[0] : url;
                       setCfg((prev) => ({ ...prev, theme: { ...prev.theme, galleryImages: newImages } }));
                     }}
+                    onUploadStart={onUploadStart}
+                    onUploadEnd={onUploadEnd}
                     target={`gallery_${idx}`}
                     guidance="16:9 ratio"
                     previewSize={80}
@@ -1840,8 +1849,21 @@ export default function ShopBuilderPage() {
 
             {error && <div className="microtext text-red-500">{error}</div>}
             <div className="flex items-center justify-end gap-2">
-              <button className="px-3 py-1.5 rounded-md border text-sm" onClick={saveConfig} disabled={saving}>
-                {saving ? "Saving…" : "Save & Deploy"}
+              <button
+                className={`px-3 py-1.5 rounded-md border text-sm flex items-center gap-2 ${activeUploads > 0 ? "opacity-50 cursor-wait" : ""}`}
+                onClick={saveConfig}
+                disabled={saving || activeUploads > 0}
+              >
+                {activeUploads > 0 ? (
+                  <>
+                    <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    Uploading...
+                  </>
+                ) : saving ? (
+                  "Saving…"
+                ) : (
+                  "Save & Deploy"
+                )}
               </button>
             </div>
           </div>

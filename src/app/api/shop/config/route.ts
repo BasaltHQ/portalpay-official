@@ -201,7 +201,9 @@ function normalize(raw?: any, brandKey?: string): Omit<ShopConfig, "wallet" | "i
       heroFontSize: (t.heroFontSize === "microtext" || t.heroFontSize === "small" || t.heroFontSize === "medium" || t.heroFontSize === "large" || t.heroFontSize === "xlarge") ? t.heroFontSize : d.theme.heroFontSize,
       layoutMode: (t.layoutMode === "minimalist" || t.layoutMode === "balanced" || t.layoutMode === "maximalist") ? t.layoutMode : "balanced",
       maximalistBannerUrl: isValidUrl(t.maximalistBannerUrl) ? String(t.maximalistBannerUrl) : "",
-      galleryImages: Array.isArray(t.galleryImages) ? t.galleryImages.filter((x: any) => isValidUrl(x)) : [],
+      galleryImages: Array.isArray(t.galleryImages)
+        ? [...t.galleryImages.slice(0, 5), ...Array(Math.max(0, 5 - t.galleryImages.length)).fill("")].map((x: any) => isValidUrl(x) ? String(x) : "")
+        : Array(5).fill(""),
     };
 
     const arr = String(raw.arrangement || "").toLowerCase();
@@ -281,6 +283,7 @@ function normalize(raw?: any, brandKey?: string): Omit<ShopConfig, "wallet" | "i
   // Clamp colors to strings
   try {
     for (const k of Object.keys(out.theme || {})) {
+      if (k === "galleryImages") continue; // Preserve array
       const v = (out.theme as any)[k];
       (out.theme as any)[k] = typeof v === "string" ? v : (d.theme as any)[k];
     }
@@ -613,7 +616,8 @@ export async function POST(req: NextRequest) {
 
     let theme = base.theme;
     if (body && typeof body.theme === "object" && body.theme) {
-      theme = normalize({ theme: body.theme }).theme;
+      // Merge with base theme to prevent clearing layoutMode/banners if they aren't in the partial update
+      theme = normalize({ theme: { ...base.theme, ...body.theme } }).theme;
     }
 
     let arrangement: InventoryArrangement = base.arrangement;

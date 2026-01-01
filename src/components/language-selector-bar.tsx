@@ -251,27 +251,38 @@ export function LanguageSelectorBar({ className = "" }: LanguageSelectorBarProps
       )}
 
       <div
-        className={`w-full border-b backdrop-blur-md relative z-40 ${className}`}
-        style={{ backgroundColor: `${theme.primaryColor}1a` }} // 1a is ~10% opacity in hex
+        className={`w-full backdrop-blur-md relative z-40 font-mono ${className}`}
+        style={{
+          backgroundColor: `${theme.primaryColor}1a`,
+        }}
       >
+        <div className="absolute bottom-0 left-0 right-0 h-[1px] w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-100 pointer-events-none z-50"
+          style={{
+            color: theme.primaryColor,
+            boxShadow: `0 1px 12px ${theme.primaryColor}60`
+          }}
+        />
+
+        <div className="absolute top-[1px] left-0 right-0 h-[1px] w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-80 pointer-events-none z-50" style={{ color: theme.primaryColor }} />
+
         <div className="max-w-5xl mx-auto px-4 h-7 flex items-center justify-between">
           <nav className="flex items-center gap-1">
             {categoryVisibility.industries && (
-              <Link href="/crypto-payments" className="microtext text-foreground/80 px-2 py-0.5 rounded hover:bg-foreground/5 transition-colors">
+              <Link href="/crypto-payments" className="flex items-center text-[10px] leading-none tracking-widest uppercase text-foreground/80 px-2 py-0.5 rounded hover:bg-foreground/5 transition-colors">
                 Industries
               </Link>
             )}
             {categoryVisibility.comparisons && (
-              <Link href="/vs" className="microtext text-foreground/80 px-2 py-0.5 rounded hover:bg-foreground/5 transition-colors">
+              <Link href="/vs" className="flex items-center text-[10px] leading-none tracking-widest uppercase text-foreground/80 px-2 py-0.5 rounded hover:bg-foreground/5 transition-colors">
                 Comparisons
               </Link>
             )}
             {categoryVisibility.locations && (
-              <Link href="/locations" className="microtext text-foreground/80 px-2 py-0.5 rounded hover:bg-foreground/5 transition-colors">
+              <Link href="/locations" className="flex items-center text-[10px] leading-none tracking-widest uppercase text-foreground/80 px-2 py-0.5 rounded hover:bg-foreground/5 transition-colors">
                 Locations
               </Link>
             )}
-            <Link href="/developers" className="microtext text-foreground/80 px-2 py-0.5 rounded hover:bg-foreground/5 transition-colors">
+            <Link href="/developers" className="flex items-center text-[10px] leading-none tracking-widest uppercase text-foreground/80 px-2 py-0.5 rounded hover:bg-foreground/5 transition-colors">
               Developers
             </Link>
           </nav>
@@ -281,12 +292,12 @@ export function LanguageSelectorBar({ className = "" }: LanguageSelectorBarProps
               className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-foreground/5 transition-colors"
               aria-label={tLanguageBar("selectLanguage")}
             >
-              <Globe className="h-3 w-3 opacity-60" />
-              <span className="microtext text-[9px] opacity-80">{currentLanguage}</span>
+              <Globe className="h-3 w-3 opacity-60 -mt-px" />
+              <span className="text-[10px] leading-none tracking-widest uppercase opacity-80">{currentLanguage}</span>
             </button>
 
             {isOpen && (
-              <div className="absolute right-0 top-full mt-1 w-72 max-h-[400px] glass-float rounded-md border shadow-xl z-50 flex flex-col">
+              <div className="absolute right-0 top-full mt-1 w-72 max-h-[400px] glass-float rounded-md border shadow-xl z-50 flex flex-col font-sans">
                 {/* Search field */}
                 <div className="p-2 border-b sticky top-0 bg-background/95 backdrop-blur-sm">
                   <div className="relative">
@@ -303,7 +314,7 @@ export function LanguageSelectorBar({ className = "" }: LanguageSelectorBarProps
                       spellCheck="false"
                       data-form-type="other"
                       data-lpignore="true"
-                      className="w-full pl-7 pr-2 py-1 text-xs rounded border bg-background/50 focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                      className="w-full pl-7 pr-2 py-1 text-xs rounded border bg-background/50 focus:outline-none focus:ring-1 focus:ring-foreground/20 font-sans"
                     />
                   </div>
                 </div>
@@ -428,6 +439,7 @@ export function LanguageSelectorBar({ className = "" }: LanguageSelectorBarProps
             )}
           </div>
         </div>
+
       </div>
     </>
   );

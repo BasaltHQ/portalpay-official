@@ -56,41 +56,38 @@ export function HideableNavbar() {
   const fsParam = String(searchParams?.get("fs") || searchParams?.get("fullscreen") || "").toLowerCase();
   const isFullscreen = fsParam === "1" || fsParam === "true";
 
-  // Hide navbar on custom domains (shop storefronts)
-  if (isCustomDomain) {
-    return null;
-  }
-  if (pathname === "/portal" || pathname.startsWith("/portal/")) {
-    return null;
-  }
-  if (pathname.startsWith("/shop/")) {
-    return null;
-  }
-  // Hide navbar on MSA signing pages (clean Adobe Sign iframe experience)
-  if (pathname === "/msa" || pathname === "/msas") {
-    return null;
-  }
-  // Hide navbar on reader pages (clean immersive reading experience)
-  if (pathname.startsWith("/reader/") || pathname === "/reader") {
-    return null;
-  }
-  // Hide navbar on /terminal when opened as a pop-out/fullscreen (fs=1)
-  if ((pathname === "/terminal" || pathname.startsWith("/terminal")) && isFullscreen) {
-    return null;
-  }
-  // Hide navbar on /terminal on mobile when in terminal mode (default or view=terminal)
-  // This allows the terminal numpad and QR code to fit without scrolling
+  // Determine if navbar should be hidden
   const viewParam = String(searchParams?.get("view") || "").toLowerCase();
   const isTerminalView = viewParam === "terminal" || viewParam === "" || !viewParam;
-  if ((pathname === "/terminal" || pathname.startsWith("/terminal")) && isMobile && isTerminalView) {
+
+  const shouldHideNavbar =
+    isCustomDomain ||
+    pathname === "/portal" || pathname.startsWith("/portal/") ||
+    pathname.startsWith("/shop/") ||
+    pathname === "/msa" || pathname === "/msas" ||
+    pathname.startsWith("/reader/") || pathname === "/reader" ||
+    ((pathname === "/terminal" || pathname.startsWith("/terminal")) && isFullscreen) ||
+    ((pathname === "/terminal" || pathname.startsWith("/terminal")) && isMobile && isTerminalView) ||
+    isCandidateSlug(pathname);
+
+  // Apply body class for navbar padding
+  useEffect(() => {
+    if (!shouldHideNavbar) {
+      document.body.classList.add("with-global-navbar");
+    } else {
+      document.body.classList.remove("with-global-navbar");
+    }
+    return () => {
+      document.body.classList.remove("with-global-navbar");
+    };
+  }, [shouldHideNavbar]);
+
+  if (shouldHideNavbar) {
     return null;
   }
-  // Hide navbar on vanity slugs (e.g., /myshop)
-  if (isCandidateSlug(pathname)) {
-    return null;
-  }
+
   return (
-    <div className="sticky top-0 z-[10001]">
+    <div className="fixed top-0 left-0 right-0 z-[10001] flex flex-col">
       <Navbar />
       {!((pathname.startsWith("/pricing") || pathname.startsWith("/terminal")) && isMobile) ? <LanguageSelectorBar /> : null}
       {(pathname.startsWith("/pricing") || pathname.startsWith("/terminal")) && !isMobile ? <TerminalViewBar /> : null}

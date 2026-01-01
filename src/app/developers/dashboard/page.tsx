@@ -7,7 +7,9 @@ import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { DashboardTOC } from "@/components/dashboard/dashboard-toc";
 import { getBrandConfig } from "@/config/brands";
 import { getBaseUrl } from "@/lib/base-url";
-import { resolveBrandAppLogo } from "@/lib/branding";
+import { resolveBrandAppLogo, resolveBrandSymbol, normalizeBrandName } from "@/lib/branding";
+import { DocsSidebarProvider } from "@/contexts/DocsSidebarContext";
+import { DashboardContentWrapper } from "@/components/dashboard/dashboard-content-wrapper";
 
 export const metadata = {
   title: "Developer Dashboard",
@@ -118,12 +120,12 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      {/* Sidebar */}
-      <DashboardSidebar currentPath="/developers/dashboard" />
+      <DocsSidebarProvider>
+        {/* Sidebar */}
+        <DashboardSidebar currentPath="/developers/dashboard" />
 
-      {/* Main Content - centered with equal sidebar spacing */}
-      <main className="pt-[176px] transition-all duration-300">
-        <div className="mx-auto max-w-4xl px-8 py-12 md:ml-64 xl:mr-64">
+        {/* Main Content - centered with equal sidebar spacing */}
+        <DashboardContentWrapper>
           <div className="mb-10">
             <h1 className="text-4xl font-bold mb-2">Developer Dashboard</h1>
             <p className="text-muted-foreground">
@@ -184,12 +186,13 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Image
-                  src={brand?.logos?.symbol || brand?.logos?.app || brand?.logos?.favicon || "/ppsymbol.png"}
-                  alt={brand?.name || "Brand"}
+                  src={resolveBrandSymbol(brand?.logos?.symbol, brand?.key)}
+                  alt={normalizeBrandName(brand?.name, brand?.key)}
                   width={20}
                   height={20}
+                  className="object-contain"
                 />
-                <span>© {new Date().getFullYear()} {brand?.name || "PortalPay"}. All rights reserved.</span>
+                <span>© {new Date().getFullYear()} {normalizeBrandName(brand?.name, brand?.key)}. All rights reserved.</span>
               </div>
               <div className="flex items-center gap-4">
                 <a
@@ -206,8 +209,8 @@ export default async function DashboardPage() {
               </div>
             </div>
           </footer>
-        </div>
-      </main>
+        </DashboardContentWrapper>
+      </DocsSidebarProvider>
 
       {/* Table of Contents */}
       <DashboardTOC sections={tocSections} />

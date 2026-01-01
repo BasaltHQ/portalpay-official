@@ -8,6 +8,8 @@ import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { DashboardTOC } from "@/components/dashboard/dashboard-toc";
 import { useBrand } from "@/contexts/BrandContext";
 import { resolveBrandAppLogo } from "@/lib/branding";
+import { DocsSidebarProvider } from "@/contexts/DocsSidebarContext";
+import { DashboardContentWrapper } from "@/components/dashboard/dashboard-content-wrapper";
 
 type Subscription = {
   subscriptionId: string;
@@ -96,10 +98,10 @@ export default function SubscriptionsPage() {
         </div>
       </header>
 
-      <DashboardSidebar currentPath="/developers/dashboard/subscriptions" />
+      <DocsSidebarProvider>
+        <DashboardSidebar currentPath="/developers/dashboard/subscriptions" />
 
-      <main className="pt-[176px] transition-all duration-300">
-        <div className="mx-auto max-w-4xl px-8 py-12 md:ml-64 xl:mr-64">
+        <DashboardContentWrapper>
           {/* Breadcrumb */}
           <nav className="mb-8 flex items-center gap-2 text-sm text-muted-foreground">
             <Link href="/developers/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link>
@@ -166,8 +168,8 @@ export default function SubscriptionsPage() {
             </div>
           )}
 
-        </div>
-      </main>
+        </DashboardContentWrapper>
+      </DocsSidebarProvider>
       <DashboardTOC sections={tocSections} />
     </div>
   );

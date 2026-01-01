@@ -12,7 +12,9 @@ import { wrapFetchWithPayment } from "thirdweb/x402";
 import { useActiveWallet, ConnectButton } from "thirdweb/react";
 import { useBrand } from "@/contexts/BrandContext";
 import { usePortalThirdwebTheme } from "@/lib/thirdweb/theme";
-import { resolveBrandAppLogo } from "@/lib/branding";
+import { resolveBrandAppLogo, normalizeBrandName, resolveBrandSymbol, isBasaltSurge } from "@/lib/branding";
+import { DocsSidebarProvider } from "@/contexts/DocsSidebarContext";
+import { DashboardContentWrapper } from "@/components/dashboard/dashboard-content-wrapper";
 
 type Product = {
   id: string;
@@ -628,12 +630,12 @@ export default function ProductsPage() {
         </div>
       </header>
 
-      {/* Sidebar */}
-      <DashboardSidebar currentPath="/developers/dashboard/products" />
+      <DocsSidebarProvider>
+        {/* Sidebar */}
+        <DashboardSidebar currentPath="/developers/dashboard/products" />
 
-      {/* Main Content - centered with equal sidebar spacing */}
-      <main className="pt-[176px] transition-all duration-300">
-        <div className="mx-auto max-w-4xl px-8 py-12 md:ml-64 xl:mr-64">
+        {/* Main Content - centered with equal sidebar spacing */}
+        <DashboardContentWrapper>
           {/* Breadcrumb */}
           <nav className="mb-8 flex items-center gap-2 text-sm text-muted-foreground">
             <Link href="/developers/dashboard" className="hover:text-foreground transition-colors">
@@ -673,7 +675,17 @@ export default function ProductsPage() {
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-2xl font-bold mb-1">
-                        {brand?.name ? `${brand.name} ${product.name}` : product.name}
+                        {isBasaltSurge(brand?.key) ? (
+                          <span style={{ fontFamily: 'vox, sans-serif' }}>
+                            <span style={{ fontWeight: 400, fontVariationSettings: '"wght" 400' }}>BASALT</span>
+                            <span style={{ fontWeight: 800, fontVariationSettings: '"wght" 800' }}>SURGE</span>
+                          </span>
+                        ) : (
+                          <span style={{ fontFamily: 'vox, sans-serif', fontWeight: 700, fontVariationSettings: '"wght" 700' }}>
+                            {normalizeBrandName(brand?.name, brand?.key)}
+                          </span>
+                        )}{" "}
+                        {product.name}
                       </h3>
                       <p className="text-sm text-muted-foreground font-mono">
                         {`${String(brand?.key || "portalpay")}-${String(product.name || "").toLowerCase()}`}
@@ -719,7 +731,7 @@ export default function ProductsPage() {
                   >
                     {getPricingLabel(product).enterprise
                       ? "Contact for Enterprise"
-                      : `Subscribe to ${brand?.name ? `${brand.name} ${product.name}` : product.name}`}
+                      : `Subscribe to ${normalizeBrandName(brand?.name, brand?.key)} ${product.name}`}
                   </button>
                 </div>
               ))}
@@ -731,12 +743,13 @@ export default function ProductsPage() {
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Image
-                  src={brand?.logos?.symbol || brand?.logos?.app || brand?.logos?.favicon || "/ppsymbol.png"}
-                  alt={brand?.name || "Brand"}
+                  src={resolveBrandSymbol(brand?.logos?.symbol, brand?.key)}
+                  alt={normalizeBrandName(brand?.name, brand?.key)}
                   width={20}
                   height={20}
+                  className="object-contain"
                 />
-                <span>© {new Date().getFullYear()} {brand?.name || "PortalPay"}. All rights reserved.</span>
+                <span>© {new Date().getFullYear()} {normalizeBrandName(brand?.name, brand?.key)}. All rights reserved.</span>
               </div>
               <div className="flex items-center gap-4">
                 <a
@@ -753,8 +766,8 @@ export default function ProductsPage() {
               </div>
             </div>
           </footer>
-        </div>
-      </main>
+        </DashboardContentWrapper>
+      </DocsSidebarProvider>
 
       {/* Table of Contents with contextual guides */}
       <DashboardTOC sections={tocSections} />

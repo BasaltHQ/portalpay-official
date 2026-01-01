@@ -1,150 +1,156 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useBrand } from "@/contexts/BrandContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { cachedFetch } from "@/lib/client-api-cache";
-import { getDefaultBrandSymbol, resolveBrandSymbol } from "@/lib/branding";
+import Link from 'next/link';
+import Image from 'next/image';
+import { useTheme } from "../../contexts/ThemeContext";
+
+const navigationLinks = [
+  { label: 'Home', href: '#hero' },
+  { label: 'Features', href: '#features' },
+  { label: 'AI Agents', href: '#ai-agents' },
+  { label: 'Pricing', href: '#pricing' },
+];
+
+const ecosystemLinks = [
+  { label: 'BasaltHQ', href: 'https://basalthq.com', description: 'Main Homepage' },
+  { label: 'BasaltCRM', href: 'https://crm.basalthq.com', description: 'Customer Relations' },
+  { label: 'BasaltERP', href: 'https://erp.basalthq.com', description: 'Enterprise Resource' },
+  { label: 'BasaltCMS', href: 'https://cms.basalthq.com', description: 'Content Management' },
+  { label: 'BasaltEcho', href: 'https://echo.basalthq.com', description: 'AI Communications' },
+  { label: 'BasaltOnyx', href: 'https://onyx.basalthq.com', description: 'Analytics & BI' },
+  { label: 'Developer API', href: '/developers' },
+  { label: 'Status', href: 'https://status.basalthq.com' },
+];
+
+const socialLinks = [
+  { label: 'Twitter', href: 'https://twitter.com/BasaltHQ' },
+  { label: 'LinkedIn', href: 'https://linkedin.com/company/basalthq' },
+  { label: 'GitHub', href: 'https://github.com/basalthq' },
+];
 
 export default function SiteFooter() {
-  const brand = useBrand();
   const { theme } = useTheme();
-  const [containerBrandKey, setContainerBrandKey] = useState<string>("");
-  const [containerType, setContainerType] = useState<string>("");
-  // Partner brand assets (fetched when container is partner type)
-  const [partnerLogoSymbol, setPartnerLogoSymbol] = useState<string>("");
-  const [partnerLogoFavicon, setPartnerLogoFavicon] = useState<string>("");
-  const [partnerLogoApp, setPartnerLogoApp] = useState<string>("");
-  const [partnerBrandName, setPartnerBrandName] = useState<string>("");
-  const [isPartnerBrandLoading, setIsPartnerBrandLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    cachedFetch("/api/site/container", { cache: "no-store" })
-      .then((ci: any) => {
-        if (cancelled) return;
-        const bk = String(ci?.brandKey || "").trim();
-        const ct = String(ci?.containerType || "").trim();
-        setContainerBrandKey(bk);
-        setContainerType(ct);
-        // If not a partner container, stop loading state immediately
-        if (ct.toLowerCase() !== "partner" || !bk) {
-          setIsPartnerBrandLoading(false);
-        }
-      })
-      .catch(() => {
-        setIsPartnerBrandLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, []);
-
-  // Fetch partner brand configuration when in a partner container
-  useEffect(() => {
-    if (containerType.toLowerCase() !== "partner" || !containerBrandKey) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`/api/platform/brands/${encodeURIComponent(containerBrandKey)}/config`, { cache: "no-store" });
-        if (!res.ok || cancelled) {
-          if (!cancelled) setIsPartnerBrandLoading(false);
-          return;
-        }
-        const data = await res.json();
-        // API returns { brandKey, brand: { logos, ... }, overrides }
-        const cfg = data?.brand || data?.config || data || {};
-        const logos = cfg?.logos || data?.overrides?.logos || cfg?.theme?.logos || {};
-        if (!cancelled) {
-          setPartnerLogoSymbol(String(logos?.symbol || "").trim());
-          setPartnerLogoFavicon(String(logos?.favicon || cfg?.theme?.brandFaviconUrl || "").trim());
-          setPartnerLogoApp(String(logos?.app || cfg?.theme?.brandLogoUrl || "").trim());
-          setPartnerBrandName(String(cfg?.name || cfg?.displayName || "").trim());
-          setIsPartnerBrandLoading(false);
-        }
-      } catch {
-        if (!cancelled) setIsPartnerBrandLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [containerType, containerBrandKey]);
-
-  // Detect container type from state or HTML attribute set in RootLayout
-  const containerTypeAttr = (typeof document !== "undefined"
-    ? (document.documentElement.getAttribute("data-pp-container-type") || "").toLowerCase()
-    : "");
-  const isPartnerContainer = containerType.toLowerCase() === "partner" || containerTypeAttr === "partner";
-
-  // Effective values: partner assets take precedence for partner containers
-  const effectiveLogoSymbol = (isPartnerContainer && partnerLogoSymbol) ? partnerLogoSymbol : (theme?.symbolLogoUrl || "");
-  const effectiveLogoFavicon = (isPartnerContainer && partnerLogoFavicon) ? partnerLogoFavicon : (theme?.brandFaviconUrl || "");
-  const effectiveLogoApp = (isPartnerContainer && partnerLogoApp) ? partnerLogoApp : (theme?.brandLogoUrl || "");
-
-  // Use transparent placeholder while loading partner brand data to prevent wrong logo flash
-  const footerIcon = (() => {
-    if (isPartnerBrandLoading && isPartnerContainer) {
-      return "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-    }
-    // Partner-fetched logos take absolute priority in partner containers
-    // Don't let theme context or brand context values override them
-    if (isPartnerContainer) {
-      const pSym = partnerLogoSymbol.trim();
-      const pFav = partnerLogoFavicon.trim();
-      const pApp = partnerLogoApp.trim();
-      if (pSym) return pSym;
-      if (pFav) return pFav;
-      if (pApp) return pApp;
-      // If partner fetch completed but returned no logos, use fallback
-      // DO NOT fall through to theme/brand context as they may be platform defaults
-      return getDefaultBrandSymbol(containerBrandKey);
-    }
-    // For platform container, use the standard cascade
-    const sym = effectiveLogoSymbol.trim();
-    const fav = effectiveLogoFavicon.trim();
-    const app = effectiveLogoApp.trim();
-    const rawIcon = (
-      (theme as any)?.logos?.footer ||
-      sym ||
-      fav ||
-      app ||
-      brand.logos.footer ||
-      brand.logos.symbol ||
-      brand.logos.app ||
-      getDefaultBrandSymbol(containerBrandKey || (brand as any)?.key)
-    );
-    return resolveBrandSymbol(rawIcon, containerBrandKey || (brand as any)?.key);
-  })();
-
-  // Brand name fallback: prefer partner brand name for partner containers
-  const effectiveBrandNameFromPartner = (isPartnerContainer && partnerBrandName) ? partnerBrandName : "";
-  const rawFooterName =
-    (effectiveBrandNameFromPartner) ||
-    (typeof theme?.brandName === "string" && theme.brandName.trim()
-      ? theme.brandName.trim()
-      : brand.name);
-  const isGenericFooterName =
-    /^ledger\d*$/i.test(String(rawFooterName || "")) ||
-    /^partner\d*$/i.test(String(rawFooterName || "")) ||
-    /^default$/i.test(String(rawFooterName || "")) ||
-    // Treat 'PortalPay' as generic in partner containers so we fall back to titleized brand key
-    (isPartnerContainer && /^portalpay$/i.test(String(rawFooterName || "")));
-  const titleizedKey = (() => {
-    // Prefer container brand key over static brand key
-    const k = String(containerBrandKey || (brand as any)?.key || "").trim();
-    return k ? k.charAt(0).toUpperCase() + k.slice(1) : "PortalPay";
-  })();
-  const footerName = (!rawFooterName || isGenericFooterName) ? titleizedKey : rawFooterName;
-
   return (
-    <footer className="mt-10 border-t border-border/60">
-      <div className="max-w-6xl mx-auto px-6 md:px-8 py-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/bssymbol.png"
-          alt={`${footerName} symbol`}
-          className="h-10 w-10 rounded-sm object-contain"
-        />
-        <span className="microtext text-muted-foreground">
-          © {new Date().getFullYear()} {footerName}. All rights reserved.
-        </span>
+    <footer className="relative py-16 px-6 border-t border-white/10 mt-24">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+          {/* Brand Column */}
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="relative w-12 h-12">
+                <Image
+                  src="/Surge.png"
+                  alt="Basalt Surge"
+                  fill
+                  className="object-contain"
+                />
+                <div className="shield-gleam-container" />
+              </div>
+              <div>
+                <span className="text-white text-xl tracking-widest" style={{ fontFamily: '"vox", sans-serif' }}>
+                  <span style={{ fontWeight: 300 }}>BASALT</span><span style={{ fontWeight: 700 }}>SURGE</span>
+                </span>
+                <p className="text-[10px] font-mono mt-1 whitespace-nowrap" style={{ color: theme.primaryColor }}>AI-POWERED RELATIONSHIPS</p>
+              </div>
+            </div>
+            <p className="text-gray-400 text-sm leading-relaxed mb-6">
+              <span className="font-semibold" style={{ color: theme.primaryColor }}>Payments. Portals. Power.</span> The financial backbone of the Basalt ecosystem, enabling seamless crypto and fiat transactions across all your business operations.
+            </p>
+            <a
+              href="mailto:info@basalthq.com"
+              className="text-sm hover:underline"
+              style={{ color: theme.primaryColor }}
+            >
+              info@basalthq.com
+            </a>
+          </div>
+
+          {/* Navigation */}
+          <div>
+            <h4 className="text-xs font-mono tracking-wider text-gray-500 mb-4">NAVIGATE</h4>
+            <ul className="space-y-2">
+              {navigationLinks.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="text-gray-400 text-sm hover:text-white transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Ecosystem */}
+          <div>
+            <h4 className="text-xs font-mono tracking-wider text-gray-500 mb-4">ECOSYSTEM</h4>
+            <ul className="space-y-2">
+              {ecosystemLinks.map((link) => (
+                <li key={link.label}>
+                  <a
+                    href={link.href}
+                    target={link.href.startsWith("http") ? "_blank" : undefined}
+                    rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                    className="text-gray-400 text-sm hover:text-white transition-colors flex items-center gap-1"
+                  >
+                    {link.label}
+                    {link.href.startsWith("http") && (
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 0 00-2 2v10a2 0 002 2h10a2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    )}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Connect */}
+          <div>
+            <h4 className="text-xs font-mono tracking-wider text-gray-500 mb-4">CONNECT</h4>
+            <ul className="space-y-2">
+              {socialLinks.map((link) => (
+                <li key={link.label}>
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 text-sm hover:text-[var(--primary)] transition-colors"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-8">
+              <h4 className="text-xs font-mono tracking-wider text-gray-500 mb-2">STATUS</h4>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-[var(--primary)]"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--primary)]"></span>
+                </span>
+                <span className="text-xs font-mono text-[var(--primary)]">ALL SYSTEMS OPERATIONAL</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-gray-500 text-xs">
+            © {new Date().getFullYear()} BasaltSurge. All rights reserved.
+          </p>
+          <div className="flex items-center gap-6">
+            <Link href="/privacy" className="text-gray-500 text-xs hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="text-gray-500 text-xs hover:text-white transition-colors">
+              Terms of Service
+            </Link>
+          </div>
+        </div>
       </div>
     </footer>
   );

@@ -5,6 +5,19 @@ import { useActiveAccount } from 'thirdweb/react';
 import { useBrand } from "@/contexts/BrandContext";
 import { getDefaultBrandSymbol, isBasaltSurge, resolveBrandAppLogo, resolveBrandSymbol } from "@/lib/branding";
 
+// Blocked favicon URLs that should be replaced with fallback
+const BLOCKED_FAVICON_URLS = [
+  "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/uploads/a311dcf8-e6de-4eca-a39c-907b347dff11.png",
+];
+const BLOCKED_FAVICON_REPLACEMENT = "/cblogod.png";
+
+function sanitizeFaviconUrl(url: string | undefined): string {
+  if (!url) return '';
+  const normalized = url.trim().toLowerCase();
+  const isBlocked = BLOCKED_FAVICON_URLS.some(blocked => normalized === blocked.toLowerCase());
+  return isBlocked ? BLOCKED_FAVICON_REPLACEMENT : url;
+}
+
 export type SiteTheme = {
   primaryColor: string;
   secondaryColor: string;
@@ -70,7 +83,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     primaryColor: (brand as any)?.key?.toLowerCase() === 'basaltsurge' ? '#35ff7c' : (typeof (brand as any)?.colors?.primary === 'string' ? (brand as any).colors.primary : defaultTheme.primaryColor),
     secondaryColor: (brand as any)?.key?.toLowerCase() === 'basaltsurge' ? '#FF6B35' : (typeof (brand as any)?.colors?.accent === 'string' ? (brand as any).colors.accent : defaultTheme.secondaryColor),
     brandName: brand.name,
-    brandFaviconUrl: brand.logos.favicon,
+    brandFaviconUrl: sanitizeFaviconUrl(brand.logos.favicon),
     symbolLogoUrl: (brand as any)?.key?.toLowerCase() === 'basaltsurge' ? '/BasaltSurgeD.png' : String(brand.logos.symbol || brand.logos.app || ''),
     brandLogoUrl: (brand as any)?.key?.toLowerCase() === 'basaltsurge' ? '/BasaltSurgeWideD.png' : brand.logos.app,
     footerLogoUrl: (brand as any)?.logos?.footer || '',
@@ -185,8 +198,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             primaryColor: shopTheme.primaryColor || mergedTheme.primaryColor || defaultTheme.primaryColor,
             secondaryColor: shopTheme.secondaryColor || mergedTheme.secondaryColor || defaultTheme.secondaryColor,
             brandLogoUrl: shopLogoToUse,
-            brandFaviconUrl: shopTheme.brandFaviconUrl || shopTheme.symbolLogoUrl || shopTheme.brandLogoUrl || mergedTheme.brandFaviconUrl || '',
-            symbolLogoUrl: shopTheme.symbolLogoUrl || shopTheme.brandFaviconUrl || shopLogoToUse,
+            brandFaviconUrl: sanitizeFaviconUrl(shopTheme.brandFaviconUrl || shopTheme.symbolLogoUrl || shopTheme.brandLogoUrl || mergedTheme.brandFaviconUrl || ''),
+            symbolLogoUrl: sanitizeFaviconUrl(shopTheme.symbolLogoUrl || shopTheme.brandFaviconUrl || shopLogoToUse),
             navbarMode: (/(basalt|portal\s*pay)/i.test(String(shopTheme.brandName || shopTheme.name || shopTheme.partName || ''))) ? 'logo' : (shopTheme.navbarMode || 'symbol'),
             brandName: shopTheme.brandName || shopTheme.name || shopTheme.partName || mergedTheme.brandName || brand.name || '',
             textColor: shopTheme.textColor || mergedTheme.textColor || defaultTheme.textColor,

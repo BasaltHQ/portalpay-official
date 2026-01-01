@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -56,6 +57,24 @@ export function Navbar() {
         return { containerType: typeGuess, brandKey: key };
     });
     const [wallets, setWallets] = useState<any[]>([]);
+    const [scrolled, setScrolled] = useState(false);
+    const [time, setTime] = useState('');
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 50);
+        };
+        const tick = () => {
+            setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        };
+        tick();
+        const interval = setInterval(tick, 1000);
+        window.addEventListener('scroll', handleScroll);
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            clearInterval(interval);
+        };
+    }, []);
     useEffect(() => {
         let mounted = true;
         getWallets()
@@ -434,336 +453,101 @@ export function Navbar() {
         return (!raw || generic) ? titleizedKey : raw;
     })();
 
+    // Consolidate functionality into the new template structure
+    const themeColor = ctxTheme.primaryColor || '#06b6d4'; // Dynamic Basalt Theme Color
+    const secondaryColor = ctxTheme.secondaryColor || '#F54029'; // Dynamic Basalt Secondary
+    const isBasaltSurge = displayBrandName === "BasaltSurge";
+    const effectiveLogo = isBasaltSurge ? "/Surge.png" : (theme.symbolLogoUrl || theme.brandLogoUrl || "/Surge.png");
+    const maskUrl = effectiveLogo.startsWith("http")
+        ? `/_next/image?url=${encodeURIComponent(effectiveLogo)}&w=96&q=75`
+        : effectiveLogo;
+
     return (
-        <header className={`w-full sticky top-0 ${navZ} backdrop-blur bg-background/70 border-b`}>
-            <div className="max-w-5xl mx-auto px-4 h-20 flex items-center justify-between">
-                <Link href="/" className="flex items-center gap-2 min-w-0 relative z-50">
-                    {showBrandSkeleton ? (
-                        <span
-                            aria-hidden="true"
-                            className={
-                                "w-8 h-12 flex-shrink-0 bg-foreground/10 brand-skeleton " +
-                                (theme.brandLogoShape === "round"
-                                    ? "rounded-full"
-                                    : theme.brandLogoShape === "unmasked"
-                                        ? "rounded-none bg-transparent"
-                                        : "rounded-md")
-                            }
-                        />
-                    ) : navbarMode === 'logo' ? (
-                        <img
-                            src={(() => {
-                                const app = (effectiveLogoApp || "").trim();
-                                const sym = (effectiveLogoSymbol || "").trim();
-                                const fav = (effectiveLogoFavicon || "").trim();
-                                const def = getDefaultBrandSymbol(effectiveBrandKey);
-                                return resolveBrandSymbol(app || sym || fav || (isPartnerContainer ? "" : def), effectiveBrandKey);
-                            })()}
-                            alt={displayBrandName || (isPartnerContainer ? "" : getDefaultBrandName(effectiveBrandKey))}
-                            className={
-                                "h-14 w-auto max-w-[360px] object-contain flex-shrink-0 rounded-none bg-transparent drop-shadow-md"
-                            }
-                        />
-                    ) : (
-                        <img
-                            src={(() => {
-                                const a = (effectiveLogoSymbol || "").trim();
-                                const b = (effectiveLogoFavicon || "").trim();
-                                const c = (effectiveLogoApp || "").trim();
-                                const def = getDefaultBrandSymbol(effectiveBrandKey);
-                                return resolveBrandSymbol(a || b || c || (isPartnerContainer ? "" : def), effectiveBrandKey);
-                            })()}
-                            alt={displayBrandName || (isPartnerContainer ? "" : "PortalPay")}
-                            className={
-                                "w-12 h-12 object-contain bg-foreground/5 flex-shrink-0 drop-shadow-md " +
-                                (theme.brandLogoShape === "round"
-                                    ? "rounded-full"
-                                    : theme.brandLogoShape === "unmasked"
-                                        ? "rounded-none bg-transparent"
-                                        : "rounded-md")
-                            }
-                        />
-                    )}
-                    {theme.brandLogoShape === "unmasked" ? null : (
-                        showBrandSkeleton || navbarMode !== 'symbol' ? null : (
-                            <span className="hidden sm:inline text-sm md:text-lg font-semibold leading-none">
-                                {displayBrandName || (isPartnerContainer ? "" : "PortalPay")}
-                            </span>
-                        )
-                    )}
-                </Link>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                    <nav ref={navRef} className="relative hidden md:flex items-center gap-0.5 md:gap-1">
-                        {account?.address ? (
-                            <div
-                                className="relative flex items-center"
-                                onMouseEnter={() => {
-                                    if (socialHideRef.current) clearTimeout(socialHideRef.current);
-                                    setSocialOpen(true);
-                                }}
-                                onMouseLeave={() => {
-                                    if (socialHideRef.current) clearTimeout(socialHideRef.current);
-                                    socialHideRef.current = window.setTimeout(() => setSocialOpen(false), 180);
-                                }}
-                            >
-                                <Link
-                                    href="/analytics"
-                                    ref={el => { linkRefs.current['/loyalty'] = el; }}
-                                    className={"px-2 py-0.5 microtext text-[9px] md:text-[9px] lg:text-[10px] rounded-md hover:bg-foreground/5 transition-colors inline-flex items-center leading-none " + (socialActive ? "text-foreground" : "text-foreground/80")}
-                                >
-                                    {tNavbar("loyalty")}
-                                    <ChevronDown className="inline-block ml-1 opacity-80 h-3 w-3 align-[-2px]" />
-                                </Link>
-                                {socialOpen ? (
-                                    <div className="absolute left-0 top-full mt-0 z-10 glass-float rounded-md border p-1">
-                                        <Link href="/analytics" className="block px-3 py-1.5 microtext text-[10px] rounded-md hover:bg-foreground/5">{tNavbar("analytics")}</Link>
-                                        <Link href="/leaderboard" className="block px-3 py-1.5 microtext text-[10px] rounded-md hover:bg-foreground/5">{tNavbar("leaderboard")}</Link>
-                                    </div>
-                                ) : null}
+        <>
+            <style>{`
+                .nav-item-custom-border {
+                    border: 1px solid transparent;
+                }
+                .nav-item-custom-border:hover, .nav-item-custom-border.active {
+                    border-color: ${secondaryColor} !important;
+                }
+            `}</style>
+            <nav
+                className={`w-full relative ${navZ} transition-all duration-500 ease-in-out ${scrolled
+                    ? 'bg-black/80 backdrop-blur-2xl py-[22px]'
+                    : 'py-[22px] bg-transparent'
+                    }`}
+            >
+                <div className="w-full mx-auto px-6 flex items-center justify-between">
+                    {/* Logo & System Status */}
+                    <div className="flex items-center gap-6 shrink-0">
+                        <Link href="/" className="flex items-center gap-3 group relative z-50">
+                            <div className="relative w-10 h-10 transform group-hover:scale-110 transition-transform duration-300">
+                                <Image
+                                    src={effectiveLogo}
+                                    alt={theme.brandName || "Logo"}
+                                    fill
+                                    className="object-contain"
+                                    priority
+                                />
+                                <div
+                                    className="shield-gleam-container"
+                                    style={{
+                                        maskImage: `url('${maskUrl}')`,
+                                        WebkitMaskImage: `url('${maskUrl}')`,
+                                        maskSize: 'contain',
+                                        WebkitMaskSize: 'contain',
+                                        maskPosition: 'center',
+                                        WebkitMaskPosition: 'center',
+                                        maskRepeat: 'no-repeat',
+                                        WebkitMaskRepeat: 'no-repeat'
+                                    }}
+                                />
                             </div>
-                        ) : null}
-                        {items.map((it: NavItem) => (
-                            <Link
-                                key={it.href}
-                                href={it.href}
-                                ref={el => { linkRefs.current[it.href] = el; }}
-                                onClick={(e) => {
-                                    try {
-                                        if (it.href === "/admin" && !authed) {
-                                            // Prevent navigation until auth completes
-                                            e.preventDefault();
-                                            setPendingAdminNav(true);
-                                            const walletId = activeWallet?.id;
-                                            const isEmbeddedWallet = walletId === "inApp" || walletId === "embedded";
-                                            setIsSocialLogin(isEmbeddedWallet);
-                                            setShowAuthModal(true);
-                                        }
-                                    } catch { }
-                                }}
-                                className={"px-2 py-0.5 microtext text-[9px] md:text-[9px] lg:text-[10px] rounded-md hover:bg-foreground/5 transition-colors inline-flex items-center leading-none " + (pathname?.startsWith(it.href) ? "text-foreground" : "text-foreground/80")}
-                            >
-                                {it.label}
-                            </Link>
-                        ))}
-                        {/* Animated underline */}
-                        {indicator.visible ? (
-                            <span
-                                className="absolute bottom-0 h-[2px] rounded bg-[var(--pp-secondary)] transition-all duration-200"
-                                style={{ left: indicator.left, width: indicator.width }}
-                            />
-                        ) : null}
-                    </nav>
-                    {/* Search */}
-                    <div className="relative flex items-center gap-1" ref={dropdownRef}>
-                        <div className="hidden sm:flex items-center gap-2">
-                            <input
-                                value={q}
-                                onChange={e => { setQ(e.target.value); setOpen(true); }}
-                                placeholder={tCommon("search")}
-                                className="w-48 h-9 px-3 py-1 rounded-md bg-foreground/5 focus:outline-none focus:ring-2 focus:ring-[var(--pp-secondary)] text-sm"
-                            />
-                            <button title={tNavbar("filters")} onClick={() => setOpen(o => !o)} className="w-9 h-9 grid place-items-center rounded-md hover:bg-foreground/5">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 3H2l8 9v7l4 2v-9l8-9z" /></svg>
-                            </button>
-                        </div>
-                        {/* Mobile search trigger */}
-                        <button className="sm:hidden w-9 h-9 grid place-items-center rounded-md glass-pane border hover:bg-foreground/10 relative z-50" onClick={() => setOpen(o => !o)} aria-label={tCommon("search")}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.3-4.3" /></svg>
-                        </button>
-                        {/* Mobile hamburger */}
-                        <button className="md:hidden w-9 h-9 grid place-items-center rounded-md glass-pane border hover:bg-foreground/10 ml-1 relative z-50" onClick={() => setMobileOpen(o => !o)} aria-label={tCommon("menu")}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
-                        </button>
-                        {open && (
-                            <div className="fixed inset-0 z-40 flex items-start justify-center pt-16">
-                                <div className="absolute inset-0 glass-backdrop" onClick={() => setOpen(false)} />
-                                <div className="relative w-[min(520px,calc(100vw-24px))] max-h-[75vh] glass-float rounded-xl border p-3 text-sm">
-                                    <div className="mb-2">
-                                        <label className="text-xs">{tSearch("search")}</label>
-                                        <input value={q} onChange={e => setQ(e.target.value)} placeholder={tCommon("search")}
-                                            className="mt-1 h-9 w-full px-3 rounded-md bg-foreground/10 focus:outline-none" />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <div className="microtext uppercase text-[10px] opacity-70 mb-1">Profiles</div>
-                                            <label className="text-xs">{tSearch("domain")}<input value={domain} onChange={e => setDomain(e.target.value)} className="mt-1 h-8 w-full px-2 rounded-md bg-foreground/10 focus:outline-none" placeholder="e.g., podcasts" /></label>
-                                            <label className="text-xs">{tSearch("platform")}<input value={platform} onChange={e => setPlatform(e.target.value)} className="mt-1 h-8 w-full px-2 rounded-md bg-foreground/10 focus:outline-none" placeholder="e.g., Twitch" /></label>
-                                            <label className="text-xs">{tSearch("language")}<input value={language} onChange={e => setLanguage(e.target.value)} className="mt-1 h-8 w-full px-2 rounded-md bg-foreground/10 focus:outline-none" placeholder="e.g., English" /></label>
-                                            <label className="text-xs">{tSearch("minXp")}<input value={minXp} onChange={e => setMinXp(e.target.value)} inputMode="numeric" className="mt-1 h-8 w-full px-2 rounded-md bg-foreground/10 focus:outline-none" placeholder="0" /></label>
-                                            <div className="mt-2 flex items-center gap-2">
-                                                <label className="text-xs flex items-center gap-1">
-                                                    <input type="checkbox" checked={liveOnly} onChange={e => setLiveOnly(e.target.checked)} className="h-3 w-3" /> Live only
-                                                </label>
-                                                <label className="text-xs flex items-center gap-1">
-                                                    Sort:
-                                                    <select value={userSort} onChange={e => setUserSort(e.target.value)} className="h-8 px-2 rounded-md bg-foreground/10 focus:outline-none">
-                                                        <option value="xp_desc">Best (XP)</option>
-                                                        <option value="heartbeat_desc">Recently active</option>
-                                                        <option value="seen_desc">Recently seen</option>
-                                                        <option value="name_asc">Name A–Z</option>
-                                                    </select>
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="microtext uppercase text-[10px] opacity-70 mb-1">Shops</div>
-                                            <label className="text-xs">Industry pack
-                                                <select value={shopPack} onChange={e => setShopPack(e.target.value)} className="mt-1 h-8 w-full px-2 rounded-md bg-foreground/10 focus:outline-none">
-                                                    <option value="">Any</option>
-                                                    <option value="restaurant">Restaurant</option>
-                                                    <option value="retail">Retail</option>
-                                                    <option value="hotel">Hotel</option>
-                                                    <option value="freelancer">Freelancer</option>
-                                                </select>
-                                            </label>
-                                            <div className="mt-2 flex items-center gap-3">
-                                                <label className="text-xs flex items-center gap-1"><input type="checkbox" checked={shopSetupOnly} onChange={e => setShopSetupOnly(e.target.checked)} className="h-3 w-3" /> Setup complete</label>
-                                                <label className="text-xs flex items-center gap-1"><input type="checkbox" checked={shopHasSlugOnly} onChange={e => setShopHasSlugOnly(e.target.checked)} className="h-3 w-3" /> Has slug</label>
-                                            </div>
-                                            <div className="mt-2">
-                                                <label className="text-xs">
-                                                    Sort:
-                                                    <select value={shopSort} onChange={e => setShopSort(e.target.value)} className="ml-2 h-8 px-2 rounded-md bg-foreground/10 focus:outline-none">
-                                                        <option value="updated_desc">Recently updated</option>
-                                                        <option value="name_asc">Name A–Z</option>
-                                                        <option value="slug_asc">Slug A–Z</option>
-                                                    </select>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="mt-3 max-h-72 overflow-auto divide-y divide-foreground/10">
-                                        {loading ? <div className="py-6 text-center opacity-75">{tSearch("searching")} <Ellipsis className="inline h-3 w-3 align-[-2px]" /></div> : null}
-                                        {!loading && userResults.length === 0 && shopResults.length === 0 ? <div className="py-6 text-center opacity-75">{tSearch("noMatches")}</div> : null}
-                                        {shopResults.length > 0 ? (
-                                            <div className="py-2">
-                                                <div className="px-2 py-1 microtext uppercase text-[10px] opacity-70">Shops</div>
-                                                {shopResults.map((s: any) => {
-                                                    const name = s.name || s.slug || (s.wallet ? `${s.wallet.slice(0, 6)}...${s.wallet.slice(-4)}` : "Shop");
-                                                    const slug = s.slug;
-                                                    if (!slug) return null;
-                                                    return (
-                                                        <a key={`shop-${slug}`} href={`/shop/${slug}`} className="flex items-center justify-between gap-3 py-2 hover:bg-foreground/5 px-2 rounded-md">
-                                                            <span className="flex items-center gap-3">
-                                                                <span className="w-8 h-8 rounded-md overflow-hidden bg-foreground/10">
-                                                                    {s.brandLogoUrl ? <img src={s.brandLogoUrl} alt={name} className="w-full h-full object-cover" /> : <span className="w-8 h-8 block" />}
-                                                                </span>
-                                                                <span className="flex flex-col">
-                                                                    <span className="font-medium leading-tight">{name}</span>
-                                                                    <span className="microtext text-muted-foreground">/{slug}</span>
-                                                                </span>
-                                                            </span>
-                                                        </a>
-                                                    );
-                                                })}
-                                            </div>
-                                        ) : null}
-                                        {userResults.length > 0 ? (
-                                            <div className="py-2">
-                                                <div className="px-2 py-1 microtext uppercase text-[10px] opacity-70">Profiles</div>
-                                                {userResults.map((u: any) => {
-                                                    const name = u.displayName || (u.wallet ? `${u.wallet.slice(0, 6)}...${u.wallet.slice(-4)}` : 'User');
-                                                    return (
-                                                        <a key={u.wallet} href={`/u/${u.wallet}`} className="flex items-center justify-between gap-3 py-2 hover:bg-foreground/5 px-2 rounded-md">
-                                                            <span className="flex items-center gap-3">
-                                                                <span className="w-8 h-8 rounded-full overflow-hidden bg-foreground/10">
-                                                                    {u.pfpUrl ? <img src={u.pfpUrl} alt={name} className="w-full h-full object-cover" /> : <span className="w-8 h-8 block" />}
-                                                                </span>
-                                                                <span className="flex flex-col">
-                                                                    <span className="font-medium leading-tight">{name}</span>
-                                                                    <span className="microtext text-muted-foreground">{u.wallet.slice(0, 10)}... <Dot className="inline h-3 w-3 mx-1" /> {u.xp || 0} XP</span>
-                                                                </span>
-                                                            </span>
-                                                            <span className="hidden md:flex items-center gap-2">
-                                                                {(u.domains || []).slice(0, 1).map((d: string, i: number) => <span key={i} className="px-2 py-0.5 rounded-md border text-xs opacity-80">{d}</span>)}
-                                                                {(u.platforms || []).slice(0, 1).map((p: string, i: number) => <span key={i} className="px-2 py-0.5 rounded-md border text-xs opacity-80">{p}</span>)}
-                                                            </span>
-                                                        </a>
-                                                    );
-                                                })}
-                                            </div>
-                                        ) : null}
-                                    </div>
-                                </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="hidden md:block text-xs font-mono tracking-widest opacity-80 transition-colors whitespace-nowrap" style={{ color: themeColor }}>
+                                    STATUS.ONLINE
+                                </span>
+                                {displayBrandName === "BasaltSurge" ? (
+                                    <span className="text-lg text-white tracking-widest group-hover:opacity-80 transition-opacity font-vox whitespace-nowrap" style={{ fontFamily: 'vox, sans-serif' }}>
+                                        <span style={{ fontWeight: 300 }}>BASALT</span><span style={{ fontWeight: 700 }}>SURGE</span>
+                                    </span>
+                                ) : (
+                                    <span className={`${displayBrandName.length > 20 ? 'text-xs' : displayBrandName.length > 12 ? 'text-sm' : 'text-lg'} text-white tracking-widest group-hover:opacity-80 transition-opacity font-mono font-bold whitespace-nowrap`}>
+                                        {displayBrandName}
+                                    </span>
+                                )}
                             </div>
-                        )}
-                    </div>
-                    <div className="hidden md:block"><ConnectButton
-                        client={client}
-                        chain={chain}
-                        wallets={wallets}
-                        connectButton={{
-                            label: <span className="microtext">{tCommon("login")}</span>,
-                            className: connectButtonClass,
-                            style: getConnectButtonStyle(),
-                        }}
-                        signInButton={{
-                            label: tCommon("authenticate"),
-                            className: connectButtonClass,
-                            style: getConnectButtonStyle(),
-                        }}
-                        detailsButton={{
-                            displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
-                        }}
-                        detailsModal={{
-                            payOptions: {
-                                buyWithFiat: {
-                                    prefillSource: {
-                                        currency: "USD",
-                                    },
-                                },
-                                prefillBuy: {
-                                    chain: chain,
-                                    token: {
-                                        address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                                        name: "USD Coin",
-                                        symbol: "USDC",
-                                    },
-                                },
-                            },
-                        }}
-                        connectModal={{ title: tCommon("login"), titleIcon: showBrandSkeleton ? undefined : (() => { const a = (theme.symbolLogoUrl || "").trim(); const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return a || b || c || (isPartnerContainer ? undefined : getDefaultBrandSymbol(effectiveBrandKey)); })(), size: "compact", showThirdwebBranding: false }}
-                        theme={twTheme}
-                        onDisconnect={async () => {
-                            try {
-                                // Call logout endpoint to clear authentication cookies
-                                await fetch('/api/auth/logout', { method: 'POST' });
+                        </Link>
 
-                                // Dispatch logout event for any listeners
-                                window.dispatchEvent(new CustomEvent("pp:auth:logged_out"));
-                            } catch (error) {
-                                console.error('Logout failed:', error);
-                            }
-
-                            // Redirect to home page
-                            try {
-                                window.location.href = '/';
-                            } catch { }
-                        }}
-                    /></div>
-                </div>
-            </div>
-            {/* Mobile menu overlay */}
-            {mobileOpen && (
-                <div className="fixed inset-0 z-30 md:hidden">
-                    <div className="absolute inset-0 glass-backdrop" onClick={() => setMobileOpen(false)} />
-                    <div className="absolute top-14 left-0 right-0 glass-float rounded-b-xl border p-3 space-y-2">
-                        <nav className="flex flex-col">
+                        {/* Desktop Navigation */}
+                        <div className="hidden lg:flex items-center gap-1">
                             {account?.address ? (
-                                <>
-                                    <button onClick={() => setMobileSocialOpen(o => !o)} className="px-3 py-2 microtext text-[11px] rounded-md hover:bg-foreground/10 flex items-center justify-between">
-                                        <span className={socialActive ? "text-foreground" : "text-foreground/80"}>{tNavbar("loyalty")}</span>
-                                        <span className={"opacity-80 transition-transform " + (mobileSocialOpen ? "rotate-180" : "")}>
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                                        </span>
-                                    </button>
-                                    {mobileSocialOpen ? (
-                                        <div className="pl-3">
-                                            <Link href="/analytics" onClick={() => setMobileOpen(false)} className={"px-3 py-2 microtext text-[11px] rounded-md hover:bg-foreground/10 " + (pathname?.startsWith('/analytics') ? "text-foreground" : "text-foreground/80")}>{tNavbar("analytics")}</Link>
-                                            <Link href="/leaderboard" onClick={() => setMobileOpen(false)} className={"px-3 py-2 microtext text-[11px] rounded-md hover:bg-foreground/10 " + (pathname?.startsWith('/leaderboard') ? "text-foreground" : "text-foreground/80")}>{tNavbar("leaderboard")}</Link>
+                                <div
+                                    className="relative"
+                                    onMouseEnter={() => {
+                                        if (socialHideRef.current) clearTimeout(socialHideRef.current);
+                                        setSocialOpen(true);
+                                    }}
+                                    onMouseLeave={() => {
+                                        if (socialHideRef.current) clearTimeout(socialHideRef.current);
+                                        socialHideRef.current = window.setTimeout(() => setSocialOpen(false), 180);
+                                    }}
+                                >
+                                    <Link
+                                        href="/analytics"
+                                        className={"px-4 py-2 text-xs font-mono tracking-wider text-gray-400 hover:text-white hover:bg-white/5 rounded-[10px] transition-all duration-200 inline-flex items-center gap-1 nav-item-custom-border " + (socialActive ? "text-white bg-white/5 active" : "")}
+                                    >
+                                        LOYALTY
+                                        <ChevronDown className="w-3 h-3 opacity-50" />
+                                    </Link>
+                                    {socialOpen && (
+                                        <div className="absolute left-0 top-full mt-1 w-32 glass-float rounded-xl border border-white/10 p-1 flex flex-col gap-1 z-50">
+                                            <Link href="/analytics" className="px-3 py-2 text-[10px] font-mono hover:bg-white/10 rounded-lg text-gray-300 hover:text-white">ANALYTICS</Link>
+                                            <Link href="/leaderboard" className="px-3 py-2 text-[10px] font-mono hover:bg-white/10 rounded-lg text-gray-300 hover:text-white">LEADERBOARD</Link>
                                         </div>
-                                    ) : null}
-                                </>
+                                    )}
+                                </div>
                             ) : null}
                             {items.map((it: NavItem) => (
                                 <Link
@@ -772,86 +556,259 @@ export function Navbar() {
                                     onClick={(e) => {
                                         try {
                                             if (it.href === "/admin" && !authed) {
-                                                // Prevent navigation until auth completes
                                                 e.preventDefault();
-                                                setMobileOpen(false);
                                                 setPendingAdminNav(true);
                                                 const walletId = activeWallet?.id;
                                                 const isEmbeddedWallet = walletId === "inApp" || walletId === "embedded";
                                                 setIsSocialLogin(isEmbeddedWallet);
                                                 setShowAuthModal(true);
-                                            } else {
-                                                setMobileOpen(false);
                                             }
-                                        } catch {
-                                            setMobileOpen(false);
-                                        }
+                                        } catch { }
                                     }}
-                                    className={"px-3 py-2 microtext text-[11px] rounded-md hover:bg-foreground/10 " + (pathname?.startsWith(it.href) ? "text-foreground" : "text-foreground/80")}
+                                    className={"px-4 py-2 text-xs font-mono tracking-wider text-gray-400 hover:text-white hover:bg-white/5 rounded-[10px] transition-all duration-200 uppercase nav-item-custom-border " + (pathname?.startsWith(it.href) ? "text-white bg-white/5 active" : "")}
                                 >
                                     {it.label}
                                 </Link>
                             ))}
-                        </nav>
-                        <div className="pt-2">
+                        </div>
+                    </div>
+
+                    {/* Right Side */}
+                    <div className="flex items-center gap-4">
+                        {/* Time Display */}
+                        <div className="hidden xl:block text-xs font-mono tracking-wider opacity-80" style={{ color: themeColor }}>
+                            {time}
+                        </div>
+
+                        {/* Search & Filters */}
+                        <div className="relative flex items-center gap-2" ref={dropdownRef}>
+                            <button
+                                onClick={() => setOpen(o => !o)}
+                                className="hidden md:flex items-center gap-2 px-3 py-2 rounded-[10px] bg-black/20 hover:bg-white/5 border border-white/10 hover:border-white/20 transition-all group"
+                            >
+                                <svg className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.3-4.3" /></svg>
+                                <span className="text-[10px] font-mono tracking-widest text-gray-400 group-hover:text-white transition-colors uppercase leading-none pt-[1px]">Search</span>
+                            </button>
+
+                            {/* Mobile Search Trigger */}
+                            <button
+                                className="md:hidden w-9 h-9 grid place-items-center rounded-[10px] border border-white/10 hover:bg-white/5 text-gray-400"
+                                onClick={() => setOpen(o => !o)}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.3-4.3" /></svg>
+                            </button>
+
+                            {open && (
+                                <div
+                                    className="absolute top-full right-0 mt-2 w-[min(520px,calc(100vw-24px))] max-h-[75vh] rounded-xl border p-4 text-sm z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right shadow-2xl backdrop-blur-2xl bg-black/80"
+                                    style={{ borderColor: secondaryColor }}
+                                >
+                                    <div className="mb-3">
+                                        <label className="text-[10px] font-mono uppercase mb-1 block opacity-80" style={{ color: secondaryColor }}>{tSearch("search")}</label>
+                                        <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder={tCommon("search")}
+                                            className="h-10 w-full px-3 rounded-lg bg-black/50 border border-white/10 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/10 text-gray-300 font-mono text-sm" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <div className="microtext text-[10px] mb-2 opacity-80" style={{ color: secondaryColor }}>PROFILES</div>
+                                            <input value={domain} onChange={e => setDomain(e.target.value)} className="h-8 w-full px-3 rounded-lg bg-white/5 border border-white/5 focus:border-white/20 focus:outline-none text-xs" placeholder={tSearch("domain")} />
+                                            <input value={platform} onChange={e => setPlatform(e.target.value)} className="h-8 w-full px-3 rounded-lg bg-white/5 border border-white/5 focus:border-white/20 focus:outline-none text-xs" placeholder={tSearch("platform")} />
+                                            <input value={language} onChange={e => setLanguage(e.target.value)} className="h-8 w-full px-3 rounded-lg bg-white/5 border border-white/5 focus:border-white/20 focus:outline-none text-xs" placeholder={tSearch("language")} />
+                                            <div className="flex items-center justify-between pt-1">
+                                                <label className="text-[10px] text-gray-400 flex items-center gap-1.5 cursor-pointer hover:text-white">
+                                                    <input type="checkbox" checked={liveOnly} onChange={e => setLiveOnly(e.target.checked)} className="rounded border-white/20 bg-white/5 checked:bg-cyan-500" />
+                                                    LIVE
+                                                </label>
+                                                <select value={userSort} onChange={e => setUserSort(e.target.value)} className="h-6 bg-transparent text-[10px] text-gray-400 hover:text-white focus:outline-none cursor-pointer border-none text-right">
+                                                    <option value="xp_desc">XP</option>
+                                                    <option value="heartbeat_desc">Active</option>
+                                                    <option value="seen_desc">Seen</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="microtext text-[10px] text-cyan-500/80 mb-2">SHOPS</div>
+                                            <select value={shopPack} onChange={e => setShopPack(e.target.value)} className="h-8 w-full px-2 rounded-lg bg-white/5 border border-white/5 focus:border-white/20 focus:outline-none text-xs text-gray-300">
+                                                <option value="">All Packs</option>
+                                                <option value="restaurant">Restaurant</option>
+                                                <option value="retail">Retail</option>
+                                                <option value="hotel">Hotel</option>
+                                                <option value="freelancer">Freelancer</option>
+                                            </select>
+                                            <div className="flex flex-col gap-1.5 pt-1">
+                                                <label className="text-[10px] text-gray-400 flex items-center gap-1.5 cursor-pointer hover:text-white">
+                                                    <input type="checkbox" checked={shopSetupOnly} onChange={e => setShopSetupOnly(e.target.checked)} className="rounded border-white/20 bg-white/5 checked:bg-cyan-500" />
+                                                    Setup Complete
+                                                </label>
+                                                <label className="text-[10px] text-gray-400 flex items-center gap-1.5 cursor-pointer hover:text-white">
+                                                    <input type="checkbox" checked={shopHasSlugOnly} onChange={e => setShopHasSlugOnly(e.target.checked)} className="rounded border-white/20 bg-white/5 checked:bg-cyan-500" />
+                                                    Has Slug
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Results Area */}
+                                    <div className="mt-4 max-h-60 overflow-y-auto custom-scrollbar border-t border-white/10 pt-2 space-y-1">
+                                        {loading ? (
+                                            <div className="py-8 text-center text-gray-500 text-xs font-mono animate-pulse">SEARCHING_DATABASE...</div>
+                                        ) : (!userResults.length && !shopResults.length) ? (
+                                            <div className="py-8 text-center text-gray-600 text-xs font-mono">NO DATA FOUND</div>
+                                        ) : (
+                                            <>
+                                                {shopResults.map((s: any) => (
+                                                    <Link key={`shop-${s.slug}`} href={`/shop/${s.slug}`} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg group transition-colors">
+                                                        <div className="w-8 h-8 rounded bg-white/10 overflow-hidden relative">
+                                                            {s.brandLogoUrl && <img src={s.brandLogoUrl} alt="" className="w-full h-full object-cover" />}
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-medium text-white group-hover:text-cyan-400 transition-colors">{s.name || s.slug}</span>
+                                                            <span className="text-[10px] text-gray-500 font-mono">/shop/{s.slug}</span>
+                                                        </div>
+                                                    </Link>
+                                                ))}
+                                                {userResults.map((u: any) => (
+                                                    <Link key={u.wallet} href={`/u/${u.wallet}`} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg group transition-colors">
+                                                        <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden relative">
+                                                            {u.pfpUrl && <img src={u.pfpUrl} alt="" className="w-full h-full object-cover" />}
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-medium text-white group-hover:text-cyan-400 transition-colors">{u.displayName || "User"}</span>
+                                                            <span className="text-[10px] text-gray-500 font-mono">{u.wallet.slice(0, 6)}...{u.wallet.slice(-4)} • {u.xp || 0} XP</span>
+                                                        </div>
+                                                    </Link>
+                                                ))}
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* CTA / Connect */}
+                        <div className="hidden md:flex items-center mr-4">
                             <ConnectButton
                                 client={client}
                                 chain={chain}
                                 wallets={wallets}
                                 connectButton={{
-                                    label: <span className="microtext">{tCommon("login")}</span>,
-                                    className: connectButtonClass,
-                                    style: getConnectButtonStyle(),
+                                    label: "CONNECT",
+                                    className: "!text-white !rounded-[10px] !px-5 !py-2.5 !h-auto !min-w-[120px] !font-mono !text-xs !tracking-wider !font-bold !border-none !ring-0 !shadow-none transition-all hover:opacity-80 hover:scale-[1.02] active:scale-95",
+                                    style: { backgroundColor: secondaryColor, color: '#ffffff', borderRadius: '10px' },
                                 }}
                                 signInButton={{
-                                    label: tCommon("authenticate"),
-                                    className: connectButtonClass,
-                                    style: getConnectButtonStyle(),
+                                    label: "SIGN IN",
+                                    className: "!text-white !rounded-[10px] !px-5 !py-2.5 !h-auto !min-w-[120px] !font-mono !text-xs !tracking-wider !font-bold !border-none transition-all hover:opacity-80 hover:scale-[1.02] active:scale-95",
+                                    style: { backgroundColor: secondaryColor, color: '#ffffff', borderRadius: '10px' },
                                 }}
                                 detailsButton={{
                                     displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
-                                    style: getConnectButtonStyle(),
+                                    style: { borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' },
+                                    className: "!rounded-[10px] !bg-white/5 !border-white/10 hover:!bg-white/10 !px-4 !h-9"
                                 }}
                                 detailsModal={{
                                     payOptions: {
-                                        buyWithFiat: {
-                                            prefillSource: {
-                                                currency: "USD",
-                                            },
-                                        },
-                                        prefillBuy: {
-                                            chain: chain,
-                                            token: {
-                                                address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                                                name: "USD Coin",
-                                                symbol: "USDC",
-                                            },
-                                        },
+                                        buyWithFiat: { prefillSource: { currency: "USD" } },
+                                        prefillBuy: { chain: chain, token: { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", name: "USD Coin", symbol: "USDC" } },
                                     },
                                 }}
-                                connectModal={{ title: tCommon("login"), titleIcon: showBrandSkeleton ? undefined : (() => { const a = (theme.symbolLogoUrl || "").trim(); const b = (theme.brandFaviconUrl || "").trim(); const c = (theme.brandLogoUrl || "").trim(); return a || b || c || (isPartnerContainer ? undefined : getDefaultBrandSymbol(effectiveBrandKey)); })(), size: "compact", showThirdwebBranding: false }}
+                                connectModal={{ title: tCommon("login"), titleIcon: "/Surge.png", size: "compact", showThirdwebBranding: false }}
                                 theme={twTheme}
                                 onDisconnect={async () => {
                                     try {
-                                        // Call logout endpoint to clear authentication cookies
                                         await fetch('/api/auth/logout', { method: 'POST' });
-
-                                        // Dispatch logout event for any listeners
                                         window.dispatchEvent(new CustomEvent("pp:auth:logged_out"));
-                                    } catch (error) {
-                                        console.error('Logout failed:', error);
-                                    }
-
-                                    // Redirect to home page
-                                    try {
-                                        window.location.href = '/';
                                     } catch { }
+                                    try { window.location.href = '/'; } catch { }
                                 }}
                             />
                         </div>
+
+                        {/* Mobile Menu Button */}
+                        <button
+                            onClick={() => setMobileOpen(!mobileOpen)}
+                            className="lg:hidden p-2 text-white transition-colors hover:text-cyan-500"
+                            style={{ color: mobileOpen ? themeColor : 'white' }}
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {mobileOpen ? (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                ) : (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                )}
+                            </svg>
+                        </button>
                     </div>
                 </div>
-            )}
+
+                {/* Mobile Menu Overlay */}
+                {mobileOpen && (
+                    <div className="lg:hidden bg-black/90 backdrop-blur-xl absolute top-[calc(100%+1px)] left-4 right-4 rounded-2xl p-4 border border-white/10 shadow-2xl animate-in slide-in-from-top-2">
+                        <div className="flex flex-col gap-2">
+                            {account?.address && (
+                                <div className="mb-2 pb-2 border-b border-white/10">
+                                    <button
+                                        onClick={() => setMobileSocialOpen(o => !o)}
+                                        className="w-full px-4 py-3 text-sm font-mono tracking-wider text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-all flex items-center justify-between"
+                                    >
+                                        LOYALTY
+                                        <ChevronDown className={`w-4 h-4 transition-transform ${mobileSocialOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    {mobileSocialOpen && (
+                                        <div className="pl-4 mt-1 space-y-1">
+                                            <Link href="/analytics" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white">ANALYTICS</Link>
+                                            <Link href="/leaderboard" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white">LEADERBOARD</Link>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {items.map((it) => (
+                                <Link
+                                    key={it.href}
+                                    href={it.href}
+                                    onClick={(e) => {
+                                        if (it.href === "/admin" && !authed) {
+                                            e.preventDefault();
+                                            setMobileOpen(false);
+                                            setPendingAdminNav(true);
+                                            // Handle auth logic
+                                            const walletId = activeWallet?.id;
+                                            const isEmbeddedWallet = walletId === "inApp" || walletId === "embedded";
+                                            setIsSocialLogin(isEmbeddedWallet);
+                                            setShowAuthModal(true);
+                                        } else {
+                                            setMobileOpen(false);
+                                        }
+                                    }}
+                                    className="px-4 py-3 text-sm font-mono tracking-wider text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-all uppercase"
+                                >
+                                    {it.label}
+                                </Link>
+                            ))}
+
+                            <div className="mt-4 pt-4 border-t border-white/10 flex justify-center">
+                                <ConnectButton
+                                    client={client}
+                                    chain={chain}
+                                    wallets={wallets}
+                                    connectButton={{
+                                        label: <span className="text-xs font-mono font-bold">CONNECT</span>,
+                                        className: "!bg-[#06b6d4] !text-black !w-full !justify-center !rounded-lg !py-3",
+                                        style: { backgroundColor: themeColor }
+                                    }}
+                                    theme={twTheme}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* HUD Decorative Lines */}
+                <div className={`absolute bottom-0 left-0 right-0 pointer-events-none z-40 transition-opacity duration-300 ${scrolled ? 'opacity-100' : 'opacity-0'}`}>
+                    <div className="absolute h-px bg-gradient-to-r from-transparent via-current to-transparent w-full" style={{ color: themeColor, opacity: 0.3 }} />
+                </div>
+            </nav>
 
             {/* Authentication Modal */}
             <AuthModal
@@ -862,7 +819,6 @@ export function Navbar() {
                     setShowAuthModal(false);
                     setAuthed(true);
                     checkingAuth.current = false;
-                    // Register user after successful auth
                     if (wallet) {
                         try {
                             fetch('/api/users/register', {
@@ -872,7 +828,6 @@ export function Navbar() {
                             }).catch(() => { });
                         } catch { }
                     }
-                    // If user attempted to open Admin before auth, navigate now
                     try {
                         if (pendingAdminNav) {
                             setPendingAdminNav(false);
@@ -880,11 +835,8 @@ export function Navbar() {
                         }
                     } catch { }
                 }}
-                onError={(error) => {
-                    console.error('[Auth] Failed:', error);
-                    // Allow retry by not resetting checkingAuth
-                }}
+                onError={(error) => console.error('[Auth] Failed:', error)}
             />
-        </header>
+        </>
     );
 }
