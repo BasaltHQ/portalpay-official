@@ -5,30 +5,30 @@ const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://portalpay.app";
 const DEFAULT_WIDGET_ID = "CBFCIBAA3AAABLblqZhAHRCQTck4tBTVuSFpOBUyzpaX3Pwfl4C7LnOMuF3NAsQix9gPj1Ei-619ikHBIyTI*";
 
 export const metadata: Metadata = {
-  title: "Custom Partner Agreement | PortalPay",
-  description: "Sign your custom PortalPay Partner Services Agreement with negotiated terms. Enterprise partnership with tailored pricing and features.",
+  title: "Custom Partner Agreement | BasaltSurge",
+  description: "Sign your custom BasaltSurge Partner Services Agreement with negotiated terms. Enterprise partnership with tailored pricing and features.",
   openGraph: {
     type: "website",
     url: `${BASE_URL}/msas`,
-    title: "Custom Partner Agreement | PortalPay",
-    siteName: "PortalPay",
-    description: "Sign your custom PortalPay Partner Services Agreement with negotiated terms. Enterprise partnership with tailored pricing and features.",
+    title: "Custom Partner Agreement | BasaltSurge",
+    siteName: "BasaltSurge",
+    description: "Sign your custom BasaltSurge Partner Services Agreement with negotiated terms. Enterprise partnership with tailored pricing and features.",
     locale: "en_US",
     images: [
       {
-        url: `${BASE_URL}/PortalPay.png`,
+        url: `${BASE_URL}/BasaltSurgeWideD.png`,
         width: 1200,
         height: 630,
-        alt: "PortalPay Custom Partner Agreement",
+        alt: "BasaltSurge Custom Partner Agreement",
         type: "image/png",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Custom Partner Agreement | PortalPay",
-    description: "Sign your custom PortalPay Partner Services Agreement with negotiated terms. Enterprise partnership with tailored pricing and features.",
-    images: [`${BASE_URL}/PortalPay.png`],
+    title: "Custom Partner Agreement | BasaltSurge",
+    description: "Sign your custom BasaltSurge Partner Services Agreement with negotiated terms. Enterprise partnership with tailored pricing and features.",
+    images: [`${BASE_URL}/BasaltSurgeWideD.png`],
   },
 };
 

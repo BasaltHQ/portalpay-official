@@ -5,30 +5,30 @@ const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://portalpay.app";
 const DEFAULT_WIDGET_ID = "CBFCIBAA3AAABLblqZhAcvuUre-Wl9SplRpshpIXktBmcqH0bX_pANw6g4h-3k1aNaWOvcg_KApu-1KAFPMs*";
 
 export const metadata: Metadata = {
-  title: "Standard Partner Agreement | PortalPay",
-  description: "Sign the standard PortalPay Partner Services Agreement. Join our partner network with enterprise-grade crypto payment infrastructure.",
+  title: "Standard Partner Agreement | BasaltSurge",
+  description: "Sign the standard BasaltSurge Partner Services Agreement. Join our partner network with enterprise-grade crypto payment infrastructure.",
   openGraph: {
     type: "website",
     url: `${BASE_URL}/msa`,
-    title: "Standard Partner Agreement | PortalPay",
-    siteName: "PortalPay",
-    description: "Sign the standard PortalPay Partner Services Agreement. Join our partner network with enterprise-grade crypto payment infrastructure.",
+    title: "Standard Partner Agreement | BasaltSurge",
+    siteName: "BasaltSurge",
+    description: "Sign the standard BasaltSurge Partner Services Agreement. Join our partner network with enterprise-grade crypto payment infrastructure.",
     locale: "en_US",
     images: [
       {
-        url: `${BASE_URL}/PortalPay.png`,
+        url: `${BASE_URL}/BasaltSurgeWideD.png`,
         width: 1200,
         height: 630,
-        alt: "PortalPay Partner Agreement",
+        alt: "BasaltSurge Partner Agreement",
         type: "image/png",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Standard Partner Agreement | PortalPay",
-    description: "Sign the standard PortalPay Partner Services Agreement. Join our partner network with enterprise-grade crypto payment infrastructure.",
-    images: [`${BASE_URL}/PortalPay.png`],
+    title: "Standard Partner Agreement | BasaltSurge",
+    description: "Sign the standard BasaltSurge Partner Services Agreement. Join our partner network with enterprise-grade crypto payment infrastructure.",
+    images: [`${BASE_URL}/BasaltSurgeWideD.png`],
   },
 };
 
