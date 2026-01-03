@@ -43,7 +43,7 @@ function shouldCacheResponse(url: string, data: any): boolean {
 export function cachedFetch<T = any>(url: string, options?: RequestInit): Promise<T> {
   const now = Date.now();
   const cached = globalCache[url];
-  
+
   // Return cached promise if still valid AND the cached response was valid
   if (cached && (now - cached.ts) < CACHE_TTL && cached.valid !== false) {
     // If we have a resolved value, return it directly for sync-like access
@@ -52,26 +52,36 @@ export function cachedFetch<T = any>(url: string, options?: RequestInit): Promis
     }
     return cached.promise;
   }
-  
+
   // Create new fetch and cache it
   const promise = fetch(url, options)
-    .then(r => r.json())
+    .then(async (r) => {
+      const text = await r.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        console.error('[client-api-cache] JSON parse failed for URL:', url);
+        console.error('[client-api-cache] Status:', r.status, r.statusText);
+        console.error('[client-api-cache] Response body snippet:', text.slice(0, 500));
+        throw e;
+      }
+    })
     .then(data => {
       // Check if this response should be cached
       const isValid = shouldCacheResponse(url, data);
-      
+
       // Store resolved value for immediate access on subsequent calls
       if (globalCache[url]) {
         globalCache[url].resolved = data;
         globalCache[url].valid = isValid;
       }
-      
+
       // If invalid, don't keep it in cache long - set ts to old value
       if (!isValid && globalCache[url]) {
         console.warn('[client-api-cache] Invalid response, not caching:', url, data);
         globalCache[url].ts = 0; // Expire immediately
       }
-      
+
       return data;
     })
     .catch((err) => {
@@ -83,7 +93,7 @@ export function cachedFetch<T = any>(url: string, options?: RequestInit): Promis
       }
       return {} as any;
     });
-  
+
   globalCache[url] = { promise, ts: now, valid: true };
   return promise;
 }
@@ -124,7 +134,7 @@ export async function isPartnerContainer(): Promise<boolean> {
 export async function getEffectiveBrandKey(): Promise<string> {
   const ci = await cachedContainerIdentity();
   if (ci.brandKey) return ci.brandKey;
-  
+
   // Fallback: derive from hostname
   if (typeof window !== 'undefined') {
     const host = window.location.hostname || '';
@@ -136,7 +146,7 @@ export async function getEffectiveBrandKey(): Promise<string> {
       }
     }
   }
-  
+
   return 'portalpay'; // Ultimate fallback
 }
 

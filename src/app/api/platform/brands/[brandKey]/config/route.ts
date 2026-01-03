@@ -81,28 +81,28 @@ function toEffectiveBrand(brandKey: string, overrides?: Partial<BrandConfigDoc>)
     name: typeof overrides.name === "string" ? overrides.name : withDefaults.name,
     colors: typeof overrides.colors === "object"
       ? {
-          primary: typeof overrides.colors?.primary === "string" ? overrides.colors.primary : withDefaults.colors.primary,
-          accent: typeof overrides.colors?.accent === "string" ? overrides.colors.accent! : withDefaults.colors.accent,
-        }
+        primary: typeof overrides.colors?.primary === "string" ? overrides.colors.primary : withDefaults.colors.primary,
+        accent: typeof overrides.colors?.accent === "string" ? overrides.colors.accent! : withDefaults.colors.accent,
+      }
       : withDefaults.colors,
     logos: typeof overrides.logos === "object"
       ? {
-          app: typeof overrides.logos?.app === "string" ? overrides.logos.app : withDefaults.logos.app,
-          favicon: typeof overrides.logos?.favicon === "string" ? overrides.logos.favicon : withDefaults.logos.favicon,
-          symbol: typeof overrides.logos?.symbol === "string" ? overrides.logos.symbol : withDefaults.logos.symbol,
-          socialDefault: typeof (overrides.logos as any)?.socialDefault === "string" ? (overrides.logos as any).socialDefault : (withDefaults as any)?.logos?.socialDefault,
-          footer: typeof overrides.logos?.footer === "string" ? overrides.logos.footer : withDefaults.logos.footer,
-          navbarMode:
-            (overrides.logos as any)?.navbarMode === "logo" || (overrides.logos as any)?.navbarMode === "symbol"
-              ? (overrides.logos as any).navbarMode
-              : (withDefaults as any)?.logos?.navbarMode,
-        }
+        app: typeof overrides.logos?.app === "string" ? overrides.logos.app : withDefaults.logos.app,
+        favicon: typeof overrides.logos?.favicon === "string" ? overrides.logos.favicon : withDefaults.logos.favicon,
+        symbol: typeof overrides.logos?.symbol === "string" ? overrides.logos.symbol : withDefaults.logos.symbol,
+        socialDefault: typeof (overrides.logos as any)?.socialDefault === "string" ? (overrides.logos as any).socialDefault : (withDefaults as any)?.logos?.socialDefault,
+        footer: typeof overrides.logos?.footer === "string" ? overrides.logos.footer : withDefaults.logos.footer,
+        navbarMode:
+          (overrides.logos as any)?.navbarMode === "logo" || (overrides.logos as any)?.navbarMode === "symbol"
+            ? (overrides.logos as any).navbarMode
+            : (withDefaults as any)?.logos?.navbarMode,
+      }
       : withDefaults.logos,
     meta: typeof overrides.meta === "object"
       ? {
-          ogTitle: typeof overrides.meta?.ogTitle === "string" ? overrides.meta.ogTitle : withDefaults.meta?.ogTitle,
-          ogDescription: typeof overrides.meta?.ogDescription === "string" ? overrides.meta.ogDescription : withDefaults.meta?.ogDescription,
-        }
+        ogTitle: typeof overrides.meta?.ogTitle === "string" ? overrides.meta.ogTitle : withDefaults.meta?.ogTitle,
+        ogDescription: typeof overrides.meta?.ogDescription === "string" ? overrides.meta.ogDescription : withDefaults.meta?.ogDescription,
+      }
       : withDefaults.meta,
     appUrl: overrides.appUrl ?? withDefaults.appUrl,
     platformFeeBps: typeof overrides.platformFeeBps === "number" ? overrides.platformFeeBps : withDefaults.platformFeeBps,
@@ -146,48 +146,48 @@ function normalizePatch(raw: any): Partial<BrandConfigDoc> {
   const merchant = clampBps(raw?.defaultMerchantFeeBps);
   if (typeof merchant === "number") out.defaultMerchantFeeBps = merchant;
 
-if (typeof raw?.partnerWallet === "string" && isHexAddress(raw.partnerWallet)) {
-  out.partnerWallet = raw.partnerWallet;
-}
+  if (typeof raw?.partnerWallet === "string" && isHexAddress(raw.partnerWallet)) {
+    out.partnerWallet = raw.partnerWallet;
+  }
 
-// Theme: name, colors, logos, meta
-if (typeof raw?.name === "string" && raw.name.trim().length) {
-  out.name = raw.name.trim();
-}
-if (raw?.colors && typeof raw.colors === "object") {
-  const patchColors: any = {};
-  if (typeof raw.colors.primary === "string") patchColors.primary = String(raw.colors.primary);
-  if (typeof raw.colors.accent === "string") patchColors.accent = String(raw.colors.accent);
-  if (Object.keys(patchColors).length) {
-    out.colors = patchColors;
+  // Theme: name, colors, logos, meta
+  if (typeof raw?.name === "string" && raw.name.trim().length) {
+    out.name = raw.name.trim();
   }
-}
-if (raw?.logos && typeof raw.logos === "object") {
-  const app = typeof raw.logos.app === "string" ? String(raw.logos.app) : undefined;
-  const favicon = typeof raw.logos.favicon === "string" ? String(raw.logos.favicon) : undefined;
-  const symbol = typeof raw.logos.symbol === "string" ? String(raw.logos.symbol) : undefined;
-  const socialDefault = typeof (raw.logos as any).socialDefault === "string" ? String((raw.logos as any).socialDefault) : undefined;
-  const footer = typeof raw.logos.footer === "string" ? String(raw.logos.footer) : undefined;
-  const modeRaw = (raw.logos as any).navbarMode;
-  const navbarMode = modeRaw === "logo" || modeRaw === "symbol" ? modeRaw : undefined;
-  if (app || favicon || symbol || socialDefault || footer || navbarMode) {
-    out.logos = {
-      ...(app ? { app } : {}),
-      ...(favicon ? { favicon } : {}),
-      ...(symbol ? { symbol } : {}),
-      ...(socialDefault ? { socialDefault } : {}),
-      ...(footer ? { footer } : {}),
-      ...(navbarMode ? { navbarMode } : {}),
-    } as any;
+  if (raw?.colors && typeof raw.colors === "object") {
+    const patchColors: any = {};
+    if (typeof raw.colors.primary === "string") patchColors.primary = String(raw.colors.primary);
+    if (typeof raw.colors.accent === "string") patchColors.accent = String(raw.colors.accent);
+    if (Object.keys(patchColors).length) {
+      out.colors = patchColors;
+    }
   }
-}
-if (raw?.meta && typeof raw.meta === "object") {
-  const ogTitle = typeof raw.meta.ogTitle === "string" ? String(raw.meta.ogTitle) : undefined;
-  const ogDescription = typeof raw.meta.ogDescription === "string" ? String(raw.meta.ogDescription) : undefined;
-  if (ogTitle || ogDescription) {
-    out.meta = { ...(ogTitle ? { ogTitle } : {}), ...(ogDescription ? { ogDescription } : {}) };
+  if (raw?.logos && typeof raw.logos === "object") {
+    const app = typeof raw.logos.app === "string" ? String(raw.logos.app) : undefined;
+    const favicon = typeof raw.logos.favicon === "string" ? String(raw.logos.favicon) : undefined;
+    const symbol = typeof raw.logos.symbol === "string" ? String(raw.logos.symbol) : undefined;
+    const socialDefault = typeof (raw.logos as any).socialDefault === "string" ? String((raw.logos as any).socialDefault) : undefined;
+    const footer = typeof raw.logos.footer === "string" ? String(raw.logos.footer) : undefined;
+    const modeRaw = (raw.logos as any).navbarMode;
+    const navbarMode = modeRaw === "logo" || modeRaw === "symbol" ? modeRaw : undefined;
+    if (app || favicon || symbol || socialDefault || footer || navbarMode) {
+      out.logos = {
+        ...(app ? { app } : {}),
+        ...(favicon ? { favicon } : {}),
+        ...(symbol ? { symbol } : {}),
+        ...(socialDefault ? { socialDefault } : {}),
+        ...(footer ? { footer } : {}),
+        ...(navbarMode ? { navbarMode } : {}),
+      } as any;
+    }
   }
-}
+  if (raw?.meta && typeof raw.meta === "object") {
+    const ogTitle = typeof raw.meta.ogTitle === "string" ? String(raw.meta.ogTitle) : undefined;
+    const ogDescription = typeof raw.meta.ogDescription === "string" ? String(raw.meta.ogDescription) : undefined;
+    if (ogTitle || ogDescription) {
+      out.meta = { ...(ogTitle ? { ogTitle } : {}), ...(ogDescription ? { ogDescription } : {}) };
+    }
+  }
 
   // Allow apimCatalog write-through here only if provided as an array, though preferred endpoint is /catalog
   if (Array.isArray(raw?.apimCatalog)) {
@@ -225,7 +225,7 @@ const BRAND_CONFIG_GET_TTL = 30_000; // 30 seconds
 export async function GET(req: NextRequest, ctx: { params: Promise<{ brandKey: string }> }) {
   const { brandKey } = await ctx.params;
   const key = String(brandKey || "").toLowerCase();
-  
+
   // Check in-memory cache first
   const now = Date.now();
   const cached = brandConfigGetCache[key];
@@ -267,23 +267,23 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ brandKey: s
             overrides = nextDoc;
           }
         }
-      } catch {}
+      } catch { }
     }
 
     const effective = toEffectiveBrand(key, overrides || undefined);
     const responseData = { brandKey: key, brand: effective, overrides: overrides || undefined };
-    
+
     // Cache the successful response
     brandConfigGetCache[key] = { data: responseData, ts: Date.now() };
-    
+
     return headerJson(responseData);
   } catch (e: any) {
     const effective = toEffectiveBrand(key, undefined);
     const degradedData = { brandKey: key, brand: effective, degraded: true, reason: e?.message || "cosmos_unavailable" };
-    
+
     // Cache degraded responses too (to prevent repeated failed requests)
     brandConfigGetCache[key] = { data: degradedData, ts: Date.now() };
-    
+
     return headerJson(degradedData);
   }
 }
@@ -328,7 +328,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ brandKey:
         ok: false,
         metadata: { error: e?.message || "rate_limited", resetAt }
       });
-    } catch {}
+    } catch { }
     return NextResponse.json(
       { error: e?.message || "rate_limited", resetAt, correlationId },
       { status: e?.status || 429, headers: { "x-correlation-id": correlationId, "x-ratelimit-reset": resetAt ? String(resetAt) : "" } }
@@ -368,7 +368,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ brandKey:
         { status: 403, headers: { "x-correlation-id": correlationId } }
       );
     }
-  } catch {}
+  } catch { }
 
   // Upsert overrides doc
   const doc: BrandConfigDoc = {
@@ -386,11 +386,11 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ brandKey:
   try {
     const c = await getContainer();
     await c.items.upsert(doc);
-    
+
     // Invalidate cache for this brand key (local and shared library caches)
     delete brandConfigGetCache[key];
     invalidateBrandConfigCache(key);
-    
+
     try {
       await auditEvent(req, {
         who: caller.wallet,
@@ -400,7 +400,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ brandKey:
         correlationId,
         ok: true
       });
-    } catch {}
+    } catch { }
 
     const effective = toEffectiveBrand(key, doc);
     return NextResponse.json(
@@ -419,7 +419,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ brandKey:
         ok: true,
         metadata: { degraded: true, reason: e?.message || "cosmos_unavailable" }
       });
-    } catch {}
+    } catch { }
     const effective = toEffectiveBrand(key, doc);
     return NextResponse.json(
       { ok: true, degraded: true, reason: e?.message || "cosmos_unavailable", brandKey: key, brand: effective, overrides: doc, correlationId },
