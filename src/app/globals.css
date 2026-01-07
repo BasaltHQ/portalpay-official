@@ -88,8 +88,8 @@ body {
 
 /* Pages with the global navbar visible should apply this class to their main content */
 body.with-global-navbar {
-  padding-top: 112px;
-  /* Adjusted to meet the header animation line */
+  padding-top: 118px;
+  /* Main navbar (~90px) + secondary bar (28px) = precise fit */
 }
 
 /* Route-scoped guard: hide app-level global gradient layer on portal routes to avoid duplication */
@@ -750,6 +750,35 @@ html[data-pp-theme-ready="0"] body::after {
 .tw-modal button:hover,
 .tw-connect button:hover {
   border-color: var(--pp-primary) !important;
+}
+
+/* Prevent body scroll/jump when thirdweb modal is open */
+/* Target thirdweb's modal portal containers when they contain visible content */
+html:has([data-rk]) body,
+html:has([id^="headlessui-portal"]) body,
+html:has([class*="fixed"][class*="inset-0"][class*="z-"]) body {
+  overflow: hidden !important;
+}
+
+/* Thirdweb renders modals in a portal div at the end of body - detect and lock */
+body:has(> div[data-overlay-container]) {
+  overflow: hidden !important;
+}
+
+/* Ensure thirdweb modals appear above hamburger menu and all other UI */
+[data-rk],
+[role="dialog"],
+[class*="ConnectModal"],
+[class*="tw-modal"],
+div[data-overlay-container],
+[id^="headlessui-portal"] {
+  z-index: 99999 !important;
+}
+
+/* Thirdweb modal backdrop should also be above other content */
+[data-rk]>div:first-child,
+[class*="tw-modal"]>div:first-child {
+  z-index: 99998 !important;
 }
 
 /* ========================================

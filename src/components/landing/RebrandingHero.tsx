@@ -8,8 +8,8 @@ import Image from "next/image";
 class Particle {
     x: number;
     y: number;
-    vx: number;
-    vy: number;
+    vx: number = 0;
+    vy: number = 0;
     life: number;
     maxLife: number;
     color: string;
@@ -63,10 +63,8 @@ class Particle {
             return; // physics handled mostly in update
         }
 
-        if (type !== "ash") {
-            this.vx = Math.cos(angle) * speed;
-            this.vy = Math.sin(angle) * speed;
-        }
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
         this.life = this.maxLife;
     }
 

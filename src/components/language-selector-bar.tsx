@@ -265,8 +265,8 @@ export function LanguageSelectorBar({ className = "" }: LanguageSelectorBarProps
 
         <div className="absolute top-[1px] left-0 right-0 h-[1px] w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-80 pointer-events-none z-50" style={{ color: theme.primaryColor }} />
 
-        <div className="max-w-5xl mx-auto px-4 h-7 flex items-center justify-between">
-          <nav className="flex items-center gap-1">
+        <div className="max-w-5xl w-full mx-auto px-4 sm:px-6 h-7 flex items-center justify-between">
+          <nav className="hidden sm:flex items-center gap-1">
             {categoryVisibility.industries && (
               <Link href="/crypto-payments" className="flex items-center text-[10px] leading-none tracking-widest uppercase text-foreground/80 px-2 py-0.5 rounded hover:bg-foreground/5 transition-colors">
                 Industries
@@ -286,14 +286,14 @@ export function LanguageSelectorBar({ className = "" }: LanguageSelectorBarProps
               Developers
             </Link>
           </nav>
-          <div className="relative z-50" ref={dropdownRef}>
+          <div className="relative z-50 ml-auto" ref={dropdownRef}>
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-foreground/5 transition-colors"
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-foreground/5 transition-colors max-w-[180px] sm:max-w-none"
               aria-label={tLanguageBar("selectLanguage")}
             >
-              <Globe className="h-3 w-3 opacity-60 -mt-px" />
-              <span className="text-[10px] leading-none tracking-widest uppercase opacity-80">{currentLanguage}</span>
+              <Globe className="h-3 w-3 opacity-60 -mt-px shrink-0" />
+              <span className="text-[10px] leading-none tracking-widest uppercase opacity-80 truncate">{currentLanguage}</span>
             </button>
 
             {isOpen && (
