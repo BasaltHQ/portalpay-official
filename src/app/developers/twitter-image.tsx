@@ -36,14 +36,12 @@ export default async function Image() {
             </div>
         ),
         rightWing: (
-            <>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                    <div style={{ fontSize: 36, color: 'white', fontWeight: 600 }}>• API Reference</div>
-                    <div style={{ fontSize: 36, color: 'white', fontWeight: 600 }}>• SDKs & Libraries</div>
-                    <div style={{ fontSize: 36, color: 'white', fontWeight: 600 }}>• Integration Guides</div>
-                    <div style={{ fontSize: 36, color: 'white', fontWeight: 600 }}>• Sandbox Access</div>
-                </div>
-            </>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                <div style={{ fontSize: 36, color: 'white', fontWeight: 600 }}>• API Reference</div>
+                <div style={{ fontSize: 36, color: 'white', fontWeight: 600 }}>• SDKs & Libraries</div>
+                <div style={{ fontSize: 36, color: 'white', fontWeight: 600 }}>• Integration Guides</div>
+                <div style={{ fontSize: 36, color: 'white', fontWeight: 600 }}>• Sandbox Access</div>
+            </div>
         )
     });
 }
