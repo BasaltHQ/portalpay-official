@@ -91,3 +91,4 @@ jobs:
           package: release.zip
 
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_SURGE_ICUNOWSTORE }}
+
