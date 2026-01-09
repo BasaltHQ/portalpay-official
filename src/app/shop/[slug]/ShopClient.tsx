@@ -324,9 +324,10 @@ interface ShopClientProps {
     merchantWallet: string;
     cleanSlug: string;
     isPreview?: boolean;
+    initialItemId?: string;
 }
 
-export default function ShopClient({ config: cfg, items: initialItems, reviews: initialReviews, merchantWallet, cleanSlug, isPreview = false }: ShopClientProps) {
+export default function ShopClient({ config: cfg, items: initialItems, reviews: initialReviews, merchantWallet, cleanSlug, isPreview = false, initialItemId }: ShopClientProps) {
     const twTheme = usePortalThirdwebTheme();
     const brand = useBrand();
     const account = useActiveAccount();
@@ -348,6 +349,24 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
     // State
     const [items, setItems] = useState<InventoryItem[]>(initialItems);
     const [loadingItems, setLoadingItems] = useState(false);
+
+    // Deep linking: Select item once loaded
+    useEffect(() => {
+        if (initialItemId && items.length > 0 && !selectedItem) {
+            // Try to find by direct ID match first
+            let found = items.find(i => i.id === initialItemId);
+            // If not found, try decoding just in case passed encoded
+            if (!found) {
+                try {
+                    const decoded = decodeURIComponent(initialItemId);
+                    found = items.find(i => i.id === decoded);
+                } catch { }
+            }
+            if (found) {
+                setSelectedItem(found);
+            }
+        }
+    }, [items, initialItemId]);
     const [reviews, setReviews] = useState<any[]>(initialReviews);
     const [reviewsLoading, setReviewsLoading] = useState(false);
     const [reviewsError, setReviewsError] = useState("");
