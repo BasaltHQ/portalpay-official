@@ -130,10 +130,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ shop
                 const rawPrice = typeof item.priceUsd === 'number' ? item.priceUsd : 0;
                 const price = `${rawPrice.toFixed(2)} ${item.currency || 'USD'}`;
 
-                // Availability: in_stock, out_of_stock
-                let availability = "out_of_stock";
+                // Availability: in stock, out of stock (X Shopping / Facebook spec uses spaces)
+                let availability = "out of stock";
                 if (item.stockQty === -1 || item.stockQty > 0) {
-                    availability = "in_stock";
+                    availability = "in stock";
                 }
 
                 // Link: Valid HTTPS URL
