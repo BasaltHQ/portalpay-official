@@ -47,7 +47,8 @@ export default function ShopifyIntegrationPanel() {
     | 'worldpay'
     | 'authnet'
     | 'adyen'
-    | 'cybersource';
+    | 'cybersource'
+    | 'xshopping';
 
 
   type WorkspaceSection = 'overview' | 'configuration' | 'oauth' | 'extension' | 'deploy' | 'status' | 'verification' | 'publish';
@@ -75,6 +76,7 @@ export default function ShopifyIntegrationPanel() {
     { key: 'authnet', name: 'Authorize.Net', icon: '/logos/authorize-net.svg', description: 'Gateway integration', tags: ['Gateway'] },
     { key: 'adyen', name: 'Adyen', icon: '/logos/adyen.svg', description: 'Global payments', tags: ['Payments'] },
     { key: 'cybersource', name: 'CyberSource', icon: '/logos/cybersource.svg', description: 'Payments gateway', tags: ['Gateway'] },
+    { key: 'xshopping', name: 'X Shopping', icon: '𝕏', description: 'X Shopping Integration', tags: ['Commerce', 'Social'] },
   ];
 
 
@@ -94,6 +96,9 @@ export default function ShopifyIntegrationPanel() {
   }>({
     clientId: "", clientSecret: "", webhookSecret: "", environment: "production"
   });
+
+  // X Shopping Config State
+  const [xshoppingConfig, setXshoppingConfig] = React.useState<{ enabled: boolean }>({ enabled: false });
 
   // Modal State
   const [showWarningModal, setShowWarningModal] = React.useState(false);
@@ -121,6 +126,15 @@ export default function ShopifyIntegrationPanel() {
           }
         })
         .catch(e => console.error("Failed to load Uber Eats config:", e));
+    } else if (selectedPlugin === 'xshopping') {
+      fetch("/api/admin/plugins/xshopping/config")
+        .then(r => r.json())
+        .then(data => {
+          if (data.config) {
+            setXshoppingConfig({ enabled: !!data.config.enabled });
+          }
+        })
+        .catch(e => console.error("Failed to load X Shopping config:", e));
     }
   }, [selectedPlugin]);
 
@@ -141,12 +155,113 @@ export default function ShopifyIntegrationPanel() {
     }
   }
 
+  async function saveXShoppingConfig() {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/plugins/xshopping/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(xshoppingConfig)
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      setInfo("X Shopping configuration saved.");
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   // ... (keep existing render helpers) ...
 
   function renderPluginWorkspace(section: WorkspaceSection) {
     if (selectedPlugin === 'ubereats') return renderUberEatsContent(section);
+    if (selectedPlugin === 'xshopping') return renderXShoppingContent(section);
     if (selectedPlugin === 'shopify') return renderShopifySection(section);
     return renderPlaceholderSection(section, selectedPlugin || "");
+  }
+
+  function renderXShoppingContent(section: WorkspaceSection) {
+    switch (section) {
+      case 'overview':
+        return (
+          <div className="space-y-4 max-w-2xl">
+            <div className="rounded-md border p-6 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center text-3xl font-bold text-white">𝕏</div>
+                <div>
+                  <h3 className="text-xl font-bold">X Shopping</h3>
+                  <p className="text-muted-foreground">Product feed integration for X Shopping Manager.</p>
+                </div>
+              </div>
+              <div className="pt-4 border-t">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground">Status</div>
+                    <div className={`font-medium ${xshoppingConfig.enabled ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {xshoppingConfig.enabled ? 'Active' : 'Disabled'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground">Version</div>
+                    <div className="font-medium">1.0.0</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'configuration':
+        return (
+          <div className="space-y-6 animate-in fade-in duration-300 max-w-3xl">
+            <div className="glass-pane border p-6 rounded-xl space-y-6">
+              <div className="border-b pb-4">
+                <h3 className="font-semibold text-lg">Configuration</h3>
+                <p className="text-sm text-muted-foreground">Manage X Shopping integration status.</p>
+              </div>
+
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-background">
+                <div>
+                  <div className="font-medium">Enable X Shopping Integration</div>
+                  <div className="text-sm text-muted-foreground">Allow merchants to connect their catalog to X Shopping.</div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={xshoppingConfig.enabled}
+                    onChange={(e) => setXshoppingConfig({ enabled: e.target.checked })}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <div className="pt-4 flex items-center justify-end border-t mt-2">
+                <button
+                  onClick={saveXShoppingConfig}
+                  disabled={saving}
+                  className="px-6 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
+                >
+                  {saving ? "Saving..." : "Save Configuration"}
+                </button>
+              </div>
+
+              {info && (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 text-sm border border-emerald-100 dark:border-emerald-900/30">
+                  <CheckCircle2Icon className="w-4 h-4" /> {info}
+                </div>
+              )}
+              {error && (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-sm border border-red-100 dark:border-red-900/30">
+                  <AlertCircleIcon className="w-4 h-4" /> {error}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
   }
 
   function renderUberEatsContent(section: WorkspaceSection) {
@@ -994,6 +1109,11 @@ export default function ShopifyIntegrationPanel() {
     let tabs: { key: WorkspaceSection; label: string }[] = [];
 
     if (selectedPlugin === 'ubereats') {
+      tabs = [
+        { key: 'overview', label: 'Overview' },
+        { key: 'configuration', label: 'Configuration' },
+      ];
+    } else if (selectedPlugin === 'xshopping') {
       tabs = [
         { key: 'overview', label: 'Overview' },
         { key: 'configuration', label: 'Configuration' },
@@ -2146,7 +2266,12 @@ export default function ShopifyIntegrationPanel() {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <div className="h-12 w-12 rounded-md border bg-background flex items-center justify-center overflow-hidden">
-          <img src={p.icon} alt={p.name} className="h-8 w-8 object-contain rounded-md" />
+          {p.key === 'xshopping' ? (
+            <span className="text-3xl font-bold text-black dark:text-white">𝕏</span>
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={p.icon} alt={p.name} className="h-8 w-8 object-contain rounded-md" />
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -2175,7 +2300,12 @@ export default function ShopifyIntegrationPanel() {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <div className="h-9 w-9 rounded-md border bg-background flex items-center justify-center overflow-hidden">
-          <img src={p.icon} alt={p.name} className="h-6 w-6 object-contain rounded-md" />
+          {p.key === 'xshopping' ? (
+            <span className="text-2xl font-bold text-black dark:text-white">𝕏</span>
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={p.icon} alt={p.name} className="h-6 w-6 object-contain rounded-md" />
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -2203,7 +2333,12 @@ export default function ShopifyIntegrationPanel() {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <div className="h-8 w-8 rounded-md border bg-background flex items-center justify-center overflow-hidden">
-          <img src={p.icon} alt={p.name} className="h-6 w-6 object-contain rounded-md" />
+          {p.key === 'xshopping' ? (
+            <span className="text-xl font-bold text-black dark:text-white">𝕏</span>
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={p.icon} alt={p.name} className="h-6 w-6 object-contain rounded-md" />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -2321,7 +2456,11 @@ export default function ShopifyIntegrationPanel() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={catalog.find(c => c.key === selectedPlugin)?.icon || '/logos/crypto.svg'} alt={selectedName} className="h-6 w-6 object-contain rounded-md" />
+              {selectedPlugin === 'xshopping' ? (
+                <div className="h-6 w-6 flex items-center justify-center text-lg font-bold text-black dark:text-white">𝕏</div>
+              ) : (
+                <img src={catalog.find(c => c.key === selectedPlugin)?.icon || '/logos/crypto.svg'} alt={selectedName} className="h-6 w-6 object-contain rounded-md" />
+              )}
               <div className="text-sm font-semibold">{selectedName} Workspace — {brandKey}</div>
             </div>
             <div className="text-xs text-muted-foreground">State: {selectedPlugin === 'shopify' ? (shopifyEnabled ? 'Enabled' : 'Disabled') : 'Disabled'}</div>
