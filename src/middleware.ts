@@ -132,9 +132,10 @@ function applySecurityHeaders(req: NextRequest, res: NextResponse) {
   res.headers.set("Cross-Origin-Opener-Policy", "unsafe-none");
 
   // For API routes, use cross-origin to allow proxied/CDN requests
-  // For other routes, use same-origin for stricter security
+  // For other routes, use same-origin for stricter security, EXCEPT images/public assets for mini apps
   const isApiRoute = req.nextUrl.pathname.startsWith("/api/");
-  res.headers.set("Cross-Origin-Resource-Policy", isApiRoute ? "cross-origin" : "same-origin");
+  const isImageResp = /\.(png|jpg|jpeg|gif|webp|svg|ico)$/i.test(req.nextUrl.pathname);
+  res.headers.set("Cross-Origin-Resource-Policy", (isApiRoute || isImageResp) ? "cross-origin" : "same-origin");
 
   // HSTS (only meaningful over HTTPS; harmless otherwise)
   res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");

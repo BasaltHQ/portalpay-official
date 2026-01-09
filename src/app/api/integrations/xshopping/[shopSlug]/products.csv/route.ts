@@ -93,7 +93,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ shop
             "custom_label_1",
             "custom_label_2",
             "custom_label_3",
-            "custom_label_4"
+            "custom_label_4",
+            "debug_info"
         ];
 
         // Construct Base URL based on request custom domain or env?
@@ -186,7 +187,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ shop
                     "", // custom_label_1
                     "", // custom_label_2
                     "", // custom_label_3
-                    ""  // custom_label_4
+                    "", // custom_label_4
+                    "v2-fix-spaces" // debug_source
                 ].join(",");
             });
 
