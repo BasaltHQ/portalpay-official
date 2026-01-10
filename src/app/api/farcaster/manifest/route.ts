@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 export async function GET() {
     const accountBalance = {
         miniapp: {
-            version: "next",
+            version: "1",
             name: "BasaltSurge",
             iconUrl: "https://surge.basalthq.com/Surge.png",
             homeUrl: "https://surge.basalthq.com",
@@ -17,7 +17,7 @@ export async function GET() {
             ogTitle: "BasaltSurge",
             ogDescription: "Enterprise crypto payments with instant settlement. Unified billing and analytics.",
             ogImageUrl: "https://surge.basalthq.com/opengraph-image.png",
-            imageUrl: "https://surge.basalthq.com/Surge.png",
+            imageUrl: "https://surge.basalthq.com/opengraph-image.png",
             primaryCategory: "finance",
             tags: ["payments", "crypto", "billing", "merchant"],
             button: {

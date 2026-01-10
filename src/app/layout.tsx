@@ -526,7 +526,7 @@ export async function generateMetadata(): Promise<Metadata> {
       ...(iosAppId ? { "apple-itunes-app": `app-id=${iosAppId}` } : {}),
       "fc:miniapp": JSON.stringify({
         version: "next",
-        imageUrl: "https://surge.basalthq.com/Surge.png",
+        imageUrl: "https://surge.basalthq.com/opengraph-image.png",
         button: {
           title: "Start Your Shop!",
           action: {
