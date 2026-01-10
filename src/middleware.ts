@@ -102,7 +102,8 @@ function applySecurityHeaders(req: NextRequest, res: NextResponse) {
 
   // ALWAYS allow Farcaster domains for framing, regardless of route (shop or portal)
   // Also include localhost for dev tools
-  const allowedAncestors = ["'self'", "https://warpcast.com", "https://*.warpcast.com", "https://*.farcaster.xyz", "https://client.warpcast.com", "http://localhost:*", "https://localhost:*"];
+  // We utilize a wildcard '*' to allow all framing for now to unblock the user.
+  const allowedAncestors = ["*"];
 
   if (isPortalRoute) {
     try {
