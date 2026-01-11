@@ -448,6 +448,17 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
         }
     }, [cleanSlug]);
 
+    // Sticky Header Logic
+    const [isSticky, setIsSticky] = useState(false);
+    useEffect(() => {
+        const handleScroll = () => {
+            // Show sticky header after scrolling past roughly the top area (e.g. 100px)
+            setIsSticky(window.scrollY > 100);
+        };
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
     const loadDiscounts = async () => {
         setDiscountsLoading(true);
         try {
@@ -1858,6 +1869,75 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             <AutoTranslateProvider>
                 <div style={varStyle}>
                     <ShopThemeAuditor expected={cfg?.theme || {}} />
+
+                    {/* Sticky Header */}
+                    <div className={`fixed top-0 left-0 right-0 z-[100] bg-background/90 backdrop-blur-md border-b shadow-sm transition-transform duration-300 ${isSticky ? "translate-y-0" : "-translate-y-full"}`} style={{ borderColor: shopPrimary }}>
+                        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+                                <div className={`w-8 h-8 ${cfg?.theme?.logoShape === "circle" ? "rounded-full" : "rounded-lg"} overflow-hidden flex-shrink-0 border bg-white flex items-center justify-center`}>
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={(() => {
+                                            const a = String(cfg?.theme?.brandLogoUrl || "").trim();
+                                            const b = String((brand?.logos?.symbol || "") as string).trim();
+                                            const c = String((brand?.logos?.favicon || "") as string).trim();
+                                            const d = String((brand?.logos?.app || "") as string).trim();
+                                            return resolveBrandSymbol(a || b || c || d, (brand as any)?.key);
+                                        })()}
+                                        alt="Logo"
+                                        className="max-w-full max-h-full object-contain"
+                                    />
+                                </div>
+                                <div className="font-bold text-lg truncate hidden md:block">{cfg?.name}</div>
+                            </div>
+
+                            <div className="flex-1 max-w-md">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <input
+                                        className="w-full h-10 pl-10 pr-4 rounded-full border bg-muted/50 text-sm focus:bg-background focus:ring-1 transition-colors outline-none"
+                                        placeholder="Search products..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="hidden md:block w-[140px]">
+                                    <ClientOnly fallback={<div style={{ height: "36px" }} />}>
+                                        <ConnectButton
+                                            client={client}
+                                            chain={chain}
+                                            wallets={wallets}
+                                            theme={twTheme}
+                                            connectButton={{
+                                                label: "Login",
+                                                className: connectButtonClass,
+                                                style: { ...getConnectButtonStyle(), height: "36px", padding: "0 12px", fontSize: "13px" },
+                                            }}
+                                            detailsButton={{
+                                                displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+                                            }}
+                                            connectModal={{
+                                                title: "Login",
+                                                titleIcon: (() => {
+                                                    const a = String(cfg?.theme?.brandLogoUrl || "").trim();
+                                                    const b = String((brand?.logos?.symbol || "") as string).trim();
+                                                    const c = String((brand?.logos?.favicon || "") as string).trim();
+                                                    const d = String((brand?.logos?.app || "") as string).trim();
+                                                    return resolveBrandSymbol(a || b || c || d, (brand as any)?.key);
+                                                })(),
+                                                size: "compact",
+                                                showThirdwebBranding: false,
+                                            }}
+                                        />
+                                    </ClientOnly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="max-w-7xl mx-auto px-4 pt-6 pb-24 md:pb-10 space-y-6">
                         <div className={`rounded-t-2xl border shadow transition-all duration-500 ${heroCollapsed ? "h-auto" : ""}`} style={{ borderColor: "var(--shop-primary)" }}>
                             {!heroCollapsed && coverUrl && !useSideLayout && layoutMode !== "minimalist" && (
@@ -2378,7 +2458,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                             {loadingItems ? "Loading..." : "Refresh"}
                                         </button>
                                     </div>
-                                    <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
+                                    <div className="">
                                         {loadingItems ? (
                                             <div className={`grid ${cardSize === "small" ? "grid-cols-3 md:grid-cols-4 lg:grid-cols-5" :
                                                 cardSize === "large" ? "grid-cols-1 md:grid-cols-2" :
@@ -2401,7 +2481,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
 
                                 {!heroCollapsed && (
                                     <div className="hidden lg:block">
-                                        <div className="sticky top-4 rounded-xl border p-4 glass-pane" style={{ borderColor: "var(--shop-primary)" }}>
+                                        <div className={`sticky transition-[top] duration-300 ${isSticky ? "top-20" : "top-4"} rounded-xl border p-4 glass-pane`} style={{ borderColor: "var(--shop-primary)" }}>
                                             {renderCartContent()}
                                         </div>
                                     </div>
@@ -2435,7 +2515,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                     </button>
                                 </div>
                                 {reviewsError && <div className="microtext text-red-500">{reviewsError}</div>}
-                                <div className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto pr-2">
+                                <div className="space-y-2">
                                     {(reviews || []).map((rv: any) => (
                                         <div key={rv.id} className="rounded-md border p-3 bg-background/50">
                                             <div className="flex items-center justify-between mb-2">
