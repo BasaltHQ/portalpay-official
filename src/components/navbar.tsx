@@ -67,6 +67,23 @@ export function Navbar() {
     const [scrolled, setScrolled] = useState(false);
     const [time, setTime] = useState('');
 
+    // Re-read container type from DOM after mount (SSR may not have it available during initial render)
+    useEffect(() => {
+        try {
+            const d = document.documentElement;
+            const t = (d?.getAttribute('data-pp-container-type') || '').toLowerCase();
+            const k = (d?.getAttribute('data-pp-brand-key') || (brand as any)?.key || '').toString();
+            if (t === 'partner' || t === 'platform') {
+                setContainer(prev => {
+                    if (prev.containerType !== t || prev.brandKey !== k) {
+                        return { containerType: t, brandKey: k };
+                    }
+                    return prev;
+                });
+            }
+        } catch { }
+    }, [brand]);
+
     useEffect(() => {
         const handleScroll = () => {
             setScrolled(window.scrollY > 50);
@@ -141,14 +158,58 @@ export function Navbar() {
     const { theme: ctxTheme } = useTheme();
     // Helper to resolve effective branding, prioritizing partner assets if in partner container
     // CRITICAL: When logged out on BasaltSurge, use static defaults, NOT stored config data
+    // BUT: Never do this in Partner containers - they should always show their own branding
     const effectiveTheme = useMemo(() => {
         const t = ctxTheme;
-        const effectiveBrandKey = (t.brandKey || container.brandKey || getEffectiveBrandKey()).toLowerCase();
-        const isBasalt = effectiveBrandKey === "basaltsurge";
+
+        // Read DOM attributes directly for most reliable partner detection
+        // These are set by the server based on env vars
+        const domContainerType = typeof document !== 'undefined'
+            ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase()
+            : '';
+        const domBrandKey = typeof document !== 'undefined'
+            ? (document.documentElement.getAttribute('data-pp-brand-key') || '').toLowerCase()
+            : '';
+
+        // CRITICAL: Use DOM brand key first, then container state, then theme context
+        const effectiveBrandKey = (domBrandKey || container.brandKey || t.brandKey || getEffectiveBrandKey()).toLowerCase();
+        const isBasalt = effectiveBrandKey === "basaltsurge" || effectiveBrandKey === "portalpay";
         const isLoggedIn = Boolean(account?.address);
 
-        // When logged out on BasaltSurge, force static platform defaults
-        if (isBasalt && !isLoggedIn) {
+        // Detect if this is a partner container - NEVER force Basalt in partner context
+        // DOM attribute is authoritative - set by server based on env vars
+        const isPartnerContainer = (() => {
+            // Check DOM attribute directly - this is the most reliable source
+            if (domContainerType === "partner") return true;
+            if (domContainerType === "platform") return false;
+
+            // Fallback to container state
+            const ct = (container.containerType || "").toLowerCase();
+            if (ct === "partner") return true;
+            if (ct === "platform") return false;
+
+            // Last resort: Check BrandContext
+            const brandName = String((brand as any)?.name || "").toLowerCase();
+            const brandKeyFromCtx = String((brand as any)?.key || "").toLowerCase();
+            const isPlatformBrand = (!brandName || brandName === "basaltsurge" || brandName === "portalpay") &&
+                (!brandKeyFromCtx || brandKeyFromCtx === "basaltsurge" || brandKeyFromCtx === "portalpay");
+            return !isPlatformBrand;
+        })();
+
+        // DEBUG: Trace navbar partner detection
+        console.log('[Navbar DEBUG] effectiveTheme:', {
+            domContainerType,
+            domBrandKey,
+            containerType: container.containerType,
+            effectiveBrandKey,
+            isBasalt,
+            isLoggedIn,
+            isPartnerContainer,
+            willOverride: isBasalt && !isLoggedIn && !isPartnerContainer
+        });
+
+        // When logged out on BasaltSurge (PLATFORM only), force static platform defaults
+        if (isBasalt && !isLoggedIn && !isPartnerContainer) {
             return {
                 brandLogoUrl: "/BasaltSurgeWideD.png",
                 brandFaviconUrl: t.brandFaviconUrl || "/favicon-32x32.png",
@@ -160,16 +221,26 @@ export function Navbar() {
             };
         }
 
+        // For partners, NEVER return BasaltSurge logos - use partner's or empty
+        const sanitizeLogoForPartner = (logo: string | undefined) => {
+            if (!isPartnerContainer) return logo;
+            const s = String(logo || '').toLowerCase();
+            if (s.includes('basaltsurge') || s.includes('bssymbol') || s.includes('bswide')) {
+                return ''; // Block BasaltSurge logos for partners
+            }
+            return logo;
+        };
+
         return {
-            brandLogoUrl: t.brandLogoUrl,
+            brandLogoUrl: sanitizeLogoForPartner(t.brandLogoUrl),
             brandFaviconUrl: t.brandFaviconUrl,
-            symbolLogoUrl: t.symbolLogoUrl,
+            symbolLogoUrl: sanitizeLogoForPartner(t.symbolLogoUrl),
             brandName: t.brandName,
             brandLogoShape: t.brandLogoShape,
             brandKey: t.brandKey,
             navbarMode: t.navbarMode
         };
-    }, [ctxTheme]);
+    }, [ctxTheme, container.containerType, container.brandKey, account?.address, brand]);
 
     // Use effectiveTheme instead of local state
     const theme = effectiveTheme;
@@ -524,14 +595,22 @@ export function Navbar() {
     const effectiveLogoSymbol = theme.symbolLogoUrl;
     const effectiveLogoFavicon = theme.brandFaviconUrl;
 
-    // Trust explicit navbarMode from theme
+    // Trust explicit navbarMode from theme or brand config
+    const brandNavbarMode = (brand as any)?.logos?.navbarMode;
     const navbarMode: "symbol" | "logo" = (() => {
-        if (theme.navbarMode === "logo") return "logo";
-        if (theme.navbarMode === "symbol") return "symbol";
+        if (theme.navbarMode === "logo" || brandNavbarMode === "logo") return "logo";
+        if (theme.navbarMode === "symbol" || brandNavbarMode === "symbol") return "symbol";
         // Fallback: use "logo" for partners with a full logo, otherwise "symbol"
         if (effectiveBrandKey && effectiveBrandKey !== "portalpay" && effectiveBrandKey !== "basaltsurge") return "logo";
         return "symbol";
     })();
+
+    // DEBUG: Log navbar mode
+    console.log('[Navbar] navbarMode:', {
+        'theme.navbarMode': theme.navbarMode,
+        'brand.logos.navbarMode': brandNavbarMode,
+        effectiveNavbarMode: navbarMode
+    });
 
     // Partner-safe display name: treat generic names and 'PortalPay' as placeholders in partner containers
     const displayBrandName = (() => {
@@ -553,7 +632,22 @@ export function Navbar() {
     const themeColor = ctxTheme.primaryColor || '#06b6d4'; // Dynamic Basalt Theme Color
     const secondaryColor = ctxTheme.secondaryColor || '#F54029'; // Dynamic Basalt Secondary
     const isBasaltSurge = displayBrandName === "BasaltSurge";
-    const effectiveLogo = isBasaltSurge ? "/Surge.png" : (theme.symbolLogoUrl || theme.brandLogoUrl || "/Surge.png");
+    // For partners, use partner brand logo from context as fallback, not platform logos
+    const partnerFallbackLogo = (brand as any)?.logos?.app || (brand as any)?.logos?.symbol || '';
+    const platformFallbackLogo = "/Surge.png";
+    const fallbackLogo = isPartnerContainer ? partnerFallbackLogo : platformFallbackLogo;
+
+    // DEBUG: Trace EXACT logo values at render time
+    console.log('[Navbar LOGO DEBUG]', {
+        'theme.symbolLogoUrl': theme.symbolLogoUrl,
+        'theme.brandLogoUrl': theme.brandLogoUrl,
+        fallbackLogo,
+        isBasaltSurge,
+        isPartnerContainer,
+        displayBrandName,
+    });
+
+    const effectiveLogo = isBasaltSurge ? "/Surge.png" : (theme.symbolLogoUrl || theme.brandLogoUrl || fallbackLogo);
     const maskUrl = effectiveLogo.startsWith("http")
         ? `/_next/image?url=${encodeURIComponent(effectiveLogo)}&w=96&q=75`
         : effectiveLogo;
@@ -578,42 +672,64 @@ export function Navbar() {
                     {/* Logo & System Status */}
                     <div className="flex items-center gap-6 shrink-0">
                         <Link href="/" className="flex items-center gap-3 group relative z-50">
-                            <div className="relative w-10 h-10 transform group-hover:scale-110 transition-transform duration-300">
-                                <Image
-                                    src={effectiveLogo}
-                                    alt={theme.brandName || "Logo"}
-                                    fill
-                                    className="object-contain"
-                                    priority
-                                />
-                                <div
-                                    className="shield-gleam-container"
-                                    style={{
-                                        maskImage: `url('${maskUrl}')`,
-                                        WebkitMaskImage: `url('${maskUrl}')`,
-                                        maskSize: 'contain',
-                                        WebkitMaskSize: 'contain',
-                                        maskPosition: 'center',
-                                        WebkitMaskPosition: 'center',
-                                        maskRepeat: 'no-repeat',
-                                        WebkitMaskRepeat: 'no-repeat'
-                                    }}
-                                />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                                <span className="hidden md:block text-xs font-mono tracking-widest opacity-80 transition-colors whitespace-nowrap" style={{ color: themeColor }}>
-                                    STATUS.ONLINE
-                                </span>
-                                {displayBrandName === "BasaltSurge" ? (
-                                    <span className="text-lg text-white tracking-widest group-hover:opacity-80 transition-opacity font-vox whitespace-nowrap" style={{ fontFamily: 'vox, sans-serif' }}>
-                                        <span style={{ fontWeight: 300 }}>BASALT</span><span style={{ fontWeight: 700 }}>SURGE</span>
+                            {navbarMode === "logo" ? (
+                                /* Full-width logo mode - Logo behind STATUS.ONLINE */
+                                <div className="flex flex-col min-w-0 relative">
+                                    <span className="hidden md:block text-xs font-mono tracking-widest opacity-80 transition-colors whitespace-nowrap relative z-10" style={{ color: themeColor }}>
+                                        STATUS.ONLINE
                                     </span>
-                                ) : (
-                                    <span className={`${displayBrandName.length > 20 ? 'text-xs' : displayBrandName.length > 12 ? 'text-sm' : 'text-lg'} text-white tracking-widest group-hover:opacity-80 transition-opacity font-mono font-bold whitespace-nowrap`}>
-                                        {displayBrandName}
-                                    </span>
-                                )}
-                            </div>
+                                    <div className="relative h-8 min-w-[120px] max-w-[180px] transform group-hover:scale-105 transition-transform duration-300">
+                                        <Image
+                                            src={effectiveLogo || effectiveLogoApp || partnerFallbackLogo}
+                                            alt={theme.brandName || "Logo"}
+                                            fill
+                                            className="object-contain object-left"
+                                            priority
+                                            sizes="180px"
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                /* Symbol + Text mode - Square symbol with brand name */
+                                <>
+                                    <div className="relative w-10 h-10 transform group-hover:scale-110 transition-transform duration-300">
+                                        <Image
+                                            src={effectiveLogo}
+                                            alt={theme.brandName || "Logo"}
+                                            fill
+                                            className="object-contain"
+                                            priority
+                                        />
+                                        <div
+                                            className="shield-gleam-container"
+                                            style={{
+                                                maskImage: `url('${maskUrl}')`,
+                                                WebkitMaskImage: `url('${maskUrl}')`,
+                                                maskSize: 'contain',
+                                                WebkitMaskSize: 'contain',
+                                                maskPosition: 'center',
+                                                WebkitMaskPosition: 'center',
+                                                maskRepeat: 'no-repeat',
+                                                WebkitMaskRepeat: 'no-repeat'
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="hidden md:block text-xs font-mono tracking-widest opacity-80 transition-colors whitespace-nowrap" style={{ color: themeColor }}>
+                                            STATUS.ONLINE
+                                        </span>
+                                        {displayBrandName === "BasaltSurge" ? (
+                                            <span className="text-lg text-white tracking-widest group-hover:opacity-80 transition-opacity font-vox whitespace-nowrap" style={{ fontFamily: 'vox, sans-serif' }}>
+                                                <span style={{ fontWeight: 300 }}>BASALT</span><span style={{ fontWeight: 700 }}>SURGE</span>
+                                            </span>
+                                        ) : (
+                                            <span className={`${displayBrandName.length > 20 ? 'text-xs' : displayBrandName.length > 12 ? 'text-sm' : 'text-lg'} text-white tracking-widest group-hover:opacity-80 transition-opacity font-mono font-bold whitespace-nowrap`}>
+                                                {displayBrandName}
+                                            </span>
+                                        )}
+                                    </div>
+                                </>
+                            )}
                         </Link>
 
                         {/* Desktop Navigation */}

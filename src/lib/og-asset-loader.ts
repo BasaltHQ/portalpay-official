@@ -166,34 +166,77 @@ export async function loadTwemojiPng(emoji: string, size = 96): Promise<Buffer |
 }
 
 /**
- * Load default assets for Basalt OG template
+ * Load assets for dynamic Brand OG template
  */
-export async function loadBasaltDefaults(): Promise<{
+export async function loadBrandOGAssets(): Promise<{
     bgBase64: string;
     blurredBgBase64: string;
     medallionBase64: string;
     logoBase64: string;
     shieldBase64: string;
+    brand: any;
 }> {
-    const [bg, blurred, medallion, logo, shield] = await Promise.all([
+    const brand = getBrandConfig();
+    const isPlatform = String(brand?.key || '').toLowerCase() === 'basaltsurge' || String(brand?.key || '').toLowerCase() === 'portalpay';
+
+    // 1. Backgrounds: Use Brand-specific if available (future), otherwise default BasaltBG
+    // We can stick to BasaltBG for now as it's high quality, or use a neutral one.
+    const [bg, blurred] = await Promise.all([
         loadPublicImageBuffer('bsurgebg.png'),
-        loadPublicImageBuffer('bsurgebg-blurred.png'),
-        loadPublicImageBuffer('BasaltSurgeM.png'),
-        loadPublicImageBuffer('BasaltSurgeWide.png'),
-        loadPublicImageBuffer('Shield.png')
+        loadPublicImageBuffer('bsurgebg-blurred.png')
     ]);
 
-    const toBase64 = (buf: Buffer | null) => buf ? `data:image/png;base64,${buf.toString('base64')}` : '';
+    // 2. Medallion (Center Image)
+    // For platform: BasaltSurgeM.png
+    // For partner: Try brand.logos.symbol -> brand.logos.app -> fallback to blank or platform
+    let medallion: Buffer | null = null;
+    if (isPlatform) {
+        medallion = await loadPublicImageBuffer('BasaltSurgeM.png');
+    } else {
+        // Try to load partner symbol using our robust loader
+        medallion = await loadPPSymbol(600);
+    }
 
-    const resize = async (buf: Buffer | null, w: number) => {
+    // 3. Logo (Bottom/Footer Logo or "Powered By")
+    // For platform: BasaltSurgeWide.png
+    // For partner: Try brand.logos.footer -> brand.logos.app
+    let logo: Buffer | null = null;
+    if (isPlatform) {
+        logo = await loadPublicImageBuffer('BasaltSurgeWide.png');
+    } else {
+        const logoPath = brand.logos.footer || brand.logos.app;
+        if (logoPath) {
+            if (/^https?:\/\//i.test(logoPath)) {
+                logo = await fetchWithCache(logoPath);
+            } else {
+                const rel = logoPath.replace(/^[/\\]+/, '');
+                logo = await loadPublicImageBuffer(rel);
+                if (!logo && brand.appUrl) {
+                    logo = await fetchWithCache(`${brand.appUrl.replace(/\/+$/, '')}/${rel}`);
+                }
+            }
+        }
+    }
+
+    // 4. Shield (Corner) - Only for Basalt/Platform
+    let shield: Buffer | null = null;
+    if (isPlatform) {
+        shield = await loadPublicImageBuffer('Shield.png');
+    }
+
+    const toBase64 = (buf: Buffer | null) => buf ? `data:image/png;base64,${buf.toString('base64')}` : '';
+    const resize = async (buf: Buffer | null, w: number, h?: number, fit: 'contain' | 'cover' = 'contain') => {
         if (!buf) return null;
-        return await sharp(buf).resize(w).png().toBuffer();
+        return await sharp(buf)
+            .resize(w, h, { fit, background: { r: 0, g: 0, b: 0, alpha: 0 } })
+            .png()
+            .toBuffer();
     };
 
     const bgResized = await resize(bg, 1200);
     const blurredResized = await resize(blurred, 1200);
-    const medallionResized = await resize(medallion, 600);
-    const logoResized = await resize(logo, 600);
+    const medallionResized = await resize(medallion, 600, 600, 'contain');
+    const logoResized = await resize(logo, 600, 150, 'contain');
     const shieldResized = await resize(shield, 200);
 
     return {
@@ -202,5 +245,14 @@ export async function loadBasaltDefaults(): Promise<{
         medallionBase64: toBase64(medallionResized),
         logoBase64: toBase64(logoResized),
         shieldBase64: toBase64(shieldResized),
+        brand
     };
+}
+
+/**
+ * Load default assets for Basalt OG template
+ * @deprecated Use loadBrandOGAssets instead
+ */
+export async function loadBasaltDefaults() {
+    return loadBrandOGAssets();
 }

@@ -47,6 +47,12 @@ export async function ensureSplitForWallet(account: Account | any, brandKeyOverr
         } catch { }
       }
     }
+
+    // Fix: Normalize basaltsurge -> portalpay for platform lookup to ensure we find the correct platform wallet
+    // The platform wallet is configured under the 'portalpay' brand key in the database/env
+    if (brandKey === 'basaltsurge') {
+      brandKey = 'portalpay';
+    }
     if (!brandKey) {
       // Persist recipients (without address) for later binding and exit early
       try {

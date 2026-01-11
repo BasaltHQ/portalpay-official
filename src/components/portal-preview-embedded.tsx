@@ -205,11 +205,18 @@ export function PortalPreviewEmbedded({
   // Helper to get best logo for different contexts
   const getHeaderLogo = () => {
     const key = (theme as any)?.brandKey || (brandCtx as any)?.key;
-    return resolveBrandAppLogo(theme.brandLogoUrl || theme.symbolLogoUrl || theme.brandFaviconUrl, key);
+    // For header, prefer full-width app logo
+    const themeLogo = theme.brandLogoUrl || theme.symbolLogoUrl || theme.brandFaviconUrl;
+    const brandLogo = (brandCtx as any)?.logos?.app || (brandCtx as any)?.logos?.symbol;
+    return resolveBrandAppLogo(themeLogo || brandLogo, key);
   };
   const getSymbolLogo = () => {
     const key = (theme as any)?.brandKey || (brandCtx as any)?.key;
-    return resolveBrandSymbol(theme.symbolLogoUrl || theme.brandFaviconUrl || theme.brandLogoUrl, key);
+    // For receipt symbol, prefer brand.logos.symbol first (matches landing page hero)
+    // then fall back to theme values
+    const brandSymbol = (brandCtx as any)?.logos?.symbol || (brandCtx as any)?.logos?.app;
+    const themeLogo = theme.symbolLogoUrl || theme.brandFaviconUrl || theme.brandLogoUrl;
+    return resolveBrandSymbol(brandSymbol || themeLogo, key);
   };
 
   // Currency and rates
@@ -596,27 +603,37 @@ export function PortalPreviewEmbedded({
     return () => { try { mo.disconnect(); } catch { }; clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [effectiveSecondaryColor, theme.secondaryColor]);
 
-  // Compute navbar mode (Symbol+Text vs Full Width) with partner fallback
+  // Compute navbar mode (Symbol+Text vs Full Width) - respect brand config
   const isPartnerContainer =
     typeof document !== "undefined" &&
     ((document.documentElement.getAttribute("data-pp-container-type") || "").toLowerCase() === "partner");
+
+  // Check brand config for navbarMode setting
+  const brandNavbarMode = (brandCtx as any)?.logos?.navbarMode;
+  const themeNavbarMode = (theme as any)?.navbarMode;
+
   const navbarMode: "symbol" | "logo" = (() => {
-    const m = (theme as any)?.navbarMode || ((theme as any)?.logos?.navbarMode);
-    if (m === "logo" || m === "symbol") return m;
-    return isPartnerContainer ? "logo" : "symbol";
+    // Explicit config takes priority
+    if (themeNavbarMode === "logo" || brandNavbarMode === "logo") return "logo";
+    if (themeNavbarMode === "symbol" || brandNavbarMode === "symbol") return "symbol";
+    // No explicit config - default to symbol+text for preview (matches typical shop portal)
+    return "symbol";
   })();
 
-  // Degrade to symbol+text if the full-width logo looks like a generic platform asset
+  // Check if we have a valid full-width logo to use
   const fullLogoCandidate = (() => {
     const app = String((theme as any)?.brandLogoUrl || "").trim();
+    const brandApp = String((brandCtx as any)?.logos?.app || "").trim();
     const sym = String((theme as any)?.symbolLogoUrl || "").trim();
     const fav = String(theme.brandFaviconUrl || "").trim();
-    return app || sym || fav || "";
+    return app || brandApp || sym || fav || "";
   })();
+
+  // For CDN URLs (non-local paths), assume they're valid partner logos
+  const isExternalUrl = fullLogoCandidate.startsWith("http");
   const fileName = fullLogoCandidate.split("/").pop() || "";
-  const genericRe = /^(PortalPay(\d*)\.png|ppsymbol(\.png)?|favicon\-[0-9]+x[0-9]+\.png|next\.svg)$/i;
-  const hasPartnerPath = fullLogoCandidate.includes("/brands/");
-  const canUseFullLogo = !!fullLogoCandidate && (hasPartnerPath || !genericRe.test(fileName));
+  const genericRe = /^(PortalPay(\d*)\.png|ppsymbol(\.png)?|favicon\-[0-9]+x[0-9]+\.png|next\.svg|BasaltSurge.*\.png)$/i;
+  const canUseFullLogo = !!fullLogoCandidate && (isExternalUrl || !genericRe.test(fileName));
   const effectiveNavbarMode: "symbol" | "logo" = (navbarMode === "logo" && canUseFullLogo) ? "logo" : "symbol";
 
   // Render
@@ -674,7 +691,7 @@ export function PortalPreviewEmbedded({
             <img
               alt={effectiveBrandName || "Logo"}
               src={getHeaderLogo()}
-              className="h-9 w-auto max-w-[360px] object-contain rounded-none bg-transparent drop-shadow-md"
+              className="h-6 w-auto max-w-[140px] object-contain rounded-none bg-transparent drop-shadow-md"
               style={{ fontFamily: theme.fontFamily }}
             />
           ) : (

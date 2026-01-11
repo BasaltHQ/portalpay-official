@@ -279,9 +279,10 @@ export async function generateMetadata(): Promise<Metadata> {
         ...baseBrand,
         name: typeof b.name === "string" && b.name ? b.name : baseBrand.name,
         colors: b.colors && typeof b.colors === "object" ? b.colors : baseBrand.colors,
-        // Do NOT override partner logos with platform overrides; keep static partner assets
+        // For partners, ALWAYS prefer Cosmos DB logos (b.logos) since static baseBrand.logos is empty
+        // For platform, merge static base with DB overrides
         logos: isPartner
-          ? baseBrand.logos
+          ? (b.logos && typeof b.logos === "object" ? { ...baseBrand.logos, ...b.logos } : baseBrand.logos)
           : (b.logos && typeof b.logos === "object" ? { ...baseBrand.logos, ...b.logos } : baseBrand.logos),
         appUrl: typeof b.appUrl === "string" && b.appUrl ? b.appUrl : baseBrand.appUrl,
         partnerFeeBps: typeof b.partnerFeeBps === "number" ? b.partnerFeeBps : baseBrand.partnerFeeBps,

@@ -297,6 +297,9 @@ export function ThemeLoader() {
         const isBasaltSurgeBrand = String(bk || "").toLowerCase() === "basaltsurge";
         const isLoggedOut = !headers["x-wallet"]; // No wallet in headers means logged out
 
+        // DEBUG: Log the override check values
+        console.log("[ThemeLoader] Override check:", { bk, isBasaltSurgeBrand, isLoggedOut, isPartnerContainer });
+
         if (isBasaltSurgeBrand && isLoggedOut && !isPartnerContainer && t) {
           console.log("[ThemeLoader] BasaltSurge logged-out override: forcing /BasaltSurgeWideD.png");
           (t as any).brandLogoUrl = "/BasaltSurgeWideD.png";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 const ConnectButton = dynamic(() => import("thirdweb/react").then((m) => m.ConnectButton), { ssr: false });
 import { client, chain, getWallets } from "@/lib/thirdweb/client";
 import { usePortalThirdwebTheme, getConnectButtonStyle, connectButtonClass } from "@/lib/thirdweb/theme";
+import { useBrand } from "@/contexts/BrandContext";
 
 interface SignupWizardProps {
     isOpen: boolean;
@@ -143,11 +144,53 @@ const WIZARD_STEPS = [
     },
 ];
 
+// Generate wizard steps dynamically based on brand
+function getWizardSteps(brandName: string) {
+    return WIZARD_STEPS.map(step => {
+        if (step.id === "welcome") {
+            return {
+                ...step,
+                title: `Welcome to ${brandName}`,
+                content: (
+                    <div className="space-y-4">
+                        <p className="text-sm text-gray-300 leading-relaxed">
+                            {brandName} is a <span className="text-emerald-400 font-semibold">trustless, permissionless</span> payment infrastructure
+                            that enables businesses to accept cryptocurrency and card payments with instant settlement.
+                        </p>
+                        <div className="grid grid-cols-3 gap-2 mt-6">
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                                <div className="text-xl mb-1">⚡</div>
+                                <div className="text-[10px] font-mono text-gray-400 uppercase">Instant</div>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                                <div className="text-xl mb-1">🔒</div>
+                                <div className="text-[10px] font-mono text-gray-400 uppercase">Secure</div>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                                <div className="text-xl mb-1">💎</div>
+                                <div className="text-[10px] font-mono text-gray-400 uppercase">Trustless</div>
+                            </div>
+                        </div>
+                    </div>
+                ),
+            };
+        }
+        return step;
+    });
+}
 
 export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps) {
     const [currentStep, setCurrentStep] = useState(0);
     const [wallets, setWallets] = useState<any[]>([]);
     const twTheme = usePortalThirdwebTheme();
+    const brand = useBrand();
+
+    // Get brand-specific values
+    const brandName = (brand as any)?.name || "BasaltSurge";
+    const brandLogo = (brand as any)?.logos?.symbol || (brand as any)?.logos?.app || "/Surge.png";
+
+    // Generate wizard steps with dynamic brand name
+    const wizardSteps = useMemo(() => getWizardSteps(brandName), [brandName]);
 
     useEffect(() => {
         let mounted = true;
@@ -179,12 +222,12 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
         }
     }, [isOpen]);
 
-    const step = WIZARD_STEPS[currentStep];
-    const isLastStep = currentStep === WIZARD_STEPS.length - 1;
+    const step = wizardSteps[currentStep];
+    const isLastStep = currentStep === wizardSteps.length - 1;
     const isFirstStep = currentStep === 0;
 
     const handleNext = () => {
-        if (currentStep < WIZARD_STEPS.length - 1) {
+        if (currentStep < wizardSteps.length - 1) {
             setCurrentStep(currentStep + 1);
         }
     };
