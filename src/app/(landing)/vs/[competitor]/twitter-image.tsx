@@ -105,19 +105,21 @@ export default async function Image({ params }: { params: Promise<{ competitor: 
         primaryColor: colors[0],
         leftWing: (
             <>
-                <div style={{ fontSize: 32, color: 'rgba(255,255,255,0.8)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 20 }}>COMPARING</div>
-                <div style={{ fontSize: 72, color: 'white', fontWeight: 800, textAlign: 'right', lineHeight: 1.1, textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-                    BASALT<br />VS<br />{name.toUpperCase()}
+                <div style={{ display: 'flex', fontSize: 32, color: 'rgba(255,255,255,0.8)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 20 }}>COMPARING</div>
+                <div style={{ display: 'flex', flexDirection: 'column', fontSize: 72, color: 'white', fontWeight: 800, textAlign: 'right', lineHeight: 1.1, textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                    <span>BASALT</span>
+                    <span>VS</span>
+                    <span>{name.toUpperCase()}</span>
                 </div>
             </>
         ),
         rightWing: (
             <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                    <div style={{ fontSize: 24, color: 'rgba(255,255,255,0.7)' }}>SAVES YOU</div>
-                    <div style={{ fontSize: 64, color: '#22c55e', fontWeight: 800 }}>70% LESS</div>
-                    <div style={{ fontSize: 32, color: 'white', fontWeight: 600 }}>Fees start at 0.5%</div>
-                    <div style={{ fontSize: 24, color: 'rgba(255,255,255,0.6)', marginTop: 10 }}>vs {getFees()}</div>
+                    <div style={{ display: 'flex', fontSize: 24, color: 'rgba(255,255,255,0.7)' }}>SAVES YOU</div>
+                    <div style={{ display: 'flex', fontSize: 64, color: '#22c55e', fontWeight: 800 }}>70% LESS</div>
+                    <div style={{ display: 'flex', fontSize: 32, color: 'white', fontWeight: 600 }}>Fees start at 0.5%</div>
+                    <div style={{ display: 'flex', fontSize: 24, color: 'rgba(255,255,255,0.6)', marginTop: 10 }}>{`vs ${getFees()}`}</div>
                 </div>
             </>
         )

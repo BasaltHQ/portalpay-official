@@ -225,13 +225,18 @@ export async function loadBrandOGAssets(): Promise<{
         shield = await loadPublicImageBuffer('Shield.png');
     }
 
-    const toBase64 = (buf: Buffer | null) => buf ? `data:image/png;base64,${buf.toString('base64')}` : '';
+    const toBase64 = (buf: Buffer | null) => buf && buf.length > 0 ? `data:image/png;base64,${buf.toString('base64')}` : '';
     const resize = async (buf: Buffer | null, w: number, h?: number, fit: 'contain' | 'cover' = 'contain') => {
         if (!buf) return null;
-        return await sharp(buf)
-            .resize(w, h, { fit, background: { r: 0, g: 0, b: 0, alpha: 0 } })
-            .png()
-            .toBuffer();
+        try {
+            return await sharp(buf)
+                .resize(w, h, { fit, background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                .png()
+                .toBuffer();
+        } catch (e) {
+            console.error('Resize error', e);
+            return null;
+        }
     };
 
     const bgResized = await resize(bg, 1200);

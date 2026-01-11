@@ -38,25 +38,25 @@ export default async function Image() {
         poweredByImage: logoBase64,
 
         leftWing: (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0 }}>
-                <div style={{ fontSize: 32, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 4 }}>{titleLine1}</div>
-                <div style={{ fontSize: 60, color: primaryColor, fontWeight: 800, letterSpacing: '0.05em', lineHeight: 1.1, textTransform: 'uppercase' }}>{titleLine2}</div>
-                <div style={{ fontSize: 32, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginTop: 4 }}>{titleLine3}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', gap: 0 }}>
+                <div style={{ display: 'flex', fontSize: 32, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 4 }}>{titleLine1}</div>
+                <div style={{ display: 'flex', fontSize: 60, color: primaryColor, fontWeight: 800, letterSpacing: '0.05em', lineHeight: 1.1, textTransform: 'uppercase' }}>{titleLine2}</div>
+                <div style={{ display: 'flex', fontSize: 32, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginTop: 4 }}>{titleLine3}</div>
             </div>
         ),
         rightWing: (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
-                <div style={{ fontSize: 42, color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', gap: 12 }}>
+                <div style={{ display: 'flex', fontSize: 42, color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
                     {tagline1}
                 </div>
-                <div style={{ fontSize: 42, color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
+                <div style={{ display: 'flex', fontSize: 42, color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
                     {tagline2}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 20 }}>
-                    <div style={{ width: 4, height: 40, background: primaryColor }} />
+                    <div style={{ display: 'flex', width: 4, height: 40, background: primaryColor }} />
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ fontSize: 20, color: primaryColor, fontWeight: 700, letterSpacing: '0.15em' }}>{isBasalt ? 'SANTA FE • NM' : 'POWERED BY WEB3'}</div>
-                        <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{isBasalt ? 'surge.basalthq.com' : (brand.appUrl?.replace(/^https?:\/\//, '') || 'WEB3 PAYMENTS')}</div>
+                        <div style={{ display: 'flex', fontSize: 20, color: primaryColor, fontWeight: 700, letterSpacing: '0.15em' }}>{isBasalt ? 'SANTA FE • NM' : 'POWERED BY WEB3'}</div>
+                        <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{isBasalt ? 'surge.basalthq.com' : (brand.appUrl?.replace(/^https?:\/\//, '') || 'WEB3 PAYMENTS')}</div>
                     </div>
                 </div>
             </div>

@@ -118,16 +118,16 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     leftWing: (
       <>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0 }}>
-          <div style={{ fontSize: 32, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 4 }}>NO-KYC CRYPTO SHOP</div>
-          <div style={{ fontSize: 60, color: '#35ff7c', fontWeight: 800, letterSpacing: '0.05em', lineHeight: 1.1, textTransform: 'uppercase', textAlign: 'right', wordBreak: 'break-word', maxWidth: '100%' }}>
+          <div style={{ display: 'flex', fontSize: 32, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 4 }}>NO-KYC CRYPTO SHOP</div>
+          <div style={{ display: 'flex', fontSize: 60, color: '#35ff7c', fontWeight: 800, letterSpacing: '0.05em', lineHeight: 1.1, textTransform: 'uppercase', textAlign: 'right', wordBreak: 'break-word', maxWidth: '100%' }}>
             {shopName.toUpperCase()}
           </div>
         </div>
         {reviewCount > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', marginTop: 16 }}>
-            <div style={{ fontSize: 32, color: '#fbbf24', marginRight: 10 }}>★</div>
-            <div style={{ fontSize: 32, color: 'white', fontWeight: 600 }}>{avgRating.toFixed(1)}</div>
-            <div style={{ fontSize: 24, color: 'rgba(255,255,255,0.6)', marginLeft: 10 }}>({reviewCount})</div>
+            <div style={{ display: 'flex', fontSize: 32, color: '#fbbf24', marginRight: 10 }}>★</div>
+            <div style={{ display: 'flex', fontSize: 32, color: 'white', fontWeight: 600 }}>{avgRating.toFixed(1)}</div>
+            <div style={{ display: 'flex', fontSize: 24, color: 'rgba(255,255,255,0.6)', marginLeft: 10 }}>({reviewCount})</div>
           </div>
         )}
       </>
@@ -136,18 +136,18 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       <>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {shopDescription ? (
-            <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', lineHeight: 1.4, maxHeight: 120, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', fontSize: 28, color: 'rgba(255,255,255,0.9)', lineHeight: 1.4, maxHeight: 120, overflow: 'hidden' }}>
               {shopDescription.length > 80 ? shopDescription.slice(0, 80) + '...' : shopDescription}
             </div>
           ) : (
-            <div style={{ fontSize: 36, color: 'white', fontWeight: 600 }}>Verified Merchant</div>
+            <div style={{ display: 'flex', fontSize: 36, color: 'white', fontWeight: 600 }}>Verified Merchant</div>
           )}
 
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: primaryColor, padding: '16px 40px', borderRadius: 12, marginTop: 20
           }}>
-            <div style={{ fontSize: 32, color: 'white', fontWeight: 700 }}>SHOP NOW</div>
+            <div style={{ display: 'flex', fontSize: 32, color: 'white', fontWeight: 700 }}>SHOP NOW</div>
           </div>
         </div>
       </>
