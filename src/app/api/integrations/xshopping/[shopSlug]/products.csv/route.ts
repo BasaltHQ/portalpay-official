@@ -58,7 +58,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ shop
         // 2. Fetch Inventory Items for this Wallet
         const { resources: items } = await container.items
             .query({
-                query: "SELECT * FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet AND (c.approvalStatus != 'ARCHIVED' OR NOT IS_DEFINED(c.approvalStatus))",
+                query: "SELECT * FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet AND ((NOT IS_DEFINED(c.attributes) OR c.attributes.type != 'publishing') OR (c.attributes.type = 'publishing' AND (c.approvalStatus != 'ARCHIVED' OR NOT IS_DEFINED(c.approvalStatus))))",
                 parameters: [{ name: "@wallet", value: wallet }]
             })
             .fetchAll();
@@ -142,10 +142,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ shop
 
                 // Link: Valid HTTPS URL
                 let link = "";
+                // Use untruncated ID for the link to ensure deep linking works
+                const rawId = String(item.id || "").trim();
+                const encodedId = encodeURIComponent(rawId);
+
                 if (shop.customDomain && shop.customDomainVerified) {
-                    link = `https://${shop.customDomain}/product/${itemId}`;
+                    link = `https://${shop.customDomain}/product/${encodedId}`;
                 } else {
-                    link = `${baseUrl}/shop/${effectiveSlug}/product/${itemId}`;
+                    link = `${baseUrl}/shop/${effectiveSlug}/product/${encodedId}`;
                 }
 
                 // Image Link
@@ -156,7 +160,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ shop
                     imageLink = item.images[0];
                 } else {
                     const platformUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pay.ledger1.ai";
-                    imageLink = `${platformUrl}/api/integrations/xshopping/${effectiveSlug}/product-images/default?id=${itemId}`;
+                    imageLink = `${platformUrl}/api/integrations/xshopping/${effectiveSlug}/product-images/default?id=${encodedId}`;
                 }
 
                 return [

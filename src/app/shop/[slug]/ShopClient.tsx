@@ -1692,14 +1692,16 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
 
                         return (
                             <div key={`${it.id}-${idx}`} className="flex items-center gap-2 rounded-md border p-2 bg-background/50">
-                                <Thumbnail
-                                    src={Array.isArray(it.images) && it.images.length ? it.images[0] : undefined}
-                                    fill
-                                    itemId={it.id}
-                                    primaryColor={cfg?.theme?.primaryColor}
-                                    secondaryColor={cfg?.theme?.secondaryColor}
-                                    logoUrl={cfg?.theme?.brandLogoUrl}
-                                />
+                                <div className="w-14 h-14 rounded-md overflow-hidden flex-shrink-0">
+                                    <Thumbnail
+                                        src={Array.isArray(it.images) && it.images.length ? it.images[0] : undefined}
+                                        fill
+                                        itemId={it.id}
+                                        primaryColor={cfg?.theme?.primaryColor}
+                                        secondaryColor={cfg?.theme?.secondaryColor}
+                                        logoUrl={cfg?.theme?.brandLogoUrl}
+                                    />
+                                </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="text-sm font-semibold truncate">{it.name}</div>
                                     <div className="text-xs text-muted-foreground">
