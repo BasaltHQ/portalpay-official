@@ -104,8 +104,8 @@ function getDefaultTemplates(brandName: string): Record<PageCategory, Record<str
 
 export function SEOLandingPagesPanel() {
   const brand = useBrand();
-  const isPartnerContainer = brand.key.toLowerCase() !== 'portalpay';
-  
+  const isPartnerContainer = brand.key.toLowerCase() !== 'portalpay' && brand.key.toLowerCase() !== 'basaltsurge';
+
   const [viewMode, setViewMode] = useState<ViewMode>('pages');
   const [activeCategory, setActiveCategory] = useState<PageCategory>('industries');
   const [searchQuery, setSearchQuery] = useState('');
@@ -118,20 +118,20 @@ export function SEOLandingPagesPanel() {
   const [error, setError] = useState('');
   const [pageStatuses, setPageStatuses] = useState<Record<string, PageStatus>>({});
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
-  
+
   // Initialize templates with brand name
   const defaultTemplates = useMemo(() => getDefaultTemplates(brand.name), [brand.name]);
   const [templates, setTemplates] = useState<Record<PageCategory, Record<string, string>>>(defaultTemplates);
   const [editingTemplate, setEditingTemplate] = useState<{ category: PageCategory; key: string } | null>(null);
   const [templateEditValue, setTemplateEditValue] = useState('');
-  
+
   // Loading and persistence state
   const [loading, setLoading] = useState(true);
   const [persistError, setPersistError] = useState('');
   const [lastSaved, setLastSaved] = useState<number | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const initialLoadDone = useRef(false);
-  
+
   // Ref to track modal and trigger element position
   const modalRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -139,31 +139,31 @@ export function SEOLandingPagesPanel() {
   // Load settings from API on mount
   useEffect(() => {
     let cancelled = false;
-    
+
     async function loadSettings() {
       try {
         setLoading(true);
         setPersistError('');
-        
+
         const res = await fetch('/api/admin/seo-pages', {
           cache: 'no-store',
           headers: { 'Content-Type': 'application/json' },
         });
-        
+
         if (!res.ok) {
           throw new Error(`Failed to load settings: ${res.status}`);
         }
-        
+
         const data = await res.json();
-        
+
         if (cancelled) return;
-        
+
         if (data.ok && data.settings) {
           // Load page statuses
           if (data.settings.pageStatuses && typeof data.settings.pageStatuses === 'object') {
             setPageStatuses(data.settings.pageStatuses);
           }
-          
+
           // Load templates - merge with defaults
           if (data.settings.templates && typeof data.settings.templates === 'object') {
             const loadedTemplates = data.settings.templates;
@@ -173,12 +173,12 @@ export function SEOLandingPagesPanel() {
               locations: { ...prev.locations, ...loadedTemplates.locations },
             }));
           }
-          
+
           console.log('[SEOPages] Loaded settings for brand:', data.brandKey, {
             pageStatusCount: Object.keys(data.settings.pageStatuses || {}).length,
           });
         }
-        
+
         initialLoadDone.current = true;
       } catch (err: any) {
         console.error('[SEOPages] Failed to load settings:', err);
@@ -192,9 +192,9 @@ export function SEOLandingPagesPanel() {
         }
       }
     }
-    
+
     loadSettings();
-    
+
     return () => {
       cancelled = true;
     };
@@ -204,7 +204,7 @@ export function SEOLandingPagesPanel() {
   const saveSettings = useCallback(async (statuses: Record<string, PageStatus>, tmpls: Record<PageCategory, Record<string, string>>) => {
     try {
       setPersistError('');
-      
+
       const res = await fetch('/api/admin/seo-pages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -213,12 +213,12 @@ export function SEOLandingPagesPanel() {
           templates: tmpls,
         }),
       });
-      
+
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `Save failed: ${res.status}`);
       }
-      
+
       const data = await res.json();
       if (data.ok) {
         setLastSaved(Date.now());
@@ -233,15 +233,15 @@ export function SEOLandingPagesPanel() {
   // Debounced save when pageStatuses change
   useEffect(() => {
     if (!initialLoadDone.current) return;
-    
+
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
-    
+
     saveTimeoutRef.current = setTimeout(() => {
       saveSettings(pageStatuses, templates);
     }, 1000); // 1 second debounce
-    
+
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -335,9 +335,9 @@ export function SEOLandingPagesPanel() {
       if (page.category !== activeCategory) return false;
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        if (!page.title.toLowerCase().includes(query) && 
-            !page.slug.toLowerCase().includes(query) && 
-            !page.metaDescription.toLowerCase().includes(query)) return false;
+        if (!page.title.toLowerCase().includes(query) &&
+          !page.slug.toLowerCase().includes(query) &&
+          !page.metaDescription.toLowerCase().includes(query)) return false;
       }
       if (statusFilter !== 'all') {
         const isEnabled = pageStatuses[page.id]?.enabled ?? true;
@@ -362,7 +362,7 @@ export function SEOLandingPagesPanel() {
       comparisons: false,
       locations: false,
     };
-    
+
     (['industries', 'comparisons', 'locations'] as PageCategory[]).forEach((category) => {
       const pagesInCategory = allPages.filter((p) => p.category === category);
       if (pagesInCategory.length === 0) {
@@ -372,7 +372,7 @@ export function SEOLandingPagesPanel() {
         result[category] = pagesInCategory.every((p) => pageStatuses[p.id]?.enabled === false);
       }
     });
-    
+
     return result;
   }, [allPages, pageStatuses]);
 
@@ -661,7 +661,7 @@ export function SEOLandingPagesPanel() {
       {!loading && isPartnerContainer && (
         <div className="rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-3">
           <p className="text-sm text-amber-800 dark:text-amber-200">
-            <strong>Partner Container:</strong> Content is customized for <strong>{brand.name}</strong> (brand key: {brand.key}). 
+            <strong>Partner Container:</strong> Content is customized for <strong>{brand.name}</strong> (brand key: {brand.key}).
             All templates and page content will use your brand name instead of PortalPay.
           </p>
         </div>
@@ -669,24 +669,22 @@ export function SEOLandingPagesPanel() {
 
       {/* View Mode Toggle */}
       {!loading && (
-      <div className="flex gap-2 p-1 bg-muted/30 rounded-lg w-fit">
-        <button
-          onClick={() => setViewMode('pages')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            viewMode === 'pages' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <FileText className="h-4 w-4" />Pages
-        </button>
-        <button
-          onClick={() => setViewMode('templates')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            viewMode === 'templates' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Layout className="h-4 w-4" />Base Templates
-        </button>
-      </div>
+        <div className="flex gap-2 p-1 bg-muted/30 rounded-lg w-fit">
+          <button
+            onClick={() => setViewMode('pages')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'pages' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+          >
+            <FileText className="h-4 w-4" />Pages
+          </button>
+          <button
+            onClick={() => setViewMode('templates')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'templates' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+          >
+            <Layout className="h-4 w-4" />Base Templates
+          </button>
+        </div>
       )}
 
       {!loading && info && <div className="microtext text-green-600 dark:text-green-400">{info}</div>}
@@ -694,36 +692,34 @@ export function SEOLandingPagesPanel() {
 
       {/* Category Tabs - always show all tabs in admin panel */}
       {!loading && (
-      <div className="flex gap-2 border-b border-border">
-        {(['industries', 'comparisons', 'locations'] as PageCategory[]).map((category) => {
-          const isAllDisabled = categoryAllDisabled[category];
-          
-          return (
-            <button
-              key={category}
-              onClick={() => setActiveCategory(category)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeCategory === category
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {getCategoryIcon(category)}
-              <span className="capitalize">{category}</span>
-              <span className={`px-2 py-0.5 rounded-full text-xs ${
-                activeCategory === category ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-              }`}>
-                {categoryCounts[category]}
-              </span>
-              {isAllDisabled && (
-                <span className="px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">
-                  Hidden
+        <div className="flex gap-2 border-b border-border">
+          {(['industries', 'comparisons', 'locations'] as PageCategory[]).map((category) => {
+            const isAllDisabled = categoryAllDisabled[category];
+
+            return (
+              <button
+                key={category}
+                onClick={() => setActiveCategory(category)}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeCategory === category
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+              >
+                {getCategoryIcon(category)}
+                <span className="capitalize">{category}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs ${activeCategory === category ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                  }`}>
+                  {categoryCounts[category]}
                 </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+                {isAllDisabled && (
+                  <span className="px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                    Hidden
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       )}
 
       {!loading && viewMode === 'templates' ? (
@@ -973,14 +969,14 @@ export function SEOLandingPagesPanel() {
       {editingPage && (
         <>
           {/* Backdrop - covers entire viewport */}
-          <div 
+          <div
             className="fixed inset-0 z-[60] bg-black/50"
             onClick={closeEditModal}
             aria-hidden="true"
           />
-          
+
           {/* Modal container - positioned below admin nav */}
-          <div 
+          <div
             ref={modalRef}
             className="fixed z-[61] left-1/2 -translate-x-1/2 top-[170px] md:top-[160px] w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-2xl"
             role="dialog"
@@ -995,15 +991,15 @@ export function SEOLandingPagesPanel() {
                   <span className="sm:hidden">Edit: </span>
                   {editingPage.title}
                 </h3>
-                <button 
-                  onClick={closeEditModal} 
+                <button
+                  onClick={closeEditModal}
                   className="p-1.5 rounded-md hover:bg-muted flex-shrink-0"
                   aria-label="Close modal"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              
+
               {/* Content - scrollable */}
               <div className="p-3 sm:p-4 overflow-y-auto flex-1">
                 <div className="space-y-3 sm:space-y-4">
@@ -1015,18 +1011,18 @@ export function SEOLandingPagesPanel() {
                   })}
                 </div>
               </div>
-              
+
               {/* Footer */}
               <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 p-3 sm:p-4 border-t border-border flex-shrink-0">
-                <button 
-                  onClick={closeEditModal} 
+                <button
+                  onClick={closeEditModal}
                   className="px-4 py-2.5 sm:py-2 rounded-md border text-sm w-full sm:w-auto"
                 >
                   Cancel
                 </button>
-                <button 
-                  onClick={savePageEdits} 
-                  disabled={saving} 
+                <button
+                  onClick={savePageEdits}
+                  disabled={saving}
                   className="px-4 py-2.5 sm:py-2 rounded-md bg-primary text-primary-foreground text-sm w-full sm:w-auto disabled:opacity-50"
                 >
                   {saving ? 'Saving...' : 'Save Changes'}

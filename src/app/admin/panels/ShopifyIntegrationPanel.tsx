@@ -18,8 +18,8 @@ export default function ShopifyIntegrationPanel() {
   const account = useActiveAccount();
 
   // Brand selection
-  const [brandKey, setBrandKey] = React.useState<string>("portalpay");
-  const [brandsList, setBrandsList] = React.useState<string[]>(["portalpay"]);
+  const [brandKey, setBrandKey] = React.useState<string>("basaltsurge");
+  const [brandsList, setBrandsList] = React.useState<string[]>(["basaltsurge"]);
 
   // Global state
   const [loading, setLoading] = React.useState(false);
@@ -904,7 +904,7 @@ export default function ShopifyIntegrationPanel() {
         const r = await fetch("/api/platform/brands", { cache: "no-store" });
         const j = await r.json().catch(() => ({}));
         const arr = Array.isArray(j?.brands) ? j.brands.map((b: any) => String(b || '').toLowerCase()).filter(Boolean) : [];
-        const merged = Array.from(new Set(["portalpay", ...arr]));
+        const merged = Array.from(new Set(["basaltsurge", ...arr]));
         setBrandsList(merged);
       } catch { /* no-op */ }
     })();

@@ -85,7 +85,7 @@ export default function PartnerManagementPanel() {
   async function persistBrandBeforeProvision(): Promise<boolean> {
     try {
       const key = String(brandKey || "").toLowerCase();
-      if (!key || key === "portalpay") return false;
+      if (!key || key === "portalpay" || key === "basaltsurge") return false;
       const body: any = {};
       if (config?.appUrl) body.appUrl = String(config.appUrl);
       if (typeof config?.partnerFeeBps === "number") {
@@ -222,7 +222,7 @@ export default function PartnerManagementPanel() {
 
       // Load brand config snapshot (avoid main 'portalpay' in this panel)
       const key = String(brandKey || "").toLowerCase();
-      if (!key || key === "portalpay") {
+      if (!key || key === "portalpay" || key === "basaltsurge") {
         setConfig(null);
         setUsers([]);
         setLoading(false);
@@ -352,7 +352,7 @@ export default function PartnerManagementPanel() {
     load();
     (async () => {
       const k = String(brandKey || "").toLowerCase();
-      if (!k || k === "portalpay") {
+      if (!k || k === "portalpay" || k === "basaltsurge") {
         setVersions([]);
         setVersionMap({});
         return;
@@ -371,13 +371,13 @@ export default function PartnerManagementPanel() {
 
         const partnersOnly = arr
           .map((k: any) => String(k || "").toLowerCase())
-          .filter((k: string) => k && k !== "portalpay");
+          .filter((k: string) => k && k !== "portalpay" && k !== "basaltsurge");
 
         // If no partner brands exist, show empty-state (brandsList empty)
         setBrandsList(partnersOnly);
 
         // If current selection is portalpay, pick first partner brand if available
-        if (String(brandKey).toLowerCase() === "portalpay" && partnersOnly.length > 0) {
+        if ((String(brandKey).toLowerCase() === "portalpay" || String(brandKey).toLowerCase() === "basaltsurge") && partnersOnly.length > 0) {
           setBrandKey(partnersOnly[0]);
         }
       } catch {
@@ -389,7 +389,7 @@ export default function PartnerManagementPanel() {
   // Autopopulate deployment fields and Azure params when brand changes (sane defaults + brand-based name)
   useEffect(() => {
     const key = String(brandKey || "").toLowerCase();
-    if (!key || key === "portalpay") return;
+    if (!key || key === "portalpay" || key === "basaltsurge") return;
     setProvName((prev) => prev || `pp-${key}`);
     setProvResourceGroup((prev) => prev || "rg-portalpay");
     setAzureResourceGroup((prev) => prev || "rg-portalpay-prod");
@@ -403,7 +403,7 @@ export default function PartnerManagementPanel() {
   // Load last successful deployment params for this brand (prefill from DB)
   useEffect(() => {
     const key = String(brandKey || "").toLowerCase();
-    if (!key || key === "portalpay") return;
+    if (!key || key === "portalpay" || key === "basaltsurge") return;
     (async () => {
       try {
         const resp = await fetch(`/api/platform/brands/${encodeURIComponent(key)}/deploy-params`, {
@@ -440,7 +440,7 @@ export default function PartnerManagementPanel() {
       setProvError("");
       setInfo("");
       const key = String(brandKey || "").toLowerCase();
-      if (!key || key === "portalpay") {
+      if (!key || key === "portalpay" || key === "basaltsurge") {
         setProvError("Select a partner brand to provision a container");
         setProvLoading(false);
         return;
@@ -570,7 +570,7 @@ export default function PartnerManagementPanel() {
       setDeployProgress([]);
 
       const key = String(brandKey || "").toLowerCase();
-      if (!key || key === "portalpay") {
+      if (!key || key === "portalpay" || key === "basaltsurge") {
         setDeployError("Select a partner brand to deploy");
         setDeployLoading(false);
         return;
@@ -727,7 +727,7 @@ export default function PartnerManagementPanel() {
       setInfo("");
 
       const key = String(brandKey || "").toLowerCase();
-      if (!key || key === "portalpay") {
+      if (!key || key === "portalpay" || key === "basaltsurge") {
         setRetryError("Select a partner brand to retry AFD");
         setRetryLoading(false);
         return;
@@ -763,7 +763,7 @@ export default function PartnerManagementPanel() {
       setError("");
       setInfo("");
       const key = String(brandKey || "").toLowerCase();
-      if (!key || key === "portalpay") {
+      if (!key || key === "portalpay" || key === "basaltsurge") {
         setError("Select a partner brand to save settings");
         return;
       }
@@ -886,7 +886,7 @@ export default function PartnerManagementPanel() {
 
   // Derived helpers for empty-state
   const hasPartnerBrands = brandsList.length > 0;
-  const isPortalPaySelected = String(brandKey || "").toLowerCase() === "portalpay";
+  const isPortalPaySelected = String(brandKey || "").toLowerCase() === "portalpay" || String(brandKey || "").toLowerCase() === "basaltsurge";
 
   // Fetch balances for a merchant (brand-scoped by wallet)
   // knownSplitAddress: pass the split address from the row data to bypass lookup and use the correct partner-brand split
@@ -1438,7 +1438,7 @@ export default function PartnerManagementPanel() {
               onClick={async () => {
                 try {
                   const key = String(brandKey || "").toLowerCase();
-                  if (!key || key === "portalpay") {
+                  if (!key || key === "portalpay" || key === "basaltsurge") {
                     setError("Select a partner brand to remove");
                     return;
                   }
@@ -1461,7 +1461,7 @@ export default function PartnerManagementPanel() {
                 }
               }}
               title="Remove selected partner brand"
-              disabled={!brandKey || brandKey.toLowerCase() === "portalpay"}
+              disabled={!brandKey || brandKey.toLowerCase() === "portalpay" || brandKey.toLowerCase() === "basaltsurge"}
             >
               Remove
             </button>
@@ -2056,7 +2056,7 @@ export default function PartnerManagementPanel() {
                   className="px-3 py-1.5 rounded-md border text-sm"
                   onClick={() => {
                     const k = String(brandKey || "").toLowerCase();
-                    if (!k || k === "portalpay") { setVersions([]); setVersionMap({}); return; }
+                    if (!k || k === "portalpay" || k === "basaltsurge") { setVersions([]); setVersionMap({}); return; }
                     loadVersionsForBrand(k);
                   }}
                   disabled={versionsLoading}

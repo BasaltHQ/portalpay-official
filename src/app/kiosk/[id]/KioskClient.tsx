@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
-import { X, Search, ShoppingCart, Trash2, Plus, Minus, Tag, RotateCcw, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { X, Search, ShoppingCart, Trash2, Plus, Minus, Tag, RotateCcw, ChevronLeft, ChevronRight, Sparkles, Ticket, Percent } from "lucide-react";
 import { InventoryItem } from "@/types/inventory";
 import { ShopConfig } from "@/app/shop/[slug]/ShopClient";
 
@@ -74,6 +74,94 @@ function MeshGradientPlaceholder({
 }
 
 // ============================================================
+// DISCOUNT UI HELPERS (matches shop page implementation)
+// ============================================================
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+    const h = hex.trim().replace(/^#/, "");
+    const full = h.length === 3 ? h.split("").map((ch) => ch + ch).join("") : h;
+    if (!/^[0-9a-fA-F]{6}$/.test(full)) return null;
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+    return { r, g, b };
+}
+
+function relativeLuminance(rgb: { r: number; g: number; b: number }): number {
+    const srgb = [rgb.r, rgb.g, rgb.b].map((v) => v / 255);
+    const lin = srgb.map((c) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)));
+    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+}
+
+function contrastTextFor(bg: string, fallback = "#ffffff"): string {
+    const rgb = hexToRgb(bg);
+    if (!rgb) return fallback;
+    const L = relativeLuminance(rgb);
+    return L > 0.5 ? "#000000" : "#ffffff";
+}
+
+function toHslaTint(hsl: string, alpha = 0.08): string {
+    const s = String(hsl || "").trim();
+    if (!s.startsWith("hsl(")) return s;
+    return s.replace(/^hsl\(/, "hsla(").replace(/\)$/, `,${alpha})`);
+}
+
+function formatDiscountText(d: { type: string; value: number }): string {
+    if (d.type === 'percentage') return `${d.value}% OFF`;
+    if (d.type === 'fixed_amount') return `$${d.value} OFF`;
+    if (d.type === 'buy_x_get_y') return `Buy ${Math.floor(d.value)} Get 1 Free`;
+    return 'SALE';
+}
+
+function formatDiscountRequirement(d: { minRequirement: string; minRequirementValue: number }): string | null {
+    if (d.minRequirement === 'amount' && d.minRequirementValue > 0) {
+        return `Min $${d.minRequirementValue} order`;
+    }
+    if (d.minRequirement === 'quantity' && d.minRequirementValue > 0) {
+        return `Min ${d.minRequirementValue} items`;
+    }
+    return null;
+}
+
+function DiscountBanner({ discount, compact = false, primaryColor, secondaryColor }: { discount: { type: string; value: number; title?: string; minRequirement: string; minRequirementValue: number }; compact?: boolean; primaryColor?: string; secondaryColor?: string }) {
+    const text = formatDiscountText(discount);
+    const requirement = formatDiscountRequirement(discount);
+    const bgStyle = primaryColor ? {
+        background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor || primaryColor} 100%)`
+    } : {
+        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+    };
+
+    return (
+        <div
+            className={`absolute top-0 left-0 right-0 z-10 ${compact ? 'px-2 py-1' : 'px-3 py-1.5'} overflow-hidden shadow-sm`}
+            style={bgStyle}
+        >
+            <style>{`
+                @keyframes glint {
+                    0% { transform: translateX(-150%) skewX(-15deg); }
+                    20% { transform: translateX(150%) skewX(-15deg); }
+                    100% { transform: translateX(150%) skewX(-15deg); }
+                }
+            `}</style>
+            <div className="absolute inset-0 bg-white/20 skew-x-12" style={{ animation: 'glint 3s infinite' }} />
+            <div className="relative flex items-center justify-between gap-2 text-white">
+                <div className="flex items-center gap-1.5 min-w-0">
+                    <Sparkles className="w-3.5 h-3.5 fill-white/20 animate-pulse" />
+                    <span className={`font-bold truncate ${compact ? 'text-[10px]' : 'text-xs'}`}>
+                        {text}
+                    </span>
+                </div>
+                {requirement && (
+                    <span className={`${compact ? 'text-[8px] px-1' : 'text-[10px] px-1.5'} opacity-90 whitespace-nowrap font-medium bg-black/10 py-0.5 rounded`}>
+                        {requirement}
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ============================================================
 // KIOSK CLIENT
 // ============================================================
 export default function KioskClient({
@@ -96,6 +184,28 @@ export default function KioskClient({
     const categoryScrollRef = useRef<HTMLDivElement>(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
+
+    // Discount type (matches /api/shop/discounts)
+    type Discount = {
+        id: string;
+        title: string;
+        code?: string;
+        type: 'percentage' | 'fixed_amount' | 'buy_x_get_y';
+        value: number;
+        appliesTo: 'all' | 'collection' | 'product';
+        appliesToIds: string[];
+        minRequirement: 'none' | 'amount' | 'quantity';
+        minRequirementValue: number;
+        status: 'active' | 'scheduled' | 'expired';
+    };
+
+    // Discounts & Coupons state
+    const [discounts, setDiscounts] = useState<Discount[]>([]);
+    const [coupons, setCoupons] = useState<Discount[]>([]);
+    const [appliedCoupon, setAppliedCoupon] = useState<Discount | null>(null);
+    const [couponCode, setCouponCode] = useState('');
+    const [couponError, setCouponError] = useState('');
+    const [discountsLoading, setDiscountsLoading] = useState(false);
 
     const categories = useMemo(() => {
         const cats = new Set<string>();
@@ -134,6 +244,113 @@ export default function KioskClient({
                 .finally(() => setLoading(false));
         }
     }, [items.length, merchantWallet]);
+
+    // Load discounts on mount
+    useEffect(() => {
+        loadDiscounts();
+    }, [merchantWallet, config.slug]);
+
+    const loadDiscounts = async () => {
+        setDiscountsLoading(true);
+        try {
+            const res = await fetch(`/api/shop/discounts?wallet=${encodeURIComponent(merchantWallet)}${config.slug ? `&slug=${encodeURIComponent(config.slug)}` : ''}`, { cache: 'no-store' });
+            const data = await res.json();
+            if (Array.isArray(data.discounts)) {
+                setDiscounts(data.discounts);
+            }
+            if (Array.isArray(data.coupons)) {
+                setCoupons(data.coupons);
+            }
+        } catch (e) {
+            console.error("Failed to load discounts", e);
+        } finally {
+            setDiscountsLoading(false);
+        }
+    };
+
+    // Get applicable discount for an item
+    const getItemDiscount = useCallback((item: InventoryItem): Discount | null => {
+        if (!discounts.length) return null;
+        for (const d of discounts) {
+            if (d.appliesTo === 'all') return d;
+            if (d.appliesTo === 'collection' && item.category && Array.isArray(d.appliesToIds)) {
+                const itemCat = item.category.trim().toLowerCase();
+                const match = d.appliesToIds.some(id => id.trim().toLowerCase() === itemCat);
+                if (match) return d;
+            }
+            if (d.appliesTo === 'product' && Array.isArray(d.appliesToIds) && d.appliesToIds.includes(item.id)) {
+                return d;
+            }
+        }
+        return null;
+    }, [discounts]);
+
+    // Apply coupon code
+    const applyCouponCode = useCallback((code: string) => {
+        setCouponError('');
+        const found = coupons.find(c => c.code?.toUpperCase() === code.toUpperCase());
+        if (!found) {
+            setCouponError('Invalid coupon code');
+            return false;
+        }
+        setAppliedCoupon(found);
+        return true;
+    }, [coupons]);
+
+    // Calculate discount amount for cart total (coupon-based)
+    const calculateCouponDiscount = useCallback((baseTotal: number, totalQty: number = 0): number => {
+        if (!appliedCoupon) return 0;
+
+        // Check requirement
+        let met = false;
+        if (appliedCoupon.minRequirement === 'none') {
+            met = true;
+        } else if (appliedCoupon.minRequirement === 'quantity') {
+            met = totalQty >= (appliedCoupon.minRequirementValue || 0);
+        } else if (appliedCoupon.minRequirement === 'amount') {
+            met = baseTotal >= (appliedCoupon.minRequirementValue || 0);
+        }
+
+        if (!met) return 0;
+
+        if (appliedCoupon.type === 'percentage') {
+            return baseTotal * (appliedCoupon.value / 100);
+        } else if (appliedCoupon.type === 'fixed_amount') {
+            return Math.min(appliedCoupon.value, baseTotal);
+        }
+        return 0;
+    }, [appliedCoupon]);
+
+    // Calculate discounted price for an individual item
+    const calculateItemDiscountedPrice = useCallback((item: InventoryItem, basePrice: number, qty: number = 1, cartSubtotal: number = 0, cartQty: number = 0): { discountedPrice: number; discount: Discount | null; savings: number; met: boolean } => {
+        const discount = getItemDiscount(item);
+        if (!discount) return { discountedPrice: basePrice, discount: null, savings: 0, met: false };
+
+        // Check requirement
+        let met = false;
+        if (discount.minRequirement === 'none') {
+            met = true;
+        } else if (discount.minRequirement === 'quantity') {
+            // If it applies to all, check total cart quantity, otherwise check line quantity
+            const checkQty = discount.appliesTo === 'all' ? (cartQty || qty) : qty;
+            met = checkQty >= discount.minRequirementValue;
+        } else if (discount.minRequirement === 'amount') {
+            // If it applies to all, check cart subtotal, otherwise check line amount
+            const checkAmount = discount.appliesTo === 'all' ? (cartSubtotal || (basePrice * qty)) : (basePrice * qty);
+            met = checkAmount >= discount.minRequirementValue;
+        }
+
+        if (!met) return { discountedPrice: basePrice, discount, savings: 0, met: false };
+
+        let discountedPrice = basePrice;
+        if (discount.type === 'percentage') {
+            discountedPrice = basePrice * (1 - discount.value / 100);
+        } else if (discount.type === 'fixed_amount') {
+            discountedPrice = Math.max(0, basePrice - discount.value);
+        }
+        const savings = basePrice - discountedPrice;
+        return { discountedPrice, discount, savings, met: true };
+    }, [getItemDiscount]);
 
     useEffect(() => {
         const root = document.documentElement;
@@ -237,9 +454,45 @@ export default function KioskClient({
         setQrValue("");
         setSearchQuery("");
         setSelectedCategory(null);
+        setAppliedCoupon(null);
+        setCouponCode('');
+        setCouponError('');
     };
 
-    const total = useMemo(() => cart.reduce((acc, line) => acc + (line.item.priceUsd || 0) * line.qty, 0), [cart]);
+    // Calculate totals with discounts
+    const cartTotals = useMemo(() => {
+        let rawSubtotal = 0;
+        let itemSavings = 0;
+        const totalQty = cart.reduce((acc, line) => acc + line.qty, 0);
+
+        // First pass: Calculate raw subtotal from base prices
+        cart.forEach(line => {
+            rawSubtotal += (line.item.priceUsd || 0) * line.qty;
+        });
+
+        // Second pass: Calculate savings with requirement context
+        cart.forEach(line => {
+            const { savings } = calculateItemDiscountedPrice(
+                line.item,
+                line.item.priceUsd || 0,
+                line.qty,
+                rawSubtotal,
+                totalQty
+            );
+            itemSavings += savings * line.qty;
+        });
+
+        const subtotal = rawSubtotal - itemSavings;
+        const couponSavings = calculateCouponDiscount(subtotal, totalQty);
+        const total = subtotal - couponSavings;
+        const totalSavings = itemSavings + couponSavings;
+
+        return { subtotal: rawSubtotal, itemSavings, couponSavings, total, totalSavings };
+    }, [cart, calculateItemDiscountedPrice, calculateCouponDiscount]);
+
+    const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+    const pfmt = (n: number) => `${n.toFixed(0)}%`;
+
     const cartCount = useMemo(() => cart.reduce((acc, line) => acc + line.qty, 0), [cart]);
 
     const handleCheckout = async () => {
@@ -248,7 +501,11 @@ export default function KioskClient({
             const res = await fetch("/api/orders", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "x-wallet": merchantWallet },
-                body: JSON.stringify({ items: cart.map(c => ({ id: c.id, qty: c.qty })) })
+                body: JSON.stringify({
+                    items: cart.map(c => ({ id: c.id, qty: c.qty })),
+                    couponCode: appliedCoupon?.code,
+                    appliedCoupon: appliedCoupon ? { id: appliedCoupon.id, code: appliedCoupon.code, title: appliedCoupon.title, type: appliedCoupon.type, value: appliedCoupon.value } : undefined
+                })
             });
             const data = await res.json();
             if (data.receiptId) {
@@ -258,8 +515,6 @@ export default function KioskClient({
             console.error("Checkout failed", e);
         }
     };
-
-    const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 
     // ========================
     // CHECKOUT SCREEN
@@ -291,7 +546,7 @@ export default function KioskClient({
                     </div>
                 </div>
 
-                <div className="text-5xl font-bold text-white font-mono relative z-10">{fmt(total)}</div>
+                <div className="text-5xl font-bold text-white font-mono relative z-10">{fmt(cartTotals.total)}</div>
                 <p className="text-white/70 max-w-md relative z-10">Open your mobile wallet app and scan the QR code to complete your purchase.</p>
 
                 <button onClick={reset} className="px-8 py-4 rounded-2xl border-2 border-white/30 text-white text-lg font-medium hover:bg-white/10 transition-all flex items-center gap-2 relative z-10">
@@ -516,6 +771,10 @@ export default function KioskClient({
                                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                                         {catItems.map(item => {
                                                             const inCart = cart.find(c => c.id === item.id);
+                                                            const itemDiscount = getItemDiscount(item);
+                                                            const basePrice = Number(item.priceUsd || 0);
+                                                            const { discountedPrice, savings } = calculateItemDiscountedPrice(item, basePrice);
+
                                                             return (
                                                                 <button
                                                                     key={item.id}
@@ -527,6 +786,14 @@ export default function KioskClient({
                                                                         backgroundColor: inCart ? color.bgLight : undefined
                                                                     }}
                                                                 >
+                                                                    {itemDiscount && (
+                                                                        <DiscountBanner
+                                                                            discount={itemDiscount}
+                                                                            compact={true}
+                                                                            primaryColor={config.theme?.primaryColor}
+                                                                            secondaryColor={config.theme?.secondaryColor}
+                                                                        />
+                                                                    )}
                                                                     <div className="aspect-square relative overflow-hidden">
                                                                         {item.images && item.images.length > 0 && item.images[0] ? (
                                                                             <img src={item.images[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={item.name} />
@@ -541,7 +808,7 @@ export default function KioskClient({
                                                                         )}
 
                                                                         {inCart && (
-                                                                            <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg" style={{ background: color.bg }}>
+                                                                            <div className="absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg z-20" style={{ background: color.bg }}>
                                                                                 {inCart.qty}
                                                                             </div>
                                                                         )}
@@ -556,9 +823,20 @@ export default function KioskClient({
                                                                     <div className="p-3 flex-1 flex flex-col">
                                                                         <h3 className="font-medium text-sm leading-tight line-clamp-2">{item.name}</h3>
                                                                         <div className="mt-auto pt-2">
-                                                                            <span className="text-lg font-bold" style={{ color: color.bg }}>
-                                                                                {fmt(item.priceUsd || 0)}
-                                                                            </span>
+                                                                            {savings > 0 ? (
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="text-[10px] text-muted-foreground line-through">
+                                                                                        {fmt(basePrice)}
+                                                                                    </span>
+                                                                                    <span className="text-lg font-bold text-green-600">
+                                                                                        {fmt(discountedPrice)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <span className="text-lg font-bold" style={{ color: color.bg }}>
+                                                                                    {fmt(basePrice)}
+                                                                                </span>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </button>
@@ -580,6 +858,10 @@ export default function KioskClient({
                                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                                     {uncategorized.map(item => {
                                                         const inCart = cart.find(c => c.id === item.id);
+                                                        const itemDiscount = getItemDiscount(item);
+                                                        const basePrice = Number(item.priceUsd || 0);
+                                                        const { discountedPrice, savings } = calculateItemDiscountedPrice(item, basePrice);
+
                                                         return (
                                                             <button
                                                                 key={item.id}
@@ -587,6 +869,14 @@ export default function KioskClient({
                                                                 className={`group relative bg-card border rounded-xl overflow-hidden text-left flex flex-col h-full shadow-sm transition-all active:scale-[0.98] ${inCart ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/30 hover:shadow-lg"
                                                                     }`}
                                                             >
+                                                                {itemDiscount && (
+                                                                    <DiscountBanner
+                                                                        discount={itemDiscount}
+                                                                        compact={true}
+                                                                        primaryColor={config.theme?.primaryColor}
+                                                                        secondaryColor={config.theme?.secondaryColor}
+                                                                    />
+                                                                )}
                                                                 <div className="aspect-square relative overflow-hidden">
                                                                     {item.images && item.images.length > 0 && item.images[0] ? (
                                                                         <img src={item.images[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={item.name} />
@@ -601,7 +891,7 @@ export default function KioskClient({
                                                                     )}
 
                                                                     {inCart && (
-                                                                        <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg" style={{ background: config.theme?.primaryColor || "#0ea5e9" }}>
+                                                                        <div className="absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg z-20" style={{ background: config.theme?.primaryColor || "#0ea5e9" }}>
                                                                             {inCart.qty}
                                                                         </div>
                                                                     )}
@@ -616,9 +906,20 @@ export default function KioskClient({
                                                                 <div className="p-3 flex-1 flex flex-col">
                                                                     <h3 className="font-medium text-sm leading-tight line-clamp-2">{item.name}</h3>
                                                                     <div className="mt-auto pt-2">
-                                                                        <span className="text-lg font-bold" style={{ color: config.theme?.primaryColor || "#0ea5e9" }}>
-                                                                            {fmt(item.priceUsd || 0)}
-                                                                        </span>
+                                                                        {savings > 0 ? (
+                                                                            <div className="flex flex-col">
+                                                                                <span className="text-[10px] text-muted-foreground line-through">
+                                                                                    {fmt(basePrice)}
+                                                                                </span>
+                                                                                <span className="text-lg font-bold text-green-600">
+                                                                                    {fmt(discountedPrice)}
+                                                                                </span>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <span className="text-lg font-bold" style={{ color: config.theme?.primaryColor || "#0ea5e9" }}>
+                                                                                {fmt(basePrice)}
+                                                                            </span>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             </button>
@@ -678,8 +979,28 @@ export default function KioskClient({
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="font-medium text-sm truncate">{line.item.name}</div>
-                                    <div className="font-bold" style={{ color: config.theme?.primaryColor || "#0ea5e9" }}>
-                                        {fmt((line.item.priceUsd || 0) * line.qty)}
+                                    <div className="flex items-center gap-2">
+                                        {(() => {
+                                            const basePrice = Number(line.item.priceUsd || 0);
+                                            const { discountedPrice, savings } = calculateItemDiscountedPrice(line.item, basePrice);
+                                            if (savings > 0) {
+                                                return (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-xs text-muted-foreground line-through opacity-70">
+                                                            {fmt(basePrice * line.qty)}
+                                                        </span>
+                                                        <span className="font-bold text-green-600">
+                                                            {fmt(discountedPrice * line.qty)}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            }
+                                            return (
+                                                <span className="font-bold" style={{ color: config.theme?.primaryColor || "#0ea5e9" }}>
+                                                    {fmt(basePrice * line.qty)}
+                                                </span>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1">
@@ -698,9 +1019,59 @@ export default function KioskClient({
 
                 {/* Checkout Footer */}
                 <div className="flex-shrink-0 p-4 border-t space-y-3">
+                    {/* Coupon Code Input */}
+                    <div className="space-y-2">
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                placeholder="Coupon code"
+                                className="flex-1 h-10 px-3 border rounded-lg bg-background text-sm font-mono uppercase"
+                                value={couponCode}
+                                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                disabled={!!appliedCoupon}
+                            />
+                            {appliedCoupon ? (
+                                <button
+                                    onClick={() => { setAppliedCoupon(null); setCouponCode(''); setCouponError(''); }}
+                                    className="px-3 py-2 border rounded-lg text-sm hover:bg-muted"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => applyCouponCode(couponCode)}
+                                    className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
+                                    style={{ background: config.theme?.secondaryColor || "#22c55e" }}
+                                    disabled={!couponCode.trim()}
+                                >
+                                    Apply
+                                </button>
+                            )}
+                        </div>
+                        {couponError && <p className="text-xs text-red-500">{couponError}</p>}
+                        {appliedCoupon && (
+                            <div className="flex items-center gap-2 text-xs text-green-600">
+                                <Ticket className="w-3 h-3" />
+                                <span>{appliedCoupon.title} applied!</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Savings */}
+                    {cartTotals.totalSavings > 0 && (
+                        <div className="flex items-center justify-between text-green-600">
+                            <span className="text-sm flex items-center gap-1">
+                                <Sparkles className="w-3 h-3" />
+                                Total Savings
+                                {appliedCoupon && <span className="text-xs opacity-80">({appliedCoupon.code})</span>}
+                            </span>
+                            <span className="text-sm font-medium">-{fmt(cartTotals.totalSavings)}</span>
+                        </div>
+                    )}
+
                     <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Total</span>
-                        <span className="text-2xl font-bold">{fmt(total)}</span>
+                        <span className="text-2xl font-bold">{fmt(cartTotals.total)}</span>
                     </div>
                     <button
                         onClick={handleCheckout}
