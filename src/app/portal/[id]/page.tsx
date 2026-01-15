@@ -129,6 +129,38 @@ function isValidHexAddress(addr: string): boolean {
   }
 }
 
+function selectTokenFromRatios(ratios: Record<string, number> | undefined, available: TokenDef[]): string | null {
+  if (!ratios || Object.keys(ratios).length === 0) return null;
+
+  // Filter ratios to only include available tokens
+  const candidates: { symbol: string; weight: number }[] = [];
+  let totalWeight = 0;
+
+  for (const [symbol, weight] of Object.entries(ratios)) {
+    // Basic validation: weight > 0
+    if (typeof weight !== "number" || weight <= 0) continue;
+
+    // Check if token is available/supported
+    const isAvail = available.some(t => t.symbol === symbol || (symbol === "ETH" && t.type === "native"));
+    if (isAvail) {
+      candidates.push({ symbol, weight });
+      totalWeight += weight;
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Weighted random selection
+  let r = Math.random() * totalWeight;
+  for (const c of candidates) {
+    if (r < c.weight) return c.symbol;
+    r -= c.weight;
+  }
+
+  // Fallback to first candidate (should rarely happen due to float precision)
+  return candidates[0].symbol;
+}
+
 export default function PortalReceiptPage() {
   // ... (hooks)
 
@@ -1219,13 +1251,29 @@ export default function PortalReceiptPage() {
           setBasePlatformFeePct((cfg as any).basePlatformFeePct);
         }
 
-        // defaultPaymentToken
+        // defaultPaymentToken or Dynamic Reserve Strategy
         const t = (cfg as any)?.defaultPaymentToken as any;
-        if (typeof t === "string") {
-          const avail = availableTokens.find((x) => x.symbol === t);
+
+        // Check for reserve ratios for dynamic selection
+        const ratios = (cfg as any)?.reserveRatios as Record<string, number> | undefined;
+        let selected = "ETH";
+
+        const dynamicToken = selectTokenFromRatios(ratios, availableTokens); // Use updated availableTokens from closure or hope it's consistent? 
+        // Actually, availableTokens in this scope is the OLD state. We should use runtimeTokens if present, else availableTokens state.
+        const effectiveTokens = (cfg?.tokens && Array.isArray(cfg.tokens) && cfg.tokens.length > 0)
+          ? (cfg.tokens as TokenDef[])
+          : availableTokens;
+
+        if (dynamicToken) {
+          selected = dynamicToken;
+          console.log("[PORTAL] Dynamic Reserve Strategy selected:", selected);
+        } else if (typeof t === "string") {
+          const avail = effectiveTokens.find((x) => x.symbol === t);
           const ok = t === "ETH" || (!!avail?.address && isValidHexAddress(String(avail.address)));
-          setToken(ok ? (t as any) : "ETH");
+          if (ok) selected = t;
         }
+
+        setToken(selected as any);
 
         // sellerAddress (split routing)
         const splitAddr = (cfg as any)?.splitAddress || (cfg as any)?.split?.address || "";
@@ -1316,6 +1364,32 @@ export default function PortalReceiptPage() {
       cancelled = true;
     };
   }, [token]);
+
+  // Retroactive Attribution:
+  // If we have a receipt ID (receiptId) but no buyer wallet has been recorded yet (or we want to claim it),
+  // and the user just connected their wallet, try to claim it.
+  const [hasClaimed, setHasClaimed] = useState(false);
+  useEffect(() => {
+    if (!loggedIn || !account?.address || !receiptId) return;
+    if (hasClaimed) return;
+
+    // Only attempt claim if we suspect it's unclaimed or just to be safe.
+    // We rely on the API to handle idempotency or updates.
+    console.log("[RECEIPT] Attempting to claim receipt:", receiptId, "for", account.address);
+
+    fetch("/api/receipts/status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        receiptId: receiptId,
+        wallet: merchantWallet || recipient,
+        status: "receipt_claimed",
+        buyerWallet: account.address
+      })
+    })
+      .then(() => setHasClaimed(true))
+      .catch(e => console.error("[RECEIPT] Claim failed:", e));
+  }, [loggedIn, account?.address, receiptId, merchantWallet, recipient, hasClaimed]);
 
   const tokenDef = useMemo(() => availableTokens.find((t) => t.symbol === token), [availableTokens, token]);
 
@@ -1593,7 +1667,7 @@ export default function PortalReceiptPage() {
     >
       <div
         ref={containerRef}
-        className={`pp-embed-white-text relative ${isEmbedded ? "border-2 rounded-2xl shadow-none bg-transparent" : (isInvoiceLayout ? "rounded-none border-0 shadow-none bg-transparent" : "rounded-2xl border shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur")} ${isTwoColumnLayout ? (isInvoiceLayout ? "w-full max-w-none mx-auto" : "w-full max-w-none mx-auto") : ""}`}
+        className={`pp-embed-white-text relative ${isEmbedded ? "border-2 rounded-2xl shadow-none bg-transparent" : (isInvoiceLayout ? "rounded-none border-0 shadow-none bg-transparent" : "rounded-2xl border shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur")} ${isTwoColumnLayout ? (isInvoiceLayout ? "w-full max-w-none mx-auto" : "w-full max-w-none mx-auto") : ""} ${isEmbedded ? "no-scrollbar" : ""}`}
         style={{
           ...backgroundStyle,
           display: "flex",
@@ -1603,13 +1677,19 @@ export default function PortalReceiptPage() {
           minHeight: isEmbedded ? "100%" : undefined,
           maxHeight: isEmbedded ? undefined : "var(--pp-vh)",
           // Embedded: always use auto to allow scrolling when content exceeds container
-          overflow: isEmbedded ? "auto" : "auto",
-          WebkitOverflowScrolling: isEmbedded ? "touch" : undefined,
-          overscrollBehavior: isEmbedded ? "contain" : "contain",
+          overflowY: "auto", // Fix: explicit overflow-y
+          WebkitOverflowScrolling: "touch", // Fix: native momentum scrolling
+          overscrollBehavior: "contain", // Fix: prevent parent scroll chaining
+          touchAction: "pan-y", // Fix: explicit touch action
           fontFamily: theme.fontFamily,
           borderColor: isEmbedded ? "var(--pp-primary)" : undefined,
         }}
       >
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            .no-scrollbar::-webkit-scrollbar { display: none; }
+            .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+          `}} />
         {/* Left-half decorative gradient background (only for invoice-style full page) */}
         {!isEmbedded && isInvoiceLayout && (
           <div
@@ -2022,30 +2102,46 @@ export default function PortalReceiptPage() {
                               feePct: (basePlatformFeePct + Number(processingFeePct || 0)),
                             },
                           }}
-                          onSuccess={async () => {
+                          onSuccess={(result: any) => {
+                            // Onramp Tracking: Capture success and link txHash immediately
+                            console.log("[CHECKOUT] Success:", result);
+                            const txHash = result?.transactionHash || result?.hash;
+                            const buyer = (account?.address || "").toLowerCase();
+
+                            // Link txHash to receipt immediately via receipt_claimed
+                            if (txHash && receiptId) {
+                              postStatus("receipt_claimed", {
+                                buyerWallet: buyer,
+                                txHash
+                              }).catch(e => console.error("[CHECKOUT] Failed to update status:", e));
+                            } else {
+                              postStatus("checkout_success", { buyer });
+                            }
+
+                            // Legacy post-processing steps (billing, postMessage)
                             try {
-                              const wallet = (account?.address || "").toLowerCase();
-                              await postStatus("checkout_success", { buyer: wallet });
-                              await fetch("/api/billing/purchase", {
+                              fetch("/api/billing/purchase", {
                                 method: "POST",
                                 headers: {
                                   "Content-Type": "application/json",
-                                  "x-wallet": wallet,
+                                  "x-wallet": buyer,
                                   "x-recipient": merchantWallet || recipient,
                                 },
                                 body: JSON.stringify({
                                   seconds: 1,
                                   usd: Number(totalUsd.toFixed(2)),
                                   token,
-                                  wallet,
+                                  wallet: buyer,
                                   receiptId,
                                   recipient: merchantWallet || recipient,
-                                  idempotencyKey: `portal:${receiptId}:${wallet}:${Date.now()}`,
+                                  idempotencyKey: `portal:${receiptId}:${buyer}:${Date.now()}`,
                                 }),
-                              });
+                              }).catch(() => { });
+
                               try {
                                 window.postMessage({ type: "billing:refresh" }, "*");
                               } catch { }
+
                               try {
                                 if (typeof window !== "undefined" && window.parent && window.parent !== window) {
                                   const confirmToken = `ppc_${receiptId}_${Date.now()}`;

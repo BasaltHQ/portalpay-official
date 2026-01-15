@@ -29,6 +29,7 @@ type SiteTheme = {
 };
 
 type DemoReceipt = {
+  receiptId?: string;
   lineItems: { label: string; priceUsd: number; qty?: number }[];
   totalUsd: number;
 } | null;
@@ -479,6 +480,32 @@ export function PortalPreviewEmbedded({
     };
   }, [token]);
 
+  // Retroactive Attribution:
+  // If we have a receipt ID (demoReceipt) but no buyer wallet has been recorded yet (or we want to claim it),
+  // and the user just connected their wallet, try to claim it.
+  const [hasClaimed, setHasClaimed] = useState(false);
+  useEffect(() => {
+    if (!account?.address || !demoReceipt?.receiptId) return;
+    if (hasClaimed) return;
+
+    // Only attempt claim if we suspect it's unclaimed or just to be safe.
+    // For now, we fire once per session per receipt when an account is present.
+    console.log("[RECEIPT] Attempting to claim receipt:", demoReceipt.receiptId, "for", account.address);
+
+    fetch("/api/receipts/status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        receiptId: demoReceipt.receiptId,
+        wallet: recipient,
+        status: "receipt_claimed",
+        buyerWallet: account.address
+      })
+    })
+      .then(() => setHasClaimed(true))
+      .catch(e => console.error("[RECEIPT] Claim failed:", e));
+  }, [account?.address, demoReceipt?.receiptId, recipient]);
+
   // Static token icons
   const STATIC_TOKEN_ICONS: Record<string, string> = useMemo(
     () => ({
@@ -830,12 +857,19 @@ export function PortalPreviewEmbedded({
 
       {/* Scrollable content */}
       <div
-        className="flex-1 overflow-y-auto p-3"
+        className="flex-1 overflow-y-auto p-3 overscroll-contain touch-pan-y no-scrollbar"
         style={{
           backdropFilter: "saturate(1.02) contrast(1.02)",
           color: "#ffffff",
+          WebkitOverflowScrolling: "touch"
         }}
       >
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          .no-scrollbar::-webkit-scrollbar { display: none; }
+          .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        `}} />
+
         {/* Currency equivalents selector */}
         <div className="rounded-xl border bg-background/80 p-3" ref={currencyRef}>
           <div className="flex items-center justify-between">
@@ -1008,6 +1042,27 @@ export function PortalPreviewEmbedded({
                 seller={(sellerAddress as any) || (recipient as any)}
                 tokenAddress={token === "ETH" ? undefined : (tokenDef?.address as any)}
                 showThirdwebBranding={false}
+                // Onramp Tracking: Capture success and link txHash immediately
+                onSuccess={(result: any) => {
+                  console.log("[CHECKOUT] Success:", result);
+                  const txHash = result?.transactionHash || result?.hash;
+                  if (txHash && demoReceipt) {
+                    // Link txHash to receipt immediately
+                    const payload = {
+                      receiptId: demoReceipt.receiptId || "unknown", // Make sure demoReceipt has an ID if real
+                      wallet: recipient, // The merchant wallet
+                      status: "receipt_claimed", // Use tracking status to avoid auth errors on client
+                      txHash,
+                      buyerWallet: account?.address
+                    };
+                    // Fire and forget status update
+                    fetch("/api/receipts/status", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payload)
+                    }).catch(e => console.error("[CHECKOUT] Failed to update status:", e));
+                  }
+                }}
                 theme={darkTheme({
                   colors: {
                     modalBg: "transparent",

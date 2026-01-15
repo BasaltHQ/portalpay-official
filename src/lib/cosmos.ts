@@ -43,23 +43,12 @@ export async function getContainer(dbId = defaultDbId, containerId = defaultCont
   const { database } = await client.databases.createIfNotExists({ id: dbId });
   cache.db = database;
 
-  const { container } = await database.containers.createIfNotExists({
-    id: containerId,
-    partitionKey: { paths: ["/wallet"] },
-    indexingPolicy: {
-      indexingMode: "consistent",
-      includedPaths: [
-        { path: "/*" },
-      ],
-      excludedPaths: [
-        { path: "/\"_etag\"/?" },
-      ],
-      compositeIndexes: [
-        [{ path: "/type", order: "ascending" }, { path: "/xp", order: "descending" }],
-        [{ path: "/type", order: "ascending" }, { path: "/lastHeartbeat", order: "descending" }],
-      ],
-    },
-  });
+  // OPTIMIZATION: Use optimistic container reference to avoid network RTT on every cold start
+  // We assume the container exists in production. "createIfNotExists" adds significant latency.
+  const container = database.container(containerId);
+  // Only verify existence if explicitly needed (e.g. during specialized init routines), 
+  // but for high-traffic runtime, assume it's there.
+
   cache.container = container;
   cache.dbId = dbId;
   cache.containerId = containerId;

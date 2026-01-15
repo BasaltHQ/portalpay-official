@@ -643,7 +643,13 @@ export function Navbar() {
         const key = String((theme.brandKey || container.brandKey || "")).trim();
         const lowerKey = key.toLowerCase();
         // explicit casing for basaltsurge
-        if (lowerKey === "basaltsurge") return "BasaltSurge";
+        if (lowerKey === "basaltsurge") {
+            // Only force BasaltSurge if the name is empty, generic, or explicitly "BasaltSurge"/"PortalPay"
+            if (!raw || generic || raw.toLowerCase() === "basaltsurge" || raw.toLowerCase() === "portalpay") {
+                return "BasaltSurge";
+            }
+            return raw;
+        }
         const titleizedKey = key ? key.charAt(0).toUpperCase() + key.slice(1) : "PortalPay";
         return (!raw || generic) ? titleizedKey : raw;
     })();

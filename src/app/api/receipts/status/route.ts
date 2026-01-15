@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
         };
         return NextResponse.json(payload, { headers: { "x-correlation-id": correlationId } });
       }
-    } catch {}
+    } catch { }
 
     // Degraded mode: attempt in-memory
     try {
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
         };
         return NextResponse.json(payload, { headers: { "x-correlation-id": correlationId } });
       }
-    } catch {}
+    } catch { }
 
     return NextResponse.json(
       { error: "not_found" },
@@ -123,11 +123,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // AuthZ: Allow unauthenticated status updates for tracking (link_opened, buyer_logged_in, checkout_initialized)
+    // AuthZ: Allow unauthenticated status updates for tracking (link_opened, buyer_logged_in, checkout_initialized, receipt_claimed)
     // Require JWT auth only for sensitive status updates (checkout_success, refund, etc.)
-    const trackingStatuses = ["link_opened", "buyer_logged_in", "checkout_initialized"];
+    const trackingStatuses = ["link_opened", "buyer_logged_in", "checkout_initialized", "receipt_claimed"];
     const isTrackingStatus = trackingStatuses.includes(status);
-    
+
     let caller: any = null;
     if (!isTrackingStatus) {
       // Require auth for non-tracking statuses
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
           ok: false,
           metadata: { error: e?.message || "rate_limited", resetAt, receiptId, status }
         });
-      } catch {}
+      } catch { }
       return NextResponse.json(
         { ok: false, error: e?.message || "rate_limited", resetAt, correlationId },
         { status: e?.status || 429, headers: { "x-correlation-id": correlationId, "x-ratelimit-reset": resetAt ? String(resetAt) : "" } }
@@ -182,56 +182,56 @@ export async function POST(req: NextRequest) {
       const ts = Date.now();
       const next = resource
         ? {
-            ...resource,
-            status,
-            statusHistory: Array.isArray(resource.statusHistory)
-              ? [...resource.statusHistory, { status, ts }]
-              : [{ status, ts }],
-            lastUpdatedAt: ts,
-            brandKey,
-            // Record buyer on settlement statuses
-            ...(buyerWallet && ["checkout_success", "paid", "tx_mined", "reconciled"].includes(status) 
-              ? { buyerWallet } 
-              : {}),
-            // Persist transaction hash on relevant statuses
-            ...(txHash && ["tx_mined", "recipient_validated", "paid", "reconciled"].includes(status)
-              ? { transactionHash: txHash, transactionTimestamp: txTs }
-              : {}),
-            // Persist expected payment metadata at checkout initialization
-            ...(status === "checkout_initialized" && (expectedToken || expectedAmountToken || typeof expectedUsd === "number")
-              ? {
-                  expectedToken,
-                  expectedAmountToken,
-                  expectedUsd
-                }
-              : {}),
-            ...(shopSlug ? { shopSlug } : {}),
-          }
+          ...resource,
+          status,
+          statusHistory: Array.isArray(resource.statusHistory)
+            ? [...resource.statusHistory, { status, ts }]
+            : [{ status, ts }],
+          lastUpdatedAt: ts,
+          brandKey,
+          // Record buyer on settlement statuses
+          ...(buyerWallet && ["checkout_success", "paid", "tx_mined", "reconciled", "receipt_claimed"].includes(status)
+            ? { buyerWallet }
+            : {}),
+          // Persist transaction hash on relevant statuses
+          ...(txHash && ["tx_mined", "recipient_validated", "paid", "reconciled", "receipt_claimed"].includes(status)
+            ? { transactionHash: txHash, transactionTimestamp: txTs }
+            : {}),
+          // Persist expected payment metadata at checkout initialization
+          ...(status === "checkout_initialized" && (expectedToken || expectedAmountToken || typeof expectedUsd === "number")
+            ? {
+              expectedToken,
+              expectedAmountToken,
+              expectedUsd
+            }
+            : {}),
+          ...(shopSlug ? { shopSlug } : {}),
+        }
         : {
-            id,
-            type: "receipt",
-            wallet,
-            receiptId,
-            status,
-            statusHistory: [{ status, ts }],
-            createdAt: ts,
-            lastUpdatedAt: ts,
-            brandKey,
-            ...(buyerWallet && ["checkout_success", "paid", "tx_mined", "reconciled"].includes(status) 
-              ? { buyerWallet } 
-              : {}),
-            ...(txHash && ["tx_mined", "recipient_validated", "paid", "reconciled"].includes(status)
-              ? { transactionHash: txHash, transactionTimestamp: txTs }
-              : {}),
-            ...(status === "checkout_initialized" && (expectedToken || expectedAmountToken || typeof expectedUsd === "number")
-              ? {
-                  expectedToken,
-                  expectedAmountToken,
-                  expectedUsd
-                }
-              : {}),
-            ...(shopSlug ? { shopSlug } : {}),
-          };
+          id,
+          type: "receipt",
+          wallet,
+          receiptId,
+          status,
+          statusHistory: [{ status, ts }],
+          createdAt: ts,
+          lastUpdatedAt: ts,
+          brandKey,
+          ...(buyerWallet && ["checkout_success", "paid", "tx_mined", "reconciled", "receipt_claimed"].includes(status)
+            ? { buyerWallet }
+            : {}),
+          ...(txHash && ["tx_mined", "recipient_validated", "paid", "reconciled", "receipt_claimed"].includes(status)
+            ? { transactionHash: txHash, transactionTimestamp: txTs }
+            : {}),
+          ...(status === "checkout_initialized" && (expectedToken || expectedAmountToken || typeof expectedUsd === "number")
+            ? {
+              expectedToken,
+              expectedAmountToken,
+              expectedUsd
+            }
+            : {}),
+          ...(shopSlug ? { shopSlug } : {}),
+        };
 
       await container.items.upsert(next as any);
       try {
@@ -244,13 +244,13 @@ export async function POST(req: NextRequest) {
           ok: true,
           metadata: { receiptId, status, tracking: isTrackingStatus }
         });
-      } catch {}
+      } catch { }
       return NextResponse.json({ ok: true }, { headers: { "x-correlation-id": correlationId } });
     } catch (e: any) {
       // Degraded mode: update in-memory store
       try {
         updateReceiptStatus(receiptId, wallet, status);
-      } catch {}
+      } catch { }
       try {
         await auditEvent(req, {
           who: caller?.wallet || "",
@@ -261,7 +261,7 @@ export async function POST(req: NextRequest) {
           ok: true,
           metadata: { degraded: true, reason: e?.message || "cosmos_unavailable", receiptId, status }
         });
-      } catch {}
+      } catch { }
       return NextResponse.json(
         { ok: true, degraded: true, reason: e?.message || "cosmos_unavailable" },
         { status: 200, headers: { "x-correlation-id": correlationId } }
