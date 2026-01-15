@@ -1001,11 +1001,11 @@ export default function PartnerManagementPanel() {
 
       const envTokens: Record<string, { address?: `0x${string}`; decimals?: number }> = {
         ETH: { address: undefined, decimals: 18 },
-        USDC: { address: (process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_USDC_DECIMALS || 6) },
-        USDT: { address: (process.env.NEXT_PUBLIC_BASE_USDT_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_USDT_DECIMALS || 6) },
-        cbBTC: { address: (process.env.NEXT_PUBLIC_BASE_CBBTC_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_CBBTC_DECIMALS || 8) },
-        cbXRP: { address: (process.env.NEXT_PUBLIC_BASE_CBXRP_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_CBXRP_DECIMALS || 6) },
-        SOL: { address: (process.env.NEXT_PUBLIC_BASE_SOL_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_SOL_DECIMALS || 9) },
+        USDC: { address: (process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS || "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_USDC_DECIMALS || 6) },
+        USDT: { address: (process.env.NEXT_PUBLIC_BASE_USDT_ADDRESS || "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_USDT_DECIMALS || 6) },
+        cbBTC: { address: (process.env.NEXT_PUBLIC_BASE_CBBTC_ADDRESS || "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_CBBTC_DECIMALS || 8) },
+        cbXRP: { address: (process.env.NEXT_PUBLIC_BASE_CBXRP_ADDRESS || "0xcb585250f852C6c6bf90434AB21A00f02833a4af").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_CBXRP_DECIMALS || 6) },
+        SOL: { address: (process.env.NEXT_PUBLIC_BASE_SOL_ADDRESS || "0x311935Cd80B76769bF2ecC9D8Ab7635b2139cf82").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_SOL_DECIMALS || 9) },
       };
 
       const PAYMENT_SPLITTER_READ_ABI = [
@@ -1147,11 +1147,11 @@ export default function PartnerManagementPanel() {
 
       const envTokens: Record<string, { address?: `0x${string}`; decimals?: number }> = {
         ETH: { address: undefined, decimals: 18 },
-        USDC: { address: (process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_USDC_DECIMALS || 6) },
-        USDT: { address: (process.env.NEXT_PUBLIC_BASE_USDT_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_USDT_DECIMALS || 6) },
-        cbBTC: { address: (process.env.NEXT_PUBLIC_BASE_CBBTC_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_CBBTC_DECIMALS || 8) },
-        cbXRP: { address: (process.env.NEXT_PUBLIC_BASE_CBXRP_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_CBXRP_DECIMALS || 6) },
-        SOL: { address: (process.env.NEXT_PUBLIC_BASE_SOL_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_SOL_DECIMALS || 9) },
+        USDC: { address: (process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS || "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_USDC_DECIMALS || 6) },
+        USDT: { address: (process.env.NEXT_PUBLIC_BASE_USDT_ADDRESS || "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_USDT_DECIMALS || 6) },
+        cbBTC: { address: (process.env.NEXT_PUBLIC_BASE_CBBTC_ADDRESS || "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_CBBTC_DECIMALS || 8) },
+        cbXRP: { address: (process.env.NEXT_PUBLIC_BASE_CBXRP_ADDRESS || "0xcb585250f852C6c6bf90434AB21A00f02833a4af").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_CBXRP_DECIMALS || 6) },
+        SOL: { address: (process.env.NEXT_PUBLIC_BASE_SOL_ADDRESS || "0x311935Cd80B76769bF2ecC9D8Ab7635b2139cf82").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_SOL_DECIMALS || 9) },
       };
 
       setReleaseLoading((prev) => ({ ...prev, [w]: true }));
@@ -1303,11 +1303,11 @@ export default function PartnerManagementPanel() {
 
       const envTokens: Record<string, { address?: `0x${string}`; decimals?: number }> = {
         ETH: { address: undefined, decimals: 18 },
-        USDC: { address: (process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_USDC_DECIMALS || 6) },
-        USDT: { address: (process.env.NEXT_PUBLIC_BASE_USDT_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_USDT_DECIMALS || 6) },
-        cbBTC: { address: (process.env.NEXT_PUBLIC_BASE_CBBTC_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_CBBTC_DECIMALS || 8) },
-        cbXRP: { address: (process.env.NEXT_PUBLIC_BASE_CBXRP_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_CBXRP_DECIMALS || 6) },
-        SOL: { address: (process.env.NEXT_PUBLIC_BASE_SOL_ADDRESS || "").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_SOL_DECIMALS || 9) },
+        USDC: { address: (process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS || "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_USDC_DECIMALS || 6) },
+        USDT: { address: (process.env.NEXT_PUBLIC_BASE_USDT_ADDRESS || "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_USDT_DECIMALS || 6) },
+        cbBTC: { address: (process.env.NEXT_PUBLIC_BASE_CBBTC_ADDRESS || "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_CBBTC_DECIMALS || 8) },
+        cbXRP: { address: (process.env.NEXT_PUBLIC_BASE_CBXRP_ADDRESS || "0xcb585250f852C6c6bf90434AB21A00f02833a4af").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_CBXRP_DECIMALS || 6) },
+        SOL: { address: (process.env.NEXT_PUBLIC_BASE_SOL_ADDRESS || "0x311935Cd80B76769bF2ecC9D8Ab7635b2139cf82").toLowerCase() as any, decimals: Number(process.env.NEXT_PUBLIC_BASE_SOL_DECIMALS || 9) },
       };
 
       setReleaseLoading((prev) => ({ ...prev, [w]: true }));

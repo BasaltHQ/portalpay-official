@@ -99,6 +99,38 @@ function getBuildTimeTokens(): TokenDef[] {
   return tokens;
 }
 
+function selectTokenFromRatios(ratios: Record<string, number> | undefined, available: TokenDef[]): string | null {
+  if (!ratios || Object.keys(ratios).length === 0) return null;
+
+  // Filter ratios to only include available tokens
+  const candidates: { symbol: string; weight: number }[] = [];
+  let totalWeight = 0;
+
+  for (const [symbol, weight] of Object.entries(ratios)) {
+    // Basic validation: weight > 0
+    if (typeof weight !== "number" || weight <= 0) continue;
+
+    // Check if token is available/supported
+    const isAvail = available.some(t => t.symbol === symbol || (symbol === "ETH" && t.type === "native"));
+    if (isAvail) {
+      candidates.push({ symbol, weight });
+      totalWeight += weight;
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Weighted random selection
+  let r = Math.random() * totalWeight;
+  for (const c of candidates) {
+    if (r < c.weight) return c.symbol;
+    r -= c.weight;
+  }
+
+  // Fallback to first candidate (should rarely happen due to float precision)
+  return candidates[0].symbol;
+}
+
 export function PortalPreviewEmbedded({
   theme,
   demoReceipt,
@@ -346,7 +378,17 @@ export function PortalPreviewEmbedded({
         }
 
         const t = cfg?.defaultPaymentToken;
-        if (typeof t === "string") {
+        const ratios = cfg?.reserveRatios; // e.g. { USDC: 0.8, ETH: 0.2 }
+
+        // Dynamic Strategy:
+        // If reserveRatios are present, use them for probabilistic selection.
+        // This effectively "rotates" the default token to match target accumulation breakdown.
+        const dynamicToken = selectTokenFromRatios(ratios, currentTokens);
+
+        if (dynamicToken) {
+          console.log("[PORTAL-PREVIEW] Selected dynamic token from reserve ratios:", dynamicToken);
+          setToken(dynamicToken as any);
+        } else if (typeof t === "string") {
           const avail = currentTokens.find((x) => x.symbol === t);
           const ok = t === "ETH" || (!!avail?.address && isValidHexAddress(String(avail.address)));
           setToken(ok ? (t as any) : "ETH");
