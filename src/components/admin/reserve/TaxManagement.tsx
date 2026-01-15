@@ -41,10 +41,10 @@ export function TaxManagement() {
         setTimeout(() => {
           try {
             (document.getElementById("custom-jurisdiction-name") as HTMLInputElement | null)?.focus();
-          } catch {}
+          } catch { }
         }, 0);
       }
-    } catch {}
+    } catch { }
   }, [customOpen]);
 
   async function refresh() {
@@ -161,14 +161,18 @@ export function TaxManagement() {
         setError("Enter a ZIP/Postal code");
         return;
       }
-      const res = await fetch(`https://api.taxratesapi.com/rates/${encodeURIComponent(zipTrim)}`);
+      // Use backend proxy to avoid CORS issues with external Tax Rates API
+      const res = await fetch(`/api/tax/lookup?zip=${encodeURIComponent(zipTrim)}`);
       const j = await res.json().catch(() => ({}));
-      const combined = Number(j?.data?.combined_rate ?? 0);
-      const rate =
-        Number.isFinite(combined) && combined > 0
-          ? combined
-          : Number((j && (j.rate ?? (j.result?.rate) ?? (j.data?.rate))) || 0);
-      if (!Number.isFinite(rate) || rate < 0) {
+
+      if (!j.ok) {
+        setError(j?.error === "rate_not_found" ? "Rate not found for ZIP" : (j?.error || "Failed to lookup ZIP"));
+        setZipRate(null);
+        return;
+      }
+
+      const rate = Number(j?.rate ?? j?.data?.combined_rate ?? 0);
+      if (!Number.isFinite(rate) || rate <= 0) {
         setError("Rate not found for ZIP");
         setZipRate(null);
         return;
@@ -185,6 +189,7 @@ export function TaxManagement() {
       setZipLoading(false);
     }
   }
+
 
   function genCodeFromName(n: string): string {
     const slug = String(n || "")

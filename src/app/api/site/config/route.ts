@@ -1272,13 +1272,13 @@ export async function POST(req: NextRequest) {
 
     const normalized = normalizeSiteConfig(candidate);
 
-    // Write brand-scoped doc in partner containers; keep legacy id on platform (portalpay) for safety.
+    // Write brand-scoped doc in partner containers; use getDocIdForBrand() for consistency with GET.
     let brandKey: string | undefined = undefined;
     try { brandKey = getBrandKey(); } catch { brandKey = undefined; }
     const normalizedBrand = String(brandKey || "portalpay").toLowerCase();
-    const docId = (brandKey && normalizedBrand !== "portalpay" && normalizedBrand !== "basaltsurge")
-      ? getDocIdForBrand(brandKey)
-      : DOC_ID;
+    // Use getDocIdForBrand() for consistent doc ID between save and load
+    // This ensures basaltsurge/portalpay uses "site:config:portalpay" and partners use "site:config:<brandKey>"
+    const docId = getDocIdForBrand(normalizedBrand);
 
     const doc = {
       ...normalized,
