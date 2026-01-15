@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { GET as getShopConfig } from "../../../shop/config/route";
+import { GET as getReviews } from "../../../reviews/route";
+import { GET as getInventory } from "../../../inventory/route";
+
 export const dynamic = 'force-dynamic';
 
 /**
  * Server-side execution for voice agent tools.
  * - Accepts POST { toolName, args }
  * - Uses x-wallet (and optionally x-slug) from headers to scope shop context
- * - Calls internal REST endpoints and applies filtering/pagination for inventory tools
+ * - Calls internal REST endpoints directly (function calls) to avoid network latency/issues.
  * - Returns { result: { ok: boolean; data?: any; error?: string } }
  */
 export async function POST(req: NextRequest) {
@@ -16,44 +20,55 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "missing_tool_name" }, { status: 400 });
     }
 
-    // Derive shop context from headers or args
+    // Derive shop context
     const wallet = String(req.headers.get("x-wallet") || (args?.wallet ?? "") || "").toLowerCase();
     const slug = String(req.headers.get("x-slug") || (args?.slug ?? "") || "").toLowerCase();
 
-    // Prefer internal base URL to avoid external egress (e.g., AFD/CDN); fallback to request origin or app URL
-    // Use localhost IP to avoid DNS issues in some environments
-    const base = process.env.INTERNAL_BASE_URL || (() => {
-      try {
-        const u = new URL(req.url);
-        return u.origin;
-      } catch {
-        return process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:3000";
-      }
-    })();
+    // Headers for internal calls
+    const getInternalHeaders = () => {
+      const headers = new Headers();
+      headers.set("Content-Type", "application/json");
 
-    // Preserve session cookies/authorization if present
-    const forwardHeaders = (extra?: Record<string, string>) => {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        ...(extra || {}),
-      };
       const auth = req.headers.get("authorization");
       const cookie = req.headers.get("cookie");
-      if (auth) headers["Authorization"] = auth;
-      if (cookie) headers["Cookie"] = cookie;
-      if (wallet && !headers["x-wallet"]) headers["x-wallet"] = wallet;
-      if (slug && !headers["x-slug"]) headers["x-slug"] = slug;
+      if (auth) headers.set("Authorization", auth);
+      if (cookie) headers.set("Cookie", cookie);
+
+      if (wallet) headers.set("x-wallet", wallet);
+      if (slug) headers.set("x-slug", slug);
+
       return headers;
     };
 
-    // Helper to safely fetch JSON (include target URL for diagnostics)
-    const safeJsonFetch = async (input: string, init?: RequestInit): Promise<{ ok: boolean; json: any; status: number; target: string }> => {
+    /**
+     * Helper to invoke a route handler directly.
+     * Simulates a request to the handler and processes the response.
+     */
+    const callHandler = async (
+      handler: (req: NextRequest) => Promise<NextResponse>,
+      path: string,
+      query?: URLSearchParams
+    ): Promise<{ ok: boolean; json: any; status: number }> => {
       try {
-        const res = await fetch(input, init);
-        const json = await res.json().catch(() => ({}));
-        return { ok: res.ok, json, status: res.status, target: input };
+        // Construct a dummy URL - host doesn't matter for internal logic usually, 
+        // but we ensure it looks valid.
+        const urlStr = `http://internal${path}${query ? `?${query.toString()}` : ""}`;
+        const internalReq = new NextRequest(urlStr, {
+          method: "GET",
+          headers: getInternalHeaders(),
+        });
+
+        const res = await handler(internalReq);
+
+        let json = {};
+        try {
+          json = await res.json();
+        } catch { /* empty or non-json */ }
+
+        return { ok: res.ok, json, status: res.status };
       } catch (e: any) {
-        return { ok: false, json: { error: e?.message || "network_error" }, status: 0, target: input };
+        console.error(`[callHandler] Error invoking ${path}:`, e);
+        return { ok: false, json: { error: e?.message || "internal_handler_error" }, status: 500 };
       }
     };
 
@@ -69,10 +84,6 @@ export async function POST(req: NextRequest) {
       }, null, 2));
 
       // Extract modifier info from attributes (the correct field name per types/inventory.ts)
-      // Modifiers can be stored in multiple places:
-      // 1. item.attributes.data.modifierGroups (when type is "restaurant" or "general")
-      // 2. item.attributes.modifierGroups (legacy/direct)
-      // 3. item.modifierGroups (legacy top-level)
       const attrs = item?.attributes || {};
       let industryType = String(attrs?.type || "general");
       const data = attrs?.data || {};
@@ -109,7 +120,6 @@ export async function POST(req: NextRequest) {
         const optionalMatch = desc.match(/(?:Optional|Add-ons?|Extras?|Modifiers?):\s*(.+)/i);
         if (optionalMatch) {
           const optionsText = optionalMatch[1];
-          // Parse comma-separated options like "Bacon +$0.50, Extra Croutons +$1.00"
           const optionMatches = optionsText.matchAll(/([^,]+?)\s*\+?\$?([\d.]+)?/g);
           const parsedModifiers: any[] = [];
           let idx = 0;
@@ -149,7 +159,7 @@ export async function POST(req: NextRequest) {
       let variants: any = null;
 
       if (modifierGroups && modifierGroups.length > 0) {
-        // Restaurant modifiers: { modifierGroups: RestaurantModifierGroup[] }
+        // Restaurant modifiers
         modifiers = modifierGroups.map((g: any) => ({
           groupId: String(g?.id || ""),
           groupName: String(g?.name || ""),
@@ -168,7 +178,7 @@ export async function POST(req: NextRequest) {
             : [],
         }));
       } else if (industryType === "retail") {
-        // Retail variants: { variationGroups: RetailVariationGroup[], variants: RetailProductVariant[] }
+        // Retail variants
         const variationGroups = Array.isArray(data?.variationGroups) ? data.variationGroups : [];
         const productVariants = Array.isArray(data?.variants) ? data.variants : [];
 
@@ -199,8 +209,8 @@ export async function POST(req: NextRequest) {
 
     // Case: getShopDetails
     if (name === "getShopDetails") {
-      const { ok, json, status, target } = await safeJsonFetch(`${base}/api/shop/config`, { method: "GET", headers: forwardHeaders() });
-      if (!ok) return NextResponse.json({ result: { ok: false, error: json?.error || `shop_config_failed_${status}`, target } });
+      const { ok, json, status } = await callHandler(getShopConfig, "/api/shop/config");
+      if (!ok) return NextResponse.json({ result: { ok: false, error: json?.error || `shop_config_failed_${status}` } });
       const cfg = json?.config || {};
       return NextResponse.json({
         result: {
@@ -227,11 +237,13 @@ export async function POST(req: NextRequest) {
     if (name === "getShopRating") {
       const useSlug = slug || String(args?.slug || "");
       if (!useSlug) return NextResponse.json({ result: { ok: false, error: "missing_slug" } });
-      const { ok, json, status, target } = await safeJsonFetch(`${base}/api/reviews?subjectType=shop&subjectId=${encodeURIComponent(useSlug)}`, {
-        method: "GET",
-        headers: forwardHeaders(),
-      });
-      if (!ok) return NextResponse.json({ result: { ok: false, error: json?.error || `reviews_failed_${status}`, target } });
+
+      const qs = new URLSearchParams();
+      qs.set("subjectType", "shop");
+      qs.set("subjectId", useSlug);
+
+      const { ok, json, status } = await callHandler(getReviews, "/api/reviews", qs);
+      if (!ok) return NextResponse.json({ result: { ok: false, error: json?.error || `reviews_failed_${status}` } });
       const items: any[] = Array.isArray(json?.items) ? json.items : [];
       const count = items.length;
       const avg = count ? items.reduce((s, rv) => s + Number(rv?.rating || 0), 0) / count : 0;
@@ -240,8 +252,8 @@ export async function POST(req: NextRequest) {
 
     // Case: getInventory / getInventoryPage
     if (name === "getInventory" || name === "getInventoryPage") {
-      const { ok, json, status, target } = await safeJsonFetch(`${base}/api/inventory`, { method: "GET", headers: forwardHeaders() });
-      if (!ok) return NextResponse.json({ result: { ok: false, error: json?.error || `inventory_failed_${status}`, target } });
+      const { ok, json, status } = await callHandler(getInventory, "/api/inventory");
+      if (!ok) return NextResponse.json({ result: { ok: false, error: json?.error || `inventory_failed_${status}` } });
       let items: any[] = Array.isArray(json?.items) ? json.items : [];
 
       // Filters
@@ -251,7 +263,7 @@ export async function POST(req: NextRequest) {
       const priceMin = Number.isFinite(Number(args?.priceMin)) ? Number(args?.priceMin) : 0;
       const priceMax = Number.isFinite(Number(args?.priceMax)) ? Number(args?.priceMax) : Number.MAX_SAFE_INTEGER;
       const sort = String(args?.sort || "name-asc");
-      const includeModifiers = args?.includeModifiers !== false; // default true
+      const includeModifiers = args?.includeModifiers !== false;
 
       if (query) {
         items = items.filter((it) =>
@@ -344,8 +356,8 @@ export async function POST(req: NextRequest) {
     // Case: getItemModifiers - fetch modifier/variant info for a specific item
     // Note: getInventory now returns this info if includeModifiers=true, but we keep this for granular lookups
     if (name === "getItemModifiers") {
-      const { ok, json, status, target } = await safeJsonFetch(`${base}/api/inventory`, { method: "GET", headers: forwardHeaders() });
-      if (!ok) return NextResponse.json({ result: { ok: false, error: json?.error || `inventory_failed_${status}`, target } });
+      const { ok, json, status } = await callHandler(getInventory, "/api/inventory");
+      if (!ok) return NextResponse.json({ result: { ok: false, error: json?.error || `inventory_failed_${status}` } });
       const items: any[] = Array.isArray(json?.items) ? json.items : [];
 
       // Find item by id, sku, or name
@@ -419,9 +431,30 @@ export async function POST(req: NextRequest) {
       const since = Number(args?.sinceMs || 0);
       if (Number.isFinite(since) && since > 0) qs.set("sinceMs", String(since));
 
+      // Use internal or localhost fallback as last resort for this one endpoint that isn't imported
+      const base = process.env.INTERNAL_BASE_URL || "http://127.0.0.1:3000";
+
+      const safeJsonFetch = async (input: string, init?: RequestInit): Promise<{ ok: boolean; json: any; status: number; target: string }> => {
+        try {
+          const res = await fetch(input, init);
+          const json = await res.json().catch(() => ({}));
+          return { ok: res.ok, json, status: res.status, target: input };
+        } catch (e: any) {
+          return { ok: false, json: { error: e?.message || "network_error" }, status: 0, target: input };
+        }
+      };
+
+      // Headers need to be constructed for fetch, forwardHeaders helper was removed so recreate it
+      const headersKeyed: Record<string, string> = { "Content-Type": "application/json" };
+      const auth = req.headers.get("authorization");
+      const cookie = req.headers.get("cookie");
+      if (auth) headersKeyed["Authorization"] = auth;
+      if (cookie) headersKeyed["Cookie"] = cookie;
+      if (wallet) headersKeyed["x-wallet"] = wallet;
+
       const { ok, json, status, target } = await safeJsonFetch(`${base}/api/agent/owner-analytics?${qs.toString()}`, {
         method: "GET",
-        headers: forwardHeaders(),
+        headers: headersKeyed,
       });
       if (!ok) {
         return NextResponse.json({ result: { ok: false, error: json?.error || `owner_analytics_failed_${status}`, target } });
