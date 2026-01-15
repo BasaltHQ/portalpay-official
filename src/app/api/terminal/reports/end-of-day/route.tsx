@@ -38,9 +38,16 @@ export async function GET(req: NextRequest) {
         const w = String(merchantWallet).toLowerCase();
 
         // 1. Verify User Role via Session
-        const { resource: session } = await container.item(sessionId, w).read();
+        // 1. Verify User Role via Session
+        // Use Query to avoid potential partition key mismatch (session doc might be in undefined partition if 'wallet' key is missing)
+        const sessionQuery = {
+            query: "SELECT * FROM c WHERE c.id = @id AND c.type = 'terminal_session'",
+            parameters: [{ name: "@id", value: sessionId }]
+        };
+        const { resources: sessions } = await container.items.query(sessionQuery).fetchAll();
+        const session = sessions[0];
 
-        if (!session) {
+        if (!session || session.merchantWallet !== w) {
             return NextResponse.json({ error: "Session invalid" }, { status: 401 });
         }
 
