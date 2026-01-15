@@ -73,6 +73,15 @@ export async function GET(req: NextRequest) {
 
             let matched = false;
             for (const c of canon) {
+              // Only let "strong" canonical receipts suppress synthetic ones
+              // If the canonical receipt is just "checkout_initialized" (no tx, not paid), ignore it here
+              // so we prefer the synthetic one (which is reconciled/paid)
+              const cStatus = String(c?.status || "").toLowerCase();
+              const cHsTx = typeof c?.transactionHash === "string" && !!c.transactionHash;
+              const isStrong = cStatus === "paid" || cStatus === "reconciled" || cHsTx;
+
+              if (!isStrong) continue;
+
               const cTx =
                 typeof c?.transactionHash === "string" ? String(c.transactionHash).toLowerCase() : "";
 
@@ -97,7 +106,7 @@ export async function GET(req: NextRequest) {
             }
           }
 
-          // Always keep canonical receipts
+          // Always keep canonical receipts (they will be filtered by status next)
           filtered.push(...canon);
         }
 

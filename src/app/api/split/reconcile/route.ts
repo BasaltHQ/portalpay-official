@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const txHashesIn: any[] = Array.isArray(body.txHashes) ? body.txHashes : [];
     const txHashes = txHashesIn.map((h) => String(h || "").toLowerCase()).filter((h) => isTxHash(h));
     const timeWindowMs = Number.isFinite(Number(body.timeWindowMs)) ? Math.max(60_000, Number(body.timeWindowMs)) : 2 * 60 * 60 * 1000;
-    const tolerancePct = Number.isFinite(Number(body.tolerancePct)) ? Math.max(0, Math.min(5, Number(body.tolerancePct))) : 1.0;
+    const tolerancePct = Number.isFinite(Number(body.tolerancePct)) ? Math.max(0, Math.min(100, Number(body.tolerancePct))) : 20.0;
     const receiptIdTarget = typeof body.receiptId === "string" && String(body.receiptId).trim() ? String(body.receiptId).trim() : undefined;
 
     if (!isHexAddr(merchantWallet)) {
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
         if (isHexAddr(resolved)) {
           splitAddress = resolved;
         }
-      } catch {}
+      } catch { }
     }
 
     if (!isHexAddr(splitAddress)) {
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       try {
         const { resource } = await container.item(`receipt:${receiptIdTarget}`, merchantWallet).read<any>();
         if (resource) candidateReceipts = [resource];
-      } catch {}
+      } catch { }
     } else {
       // Query recent receipts for this merchant partition
       try {
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
             statusesForRecon.has(String(r.status || "").toLowerCase()) &&
             !isTxHash(String(r.transactionHash || ""))
         );
-      } catch {}
+      } catch { }
     }
 
     // Token prices for USD conversion
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
     try {
       const rates = await fetchEthRates();
       ethUsdRate = Number(rates?.USD || 0);
-    } catch {}
+    } catch { }
     const tokenPrices: Record<string, number> = {
       ETH: ethUsdRate || 2500,
       USDC: 1.0,
@@ -141,7 +141,9 @@ export async function POST(req: NextRequest) {
     function withinTolerance(expected: number, actual: number, pct: number): boolean {
       if (!(expected > 0) || !(actual > 0)) return false;
       const delta = Math.abs(actual - expected);
-      return delta <= (pct / 100) * expected || delta <= 0.02; // allow 2 cents absolute tolerance
+      const relTol = (pct / 100) * expected;
+      const absTol = 5.0; // $5 min tolerance
+      return delta <= Math.max(relTol, absTol);
     }
 
     // Helper to update receipt doc idempotently
@@ -156,7 +158,7 @@ export async function POST(req: NextRequest) {
         if (existingLink && existingLink.txHash && isTxHash(String(existingLink.txHash))) {
           return false;
         }
-      } catch {}
+      } catch { }
 
       const ts = Date.now();
       const docId = `receipt:${receiptId}`;
@@ -164,34 +166,34 @@ export async function POST(req: NextRequest) {
       try {
         const { resource: existing } = await container.item(docId, merchantWallet).read<any>();
         resource = existing || null;
-      } catch {}
+      } catch { }
 
       const next = resource
         ? {
-            ...resource,
-            status: "reconciled",
-            statusHistory: Array.isArray(resource.statusHistory)
-              ? [...resource.statusHistory, { status: "reconciled", ts }]
-              : [{ status: "reconciled", ts }],
-            lastUpdatedAt: ts,
-            transactionHash: String(tx.hash || tx.txHash || "").toLowerCase(),
-            transactionTimestamp: Number(tx.timestamp || Date.now()),
-            buyerWallet:
-              String(resource.buyerWallet || tx.from || "").toLowerCase() || undefined
-          }
+          ...resource,
+          status: "reconciled",
+          statusHistory: Array.isArray(resource.statusHistory)
+            ? [...resource.statusHistory, { status: "reconciled", ts }]
+            : [{ status: "reconciled", ts }],
+          lastUpdatedAt: ts,
+          transactionHash: String(tx.hash || tx.txHash || "").toLowerCase(),
+          transactionTimestamp: Number(tx.timestamp || Date.now()),
+          buyerWallet:
+            String(resource.buyerWallet || tx.from || "").toLowerCase() || undefined
+        }
         : {
-            id: docId,
-            type: "receipt",
-            wallet: merchantWallet,
-            receiptId,
-            status: "reconciled",
-            statusHistory: [{ status: "reconciled", ts }],
-            createdAt: Number(receipt.createdAt || ts),
-            lastUpdatedAt: ts,
-            transactionHash: String(tx.hash || tx.txHash || "").toLowerCase(),
-            transactionTimestamp: Number(tx.timestamp || ts),
-            buyerWallet: String(tx.from || "").toLowerCase() || undefined
-          };
+          id: docId,
+          type: "receipt",
+          wallet: merchantWallet,
+          receiptId,
+          status: "reconciled",
+          statusHistory: [{ status: "reconciled", ts }],
+          createdAt: Number(receipt.createdAt || ts),
+          lastUpdatedAt: ts,
+          transactionHash: String(tx.hash || tx.txHash || "").toLowerCase(),
+          transactionTimestamp: Number(tx.timestamp || ts),
+          buyerWallet: String(tx.from || "").toLowerCase() || undefined
+        };
 
       await container.items.upsert(next as any);
 
@@ -215,7 +217,7 @@ export async function POST(req: NextRequest) {
           ok: true,
           metadata: { receiptId, txHash: next.transactionHash }
         });
-      } catch {}
+      } catch { }
 
       return true;
     }

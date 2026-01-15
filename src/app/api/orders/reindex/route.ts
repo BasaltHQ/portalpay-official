@@ -25,36 +25,36 @@ function isTxHash(s: string): boolean {
 
 export async function POST(req: NextRequest) {
   const correlationId = crypto.randomUUID();
-  
+
   try {
     // Authenticate buyer
     const caller = await requireThirdwebAuth(req);
     const buyerWallet = String(caller.wallet || "").toLowerCase();
-    
+
     if (!isHexAddr(buyerWallet)) {
       return NextResponse.json(
         { ok: false, error: "invalid_buyer_wallet" },
         { status: 400, headers: { "x-correlation-id": correlationId } }
       );
     }
-    
-    console.log(`[REINDEX] Starting reindex for buyer ${buyerWallet.slice(0,10)}...`);
-    
+
+    console.log(`[REINDEX] Starting reindex for buyer ${buyerWallet.slice(0, 10)}...`);
+
     const container = await getContainer();
     const brandKey = getBrandKey();
     const baseOrigin = req.nextUrl.origin;
-    
+
     // Find all merchants this buyer has transacted with
     // Query user_merchant docs for this buyer's wallet partition
     const merchantsSet = new Set<string>();
-    
+
     try {
       const spec = {
         query: "SELECT c.merchant FROM c WHERE c.type='user_merchant' AND c.wallet=@buyer",
         parameters: [{ name: "@buyer", value: buyerWallet }]
       };
       const { resources } = await container.items.query(spec).fetchAll();
-      
+
       for (const row of resources || []) {
         const m = String(row?.merchant || "").toLowerCase();
         if (isHexAddr(m)) merchantsSet.add(m);
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error('[REINDEX] Error querying user_merchant:', e);
     }
-    
+
     // Also query split_index docs to find any merchants (within brand scope)
     try {
       const spec = {
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
         parameters: [{ name: "@brand", value: brandKey }]
       };
       const { resources } = await container.items.query(spec).fetchAll();
-      
+
       for (const row of resources || []) {
         const m = String(row?.merchantWallet || "").toLowerCase();
         if (isHexAddr(m)) merchantsSet.add(m);
@@ -78,10 +78,10 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error('[REINDEX] Error querying split_index:', e);
     }
-    
+
     const merchants = Array.from(merchantsSet);
     console.log(`[REINDEX] Found ${merchants.length} merchants to scan`);
-    
+
     // Dynamic USD pricing from Coinbase (no hardcoded constants)
     const [ethUsd, btcUsd, xrpUsd] = await Promise.all([
       fetchEthUsd().catch(() => 0),
@@ -92,11 +92,11 @@ export async function POST(req: NextRequest) {
       const t = String(token || "").toUpperCase();
       const price =
         t === "ETH" ? ethUsd :
-        t === "USDC" ? 1.0 :
-        t === "USDT" ? 1.0 :
-        t === "CBBTC" ? btcUsd :
-        t === "CBXRP" ? xrpUsd :
-        1.0;
+          t === "USDC" ? 1.0 :
+            t === "USDT" ? 1.0 :
+              t === "CBBTC" ? btcUsd :
+                t === "CBXRP" ? xrpUsd :
+                  1.0;
       const usd = Number(value || 0) * Number(price || 0);
       return +usd.toFixed(2);
     }
@@ -108,18 +108,18 @@ export async function POST(req: NextRequest) {
           "SELECT c.id, c.wallet, c.sku, c.name, c.priceUsd, c.updatedAt FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet";
         const spec = brandKey
           ? {
-              query:
-                baseSelect +
-                " AND (LOWER(c.brandKey)=@brandKey OR NOT IS_DEFINED(c.brandKey)) ORDER BY c.updatedAt DESC",
-              parameters: [
-                { name: "@wallet", value: merchantWallet },
-                { name: "@brandKey", value: String(brandKey).toLowerCase() },
-              ],
-            }
+            query:
+              baseSelect +
+              " AND (LOWER(c.brandKey)=@brandKey OR NOT IS_DEFINED(c.brandKey)) ORDER BY c.updatedAt DESC",
+            parameters: [
+              { name: "@wallet", value: merchantWallet },
+              { name: "@brandKey", value: String(brandKey).toLowerCase() },
+            ],
+          }
           : {
-              query: baseSelect + " ORDER BY c.updatedAt DESC",
-              parameters: [{ name: "@wallet", value: merchantWallet }],
-            };
+            query: baseSelect + " ORDER BY c.updatedAt DESC",
+            parameters: [{ name: "@wallet", value: merchantWallet }],
+          };
         const { resources } = await container.items.query(spec as any).fetchAll();
         return Array.isArray(resources) ? resources : [];
       } catch {
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
         return Array.isArray(purchase) ? purchase : [];
       }
     }
-    
+
     // Create a recovered tracking receipt to preserve pre-checkout itemization for correlation
     async function upsertRecoveredTrackingReceipt(
       container: any,
@@ -208,7 +208,7 @@ export async function POST(req: NextRequest) {
               }))
               .filter((it: any) => Number(it.priceUsd || 0) >= 0);
           }
-        } catch {}
+        } catch { }
         if (!Array.isArray(lineItems) || lineItems.length === 0) {
           const amtUsd = toUsd(String(token || "").toUpperCase(), Number(value || 0));
           lineItems = [
@@ -260,7 +260,7 @@ export async function POST(req: NextRequest) {
     function guessInventoryItemsByTotal(inventory: any[], targetUsd: number): any[] {
       try {
         const target = Math.max(0, Number(targetUsd || 0));
-        const tol = Math.max(0.5, Math.min(10, target * 0.05)); // 5% tolerance, min $0.5, max $10
+        const tol = Math.max(0.5, target * 0.20); // 20% tolerance
 
         const items = (Array.isArray(inventory) ? inventory : [])
           .filter((it: any) => Number(it?.priceUsd || 0) > 0)
@@ -323,7 +323,7 @@ export async function POST(req: NextRequest) {
             }];
           }
         }
-      } catch {}
+      } catch { }
       return [];
     }
 
@@ -331,7 +331,7 @@ export async function POST(req: NextRequest) {
     let receiptsLinked = 0;
     let transactionsFound = 0;
     const processedMerchants: string[] = [];
-    
+
     // Process each merchant
     for (const merchantWallet of merchants) {
       try {
@@ -343,25 +343,25 @@ export async function POST(req: NextRequest) {
           if (isHexAddr(resolved)) {
             splitAddress = resolved;
           }
-        } catch {}
-        
+        } catch { }
+
         if (!isHexAddr(splitAddress)) {
-          console.log(`[REINDEX] Merchant ${merchantWallet.slice(0,10)}... has no split configured, skipping`);
+          console.log(`[REINDEX] Merchant ${merchantWallet.slice(0, 10)}... has no split configured, skipping`);
           continue;
         }
-        
-        console.log(`[REINDEX] Processing merchant ${merchantWallet.slice(0,10)}... split ${splitAddress.slice(0,10)}...`);
-        
+
+        console.log(`[REINDEX] Processing merchant ${merchantWallet.slice(0, 10)}... split ${splitAddress.slice(0, 10)}...`);
+
         // Fetch split transactions
         const txUrl = `${baseOrigin}/api/split/transactions?splitAddress=${encodeURIComponent(splitAddress)}&merchantWallet=${encodeURIComponent(merchantWallet)}&limit=1000`;
         const txRes = await fetch(txUrl, { cache: "no-store" });
         const txData = await txRes.json().catch(() => ({}));
-        
+
         if (!txRes.ok || !txData?.ok) {
-          console.error(`[REINDEX] Failed to fetch transactions for ${merchantWallet.slice(0,10)}...`);
+          console.error(`[REINDEX] Failed to fetch transactions for ${merchantWallet.slice(0, 10)}...`);
           continue;
         }
-        
+
         const transactions: any[] = Array.isArray(txData.transactions) ? txData.transactions : [];
         // Group by tx hash; compute effective payment per hash considering related token transfers
         const byHash = new Map<string, any[]>();
@@ -380,7 +380,7 @@ export async function POST(req: NextRequest) {
             .filter(x => String(x?.token || "ETH").toUpperCase() !== "ETH")
             .filter(x => String(x?.from || "").toLowerCase() === buyerWallet)
             .sort((a, b) => Number(b?.value || 0) - Number(a?.value || 0))[0];
-          
+
           if (!chosen) {
             // If only ETH payment present (possibly 0 ETH), try correlated token transfers
             const ethRec = arr.find(x => String(x?.token || "ETH").toUpperCase() === "ETH");
@@ -402,7 +402,7 @@ export async function POST(req: NextRequest) {
             paymentTxs.push(chosen);
           }
         }
-        
+
         // Also include direct token payments to the split (aggregator → split) even if from != buyer or hash missing
         const directTokenPayments = transactions.filter((t: any) =>
           String(t?.type || "") === "payment" &&
@@ -425,7 +425,7 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        console.log(`[REINDEX] Found ${paymentTxs.length} payment transactions (including aggregator token transfers) for ${merchantWallet.slice(0,10)}...`);
+        console.log(`[REINDEX] Found ${paymentTxs.length} payment transactions (including aggregator token transfers) for ${merchantWallet.slice(0, 10)}...`);
         transactionsFound += paymentTxs.length;
 
         // Additionally, link merchant release events (token distributions) to existing receipts by time/amount
@@ -443,7 +443,7 @@ export async function POST(req: NextRequest) {
               const relAmountUsd = toUsd(relToken, Number(relTx.value || 0));
               const relTs = Number(relTx.timestamp || Date.now());
               const windowMs = 2 * 60 * 60 * 1000; // ±2 hours
-              const tolUsd = 5; // +/- $5 tolerance
+              const tolUsd = Math.max(5, relAmountUsd * 0.20); // 20% tolerance
 
               const specRel = {
                 query:
@@ -487,7 +487,7 @@ export async function POST(req: NextRequest) {
                     receiptsLinked++;
                     console.log(`[REINDEX] Linked merchant release (${relToken} ${Number(relTx.value || 0)}) to receipt ${best.receiptId}`);
                   }
-                } catch {}
+                } catch { }
               }
             } catch (e) {
               console.error(`[REINDEX] Release linking failed:`, e);
@@ -496,7 +496,7 @@ export async function POST(req: NextRequest) {
         } catch (e) {
           console.error(`[REINDEX] Error scanning merchant releases:`, e);
         }
-        
+
         // Process each payment transaction
         for (const tx of paymentTxs) {
           const txHash = String(tx.hash || "").toLowerCase();
@@ -506,12 +506,12 @@ export async function POST(req: NextRequest) {
           const txKey = isHashValid
             ? txHash
             : `nohash:${tokenSym}:${Number(tx.value || 0)}:${String(tx.from || "").toLowerCase()}:${String(tx.to || "").toLowerCase()}:${Number(tx.timestamp || 0)}`;
-          
+
           // Skip zero-value ETH payments to avoid generating $0 synthetic receipts
           if (tokenSym === "ETH" && Number(tx.value || 0) <= 0) {
             continue;
           }
-          
+
           // Check if receipt already exists with this transactionHash
           let existingReceipt: any = null;
           try {
@@ -524,8 +524,8 @@ export async function POST(req: NextRequest) {
             };
             const { resources } = await container.items.query(spec).fetchAll();
             existingReceipt = resources && resources[0];
-          } catch {}
-          
+          } catch { }
+
           // If receipt exists, ensure buyerWallet is set and enrich inventory if minimal
           if (existingReceipt) {
             const receiptId = String(existingReceipt.receiptId || "").trim();
@@ -537,7 +537,7 @@ export async function POST(req: NextRequest) {
                   const currentBuyer = String(resource.buyerWallet || "").toLowerCase();
                   let updated = false;
                   let patch: any = { ...resource };
-                  
+
                   if (currentBuyer !== buyerWallet) {
                     patch.buyerWallet = buyerWallet;
                     patch.lastUpdatedAt = Date.now();
@@ -547,12 +547,12 @@ export async function POST(req: NextRequest) {
                   } else {
                     console.log(`[REINDEX] Receipt ${receiptId} already linked to buyer`);
                   }
-                  
+
                   // If receipt is minimal (no items or generic on-chain line) or zero total, try enriching from purchaseData
                   const isMinimal = !Array.isArray(resource.lineItems) || resource.lineItems.length === 0 ||
                     (resource.lineItems.length === 1 && String(resource.lineItems[0]?.label || "").toLowerCase().includes("on-chain payment"));
                   const totalZero = Number(resource.totalUsd || 0) <= 0;
-                  
+
                   if (isMinimal || totalZero) {
                     try {
                       const specEvent = {
@@ -590,7 +590,7 @@ export async function POST(req: NextRequest) {
                             tokenSym,
                             Number(tx.value || 0)
                           );
-                        } catch {}
+                        } catch { }
                       }
                     } catch (e) {
                       console.error(`[REINDEX] Error enriching receipt ${receiptId} from purchaseData:`, e);
@@ -632,10 +632,10 @@ export async function POST(req: NextRequest) {
                           updated = true;
                           console.log(`[REINDEX] Enriched receipt ${receiptId} from tracking ${String(chosen?.receiptId || "")} (score ${bestScore.toFixed(2)})`);
                         }
-                      } catch {}
+                      } catch { }
                     }
                   }
-                  
+
                   if (updated) {
                     // Correlate to shop inventory and recompute total
                     try {
@@ -647,7 +647,7 @@ export async function POST(req: NextRequest) {
                       );
                       patch.lineItems = stamped;
                       patch.totalUsd = +newTotal.toFixed(2);
-                    } catch {}
+                    } catch { }
 
                     // Upgrade status to paid and lock to prevent deletion
                     if (String(patch.status || "").toLowerCase() !== "paid") {
@@ -667,7 +667,7 @@ export async function POST(req: NextRequest) {
             }
             continue;
           }
-          
+
           // Attempt expectedToken/amount match for hashed payments (merchant receipts with expectedToken/expectedAmountToken)
           try {
             const amountTok = Number(tx.value || 0);
@@ -717,7 +717,7 @@ export async function POST(req: NextRequest) {
                   if (match && typeof match.purchaseData === "object") {
                     hashedPurchaseData = match.purchaseData;
                   }
-                } catch {}
+                } catch { }
 
                 let hashedLineItems: any[] = [];
                 try {
@@ -733,7 +733,7 @@ export async function POST(req: NextRequest) {
                       }))
                       .filter((it: any) => Number(it.priceUsd || 0) >= 0);
                   }
-                } catch {}
+                } catch { }
                 if (!Array.isArray(hashedLineItems) || hashedLineItems.length === 0) {
                   // Prefer settlement/linked token metadata if present (e.g., USDT), otherwise use tx token/value
                   const metaToken = String(rHashed?.metadata?.token || "").toUpperCase();
@@ -780,7 +780,7 @@ export async function POST(req: NextRequest) {
                 // Preserve recovered tracking receipt for correlation (hashed match path)
                 try {
                   await upsertRecoveredTrackingReceipt(container, merchantWallet, buyerWallet, txHash, ts, hashedPurchaseData, tokenSym, Number(tx.value || 0));
-                } catch {}
+                } catch { }
                 const linkIdExpHashed = `buyer_tx_link:${buyerWallet}:${txKey}`;
                 await container.items.upsert({
                   id: linkIdExpHashed,
@@ -810,7 +810,7 @@ export async function POST(req: NextRequest) {
                     for (const d of dupsH) {
                       const drid = String(d?.receiptId || "");
                       if (!drid) continue;
-                      try { await container.item(`receipt:${drid}`, merchantWallet).delete(); } catch {}
+                      try { await container.item(`receipt:${drid}`, merchantWallet).delete(); } catch { }
                     }
                   } else {
                     // Fallback: delete synthetic near time/amount when txHash is missing
@@ -833,16 +833,16 @@ export async function POST(req: NextRequest) {
                       const withinTime = Math.abs(cAt - ts) <= windowMs;
                       const withinAmt = Math.abs(tUsd - vUsd) <= 1; // $1 tolerance
                       if (withinTime && withinAmt) {
-                        try { await container.item(`receipt:${drid}`, merchantWallet).delete(); } catch {}
+                        try { await container.item(`receipt:${drid}`, merchantWallet).delete(); } catch { }
                       }
                     }
                   }
-                } catch {}
+                } catch { }
                 continue;
               }
             }
-          } catch {}
-          
+          } catch { }
+
           // Heuristic match when tx hash is missing (token payment via aggregator)
           if (!isHashValid && tokenSym !== "ETH") {
             // Attempt 1: exact expectedToken/amount match within 2h window (uses expectedToken/expectedAmountToken set at checkout)
@@ -933,7 +933,7 @@ export async function POST(req: NextRequest) {
                           patched.lineItems = chosen.lineItems;
                           patched.totalUsd = Number(chosen.totalUsd || amountUsdExp);
                         }
-                      } catch {}
+                      } catch { }
 
                       await container.items.upsert(patched);
                     }
@@ -951,15 +951,15 @@ export async function POST(req: NextRequest) {
                     });
                     continue;
                   }
-                } catch {}
+                } catch { }
               }
-            } catch {}
+            } catch { }
             // Attempt 2: nearest by time and USD amount tolerance when expected fields not present
             try {
               const amountUsd = toUsd(tokenSym, Number(tx.value || 0));
               const ts = Number(tx.timestamp || Date.now());
               const windowMs = 60 * 60 * 1000; // ±60 minutes
-              const tolUsd = 5; // +/- $5 tolerance for amount match
+              const tolUsd = Math.max(5, amountUsd * 0.20); // 20% tolerance for amount match
               const specApprox = {
                 query:
                   "SELECT c.id, c.wallet, c.receiptId, c.totalUsd, c.createdAt, c.status FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.createdAt BETWEEN @start AND @end AND c.totalUsd >= @minUsd AND c.totalUsd <= @maxUsd",
@@ -1042,7 +1042,7 @@ export async function POST(req: NextRequest) {
                           patchedApprox.lineItems = chosen.lineItems;
                           patchedApprox.totalUsd = Number(chosen.totalUsd || amountUsdApprox);
                         }
-                      } catch {}
+                      } catch { }
 
                       await container.items.upsert(patchedApprox);
                     }
@@ -1060,7 +1060,7 @@ export async function POST(req: NextRequest) {
                     });
                     continue;
                   }
-                } catch {}
+                } catch { }
               }
             } catch (e) {
               console.error(`[REINDEX] Heuristic match failed for token payment without hash:`, e);
@@ -1073,8 +1073,8 @@ export async function POST(req: NextRequest) {
           try {
             const { resource } = await container.item(linkId, linkId).read<any>();
             linkDoc = resource || null;
-          } catch {}
-          
+          } catch { }
+
           if (linkDoc) {
             // Link already exists – ensure the referenced receipt is visible to the buyer
             try {
@@ -1116,25 +1116,25 @@ export async function POST(req: NextRequest) {
                           receiptsLinked++;
                           console.log(`[REINDEX] Linked buyer to receipt ${found.receiptId} via cross-partition lookup`);
                         }
-                      } catch {}
+                      } catch { }
                     }
                   }
-                } catch {}
+                } catch { }
               }
             } catch (e) {
-              console.error(`[REINDEX] Error ensuring buyer linkage for linked tx ${txHash.slice(0,10)}...:`, e);
+              console.error(`[REINDEX] Error ensuring buyer linkage for linked tx ${txHash.slice(0, 10)}...:`, e);
             }
-            console.log(`[REINDEX] Transaction ${txHash.slice(0,10)}... already linked to another receipt`);
+            console.log(`[REINDEX] Transaction ${txHash.slice(0, 10)}... already linked to another receipt`);
             continue;
           }
-          
+
           // Generate synthetic receipt (try to enrich from Thirdweb payment event if present)
-          const receiptId = `R-ONCHAIN-${txHash.slice(0,10).toUpperCase()}-${Date.now()}`;
+          const receiptId = `R-ONCHAIN-${txHash.slice(0, 10).toUpperCase()}-${Date.now()}`;
           const token = String(tx.token || "ETH").toUpperCase();
           const value = Number(tx.value || 0);
           const valueUsd = toUsd(token, value);
           const timestamp = Number(tx.timestamp || Date.now());
-          
+
           // Get merchant brand name
           let brandName = "Merchant";
           try {
@@ -1142,8 +1142,8 @@ export async function POST(req: NextRequest) {
             if (siteCfg?.theme?.brandName) {
               brandName = String(siteCfg.theme.brandName);
             }
-          } catch {}
-          
+          } catch { }
+
           // Optional: fetch Thirdweb payment event to enrich purchaseData and items
           let purchaseData: any = null;
           try {
@@ -1159,8 +1159,8 @@ export async function POST(req: NextRequest) {
             if (match && typeof match.purchaseData === "object") {
               purchaseData = match.purchaseData;
             }
-          } catch {}
-          
+          } catch { }
+
           // Build line items: prefer purchaseData.items if present; else single-row generic
           let lineItems: any[] = [];
           if (purchaseData && Array.isArray((purchaseData as any).items)) {
@@ -1175,7 +1175,7 @@ export async function POST(req: NextRequest) {
                   itemId: typeof it?.itemId === "string" ? it.itemId : undefined,
                 }))
                 .filter((it: any) => Number(it.priceUsd || 0) >= 0);
-            } catch {}
+            } catch { }
           }
           if (!Array.isArray(lineItems) || lineItems.length === 0) {
             lineItems = [
@@ -1196,7 +1196,7 @@ export async function POST(req: NextRequest) {
                 try {
                   const invItems = await loadInventoryForMerchant(container, merchantWallet, brandKey);
                   lineItems = correlateLineItems(Array.isArray(lineItems) ? lineItems : [], invItems);
-                } catch {}
+                } catch { }
                 const newTotal = lineItems.reduce((s: number, it: any) => s + Number(it.priceUsd || 0) * (Number(it.qty || 1)), 0);
                 await container.items.upsert({
                   ...existing,
@@ -1231,7 +1231,7 @@ export async function POST(req: NextRequest) {
                   correlationId
                 });
                 receiptsLinked++;
-                console.log(`[REINDEX] Linked existing merchant receipt ${pdReceiptId} for tx ${txHash.slice(0,10)}...`);
+                console.log(`[REINDEX] Linked existing merchant receipt ${pdReceiptId} for tx ${txHash.slice(0, 10)}...`);
                 // Remove any synthetic ONCHAIN receipts for this tx to avoid duplicates
                 try {
                   const specDup = {
@@ -1247,9 +1247,9 @@ export async function POST(req: NextRequest) {
                   for (const d of dups) {
                     const drid = String(d?.receiptId || "");
                     if (!drid) continue;
-                    try { await container.item(`receipt:${drid}`, merchantWallet).delete(); } catch {}
+                    try { await container.item(`receipt:${drid}`, merchantWallet).delete(); } catch { }
                   }
-                } catch {}
+                } catch { }
               } else {
                 // Restore deleted merchant receipt using purchaseData.receiptId
                 try {
@@ -1290,20 +1290,20 @@ export async function POST(req: NextRequest) {
                     correlationId
                   });
                   receiptsLinked++;
-                  console.log(`[REINDEX] Restored merchant receipt ${pdReceiptId} and linked to tx ${txHash.slice(0,10)}...`);
+                  console.log(`[REINDEX] Restored merchant receipt ${pdReceiptId} and linked to tx ${txHash.slice(0, 10)}...`);
                 } catch (e) {
                   console.error(`[REINDEX] Failed to restore merchant receipt ${pdReceiptId}:`, e);
                 }
               }
               continue;
-            } catch {}
+            } catch { }
           }
-          
+
           // Before creating a synthetic receipt, attempt time+USD match to existing receipts
           try {
             const amtUsd = toUsd(tokenSym, Number(tx.value || 0));
             const windowMs = 60 * 60 * 1000; // ±60 minutes
-            const tolUsd = 5; // +/- $5 tolerance
+            const tolUsd = Math.max(5, amtUsd * 0.20); // 20% tolerance
             const specFind = {
               query:
                 "SELECT c.id, c.wallet, c.receiptId, c.totalUsd, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant ORDER BY c.createdAt DESC OFFSET 0 LIMIT 200",
@@ -1348,7 +1348,7 @@ export async function POST(req: NextRequest) {
                     if (match && typeof match.purchaseData === "object") {
                       timePurchaseData = match.purchaseData;
                     }
-                  } catch {}
+                  } catch { }
 
                   let timeLineItems: any[] = [];
                   try {
@@ -1364,24 +1364,24 @@ export async function POST(req: NextRequest) {
                         }))
                         .filter((it: any) => Number(it.priceUsd || 0) >= 0);
                     }
-                  } catch {}
-                if (!Array.isArray(timeLineItems) || timeLineItems.length === 0) {
-                  const metaToken = String(rAny?.metadata?.token || "").toUpperCase();
-                  const metaValue = Number(rAny?.metadata?.tokenValue ?? 0);
-                  const preferredToken = metaToken || tokenSym;
-                  const preferredValue = metaValue > 0 ? metaValue : Number(tx.value || 0);
-                  const vUsd = toUsd(preferredToken, preferredValue);
-                  const fallbackLine = { label: `On-chain Payment (${preferredToken})`, priceUsd: vUsd > 0 ? vUsd : preferredValue };
-                  const existingLi = Array.isArray(rAny?.lineItems) ? rAny.lineItems : [];
-                  const existingUseful =
-                    existingLi.length > 1 ||
-                    (existingLi.length === 1 && Number(existingLi[0]?.priceUsd || 0) > 0);
-                  if ((preferredToken === "ETH" && preferredValue <= 0) && existingUseful) {
-                    timeLineItems = existingLi;
-                  } else {
-                    timeLineItems = [fallbackLine];
+                  } catch { }
+                  if (!Array.isArray(timeLineItems) || timeLineItems.length === 0) {
+                    const metaToken = String(rAny?.metadata?.token || "").toUpperCase();
+                    const metaValue = Number(rAny?.metadata?.tokenValue ?? 0);
+                    const preferredToken = metaToken || tokenSym;
+                    const preferredValue = metaValue > 0 ? metaValue : Number(tx.value || 0);
+                    const vUsd = toUsd(preferredToken, preferredValue);
+                    const fallbackLine = { label: `On-chain Payment (${preferredToken})`, priceUsd: vUsd > 0 ? vUsd : preferredValue };
+                    const existingLi = Array.isArray(rAny?.lineItems) ? rAny.lineItems : [];
+                    const existingUseful =
+                      existingLi.length > 1 ||
+                      (existingLi.length === 1 && Number(existingLi[0]?.priceUsd || 0) > 0);
+                    if ((preferredToken === "ETH" && preferredValue <= 0) && existingUseful) {
+                      timeLineItems = existingLi;
+                    } else {
+                      timeLineItems = [fallbackLine];
+                    }
                   }
-                }
 
                   const newTotal = timeLineItems.reduce((s: number, it: any) => s + Number(it.priceUsd || 0) * (Number(it.qty || 1)), 0);
                   await container.items.upsert({
@@ -1409,7 +1409,7 @@ export async function POST(req: NextRequest) {
                   // Preserve recovered tracking receipt for correlation (time+USD match path)
                   try {
                     await upsertRecoveredTrackingReceipt(container, merchantWallet, buyerWallet, txHash, timestamp, timePurchaseData, tokenSym, Number(tx.value || 0));
-                  } catch {}
+                  } catch { }
                   const linkIdAny = `buyer_tx_link:${buyerWallet}:${txKey}`;
                   await container.items.upsert({
                     id: linkIdAny,
@@ -1439,7 +1439,7 @@ export async function POST(req: NextRequest) {
                       for (const d of dupsH) {
                         const drid = String(d?.receiptId || "");
                         if (!drid) continue;
-                        try { await container.item(`receipt:${drid}`, merchantWallet).delete(); } catch {}
+                        try { await container.item(`receipt:${drid}`, merchantWallet).delete(); } catch { }
                       }
                     } else {
                       const vUsd = toUsd(tokenSym, Number(tx.value || 0));
@@ -1461,14 +1461,14 @@ export async function POST(req: NextRequest) {
                         const withinTime = Math.abs(cAt - timestamp) <= windowMs;
                         const withinAmt = Math.abs(tUsd - vUsd) <= 1;
                         if (withinTime && withinAmt) {
-                          try { await container.item(`receipt:${drid}`, merchantWallet).delete(); } catch {}
+                          try { await container.item(`receipt:${drid}`, merchantWallet).delete(); } catch { }
                         }
                       }
                     }
-                  } catch {}
+                  } catch { }
                   continue;
                 }
-              } catch {}
+              } catch { }
             }
           } catch (e) {
             console.error(`[REINDEX] Pre-synthetic time+USD match failed:`, e);
@@ -1478,8 +1478,8 @@ export async function POST(req: NextRequest) {
           try {
             const invItems = await loadInventoryForMerchant(container, merchantWallet, brandKey);
             lineItems = correlateLineItems(Array.isArray(lineItems) ? lineItems : [], invItems);
-          } catch {}
-          
+          } catch { }
+
           // Create synthetic receipt
           const syntheticReceipt = {
             id: `receipt:${pdReceiptId || receiptId}`,
@@ -1509,10 +1509,10 @@ export async function POST(req: NextRequest) {
             },
             lastUpdatedAt: Date.now()
           };
-          
+
           try {
             await container.items.upsert(syntheticReceipt);
-            
+
             // Create link doc to prevent duplicate generation
             await container.items.upsert({
               id: linkId,
@@ -1524,10 +1524,10 @@ export async function POST(req: NextRequest) {
               linkedAt: Date.now(),
               correlationId
             });
-            
+
             receiptsGenerated++;
-            console.log(`[REINDEX] Generated synthetic receipt ${receiptId} for tx ${txHash.slice(0,10)}...`);
-            
+            console.log(`[REINDEX] Generated synthetic receipt ${receiptId} for tx ${txHash.slice(0, 10)}...`);
+
             // Audit event
             await auditEvent(req, {
               who: buyerWallet,
@@ -1536,13 +1536,13 @@ export async function POST(req: NextRequest) {
               target: merchantWallet,
               correlationId,
               ok: true,
-              metadata: { receiptId, txHash: txHash.slice(0,10), token, valueUsd }
+              metadata: { receiptId, txHash: txHash.slice(0, 10), token, valueUsd }
             });
           } catch (e) {
             console.error(`[REINDEX] Error generating synthetic receipt:`, e);
           }
         }
-        
+
         // Post-pass enrichment: promote tracking line items into minimal canonical receipts
         try {
           // Get latest canonical receipts for this buyer/merchant
@@ -1640,7 +1640,7 @@ export async function POST(req: NextRequest) {
                     existingLi.length === 0 ||
                     (existingLi.length === 1 &&
                       (String(existingLi[0]?.label || "").toLowerCase().includes("on-chain") ||
-                       Number(existingLi[0]?.priceUsd || 0) <= 0));
+                        Number(existingLi[0]?.priceUsd || 0) <= 0));
                   const metaToken = String(rdoc?.metadata?.token || "").toUpperCase();
                   const metaValue = Number(rdoc?.metadata?.tokenValue ?? 0);
 
@@ -1691,7 +1691,7 @@ export async function POST(req: NextRequest) {
                         receiptsLinked++;
                         console.log(`[REINDEX] Post-pass fallback set canonical ${String(c.receiptId)} to ${metaToken} ${metaValue}`);
                       }
-                    } catch {}
+                    } catch { }
                   }
                 }
               } catch (e) {
@@ -1822,10 +1822,10 @@ export async function POST(req: NextRequest) {
 
         processedMerchants.push(merchantWallet);
       } catch (e) {
-        console.error(`[REINDEX] Error processing merchant ${merchantWallet.slice(0,10)}...:`, e);
+        console.error(`[REINDEX] Error processing merchant ${merchantWallet.slice(0, 10)}...:`, e);
       }
     }
-    
+
     const summary = {
       ok: true,
       merchantsProcessed: processedMerchants.length,
@@ -1834,9 +1834,9 @@ export async function POST(req: NextRequest) {
       receiptsLinked,
       brandKey
     };
-    
+
     console.log(`[REINDEX] Complete:`, summary);
-    
+
     await auditEvent(req, {
       who: buyerWallet,
       roles: ['buyer'],
@@ -1846,13 +1846,13 @@ export async function POST(req: NextRequest) {
       ok: true,
       metadata: summary
     });
-    
+
     return NextResponse.json(summary, {
       headers: { "x-correlation-id": correlationId }
     });
   } catch (e: any) {
     console.error("[REINDEX] Error:", e);
-    
+
     try {
       await auditEvent(req, {
         who: 'unknown',
@@ -1863,8 +1863,8 @@ export async function POST(req: NextRequest) {
         ok: false,
         metadata: { error: e?.message || 'failed' }
       });
-    } catch {}
-    
+    } catch { }
+
     return NextResponse.json(
       { ok: false, error: e?.message || "reindex_failed" },
       { status: 500, headers: { "x-correlation-id": correlationId } }
