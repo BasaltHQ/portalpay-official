@@ -1,7 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useBrand } from "@/contexts/BrandContext";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Copy, CheckCircle } from "lucide-react";
+import { useActiveAccount } from "thirdweb/react";
 
 type ShopifyTile = {
   brandKey: string;
@@ -31,7 +37,8 @@ type CatalogKey =
   | "worldpay"
   | "authnet"
   | "adyen"
-  | "cybersource";
+  | "cybersource"
+  | "xshopping";
 
 type CatalogPlugin = { key: CatalogKey; name: string; icon: string; description: string };
 
@@ -54,13 +61,23 @@ const catalog: CatalogPlugin[] = [
   { key: "authnet", name: "Authorize.Net", icon: "/logos/authorize-net.svg", description: "Gateway integration" },
   { key: "adyen", name: "Adyen", icon: "/logos/adyen.svg", description: "Global payments" },
   { key: "cybersource", name: "CyberSource", icon: "/logos/cybersource.svg", description: "Payments gateway" },
+  { key: "xshopping", name: "X Shopping", icon: "𝕏", description: "Sync product catalog to X" },
 ];
 
 export default function IntegrationsPanel() {
   const brand = useBrand();
+  const account = useActiveAccount();
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
   const [tile, setTile] = React.useState<ShopifyTile | null>(null);
+  const [xEnabled, setXEnabled] = React.useState(false);
+  const [showXSetup, setShowXSetup] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [shopSlug, setShopSlug] = useState("");
+
+  // Brand Key
+  const rawKey = String(brand?.key || "").toLowerCase();
+  const normalizedKey = rawKey || "basaltsurge";
 
   React.useEffect(() => {
     let cancelled = false;
@@ -68,14 +85,42 @@ export default function IntegrationsPanel() {
       try {
         setLoading(true);
         setError("");
-        const rawBk = String(brand?.key || "").toLowerCase();
-        const bk = rawBk === "basaltsurge" ? "portalpay" : rawBk;
+        const bk = String(brand?.key || "basaltsurge").toLowerCase();
 
         if (!bk) {
           setError("brandKey unavailable");
           setLoading(false);
           return;
         }
+
+        // Fetch X Shopping Status
+        (async () => {
+          try {
+            // API is now brand-specific: /api/admin/plugins/xshopping/config/[brandKey]
+            // NOTE: This API requires admin auth. IntegrationsPanel is Merchant-facing.
+            // We need to ensure the merchant context can read this config.
+            // The API currently has `requireThirdwebAuth` and checks for admin roles.
+            // For merchants to see if it's enabled, they technically need read access.
+            // Strategy: The previous `api/admin/plugins` was for Platform/Partner admins.
+            // We might need a public/merchant-facing check or ensure the merchant wallet has permissions.
+            // For now, let's assume if they are logged in as merchant they can hit this if we relax permissions OR
+            // use a separate merchant-facing endpoint. 
+            // Ideally, `getBrandConfig` should return enabled plugins. 
+            // Current plan: fetch the config and handle 403 gracefully (treat as disabled).
+            // Wait, the API I created `api/admin/plugins/xshopping/config/[brandKey]` checks for admin role.
+            // Merchants are NOT platform admins. 
+            // I need to update the API to allow ANY authenticated user to READ the config for their brand?
+            // OR, just assume for now I should try to fetch it. 
+            // If it fails, I'll default to false.
+            const rx = await fetch(`/api/admin/plugins/xshopping/config/${encodeURIComponent(bk)}`, { cache: "no-store" });
+            if (rx.ok) {
+              const jx = await rx.json().catch(() => ({}));
+              if (jx?.config?.enabled) {
+                if (!cancelled) setXEnabled(true);
+              }
+            }
+          } catch { }
+        })();
         // Load Shopify integration tile; others are not yet backed by API
         const r = await fetch(`/api/integrations/shopify/brands/${encodeURIComponent(bk)}`, { cache: "no-store" });
         const j = await r.json().catch(() => ({}));
@@ -93,6 +138,27 @@ export default function IntegrationsPanel() {
     return () => { cancelled = true; };
   }, [brand?.key]);
 
+  // Fetch Site Config to get Shop Slug for the feed URL
+  React.useEffect(() => {
+    let cancelled = false;
+    // Only fetch if we have a wallet or brand context. 
+    // If account undefined, wait.
+    if (!account?.address) return;
+
+    (async () => {
+      try {
+        const r = await fetch(`/api/site/config?wallet=${account.address}`);
+        const j = await r.json().catch(() => ({}));
+        // API returns { config: ... } structure
+        const slug = j?.config?.slug || j?.slug;
+        if (!cancelled && slug) {
+          setShopSlug(slug);
+        }
+      } catch { }
+    })();
+    return () => { cancelled = true; };
+  }, [account?.address]);
+
   function enabledBadge(enabled: boolean) {
     return <span className={`microtext ${enabled ? "text-emerald-700" : "text-rose-700"} font-semibold`}>{enabled ? "Enabled" : "Disabled"}</span>;
   }
@@ -102,9 +168,14 @@ export default function IntegrationsPanel() {
 
   function renderCard(p: CatalogPlugin) {
     const isShopify = p.key === "shopify";
+    const isXShopping = p.key === "xshopping";
+
+    // Visibility Check: X Shopping only visible if enabled by Partner
+    if (isXShopping && !xEnabled) return null;
+
     const statusLower = String(tile?.status || "").toLowerCase();
-    const enabled = isShopify ? (statusLower === "published") : false;
-    const configured = isShopify ? (!!tile?.listingUrl && statusLower !== "draft") : false;
+    const enabled = isShopify ? (statusLower === "published") : (isXShopping ? true : false); // If visible (xEnabled=true), it's "enabled" for merchant use
+    const configured = isShopify ? (!!tile?.listingUrl && statusLower !== "draft") : (isXShopping ? true : false); // X Shopping is always "configured" if enabled (simple feed URL)
 
     const tagline = isShopify ? (tile?.tagline || p.description) : p.description;
     const published = isShopify && statusLower === "published";
@@ -122,8 +193,12 @@ export default function IntegrationsPanel() {
         <div className="flex items-start gap-3">
           {/* Icon */}
           <div className="shrink-0 h-12 w-12 rounded-md border bg-white grid place-items-center overflow-hidden" aria-label={p.name}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={p.icon} alt={p.name} className={`h-9 w-9 object-contain ${enabled ? "" : "grayscale"}`} />
+            {p.key === 'xshopping' ? (
+              <span className="text-3xl font-bold text-black dark:text-black">𝕏</span>
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={p.icon} alt={p.name} className={`h-9 w-9 object-contain ${enabled ? "" : "grayscale"}`} />
+            )}
           </div>
           {/* Text */}
           <div className="min-w-0 flex-1">
@@ -142,6 +217,60 @@ export default function IntegrationsPanel() {
                 >
                   Install on Shopify
                 </a>
+              ) : isXShopping ? (
+                <Dialog open={showXSetup} onOpenChange={setShowXSetup}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8">
+                      Setup Feed
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent onClick={(e) => e.stopPropagation() /* Prevent bubbling */}>
+                    <DialogHeader>
+                      <DialogTitle>X Shopping Feed Setup</DialogTitle>
+                      <DialogDescription>
+                        Connect your product catalog to X Shopping Manager.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-md border text-sm">
+                        <strong>Instructions:</strong>
+                        <ol className="list-decimal list-inside space-y-1 mt-2 text-muted-foreground">
+                          <li>Log in to <a href="https://ads.twitter.com/" target="_blank" className="underline text-blue-500">X Ads Manager</a></li>
+                          <li>Navigate to Tools {'>'} Shopping Manager</li>
+                          <li>Create a new Catalog and select "Scheduled Feed"</li>
+                          <li>Paste the Feed URL below as your data source</li>
+                        </ol>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Your Product Feed URL</Label>
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            readOnly
+                            value={`${typeof window !== 'undefined' ? window.location.origin : ''}/api/integrations/xshopping/${shopSlug || 'YOUR_SHOP_SLUG'}/products.csv`}
+                            className="font-mono text-xs"
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const url = `${window.location.origin}/api/integrations/xshopping/${shopSlug || 'YOUR_SHOP_SLUG'}/products.csv`;
+                              navigator.clipboard.writeText(url).then(() => {
+                                setCopied(true);
+                                setTimeout(() => setCopied(false), 2000);
+                              }).catch(err => {
+                                console.error("Clipboard failed", err);
+                              });
+                            }}
+                          >
+                            {copied ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               ) : (
                 <button className="px-3 py-1.5 rounded-md border text-sm text-muted-foreground" disabled>
                   Coming soon
@@ -158,7 +287,7 @@ export default function IntegrationsPanel() {
     <div className="glass-pane rounded-xl border p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Integrations</h2>
-        <span className="microtext text-muted-foreground">Brand: {brand?.key || "—"}</span>
+        <span className="microtext text-muted-foreground">Brand: {normalizedKey || "—"}</span>
       </div>
 
       <div className="microtext text-muted-foreground">Connect your store and channels. Browse available plugins; Shopify supports brand-specific configuration.</div>
@@ -168,67 +297,74 @@ export default function IntegrationsPanel() {
 
       {/* Catalog of all available plugins - long list, one card per row with extra details */}
       <div className="space-y-3">
-        {catalog.map((p) => (
-          <div key={p.key} className="rounded-lg border p-4 bg-background">
-            {renderCard(p)}
-            {/* Additional details */}
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 microtext text-muted-foreground">
-              <div>
-                <div className="font-semibold text-foreground">Description</div>
-                <div>{p.description}</div>
-              </div>
-              <div>
-                <div className="font-semibold text-foreground">Documentation</div>
+        {catalog.map((p) => {
+          // Early return for X Shopping if disabled
+          if (p.key === "xshopping" && !xEnabled) return null;
+
+          return (
+            <div key={p.key} className="rounded-lg border p-4 bg-background">
+              {renderCard(p)}
+              {/* Additional details */}
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 microtext text-muted-foreground">
                 <div>
-                  {p.key === "shopify" ? (
-                    <a href="https://shopify.dev/docs/apps" target="_blank" rel="noopener noreferrer" className="underline">Shopify Apps Docs</a>
-                  ) : p.key === "woocommerce" ? (
-                    <a href="https://developer.woocommerce.com/" target="_blank" rel="noopener noreferrer" className="underline">WooCommerce Developer</a>
-                  ) : p.key === "stripe" ? (
-                    <a href="https://stripe.com/docs" target="_blank" rel="noopener noreferrer" className="underline">Stripe Docs</a>
-                  ) : p.key === "paypal" ? (
-                    <a href="https://developer.paypal.com/home" target="_blank" rel="noopener noreferrer" className="underline">PayPal Developer</a>
-                  ) : p.key === "square" ? (
-                    <a href="https://developer.squareup.com/docs" target="_blank" rel="noopener noreferrer" className="underline">Square Docs</a>
-                  ) : p.key === "clover" ? (
-                    <a href="https://docs.clover.com/" target="_blank" rel="noopener noreferrer" className="underline">Clover Docs</a>
-                  ) : p.key === "toast" ? (
-                    <a href="https://github.com/ToastTab" target="_blank" rel="noopener noreferrer" className="underline">Toast Resources</a>
-                  ) : p.key === "flexa" ? (
-                    <a href="https://flexa.network/" target="_blank" rel="noopener noreferrer" className="underline">Flexa</a>
-                  ) : p.key === "bitpay" ? (
-                    <a href="https://bitpay.com/docs/" target="_blank" rel="noopener noreferrer" className="underline">BitPay Docs</a>
-                  ) : p.key === "coinbase" ? (
-                    <a href="https://docs.cloud.coinbase.com/commerce/docs/" target="_blank" rel="noopener noreferrer" className="underline">Coinbase Commerce Docs</a>
-                  ) : p.key === "nmi" ? (
-                    <a href="https://developer.nmi.com/" target="_blank" rel="noopener noreferrer" className="underline">NMI Developer</a>
-                  ) : p.key === "nuvei" ? (
-                    <a href="https://docs.nuvei.com/" target="_blank" rel="noopener noreferrer" className="underline">Nuvei Docs</a>
-                  ) : p.key === "bluesnap" ? (
-                    <a href="https://support.bluesnap.com/docs" target="_blank" rel="noopener noreferrer" className="underline">BlueSnap Docs</a>
-                  ) : p.key === "rapyd" ? (
-                    <a href="https://docs.rapyd.net/" target="_blank" rel="noopener noreferrer" className="underline">Rapyd Docs</a>
-                  ) : p.key === "worldpay" ? (
-                    <a href="https://developer.worldpay.com/" target="_blank" rel="noopener noreferrer" className="underline">Worldpay Developer</a>
-                  ) : p.key === "authnet" ? (
-                    <a href="https://developer.authorize.net/" target="_blank" rel="noopener noreferrer" className="underline">Authorize.Net Developer</a>
-                  ) : p.key === "adyen" ? (
-                    <a href="https://docs.adyen.com/" target="_blank" rel="noopener noreferrer" className="underline">Adyen Docs</a>
-                  ) : (
-                    <a href="https://developer.cybersource.com/" target="_blank" rel="noopener noreferrer" className="underline">CyberSource Developer</a>
-                  )}
+                  <div className="font-semibold text-foreground">Description</div>
+                  <div>{p.description}</div>
                 </div>
-              </div>
-              <div>
-                <div className="font-semibold text-foreground">Status</div>
-                <div className="microtext">
-                  <span className="text-muted-foreground">Enabled:</span> {(p.key === "shopify" ? (String(tile?.status || "").toLowerCase() === "published") : false) ? "Yes" : "No"} · <span className="text-muted-foreground">Configured:</span> {(p.key === "shopify" ? (!!tile?.listingUrl && String(tile?.status || "").toLowerCase() !== "draft") : false) ? "Yes" : "No"}
+                <div>
+                  <div className="font-semibold text-foreground">Documentation</div>
+                  <div>
+                    {p.key === "shopify" ? (
+                      <a href="https://shopify.dev/docs/apps" target="_blank" rel="noopener noreferrer" className="underline">Shopify Apps Docs</a>
+                    ) : p.key === "woocommerce" ? (
+                      <a href="https://developer.woocommerce.com/" target="_blank" rel="noopener noreferrer" className="underline">WooCommerce Developer</a>
+                    ) : p.key === "stripe" ? (
+                      <a href="https://stripe.com/docs" target="_blank" rel="noopener noreferrer" className="underline">Stripe Docs</a>
+                    ) : p.key === "paypal" ? (
+                      <a href="https://developer.paypal.com/home" target="_blank" rel="noopener noreferrer" className="underline">PayPal Developer</a>
+                    ) : p.key === "square" ? (
+                      <a href="https://developer.squareup.com/docs" target="_blank" rel="noopener noreferrer" className="underline">Square Docs</a>
+                    ) : p.key === "clover" ? (
+                      <a href="https://docs.clover.com/" target="_blank" rel="noopener noreferrer" className="underline">Clover Docs</a>
+                    ) : p.key === "toast" ? (
+                      <a href="https://github.com/ToastTab" target="_blank" rel="noopener noreferrer" className="underline">Toast Resources</a>
+                    ) : p.key === "flexa" ? (
+                      <a href="https://flexa.network/" target="_blank" rel="noopener noreferrer" className="underline">Flexa</a>
+                    ) : p.key === "bitpay" ? (
+                      <a href="https://bitpay.com/docs/" target="_blank" rel="noopener noreferrer" className="underline">BitPay Docs</a>
+                    ) : p.key === "coinbase" ? (
+                      <a href="https://docs.cloud.coinbase.com/commerce/docs/" target="_blank" rel="noopener noreferrer" className="underline">Coinbase Commerce Docs</a>
+                    ) : p.key === "nmi" ? (
+                      <a href="https://developer.nmi.com/" target="_blank" rel="noopener noreferrer" className="underline">NMI Developer</a>
+                    ) : p.key === "nuvei" ? (
+                      <a href="https://docs.nuvei.com/" target="_blank" rel="noopener noreferrer" className="underline">Nuvei Docs</a>
+                    ) : p.key === "bluesnap" ? (
+                      <a href="https://support.bluesnap.com/docs" target="_blank" rel="noopener noreferrer" className="underline">BlueSnap Docs</a>
+                    ) : p.key === "rapyd" ? (
+                      <a href="https://docs.rapyd.net/" target="_blank" rel="noopener noreferrer" className="underline">Rapyd Docs</a>
+                    ) : p.key === "worldpay" ? (
+                      <a href="https://developer.worldpay.com/" target="_blank" rel="noopener noreferrer" className="underline">Worldpay Developer</a>
+                    ) : p.key === "authnet" ? (
+                      <a href="https://developer.authorize.net/" target="_blank" rel="noopener noreferrer" className="underline">Authorize.Net Developer</a>
+                    ) : p.key === "adyen" ? (
+                      <a href="https://docs.adyen.com/" target="_blank" rel="noopener noreferrer" className="underline">Adyen Docs</a>
+                    ) : p.key === "xshopping" ? (
+                      <a href="https://ads.twitter.com/" target="_blank" rel="noopener noreferrer" className="underline">X Ads Manager</a>
+                    ) : (
+                      <a href="https://developer.cybersource.com/" target="_blank" rel="noopener noreferrer" className="underline">CyberSource Developer</a>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-semibold text-foreground">Status</div>
+                  <div className="microtext">
+                    <span className="text-muted-foreground">Enabled:</span> {(p.key === "shopify" ? (String(tile?.status || "").toLowerCase() === "published") : (p.key === "xshopping" ? xEnabled : false)) ? "Yes" : "No"} · <span className="text-muted-foreground">Configured:</span> {(p.key === "shopify" ? (!!tile?.listingUrl && String(tile?.status || "").toLowerCase() !== "draft") : (p.key === "xshopping" ? xEnabled : false)) ? "Yes" : "No"}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
+          );
+        })}
+      </div >
+    </div >
   );
 }

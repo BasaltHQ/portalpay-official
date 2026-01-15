@@ -14,10 +14,9 @@ import { useActiveAccount } from "thirdweb/react";
 export default function PartnerShopifyPanel() {
   const account = useActiveAccount();
 
-  // Helper to resolve effective brand key (basaltsurge -> portalpay)
+  // Helper to resolve effective brand key
   const getEffectiveBrandKey = (key: string) => {
-    const k = key.trim().toLowerCase();
-    return k === "basaltsurge" ? "portalpay" : k;
+    return key.trim().toLowerCase() || "basaltsurge";
   };
 
   // Brand selection (partners typically know their brand key)
@@ -25,9 +24,11 @@ export default function PartnerShopifyPanel() {
 
   // Enabled states (today: only Shopify is wired; others default disabled)
   const [shopifyEnabled, setShopifyEnabled] = React.useState<boolean>(false);
+  const [xshoppingEnabled, setXShoppingEnabled] = React.useState<boolean>(false);
 
   // Workspace state
   type CatalogKey =
+    | 'xshopping'
     | 'shopify'
     | 'woocommerce'
     | 'stripe'
@@ -50,6 +51,7 @@ export default function PartnerShopifyPanel() {
 
   type CatalogPlugin = { key: CatalogKey; name: string; icon: string; description: string; tags: string[] };
   const catalog: CatalogPlugin[] = [
+    { key: 'xshopping', name: 'X Shopping', icon: '𝕏', description: 'Sync product catalog to X', tags: ['Social', 'Commerce'] },
     { key: 'shopify', name: 'Shopify', icon: '/logos/shopify-payments.svg', description: 'Shopify app & checkout extension', tags: ['Commerce'] },
     { key: 'woocommerce', name: 'WooCommerce', icon: '/logos/woocommerce.svg', description: 'WooCommerce plugin (coming soon)', tags: ['Commerce'] },
     { key: 'stripe', name: 'Stripe', icon: '/logos/stripe.svg', description: 'Card payments + wallets', tags: ['Payments'] },
@@ -124,12 +126,21 @@ export default function PartnerShopifyPanel() {
   async function loadConfig() {
     setError(""); setInfo(""); setLoading(true);
     try {
-      if (!brandKey) { setError("Enter brandKey"); return; }
+      if (!brandKey?.trim()) { setError("Enter brandKey"); return; }
       const targetBrand = getEffectiveBrandKey(brandKey);
+      if (!targetBrand) { setError("Invalid brandKey"); return; }
       const r = await fetch(`/api/admin/shopify/brands/${encodeURIComponent(targetBrand)}/plugin-config`, { cache: "no-store" });
       const j = await r.json().catch(() => ({}));
       const ok = r.ok && j?.plugin;
       setShopifyEnabled(!!ok);
+
+      // Load X Shopping Config
+      try {
+        const rx = await fetch(`/api/admin/plugins/xshopping/config/${encodeURIComponent(targetBrand)}`, { cache: "no-store" });
+        const jx = await rx.json().catch(() => ({}));
+        setXShoppingEnabled(!!jx?.config?.enabled);
+      } catch { }
+
       if (ok) {
         const conf = j.plugin || {};
         setPlugin({
@@ -238,8 +249,9 @@ export default function PartnerShopifyPanel() {
   async function saveConfig() {
     setError(""); setInfo(""); setSaving(true);
     try {
-      if (!brandKey) { setError("Enter brandKey"); return; }
+      if (!brandKey?.trim()) { setError("Enter brandKey"); return; }
       const targetBrand = getEffectiveBrandKey(brandKey);
+      if (!targetBrand) { setError("Invalid brandKey"); return; }
       const r = await fetch(`/api/admin/shopify/brands/${encodeURIComponent(targetBrand)}/plugin-config`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -256,8 +268,9 @@ export default function PartnerShopifyPanel() {
   async function generatePackage() {
     setError(""); setInfo("");
     try {
-      if (!brandKey) { setError("Enter brandKey"); return; }
+      if (!brandKey?.trim()) { setError("Enter brandKey"); return; }
       const targetBrand = getEffectiveBrandKey(brandKey);
+      if (!targetBrand) { setError("Invalid brandKey"); return; }
       const r = await fetch(`/api/admin/shopify/apps/package`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ brandKey: targetBrand, palette: plugin?.extension?.palette }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || !j?.ok) { setError(j?.error || "Package failed"); return; }
@@ -268,8 +281,9 @@ export default function PartnerShopifyPanel() {
   async function deploy() {
     setError(""); setInfo("");
     try {
-      if (!brandKey) { setError("Enter brandKey"); return; }
+      if (!brandKey?.trim()) { setError("Enter brandKey"); return; }
       const targetBrand = getEffectiveBrandKey(brandKey);
+      if (!targetBrand) { setError("Invalid brandKey"); return; }
       const r = await fetch(`/api/admin/shopify/apps/deploy`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ brandKey: targetBrand }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || !j?.ok) { setError(j?.error || "Deploy failed"); return; }
@@ -292,14 +306,37 @@ export default function PartnerShopifyPanel() {
   async function publish() {
     setError(""); setInfo("");
     try {
-      if (!brandKey) { setError("Enter brandKey"); return; }
+      if (!brandKey?.trim()) { setError("Enter brandKey"); return; }
       const targetBrand = getEffectiveBrandKey(brandKey);
+      if (!targetBrand) { setError("Invalid brandKey"); return; }
       const r = await fetch(`/api/admin/shopify/apps/publish`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ brandKey: targetBrand, listingUrl: plugin?.listingUrl || undefined, shopifyAppId: plugin?.shopifyAppId || undefined, shopifyAppSlug: plugin?.shopifyAppSlug || undefined }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || !j?.ok) { setError(j?.error || "Publish failed"); return; }
       setInfo("Published.");
       await getStatus();
     } catch (e: any) { setError(e?.message || "Publish failed"); }
+  }
+
+  async function saveXShoppingConfig(enabled: boolean) {
+    setError(""); setInfo("");
+    try {
+      if (!brandKey?.trim()) { setError("Enter brandKey"); return; }
+      const targetBrand = getEffectiveBrandKey(brandKey);
+      if (!targetBrand) { setError("Invalid brandKey"); return; }
+
+      const r = await fetch(`/api/admin/plugins/xshopping/config/${encodeURIComponent(targetBrand)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled })
+      });
+
+      if (!r.ok) throw new Error("Failed to save X Shopping config");
+
+      setXShoppingEnabled(enabled);
+      setInfo(enabled ? "X Shopping enabled." : "X Shopping disabled.");
+    } catch (e: any) {
+      setError(e.message || "Failed to save X Shopping config");
+    }
   }
 
   // Catalog Item renderers with prominent disabled styling
@@ -332,7 +369,11 @@ export default function PartnerShopifyPanel() {
         {configuredCornerBadge(configured)}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <div className="h-12 w-12 rounded-md border bg-background flex items-center justify-center overflow-hidden">
-          <img src={plugin.icon} alt={plugin.name} className={`h-8 w-8 object-contain rounded-md ${enabled ? '' : 'grayscale'}`} />
+          {plugin.key === 'xshopping' ? (
+            <span className="text-3xl font-bold text-foreground">𝕏</span>
+          ) : (
+            <img src={plugin.icon} alt={plugin.name} className={`h-8 w-8 object-contain rounded-md ${enabled ? '' : 'grayscale'}`} />
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -362,7 +403,11 @@ export default function PartnerShopifyPanel() {
         {configuredCornerBadge(configured)}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <div className="h-9 w-9 rounded-md border bg-background flex items-center justify-center overflow-hidden">
-          <img src={plugin.icon} alt={plugin.name} className={`h-6 w-6 object-contain rounded-md ${enabled ? '' : 'grayscale'}`} />
+          {plugin.key === 'xshopping' ? (
+            <span className="text-2xl font-bold text-foreground">𝕏</span>
+          ) : (
+            <img src={plugin.icon} alt={plugin.name} className={`h-6 w-6 object-contain rounded-md ${enabled ? '' : 'grayscale'}`} />
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -391,7 +436,11 @@ export default function PartnerShopifyPanel() {
         {configuredCornerBadge(configured)}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <div className="h-8 w-8 rounded-md border bg-background flex items-center justify-center overflow-hidden">
-          <img src={plugin.icon} alt={plugin.name} className={`h-6 w-6 object-contain rounded-md ${enabled ? '' : 'grayscale'}`} />
+          {plugin.key === 'xshopping' ? (
+            <span className="text-xl font-bold text-foreground">𝕏</span>
+          ) : (
+            <img src={plugin.icon} alt={plugin.name} className={`h-6 w-6 object-contain rounded-md ${enabled ? '' : 'grayscale'}`} />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -439,8 +488,15 @@ export default function PartnerShopifyPanel() {
           <div className="rounded-md border">
             <div>
               {catalog.map((p) => {
-                const enabled = p.key === 'shopify' ? shopifyEnabled : false;
-                const configured = p.key === 'shopify' ? (!!plugin.pluginName && String(plugin.status || '').toLowerCase() !== 'draft') : false;
+                let enabled = false;
+                let configured = false;
+                if (p.key === 'shopify') {
+                  enabled = shopifyEnabled;
+                  configured = (!!plugin.pluginName && String(plugin.status || '').toLowerCase() !== 'draft');
+                } else if (p.key === 'xshopping') {
+                  enabled = xshoppingEnabled;
+                  configured = xshoppingEnabled;
+                }
                 return (
                   <CatalogItemList key={p.key} plugin={p} enabled={enabled} configured={configured} onSelect={(key) => setSelectedPlugin(key)} />
                 );
@@ -450,8 +506,15 @@ export default function PartnerShopifyPanel() {
         ) : (
           <div className={gridClass}>
             {catalog.map((p) => {
-              const enabled = p.key === 'shopify' ? shopifyEnabled : false;
-              const configured = p.key === 'shopify' ? (!!plugin.pluginName && String(plugin.status || '').toLowerCase() !== 'draft') : false;
+              let enabled = false;
+              let configured = false;
+              if (p.key === 'shopify') {
+                enabled = shopifyEnabled;
+                configured = (!!plugin.pluginName && String(plugin.status || '').toLowerCase() !== 'draft');
+              } else if (p.key === 'xshopping') {
+                enabled = xshoppingEnabled;
+                configured = xshoppingEnabled;
+              }
               return viewMode === 'grid-compact'
                 ? <CatalogItemCompact key={p.key} plugin={p} enabled={enabled} configured={configured} onSelect={(key) => setSelectedPlugin(key)} />
                 : <CatalogItemFull key={p.key} plugin={p} enabled={enabled} configured={configured} onSelect={(key) => setSelectedPlugin(key)} />;
@@ -484,7 +547,48 @@ export default function PartnerShopifyPanel() {
       {/* Catalog with view mode controls */}
       {renderCatalog()}
 
-      {/* Workspace: Only Shopify for now */}
+      {selectedPlugin === 'xshopping' && (
+        <div className="rounded-md border p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">𝕏</span>
+              <div className="text-sm font-semibold">X Shopping Workspace — {brandKey || '—'}</div>
+            </div>
+            <div className="text-xs text-muted-foreground">State: {xshoppingEnabled ? 'Enabled' : 'Disabled'}</div>
+          </div>
+
+          <div className="rounded-md border p-4 bg-background space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">Enable for Merchants</div>
+                <div className="microtext text-muted-foreground">Allow merchants under this brand to use X Shopping integration.</div>
+              </div>
+              {/* Simple Toggle */}
+              <button
+                className={`w-12 h-6 rounded-full transition-colors flex items-center px-0.5 ${xshoppingEnabled ? 'bg-green-500' : 'bg-slate-200'}`}
+                onClick={() => saveXShoppingConfig(!xshoppingEnabled)}
+              >
+                <div className={`h-5 w-5 bg-white rounded-full shadow transition-transform ${xshoppingEnabled ? 'translate-x-[22px]' : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            {xshoppingEnabled && (
+              <div className="mt-4 p-3 rounded-md bg-foreground/5 border">
+                <div className="text-sm font-semibold mb-1">Configuration</div>
+                <div className="microtext text-muted-foreground">
+                  Merchants can now see the "X Shopping" card in their Integrations panel.
+                  They will be able to generate their product feed URL there.
+                </div>
+              </div>
+            )}
+
+            {(info || error) && (
+              <div className={`rounded-md border p-2 text-sm ${error ? "text-red-600" : "text-emerald-600"}`}>{error || info}</div>
+            )}
+          </div>
+        </div>
+      )}
+
       {selectedPlugin === 'shopify' && (
         <div className="rounded-md border p-4 space-y-3">
           <div className="flex items-center justify-between">

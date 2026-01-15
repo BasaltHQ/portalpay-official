@@ -19,7 +19,7 @@ function getCookieDomainFromRequest(req: NextRequest): string | undefined {
 		// Get the actual request host (prefer x-forwarded-host for reverse proxies)
 		const forwarded = req.headers.get("x-forwarded-host");
 		const host = forwarded || req.headers.get("host") || "";
-		
+
 		// Extract hostname without port
 		const hostname = host.split(":")[0];
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 		res.cookies.set(AUTH.COOKIE, jwt, {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === 'production',
-			sameSite: 'lax',
+			sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
 			path: '/',
 			domain: cookieDomain,
 			maxAge: 60 * 60 * 24,
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 			res.cookies.set("cb_wallet", addr, {
 				httpOnly: true,
 				secure: process.env.NODE_ENV === 'production',
-				sameSite: 'lax',
+				sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
 				path: '/',
 				domain: cookieDomain,
 				maxAge: 60 * 60 * 24,

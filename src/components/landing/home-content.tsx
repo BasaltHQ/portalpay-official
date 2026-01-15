@@ -20,6 +20,8 @@ import RebrandingHero from "@/components/landing/RebrandingHero";
 import PublisherOsirisSection from "@/components/landing/PublisherOsirisSection";
 import PluginsSection from "@/components/landing/PluginsSection";
 import TrustlessPermissionlessSection from "@/components/landing/TrustlessPermissionlessSection";
+import { AgenticPaymentsSection } from "@/components/landing/AgenticPaymentsSection";
+<AgenticPaymentsSection />
 
 type Metrics = {
   totalUsers: number;
@@ -123,14 +125,39 @@ export default function HomeContent() {
 
   const { theme: rawTheme } = useTheme();
 
-  // CRITICAL: When logged out on BasaltSurge, use static defaults for Live Preview
+  // CRITICAL: When logged out on BasaltSurge (PLATFORM ONLY), use static defaults for Live Preview
+  // BUT: Never do this in Partner containers - they should always show their own branding
   const siteTheme = React.useMemo(() => {
     const t = rawTheme;
-    const effectiveBrandKey = (t.brandKey || (brand as any)?.key || getEffectiveBrandKey()).toLowerCase();
-    const isBasalt = effectiveBrandKey === "basaltsurge";
+
+    // Read DOM attributes directly for most reliable partner detection
+    const domContainerType = typeof document !== 'undefined'
+      ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase()
+      : '';
+    const domBrandKey = typeof document !== 'undefined'
+      ? (document.documentElement.getAttribute('data-pp-brand-key') || '').toLowerCase()
+      : '';
+
+    // Detect partner container from DOM attribute (most reliable) OR from environment/context
+    // This ensures partner detection works even during initial render before DOM is fully hydrated
+    const envContainerType = (typeof window !== 'undefined' && (window as any).__PP_CONTAINER_TYPE) || '';
+    const envBrandKey = (typeof window !== 'undefined' && (window as any).__PP_BRAND_KEY) || '';
+    const brandKeyFromContext = ((brand as any)?.key || '').toLowerCase();
+
+    // Partner detection: DOM attribute OR non-platform brand key from context/env
+    const isPartnerFromDOM = domContainerType === 'partner';
+    const isPartnerFromBrand = brandKeyFromContext &&
+      brandKeyFromContext !== 'portalpay' &&
+      brandKeyFromContext !== 'basaltsurge';
+    const isPartner = isPartnerFromDOM || isPartnerFromBrand;
+
+    // Use DOM brand key first, then context
+    const effectiveBrandKey = (domBrandKey || brandKeyFromContext || t.brandKey || getEffectiveBrandKey()).toLowerCase();
+    const isBasalt = effectiveBrandKey === "basaltsurge" || effectiveBrandKey === "portalpay";
     const isLoggedIn = Boolean(account?.address);
 
-    if (isBasalt && !isLoggedIn) {
+    // Only force BasaltSurge on PLATFORM, never for partners
+    if (isBasalt && !isLoggedIn && !isPartner) {
       return {
         ...t,
         brandLogoUrl: "/BasaltSurgeWideD.png",
@@ -141,6 +168,23 @@ export default function HomeContent() {
         navbarMode: "logo" as const,
       };
     }
+
+    // For partners, SANITIZE: strip any BasaltSurge logos that leaked through from rawTheme
+    if (isPartner) {
+      const sanitizeLogo = (logo: string | undefined) => {
+        const s = String(logo || '').toLowerCase();
+        if (s.includes('basaltsurge') || s.includes('ppsymbol') || s.includes('portalpay')) {
+          return (brand as any)?.logos?.app || ''; // Use partner logo instead
+        }
+        return logo;
+      };
+      return {
+        ...t,
+        brandLogoUrl: sanitizeLogo(t.brandLogoUrl),
+        symbolLogoUrl: sanitizeLogo(t.symbolLogoUrl),
+      };
+    }
+
     return t;
   }, [rawTheme, (brand as any)?.key, account?.address]);
 
@@ -174,11 +218,11 @@ export default function HomeContent() {
       const treatAsGeneric = generic || (isPartnerContainer && /^portalpay$/i.test(raw));
       // Prefer container brand key over context brand key
       const key = containerBrandKey || String((brand as any)?.key || "").trim();
-      const titleizedKey = key ? key.charAt(0).toUpperCase() + key.slice(1) : "PortalPay";
+      const titleizedKey = key ? key.charAt(0).toUpperCase() + key.slice(1) : "BasaltSurge";
       return (!raw || treatAsGeneric) ? titleizedKey : raw;
     } catch {
       const key = containerBrandKey || String((brand as any)?.key || "").trim();
-      return key ? key.charAt(0).toUpperCase() + key.slice(1) : "PortalPay";
+      return key ? key.charAt(0).toUpperCase() + key.slice(1) : "BasaltSurge";
     }
   }, [siteTheme?.brandName, containerBrandKey, (brand as any)?.key, isPartnerContainer]);
 
@@ -342,7 +386,11 @@ export default function HomeContent() {
 
       {/* Rebranding Announcement Hero - Full Width with negative bottom margin to blend */}
       <div className="w-full">
-        <RebrandingHero />
+        <RebrandingHero
+          brandName={displayBrandName}
+          logoUrl={siteTheme.brandLogoUrl || (isPartnerContainer ? ((brand as any)?.logos?.app || '') : "/BasaltSurge.png")}
+          isPartner={isPartnerContainer}
+        />
       </div>
 
       <div className="max-w-6xl mx-auto p-6 md:p-8 relative z-10 w-full">
@@ -663,6 +711,9 @@ export default function HomeContent() {
 
         {/* Plugins & Integrations */}
         <PluginsSection />
+
+        {/* Agentic Payments (x402) */}
+        <AgenticPaymentsSection />
 
         {/* Philosophy: Trustless & Permissionless */}
         <TrustlessPermissionlessSection />

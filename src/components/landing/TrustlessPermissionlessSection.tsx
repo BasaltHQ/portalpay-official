@@ -2,8 +2,11 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import { useBrand } from "@/contexts/BrandContext";
 
 export default function TrustlessPermissionlessSection() {
+    const brand = useBrand();
+    const brandName = (brand as any)?.name || "BasaltSurge";
     return (
         <section className="mb-16 relative overflow-hidden">
             {/* Background Atmosphere */}
@@ -36,7 +39,7 @@ export default function TrustlessPermissionlessSection() {
                         <h3 className="text-lg text-blue-400 font-mono mb-6">"Don't Verify. Validate."</h3>
 
                         <p className="text-zinc-400 leading-relaxed mb-6">
-                            In traditional finance, you trust the bank not to freeze your funds. In BasaltSurge, you trust code.
+                            In traditional finance, you trust the bank not to freeze your funds. With {brandName}, you trust code.
                             Smart contracts execute exactly as written. No middleman, no bias, no "pending approval".
                         </p>
 
@@ -77,7 +80,7 @@ export default function TrustlessPermissionlessSection() {
                         <h3 className="text-lg text-emerald-400 font-mono mb-6">"Open to Everyone."</h3>
 
                         <p className="text-zinc-400 leading-relaxed mb-6">
-                            No applications. No credit checks. No geo-blocking. BasaltSurge is open software that anyone can use.
+                            No applications. No credit checks. No geo-blocking. {brandName} is open software that anyone can use.
                             Whether you're a coffee shop in Seattle or a digital artist in Seoul, the network is open 24/7.
                         </p>
 

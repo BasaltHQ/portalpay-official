@@ -103,8 +103,7 @@ export async function GET(req: NextRequest) {
     } catch {
       brandKey = undefined;
     }
-    let normalizedBrand = String(brandKey || "portalpay").toLowerCase();
-    if (normalizedBrand === "basaltsurge") normalizedBrand = "portalpay";
+    const normalizedBrand = String(brandKey || "basaltsurge").toLowerCase();
 
     try {
       const c = await getContainer();
@@ -202,8 +201,7 @@ export async function POST(req: NextRequest) {
     } catch {
       brandKey = undefined;
     }
-    let normalizedBrand = String(brandKey || "portalpay").toLowerCase();
-    if (normalizedBrand === "basaltsurge") normalizedBrand = "portalpay";
+    const normalizedBrand = String(brandKey || "basaltsurge").toLowerCase();
     const docId = getDocIdForBrand(normalizedBrand);
 
     const c = await getContainer();
@@ -269,7 +267,7 @@ export async function POST(req: NextRequest) {
           secondaryColor: "#22c55e",
           textColor: "#0b1020",
           accentColor: "#f59e0b",
-          brandLogoUrl: "/cblogod.png",
+          brandLogoUrl: "/BasaltSurgeWideD.png",
           coverPhotoUrl: "",
           fontFamily:
             "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",

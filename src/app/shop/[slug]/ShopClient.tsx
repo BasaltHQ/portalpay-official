@@ -39,6 +39,7 @@ type ShopTheme = {
     layoutMode?: "balanced" | "minimalist" | "maximalist";
     maximalistBannerUrl?: string; // Specific for maximalist layout
     galleryImages?: string[]; // Up to 5 images for maximalist carousel
+    receiptBackgroundUrl?: string; // Background for terminal/receipts
 };
 
 type InventoryArrangement = "grid" | "featured_first" | "groups" | "carousel";
@@ -324,9 +325,10 @@ interface ShopClientProps {
     merchantWallet: string;
     cleanSlug: string;
     isPreview?: boolean;
+    initialItemId?: string;
 }
 
-export default function ShopClient({ config: cfg, items: initialItems, reviews: initialReviews, merchantWallet, cleanSlug, isPreview = false }: ShopClientProps) {
+export default function ShopClient({ config: cfg, items: initialItems, reviews: initialReviews, merchantWallet, cleanSlug, isPreview = false, initialItemId }: ShopClientProps) {
     const twTheme = usePortalThirdwebTheme();
     const brand = useBrand();
     const account = useActiveAccount();
@@ -348,6 +350,24 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
     // State
     const [items, setItems] = useState<InventoryItem[]>(initialItems);
     const [loadingItems, setLoadingItems] = useState(false);
+
+    // Deep linking: Select item once loaded
+    useEffect(() => {
+        if (initialItemId && items.length > 0 && !selectedItem) {
+            // Try to find by direct ID match first
+            let found = items.find(i => i.id === initialItemId);
+            // If not found, try decoding just in case passed encoded
+            if (!found) {
+                try {
+                    const decoded = decodeURIComponent(initialItemId);
+                    found = items.find(i => i.id === decoded);
+                } catch { }
+            }
+            if (found) {
+                setSelectedItem(found);
+            }
+        }
+    }, [items, initialItemId]);
     const [reviews, setReviews] = useState<any[]>(initialReviews);
     const [reviewsLoading, setReviewsLoading] = useState(false);
     const [reviewsError, setReviewsError] = useState("");
@@ -428,6 +448,17 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             loadDiscounts();
         }
     }, [cleanSlug]);
+
+    // Sticky Header Logic
+    const [isSticky, setIsSticky] = useState(false);
+    useEffect(() => {
+        const handleScroll = () => {
+            // Show sticky header after scrolling past roughly the top area (e.g. 100px)
+            setIsSticky(window.scrollY > 100);
+        };
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
 
     const loadDiscounts = async () => {
         setDiscountsLoading(true);
@@ -516,12 +547,12 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
         return { discountedPrice, discount, savings };
     }, [getItemDiscount]);
 
-    // Fetch inventory from API if not provided or empty
+    // Fetch inventory from API if not provided or empty, or if we are the owner (to see unapproved items)
     useEffect(() => {
-        if (initialItems.length === 0) {
+        if (initialItems.length === 0 || isOwner) {
             loadInventory();
         }
-    }, [initialItems]);
+    }, [initialItems, isOwner]);
 
     const loadInventory = async () => {
         setLoadingItems(true);
@@ -532,7 +563,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             const data = await res.json();
             if (Array.isArray(data.items)) {
                 const mapped = data.items
-                    .filter((it: any) => !it.approvalStatus || it.approvalStatus === "APPROVED")
+                    .filter((it: any) => isOwner || !it.approvalStatus || it.approvalStatus === "APPROVED")
                     .map((it: any) => ({
                         ...it,
                         id: it.id || it._id,
@@ -1673,14 +1704,16 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
 
                         return (
                             <div key={`${it.id}-${idx}`} className="flex items-center gap-2 rounded-md border p-2 bg-background/50">
-                                <Thumbnail
-                                    src={Array.isArray(it.images) && it.images.length ? it.images[0] : undefined}
-                                    fill
-                                    itemId={it.id}
-                                    primaryColor={cfg?.theme?.primaryColor}
-                                    secondaryColor={cfg?.theme?.secondaryColor}
-                                    logoUrl={cfg?.theme?.brandLogoUrl}
-                                />
+                                <div className="w-14 h-14 rounded-md overflow-hidden flex-shrink-0">
+                                    <Thumbnail
+                                        src={Array.isArray(it.images) && it.images.length ? it.images[0] : undefined}
+                                        fill
+                                        itemId={it.id}
+                                        primaryColor={cfg?.theme?.primaryColor}
+                                        secondaryColor={cfg?.theme?.secondaryColor}
+                                        logoUrl={cfg?.theme?.brandLogoUrl}
+                                    />
+                                </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="text-sm font-semibold truncate">{it.name}</div>
                                     <div className="text-xs text-muted-foreground">
@@ -1837,6 +1870,75 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             <AutoTranslateProvider>
                 <div style={varStyle}>
                     <ShopThemeAuditor expected={cfg?.theme || {}} />
+
+                    {/* Sticky Header */}
+                    <div className={`fixed top-0 left-0 right-0 z-[100] bg-background/90 backdrop-blur-md border-b shadow-sm transition-transform duration-300 ${isSticky ? "translate-y-0" : "-translate-y-full"}`} style={{ borderColor: shopPrimary }}>
+                        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+                                <div className={`w-8 h-8 ${cfg?.theme?.logoShape === "circle" ? "rounded-full" : "rounded-lg"} overflow-hidden flex-shrink-0 border bg-white flex items-center justify-center`}>
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={(() => {
+                                            const a = String(cfg?.theme?.brandLogoUrl || "").trim();
+                                            const b = String((brand?.logos?.symbol || "") as string).trim();
+                                            const c = String((brand?.logos?.favicon || "") as string).trim();
+                                            const d = String((brand?.logos?.app || "") as string).trim();
+                                            return resolveBrandSymbol(a || b || c || d, (brand as any)?.key);
+                                        })()}
+                                        alt="Logo"
+                                        className="max-w-full max-h-full object-contain"
+                                    />
+                                </div>
+                                <div className="font-bold text-lg truncate hidden md:block">{cfg?.name}</div>
+                            </div>
+
+                            <div className="flex-1 max-w-md">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <input
+                                        className="w-full h-10 pl-10 pr-4 rounded-full border bg-muted/50 text-sm focus:bg-background focus:ring-1 transition-colors outline-none"
+                                        placeholder="Search products..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="hidden md:block w-[140px]">
+                                    <ClientOnly fallback={<div style={{ height: "36px" }} />}>
+                                        <ConnectButton
+                                            client={client}
+                                            chain={chain}
+                                            wallets={wallets}
+                                            theme={twTheme}
+                                            connectButton={{
+                                                label: "Login",
+                                                className: connectButtonClass,
+                                                style: { ...getConnectButtonStyle(), height: "36px", padding: "0 12px", fontSize: "13px" },
+                                            }}
+                                            detailsButton={{
+                                                displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+                                            }}
+                                            connectModal={{
+                                                title: "Login",
+                                                titleIcon: (() => {
+                                                    const a = String(cfg?.theme?.brandLogoUrl || "").trim();
+                                                    const b = String((brand?.logos?.symbol || "") as string).trim();
+                                                    const c = String((brand?.logos?.favicon || "") as string).trim();
+                                                    const d = String((brand?.logos?.app || "") as string).trim();
+                                                    return resolveBrandSymbol(a || b || c || d, (brand as any)?.key);
+                                                })(),
+                                                size: "compact",
+                                                showThirdwebBranding: false,
+                                            }}
+                                        />
+                                    </ClientOnly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="max-w-7xl mx-auto px-4 pt-6 pb-24 md:pb-10 space-y-6">
                         <div className={`rounded-t-2xl border shadow transition-all duration-500 ${heroCollapsed ? "h-auto" : ""}`} style={{ borderColor: "var(--shop-primary)" }}>
                             {!heroCollapsed && coverUrl && !useSideLayout && layoutMode !== "minimalist" && (
@@ -2357,7 +2459,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                             {loadingItems ? "Loading..." : "Refresh"}
                                         </button>
                                     </div>
-                                    <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
+                                    <div className="">
                                         {loadingItems ? (
                                             <div className={`grid ${cardSize === "small" ? "grid-cols-3 md:grid-cols-4 lg:grid-cols-5" :
                                                 cardSize === "large" ? "grid-cols-1 md:grid-cols-2" :
@@ -2380,7 +2482,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
 
                                 {!heroCollapsed && (
                                     <div className="hidden lg:block">
-                                        <div className="sticky top-4 rounded-xl border p-4 glass-pane" style={{ borderColor: "var(--shop-primary)" }}>
+                                        <div className={`sticky transition-[top] duration-300 ${isSticky ? "top-20" : "top-4"} rounded-xl border p-4 glass-pane`} style={{ borderColor: "var(--shop-primary)" }}>
                                             {renderCartContent()}
                                         </div>
                                     </div>
@@ -2414,7 +2516,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                     </button>
                                 </div>
                                 {reviewsError && <div className="microtext text-red-500">{reviewsError}</div>}
-                                <div className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto pr-2">
+                                <div className="space-y-2">
                                     {(reviews || []).map((rv: any) => (
                                         <div key={rv.id} className="rounded-md border p-3 bg-background/50">
                                             <div className="flex items-center justify-between mb-2">

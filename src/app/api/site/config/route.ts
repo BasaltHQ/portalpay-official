@@ -100,7 +100,48 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
           containerBrandKey,
           hasCustomSymbol
         });
-        // Continue to partner override logic below (don't return early)
+
+        // Actually apply partner brand defaults - fetch partner brand config
+        try {
+          const { brand: partnerBrand } = await getBrandConfigFromCosmos(containerBrandKey);
+          if (partnerBrand) {
+            const pLogos = (partnerBrand?.logos || {}) as any;
+            const pColors = (partnerBrand?.colors || {}) as any;
+            const rawBrandName = String(partnerBrand?.name || "").trim();
+            const titleizedKey = containerBrandKey.charAt(0).toUpperCase() + containerBrandKey.slice(1);
+            const isGenericName = !rawBrandName || /^(ledger\d*|partner\d*|default|portalpay)$/i.test(rawBrandName);
+            const brandName = isGenericName ? titleizedKey : rawBrandName;
+
+            // Apply partner brand to theme
+            (cfg.theme as any).brandName = brandName;
+            (cfg.theme as any).brandKey = containerBrandKey;
+            if (pLogos.app) (cfg.theme as any).brandLogoUrl = pLogos.app;
+            if (pLogos.symbol || pLogos.app) (cfg.theme as any).symbolLogoUrl = pLogos.symbol || pLogos.app;
+            if (pLogos.favicon) (cfg.theme as any).brandFaviconUrl = pLogos.favicon;
+            if (pColors.primary) (cfg.theme as any).primaryColor = pColors.primary;
+            if (pColors.accent) (cfg.theme as any).secondaryColor = pColors.accent;
+            if (pLogos.navbarMode === "logo" || pLogos.navbarMode === "symbol") {
+              (cfg.theme as any).navbarMode = pLogos.navbarMode;
+            }
+            (cfg.theme as any).logos = {
+              ...((cfg.theme as any).logos || {}),
+              app: pLogos.app || (cfg.theme as any).logos?.app,
+              symbol: pLogos.symbol || pLogos.app || (cfg.theme as any).logos?.symbol,
+              favicon: pLogos.favicon || (cfg.theme as any).logos?.favicon,
+              navbarMode: pLogos.navbarMode,
+            };
+          }
+        } catch (e) {
+          console.error("[site/config] Failed to fetch partner brand config", e);
+        }
+
+        // Ensure basePlatformFeePct is present
+        try {
+          const platBpsEff = typeof brandFeesConfig.platformFeeBps === "number" ? brandFeesConfig.platformFeeBps : 50;
+          const partBpsEff = typeof brandFeesConfig.partnerFeeBps === "number" ? brandFeesConfig.partnerFeeBps : 0;
+          (cfg as any).basePlatformFeePct = Math.max(0, (platBpsEff + partBpsEff) / 100);
+        } catch { }
+        return cfg;
       } else {
         // Merchant has customized their theme OR is on main platform - return AS-IS
         // Use saved brandKey if present, otherwise use containerBrandKey (no forced default)
@@ -557,6 +598,8 @@ function normalizeSiteConfig(raw?: any) {
   };
 
   // Legacy PortalPay asset/color sanitization to avoid teal + cblogod defaults
+  // CRITICAL: Skip this entire block in partner containers - they should never inherit platform branding
+  const skipPlatformMigration = isPartnerContext();
   try {
     const t2 = (config.theme as any) || {};
 
@@ -603,7 +646,7 @@ function normalizeSiteConfig(raw?: any) {
     // Skip migration if: explicit PortalPay merchant OR has explicit customizations (logo/colors)
     const isMerchantWithCustomizations = isExplicitPortalPayMerchant || hasCustomLogo || hasCustomColors;
 
-    if (currentBrandKey === "basaltsurge" && !isMerchantWithCustomizations) {
+    if (!skipPlatformMigration && currentBrandKey === "basaltsurge" && !isMerchantWithCustomizations) {
       const isLegacyAsset = (url: any) => {
         const s = String(url || "").toLowerCase();
         if (s.includes("bssymbol") || s.includes("basalthq")) return false;
@@ -653,7 +696,8 @@ function normalizeSiteConfig(raw?: any) {
     const isGlobalConfig = !isLoadedFromDb;
 
     // Only force specific brand colors if NO custom colors exist and it's THE GLOBAL config (landing page)
-    if (isBasalt && isGlobalConfig) {
+    // ALSO skip for partner containers - they should use their own brand colors
+    if (!skipPlatformMigration && isBasalt && isGlobalConfig) {
       const p = String(t2.primaryColor || "").toLowerCase();
       const s = String(t2.secondaryColor || "").toLowerCase();
       // Only override if it's the old slate/red or teals
@@ -666,13 +710,16 @@ function normalizeSiteConfig(raw?: any) {
 
     // Default clamps for legacy teal/azure surfaces - apply these to everyone to clean up UI teals
     // but avoid overriding if it's already basalt green
-    const pCol = String(t2.primaryColor || "").toLowerCase();
-    const sCol = String(t2.secondaryColor || "").toLowerCase();
-    if (pCol === "#10b981" || pCol === "#14b8a6" || pCol === "#0d9488") {
-      t2.primaryColor = isBasalt ? "#22C55E" : "#1f2937";
-    }
-    if (sCol === "#2dd4bf" || sCol === "#22d3ee") {
-      t2.secondaryColor = isBasalt ? "#16A34A" : "#F54029";
+    // SKIP for partner containers - they should keep their own colors
+    if (!skipPlatformMigration) {
+      const pCol = String(t2.primaryColor || "").toLowerCase();
+      const sCol = String(t2.secondaryColor || "").toLowerCase();
+      if (pCol === "#10b981" || pCol === "#14b8a6" || pCol === "#0d9488") {
+        t2.primaryColor = isBasalt ? "#22C55E" : "#1f2937";
+      }
+      if (sCol === "#2dd4bf" || sCol === "#22d3ee") {
+        t2.secondaryColor = isBasalt ? "#16A34A" : "#F54029";
+      }
     }
     config.theme = t2;
   } catch { }

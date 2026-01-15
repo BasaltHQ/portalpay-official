@@ -11,10 +11,16 @@ import { client, chain, getWallets } from "@/lib/thirdweb/client";
 import { usePortalThirdwebTheme, getConnectButtonStyle, connectButtonClass } from "@/lib/thirdweb/theme";
 import { ChevronDown, Dot, Ellipsis } from "lucide-react";
 import { AuthModal } from "./auth-modal";
+import { SignupWizard } from "./signup-wizard";
 import { useTranslations } from "next-intl";
 import { cachedContainerIdentity } from "@/lib/client-api-cache";
 import { useBrand } from "@/contexts/BrandContext";
 import { getDefaultBrandSymbol, getDefaultBrandName, getEffectiveBrandKey, resolveBrandSymbol } from "@/lib/branding";
+import { getAllIndustries } from "@/lib/landing-pages/industries";
+import { getAllComparisons } from "@/lib/landing-pages/comparisons";
+import { getAllLocations } from "@/lib/landing-pages/locations";
+
+type SeoPageCategory = 'industries' | 'comparisons' | 'locations';
 
 // Dynamic import to avoid SSR hydration mismatch
 const ConnectButton = dynamic(() => import("thirdweb/react").then((m) => m.ConnectButton), { ssr: false });
@@ -27,7 +33,15 @@ export function Navbar() {
     const twTheme = usePortalThirdwebTheme();
     const account = useActiveAccount();
     const activeWallet = useActiveWallet();
-    const owner = (process.env.NEXT_PUBLIC_OWNER_WALLET || "").toLowerCase();
+    const [owner, setOwner] = useState("");
+    useEffect(() => {
+        try {
+            if (typeof document !== 'undefined') {
+                const envOwner = (document.documentElement?.getAttribute('data-pp-owner-wallet') || "").toLowerCase();
+                if (envOwner) setOwner(envOwner);
+            }
+        } catch { }
+    }, []);
     const isOwner = (account?.address || "").toLowerCase() === owner && !!owner;
     const wallet = (account?.address || "").toLowerCase();
     const pathname = usePathname();
@@ -36,6 +50,7 @@ export function Navbar() {
     const tSearch = useTranslations("search");
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [isSocialLogin, setIsSocialLogin] = useState(false);
+    const [showSignupWizard, setShowSignupWizard] = useState(false);
     const checkingAuth = useRef(false);
     const [authed, setAuthed] = useState(false);
     const [pendingAdminNav, setPendingAdminNav] = useState(false);
@@ -60,6 +75,23 @@ export function Navbar() {
     const [scrolled, setScrolled] = useState(false);
     const [time, setTime] = useState('');
 
+    // Re-read container type from DOM after mount (SSR may not have it available during initial render)
+    useEffect(() => {
+        try {
+            const d = document.documentElement;
+            const t = (d?.getAttribute('data-pp-container-type') || '').toLowerCase();
+            const k = (d?.getAttribute('data-pp-brand-key') || (brand as any)?.key || '').toString();
+            if (t === 'partner' || t === 'platform') {
+                setContainer(prev => {
+                    if (prev.containerType !== t || prev.brandKey !== k) {
+                        return { containerType: t, brandKey: k };
+                    }
+                    return prev;
+                });
+            }
+        } catch { }
+    }, [brand]);
+
     useEffect(() => {
         const handleScroll = () => {
             setScrolled(window.scrollY > 50);
@@ -83,18 +115,109 @@ export function Navbar() {
         return () => { mounted = false; };
     }, []);
 
+    // Detect thirdweb modal and lock body scroll to prevent content jump
+    useEffect(() => {
+        let savedScrollY = 0;
+
+        const lockScroll = () => {
+            savedScrollY = window.scrollY;
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${savedScrollY}px`;
+            document.body.style.left = '0';
+            document.body.style.right = '0';
+            document.body.style.overflow = 'hidden';
+        };
+
+        const unlockScroll = () => {
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.left = '';
+            document.body.style.right = '';
+            document.body.style.overflow = '';
+            window.scrollTo(0, savedScrollY);
+        };
+
+        const checkForModal = () => {
+            // Thirdweb uses various selectors for its modals
+            const modal = document.querySelector('[data-rk], [role="dialog"], [class*="ConnectModal"], [class*="tw-modal"]');
+            if (modal && !document.body.hasAttribute('data-modal-locked')) {
+                document.body.setAttribute('data-modal-locked', 'true');
+                lockScroll();
+            } else if (!modal && document.body.hasAttribute('data-modal-locked')) {
+                document.body.removeAttribute('data-modal-locked');
+                unlockScroll();
+            }
+        };
+
+        // Use MutationObserver to detect modal injection
+        const observer = new MutationObserver(checkForModal);
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        return () => {
+            observer.disconnect();
+            if (document.body.hasAttribute('data-modal-locked')) {
+                document.body.removeAttribute('data-modal-locked');
+                unlockScroll();
+            }
+        };
+    }, []);
+
     // Site branding from dynamic ThemeContext (which now includes Shop overrides)
     const { theme: ctxTheme } = useTheme();
     // Helper to resolve effective branding, prioritizing partner assets if in partner container
     // CRITICAL: When logged out on BasaltSurge, use static defaults, NOT stored config data
+    // BUT: Never do this in Partner containers - they should always show their own branding
     const effectiveTheme = useMemo(() => {
         const t = ctxTheme;
-        const effectiveBrandKey = (t.brandKey || container.brandKey || getEffectiveBrandKey()).toLowerCase();
-        const isBasalt = effectiveBrandKey === "basaltsurge";
+
+        // Read DOM attributes directly for most reliable partner detection
+        // These are set by the server based on env vars
+        const domContainerType = typeof document !== 'undefined'
+            ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase()
+            : '';
+        const domBrandKey = typeof document !== 'undefined'
+            ? (document.documentElement.getAttribute('data-pp-brand-key') || '').toLowerCase()
+            : '';
+
+        // CRITICAL: Use DOM brand key first, then container state, then theme context
+        const effectiveBrandKey = (domBrandKey || container.brandKey || t.brandKey || getEffectiveBrandKey()).toLowerCase();
+        const isBasalt = effectiveBrandKey === "basaltsurge" || effectiveBrandKey === "portalpay";
         const isLoggedIn = Boolean(account?.address);
 
-        // When logged out on BasaltSurge, force static platform defaults
-        if (isBasalt && !isLoggedIn) {
+        // Detect if this is a partner container - NEVER force Basalt in partner context
+        // DOM attribute is authoritative - set by server based on env vars
+        const isPartnerContainer = (() => {
+            // Check DOM attribute directly - this is the most reliable source
+            if (domContainerType === "partner") return true;
+            if (domContainerType === "platform") return false;
+
+            // Fallback to container state
+            const ct = (container.containerType || "").toLowerCase();
+            if (ct === "partner") return true;
+            if (ct === "platform") return false;
+
+            // Last resort: Check BrandContext
+            const brandName = String((brand as any)?.name || "").toLowerCase();
+            const brandKeyFromCtx = String((brand as any)?.key || "").toLowerCase();
+            const isPlatformBrand = (!brandName || brandName === "basaltsurge" || brandName === "portalpay") &&
+                (!brandKeyFromCtx || brandKeyFromCtx === "basaltsurge" || brandKeyFromCtx === "portalpay");
+            return !isPlatformBrand;
+        })();
+
+        // DEBUG: Trace navbar partner detection
+        console.log('[Navbar DEBUG] effectiveTheme:', {
+            domContainerType,
+            domBrandKey,
+            containerType: container.containerType,
+            effectiveBrandKey,
+            isBasalt,
+            isLoggedIn,
+            isPartnerContainer,
+            willOverride: isBasalt && !isLoggedIn && !isPartnerContainer
+        });
+
+        // When logged out on BasaltSurge (PLATFORM only), force static platform defaults
+        if (isBasalt && !isLoggedIn && !isPartnerContainer) {
             return {
                 brandLogoUrl: "/BasaltSurgeWideD.png",
                 brandFaviconUrl: t.brandFaviconUrl || "/favicon-32x32.png",
@@ -102,20 +225,30 @@ export function Navbar() {
                 brandName: "BasaltSurge",
                 brandLogoShape: "square",
                 brandKey: "basaltsurge",
-                navbarMode: "logo" as const
+                navbarMode: "symbol" as const
             };
         }
 
+        // For partners, NEVER return BasaltSurge logos - use partner's or empty
+        const sanitizeLogoForPartner = (logo: string | undefined) => {
+            if (!isPartnerContainer) return logo;
+            const s = String(logo || '').toLowerCase();
+            if (s.includes('basaltsurge') || s.includes('bssymbol') || s.includes('bswide')) {
+                return ''; // Block BasaltSurge logos for partners
+            }
+            return logo;
+        };
+
         return {
-            brandLogoUrl: t.brandLogoUrl,
+            brandLogoUrl: sanitizeLogoForPartner(t.brandLogoUrl),
             brandFaviconUrl: t.brandFaviconUrl,
-            symbolLogoUrl: t.symbolLogoUrl,
+            symbolLogoUrl: sanitizeLogoForPartner(t.symbolLogoUrl),
             brandName: t.brandName,
             brandLogoShape: t.brandLogoShape,
             brandKey: t.brandKey,
             navbarMode: t.navbarMode
         };
-    }, [ctxTheme]);
+    }, [ctxTheme, container.containerType, container.brandKey, account?.address, brand]);
 
     // Use effectiveTheme instead of local state
     const theme = effectiveTheme;
@@ -314,6 +447,48 @@ export function Navbar() {
     const defiHideRef = useRef<number | null>(null);
     const dropdownRef = useRef<HTMLDivElement | null>(null);
 
+    // SEO page visibility state for mobile menu
+    const [seoCategoryVisibility, setSeoCategoryVisibility] = useState<Record<SeoPageCategory, boolean>>({
+        industries: true,
+        comparisons: true,
+        locations: true,
+    });
+    const [mobileExploreOpen, setMobileExploreOpen] = useState(false);
+
+    // Load SEO page settings for mobile menu visibility
+    useEffect(() => {
+        async function loadSeoPageSettings() {
+            try {
+                const res = await fetch('/api/admin/seo-pages', {
+                    cache: 'no-store',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.ok || !data.settings?.pageStatuses) return;
+
+                const pageStatuses = data.settings.pageStatuses;
+                const industryIds = getAllIndustries().map(i => `industry-${i.slug}`);
+                const comparisonIds = getAllComparisons().map(c => `comparison-${c.slug}`);
+                const locationIds = getAllLocations().map(l => `location-${l.slug}`);
+
+                const isAllDisabled = (ids: string[]) => {
+                    if (ids.length === 0) return false;
+                    return ids.every(id => pageStatuses[id]?.enabled === false);
+                };
+
+                setSeoCategoryVisibility({
+                    industries: !isAllDisabled(industryIds),
+                    comparisons: !isAllDisabled(comparisonIds),
+                    locations: !isAllDisabled(locationIds),
+                });
+            } catch (err) {
+                console.error('[Navbar] Failed to load SEO page settings:', err);
+            }
+        }
+        loadSeoPageSettings();
+    }, []);
+
     useEffect(() => {
         function onDocClick(e: MouseEvent) {
             const t = e.target as Node;
@@ -428,14 +603,22 @@ export function Navbar() {
     const effectiveLogoSymbol = theme.symbolLogoUrl;
     const effectiveLogoFavicon = theme.brandFaviconUrl;
 
-    // Trust explicit navbarMode from theme
+    // Trust explicit navbarMode from theme or brand config
+    const brandNavbarMode = (brand as any)?.logos?.navbarMode;
     const navbarMode: "symbol" | "logo" = (() => {
-        if (theme.navbarMode === "logo") return "logo";
-        if (theme.navbarMode === "symbol") return "symbol";
+        if (theme.navbarMode === "logo" || brandNavbarMode === "logo") return "logo";
+        if (theme.navbarMode === "symbol" || brandNavbarMode === "symbol") return "symbol";
         // Fallback: use "logo" for partners with a full logo, otherwise "symbol"
         if (effectiveBrandKey && effectiveBrandKey !== "portalpay" && effectiveBrandKey !== "basaltsurge") return "logo";
         return "symbol";
     })();
+
+    // DEBUG: Log navbar mode
+    console.log('[Navbar] navbarMode:', {
+        'theme.navbarMode': theme.navbarMode,
+        'brand.logos.navbarMode': brandNavbarMode,
+        effectiveNavbarMode: navbarMode
+    });
 
     // Partner-safe display name: treat generic names and 'PortalPay' as placeholders in partner containers
     const displayBrandName = (() => {
@@ -457,7 +640,22 @@ export function Navbar() {
     const themeColor = ctxTheme.primaryColor || '#06b6d4'; // Dynamic Basalt Theme Color
     const secondaryColor = ctxTheme.secondaryColor || '#F54029'; // Dynamic Basalt Secondary
     const isBasaltSurge = displayBrandName === "BasaltSurge";
-    const effectiveLogo = isBasaltSurge ? "/Surge.png" : (theme.symbolLogoUrl || theme.brandLogoUrl || "/Surge.png");
+    // For partners, use partner brand logo from context as fallback, not platform logos
+    const partnerFallbackLogo = (brand as any)?.logos?.app || (brand as any)?.logos?.symbol || '';
+    const platformFallbackLogo = "/Surge.png";
+    const fallbackLogo = isPartnerContainer ? partnerFallbackLogo : platformFallbackLogo;
+
+    // DEBUG: Trace EXACT logo values at render time
+    console.log('[Navbar LOGO DEBUG]', {
+        'theme.symbolLogoUrl': theme.symbolLogoUrl,
+        'theme.brandLogoUrl': theme.brandLogoUrl,
+        fallbackLogo,
+        isBasaltSurge,
+        isPartnerContainer,
+        displayBrandName,
+    });
+
+    const effectiveLogo = isBasaltSurge ? "/Surge.png" : (theme.symbolLogoUrl || theme.brandLogoUrl || fallbackLogo);
     const maskUrl = effectiveLogo.startsWith("http")
         ? `/_next/image?url=${encodeURIComponent(effectiveLogo)}&w=96&q=75`
         : effectiveLogo;
@@ -478,46 +676,68 @@ export function Navbar() {
                     : 'py-[22px] bg-transparent'
                     }`}
             >
-                <div className="w-max mx-auto px-6 flex items-center justify-between">
+                <div className="max-w-5xl w-full mx-auto px-4 sm:px-6 flex items-center justify-between">
                     {/* Logo & System Status */}
                     <div className="flex items-center gap-6 shrink-0">
                         <Link href="/" className="flex items-center gap-3 group relative z-50">
-                            <div className="relative w-10 h-10 transform group-hover:scale-110 transition-transform duration-300">
-                                <Image
-                                    src={effectiveLogo}
-                                    alt={theme.brandName || "Logo"}
-                                    fill
-                                    className="object-contain"
-                                    priority
-                                />
-                                <div
-                                    className="shield-gleam-container"
-                                    style={{
-                                        maskImage: `url('${maskUrl}')`,
-                                        WebkitMaskImage: `url('${maskUrl}')`,
-                                        maskSize: 'contain',
-                                        WebkitMaskSize: 'contain',
-                                        maskPosition: 'center',
-                                        WebkitMaskPosition: 'center',
-                                        maskRepeat: 'no-repeat',
-                                        WebkitMaskRepeat: 'no-repeat'
-                                    }}
-                                />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                                <span className="hidden md:block text-xs font-mono tracking-widest opacity-80 transition-colors whitespace-nowrap" style={{ color: themeColor }}>
-                                    STATUS.ONLINE
-                                </span>
-                                {displayBrandName === "BasaltSurge" ? (
-                                    <span className="text-lg text-white tracking-widest group-hover:opacity-80 transition-opacity font-vox whitespace-nowrap" style={{ fontFamily: 'vox, sans-serif' }}>
-                                        <span style={{ fontWeight: 300 }}>BASALT</span><span style={{ fontWeight: 700 }}>SURGE</span>
+                            {navbarMode === "logo" ? (
+                                /* Full-width logo mode - Logo behind STATUS.ONLINE */
+                                <div className="flex flex-col min-w-0 relative">
+                                    <span className="hidden md:block text-xs font-mono tracking-widest opacity-80 transition-colors whitespace-nowrap relative z-10" style={{ color: themeColor }}>
+                                        STATUS.ONLINE
                                     </span>
-                                ) : (
-                                    <span className={`${displayBrandName.length > 20 ? 'text-xs' : displayBrandName.length > 12 ? 'text-sm' : 'text-lg'} text-white tracking-widest group-hover:opacity-80 transition-opacity font-mono font-bold whitespace-nowrap`}>
-                                        {displayBrandName}
-                                    </span>
-                                )}
-                            </div>
+                                    <div className="relative h-8 min-w-[120px] max-w-[180px] transform group-hover:scale-105 transition-transform duration-300">
+                                        <Image
+                                            src={effectiveLogoApp || effectiveLogo || partnerFallbackLogo}
+                                            alt={theme.brandName || "Logo"}
+                                            fill
+                                            className="object-contain object-left"
+                                            priority
+                                            sizes="180px"
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                /* Symbol + Text mode - Square symbol with brand name */
+                                <>
+                                    <div className="relative w-10 h-10 transform group-hover:scale-110 transition-transform duration-300">
+                                        <Image
+                                            src={effectiveLogo}
+                                            alt={theme.brandName || "Logo"}
+                                            fill
+                                            className="object-contain"
+                                            priority
+                                        />
+                                        <div
+                                            className="shield-gleam-container"
+                                            style={{
+                                                maskImage: `url('${maskUrl}')`,
+                                                WebkitMaskImage: `url('${maskUrl}')`,
+                                                maskSize: 'contain',
+                                                WebkitMaskSize: 'contain',
+                                                maskPosition: 'center',
+                                                WebkitMaskPosition: 'center',
+                                                maskRepeat: 'no-repeat',
+                                                WebkitMaskRepeat: 'no-repeat'
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="hidden md:block text-xs font-mono tracking-widest opacity-80 transition-colors whitespace-nowrap" style={{ color: themeColor }}>
+                                            STATUS.ONLINE
+                                        </span>
+                                        {displayBrandName === "BasaltSurge" ? (
+                                            <span className="text-lg text-white tracking-widest group-hover:opacity-80 transition-opacity font-vox whitespace-nowrap" style={{ fontFamily: 'vox, sans-serif' }}>
+                                                <span style={{ fontWeight: 300 }}>BASALT</span><span style={{ fontWeight: 700 }}>SURGE</span>
+                                            </span>
+                                        ) : (
+                                            <span className={`${displayBrandName.length > 20 ? 'text-xs' : displayBrandName.length > 12 ? 'text-sm' : 'text-lg'} text-white tracking-widest group-hover:opacity-80 transition-opacity font-mono font-bold whitespace-nowrap`}>
+                                                {displayBrandName}
+                                            </span>
+                                        )}
+                                    </div>
+                                </>
+                            )}
                         </Link>
 
                         {/* Desktop Navigation */}
@@ -685,20 +905,30 @@ export function Navbar() {
                             )}
                         </div>
 
-                        {/* CTA / Connect */}
-                        <div className="hidden md:flex items-center mr-4">
+                        {/* CTA / Login & Signup */}
+                        <div className="hidden md:flex items-center gap-3 mr-4">
+                            {/* Signup Button */}
+                            {!account?.address && (
+                                <button
+                                    onClick={() => setShowSignupWizard(true)}
+                                    className="px-5 py-2.5 rounded-[10px] border border-white/20 hover:border-white/40 text-white text-xs font-mono tracking-wider font-bold transition-all hover:bg-white/5"
+                                >
+                                    SIGNUP
+                                </button>
+                            )}
+                            {/* Login / Account Button */}
                             <ConnectButton
                                 client={client}
                                 chain={chain}
                                 wallets={wallets}
                                 connectButton={{
-                                    label: "CONNECT",
-                                    className: "!text-white !rounded-[10px] !px-5 !py-2.5 !h-auto !min-w-[120px] !font-mono !text-xs !tracking-wider !font-bold !border-none !ring-0 !shadow-none transition-all hover:opacity-80 hover:scale-[1.02] active:scale-95",
+                                    label: "LOGIN",
+                                    className: "!text-white !rounded-[10px] !px-5 !py-2.5 !h-auto !min-w-[100px] !font-mono !text-xs !tracking-wider !font-bold !border-none !ring-0 !shadow-none transition-all hover:opacity-80 hover:scale-[1.02] active:scale-95",
                                     style: { backgroundColor: secondaryColor, color: '#ffffff', borderRadius: '10px' },
                                 }}
                                 signInButton={{
                                     label: "SIGN IN",
-                                    className: "!text-white !rounded-[10px] !px-5 !py-2.5 !h-auto !min-w-[120px] !font-mono !text-xs !tracking-wider !font-bold !border-none transition-all hover:opacity-80 hover:scale-[1.02] active:scale-95",
+                                    className: "!text-white !rounded-[10px] !px-5 !py-2.5 !h-auto !min-w-[100px] !font-mono !text-xs !tracking-wider !font-bold !border-none transition-all hover:opacity-80 hover:scale-[1.02] active:scale-95",
                                     style: { backgroundColor: secondaryColor, color: '#ffffff', borderRadius: '10px' },
                                 }}
                                 detailsButton={{
@@ -743,21 +973,80 @@ export function Navbar() {
 
                 {/* Mobile Menu Overlay */}
                 {mobileOpen && (
-                    <div className="lg:hidden bg-black/90 backdrop-blur-xl absolute top-[calc(100%+1px)] left-4 right-4 rounded-2xl p-4 border border-white/10 shadow-2xl animate-in slide-in-from-top-2">
-                        <div className="flex flex-col gap-2">
+                    <div
+                        className="lg:hidden backdrop-blur-xl absolute top-[calc(100%+1px)] left-4 right-4 rounded-2xl p-4 shadow-2xl animate-in slide-in-from-top-2 max-h-[70vh] overflow-y-auto"
+                        style={{
+                            backgroundColor: 'rgba(0, 0, 0, 0.92)',
+                            border: `1px solid ${themeColor}30`,
+                            boxShadow: `0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px ${themeColor}15`
+                        }}
+                    >
+                        {/* Themed top accent line */}
+                        <div
+                            className="absolute top-0 left-4 right-4 h-[2px] rounded-full"
+                            style={{
+                                background: `linear-gradient(90deg, transparent, ${themeColor}, transparent)`,
+                                opacity: 0.8
+                            }}
+                        />
+
+                        <div className="flex flex-col gap-2 pt-2">
+                            {/* Explore Section - SEO Pages */}
+                            <div className="mb-2 pb-2" style={{ borderBottom: `1px solid ${themeColor}20` }}>
+                                <button
+                                    onClick={() => setMobileExploreOpen(o => !o)}
+                                    className="w-full px-4 py-3 text-sm font-mono tracking-wider text-gray-300 hover:text-white rounded-lg transition-all flex items-center justify-between"
+                                    style={{
+                                        backgroundColor: mobileExploreOpen ? `${themeColor}10` : 'transparent',
+                                    }}
+                                >
+                                    <span style={{ color: mobileExploreOpen ? themeColor : undefined }}>EXPLORE</span>
+                                    <ChevronDown
+                                        className={`w-4 h-4 transition-transform ${mobileExploreOpen ? 'rotate-180' : ''}`}
+                                        style={{ color: mobileExploreOpen ? themeColor : undefined }}
+                                    />
+                                </button>
+                                {mobileExploreOpen && (
+                                    <div className="pl-4 mt-1 space-y-1">
+                                        {seoCategoryVisibility.industries && (
+                                            <Link
+                                                href="/crypto-payments"
+                                                onClick={() => setMobileOpen(false)}
+                                                className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors"
+                                                style={{ '--hover-color': themeColor } as any}
+                                            >
+                                                INDUSTRIES
+                                            </Link>
+                                        )}
+                                        {seoCategoryVisibility.comparisons && (
+                                            <Link href="/vs" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">COMPARISONS</Link>
+                                        )}
+                                        {seoCategoryVisibility.locations && (
+                                            <Link href="/locations" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">LOCATIONS</Link>
+                                        )}
+                                        <Link href="/developers" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">DEVELOPERS</Link>
+                                    </div>
+                                )}
+                            </div>
                             {account?.address && (
-                                <div className="mb-2 pb-2 border-b border-white/10">
+                                <div className="mb-2 pb-2" style={{ borderBottom: `1px solid ${themeColor}20` }}>
                                     <button
                                         onClick={() => setMobileSocialOpen(o => !o)}
-                                        className="w-full px-4 py-3 text-sm font-mono tracking-wider text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-all flex items-center justify-between"
+                                        className="w-full px-4 py-3 text-sm font-mono tracking-wider text-gray-300 hover:text-white rounded-lg transition-all flex items-center justify-between"
+                                        style={{
+                                            backgroundColor: mobileSocialOpen ? `${themeColor}10` : 'transparent',
+                                        }}
                                     >
-                                        LOYALTY
-                                        <ChevronDown className={`w-4 h-4 transition-transform ${mobileSocialOpen ? 'rotate-180' : ''}`} />
+                                        <span style={{ color: mobileSocialOpen ? themeColor : undefined }}>LOYALTY</span>
+                                        <ChevronDown
+                                            className={`w-4 h-4 transition-transform ${mobileSocialOpen ? 'rotate-180' : ''}`}
+                                            style={{ color: mobileSocialOpen ? themeColor : undefined }}
+                                        />
                                     </button>
                                     {mobileSocialOpen && (
                                         <div className="pl-4 mt-1 space-y-1">
-                                            <Link href="/analytics" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white">ANALYTICS</Link>
-                                            <Link href="/leaderboard" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white">LEADERBOARD</Link>
+                                            <Link href="/analytics" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">ANALYTICS</Link>
+                                            <Link href="/leaderboard" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">LEADERBOARD</Link>
                                         </div>
                                     )}
                                 </div>
@@ -772,7 +1061,6 @@ export function Navbar() {
                                             e.preventDefault();
                                             setMobileOpen(false);
                                             setPendingAdminNav(true);
-                                            // Handle auth logic
                                             const walletId = activeWallet?.id;
                                             const isEmbeddedWallet = walletId === "inApp" || walletId === "embedded";
                                             setIsSocialLogin(isEmbeddedWallet);
@@ -781,22 +1069,42 @@ export function Navbar() {
                                             setMobileOpen(false);
                                         }
                                     }}
-                                    className="px-4 py-3 text-sm font-mono tracking-wider text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-all uppercase"
+                                    className="px-4 py-3 text-sm font-mono tracking-wider text-gray-300 hover:text-white rounded-lg transition-all uppercase nav-item-custom-border"
+                                    style={{
+                                        backgroundColor: pathname?.startsWith(it.href) ? `${themeColor}10` : 'transparent',
+                                        color: pathname?.startsWith(it.href) ? themeColor : undefined,
+                                    }}
                                 >
                                     {it.label}
                                 </Link>
                             ))}
 
-                            <div className="mt-4 pt-4 border-t border-white/10 flex justify-center">
+                            <div className="mt-4 pt-4 flex flex-col gap-3" style={{ borderTop: `1px solid ${themeColor}20` }}>
+                                {!account?.address && (
+                                    <button
+                                        onClick={() => {
+                                            setMobileOpen(false);
+                                            setShowSignupWizard(true);
+                                        }}
+                                        className="w-full py-3 rounded-lg text-white text-xs font-mono tracking-wider font-bold transition-all hover:opacity-90"
+                                        style={{
+                                            border: `1px solid ${themeColor}50`,
+                                            backgroundColor: `${themeColor}10`,
+                                        }}
+                                    >
+                                        SIGNUP
+                                    </button>
+                                )}
                                 <ConnectButton
                                     client={client}
                                     chain={chain}
                                     wallets={wallets}
                                     connectButton={{
-                                        label: <span className="text-xs font-mono font-bold">CONNECT</span>,
-                                        className: "!bg-[#06b6d4] !text-black !w-full !justify-center !rounded-lg !py-3",
-                                        style: { backgroundColor: themeColor }
+                                        label: <span className="text-xs font-mono font-bold">LOGIN</span>,
+                                        className: "!text-white !w-full !justify-center !rounded-lg !py-3",
+                                        style: { backgroundColor: secondaryColor }
                                     }}
+                                    connectModal={{ title: tCommon("login"), titleIcon: "/Surge.png", size: "compact", showThirdwebBranding: false }}
                                     theme={twTheme}
                                 />
                             </div>
@@ -836,6 +1144,16 @@ export function Navbar() {
                     } catch { }
                 }}
                 onError={(error) => console.error('[Auth] Failed:', error)}
+            />
+
+            {/* Signup Wizard */}
+            <SignupWizard
+                isOpen={showSignupWizard}
+                onClose={() => setShowSignupWizard(false)}
+                onComplete={() => {
+                    setShowSignupWizard(false);
+                    // The user connected via the wizard, they'll go through normal auth flow
+                }}
             />
         </>
     );

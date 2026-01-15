@@ -37,7 +37,7 @@ function getCookieDomainFromRequest(req: NextRequest): string | undefined {
       const base = parts.slice(-2).join(".");
       return `.${base}`;
     }
-  } catch {}
+  } catch { }
   return undefined;
 }
 
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}));
     const wallet = String(body?.wallet || "").toLowerCase();
-    
+
     if (!/^0x[a-f0-9]{40}$/.test(wallet)) {
       return NextResponse.json({ error: "invalid_address" }, { status: 400 });
     }
@@ -61,12 +61,12 @@ export async function POST(req: NextRequest) {
 
     const res = NextResponse.json({ ok: true });
     const cookieDomain = getCookieDomainFromRequest(req);
-    
+
     // Set auth cookie
     res.cookies.set(AUTH_COOKIE, jwt, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: '/',
       domain: cookieDomain,
       maxAge: 60 * 60 * 24 // 24 hours
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     res.cookies.set("cb_wallet", wallet, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: '/',
       domain: cookieDomain,
       maxAge: 60 * 60 * 24,

@@ -2,8 +2,11 @@
 
 import React, { useRef, useMemo } from "react";
 import { motion, useInView } from "framer-motion";
+import { useBrand } from "@/contexts/BrandContext";
 
 export default function PublisherOsirisSection() {
+    const brand = useBrand();
+    const brandName = (brand as any)?.name || "BasaltSurge";
     const ref = useRef(null);
     const isInView = useInView(ref, { once: false, margin: "-100px" });
 
@@ -129,7 +132,7 @@ export default function PublisherOsirisSection() {
 
                     {/* B. OSIRIS MODEL */}
                     <div className="h-1/2 relative bg-emerald-950/10 rounded-xl border border-emerald-500/30 p-4 flex items-center shadow-[0_0_50px_rgba(16,185,129,0.1)]">
-                        <div className="absolute top-2 left-4 text-xs font-mono text-emerald-500/50 uppercase">BasaltSurge + OsirisUSBN</div>
+                        <div className="absolute top-2 left-4 text-xs font-mono text-emerald-500/50 uppercase">{brandName} + OsirisUSBN</div>
 
                         {/* Source */}
                         <div className="w-16 h-16 rounded-lg bg-emerald-900/20 flex items-center justify-center border border-emerald-500/50 relative">

@@ -8,8 +8,8 @@ import Image from "next/image";
 class Particle {
     x: number;
     y: number;
-    vx: number;
-    vy: number;
+    vx: number = 0;
+    vy: number = 0;
     life: number;
     maxLife: number;
     color: string;
@@ -63,10 +63,8 @@ class Particle {
             return; // physics handled mostly in update
         }
 
-        if (type !== "ash") {
-            this.vx = Math.cos(angle) * speed;
-            this.vy = Math.sin(angle) * speed;
-        }
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
         this.life = this.maxLife;
     }
 
@@ -106,7 +104,13 @@ class Particle {
     }
 }
 
-export default function RebrandingHero() {
+export interface RebrandingHeroProps {
+    brandName?: string;
+    logoUrl?: string;
+    isPartner?: boolean;
+}
+
+export default function RebrandingHero({ brandName = "BasaltSurge", logoUrl = "/BasaltSurge.png", isPartner = false }: RebrandingHeroProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [stage, setStage] = useState<"blueprint" | "overheat" | "eruption" | "harden">("blueprint");
@@ -114,7 +118,14 @@ export default function RebrandingHero() {
 
     // Cinematic Orchestration
     useEffect(() => {
-        // Slightly faster pacing for impact
+        if (isPartner) {
+            // Partners skip the drama, go straight to final state
+            setStage("harden");
+            const tDismiss = setTimeout(() => setIsDismissed(true), 15000); // Faster dismiss
+            return () => clearTimeout(tDismiss);
+        }
+
+        // Basalt Cinematic Sequence
         const t1 = setTimeout(() => setStage("overheat"), 2500);
         const t2 = setTimeout(() => setStage("eruption"), 5000);
         const t3 = setTimeout(() => setStage("harden"), 5300); // 300ms explosion
@@ -125,7 +136,7 @@ export default function RebrandingHero() {
         return () => {
             clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(tDismiss);
         };
-    }, []);
+    }, [isPartner]);
 
     // Canvas Loop
     useEffect(() => {
@@ -150,18 +161,23 @@ export default function RebrandingHero() {
             ctx.clearRect(0, 0, canvas.width, canvas.height); // Standard clear
 
             // Dynamic Emitter based on stage
-            if (stage === "blueprint") {
-                if (Math.random() < 0.3) particles.push(new Particle(canvas.width, canvas.height, "blue_spark"));
-            } else if (stage === "overheat") {
-                // Intense central sparks
-                for (let i = 0; i < 8; i++) particles.push(new Particle(canvas.width, canvas.height, "hot_spark"));
-            } else if (stage === "eruption") {
-                // EXPLOSION
-                for (let i = 0; i < 50; i++) particles.push(new Particle(canvas.width, canvas.height, "magma"));
-                if (Math.random() < 0.5) particles.push(new Particle(canvas.width, canvas.height, "shockwave"));
-            } else if (stage === "harden") {
-                // Gentle floating ash
-                if (Math.random() < 0.4) particles.push(new Particle(canvas.width, canvas.height, "ash"));
+            // Partners get a gentle constant ambient effect
+            if (isPartner) {
+                if (Math.random() < 0.2) particles.push(new Particle(canvas.width, canvas.height, "blue_spark"));
+            } else {
+                if (stage === "blueprint") {
+                    if (Math.random() < 0.3) particles.push(new Particle(canvas.width, canvas.height, "blue_spark"));
+                } else if (stage === "overheat") {
+                    // Intense central sparks
+                    for (let i = 0; i < 8; i++) particles.push(new Particle(canvas.width, canvas.height, "hot_spark"));
+                } else if (stage === "eruption") {
+                    // EXPLOSION
+                    for (let i = 0; i < 50; i++) particles.push(new Particle(canvas.width, canvas.height, "magma"));
+                    if (Math.random() < 0.5) particles.push(new Particle(canvas.width, canvas.height, "shockwave"));
+                } else if (stage === "harden") {
+                    // Gentle floating ash
+                    if (Math.random() < 0.4) particles.push(new Particle(canvas.width, canvas.height, "ash"));
+                }
             }
 
             // Update & Draw
@@ -179,7 +195,7 @@ export default function RebrandingHero() {
             window.removeEventListener("resize", resize);
             cancelAnimationFrame(animationId);
         };
-    }, [stage]);
+    }, [stage, isPartner]);
 
     return (
         <motion.div
@@ -198,7 +214,7 @@ export default function RebrandingHero() {
             <motion.div
                 className="absolute inset-0 z-0"
                 animate={{
-                    background: stage === "harden"
+                    background: stage === "harden" || isPartner
                         ? "radial-gradient(circle at center, #022c22 0%, #000000 90%)"
                         : "radial-gradient(circle at center, #0f172a 0%, #000000 90%)"
                 }}
@@ -214,7 +230,8 @@ export default function RebrandingHero() {
                 <div className="relative w-full max-w-4xl h-[400px] flex items-center justify-center mb-0 md:mb-10">
                     <AnimatePresence mode="wait">
 
-                        {(stage === "blueprint" || stage === "overheat") && (
+                        {/* Basalt-specific intro sequence (hidden for partners) */}
+                        {!isPartner && (stage === "blueprint" || stage === "overheat") && (
                             <motion.div
                                 key="blueprint"
                                 initial={{ opacity: 0, scale: 0.9 }}
@@ -244,7 +261,7 @@ export default function RebrandingHero() {
                             </motion.div>
                         )}
 
-                        {stage === "eruption" && (
+                        {!isPartner && stage === "eruption" && (
                             <motion.div
                                 key="flash"
                                 className="absolute inset-0 bg-white z-50 pointer-events-none"
@@ -254,18 +271,19 @@ export default function RebrandingHero() {
                             />
                         )}
 
-                        {stage === "harden" && (
+                        {/* Final Hardened State / Partner Default State */}
+                        {(stage === "harden" || isPartner) && (
                             <motion.div
-                                key="basalt"
-                                initial={{ opacity: 0, scale: 0.8 }}
+                                key="final"
+                                initial={isPartner ? { opacity: 0, scale: 0.95 } : { opacity: 0, scale: 0.8 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ duration: 2, ease: "easeOut" }}
                                 className="flex flex-col items-center w-full"
                             >
                                 <div className="relative w-64 h-32 md:w-80 md:h-40 mb-8 md:mb-12">
                                     <Image
-                                        src="/BasaltSurge.png"
-                                        alt="BasaltSurge"
+                                        src={logoUrl}
+                                        alt={brandName}
                                         fill
                                         className="object-contain drop-shadow-[0_0_60px_rgba(34,197,94,0.8)]"
                                         priority

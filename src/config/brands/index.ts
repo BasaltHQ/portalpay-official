@@ -61,7 +61,7 @@ export const BRANDS: Record<string, BrandConfig> = {
     key: "basaltsurge",
     name: "BasaltSurge",
     colors: { primary: "#35ff7c", accent: "#FF6B35" },
-    logos: { app: "/BasaltSurgeWideD.png", favicon: "/favicon-32x32.png", symbol: "/BasaltSurgeD.png", og: "/BasaltSurgeD.png", twitter: "/BasaltSurgeD.png", navbarMode: "logo" },
+    logos: { app: "/BasaltSurgeWideD.png", favicon: "/favicon-32x32.png", symbol: "/BasaltSurgeD.png", og: "/BasaltSurgeD.png", twitter: "/BasaltSurgeD.png", navbarMode: "symbol" },
     meta: { ogTitle: "BasaltSurge", ogDescription: "Payments & portals" },
     platformFeeBps: 50,
     partnerFeeBps: 0,
@@ -110,11 +110,11 @@ export function getBrandKey(): string {
   // In partner context, no implicit fallback — brand must be provided via env/config
   // However, we do not throw here to allow RootLayout to render a fallback (so middleware can redirect to /brand-not-configured)
   if (isPartnerContext()) {
-    return "portalpay";
+    return "basaltsurge";
   }
 
-  // Platform or local dev may fallback to portalpay
-  return "portalpay";
+  // Platform or local dev may fallback to basaltsurge
+  return "basaltsurge";
 }
 
 /**

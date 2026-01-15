@@ -45,12 +45,26 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: "/(.*).(svg|jpg|jpeg|png|gif|ico|webp)",
+        locale: false,
+        headers: [
+          {
+            key: "Cross-Origin-Resource-Policy",
+            value: "cross-origin",
+          },
+          {
+            key: "Access-Control-Allow-Origin",
+            value: "*",
+          },
+        ],
+      },
+      {
         source: "/(.*)",
         headers: [
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; frame-src https://embedded-wallet.thirdweb.com https://*.thirdweb.com; child-src https://embedded-wallet.thirdweb.com https://*.thirdweb.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.thirdweb.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https:; font-src 'self' https: data:;",
+              "default-src 'self'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss: https://explorer-api.walletconnect.com wss://*.walletconnect.com https://*.walletconnect.com https://auth.privy.io https://*.rpc.privy.systems; frame-src https:; child-src https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https: https://use.typekit.net https://p.typekit.net; font-src 'self' https: data: https://use.typekit.net https://p.typekit.net; frame-ancestors *;",
           },
           {
             key: "Cross-Origin-Opener-Policy",
@@ -88,6 +102,18 @@ const nextConfig = {
   async redirects() {
     // No redirects for /pricing; it now serves the Terminal experience directly
     return [];
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/.well-known/farcaster.json",
+        destination: "/api/farcaster/manifest",
+      },
+      {
+        source: "/opengraph-image.png",
+        destination: "/opengraph-image",
+      },
+    ];
   },
 };
 

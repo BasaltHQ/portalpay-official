@@ -1,38 +1,153 @@
-import { ImageResponse } from 'next/og';
-import { getBaseUrl } from '@/lib/base-url';
 
-export const runtime = 'edge';
-export const alt = 'Crypto Payment Solutions by Location';
-export const size = { width: 1200, height: 630 };
-export const contentType = 'image/jpeg';
+import { generateBasaltOG } from '@/lib/og-template';
+import { getLocationData } from '@/lib/landing-pages/locations';
+import { createFlagMeshGradient } from '@/lib/og-image-utils';
+import { loadTwemojiPng, loadBasaltDefaults } from '@/lib/og-asset-loader';
+import sharp from 'sharp';
+
+export const runtime = 'nodejs';
+export const alt = 'Crypto Payment Locations';
+export const size = { width: 2400, height: 1260 };
+export const contentType = 'image/png';
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  
-  const baseUrl = getBaseUrl();
-  
-  try {
-    // Fetch the generated OG image from our API route
-    const ogImageRes = await fetch(`${baseUrl}/api/og-image/locations/${slug}`, {
-      cache: 'no-store',
-    });
-    
-    if (ogImageRes.ok) {
-      const imageBuffer = await ogImageRes.arrayBuffer();
-      return new Response(imageBuffer, {
-        headers: {
-          'Content-Type': 'image/jpeg',
-          'Cache-Control': 'public, max-age=86400, s-maxage=86400',
-        },
-      });
-    }
-  } catch (error) {
-    console.error('OG image fetch error:', error);
+  const location = getLocationData(slug);
+
+  if (!location) {
+    return new Response('Not found', { status: 404 });
   }
-  
-  // Fallback: return a simple error response
-  return new Response(null, {
-    status: 404,
-    statusText: 'OG Image Not Found',
+
+  const { name, country } = location;
+
+  // 1. Get Flag Colors from Source of Truth
+  const { getFlagColors } = await import('@/lib/flags');
+  const primaryColors = getFlagColors(country);
+
+  // 2. Generate Flag Gradient Background
+  const bgSvg = createFlagMeshGradient(primaryColors, 2400, 1260); // Use generated flag colors for the mesh
+  const bgBuffer = await sharp(Buffer.from(bgSvg)).png().toBuffer();
+  const bgDataUri = `data:image/png;base64,${bgBuffer.toString('base64')}`;
+
+  // 3. Medallion - Load Twemoji for the actual flag
+  // Map full country names to ISO codes for flag emoji generation
+  const countryToIso: Record<string, string> = {
+    'Nigeria': 'NG',
+    'Brazil': 'BR',
+    'United Kingdom': 'GB',
+    'UK': 'GB',
+    'United States': 'US',
+    'USA': 'US',
+    'Germany': 'DE',
+    'France': 'FR',
+    'Italy': 'IT',
+    'Spain': 'ES',
+    'Canada': 'CA',
+    'Australia': 'AU',
+    'Japan': 'JP',
+    'South Korea': 'KR',
+    'India': 'IN',
+    'China': 'CN',
+    'Russia': 'RU',
+    'South Africa': 'ZA',
+    'Mexico': 'MX',
+    'Argentina': 'AR',
+    'Colombia': 'CO',
+    'Peru': 'PE',
+    'Chile': 'CL',
+    'Ecuador': 'EC',
+    'Venezuela': 'VE',
+    'Bolivia': 'BO',
+    'Paraguay': 'PY',
+    'Uruguay': 'UY',
+    'Turkey': 'TR',
+    'Saudi Arabia': 'SA',
+    'UAE': 'AE',
+    'Singapore': 'SG',
+    'Vietnam': 'VN',
+    'Thailand': 'TH',
+    'Indonesia': 'ID',
+    'Malaysia': 'MY',
+    'Philippines': 'PH',
+    'Kenya': 'KE',
+    'Ghana': 'GH',
+    'Egypt': 'EG',
+    'Morocco': 'MA',
+    'Ethiopia': 'ET',
+    'Rwanda': 'RW',
+    'Tanzania': 'TZ',
+    'Uganda': 'UG'
+  };
+
+  const getFlagEmoji = (nameOrCode: string) => {
+    if (!nameOrCode) return '🇺🇳';
+    // Use mapped ISO code if available, otherwise assume it's already a code if length is 2
+    let code = countryToIso[nameOrCode] || (nameOrCode.length === 2 ? nameOrCode : 'UN');
+
+    if (code === 'UN') return '🇺🇳';
+
+    const codePoints = code
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+  };
+
+  const flagEmoji = country ? getFlagEmoji(country) : '🇺🇳';
+  const flagBuffer = await loadTwemojiPng(flagEmoji, 700);
+
+  // 4. Format Industries
+  const industries = location.popularIndustries || [];
+  const formatIndustry = (ind: string) => ind.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+  const medallionDataUri = flagBuffer
+    ? `data:image/png;base64,${flagBuffer.toString('base64')}`
+    : bgDataUri;
+
+  // Load defaults for shield/bg
+  const defaults = await loadBasaltDefaults();
+
+  return await generateBasaltOG({
+    bgImage: bgDataUri,
+    blurredBgImage: bgDataUri, // Use same for blurred or defaults.bg if preferred
+    medallionImage: medallionDataUri,
+    poweredByImage: defaults.logoBase64,
+    primaryColor: primaryColors[0],
+    leftWing: (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', height: '100%', gap: 0 }}>
+        <div style={{ display: 'flex', fontSize: 32, color: 'rgba(255,255,255,0.7)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 8 }}>ACCEPT PAYMENTS IN</div>
+        <div style={{ display: 'flex', fontSize: 80, color: 'white', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 0.9, textTransform: 'uppercase', textAlign: 'right', textShadow: `0 4px 20px rgba(0,0,0,0.8), 0 0 60px ${primaryColors[0]}80` }}>
+          {name}
+        </div>
+        <div style={{ display: 'flex', fontSize: 24, color: 'rgba(255,255,255,0.9)', fontWeight: 500, letterSpacing: '0.05em', marginTop: 16, textAlign: 'right', maxWidth: 400 }}>
+          {location.localContext ? location.localContext.split('.')[0] + '.' : 'Instant settlement and offline support.'}
+        </div>
+      </div>
+    ),
+    rightWing: (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%', justifyContent: 'center', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+          MAJOR INDUSTRIES IN {name}:
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, maxWidth: 480, justifyContent: 'flex-start' }}>
+          {industries.slice(0, 6).map((ind, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center',
+              background: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: 12, // Slightly less rounded for a "tech tag" feel
+              padding: '8px 20px',
+              color: 'white',
+              fontSize: 20, // Slightly smaller
+              fontWeight: 600,
+              whiteSpace: 'nowrap'
+            }}>
+              {formatIndustry(ind)}
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+    cornerShieldImage: defaults.shieldBase64
   });
 }

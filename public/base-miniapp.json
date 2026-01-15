@@ -1,14 +1,16 @@
 {
-  "name": "Chicken Bones",
-  "short_name": "ChickenBones",
-  "description": "Live AI audio agent with ETH billing on Base.",
-  "start_url": "/",
-  "icon_url": "/android-chrome-192x192.png",
-  "splash_image_url": "/story4.png",
-  "theme_color": "#111111",
-  "background_color": "#0b0b0b",
-  "categories": ["utilities", "productivity", "audio"],
-  "related_applications": []
+  "name": "BasaltSurge",
+  "description": "Enterprise crypto payments at 0.5% with instant settlement. Unified billing and analytics.",
+  "icons": [
+    {
+      "src": "https://surge.basalthq.com/opengraph-image.png",
+      "sizes": "1200x630",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "https://surge.basalthq.com",
+  "display": "standalone",
+  "imageUrl": "https://surge.basalthq.com/opengraph-image.png",
+  "theme_color": "#35ff7c",
+  "background_color": "#0a0a0a"
 }
-
-

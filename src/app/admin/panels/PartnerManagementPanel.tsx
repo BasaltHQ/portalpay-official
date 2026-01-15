@@ -85,7 +85,7 @@ export default function PartnerManagementPanel() {
   async function persistBrandBeforeProvision(): Promise<boolean> {
     try {
       const key = String(brandKey || "").toLowerCase();
-      if (!key || key === "portalpay") return false;
+      if (!key || key === "portalpay" || key === "basaltsurge") return false;
       const body: any = {};
       if (config?.appUrl) body.appUrl = String(config.appUrl);
       if (typeof config?.partnerFeeBps === "number") {
@@ -126,7 +126,25 @@ export default function PartnerManagementPanel() {
   }
 
   // Merchants under selected partner
-  const [users, setUsers] = useState<Array<{ merchant: string; splitAddress?: string }>>([]);
+  const [users, setUsers] = useState<Array<{ merchant: string; splitAddress?: string; kioskEnabled?: boolean; terminalEnabled?: boolean }>>([]);
+
+  async function toggleMerchantFeature(merchant: string, feature: 'kioskEnabled' | 'terminalEnabled', value: boolean) {
+    // Optimistic update
+    setUsers(prev => prev.map(u => u.merchant === merchant ? { ...u, [feature]: value } : u));
+    try {
+      const r = await fetch(`/api/merchants/${merchant}/features`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [feature]: value })
+      });
+      if (!r.ok) throw new Error("Failed to update");
+    } catch (e) {
+      // Revert on error
+      setUsers(prev => prev.map(u => u.merchant === merchant ? { ...u, [feature]: !value } : u));
+      // Use explicit window.alert or setError state if accessible, otherwise just console error and revert
+      console.error("Failed to update feature setting");
+    }
+  }
 
   // Per-merchant platform release info microtext
   const [releaseInfo, setReleaseInfo] = useState<Record<string, string>>({});
@@ -204,7 +222,7 @@ export default function PartnerManagementPanel() {
 
       // Load brand config snapshot (avoid main 'portalpay' in this panel)
       const key = String(brandKey || "").toLowerCase();
-      if (!key || key === "portalpay") {
+      if (!key || key === "portalpay" || key === "basaltsurge") {
         setConfig(null);
         setUsers([]);
         setLoading(false);
@@ -236,7 +254,12 @@ export default function PartnerManagementPanel() {
             : Array.isArray(ju)
               ? ju
               : [];
-      setUsers(itemsArr.map((it: any) => ({ merchant: String(it.merchant || ""), splitAddress: it.splitAddress })));
+      setUsers(itemsArr.map((it: any) => ({
+        merchant: String(it.merchant || ""),
+        splitAddress: it.splitAddress,
+        kioskEnabled: !!it.kioskEnabled,
+        terminalEnabled: !!it.terminalEnabled
+      })));
     } catch (e: any) {
       setError(e?.message || "Failed to load partner data");
     } finally {
@@ -329,7 +352,7 @@ export default function PartnerManagementPanel() {
     load();
     (async () => {
       const k = String(brandKey || "").toLowerCase();
-      if (!k || k === "portalpay") {
+      if (!k || k === "portalpay" || k === "basaltsurge") {
         setVersions([]);
         setVersionMap({});
         return;
@@ -348,13 +371,13 @@ export default function PartnerManagementPanel() {
 
         const partnersOnly = arr
           .map((k: any) => String(k || "").toLowerCase())
-          .filter((k: string) => k && k !== "portalpay");
+          .filter((k: string) => k && k !== "portalpay" && k !== "basaltsurge");
 
         // If no partner brands exist, show empty-state (brandsList empty)
         setBrandsList(partnersOnly);
 
         // If current selection is portalpay, pick first partner brand if available
-        if (String(brandKey).toLowerCase() === "portalpay" && partnersOnly.length > 0) {
+        if ((String(brandKey).toLowerCase() === "portalpay" || String(brandKey).toLowerCase() === "basaltsurge") && partnersOnly.length > 0) {
           setBrandKey(partnersOnly[0]);
         }
       } catch {
@@ -366,7 +389,7 @@ export default function PartnerManagementPanel() {
   // Autopopulate deployment fields and Azure params when brand changes (sane defaults + brand-based name)
   useEffect(() => {
     const key = String(brandKey || "").toLowerCase();
-    if (!key || key === "portalpay") return;
+    if (!key || key === "portalpay" || key === "basaltsurge") return;
     setProvName((prev) => prev || `pp-${key}`);
     setProvResourceGroup((prev) => prev || "rg-portalpay");
     setAzureResourceGroup((prev) => prev || "rg-portalpay-prod");
@@ -380,7 +403,7 @@ export default function PartnerManagementPanel() {
   // Load last successful deployment params for this brand (prefill from DB)
   useEffect(() => {
     const key = String(brandKey || "").toLowerCase();
-    if (!key || key === "portalpay") return;
+    if (!key || key === "portalpay" || key === "basaltsurge") return;
     (async () => {
       try {
         const resp = await fetch(`/api/platform/brands/${encodeURIComponent(key)}/deploy-params`, {
@@ -417,7 +440,7 @@ export default function PartnerManagementPanel() {
       setProvError("");
       setInfo("");
       const key = String(brandKey || "").toLowerCase();
-      if (!key || key === "portalpay") {
+      if (!key || key === "portalpay" || key === "basaltsurge") {
         setProvError("Select a partner brand to provision a container");
         setProvLoading(false);
         return;
@@ -547,7 +570,7 @@ export default function PartnerManagementPanel() {
       setDeployProgress([]);
 
       const key = String(brandKey || "").toLowerCase();
-      if (!key || key === "portalpay") {
+      if (!key || key === "portalpay" || key === "basaltsurge") {
         setDeployError("Select a partner brand to deploy");
         setDeployLoading(false);
         return;
@@ -704,7 +727,7 @@ export default function PartnerManagementPanel() {
       setInfo("");
 
       const key = String(brandKey || "").toLowerCase();
-      if (!key || key === "portalpay") {
+      if (!key || key === "portalpay" || key === "basaltsurge") {
         setRetryError("Select a partner brand to retry AFD");
         setRetryLoading(false);
         return;
@@ -740,7 +763,7 @@ export default function PartnerManagementPanel() {
       setError("");
       setInfo("");
       const key = String(brandKey || "").toLowerCase();
-      if (!key || key === "portalpay") {
+      if (!key || key === "portalpay" || key === "basaltsurge") {
         setError("Select a partner brand to save settings");
         return;
       }
@@ -863,7 +886,7 @@ export default function PartnerManagementPanel() {
 
   // Derived helpers for empty-state
   const hasPartnerBrands = brandsList.length > 0;
-  const isPortalPaySelected = String(brandKey || "").toLowerCase() === "portalpay";
+  const isPortalPaySelected = String(brandKey || "").toLowerCase() === "portalpay" || String(brandKey || "").toLowerCase() === "basaltsurge";
 
   // Fetch balances for a merchant (brand-scoped by wallet)
   // knownSplitAddress: pass the split address from the row data to bypass lookup and use the correct partner-brand split
@@ -1415,7 +1438,7 @@ export default function PartnerManagementPanel() {
               onClick={async () => {
                 try {
                   const key = String(brandKey || "").toLowerCase();
-                  if (!key || key === "portalpay") {
+                  if (!key || key === "portalpay" || key === "basaltsurge") {
                     setError("Select a partner brand to remove");
                     return;
                   }
@@ -1438,7 +1461,7 @@ export default function PartnerManagementPanel() {
                 }
               }}
               title="Remove selected partner brand"
-              disabled={!brandKey || brandKey.toLowerCase() === "portalpay"}
+              disabled={!brandKey || brandKey.toLowerCase() === "portalpay" || brandKey.toLowerCase() === "basaltsurge"}
             >
               Remove
             </button>
@@ -1682,6 +1705,7 @@ export default function PartnerManagementPanel() {
                       }
                     }}
                   />
+
                   <button
                     className="px-3 py-1.5 rounded-md border text-sm"
                     title="Generate favicon from existing logo"
@@ -2032,7 +2056,7 @@ export default function PartnerManagementPanel() {
                   className="px-3 py-1.5 rounded-md border text-sm"
                   onClick={() => {
                     const k = String(brandKey || "").toLowerCase();
-                    if (!k || k === "portalpay") { setVersions([]); setVersionMap({}); return; }
+                    if (!k || k === "portalpay" || k === "basaltsurge") { setVersions([]); setVersionMap({}); return; }
                     loadVersionsForBrand(k);
                   }}
                   disabled={versionsLoading}
@@ -2097,6 +2121,8 @@ export default function PartnerManagementPanel() {
                   <tr className="bg-foreground/5">
                     <th className="text-left px-3 py-2 font-medium">Merchant Wallet</th>
                     <th className="text-left px-3 py-2 font-medium">Split</th>
+                    <th className="text-center px-3 py-2 font-medium">Kiosk</th>
+                    <th className="text-center px-3 py-2 font-medium">Terminal</th>
                     <th className="text-left px-3 py-2 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -2121,6 +2147,22 @@ export default function PartnerManagementPanel() {
                             <TruncatedAddress address={u.merchant} />
                           </td>
                           <td className="px-3 py-2 font-mono">{u.splitAddress || "—"}</td>
+                          <td className="px-3 py-2 text-center">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4"
+                              checked={!!u.kioskEnabled}
+                              onChange={(e) => toggleMerchantFeature(u.merchant, 'kioskEnabled', e.target.checked)}
+                            />
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4"
+                              checked={!!u.terminalEnabled}
+                              onChange={(e) => toggleMerchantFeature(u.merchant, 'terminalEnabled', e.target.checked)}
+                            />
+                          </td>
                           <td className="px-3 py-2">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <button

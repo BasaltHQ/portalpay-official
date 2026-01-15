@@ -22,7 +22,7 @@ export function getEffectiveBrandKey(): string {
         }
     }
 
-    return "portalpay";
+    return "basaltsurge";
 }
 
 export function isBasaltSurge(key?: string): boolean {
@@ -30,11 +30,21 @@ export function isBasaltSurge(key?: string): boolean {
     return k === "basaltsurge";
 }
 
+export function isPlatformBrand(key?: string): boolean {
+    const k = (key || "").toLowerCase();
+    return k === "basaltsurge" || k === "portalpay" || !k;
+}
+
 export function getDefaultBrandSymbol(key?: string): string {
+    // Only return platform symbols for platform brands
+    // For partner brands, return empty - they should use their own Cosmos DB logos
+    if (!isPlatformBrand(key)) return ""; // Partner - no default
     return isBasaltSurge(key) ? "/BasaltSurgeD.png" : "/ppsymbol.png";
 }
 
 export function getDefaultBrandName(key?: string): string {
+    // Only return platform names for platform brands
+    if (!isPlatformBrand(key)) return ""; // Partner - no default
     return isBasaltSurge(key) ? "BasaltSurge" : "PortalPay";
 }
 
@@ -64,7 +74,12 @@ export function normalizeBrandName(name?: string | null, key?: string): string {
     }
 
     // Return original name if no match found, or derive from key
-    return n || getDefaultBrandName(k);
+    // For partners, titleize the key (e.g., "xoinpay" -> "Xoinpay")
+    if (n) return n;
+    if (k && !isPlatformBrand(k)) {
+        return k.charAt(0).toUpperCase() + k.slice(1);
+    }
+    return getDefaultBrandName(k);
 }
 
 /**

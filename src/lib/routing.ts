@@ -21,6 +21,7 @@ export const EXCLUDE_PREFIXES = new Set<string>([
     "get-started", // get started landing page
     "leaderboard",
     "live",
+    "kiosk", // kiosk mode
     "msa", // Master Services Agreement signing page
     "msas", // Master Services Agreement with special terms
     "portal",
@@ -40,6 +41,10 @@ export const EXCLUDE_PREFIXES = new Set<string>([
     "globals.css",
     "robots.txt",
     "sitemap.xml",
+    "opengraph-image",
+    "opengraph-image.png",
+    "twitter-image",
+    ".well-known",
 ]);
 
 export function isCandidateSlug(pathname: string): string | null {

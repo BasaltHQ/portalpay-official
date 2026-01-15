@@ -1,66 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { getComparisonData } from '@/lib/landing-pages/comparisons';
-import { createMeshGradient, escapeForSvg, wrapTextToLines, loadPPSymbol, fetchWithCache, loadPublicImageBuffer, renderLineWithEmphasis } from '@/lib/og-image-utils';
+import { createMeshGradient, escapeForSvg, wrapTextToLines, renderLineWithEmphasis } from '@/lib/og-image-utils';
+import { loadPPSymbol, fetchWithCache, loadPublicImageBuffer } from '@/lib/og-asset-loader';
 import { getBrandConfig } from '@/config/brands';
 import { isPartnerContext } from '@/lib/env';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/**
- * Load the brand's logo for the comparison table (larger logo, not compact symbol).
- * Similar to loadPPSymbol but for the full logo (app logo) with proper sizing.
- */
-async function loadBrandLogo(size = 96): Promise<Buffer | null> {
-  let src: Buffer | null = null;
 
-  try {
-    const brand = getBrandConfig();
-    const isPartner = isPartnerContext() || (String((brand as any)?.key || '').toLowerCase() !== 'portalpay');
-
-    if (isPartner) {
-      // Prefer brand-specific app logo in partner containers
-      const logoPath = String(brand?.logos?.app || brand?.logos?.symbol || '');
-      console.log('[loadBrandLogo] Partner context - logoPath:', logoPath);
-
-      if (logoPath) {
-        // Check if it's a full URL (starts with http:// or https://)
-        if (/^https?:\/\//i.test(logoPath)) {
-          src = await fetchWithCache(logoPath);
-        } else {
-          // Local path - try loading from public directory
-          const rel = logoPath.replace(/^[/\\]+/, '');
-          src = await loadPublicImageBuffer(rel);
-
-          // Fallback to remote brand asset if local not present and brand.appUrl known
-          if (!src && brand?.appUrl) {
-            const base = String(brand.appUrl).replace(/\/+$/, '');
-            const url = `${base}/${rel}`;
-            src = await fetchWithCache(url);
-          }
-        }
-      }
-    }
-
-    if (!src) {
-      // Platform default: use cblogod.png (full PortalPay logo)
-      src = await loadPublicImageBuffer('cblogod.png');
-    }
-
-    if (!src) {
-      return null;
-    }
-
-    return await sharp(src)
-      .resize(size, size, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
-      .png()
-      .toBuffer();
-  } catch (error) {
-    console.error('[loadBrandLogo] Error:', error);
-    return null;
-  }
-}
 
 export async function GET(
   req: NextRequest,
@@ -86,8 +35,8 @@ export async function GET(
     let imageBuffer = await sharp(Buffer.from(backgroundSvg)).resize(1200, 630).png().toBuffer();
 
     const ppSymbolOverlay: Buffer | null = await loadPPSymbol(80);
-    // Brand accent color for table highlights (use brand's accent or fall back to teal)
-    const BRAND_ACCENT = brand.colors?.accent || brand.colors?.primary || '#2EE5C8';
+    // Brand primary color for table highlights (use primary green)
+    const BRAND_ACCENT = brand.colors?.primary || '#35ff7c';
 
     // Two-pane geometry
     const PANE_DIVIDER = 600;
@@ -341,35 +290,13 @@ export async function GET(
     const logoContainerSize = 96;
     const logoTop = tableY - 76;
 
-    // Brand logo (PortalPay or partner brand) positioned near left header base
-    const portalLogo = await loadBrandLogo(logoContainerSize);
+    // Brand logo (Partner/Basalt Symbol) positioned near right column header
+    // Use loadPPSymbol to respect partner branding (auto-fallback to Surge.png for platform)
+    const portalLogo = await loadPPSymbol(logoContainerSize);
     if (portalLogo) {
-      // Build masked rounded-square tile with the image clipped to rounded corners
-      let portalTile = await sharp({
-        create: { width: logoContainerSize, height: logoContainerSize, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } }
-      }).png().toBuffer();
-
-      // Ensure white base behind any transparent portions of the logo
-      const whiteBgSvg = `<svg width="${logoContainerSize}" height="${logoContainerSize}" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0" y="0" width="${logoContainerSize}" height="${logoContainerSize}" rx="16" ry="16" fill="#ffffff"/>
-      </svg>`;
-      portalTile = await sharp(portalTile).composite([{ input: Buffer.from(whiteBgSvg) }]).png().toBuffer();
-
-      // portalLogo is already resized by loadBrandLogo
-      portalTile = await sharp(portalTile).composite([{ input: portalLogo, top: 0, left: 0 }]).png().toBuffer();
-
-      const clipSvg = `<svg width="${logoContainerSize}" height="${logoContainerSize}" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0" y="0" width="${logoContainerSize}" height="${logoContainerSize}" rx="16" ry="16" fill="#fff"/>
-      </svg>`;
-      portalTile = await sharp(portalTile).composite([{ input: Buffer.from(clipSvg), blend: 'dest-in' }]).png().toBuffer();
-
-      const strokeSvg = `<svg width="${logoContainerSize}" height="${logoContainerSize}" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0" y="0" width="${logoContainerSize}" height="${logoContainerSize}" rx="16" ry="16" fill="none" stroke="rgba(255,255,255,0.30)" stroke-width="2"/>
-      </svg>`;
-      portalTile = await sharp(portalTile).composite([{ input: Buffer.from(strokeSvg) }]).png().toBuffer();
-
+      // For transparent logos, use directly without rectangular background
       const portalLogoLeft = tableX + containerPadding + colWidth + (colWidth - logoContainerSize) / 2;
-      composites.push({ input: portalTile, top: logoTop, left: Math.round(portalLogoLeft) });
+      composites.push({ input: portalLogo, top: logoTop, left: Math.round(portalLogoLeft) });
     }
 
     // Competitor logo positioned high on right pane for visual balance

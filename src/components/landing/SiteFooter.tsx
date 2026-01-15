@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTheme } from "../../contexts/ThemeContext";
+import { useBrand } from "../../contexts/BrandContext";
 
 const navigationLinks = [
   { label: 'Home', href: '#hero' },
@@ -31,39 +32,85 @@ const socialLinks = [
 
 export default function SiteFooter() {
   const { theme } = useTheme();
+  const brand = useBrand();
+
+  // Get navbarMode from brand context or theme
+  const navbarMode = (brand as any)?.logos?.navbarMode || theme.navbarMode;
+
+  // Determine if this is a partner container based on the effective brand key
+  const isPartner = React.useMemo(() => {
+    const key = String(theme.brandKey || (brand as any)?.key || "").toLowerCase();
+    return key && key !== "basaltsurge" && key !== "portalpay";
+  }, [theme.brandKey, (brand as any)?.key]);
+
   return (
     <footer className="relative py-16 px-6 border-t border-white/10 mt-24">
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand Column */}
           <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="relative w-12 h-12">
-                <Image
-                  src="/Surge.png"
-                  alt="Basalt Surge"
-                  fill
-                  className="object-contain"
-                />
-                <div className="shield-gleam-container" />
-              </div>
-              <div>
-                <span className="text-white text-xl tracking-widest" style={{ fontFamily: '"vox", sans-serif' }}>
-                  <span style={{ fontWeight: 300 }}>BASALT</span><span style={{ fontWeight: 700 }}>SURGE</span>
-                </span>
-                <p className="text-[10px] font-mono mt-1 whitespace-nowrap" style={{ color: theme.primaryColor }}>AI-POWERED RELATIONSHIPS</p>
-              </div>
-            </div>
+            {/* Check navbarMode for logo display preference */}
+            {(() => {
+              const useFullWidthLogo = navbarMode === "logo" || (isPartner && navbarMode !== "symbol");
+              const fullWidthLogo = theme.brandLogoUrl || (brand as any)?.logos?.app;
+
+              if (useFullWidthLogo && fullWidthLogo) {
+                // Full-width logo mode
+                return (
+                  <div className="mb-6">
+                    <div className="relative h-10 w-auto max-w-[200px]">
+                      <Image
+                        src={fullWidthLogo}
+                        alt={theme.brandName || "Brand Logo"}
+                        fill
+                        className="object-contain object-left"
+                      />
+                    </div>
+                  </div>
+                );
+              } else {
+                // Symbol + Text mode
+                return (
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="relative w-12 h-12">
+                      {theme.brandLogoUrl ? (
+                        <Image
+                          src={theme.symbolLogoUrl || theme.brandLogoUrl}
+                          alt={theme.brandName || "Brand Logo"}
+                          fill
+                          className="object-contain"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-white/10 rounded-full" />
+                      )}
+
+                      {/* Only show gleam for Basalt/PortalPay */}
+                      {!isPartner && <div className="shield-gleam-container" />}
+                    </div>
+                    <div>
+                      <span className="text-white text-xl tracking-widest font-bold uppercase" style={{ fontFamily: theme.fontFamily }}>
+                        {theme.brandName || "Brand"}
+                      </span>
+                      {!isPartner && (
+                        <p className="text-[10px] font-mono mt-1 whitespace-nowrap" style={{ color: theme.primaryColor }}>AI-POWERED RELATIONSHIPS</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+            })()}
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
-              <span className="font-semibold" style={{ color: theme.primaryColor }}>Payments. Portals. Power.</span> The financial backbone of the Basalt ecosystem, enabling seamless crypto and fiat transactions across all your business operations.
+              <span className="font-semibold" style={{ color: theme.primaryColor }}>Payments. Portals. Power.</span> The financial backbone of the ecosystem, enabling seamless crypto and fiat transactions.
             </p>
-            <a
-              href="mailto:info@basalthq.com"
-              className="text-sm hover:underline"
-              style={{ color: theme.primaryColor }}
-            >
-              info@basalthq.com
-            </a>
+            {!isPartner && (
+              <a
+                href="mailto:info@basalthq.com"
+                className="text-sm hover:underline"
+                style={{ color: theme.primaryColor }}
+              >
+                info@basalthq.com
+              </a>
+            )}
           </div>
 
           {/* Navigation */}
@@ -83,64 +130,68 @@ export default function SiteFooter() {
             </ul>
           </div>
 
-          {/* Ecosystem */}
-          <div>
-            <h4 className="text-xs font-mono tracking-wider text-gray-500 mb-4">ECOSYSTEM</h4>
-            <ul className="space-y-2">
-              {ecosystemLinks.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target={link.href.startsWith("http") ? "_blank" : undefined}
-                    rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
-                    className="text-gray-400 text-sm hover:text-white transition-colors flex items-center gap-1"
-                  >
-                    {link.label}
-                    {link.href.startsWith("http") && (
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 0 00-2 2v10a2 0 002 2h10a2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    )}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Ecosystem (Available only for Platform) */}
+          {!isPartner && (
+            <div>
+              <h4 className="text-xs font-mono tracking-wider text-gray-500 mb-4">ECOSYSTEM</h4>
+              <ul className="space-y-2">
+                {ecosystemLinks.map((link) => (
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      target={link.href.startsWith("http") ? "_blank" : undefined}
+                      rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                      className="text-gray-400 text-sm hover:text-white transition-colors flex items-center gap-1"
+                    >
+                      {link.label}
+                      {link.href.startsWith("http") && (
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 0 00-2 2v10a2 0 002 2h10a2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      )}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-          {/* Connect */}
-          <div>
-            <h4 className="text-xs font-mono tracking-wider text-gray-500 mb-4">CONNECT</h4>
-            <ul className="space-y-2">
-              {socialLinks.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-400 text-sm hover:text-[var(--primary)] transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-8">
-              <h4 className="text-xs font-mono tracking-wider text-gray-500 mb-2">STATUS</h4>
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-[var(--primary)]"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--primary)]"></span>
-                </span>
-                <span className="text-xs font-mono text-[var(--primary)]">ALL SYSTEMS OPERATIONAL</span>
+          {/* Connect (Default / Platform only for now) */}
+          {!isPartner && (
+            <div>
+              <h4 className="text-xs font-mono tracking-wider text-gray-500 mb-4">CONNECT</h4>
+              <ul className="space-y-2">
+                {socialLinks.map((link) => (
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 text-sm hover:text-[var(--primary)] transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-8">
+                <h4 className="text-xs font-mono tracking-wider text-gray-500 mb-2">STATUS</h4>
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-[var(--primary)]"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--primary)]"></span>
+                  </span>
+                  <span className="text-xs font-mono text-[var(--primary)]">ALL SYSTEMS OPERATIONAL</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-gray-500 text-xs">
-            © {new Date().getFullYear()} BasaltSurge. All rights reserved.
+            © {new Date().getFullYear()} {theme.brandName || "BasaltSurge"}. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
             <Link href="/privacy" className="text-gray-500 text-xs hover:text-white transition-colors">

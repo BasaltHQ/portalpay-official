@@ -9,9 +9,9 @@ import { getDefaultBrandSymbol, isBasaltSurge, resolveBrandAppLogo, resolveBrand
 const BLOCKED_FAVICON_URLS = [
   "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/uploads/a311dcf8-e6de-4eca-a39c-907b347dff11.png",
 ];
-const BLOCKED_FAVICON_REPLACEMENT = "/cblogod.png";
+const BLOCKED_FAVICON_REPLACEMENT = "/Surge.png";
 
-function sanitizeFaviconUrl(url: string | undefined): string {
+export function sanitizeFaviconUrl(url: string | undefined): string {
   if (!url) return '';
   const normalized = url.trim().toLowerCase();
   const isBlocked = BLOCKED_FAVICON_URLS.some(blocked => normalized === blocked.toLowerCase());
@@ -44,11 +44,12 @@ type ThemeContextType = {
 };
 
 const defaultTheme: SiteTheme = {
-  primaryColor: '#0f172a',
-  secondaryColor: '#F54029',
-  // Neutral defaults to avoid PortalPay flash in partner context before BrandContext loads
+  primaryColor: '#35ff7c',
+  secondaryColor: '#FF6B35',
+  // Use EMPTY defaults to avoid BasaltSurge flash in partner context before BrandContext loads
+  // The actual values will be set by the useState initializer which has partner detection
   brandLogoUrl: '',
-  brandFaviconUrl: '',
+  brandFaviconUrl: '/Surge.png',
   symbolLogoUrl: '',
   brandName: '',
   fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
@@ -57,7 +58,7 @@ const defaultTheme: SiteTheme = {
   headerTextColor: '#ffffff',
   bodyTextColor: '#e5e7eb',
   brandLogoShape: 'square',
-  navbarMode: 'symbol',
+  navbarMode: 'logo',
   brandKey: '',
   footerLogoUrl: '',
 };
@@ -76,20 +77,55 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const brand = useBrand();
   const account = useActiveAccount();
   const wallet = (account?.address || '').toLowerCase();
-  const [theme, setTheme] = useState<SiteTheme>(() => ({
-    ...defaultTheme,
-    // Seed with container brand colors so landing page reflects merchant theme immediately
-    // FORCE overrides for BasaltSurge to prevent old DB values or defaults from showing
-    primaryColor: (brand as any)?.key?.toLowerCase() === 'basaltsurge' ? '#35ff7c' : (typeof (brand as any)?.colors?.primary === 'string' ? (brand as any).colors.primary : defaultTheme.primaryColor),
-    secondaryColor: (brand as any)?.key?.toLowerCase() === 'basaltsurge' ? '#FF6B35' : (typeof (brand as any)?.colors?.accent === 'string' ? (brand as any).colors.accent : defaultTheme.secondaryColor),
-    brandName: brand.name,
-    brandFaviconUrl: sanitizeFaviconUrl(brand.logos.favicon),
-    symbolLogoUrl: (brand as any)?.key?.toLowerCase() === 'basaltsurge' ? '/BasaltSurgeD.png' : String(brand.logos.symbol || brand.logos.app || ''),
-    brandLogoUrl: (brand as any)?.key?.toLowerCase() === 'basaltsurge' ? '/BasaltSurgeWideD.png' : brand.logos.app,
-    footerLogoUrl: (brand as any)?.logos?.footer || '',
-    navbarMode: (brand as any)?.key?.toLowerCase() === 'basaltsurge' ? 'logo' : ((brand as any)?.logos?.navbarMode === 'logo' ? 'logo' : 'symbol'),
-    brandKey: (brand as any)?.key || '',
-  }));
+  const [theme, setTheme] = useState<SiteTheme>(() => {
+    // Check if this is a partner container - if so, never force BasaltSurge
+    // Use DOM attribute (client) AND brand.key (SSR) for reliable detection
+    const domContainerType = typeof document !== 'undefined'
+      ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase()
+      : '';
+    const brandKey = (brand as any)?.key?.toLowerCase() || '';
+
+    // Partner detection:
+    // 1. DOM attribute is 'partner' (client-side)
+    // 2. OR brand.key is not platform (SSR-friendly - brand comes from BrandProvider which has correct partner brand)
+    const isPlatformBrandKey = !brandKey || brandKey === 'basaltsurge' || brandKey === 'portalpay';
+    const isPartnerFromDOM = domContainerType === 'partner';
+    const isPartnerFromBrand = !isPlatformBrandKey; // If brand key is NOT platform, it's a partner brand
+    const isPartner = isPartnerFromDOM || isPartnerFromBrand;
+
+    const isBasaltPlatform = isPlatformBrandKey && !isPartner;
+
+    // For partners, use brand config values with proper fallbacks - NEVER fall back to BasaltSurge defaults
+    const partnerLogo = String(brand.logos.app || brand.logos.symbol || '').trim();
+    const partnerSymbol = String(brand.logos.symbol || brand.logos.app || '').trim();
+    const partnerPrimary = typeof (brand as any)?.colors?.primary === 'string' ? (brand as any).colors.primary : '';
+    const partnerSecondary = typeof (brand as any)?.colors?.accent === 'string' ? (brand as any).colors.accent : '';
+
+    // DEBUG: Log initial state
+    console.log('[ThemeContext] useState initializer:', {
+      brandKey,
+      isPartner,
+      isBasaltPlatform,
+      partnerLogo,
+      'brand.logos.app': brand.logos.app,
+    });
+
+    return {
+      ...defaultTheme,
+      // Seed with container brand colors so landing page reflects merchant theme immediately
+      // FORCE overrides for BasaltSurge to prevent old DB values or defaults from showing
+      // BUT only on platform, never for partners - partners get their brand values or generic defaults (NOT Basalt)
+      primaryColor: isBasaltPlatform ? '#35ff7c' : (partnerPrimary || '#1f2937'),
+      secondaryColor: isBasaltPlatform ? '#FF6B35' : (partnerSecondary || '#F54029'),
+      brandName: brand.name || (isPartner ? brandKey : 'BasaltSurge'),
+      brandFaviconUrl: sanitizeFaviconUrl(brand.logos.favicon),
+      symbolLogoUrl: isBasaltPlatform ? '/BasaltSurgeD.png' : (partnerSymbol || ''),
+      brandLogoUrl: isBasaltPlatform ? '/BasaltSurgeWideD.png' : (partnerLogo || ''),
+      footerLogoUrl: (brand as any)?.logos?.footer || '',
+      navbarMode: isBasaltPlatform ? 'logo' : ((brand as any)?.logos?.navbarMode === 'logo' ? 'logo' : 'symbol'),
+      brandKey: (brand as any)?.key || '',
+    };
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch theme from API
@@ -210,22 +246,59 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
           };
         }
+
+        // Prepare "Effective Defaults" using BrandContext. 
+        // This ensures that for a Partner Container (where 'brand' is loaded), 
+        // we default to the Partner's colors/logos if the specific Site Configuration is missing.
+        // CRITICAL: For partners, NEVER fall back to defaultTheme (which has BasaltSurge values)
+        const brandKeyCheck = String((brand as any)?.key || '').toLowerCase();
+        const isPartnerBrand = brandKeyCheck && brandKeyCheck !== 'basaltsurge' && brandKeyCheck !== 'portalpay';
+
+        const effectiveDefaultPrimary = (brand as any)?.colors?.primary || (isPartnerBrand ? '#1f2937' : defaultTheme.primaryColor);
+        const effectiveDefaultSecondary = (brand as any)?.colors?.accent || (isPartnerBrand ? '#F54029' : defaultTheme.secondaryColor);
+        const effectiveDefaultLogo = (brand as any)?.logos?.app || (isPartnerBrand ? '' : defaultTheme.brandLogoUrl);
+        const effectiveDefaultSymbol = (brand as any)?.logos?.symbol || effectiveDefaultLogo || (isPartnerBrand ? '' : defaultTheme.symbolLogoUrl);
+        const effectiveDefaultFavicon = (brand as any)?.logos?.favicon || defaultTheme.brandFaviconUrl;
+        const effectiveDefaultName = (brand as any)?.name || (isPartnerBrand ? brandKeyCheck.charAt(0).toUpperCase() + brandKeyCheck.slice(1) : defaultTheme.brandName);
+
         // Client-side sanitization using merged theme (shop takes priority)
         const t = (() => {
           const x: any = { ...mergedTheme };
           const bKey = String((brand as any)?.key || '').toLowerCase();
-          const isBS = bKey === 'basaltsurge' || bKey === 'portalpay';
-
           // Determine container type from DOM attribute set by RootLayout
           let isPartner = false;
           try {
             const ct = typeof document !== 'undefined'
               ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase()
               : '';
-            isPartner = ct === 'partner';
+
+            // DOM attribute is authoritative - set by server based on env vars
+            if (ct === 'partner') {
+              isPartner = true;
+            } else if (ct === 'platform') {
+              isPartner = false;
+            } else {
+              // No explicit setting - check BrandContext
+              const brandName = String((brand as any)?.name || '').toLowerCase();
+              const brandKeyFromCtx = String((brand as any)?.key || '').toLowerCase();
+              const isPlatformBrand = (!brandName || brandName === 'basaltsurge' || brandName === 'portalpay') &&
+                (!brandKeyFromCtx || brandKeyFromCtx === 'basaltsurge' || brandKeyFromCtx === 'portalpay');
+              isPartner = !isPlatformBrand;
+            }
           } catch { }
 
-          // Only force specific brand colors if NO customizations exist and it's THE GLOBAL config (landing page)
+          // Fix: Ensure we don't treat this as a Basalt/Platform context if we are explicitly in a Partner container.
+          const isBS = (bKey === 'basaltsurge' || bKey === 'portalpay') && !isPartner;
+
+          // DEBUG: Trace partner detection
+          console.log('[ThemeContext DEBUG] Partner detection:', {
+            ct: typeof document !== 'undefined' ? document.documentElement.getAttribute('data-pp-container-type') : 'N/A',
+            bKey,
+            brandName: (brand as any)?.name,
+            isPartner,
+            isBS,
+            shopTheme: !!shopTheme
+          });
           // (No shopTheme and NOT a per-merchant wallet means it's likely the landing page)
           const mWallet = String((mergedTheme as any).wallet || '').toLowerCase();
           const isPerMerchant = /^0x[a-f0-9]{40}$/.test(mWallet);
@@ -244,12 +317,57 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             }
           }
 
+          // AGGRESSIVE PARTNER OVERRIDE
+          // If we identified this as a partner, we MUST NOT allow the API (which might have returned default PortalPay config)
+          // to overwrite the basic brand identity functions. 
+          if (isPartner) {
+            // If the API says "BasaltSurge" or "PortalPay", but we have a real partner name in explicit defaults, REVERT to defaults.
+            const isApiGeneric = !x.brandName || /^(portal\s*pay|basalt\s*surge)$/i.test(x.brandName);
+            if (isApiGeneric && effectiveDefaultName && !/^(portal\s*pay|basalt\s*surge)$/i.test(effectiveDefaultName)) {
+              x.brandName = effectiveDefaultName;
+            }
+            // Same for logos
+            const isApiLogoPlatform = x.brandLogoUrl && (x.brandLogoUrl.includes('BasaltSurge') || x.brandLogoUrl.includes('PortalPay') || x.brandLogoUrl.includes('ppsymbol'));
+            if (isApiLogoPlatform && effectiveDefaultLogo && !effectiveDefaultLogo.includes('BasaltSurge')) {
+              x.brandLogoUrl = effectiveDefaultLogo;
+            }
+          }
+
+          // Apply defaults if values are missing (Prefer Shop -> Site -> Brand Context -> Hardcoded Default)
+          x.primaryColor = x.primaryColor || effectiveDefaultPrimary;
+          x.secondaryColor = x.secondaryColor || effectiveDefaultSecondary;
+
+          // Fix: If the API returned a generic/platform name (PortalPay/BasaltSurge), BUT we have a specific partner name in context, use the partner name.
+          const isGenericName = !x.brandName || /^portal\s*pay$/i.test(x.brandName) || /^basalt\s*surge$/i.test(x.brandName);
+          if (isGenericName && effectiveDefaultName && effectiveDefaultName !== 'PortalPay' && effectiveDefaultName !== 'BasaltSurge') {
+            x.brandName = effectiveDefaultName;
+          } else {
+            x.brandName = x.brandName || effectiveDefaultName;
+          }
+
           // Replace legacy platform logos with brand default only if NOT a custom merchant logo
           const brandKeyFinal = String((brand as any)?.key || '').toLowerCase();
 
           // Use our robust resolvers to clean up any legacy assets
-          x.brandLogoUrl = resolveBrandAppLogo(x.brandLogoUrl, brandKeyFinal);
-          x.symbolLogoUrl = resolveBrandSymbol(x.symbolLogoUrl || x.brandLogoUrl, brandKeyFinal);
+          // If x.brandLogoUrl is missing, fallback to effectiveDefaultLogo
+          // Fix: Also override if the API returned a platform logo but we have a partner logo
+          const isPlatformLogo = x.brandLogoUrl && (x.brandLogoUrl.includes('BasaltSurge') || x.brandLogoUrl.includes('PortalPay') || x.brandLogoUrl.includes('ppsymbol'));
+          if (isPlatformLogo && effectiveDefaultLogo && !effectiveDefaultLogo.includes('BasaltSurge')) {
+            x.brandLogoUrl = effectiveDefaultLogo;
+          }
+
+          x.brandLogoUrl = resolveBrandAppLogo(x.brandLogoUrl || effectiveDefaultLogo, brandKeyFinal);
+          x.symbolLogoUrl = resolveBrandSymbol(x.symbolLogoUrl || x.brandLogoUrl || effectiveDefaultSymbol, brandKeyFinal);
+          x.brandFaviconUrl = x.brandFaviconUrl || effectiveDefaultFavicon;
+
+
+          // Ensure favicon is sanitized against malicious URLs
+          if (x.brandFaviconUrl) {
+            x.brandFaviconUrl = sanitizeFaviconUrl(x.brandFaviconUrl);
+          }
+          // Also sanitize logos if they look like the blocked URL
+          if (x.brandLogoUrl) x.brandLogoUrl = sanitizeFaviconUrl(x.brandLogoUrl);
+          if (x.symbolLogoUrl) x.symbolLogoUrl = sanitizeFaviconUrl(x.symbolLogoUrl);
 
           if (x.logos) {
             x.logos.symbol = x.symbolLogoUrl;
@@ -260,8 +378,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           // Only do this for global/platform defaults, NEVER for a specific shop theme (merchant might want teal)
           const isPlatform = !brandKeyFinal || brandKeyFinal === "portalpay" || brandKeyFinal === "basaltsurge";
           if (isPlatform && !shopTheme) {
-            const defaultPrimary = isBS ? '#22C55E' : '#1f2937';
-            const defaultAccent = isBS ? '#16A34A' : '#F54029';
+            const defaultPrimary = '#35ff7c';
+            const defaultAccent = '#FF6B35';
             const p = String(x.primaryColor || "").toLowerCase();
             const s = String(x.secondaryColor || "").toLowerCase();
 
@@ -282,22 +400,45 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             if (x.logos) {
               x.logos.app = '/BasaltSurgeWideD.png';
               x.logos.symbol = '/BasaltSurgeD.png';
-              x.logos.navbarMode = 'logo';
+              x.logos.navbarMode = 'symbol';
             }
-            x.navbarMode = 'logo';
+            x.navbarMode = 'symbol';
           }
           return x;
         })();
+
+        // Determine effective defaults: use partner brand if available, otherwise defaultTheme
+        // This prevents BasaltSurge defaults from leaking into partner containers
+        const effectiveFallbackLogo = (brand as any)?.logos?.app || defaultTheme.brandLogoUrl;
+        const effectiveFallbackSymbol = (brand as any)?.logos?.symbol || (brand as any)?.logos?.app || defaultTheme.symbolLogoUrl;
+        const effectiveFallbackName = (brand as any)?.name || defaultTheme.brandName;
+        const effectiveFallbackPrimary = (brand as any)?.colors?.primary || defaultTheme.primaryColor;
+        const effectiveFallbackSecondary = (brand as any)?.colors?.accent || defaultTheme.secondaryColor;
+
+        // DEBUG: Trace logo sources
+        console.log('[ThemeContext DEBUG] setTheme logo sources:', {
+          'brand.logos.app': (brand as any)?.logos?.app,
+          'brand.name': (brand as any)?.name,
+          'brand.key': (brand as any)?.key,
+          't.brandLogoUrl': t.brandLogoUrl,
+          't.brandName': t.brandName,
+          effectiveFallbackLogo,
+          effectiveFallbackName,
+          'defaultTheme.brandLogoUrl': defaultTheme.brandLogoUrl,
+          finalLogo: t.brandLogoUrl || effectiveFallbackLogo,
+          finalName: t.brandName || effectiveFallbackName,
+        });
 
         setTheme({
           ...defaultTheme,
           ...t,
           // Explicitly ensure critical brand fields are reset if missing in t
-          primaryColor: t.primaryColor || defaultTheme.primaryColor,
-          secondaryColor: t.secondaryColor || defaultTheme.secondaryColor,
-          brandLogoUrl: resolveBrandAppLogo(t.brandLogoUrl || defaultTheme.brandLogoUrl, (brand as any).key),
-          symbolLogoUrl: resolveBrandSymbol(t.symbolLogoUrl || defaultTheme.symbolLogoUrl, (brand as any).key),
-          brandName: t.brandName || defaultTheme.brandName,
+          // Use partner brand values as fallback, NOT hardcoded BasaltSurge defaults
+          primaryColor: t.primaryColor || effectiveFallbackPrimary,
+          secondaryColor: t.secondaryColor || effectiveFallbackSecondary,
+          brandLogoUrl: t.brandLogoUrl || effectiveFallbackLogo,
+          symbolLogoUrl: t.symbolLogoUrl || effectiveFallbackSymbol,
+          brandName: t.brandName || effectiveFallbackName,
           // Preserve container-specifics if needed, or re-calculate?
           // navbarMode and footerLogoUrl are in t or defaultTheme
         });

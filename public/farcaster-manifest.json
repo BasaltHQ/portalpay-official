@@ -1,15 +1,13 @@
 {
-  "name": "Chicken Bones",
-  "icon": "/android-chrome-192x192.png",
-  "description": "Read the chicken bones. Live AI audio agent with sessions and billing.",
-  "splash": "/story4.png",
-  "home_url": "/",
-  "terms_url": "/",
-  "privacy_url": "/",
+  "name": "BasaltSurge",
+  "icon": "https://surge.basalthq.com/opengraph-image.png",
+  "description": "Enterprise crypto payments at 0.5% with instant settlement. Unified billing and analytics.",
+  "splash": "https://surge.basalthq.com/opengraph-image.png",
+  "home_url": "https://surge.basalthq.com",
+  "terms_url": "https://surge.basalthq.com/terms",
+  "privacy_url": "https://surge.basalthq.com/privacy",
   "app": {
     "platform": "web",
-    "url": "/"
+    "url": "https://surge.basalthq.com"
   }
 }
-
-

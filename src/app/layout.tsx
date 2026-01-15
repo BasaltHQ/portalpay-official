@@ -14,6 +14,7 @@ import { ThemeReadyGate } from "@/components/providers/theme-ready-gate";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { I18nProvider } from "@/components/providers/i18n-provider";
 import { AutoTranslateProvider } from "@/components/providers/auto-translate-provider";
+import FarcasterProvider from "@/components/providers/FarcasterProvider";
 import SplitGuardMount from "@/components/split-guard-mount";
 import { getBaseUrl, isLocalhostUrl } from "@/lib/base-url";
 import messages from "../../messages/en.json";
@@ -226,7 +227,7 @@ export async function generateMetadata(): Promise<Metadata> {
   let siteBrandName: string | undefined;
   let siteLogosSocialDefault: string | undefined;
   try {
-    const recipient = String(process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "").toLowerCase();
+    const recipient = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
     const c = await getContainer();
     const DOC_ID = "site:config";
     const partition = recipient || DOC_ID;
@@ -278,9 +279,10 @@ export async function generateMetadata(): Promise<Metadata> {
         ...baseBrand,
         name: typeof b.name === "string" && b.name ? b.name : baseBrand.name,
         colors: b.colors && typeof b.colors === "object" ? b.colors : baseBrand.colors,
-        // Do NOT override partner logos with platform overrides; keep static partner assets
+        // For partners, ALWAYS prefer Cosmos DB logos (b.logos) since static baseBrand.logos is empty
+        // For platform, merge static base with DB overrides
         logos: isPartner
-          ? baseBrand.logos
+          ? (b.logos && typeof b.logos === "object" ? { ...baseBrand.logos, ...b.logos } : baseBrand.logos)
           : (b.logos && typeof b.logos === "object" ? { ...baseBrand.logos, ...b.logos } : baseBrand.logos),
         appUrl: typeof b.appUrl === "string" && b.appUrl ? b.appUrl : baseBrand.appUrl,
         partnerFeeBps: typeof b.partnerFeeBps === "number" ? b.partnerFeeBps : baseBrand.partnerFeeBps,
@@ -309,7 +311,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const ogTitle = (() => {
     const candidates = [siteMetaTitle, platformMetaTitle, filteredOgTitle];
     for (const c of candidates) {
-      const v = String(c || "").trim();
+      let v = String(c || "").trim();
       if (!v) continue;
       // Skip if it says "PortalPay" anywhere in partner containers (exact match or contains)
       if (isPartnerContainerForMeta) {
@@ -317,6 +319,11 @@ export async function generateMetadata(): Promise<Metadata> {
         if (/^portalpay$/i.test(v)) continue;
         // Also skip titles that contain "PortalPay" as these leak platform branding
         if (/portalpay/i.test(v)) continue;
+      }
+
+      // Override for Platform: If we are not a partner, and title is "PortalPay", force "BasaltSurge"
+      if (!isPartnerContainerForMeta && /^portalpay$/i.test(v)) {
+        return "BasaltSurge";
       }
       return v;
     }
@@ -339,30 +346,37 @@ export async function generateMetadata(): Promise<Metadata> {
 
   // Choose metadata base: site-config appUrl if available, otherwise APP_URL
   // CRITICAL: Never use localhost URLs in production metadata
-  let metadataBaseUrl = APP_URL;
-  if (siteAppUrl && siteAppUrl.length && !isLocalhostUrl(siteAppUrl)) {
-    metadataBaseUrl = siteAppUrl;
+  // Choose metadata base: Prioritize request headers for dynamic deployment URLs
+  // This ensures we use the actual browser URL (e.g. azurewebsites.net) instead of a hardcoded env var
+  let metadataBaseUrl = '';
+  try {
+    const { headers } = require('next/headers');
+    const headersList = await headers();
+    const host = headersList.get('x-forwarded-host') || headersList.get('host');
+    if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+      metadataBaseUrl = `https://${host}`;
+    }
+  } catch {
+    // headers() unavailable
   }
 
-  // If metadataBaseUrl is still localhost in production, try to derive from brand appUrl or request headers
+  // Fallback to site-config appUrl or env APP_URL
+  if (!metadataBaseUrl) {
+    if (siteAppUrl && siteAppUrl.length && !isLocalhostUrl(siteAppUrl)) {
+      metadataBaseUrl = siteAppUrl;
+    } else {
+      metadataBaseUrl = APP_URL;
+    }
+  }
+
+  // Final safety checks
   if (process.env.NODE_ENV === 'production' && isLocalhostUrl(metadataBaseUrl)) {
     // Try brand appUrl first
     if (runtimeBrand.appUrl && !isLocalhostUrl(runtimeBrand.appUrl)) {
       metadataBaseUrl = runtimeBrand.appUrl;
     } else {
-      // Try to get from request headers
-      try {
-        const { headers } = require('next/headers');
-        const headersList = await headers();
-        const host = headersList.get('x-forwarded-host') || headersList.get('host');
-        if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
-          metadataBaseUrl = `https://${host}`;
-        }
-      } catch {
-        // headers() may fail; fall back to a placeholder that signals misconfiguration
-        // but won't leak localhost to crawlers
-        metadataBaseUrl = 'https://example.com';
-      }
+      // Fallback to example to avoid localhost leak
+      metadataBaseUrl = 'https://example.com';
     }
   }
   // Force HTTPS for OG images when possible
@@ -441,7 +455,7 @@ export async function generateMetadata(): Promise<Metadata> {
     applicationName: brandNameForTitle,
     title: {
       default: ogTitle,
-      template: `%s • ${brandNameForTitle}`,
+      template: `%s | ${brandNameForTitle}`,
     },
     description,
     keywords: [
@@ -494,8 +508,8 @@ export async function generateMetadata(): Promise<Metadata> {
       url: true,
     },
     icons: {
-      // Always use dynamic endpoint for favicon to avoid stale or wrong-brand icons after hydration
-      icon: [{ url: "/api/favicon" }],
+      // Use Surge.png directly for favicon
+      icon: [{ url: "/Surge.png" }],
       apple: (() => {
         const isPartner = String(envMeta.CONTAINER_TYPE || "").toLowerCase() === "partner";
         const key = baseBrand.key || "";
@@ -516,7 +530,20 @@ export async function generateMetadata(): Promise<Metadata> {
       index: true,
       follow: true,
     },
-    other: iosAppId ? { "apple-itunes-app": `app-id=${iosAppId}` } : undefined,
+    other: {
+      ...(iosAppId ? { "apple-itunes-app": `app-id=${iosAppId}` } : {}),
+      "fc:miniapp": JSON.stringify({
+        version: "next",
+        imageUrl: "https://surge.basalthq.com/opengraph-image.png",
+        button: {
+          title: "Start Your Shop!",
+          action: {
+            type: "launch_frame",
+            url: "https://surge.basalthq.com",
+          },
+        },
+      }),
+    },
   };
 }
 
@@ -622,6 +649,7 @@ export default async function RootLayout({
     >
       <head>
         <link rel="stylesheet" href="https://use.typekit.net/eur3bvn.css" />
+        <meta name="base:app_id" content="69614c80b8395f034ac21fe2" />
       </head>
       <body
         suppressHydrationWarning
@@ -989,17 +1017,19 @@ export default async function RootLayout({
           <ThirdwebAppProvider>
             <ThemeProvider>
               <QueryProvider>
-                <I18nProvider messages={messages}>
-                  <AutoTranslateProvider>
-                    <TitleUpdater />
-                    <FaviconUpdater />
-                    <HideableNavbar />
-                    {/* Mobile spacer below navbar to avoid content crowding */}
-                    <div id="mobile-navbar-spacer" className="sm:hidden h-2" />
-                    <SplitGuardMount />
-                    {children}
-                  </AutoTranslateProvider>
-                </I18nProvider>
+                <FarcasterProvider>
+                  <I18nProvider messages={messages}>
+                    <AutoTranslateProvider>
+                      <TitleUpdater />
+                      <FaviconUpdater />
+                      <HideableNavbar />
+                      {/* Mobile spacer below navbar to avoid content crowding */}
+                      <div id="mobile-navbar-spacer" className="sm:hidden h-2" />
+                      <SplitGuardMount />
+                      {children}
+                    </AutoTranslateProvider>
+                  </I18nProvider>
+                </FarcasterProvider>
               </QueryProvider>
             </ThemeProvider>
           </ThirdwebAppProvider>
