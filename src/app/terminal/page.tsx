@@ -346,7 +346,7 @@ function TerminalPanel() {
   const terminalLogoUrl = theme.symbolLogoUrl || theme.brandLogoUrl || (isBasaltSurge(theme.brandKey || "") ? "/BasaltSurgeD.png" : "/ppsymbol.png");
 
   return (
-    <div className="glass-pane rounded-xl border p-6 space-y-4">
+    <div className="glass-pane rounded-xl border p-6 space-y-4" style={{ marginTop: "40px" }}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center overflow-hidden">
@@ -1050,7 +1050,7 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
   // Layouts simplified to single mode container (respecting forcedMode selection)
   if (previewMode === "compact") {
     return (
-      <div className="max-w-[428px] mx-auto px-4 py-0 md:py-1">
+      <div className="max-w-[428px] mx-auto px-4 py-0 md:py-1" style={{ marginTop: "40px" }}>
         <div className="relative rounded-2xl overflow-hidden border shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur" style={{ ...previewStyle, display: "flex", flexDirection: "column", height: "auto", overflow: "visible", overflowY: "auto", maxHeight: "none" }}>
           <HeaderBar />
           <div className="flex-1 p-4" style={{ backdropFilter: "saturate(1.02) contrast(1.02)", color: "var(--pp-text-body)", overflow: "visible", overflowY: "auto", maxHeight: "none" }}>
@@ -1095,10 +1095,10 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
   // Wide mode layout
   if (previewMode === "wide") {
     return (
-      <div className="max-w-6xl mx-auto px-3 py-0">
+      <div className="max-w-6xl mx-auto px-3 py-0" style={{ marginTop: "40px" }}>
         <div className="relative rounded-2xl overflow-hidden border shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur" style={{ ...previewStyle }}>
           <HeaderBar />
-          <div className="p-3 flex-1 flex flex-col items-center justify-center pt-0" style={{ color: "var(--pp-text-body)" }}>
+          <div className="p-3 flex-1 flex flex-col items-center justify-center pt-0" style={{ color: "var(--pp-text-body)", marginTop: "15px" }}>
             <div className="my-auto grid grid-cols-1 md:grid-cols-2 gap-3 md:items-stretch md:justify-center md:gap-6">
               <div className="relative overflow-hidden h-full p-4" style={{ background: "radial-gradient(700px 350px at 10% 20%, color-mix(in srgb, var(--pp-primary) 22%, transparent), transparent 60%), radial-gradient(800px 400px at 90% 80%, color-mix(in srgb, var(--pp-primary) 12%, transparent), transparent 60%)" }}>
                 <div className="p-3" ref={currencyRef}>
@@ -1196,7 +1196,7 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
 
   if (previewMode === "invoice") {
     return (
-      <div className="w-full min-h-[100svh] px-0 py-0">
+      <div className="w-full min-h-[100svh] px-0 py-0" style={{ marginTop: "40px" }}>
         <div className="relative overflow-hidden bg-[rgba(10,11,16,0.6)]" style={{ ...previewStyle }}>
           {/* Decorative gradient for invoice like /portal */}
           <div
@@ -1205,7 +1205,7 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
             style={{ background: "radial-gradient(1800px 900px at 20% 50%, color-mix(in srgb, var(--pp-primary) 20%, transparent), transparent 62%)" }}
           />
           <HeaderBar />
-          <div className="p-3 min-h-[calc(100svh-52px)] flex-1 flex flex-col pt-0" style={{ color: "var(--pp-text-body)" }}>
+          <div className="p-3 min-h-[calc(100svh-220px)] flex-1 flex flex-col pt-0" style={{ color: "var(--pp-text-body)" }}>
             <div className="my-auto grid grid-cols-1 md:grid-cols-2 gap-3 md:items-stretch md:justify-center md:gap-6">
               {/* Left column: Order preview and receipt (matches /portal arrangement) */}
               <div className="relative overflow-visible h-full p-4">

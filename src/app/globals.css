@@ -857,3 +857,11 @@ div[data-overlay-container],
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
+
+/* .min-h-\[calc\(100svh-52px\)\] {
+  min-height: calc(-52px + 100svh);
+} */
+
+.min-h-\[calc\(100svh-220px\)\] {
+  min-height: calc(100svh - 220px);
+}
