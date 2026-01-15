@@ -1138,7 +1138,7 @@ export default function PartnerManagementPanel() {
       const recipientWallet = String(
         containerTypeEnv === "partner"
           ? (process.env.NEXT_PUBLIC_PARTNER_WALLET || process.env.PARTNER_WALLET || "")
-          : (process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "")
+          : (process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "")
       ).toLowerCase();
       if (!isHex(recipientWallet)) {
         setReleaseError((prev) => ({ ...prev, [w]: "recipient_not_configured" }));
@@ -1177,8 +1177,35 @@ export default function PartnerManagementPanel() {
               params: [recipientWallet as `0x${string}`],
             });
           } else {
-            const t = envTokens[symbol];
-            const tokenAddr = t?.address as `0x${string}` | undefined;
+            // Prioritize address from API response, then env, then hardcoded fallback
+            let tokenAddr = envTokens[symbol]?.address;
+
+            // Try to find address in balances cache if not found in env
+            if (!tokenAddr) {
+              const b = balancesCache.get(w);
+              if (b && b.balances && (b.balances as any)[symbol]?.address) {
+                tokenAddr = (b.balances as any)[symbol].address;
+              }
+            }
+
+            // Hardcoded fallbacks for Base network
+            if (!tokenAddr) {
+              const baseFallbacks: Record<string, string> = {
+                "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                "USDT": "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
+                "CBBTC": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf", // normalized key
+                "CBXRP": "0xcb585250f852C6c6bf90434AB21A00f02833a4af", // normalized key
+                "SOL": "0x311935Cd80B76769bF2ecC9D8Ab7635b2139cf82"
+              };
+              // Handle case-insensitivity mapping if needed, but keys here match symbol
+              const normSym = symbol.toUpperCase().replace(/^W/, ""); // basic normalization if needed
+              if (baseFallbacks[normSym]) tokenAddr = baseFallbacks[normSym] as any;
+
+              // Handle specific casing for cbBTC/cbXRP if key is different
+              if (symbol === "cbBTC") tokenAddr = baseFallbacks["CBBTC"] as any;
+              if (symbol === "cbXRP") tokenAddr = baseFallbacks["CBXRP"] as any;
+            }
+
             if (!tokenAddr || !isHex(String(tokenAddr))) {
               const rr = { symbol, status: "skipped", reason: "token_address_not_configured" };
               setReleaseResults((prev) => {
@@ -1306,8 +1333,35 @@ export default function PartnerManagementPanel() {
               params: [recipientWallet as `0x${string}`],
             });
           } else {
-            const t = envTokens[symbol];
-            const tokenAddr = t?.address as `0x${string}` | undefined;
+            // Prioritize address from API response, then env, then hardcoded fallback
+            let tokenAddr = envTokens[symbol]?.address;
+
+            // Try to find address in balances cache if not found in env
+            if (!tokenAddr) {
+              const b = balancesCache.get(w);
+              if (b && b.balances && (b.balances as any)[symbol]?.address) {
+                tokenAddr = (b.balances as any)[symbol].address;
+              }
+            }
+
+            // Hardcoded fallbacks for Base network
+            if (!tokenAddr) {
+              const baseFallbacks: Record<string, string> = {
+                "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                "USDT": "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
+                "CBBTC": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf", // normalized key
+                "CBXRP": "0xcb585250f852C6c6bf90434AB21A00f02833a4af", // normalized key
+                "SOL": "0x311935Cd80B76769bF2ecC9D8Ab7635b2139cf82"
+              };
+              // Handle case-insensitivity mapping if needed, but keys here match symbol
+              const normSym = symbol.toUpperCase().replace(/^W/, ""); // basic normalization if needed
+              if (baseFallbacks[normSym]) tokenAddr = baseFallbacks[normSym] as any;
+
+              // Handle specific casing for cbBTC/cbXRP if key is different
+              if (symbol === "cbBTC") tokenAddr = baseFallbacks["CBBTC"] as any;
+              if (symbol === "cbXRP") tokenAddr = baseFallbacks["CBXRP"] as any;
+            }
+
             if (!tokenAddr || !isHex(String(tokenAddr))) {
               const rr = { symbol, status: "skipped", reason: "token_address_not_configured" };
               setReleaseResults((prev) => {
@@ -2227,7 +2281,7 @@ export default function PartnerManagementPanel() {
 
                         {isExpanded && (
                           <tr className="border-t bg-foreground/5">
-                            <td className="px-3 py-3" colSpan={3}>
+                            <td className="px-3 py-3" colSpan={5}>
                               <div className="rounded-md border p-3 space-y-3">
                                 <div className="flex items-center justify-between">
                                   <div className="microtext text-muted-foreground">
