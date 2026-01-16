@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useActiveAccount } from "thirdweb/react";
-import { QRCodeCanvas } from "qrcode.react";
+import { QRCode } from "react-qrcode-logo";
 import { createPortal } from "react-dom";
 import { sendTransaction, prepareTransaction, getContract, prepareContractCall, readContract } from "thirdweb";
 import { client, chain } from "@/lib/thirdweb/client";
@@ -39,6 +39,7 @@ import { SEOLandingPagesPanel } from "@/app/admin/panels/SEOLandingPagesPanel";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import AdminHero from "@/components/admin/admin-hero";
 import InstallerPackagesPanel from "@/app/admin/panels/InstallerPackagesPanel";
+import DeviceInstallerPanel from "@/app/admin/panels/DeviceInstallerPanel";
 import AdminManagementPanel from "@/app/admin/panels/AdminManagementPanel";
 import IntegrationsPanel from "@/app/admin/panels/IntegrationsPanel";
 import ShopifyIntegrationPanel from "@/app/admin/panels/ShopifyIntegrationPanel";
@@ -54,6 +55,8 @@ import ContractsPanel from "@/app/admin/panels/ContractsPanel";
 import DeliveryPanel from "@/app/admin/panels/DeliveryPanel";
 import WritersWorkshopPanelExt from "@/app/admin/panels/WritersWorkshopPanel";
 import PublicationsPanelExt from "@/app/admin/panels/PublicationsPanel";
+// Placeholder to avoid errors - I will read file first
+import ReportsPanel from "@/app/admin/panels/ReportsPanel";
 import { isPlatformCtx, isPartnerCtx, isPlatformSuperAdmin, canAccessPanel } from "@/lib/authz";
 
 
@@ -2243,10 +2246,12 @@ function ReceiptsAdmin() {
       const r = await fetch(`/api/receipts/seed`, {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           "x-wallet": account?.address || "",
         },
         credentials: "include",
         cache: "no-store",
+        body: JSON.stringify({ brandName: themeConfig?.brandName }),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
@@ -2655,18 +2660,44 @@ function ReceiptsAdmin() {
   }
 
 
+  const inferredBrand = React.useMemo(() => {
+    // Find the most recent non-generic brand name from the receipts list
+    if (!Array.isArray(receipts)) return null;
+    const sorted = [...receipts].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    for (const r of sorted) {
+      const name = String(r.brandName || "").trim();
+      const lower = name.toLowerCase();
+      if (!name) continue;
+      // Skip platform defaults to find the "real" merchant name
+      if (lower.includes("basaltsurge") || lower.includes("portalpay")) continue;
+      return name;
+    }
+    return null;
+  }, [receipts]);
+
+  function resolveBrandName(rec: any) {
+    const name = String(rec.brandName || "").trim();
+    const lower = name.toLowerCase();
+
+    // Detect generic/platform names: BasaltSurge, PortalPay, or empty
+    const isGeneric = !name || lower.includes("basaltsurge") || lower.includes("portalpay");
+
+    // If generic, use the inferred brand from history, or the theme config if valid
+    if (isGeneric) {
+      if (inferredBrand) return inferredBrand;
+      if (themeConfig?.brandName && !String(themeConfig.brandName).toLowerCase().includes("basaltsurge")) {
+        return themeConfig.brandName;
+      }
+    }
+    return name || "—";
+  }
+
   function getPortalLink(receiptId: string) {
     const tParams = new URLSearchParams();
     if (operatorWallet) tParams.set("recipient", operatorWallet);
-    tParams.set("t_text", String(themeConfig?.textColor || "#ffffff"));
-    if (themeConfig?.primaryColor) tParams.set("t_primary", themeConfig.primaryColor);
-    if (themeConfig?.secondaryColor) tParams.set("t_secondary", themeConfig.secondaryColor);
-    if (themeConfig?.fontFamily) tParams.set("t_font", themeConfig.fontFamily);
-    if (themeConfig?.brandName) tParams.set("t_brand", themeConfig.brandName);
-    if (themeConfig?.brandLogoUrl) tParams.set("t_logo", themeConfig.brandLogoUrl);
-
-    // Hardcode production domain as requested
-    return `https://pay.ledger1.ai/portal/${encodeURIComponent(receiptId)}?${tParams.toString()}`;
+    // Use current origin to ensure correct environment (dev/prod)
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    return `${origin}/portal/${encodeURIComponent(receiptId)}?${tParams.toString()}`;
   }
 
   const portalUrl = selected ? getPortalLink(selected.receiptId) : "";
@@ -2746,7 +2777,7 @@ function ReceiptsAdmin() {
               .map((rec: any) => (
                 <tr key={rec.receiptId} className="border-t">
                   <td className="px-3 py-2 font-mono">{rec.receiptId}</td>
-                  <td className="px-3 py-2">{rec.brandName || "—"}</td>
+                  <td className="px-3 py-2">{resolveBrandName(rec)}</td>
                   <td className="px-3 py-2">${Number(rec.totalUsd || 0).toFixed(2)}</td>
                   <td className="px-3 py-2">{new Date(Number(rec.createdAt || 0)).toLocaleString()}</td>
                   <td className="px-3 py-2">
@@ -2867,10 +2898,10 @@ function ReceiptsAdmin() {
                   ✕
                 </button>
                 <div className="grid place-items-center mb-1">
-                  <img src={brandLogoUrl || "/ppsymbol.png"} alt="Logo" className="h-8 logo object-contain" />
+                  <img src={brandLogoUrl || themeConfig?.brandLogoUrl || "/ppsymbol.png"} alt="Logo" className="h-8 logo object-contain" />
                 </div>
                 <div className="text-center text-sm font-semibold">
-                  {selected.brandName || "PortalPay"}
+                  {resolveBrandName(selected)}
                 </div>
                 <div className="thermal-footer">
                   {new Date(Number(selected.createdAt || 0)).toLocaleString()}
@@ -2878,7 +2909,7 @@ function ReceiptsAdmin() {
 
                 <div className="space-y-1 mt-1">
                   <div className="thermal-row"><span>Receipt #</span><span>{selected.receiptId}</span></div>
-                  <div className="thermal-row"><span>Merchant</span><span>{selected.brandName || "PortalPay"}</span></div>
+                  <div className="thermal-row"><span>Merchant</span><span>{resolveBrandName(selected)}</span></div>
                   <div className="thermal-row"><span>Operator</span><span>{shortWallet}</span></div>
                   <div className="thermal-row"><span>Site</span><span>{origin.replace(/^https?:\/\/(www\.)?/, "")}</span></div>
                   <div className="thermal-row"><span>Terminal</span><span>ADMIN-PORTAL</span></div>
@@ -2947,12 +2978,15 @@ function ReceiptsAdmin() {
                 ) : (
                   <>
                     <div className="grid place-items-center my-2">
-                      <QRCodeCanvas
+                      <QRCode
                         value={portalUrl}
-                        size={120}
-                        includeMargin
+                        size={150}
+                        qrStyle="dots"
+                        eyeRadius={10}
                         fgColor="#000000"
                         bgColor="#ffffff"
+                        ecLevel="H"
+                        quietZone={10}
                       />
                     </div>
                     <div className="thermal-footer">Scan to pay or visit</div>
@@ -9028,6 +9062,13 @@ export default function AdminPage() {
               Orders
             </button>
             <button
+              className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "reports" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+              onClick={() => setActiveTab("reports")}
+            >
+              Reports
+            </button>
+
+            <button
               className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "purchases" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
               onClick={() => setActiveTab("purchases")}
             >
@@ -9140,6 +9181,8 @@ export default function AdminPage() {
             Download the ZIP for your brand, run the included Windows .bat (adb install -r), then launch the app.
             The APK phones home on first launch to record the install in Devices.
           </div>
+          <DeviceInstallerPanel />
+          <div className="h-px bg-border my-6" />
           <InstallerPackagesPanel />
         </div>
       )}
@@ -9318,6 +9361,9 @@ export default function AdminPage() {
       )}
       {activeTab === "team" && (
         <TeamPanel />
+      )}
+      {activeTab === "reports" && (
+        <ReportsPanel />
       )}
     </div>
   );

@@ -129,6 +129,19 @@ function getEnvRecipient(): `0x${string}` | undefined {
   }
 }
 
+// Helper to identify generic platform assets
+function isGenericAsset(url?: string | null): boolean {
+  if (!url) return false;
+  const s = url.toLowerCase();
+  return (
+    s.includes("basaltsurgewided") ||
+    s.includes("basaltsurged") ||
+    s.includes("ppsymbol") ||
+    s.includes("portalpay") ||
+    s.includes("bssymbol")
+  );
+}
+
 /**
  * TerminalPanel (pulled from Admin module)
  * Creates ad-hoc receipts for a specific amount/currency and shows QR/portal to pay.
@@ -149,6 +162,9 @@ function TerminalPanel() {
     const w = operatorWallet;
     return w ? `${w.slice(0, 6)}…${w.slice(-4)}` : "(not connected)";
   }, [operatorWallet]);
+
+  // Construct PFP url
+  const userPfp = operatorWallet ? `/api/users/pfp?wallet=${operatorWallet}` : undefined;
 
   const [itemLabel, setItemLabel] = useState<string>("");
   const [amountStr, setAmountStr] = useState<string>("");
@@ -318,6 +334,7 @@ function TerminalPanel() {
         amountUsd: +amt.toFixed(2),
         label: (itemLabel || "").trim() || "Terminal Payment",
         currency: terminalCurrency,
+        brandName: theme.brandName,
       };
       const r = await fetch("/api/receipts/terminal", {
         method: "POST",
@@ -342,14 +359,25 @@ function TerminalPanel() {
     }
   }
 
-  // Compute effective logo URL using global theme
-  const terminalLogoUrl = theme.symbolLogoUrl || theme.brandLogoUrl || (isBasaltSurge(theme.brandKey || "") ? "/BasaltSurgeD.png" : "/ppsymbol.png");
+  // Compute effective logo URL using global theme with PFP fallback
+  const terminalLogoUrl = (() => {
+    // 1. Try explicit theme logo (symbol > brand)
+    const rawThemeLogo = (theme.symbolLogoUrl || theme.brandLogoUrl || "").trim();
+    if (rawThemeLogo && !isGenericAsset(rawThemeLogo)) {
+      return rawThemeLogo;
+    }
+    // 2. Fallback to User PFP
+    if (userPfp) return userPfp;
+
+    // 3. Last resort default
+    return "/bssymbol.png";
+  })();
 
   return (
     <div className="glass-pane rounded-xl border p-6 space-y-4" style={{ marginTop: "40px" }}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center overflow-hidden">
+          <div className={`w-9 h-9 ${theme.brandLogoShape === "round" || (theme.brandLogoShape as any) === "circle" ? "rounded-full" : (theme.brandLogoShape === "unmasked" ? "rounded-none" : "rounded-md")} bg-foreground/5 flex items-center justify-center overflow-hidden`}>
             <img src={terminalLogoUrl} alt="Logo" className="max-h-8 max-w-8 object-contain drop-shadow-md" />
           </div>
           <h2 className={(isPricing ? "text-base md:text-xl " : "text-xl ") + "font-semibold"}>{theme.brandName || "Terminal"}</h2>

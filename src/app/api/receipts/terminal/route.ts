@@ -98,7 +98,9 @@ export async function POST(req: NextRequest) {
     const taxRateOverride = typeof body?.taxRate === "number" ? Number(body.taxRate) : undefined;
     const taxComponents: string[] = Array.isArray(body?.taxComponents) ? body.taxComponents : [];
 
-    const brandName = cfg?.theme?.brandName || "PortalPay";
+    const brandName = (typeof body?.brandName === "string" && body.brandName.trim())
+      ? body.brandName.trim()
+      : (cfg?.theme?.brandName || "PortalPay");
     try {
       let splitAddr = (cfg as any)?.splitAddress || (cfg as any)?.split?.address || "";
       if (!/^0x[a-f0-9]{40}$/i.test(String(splitAddr))) {

@@ -20,6 +20,8 @@ try {
 }
 
 import React from "react";
+import { useBrand } from "@/contexts/BrandContext";
+import { Download } from "lucide-react";
 
 /**
  * Android Device Installer (WebUSB + WebADB)
@@ -1614,10 +1616,55 @@ export default function DeviceInstallerPanel() {
         setAppInstallTotals(totals);
       } catch { }
     })();
-  }, [containerType, brandEnv]);
+  }, []);
+
+  // Platform multitenancy: Fetch partners if platform
+  const [partners, setPartners] = React.useState<{ brandKey: string; name?: string }[]>([]);
+  const [targetBrand, setTargetBrand] = React.useState<string>("");
+  const isPlatform = (typeof process !== "undefined" && process.env.NEXT_PUBLIC_CONTAINER_TYPE === "platform") ||
+    (containerType === "platform") ||
+    (!containerType && !brandEnv);
+
+  React.useEffect(() => {
+    if (isPlatform) {
+      (async () => {
+        try {
+          const r = await fetch("/api/admin/devices/containers", { cache: "no-store" });
+          const j = await r.json();
+          const parts = Array.isArray(j?.partners) ? j.partners : [];
+          setPartners(parts);
+        } catch { }
+      })();
+    }
+  }, [isPlatform]);
 
   const isWindows = typeof navigator !== "undefined" && /windows/i.test(navigator.userAgent || "");
   const isFramed = typeof window !== "undefined" && window.top !== window.self;
+
+  // Touchpoint APK Logic
+  // Touchpoint APK Logic
+  const brand = useBrand();
+  // Name depends on selection or context
+  const effectiveBrandKey = targetBrand || (brand?.key || "").toLowerCase();
+  const effectiveBrandName = targetBrand
+    ? (partners.find(p => p.brandKey === targetBrand)?.name || targetBrand)
+    : (brand?.name || "Surge");
+  const touchpointApkName = `${effectiveBrandName.replace(/\s+/g, "")}Touchpoint`;
+
+  function downloadTouchpointApk() {
+    // Navigate to API endpoint to trigger download (it returns Content-Disposition attachment/inline)
+    let url = "/api/admin/apk/touchpoint";
+    if (targetBrand) {
+      url += `?brand=${encodeURIComponent(targetBrand)}`;
+    }
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${touchpointApkName}.apk`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    log(`Started download for ${touchpointApkName} APK`);
+  }
 
   return (
     <div className="space-y-3">
@@ -1632,6 +1679,52 @@ export default function DeviceInstallerPanel() {
           Open the Admin Devices page in a top-level browser tab over HTTPS to allow the USB chooser to appear.
         </div>
       )}
+
+      {/* Touchpoint Provisioning Section */}
+      <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-sm font-semibold flex items-center gap-2 text-emerald-500">
+              <Download className="h-4 w-4" />
+              Touchpoint Provisioning
+            </h3>
+            <p className="microtext text-muted-foreground mt-1">
+              Download the {touchpointApkName} APK to convert any Android device into a locked Terminal or Kiosk.
+            </p>
+          </div>
+        </div>
+
+        {/* Platform Admin: Brand Selector */}
+        {isPlatform && partners.length > 0 && (
+          <div className="flex items-center gap-2">
+            <label className="microtext text-muted-foreground whitespace-nowrap">Target Brand:</label>
+            <select
+              className="h-8 flex-1 max-w-xs border rounded-md text-xs bg-background px-2"
+              value={targetBrand}
+              onChange={(e) => setTargetBrand(e.target.value)}
+            >
+              <option value="">Surge (Platform Default)</option>
+              {partners.map((p) => (
+                <option key={p.brandKey} value={p.brandKey}>
+                  {p.name || p.brandKey}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={downloadTouchpointApk}
+            className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium transition-colors shadow-sm"
+          >
+            Download {effectiveBrandName} APK
+          </button>
+          <span className="microtext text-muted-foreground">
+            Filename: <code className="bg-background px-1 rounded">{touchpointApkName}.apk</code>
+          </span>
+        </div>
+      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <button

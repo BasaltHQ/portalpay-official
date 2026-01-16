@@ -213,7 +213,7 @@ export function PortalPreviewEmbedded({
   // No longer fetching partner info redundantly - we rely on the dynamic theme prop
   const rawThemeName = String(theme?.brandName || "").trim();
   const keyForDisplay = String(((theme as any)?.brandKey || (brandCtx as any)?.key || "")).trim();
-  const titleizedKey = keyForDisplay ? keyForDisplay.charAt(0).toUpperCase() + keyForDisplay.slice(1) : "PortalPay";
+  const titleizedKey = (keyForDisplay && keyForDisplay.toLowerCase() !== "portalpay") ? keyForDisplay.charAt(0).toUpperCase() + keyForDisplay.slice(1) : "BasaltSurge";
 
   // Detect partner container from HTML attribute to treat 'PortalPay' as generic placeholder in partner envs
   const isPartnerContainerNow =
@@ -224,7 +224,7 @@ export function PortalPreviewEmbedded({
     /^ledger\d*$/i.test(rawThemeName) ||
     /^partner\d*$/i.test(rawThemeName) ||
     /^default$/i.test(rawThemeName) ||
-    (isPartnerContainerNow && /^portalpay$/i.test(rawThemeName));
+    /^portalpay$/i.test(rawThemeName);
 
   const displayBrandName = (!rawThemeName || isGenericThemeName) ? titleizedKey : rawThemeName;
 
@@ -367,6 +367,9 @@ export function PortalPreviewEmbedded({
 
         // 1. Process Branding/Theme
         if (cfg?.theme) {
+          // Critical Sanitization: Prevent PortalPay reversion from API
+          // Sanitization moved to render time in effectiveBrandName (line ~408)
+          // We leave it raw here so we can detect "generic" names later.
           setPreviewTheme(cfg.theme);
         }
 
@@ -400,29 +403,107 @@ export function PortalPreviewEmbedded({
       });
   }, [availableTokens, recipient]);
 
-  // Compute effective theme values, prioritizing fetched previewTheme -> props theme -> defaults
-  const effectivePrimaryColor = previewTheme?.primaryColor || theme.primaryColor;
-  const effectiveSecondaryColor = previewTheme?.secondaryColor || theme.secondaryColor;
-  const effectiveBrandName = previewTheme?.brandName || theme.brandName || displayBrandName;
-  const effectiveLogoApp = previewTheme?.brandLogoUrl || theme.brandLogoUrl;
-  const effectiveLogoSymbol = previewTheme?.symbolLogoUrl || theme.symbolLogoUrl;
-  const effectiveLogoFavicon = previewTheme?.brandFaviconUrl || theme.brandFaviconUrl;
+  // Compute effective theme values.
+  // We prioritize the 'theme' prop (from Context/Props) over the 'previewTheme' (fetched from API) 
+  // because the Context usually contains the most up-to-date or locally overridden state (e.g. from the Branding Panel or authenticated session),
+  // whereas the API fetch might return stale or default data for the wallet.
+  const effectivePrimaryColor = theme.primaryColor || previewTheme?.primaryColor;
+  const effectiveSecondaryColor = theme.secondaryColor || previewTheme?.secondaryColor;
+  const rawEffectiveName = theme.brandName || previewTheme?.brandName || displayBrandName;
+
+  // Determine Brand Name Priority:
+  // 1. Merchant's Custom Theme Name (if set and not generic)
+  // 2. Display Name Prop (Merchant Name context)
+  // 3. Fallback to BasaltSurge
+
+  const isGeneric = (name: string | undefined) => !name || /^\s*(basaltsurge|portalpay)\s*$/i.test(name);
+
+  let effectiveBrandName = rawEffectiveName;
+
+  // If the resolved "theme name" is generic (BasaltSurge/PortalPay), but we have a specific Merchant Display Name (GenRevo), use the Merchant Name.
+  // This fixes the issue where default API themes overwrite the Merchant's Context Name.
+  if (isGeneric(effectiveBrandName) && displayBrandName && !isGeneric(displayBrandName)) {
+    effectiveBrandName = displayBrandName;
+  }
+
+  // Final safeguard: If it's still "PortalPay", force BasaltSurge.
+  if (/^\s*portalpay\s*$/i.test(effectiveBrandName || "")) {
+    effectiveBrandName = "BasaltSurge";
+  }
+  const effectiveLogoApp = theme.brandLogoUrl || previewTheme?.brandLogoUrl;
+  const effectiveLogoSymbol = theme.symbolLogoUrl || previewTheme?.symbolLogoUrl;
+  const effectiveLogoFavicon = theme.brandFaviconUrl || previewTheme?.brandFaviconUrl;
+
+  // Helper to detect generic platform assets that should be ignored in favor of user PFP
+  const isGenericAsset = (url: string | undefined) => {
+    if (!url) return false;
+    return /BasaltSurgeWideD\.png/i.test(url) ||
+      /BasaltSurgeD\.png/i.test(url) ||
+      /ppsymbol\.png/i.test(url) ||
+      /bssymbol\.png/i.test(url) ||
+      /PortalPay\.png/i.test(url);
+  };
 
   // Helper to get best logo for different contexts
   const getHeaderLogo = () => {
     const key = (previewTheme as any)?.brandKey || (theme as any)?.brandKey || (brandCtx as any)?.key;
     // For header, prefer full-width app logo
-    const themeLogo = effectiveLogoApp || effectiveLogoSymbol || effectiveLogoFavicon;
-    const brandLogo = (brandCtx as any)?.logos?.app || (brandCtx as any)?.logos?.symbol;
-    return resolveBrandAppLogo(themeLogo || brandLogo, key);
+    // If we are BasaltSurge (generic), default to Wide logo for Header.
+    const isBasalt = effectiveBrandName === "BasaltSurge";
+    const defaultApp = isBasalt ? "/bssymbol.png" : undefined;
+
+    let themeLogo = effectiveLogoApp || effectiveLogoSymbol || effectiveLogoFavicon || defaultApp;
+    if (isGenericAsset(themeLogo)) {
+      themeLogo = undefined;
+    }
+
+    // CRITICAL FIX: Include .avatar as a valid logo source AND fallback to API PFP for logged-in user (Preview inherits theme)
+    const userPfp = account?.address ? `/api/users/pfp?wallet=${account.address}` : undefined;
+
+    // Sanitize Brand Context logos too (they might carry defaults)
+    let brandCtxApp = (brandCtx as any)?.logos?.app;
+    if (isGenericAsset(brandCtxApp)) brandCtxApp = undefined;
+
+    let brandCtxSymbol = (brandCtx as any)?.logos?.symbol;
+    if (isGenericAsset(brandCtxSymbol)) brandCtxSymbol = undefined;
+
+    // Prio: Brand Context (Sanitized) > User PFP > Theme (Sanitized) > Default
+    const brandLogo = brandCtxApp || brandCtxSymbol || (brandCtx as any)?.avatar || userPfp;
+
+    // If we have a specific brand logo (or PFP), use it. Only use themeLogo if it survived sanitization (meaning it's custom).
+    // CORRECT PRIORITY: Theme (Shop) > Brand (User PFP/Context) > Default
+    return resolveBrandAppLogo(themeLogo || brandLogo || defaultApp, key);
   };
+
   const getSymbolLogo = () => {
     const key = (previewTheme as any)?.brandKey || (theme as any)?.brandKey || (brandCtx as any)?.key;
     // For receipt symbol, prefer brand.logos.symbol first (matches landing page hero)
     // then fall back to theme values
-    const brandSymbol = (brandCtx as any)?.logos?.symbol || (brandCtx as any)?.logos?.app;
-    const themeLogo = effectiveLogoSymbol || effectiveLogoFavicon || effectiveLogoApp;
-    return resolveBrandSymbol(brandSymbol || themeLogo, key);
+    // USER REQ: default basaltsurge logo ... should be public/bssymbol.png
+    const isBasalt = effectiveBrandName === "BasaltSurge";
+    const defaultSymbol = isBasalt ? "/bssymbol.png" : "/bssymbol.png"; // Always fallback to bssymbol.png if nothing else
+
+    const userPfp = account?.address ? `/api/users/pfp?wallet=${account.address}` : undefined;
+
+    // Sanitize Brand Context logos too
+    let brandCtxSymbol = (brandCtx as any)?.logos?.symbol;
+    if (isGenericAsset(brandCtxSymbol)) brandCtxSymbol = undefined;
+
+    let brandCtxApp = (brandCtx as any)?.logos?.app;
+    if (isGenericAsset(brandCtxApp)) brandCtxApp = undefined;
+
+    // CRITICAL FIX: Include .avatar as a valid symbol source AND fallback to API PFP
+    const brandSymbol = brandCtxSymbol || brandCtxApp || (brandCtx as any)?.avatar || userPfp;
+
+    let themeLogo = effectiveLogoSymbol || effectiveLogoFavicon || effectiveLogoApp;
+    if (isGenericAsset(themeLogo)) {
+      themeLogo = undefined;
+    }
+
+    // Usage: if themeLogo is present (custom), use it. OR if brandSymbol is present (from context/PFP), use it.
+    // If BOTH are missing (or generic), use /bssymbol.png
+    // CORRECT PRIORITY: Theme (Shop) > Brand (User PFP/Context) > Default
+    return resolveBrandSymbol(themeLogo || brandSymbol || defaultSymbol, key);
   };
 
   // Auto-rotate through tokens to make preview feel alive
@@ -718,6 +799,9 @@ export function PortalPreviewEmbedded({
   const canUseFullLogo = !!fullLogoCandidate && (isExternalUrl || !genericRe.test(fileName));
   const effectiveNavbarMode: "symbol" | "logo" = (navbarMode === "logo" && canUseFullLogo) ? "logo" : "symbol";
 
+  // Resolve shape priority: Theme > Preview > Default
+  const effectiveLogoShape = theme.brandLogoShape || previewTheme?.brandLogoShape || theme.brandLogoShape || "square";
+
   // Render
   return (
     <div
@@ -733,8 +817,7 @@ export function PortalPreviewEmbedded({
       <div
         className="flex items-center gap-3 px-4 py-3 relative overflow-hidden"
         style={{
-          background: `radial-gradient(circle at 75% 10%, ${effectivePrimaryColor}, transparent 60%), radial-gradient(circle at 25% 90%, ${effectivePrimaryColor}, transparent 60%), #000000`, // Rich green contrast
-          backgroundSize: "400% 400%",
+          background: `radial-gradient(circle at 75% 10%, ${effectivePrimaryColor}, transparent 60%) 0% 0% / 400% 400%, radial-gradient(circle at 25% 90%, ${effectivePrimaryColor}, transparent 60%) 0% 0% / 400% 400% #000000`,
           animation: "bg-pan 15s ease infinite alternate",
           color: (theme.headerTextColor || theme.textColor || "#ffffff")
         }}
@@ -751,8 +834,7 @@ export function PortalPreviewEmbedded({
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: `radial-gradient(circle at 75% 10%, ${effectivePrimaryColor}, transparent 55%), radial-gradient(circle at 25% 90%, ${effectivePrimaryColor}, transparent 55%), #000000`,
-            backgroundSize: "400% 400%",
+            background: `radial-gradient(circle at 75% 10%, ${effectivePrimaryColor}, transparent 55%) 0% 0% / 400% 400%, radial-gradient(circle at 25% 90%, ${effectivePrimaryColor}, transparent 55%) 0% 0% / 400% 400% #000000`,
             animation: "bg-pan 15s ease infinite alternate",
           }}
         />
@@ -761,7 +843,7 @@ export function PortalPreviewEmbedded({
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: `radial-gradient(circle at 60% -10%, ${effectivePrimaryColor}40, transparent 70%), radial-gradient(circle at 0% 100%, ${effectivePrimaryColor}20, transparent 60%)`,
+            backgroundImage: `radial-gradient(circle at 60% -10%, ${effectivePrimaryColor}40, transparent 70%), radial-gradient(circle at 0% 100%, ${effectivePrimaryColor}20, transparent 60%)`,
             mixBlendMode: 'screen'
           }}
         />
@@ -779,7 +861,7 @@ export function PortalPreviewEmbedded({
           ) : (
             // Symbol + Text
             <>
-              <div className={`w-10 h-10 relative z-10 ${theme.brandLogoShape === "round" ? "rounded-full" : (theme.brandLogoShape === "unmasked" ? "rounded-none" : "rounded-md")} bg-white/10 flex items-center justify-center overflow-visible`}>
+              <div className={`w-10 h-10 relative z-10 ${effectiveLogoShape === "round" || (effectiveLogoShape as any) === "circle" ? "rounded-full" : (effectiveLogoShape === "unmasked" ? "rounded-none" : "rounded-md")} bg-white/10 flex items-center justify-center overflow-visible`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   alt={effectiveBrandName || "Logo"}
@@ -937,7 +1019,7 @@ export function PortalPreviewEmbedded({
         {/* Receipt */}
         <div className="mt-4 rounded-2xl border p-3 bg-background/70">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 ${theme.brandLogoShape === "round" ? "rounded-full" : (theme.brandLogoShape === "unmasked" ? "rounded-none" : "rounded-lg")} bg-foreground/5 overflow-hidden grid place-items-center`}>
+            <div className={`w-10 h-10 ${effectiveLogoShape === "round" || (effectiveLogoShape as any) === "circle" ? "rounded-full" : (effectiveLogoShape === "unmasked" ? "rounded-none" : "rounded-lg")} bg-foreground/5 overflow-hidden grid place-items-center`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={getSymbolLogo()}
@@ -1116,8 +1198,7 @@ export function PortalPreviewEmbedded({
         <div
           className="mt-2 px-4 py-3 text-[11px] font-medium rounded-xl drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] relative overflow-hidden"
           style={{
-            background: `radial-gradient(circle at 75% 10%, ${effectivePrimaryColor}, transparent 55%), radial-gradient(circle at 25% 90%, ${effectivePrimaryColor}, transparent 55%), #000000`,
-            backgroundSize: "400% 400%",
+            background: `radial-gradient(circle at 75% 10%, ${effectivePrimaryColor}, transparent 55%) 0% 0% / 400% 400%, radial-gradient(circle at 25% 90%, ${effectivePrimaryColor}, transparent 55%) 0% 0% / 400% 400% #000000`,
             animation: "bg-pan 15s ease infinite alternate",
             color: "#ffffff"
           }}

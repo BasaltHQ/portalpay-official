@@ -39,7 +39,7 @@ export function getDefaultBrandSymbol(key?: string): string {
     // Only return platform symbols for platform brands
     // For partner brands, return empty - they should use their own Cosmos DB logos
     if (!isPlatformBrand(key)) return ""; // Partner - no default
-    return isBasaltSurge(key) ? "/BasaltSurgeD.png" : "/ppsymbol.png";
+    return isBasaltSurge(key) ? "/bssymbol.png" : "/ppsymbol.png";
 }
 
 export function getDefaultBrandName(key?: string): string {

@@ -122,14 +122,19 @@ export async function POST(req: NextRequest) {
     try {
       const { resource: resWallet } = await container.item("site:config", merchant).read<any>();
       cfg = resWallet || null;
-    } catch {}
+    } catch { }
     if (!cfg) {
       try {
         const { resource: resGlobal } = await container.item("site:config", "site:config").read<any>();
         cfg = resGlobal || null;
-      } catch {}
+      } catch { }
     }
-    const brandName = cfg?.theme?.brandName || "Your Brand";
+
+    let brandName = cfg?.theme?.brandName || "Your Brand";
+    try {
+      const body = await req.json().catch(() => ({}));
+      if (body?.brandName) brandName = String(body.brandName).trim();
+    } catch { }
 
     // Disallow reseeding if this merchant already has any receipts
     const specChk = { query: "SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.wallet=@w", parameters: [{ name: "@w", value: merchant }] } as any;

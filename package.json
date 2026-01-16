@@ -64,6 +64,7 @@
     "react-dom": "^19.2.3",
     "react-markdown": "^10.1.0",
     "react-pdf": "^10.2.0",
+    "react-qrcode-logo": "^4.0.0",
     "react-simple-maps": "^3.0.0",
     "react-syntax-highlighter": "^16.0.0",
     "recharts": "^3.2.1",

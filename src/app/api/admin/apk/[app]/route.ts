@@ -9,6 +9,7 @@ export const runtime = "nodejs";
 const APP_TO_PATH: Record<string, string> = {
   portalpay: path.join("android", "launcher", "recovered", "portalpay-signed.apk"),
   paynex: path.join("android", "launcher", "recovered", "paynex-signed.apk"),
+  "surge-touchpoint": path.join("android", "launcher", "recovered", "surge-touchpoint-signed.apk"),
 };
 
 /**
@@ -16,7 +17,7 @@ const APP_TO_PATH: Record<string, string> = {
  * The Admin panel can fetch this endpoint as an ArrayBuffer and install it to a USB-connected device via WebUSB/ADB.
  *
  * GET /api/admin/apk/{app}
- *   app: "portalpay" | "paynex"
+ *   app: "portalpay" | "paynex" | "touchpoint"
  */
 export async function GET(
   _req: NextRequest,
@@ -35,10 +36,33 @@ export async function GET(
     const brandKey = String(process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase();
 
     const { app } = await context.params;
-    const key = String(app || "").toLowerCase();
+    const requestedApp = String(app || "").toLowerCase();
+
+    // Parse optional brand override (e.g. from Platform Admin selecting a partner)
+    // Only allow override if on Platform container (superadmin context implied by requireThirdwebAuth admin check)
+    const { searchParams } = new URL(_req.url);
+    const brandParam = searchParams.get("brand");
+
+    // Resolve 'touchpoint' to brand-specific filename key
+    // Platform -> surge-touchpoint (or [brandParam]-touchpoint if specified)
+    // Partner -> [brandKey]-touchpoint
+    let effectiveKey = requestedApp;
+    if (requestedApp === "touchpoint") {
+      if (containerType === "platform" && brandParam) {
+        effectiveKey = `${brandParam.toLowerCase()}-touchpoint`;
+      } else {
+        effectiveKey = (brandKey && containerType === "partner")
+          ? `${brandKey}-touchpoint`
+          : "surge-touchpoint";
+      }
+    }
+
     if (containerType === "partner") {
-      if (!brandKey || key !== brandKey) {
-        // Hide other brand artifacts from partner containers
+      // Allow 'touchpoint' (which resolves to brand-touchpoint) OR exact brand match
+      // If effectiveKey is [brandKey]-touchpoint, it's allowed.
+      // If requestedApp is touchpoint, it's allowed (because we just resolved it to brand).
+      // Check if trying to access other apps:
+      if (requestedApp !== "touchpoint" && (!brandKey || requestedApp !== brandKey)) {
         return NextResponse.json({ error: "apk_not_visible" }, { status: 404 });
       }
     }
@@ -54,7 +78,7 @@ export async function GET(
     if (conn && container) {
       try {
         const prefix = String(process.env.PP_APK_BLOB_PREFIX || "").trim().replace(/^\/+|\/+$/g, "");
-        const blobName = prefix ? `${prefix}/${key}-signed.apk` : `${key}-signed.apk`;
+        const blobName = prefix ? `${prefix}/${effectiveKey}-signed.apk` : `${effectiveKey}-signed.apk`;
         const bsc = BlobServiceClient.fromConnectionString(conn);
         const cont = bsc.getContainerClient(container);
         const blob = cont.getBlockBlobClient(blobName);
@@ -71,7 +95,7 @@ export async function GET(
           headers: {
             "Content-Type": "application/vnd.android.package-archive",
             "Content-Length": String(buf.length),
-            "Content-Disposition": `inline; filename="${key}.apk"`,
+            "Content-Disposition": `inline; filename="${effectiveKey}.apk"`,
             "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
             Pragma: "no-cache",
             Expires: "0",
@@ -82,7 +106,7 @@ export async function GET(
       }
     }
 
-    const rel = APP_TO_PATH[key];
+    const rel = APP_TO_PATH[effectiveKey];
     if (!rel) {
       return NextResponse.json({ error: "unknown app" }, { status: 404 });
     }
@@ -104,7 +128,7 @@ export async function GET(
       headers: {
         "Content-Type": "application/vnd.android.package-archive",
         "Content-Length": String(data.length),
-        "Content-Disposition": `inline; filename="${key}.apk"`,
+        "Content-Disposition": `inline; filename="${effectiveKey}.apk"`,
         // Prevent caching to always serve latest build
         "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
         Pragma: "no-cache",

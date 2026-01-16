@@ -213,20 +213,7 @@ export default function PortalReceiptPage() {
   const [partnerLogoFavicon, setPartnerLogoFavicon] = useState<string>("");
   const [partnerBrandName, setPartnerBrandName] = useState<string>("");
 
-  // Compute effective colors: partner colors take precedence for partner containers without merchant theme
-  const effectivePrimaryColor = partnerBrandColors?.primary || theme.primaryColor;
-  const effectiveSecondaryColor = partnerBrandColors?.accent || theme.secondaryColor;
 
-  // Compute effective logos: partner logos take precedence for partner containers without merchant theme
-  const effectiveLogoApp = partnerLogoApp || theme.brandLogoUrl || "";
-  const effectiveLogoSymbol = partnerLogoSymbol || theme.symbolLogoUrl || "";
-  const effectiveLogoFavicon = partnerLogoFavicon || theme.brandFaviconUrl || "";
-  const effectiveBrandName = partnerBrandName || theme.brandName || "PortalPay";
-
-  // Helper functions to get the best available logo
-  const defaultPortalSymbol = getDefaultBrandSymbol(theme.brandKey);
-  const getHeaderLogo = () => effectiveLogoApp || effectiveLogoSymbol || effectiveLogoFavicon || defaultPortalSymbol;
-  const getSymbolLogo = () => effectiveLogoSymbol || effectiveLogoFavicon || effectiveLogoApp || defaultPortalSymbol;
 
   // URL params and layout/embedding detection
   const searchParams = useSearchParams();
@@ -295,9 +282,30 @@ export default function PortalReceiptPage() {
   // We do NOT fall back to receipt-resolved or authed wallet here on portal routes.
   const merchantWallet = (hasRecipient ? (recipient as `0x${string}`) : undefined);
   const merchantWalletLower = (merchantWallet || "").toLowerCase();
+
+  // Smart fallback: If URL doesn't have recipient, use the one resolved from receipt (to fix logos)
+  const effectiveMerchantWallet = merchantWallet || resolvedRecipient;
+
   // Merchant theme is expected when viewer is not the recipient (buyer flow) and not forcing default
   // Allow merchant to see their own theme if they are visiting via a parameterized URL (verification/preview flow)
-  const hasMerchantForTheme = useMerchantThemeLock || (!!merchantWallet && !forcePortalTheme);
+  const hasMerchantForTheme = useMerchantThemeLock || (!!effectiveMerchantWallet && !forcePortalTheme);
+
+  // Compute effective colors: Merchant theme takes precedence over partner container if a merchant is active
+  const effectivePrimaryColor = (hasMerchantForTheme && theme.primaryColor) || partnerBrandColors?.primary || theme.primaryColor;
+  const effectiveSecondaryColor = (hasMerchantForTheme && theme.secondaryColor) || partnerBrandColors?.accent || theme.secondaryColor;
+
+  // Compute effective logos: Merchant theme takes precedence over partner container if a merchant is active
+  // This ensures the PFP/Shop Logo (which resides in theme) wins over any container defaults.
+  const effectiveLogoApp = (hasMerchantForTheme && theme.brandLogoUrl) || partnerLogoApp || theme.brandLogoUrl || "";
+  // Fallback to brandLogoUrl (PFP) if symbolLogoUrl is missing to prevents dropping through to partner defaults
+  const effectiveLogoSymbol = (hasMerchantForTheme && (theme.symbolLogoUrl || theme.brandLogoUrl)) || partnerLogoSymbol || theme.symbolLogoUrl || "";
+  const effectiveLogoFavicon = (hasMerchantForTheme && theme.brandFaviconUrl) || partnerLogoFavicon || theme.brandFaviconUrl || "";
+  const effectiveBrandName = (hasMerchantForTheme && theme.brandName) || partnerBrandName || theme.brandName || "PortalPay";
+
+  // Helper functions to get the best available logo
+  const defaultPortalSymbol = getDefaultBrandSymbol(theme.brandKey);
+  const getHeaderLogo = () => effectiveLogoApp || effectiveLogoSymbol || effectiveLogoFavicon || defaultPortalSymbol;
+  const getSymbolLogo = () => effectiveLogoSymbol || effectiveLogoFavicon || effectiveLogoApp || defaultPortalSymbol;
 
   // Persist merchant theme expectation for invoice layout once merchant wallet is known
   React.useLayoutEffect(() => {
@@ -399,11 +407,16 @@ export default function PortalReceiptPage() {
         const url = `/api/site/config?wallet=${encodeURIComponent(walletHex)}`;
         const headers = { "x-theme-caller": "PortalPage:merchant", "x-wallet": String(walletHex || "").toLowerCase(), "x-recipient": String(walletHex || "").toLowerCase() };
 
-        // Concurrently fetch site config AND shop config (if wallet is present)
-        const [siteRes, shopConfig] = await Promise.all([
+        // Concurrently fetch site config, shop config, AND user profile for smart logo fallback
+        const [siteRes, shopConfig, profileRes] = await Promise.all([
           fetch(url, { cache: "no-store", headers }).then(r => r.json()).catch(() => ({} as any)),
           walletHex
             ? fetch(`/api/shop/config?wallet=${encodeURIComponent(walletHex)}`, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant:shop" } })
+              .then(r => r.ok ? r.json() : null)
+              .catch(() => null)
+            : Promise.resolve(null),
+          walletHex
+            ? fetch(`/api/users/profile?wallet=${encodeURIComponent(walletHex)}`, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant:profile" } })
               .then(r => r.ok ? r.json() : null)
               .catch(() => null)
             : Promise.resolve(null)
@@ -412,28 +425,80 @@ export default function PortalReceiptPage() {
         const j: SiteConfigResponse = siteRes || {};
         const shopTheme = shopConfig?.config?.theme;
         const shopName = shopConfig?.config?.name;
+        const pfpUrl = profileRes?.profile?.pfpUrl;
 
         // Merge shop theme if present - SHOP takes priority for branding colors/logos
+        // Merge shop theme if present - SHOP takes priority for branding colors/logos
+        // USER REQUEST: Site config is deprecated, strictly use Shop Config + Profile
         if (shopTheme) {
           if (!j.config) j.config = {};
-          if (!j.config.theme) j.config.theme = {} as any;
 
-          const t = j.config!.theme!;
-          // Merge supported properties
-          if (shopTheme.primaryColor) t.primaryColor = shopTheme.primaryColor;
-          if (shopTheme.secondaryColor) t.secondaryColor = shopTheme.secondaryColor;
-          if (shopTheme.brandLogoUrl) {
-            t.brandLogoUrl = shopTheme.brandLogoUrl;
-            // If Shop defines a logo, use it as fallback for symbol too
-            if (!t.symbolLogoUrl) t.symbolLogoUrl = shopTheme.brandLogoUrl;
+          // Start with a clean slate or safe defaults, IGNORING siteRes theme
+          // This ensures no "PortalPay" defaults bleed through from the deprecated site config
+          const cleanTheme = {
+            primaryColor: "#10b981",
+            secondaryColor: "#2dd4bf",
+            brandLogoUrl: "", // Start empty to force PFP fallback
+            symbolLogoUrl: "",
+            brandFaviconUrl: "/favicon-32x32.png",
+            brandName: "PortalPay",
+            fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+            receiptBackgroundUrl: "/watermark.png",
+            brandLogoShape: "round",
+            textColor: "#ffffff",
+            headerTextColor: "#ffffff",
+            bodyTextColor: "#e5e7eb",
+            ...shopTheme // Spread shop theme over defaults
+          };
+
+          const t = cleanTheme as any;
+
+          // Re-apply specific smart fallback logic on this clean object
+          let effectiveLogo = shopTheme.brandLogoUrl;
+
+          // Smart Logo Resolution:
+          // If the shop logo is missing OR matches a platform default/placeholder,
+          // and we have a valid PFP, use the PFP instead.
+          // Note: Since we ignored siteRes, 'effectiveLogo' is solely from Shop Config now.
+          const isGenericLogo = !effectiveLogo || effectiveLogo.includes("ppsymbol") || effectiveLogo.includes("BasaltSurge") || effectiveLogo.includes("placeholder");
+
+          if (isClientSide) {
+            console.log("[PortalTheme] Smart Logo Debug (Shop Config Only):", {
+              shopName,
+              originalLogo: shopTheme.brandLogoUrl,
+              effectiveLogo,
+              isGenericLogo,
+              pfpUrl,
+              willSwap: isGenericLogo && !!pfpUrl
+            });
           }
-          if (shopTheme.logoShape) t.brandLogoShape = shopTheme.logoShape;
 
-          // Shop name override if present
+          if (isGenericLogo && pfpUrl) {
+            effectiveLogo = pfpUrl;
+            console.log("[PortalTheme] Swapped generic/missing shop logo for PFP:", pfpUrl);
+          }
+
+          if (effectiveLogo) {
+            t.brandLogoUrl = effectiveLogo;
+
+            // Force overwrite symbol if it's currently a generic platform symbol or missing
+            const currentSymbol = String(t.symbolLogoUrl || "");
+            const isGenericSymbol = !currentSymbol || currentSymbol.includes("ppsymbol") || currentSymbol.includes("BasaltSurge");
+
+            if (isGenericSymbol) {
+              t.symbolLogoUrl = effectiveLogo;
+            }
+          }
+
           if (shopName) {
             t.brandName = shopName;
           }
+
+          // Replace the config theme entirely
+          j.config.theme = t;
         }
+
+
 
         try { cfgCacheRef.current.set(normKey, j); } catch { }
         return j;
@@ -770,7 +835,7 @@ export default function PortalReceiptPage() {
     }
 
     console.log('[PORTAL THEME DEBUG] Fetching merchant theme from API', {
-      merchantWallet,
+      merchantWallet: effectiveMerchantWallet,
       recipient
     });
 
@@ -789,7 +854,8 @@ export default function PortalReceiptPage() {
     let cancelled = false;
     (async () => {
       try {
-        const j: SiteConfigResponse = await getSiteConfigOnce(currentMerchantKey, String(merchantWallet || recipient));
+        // Use effectiveMerchantWallet to support receipt-derived merchant identity
+        const j: SiteConfigResponse = await getSiteConfigOnce(currentMerchantKey, String(effectiveMerchantWallet || recipient));
         const t = j?.config?.theme;
         console.log('[PORTAL THEME DEBUG] API response received', { hasTheme: !!t, theme: t });
         if (!cancelled && t) {
@@ -891,7 +957,7 @@ export default function PortalReceiptPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [merchantWallet, receiptId, hasMerchantForTheme, forcePortalTheme]);
+  }, [merchantWallet, receiptId, hasMerchantForTheme, forcePortalTheme, effectiveMerchantWallet]);
 
   // Background style only (no CSS vars inline to avoid hydration mismatch)
   const backgroundStyle = useMemo(() => {

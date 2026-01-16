@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         const { createHash } = await import("node:crypto");
         const pinHash = createHash("sha256").update(String(body.pin)).digest("hex");
 
-        const newMember: TeamMember & { type: string, merchantWallet: string, merchant: string } = {
+        const newMember: TeamMember & { type: string, merchantWallet: string, merchant: string, linkedWallet?: string } = {
             id: randomUUID(),
             type: "merchant_team_member",
             merchant: merchantWallet, // Partition key
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
             pinHash,
             role: body.role,
             active: true,
+            linkedWallet: body.linkedWallet ? String(body.linkedWallet).toLowerCase() : undefined,
             createdAt: Math.floor(Date.now() / 1000),
             updatedAt: Math.floor(Date.now() / 1000)
         };
@@ -71,6 +72,46 @@ export async function POST(req: NextRequest) {
 
     } catch (e: any) {
         console.error("POST team failed", e);
+        return NextResponse.json({ error: e.message }, { status: 500 });
+    }
+}
+
+// PATCH: Update team member
+export async function PATCH(req: NextRequest) {
+    try {
+        const container = await getContainer();
+        const body = await req.json();
+        const walletHeader = req.headers.get("x-wallet") || "";
+        if (!walletHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        const merchantWallet = walletHeader.toLowerCase();
+
+        if (!body.id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
+
+        // Retrieve existing
+        const { resource: existing } = await container.item(body.id, merchantWallet).read();
+        if (!existing) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+
+        const ops = [];
+        if (body.name) ops.push({ op: "set", path: "/name", value: body.name });
+        if (body.role) ops.push({ op: "set", path: "/role", value: body.role });
+        if (body.linkedWallet !== undefined) {
+            ops.push({ op: "set", path: "/linkedWallet", value: body.linkedWallet ? String(body.linkedWallet).toLowerCase() : null });
+        }
+
+        if (body.pin) {
+            const { createHash } = await import("node:crypto");
+            const ph = createHash("sha256").update(String(body.pin)).digest("hex");
+            ops.push({ op: "set", path: "/pinHash", value: ph });
+        }
+
+        ops.push({ op: "set", path: "/updatedAt", value: Math.floor(Date.now() / 1000) });
+
+        if (ops.length > 0) {
+            await container.item(body.id, merchantWallet).patch(ops as any);
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });
     }
 }

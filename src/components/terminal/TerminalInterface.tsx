@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { formatCurrency, roundForCurrency, convertFromUsd, SUPPORTED_CURRENCIES } from "@/lib/fx";
 import { fetchEthRates, fetchUsdRates } from "@/lib/eth";
-import { QRCodeCanvas } from "qrcode.react";
+import { QRCode } from "react-qrcode-logo";
 import { createPortal } from "react-dom";
 
 // Shared Logic extracted from TerminalPage
@@ -21,7 +21,7 @@ interface TerminalInterfaceProps {
     theme?: any;
 }
 
-export default function TerminalInterface({ merchantWallet, employeeId, employeeName, employeeRole, sessionId, onLogout, brandName, logoUrl }: TerminalInterfaceProps) {
+export default function TerminalInterface({ merchantWallet, employeeId, employeeName, employeeRole, sessionId, onLogout, brandName, logoUrl, theme }: TerminalInterfaceProps) {
     const [amountStr, setAmountStr] = useState<string>("");
     const [itemLabel, setItemLabel] = useState<string>("");
     const [loading, setLoading] = useState(false);
@@ -109,46 +109,50 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
         }
     }
 
-    async function handleEndOfDayReport() {
-        if (reportLoading) return;
+    // End of Day / Summary Logic
+    const [summaryOpen, setSummaryOpen] = useState(false);
+    const [reportData, setReportData] = useState<any>(null);
+
+    async function openSummary() {
         setReportLoading(true);
         setError("");
-
         try {
-            // Calculate start/end of day in local time (or just send UTC range if preferred, but local is better for "End of Day")
-            // We'll stick to simple 00:00 - 23:59 local client time converted to ISO or timestamp
             const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+            const startTs = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime() / 1000);
+            const endTs = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime() / 1000);
 
-            const startTs = Math.floor(startOfDay.getTime() / 1000);
-            const endTs = Math.floor(endOfDay.getTime() / 1000);
-
-            const res = await fetch(`/api/terminal/reports/end-of-day?sessionId=${sessionId}&start=${startTs}&end=${endTs}`, {
-                method: "GET",
+            const res = await fetch(`/api/terminal/reports?sessionId=${sessionId}&start=${startTs}&end=${endTs}&type=z-report&format=json`, {
                 headers: { "x-wallet": merchantWallet }
             });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Failed to load summary");
 
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || "Failed to generate report");
-            }
+            setReportData(data);
+            setSummaryOpen(true);
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setReportLoading(false);
+        }
+    }
 
-            // Download Blob
-            const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `end-of-day-${new Date().toISOString().split('T')[0]}.zip`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
+    async function closeDay() {
+        if (!confirm("Are you sure you want to close the day? This will end the current session.")) return;
+        setReportLoading(true);
+        try {
+            const r = await fetch("/api/terminal/session", {
+                method: "POST",
+                body: JSON.stringify({ sessionId, merchantWallet })
+            });
+            const j = await r.json();
+            if (!r.ok) throw new Error(j.error || "Failed to close session");
+
+            // Success - maybe redirect or logout
+            if (onLogout) onLogout();
+            else window.location.reload();
 
         } catch (e: any) {
-            console.error(e);
-            setError(e.message || "Report generation failed");
-        } finally {
+            alert(e.message);
             setReportLoading(false);
         }
     }
@@ -174,11 +178,11 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                 <div className="flex gap-2">
                     {isManagerOrKeyholder && (
                         <button
-                            onClick={handleEndOfDayReport}
+                            onClick={openSummary}
                             disabled={reportLoading}
                             className="px-4 py-2 text-sm border bg-background rounded-md hover:bg-muted disabled:opacity-50"
                         >
-                            {reportLoading ? "Generating..." : "End-of-Day Report"}
+                            {reportLoading ? "Loading..." : "End of Day Summary"}
                         </button>
                     )}
                     {onLogout && (
@@ -263,31 +267,206 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
             </div>
 
             {/* QR Modal */}
+            {/* QR / Payment Modal */}
             {qrOpen && selected && typeof window !== "undefined" && createPortal(
                 <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm grid place-items-center p-4 animate-in fade-in">
-                    <div className="bg-white p-6 rounded-2xl max-w-sm w-full space-y-6 text-center relative shadow-2xl">
+                    <div className="bg-[#0f0f12] text-white rounded-2xl max-w-sm w-full text-center relative shadow-2xl p-8 border border-white/10">
                         <button
                             onClick={() => setQrOpen(false)}
-                            className="absolute right-4 top-4 text-gray-400 hover:text-black"
+                            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors"
                         >
-                            <XIcon />
+                            <span className="opacity-70 group-hover:opacity-100">
+                                <XIcon />
+                            </span>
                         </button>
 
-                        <h2 className="text-2xl font-bold text-black">Scan to Pay</h2>
+                        <h2 className="text-2xl font-bold mb-6">Scan to Pay</h2>
 
-                        <div className="bg-white p-2 rounded-xl border inline-block">
-                            <QRCodeCanvas value={portalUrl} size={200} />
+                        <div className="inline-block mb-4 p-2 rounded-xl border border-white/10">
+                            <QRCode
+                                value={portalUrl}
+                                size={200}
+                                fgColor="#ffffff"
+                                bgColor="transparent"
+                                qrStyle="dots"
+                                eyeRadius={10}
+                                eyeColor={(theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#ffffff"}
+                                logoImage={logoUrl}
+                                logoWidth={40}
+                                logoHeight={40}
+                                removeQrCodeBehindLogo={true}
+                                logoPadding={5}
+                                ecLevel="H"
+                                quietZone={10}
+                            />
                         </div>
 
-                        <div className="text-3xl font-mono font-bold text-black">
+                        <div className="text-4xl font-mono font-bold mb-2 tracking-tight">
                             {formatCurrency(totalConverted, terminalCurrency)}
                         </div>
 
-                        <div className="text-sm text-gray-500 break-all">{portalUrl}</div>
+                        <div className="text-xs text-muted-foreground break-all px-4 opacity-50 mb-8 font-mono">
+                            {portalUrl}
+                        </div>
 
-                        <div className="grid grid-cols-2 gap-3 pt-4">
-                            <button onClick={() => window.print()} className="px-4 py-2 border rounded-lg text-black hover:bg-gray-50">Print</button>
-                            <button onClick={() => setQrOpen(false)} className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800">Done</button>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                onClick={() => window.print()}
+                                className="px-4 py-3 border border-white/10 rounded-xl font-semibold hover:bg-white/5 transition-colors"
+                            >
+                                Print
+                            </button>
+                            <button
+                                onClick={() => setQrOpen(false)}
+                                className="px-4 py-3 text-white rounded-xl font-bold shadow-lg hover:brightness-110 active:scale-95 transition-all"
+                                style={{ backgroundColor: (theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#000" }}
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* End of Day Summary Modal */}
+            {summaryOpen && reportData && typeof window !== "undefined" && createPortal(
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm grid place-items-center p-4 animate-in fade-in">
+                    <div className="rounded-2xl max-w-2xl w-full text-center relative shadow-2xl flex flex-col max-h-[90vh] border border-white/10 bg-[#0f0f12] text-white">
+                        {/* Header */}
+                        <div className="flex justify-between items-center p-6 border-b border-white/10">
+                            <h2 className="text-xl font-bold">End of Day Report</h2>
+                            <button
+                                onClick={() => setSummaryOpen(false)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                            >
+                                <XIcon />
+                            </button>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="flex border-b border-white/10">
+                            <button
+                                className={`flex-1 py-3 text-sm font-semibold transition-colors`}
+                                style={{
+                                    borderBottom: !reportData.showDetails ? `2px solid ${(theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#fff"}` : "transparent",
+                                    color: !reportData.showDetails ? ((theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#fff") : "#9ca3af"
+                                }}
+                                onClick={() => setReportData({ ...reportData, showDetails: false })}
+                            >
+                                Summary
+                            </button>
+                            <button
+                                className={`flex-1 py-3 text-sm font-semibold transition-colors`}
+                                style={{
+                                    borderBottom: reportData.showDetails ? `2px solid ${(theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#fff"}` : "transparent",
+                                    color: reportData.showDetails ? ((theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#fff") : "#9ca3af"
+                                }}
+                                onClick={() => setReportData({ ...reportData, showDetails: true })}
+                            >
+                                Details & Transactions
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 overflow-y-auto flex-1 text-left">
+                            {!reportData.showDetails ? (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                            <p className="text-xs text-gray-400 uppercase font-semibold">Total Sales</p>
+                                            <p className="text-3xl font-bold">{formatCurrency((reportData.summary?.totalSales || 0), "USD")}</p>
+                                        </div>
+                                        <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                            <p className="text-xs text-gray-400 uppercase font-semibold">Total Tips</p>
+                                            <p className="text-3xl font-bold">{formatCurrency((reportData.summary?.totalTips || 0), "USD")}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/5 space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm font-medium text-gray-400">Transactions</span>
+                                            <span className="text-lg font-bold">{reportData.summary?.transactionCount || 0}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center border-t border-white/10 pt-3">
+                                            <span className="text-sm font-medium text-gray-400">Avg. Order Value</span>
+                                            <span className="text-lg font-bold">{formatCurrency((reportData.summary?.averageOrderValue || 0), "USD")}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center border-t border-white/10 pt-3">
+                                            <span className="text-sm font-bold uppercase">Net Revenue</span>
+                                            <span className="text-xl font-bold text-green-400">{formatCurrency((reportData.summary?.net || 0), "USD")}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Payment Methods */}
+                                    {reportData.paymentMethods && reportData.paymentMethods.length > 0 && (
+                                        <div className="space-y-2">
+                                            <h3 className="text-sm font-semibold text-gray-400 uppercase">Payment Methods</h3>
+                                            <div className="bg-white/5 rounded-lg border border-white/5 divide-y divide-white/5">
+                                                {reportData.paymentMethods.map((pm: any, idx: number) => (
+                                                    <div key={idx} className="flex justify-between items-center p-3 text-sm">
+                                                        <span className="font-medium">{pm.method}</span>
+                                                        <span>{formatCurrency(pm.total, "USD")}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-sm font-semibold text-gray-400">Transactions ({reportData.receipts?.length || 0})</h3>
+                                    </div>
+
+                                    {reportData.receipts && reportData.receipts.length > 0 ? (
+                                        <div className="border border-white/10 rounded-lg overflow-hidden">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="bg-white/5 text-gray-400 font-medium">
+                                                    <tr>
+                                                        <th className="px-4 py-2">Time</th>
+                                                        <th className="px-4 py-2">Method</th>
+                                                        <th className="px-4 py-2 text-right">Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-white/5">
+                                                    {reportData.receipts.map((r: any, idx: number) => (
+                                                        <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                                            <td className="px-4 py-3 text-gray-400">
+                                                                {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </td>
+                                                            <td className="px-4 py-3 font-medium">
+                                                                {r.paymentMethod || r.currency || "Cash"}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-right font-bold">
+                                                                {formatCurrency(r.totalUsd, "USD")}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-10 text-gray-500 bg-white/5 rounded-xl border border-white/10 border-dashed">
+                                            No detailed transactions available for this period.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 border-t border-white/10 bg-white/5 rounded-b-2xl">
+                            <button
+                                onClick={closeDay}
+                                disabled={reportLoading}
+                                className="w-full py-3 bg-red-600 text-white rounded-xl font-bold text-lg hover:bg-red-700 disabled:opacity-50 transition-colors shadow-sm"
+                            >
+                                {reportLoading ? "Closing..." : "Close Day & Logout"}
+                            </button>
+                            <p className="text-xs text-gray-500 mt-2">
+                                Closing the day ends your session. Values are final.
+                            </p>
                         </div>
                     </div>
                 </div>,
@@ -298,5 +477,5 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
 }
 
 function XIcon() {
-    return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 18 18" /></svg>
+    return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="M6 6 18 18" /></svg>
 }

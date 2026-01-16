@@ -59,6 +59,7 @@ export default function TeamPanel() {
     const [editName, setEditName] = useState("");
     const [editPin, setEditPin] = useState("");
     const [editRole, setEditRole] = useState<"manager" | "staff">("staff");
+    const [editLinkedWallet, setEditLinkedWallet] = useState("");
     const [saving, setSaving] = useState(false);
 
     // Add Member State
@@ -66,6 +67,7 @@ export default function TeamPanel() {
     const [newName, setNewName] = useState("");
     const [newPin, setNewPin] = useState("");
     const [newRole, setNewRole] = useState<"manager" | "staff">("staff");
+    const [newLinkedWallet, setNewLinkedWallet] = useState("");
     const [addLoading, setAddLoading] = useState(false);
 
     async function loadTeam() {
@@ -127,6 +129,7 @@ export default function TeamPanel() {
         setEditName(member.name);
         setEditPin("");
         setEditRole(member.role);
+        setEditLinkedWallet((member as any).linkedWallet || "");
         loadMemberSessions(member.id);
     }
 
@@ -150,7 +153,12 @@ export default function TeamPanel() {
                     "Content-Type": "application/json",
                     "x-wallet": account?.address || ""
                 },
-                body: JSON.stringify({ name: newName, pin: newPin, role: newRole })
+                body: JSON.stringify({
+                    name: newName,
+                    pin: newPin,
+                    role: newRole,
+                    linkedWallet: newLinkedWallet
+                })
             });
             const j = await r.json();
             if (!r.ok) throw new Error(j.error || "Failed to add member");
@@ -160,6 +168,7 @@ export default function TeamPanel() {
             setNewName("");
             setNewPin("");
             setNewRole("staff");
+            setNewLinkedWallet("");
         } catch (e: any) {
             alert(e.message);
         } finally {
@@ -191,7 +200,8 @@ export default function TeamPanel() {
             const body: any = {
                 id: selectedMember.id,
                 name: editName,
-                role: editRole
+                role: editRole,
+                linkedWallet: editLinkedWallet || null
             };
             if (editPin) body.pin = editPin;
 
@@ -207,8 +217,15 @@ export default function TeamPanel() {
             if (!r.ok) throw new Error(j.error || "Failed to update");
 
             // Update local state
-            setMembers(prev => prev.map(m => m.id === selectedMember.id ? { ...m, name: editName, role: editRole } : m));
-            setSelectedMember({ ...selectedMember, name: editName, role: editRole });
+            const updated = {
+                ...selectedMember,
+                name: editName,
+                role: editRole,
+                linkedWallet: editLinkedWallet
+            };
+
+            setMembers(prev => prev.map(m => m.id === selectedMember.id ? updated : m));
+            setSelectedMember(updated);
             setEditMode(false);
             setEditPin("");
         } catch (e: any) {
@@ -598,6 +615,26 @@ export default function TeamPanel() {
                                 <div className="h-10 px-3 rounded-lg border bg-muted/20 flex items-center capitalize">{selectedMember.role}</div>
                             )}
                         </div>
+                        {selectedMember.role === 'manager' && (
+                            <div>
+                                <label className="text-xs text-muted-foreground block mb-1">Linked Wallet Address</label>
+                                {editMode ? (
+                                    <>
+                                        <input
+                                            className="w-full h-10 px-3 rounded-lg border bg-background font-mono text-xs"
+                                            value={editLinkedWallet}
+                                            onChange={e => setEditLinkedWallet(e.target.value)}
+                                            placeholder="0x..."
+                                        />
+                                        <p className="text-[10px] text-muted-foreground mt-1">Allows this manager to access the Multi-Org Reports Panel.</p>
+                                    </>
+                                ) : (
+                                    <div className="h-10 px-3 rounded-lg border bg-muted/20 flex items-center font-mono text-xs text-muted-foreground">
+                                        {(selectedMember as any).linkedWallet || "Not Linked"}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         {editMode && (
                             <div>
                                 <label className="text-xs text-muted-foreground block mb-1">New PIN (leave blank to keep current)</label>
@@ -640,7 +677,7 @@ export default function TeamPanel() {
                         </button>
                     </div>
                 </div>
-            </div>
+            </div >
         );
     }
 
@@ -660,8 +697,8 @@ export default function TeamPanel() {
                         <div>
                             <h2 className="text-xl font-semibold">{selectedMember.name}</h2>
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${selectedMember.role === 'manager'
-                                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-                                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
                                 }`}>
                                 {selectedMember.role === 'manager' ? <Shield size={10} /> : <User size={10} />}
                                 {selectedMember.role.toUpperCase()}
@@ -683,8 +720,8 @@ export default function TeamPanel() {
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.key
-                                    ? "bg-background shadow-sm text-foreground"
-                                    : "text-muted-foreground hover:text-foreground"
+                                ? "bg-background shadow-sm text-foreground"
+                                : "text-muted-foreground hover:text-foreground"
                                 }`}
                         >
                             <tab.icon size={16} />
@@ -763,6 +800,18 @@ export default function TeamPanel() {
                                     <option value="manager">Manager</option>
                                 </select>
                             </div>
+                            {newRole === 'manager' && (
+                                <div>
+                                    <label className="text-xs text-muted-foreground block mb-1">Linked Wallet Address (Optional)</label>
+                                    <input
+                                        className="w-full h-10 px-3 rounded-lg border bg-background font-mono text-xs"
+                                        value={newLinkedWallet}
+                                        onChange={e => setNewLinkedWallet(e.target.value)}
+                                        placeholder="0x..."
+                                    />
+                                    <p className="text-[10px] text-muted-foreground mt-1">Allows this manager to access the Multi-Org Reports Panel.</p>
+                                </div>
+                            )}
                         </div>
                         <div className="flex gap-2 pt-2">
                             <button
@@ -813,8 +862,8 @@ export default function TeamPanel() {
                                 <div className="flex-1 min-w-0">
                                     <div className="font-medium truncate">{m.name}</div>
                                     <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${m.role === 'manager'
-                                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-                                            : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                                        : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
                                         }`}>
                                         {m.role === 'manager' ? <Shield size={10} /> : <User size={10} />}
                                         {m.role}

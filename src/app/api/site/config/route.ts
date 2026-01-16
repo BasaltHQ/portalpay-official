@@ -472,7 +472,7 @@ function normalizeSiteConfig(raw?: any) {
       brandLogoUrl: "",
       brandFaviconUrl: "/favicon-32x32.png",
       appleTouchIconUrl: "/apple-touch-icon.png",
-      brandName: "PortalPay",
+      brandName: "BasaltSurge",
       brandLogoShape: "round",
       textColor: "#ffffff",
       headerTextColor: "#ffffff",
@@ -833,6 +833,15 @@ function normalizeSiteConfig(raw?: any) {
   // Do not apply environment defaults; rely solely on live brand config or persisted config
   try { /* no-op */ } catch { }
   try { /* no-op */ } catch { }
+
+  // FINAL SANITIZATION: Strictly replace "PortalPay" with "BasaltSurge" in the final output
+  // unless we are in a partner context where that string might be relevant (unlikely)
+  if (!isPartnerContext()) {
+    const bn = String(config.theme?.brandName || "").trim();
+    if (/^portalpay$/i.test(bn)) {
+      if (config.theme) config.theme.brandName = "BasaltSurge";
+    }
+  }
 
   return config;
 }

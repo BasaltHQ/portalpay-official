@@ -112,20 +112,53 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
         }
     };
 
+    const isBasaltDefault = (url: string) => url.includes("BasaltSurge") || url.includes("ppsymbol") || url.includes("bssymbol");
+
+    const resolvedLogoUrl = (() => {
+        // 1. Force explicit theme logo if it exists
+        // The user explicitly wants the SHOP LOGO to take precedence over the PFP always.
+        const t = config.theme?.brandLogoUrl || (config.theme as any)?.symbolLogoUrl || "";
+        if (t) return t;
+
+        // 2. User PFP (Fallback only if NO shop logo exists)
+        if (merchantWallet) return `/api/users/pfp?wallet=${merchantWallet}`;
+
+        // 3. Default
+        return "/bssymbol.png";
+    })();
+
+    const primaryColor = config.theme?.primaryColor || "#0ea5e9";
+    const secondaryColor = config.theme?.secondaryColor || config.theme?.primaryColor || "#0ea5e9";
+
     if (view === "pin" || !activeSession) {
         return (
-            <div className="min-h-screen bg-muted/10 flex items-center justify-center p-4">
-                <div className="max-w-md w-full bg-background border rounded-2xl shadow-xl overflow-hidden">
+            <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ backgroundColor: "#000" }}>
+                {/* Background Gradient using Theme Primary Color */}
+                <div
+                    className="absolute inset-0 pointer-events-none opacity-30"
+                    style={{
+                        background: `radial-gradient(circle at 50% 50%, ${primaryColor}40 0%, transparent 70%)`
+                    }}
+                />
+
+                <div className="max-w-md w-full bg-background/90 backdrop-blur border rounded-2xl shadow-xl overflow-hidden relative z-10">
                     <div className="p-8 text-center space-y-4">
-                        {config.theme?.brandLogoUrl && (
-                            <img src={config.theme.brandLogoUrl} className="h-12 mx-auto object-contain" />
+                        {resolvedLogoUrl && (
+                            <img src={resolvedLogoUrl} className="h-12 mx-auto object-contain" alt="Logo" />
                         )}
                         <h1 className="text-2xl font-bold">Employee Login</h1>
                         <p className="text-muted-foreground text-sm">Enter your Access PIN to start session</p>
 
                         <div className="flex justify-center gap-2 my-6">
                             {[0, 1, 2, 3].map(i => (
-                                <div key={i} className={`w-4 h-4 rounded-full border ${i < pin.length ? "bg-primary border-primary" : "bg-muted"}`} />
+                                <div
+                                    key={i}
+                                    className="w-4 h-4 rounded-full border transition-colors"
+                                    style={{
+                                        borderColor: i < pin.length ? primaryColor : "rgba(128,128,128,0.3)",
+                                        backgroundColor: i < pin.length ? primaryColor : "transparent"
+                                    }}
+                                />
                             ))}
                         </div>
 
@@ -136,7 +169,7 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                                 <button
                                     key={n}
                                     onClick={() => appendPin(String(n))}
-                                    className="h-16 rounded-full bg-muted/30 hover:bg-primary/10 text-xl font-bold transition-all"
+                                    className="h-16 rounded-full bg-muted/30 hover:bg-foreground/5 text-xl font-bold transition-all"
                                 >
                                     {n}
                                 </button>
@@ -144,7 +177,7 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                             <div /> {/* Spacer */}
                             <button
                                 onClick={() => appendPin("0")}
-                                className="h-16 rounded-full bg-muted/30 hover:bg-primary/10 text-xl font-bold transition-all"
+                                className="h-16 rounded-full bg-muted/30 hover:bg-foreground/5 text-xl font-bold transition-all"
                             >
                                 0
                             </button>
@@ -159,7 +192,8 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                         <button
                             onClick={handleLogin}
                             disabled={loading || pin.length < 4}
-                            className="w-full h-12 bg-primary text-primary-foreground rounded-xl font-bold mt-6 disabled:opacity-50"
+                            className="w-full h-12 text-white rounded-xl font-bold mt-6 disabled:opacity-50 shadow-lg hover:brightness-110 active:scale-95 transition-all"
+                            style={{ backgroundColor: secondaryColor }}
                         >
                             {loading ? "Verifying..." : "Start Session"}
                         </button>
@@ -173,6 +207,19 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
     const sessTotal = typeof activeSession.totalSales === 'number' ? activeSession.totalSales : 0;
     const statsStr = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(sessTotal);
 
+    // Helper to identify generic platform assets
+    function isGenericAsset(url?: string | null): boolean {
+        if (!url) return false;
+        const s = url.toLowerCase();
+        return (
+            s.includes("basaltsurgewided") ||
+            s.includes("basaltsurged") ||
+            s.includes("ppsymbol") ||
+            s.includes("portalpay") ||
+            s.includes("bssymbol")
+        );
+    }
+
     return (
         <TerminalInterface
             merchantWallet={merchantWallet}
@@ -182,7 +229,8 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
             sessionId={activeSession.sessionId}
             onLogout={handleLogout}
             brandName={config.name}
-            logoUrl={config.theme?.brandLogoUrl}
+            logoUrl={resolvedLogoUrl}
+            theme={config.theme}
         />
     );
 }
