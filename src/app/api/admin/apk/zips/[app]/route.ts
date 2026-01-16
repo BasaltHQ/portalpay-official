@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireThirdwebAuth } from "@/lib/auth";
-import fs from "node:fs/promises";
+import fs from "node:fs";
 import path from "node:path";
-import JSZip from "jszip";
+import archiver from "archiver";
+import { Readable } from "node:stream";
 
 export const runtime = "nodejs";
 
@@ -15,26 +16,36 @@ function getBrandKey(): string {
     return String(process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase();
 }
 
-async function getApkBytes(appKey: string): Promise<Uint8Array | null> {
+/**
+ * Returns a Readable stream of the APK file, or null if not found.
+ */
+async function getApkStream(appKey: string): Promise<{ stream: Readable; length?: number } | null> {
     // Prefer Azure Blob Storage if configured
     const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
     const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
+
     if (conn && container) {
         const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
         const { BlobServiceClient } = await import("@azure/storage-blob");
         const bsc = BlobServiceClient.fromConnectionString(conn);
         const cont = bsc.getContainerClient(container);
 
-        // Try brand-specific APK from blob (works for portalpay, paynex, and ALL touchpoint variants)
-        const tryBlob = async (key: string) => {
+        // Try brand-specific APK from blob
+        const tryBlob = async (key: string): Promise<{ stream: Readable; length?: number } | null> => {
             try {
                 const blobName = prefix ? `${prefix}/${key}-signed.apk` : `${key}-signed.apk`;
                 console.log(`[APK ZIP] Checking blob: ${blobName}`);
                 const blob = cont.getBlockBlobClient(blobName);
                 if (await blob.exists()) {
-                    const buf = await blob.downloadToBuffer();
-                    console.log(`[APK ZIP] Found ${blobName} (${buf.length} bytes)`);
-                    return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+                    const props = await blob.getProperties();
+                    const downloadResponse = await blob.download();
+                    if (downloadResponse.readableStreamBody) {
+                        console.log(`[APK ZIP] Found ${blobName} (${props.contentLength} bytes)`);
+                        return {
+                            stream: downloadResponse.readableStreamBody as Readable,
+                            length: props.contentLength
+                        };
+                    }
                 }
             } catch (e: any) {
                 console.warn(`[APK ZIP] Failed to check ${key}:`, e.message);
@@ -43,18 +54,18 @@ async function getApkBytes(appKey: string): Promise<Uint8Array | null> {
         };
 
         // 1. Try exact match
-        let bytes = await tryBlob(appKey);
+        let result = await tryBlob(appKey);
 
-        // 2. Try aliases (surge <-> basaltsurge)
-        if (!bytes) {
+        // 2. Try aliases
+        if (!result) {
             if (appKey === "surge-touchpoint") {
-                bytes = await tryBlob("basaltsurge-touchpoint");
+                result = await tryBlob("basaltsurge-touchpoint");
             } else if (appKey === "basaltsurge-touchpoint") {
-                bytes = await tryBlob("surge-touchpoint");
+                result = await tryBlob("surge-touchpoint");
             }
         }
 
-        if (bytes) return bytes;
+        if (result) return result;
     }
 
     // Local filesystem fallback
@@ -65,19 +76,20 @@ async function getApkBytes(appKey: string): Promise<Uint8Array | null> {
     };
     const rel = APP_TO_PATH[appKey];
     if (!rel) return null;
+
     try {
         const filePath = path.join(process.cwd(), rel);
-        const data = await fs.readFile(filePath);
-        console.log(`[APK ZIP] Found ${appKey} in local filesystem`);
-        return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-    } catch {
-        return null;
-    }
+        if (fs.existsSync(filePath)) {
+            const stats = fs.statSync(filePath);
+            console.log(`[APK ZIP] Found ${appKey} in local filesystem`);
+            return { stream: fs.createReadStream(filePath), length: stats.size };
+        }
+    } catch { }
+
+    return null;
 }
 
 function buildInstallerBat(appKey: string, isTouchpoint: boolean = false): string {
-    // Windows .bat script to assist operator installs via adb.exe
-    // Assumes adb.exe available in PATH (Android Platform Tools)
     const apkName = `${appKey}.apk`;
     const title = isTouchpoint ? "Touchpoint" : "PortalPay/Paynex";
     return [
@@ -113,8 +125,6 @@ function buildInstallerBat(appKey: string, isTouchpoint: boolean = false): strin
 }
 
 function buildInstallerSh(appKey: string, isTouchpoint: boolean = false): string {
-    // macOS/Linux shell script to assist operator installs via adb
-    // Assumes adb available in PATH (Android Platform Tools)
     const apkName = `${appKey}.apk`;
     const title = isTouchpoint ? "Touchpoint" : "PortalPay/Paynex";
     return [
@@ -201,15 +211,6 @@ function buildReadme(appKey: string, brandKey: string, isTouchpoint: boolean = f
     ].join("\n");
 }
 
-/**
- * GET /api/admin/apk/zips/[app]
- * Returns a ZIP containing:
- * - {app}.apk
- * - install_{app}.bat
- * - README.txt
- *
- * Access: Admin or Superadmin. Partner containers gated to their own brand.
- */
 export async function GET(req: NextRequest, ctx: { params: Promise<{ app: string }> }) {
     try {
         const caller = await requireThirdwebAuth(req).catch(() => null);
@@ -245,38 +246,52 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ app: string
 
         // Partner container gating
         if (containerType === "partner") {
-            // Allow touchpoint (resolves to their brand) or exact brand match
             if (requestedApp !== "touchpoint" && (!envBrand || requestedApp !== envBrand)) {
                 return NextResponse.json({ error: "zip_not_visible" }, { status: 404 });
             }
         }
 
-        const apkBytes = await getApkBytes(effectiveKey);
-        if (!apkBytes) {
+        const apkData = await getApkStream(effectiveKey);
+        // If not found in blob or local, user hasn't built it yet.
+        if (!apkData) {
             return NextResponse.json({ error: "apk_not_found" }, { status: 404 });
         }
 
-        const zip = new JSZip();
-        zip.file(`${effectiveKey}.apk`, apkBytes);
-        zip.file(`install_${effectiveKey}.bat`, buildInstallerBat(effectiveKey, isTouchpoint));
-        zip.file(`install_${effectiveKey}.sh`, buildInstallerSh(effectiveKey, isTouchpoint));
-        zip.file(`README.txt`, buildReadme(effectiveKey, envBrand || brandParam || "platform", isTouchpoint));
-
-        // Generate ZIP as ArrayBuffer for type-safe Response BodyInit
-        const arr = await zip.generateAsync({ type: "arraybuffer", compression: "DEFLATE", compressionOptions: { level: 9 } });
+        // Stream ZIP generation
+        const archive = archiver("zip", { zlib: { level: 9 } });
         const filename = `${effectiveKey}-installer.zip`;
 
-        return new Response(arr, {
+        // Create a PassThrough stream to pipe the archive output to the response
+        // Note: In Next.js App Router, we can pass a ReadableStream to Response.
+        // We convert the Node stream to a Web ReadableStream.
+        const stream = new ReadableStream({
+            start(controller) {
+                archive.on("data", (chunk) => controller.enqueue(chunk));
+                archive.on("end", () => controller.close());
+                archive.on("error", (err) => controller.error(err));
+            }
+        });
+
+        // Add files to archive
+        archive.append(apkData.stream, { name: `${effectiveKey}.apk` });
+        archive.append(buildInstallerBat(effectiveKey, isTouchpoint), { name: `install_${effectiveKey}.bat` });
+        archive.append(buildInstallerSh(effectiveKey, isTouchpoint), { name: `install_${effectiveKey}.sh` });
+        archive.append(buildReadme(effectiveKey, envBrand || brandParam || "platform", isTouchpoint), { name: `README.txt` });
+
+        // Start streaming
+        archive.finalize();
+
+        return new Response(stream, {
             headers: {
                 "Content-Type": "application/zip",
-                "Content-Length": String(arr.byteLength),
                 "Content-Disposition": `attachment; filename="${filename}"`,
                 "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
                 Pragma: "no-cache",
                 Expires: "0",
             },
         });
-    } catch {
-        return NextResponse.json({ error: "zip_failed" }, { status: 500 });
+    } catch (e: any) {
+        console.error("ZIP Stream Error:", e);
+        return NextResponse.json({ error: "zip_failed", details: e.message }, { status: 500 });
     }
 }
