@@ -182,18 +182,30 @@ async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpo
     try {
         await fs.access(signerPath);
     } catch {
-        // Fallback: Return unsigned if signer missing (prevent crash, but warn)
         console.error("[Touchpoint APK] CRITICAL: uber-apk-signer.jar not found in tools/. Returning unsigned APK.");
         await fs.unlink(unsignedPath).catch(() => { });
         return new Uint8Array(modifiedApkUnsigned.buffer, modifiedApkUnsigned.byteOffset, modifiedApkUnsigned.byteLength);
     }
 
-    console.log(`[Touchpoint APK] Executing signer: java -jar ${signerPath} -a ${unsignedPath} --allowResign`);
+    // Determine Java Executable
+    let javaPath = "java"; // Default to global PATH
+    const localJrePath = path.join(process.cwd(), "tools", "jre-linux", "bin", "java");
+
+    // Check if local portable JRE exists (only on Linux/Production usually)
+    try {
+        await fs.access(localJrePath);
+        javaPath = localJrePath;
+        console.log(`[Touchpoint APK] Using portable JRE: ${javaPath}`);
+    } catch {
+        console.log("[Touchpoint APK] Portable JRE not found, using global 'java'");
+    }
+
+    console.log(`[Touchpoint APK] Executing signer: ${javaPath} -jar ${signerPath} -a ${unsignedPath} --allowResign`);
 
     const { spawn } = await import("child_process");
 
     await new Promise<void>((resolve, reject) => {
-        const child = spawn("java", ["-jar", signerPath, "-a", unsignedPath, "--allowResign"], {
+        const child = spawn(javaPath, ["-jar", signerPath, "-a", unsignedPath, "--allowResign"], {
             stdio: "inherit", // Pipe output to console for debugging
         });
 

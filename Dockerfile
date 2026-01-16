@@ -54,7 +54,7 @@ FROM node:20-bookworm-slim AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 # Install OS deps required by sharp/libvips
-RUN apt-get update && apt-get install -y --no-install-recommends libvips && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends libvips openjdk-17-jre-headless && rm -rf /var/lib/apt/lists/*
 
 # Use non-root 'node' user from base image
 # Ensure application directory exists

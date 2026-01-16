@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "node node_modules/next/dist/bin/next start -p 3001",
     "lint": "next lint",
+    "postinstall": "node scripts/download-jre.js",
     "migrate:dry": "node scripts/migrate-uploads-to-blob.js --dry-run",
     "migrate": "node scripts/migrate-uploads-to-blob.js"
   },

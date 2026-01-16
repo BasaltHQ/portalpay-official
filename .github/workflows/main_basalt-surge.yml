@@ -48,6 +48,8 @@ jobs:
         run: |
           cp -r public .next/standalone/public
           mkdir -p .next/standalone/.next
+          # Include tools directory for portable JRE and signer
+          cp -r tools .next/standalone/tools
           cp -r .next/static .next/standalone/.next/static
           # Ensure start command is correct for Azure Service Plan
           cd .next/standalone
