@@ -50,6 +50,9 @@ jobs:
           mkdir -p .next/standalone/.next
           # Include tools directory for portable JRE and signer
           cp -r tools .next/standalone/tools
+          # Include base APK for Touchpoint builds (create nested structure)
+          mkdir -p .next/standalone/android/launcher/recovered
+          cp android/launcher/recovered/portalpay-unsigned.apk .next/standalone/android/launcher/recovered/
           cp -r .next/static .next/standalone/.next/static
           # Ensure start command is correct for Azure Service Plan
           cd .next/standalone
