@@ -25,13 +25,37 @@ function json(obj: any, init?: { status?: number; headers?: Record<string, strin
  * Falls back to portalpay APK if surge-touchpoint doesn't exist
  */
 async function getBaseTouchpointApk(brandKey: string = ""): Promise<Uint8Array | null> {
-    // ALWAYS start from the clean, lightweight local base.
-    // Do NOT fetch from Blob Storage, as that contains the *output* of previous builds (which might be bloated).
+    // 1. Fetch "Golden Master" Unsigned APK from Azure Blob Storage
+    // This file (base/portalpay-unsigned-master.apk) is the valid, clean, 278MB template.
+    // We fetching it from Azure to avoid storing 200MB+ files in GitHub.
+    const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
+    const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
 
-    // Default to portalpay-unsigned.apk (35MB) instead of signed (277MB)
-    // This ensures a fresh build and small file size.
+    if (conn && container) {
+        try {
+            const { BlobServiceClient } = await import("@azure/storage-blob");
+            const bsc = BlobServiceClient.fromConnectionString(conn);
+            const cont = bsc.getContainerClient(container);
+
+            // "Golden Master" path in blob storage
+            const masterBlobName = "base/portalpay-unsigned-master.apk";
+            const blob = cont.getBlockBlobClient(masterBlobName);
+
+            if (await blob.exists()) {
+                console.log(`[Touchpoint Build] Downloading Master Base from Azure: ${masterBlobName}`);
+                const buf = await blob.downloadToBuffer();
+                console.log(`[Touchpoint Build] Download complete (${buf.byteLength} bytes)`);
+                return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+            } else {
+                console.error(`[Touchpoint Build] CRITICAL: Master Base APK not found in Azure: ${masterBlobName}`);
+            }
+        } catch (e) {
+            console.error("[Touchpoint Build] Failed to fetch Master Base from Azure:", e);
+        }
+    }
+
+    // 2. Local fallback (Dev environment only)
     let rel = path.join("android", "launcher", "recovered", "portalpay-unsigned.apk");
-
     // Check if separate paynex base exists (if needed)
     if (brandKey === "paynex") {
         rel = path.join("android", "launcher", "recovered", "paynex-unsigned.apk");
@@ -39,22 +63,11 @@ async function getBaseTouchpointApk(brandKey: string = ""): Promise<Uint8Array |
 
     try {
         const filePath = path.join(process.cwd(), rel);
-        // Verify it exists
-        await fs.access(filePath);
         const data = await fs.readFile(filePath);
         console.log(`[Touchpoint Build] Using local base: ${rel} (${data.byteLength} bytes)`);
         return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
     } catch {
-        // Fallback to signed if unsigned missing (though unusual)
-        try {
-            const fallbackRel = rel.replace("unsigned", "signed");
-            const fd = await fs.readFile(path.join(process.cwd(), fallbackRel));
-            console.warn(`[Touchpoint Build] Unsigned base missing. Fallback to signed: ${fallbackRel}`);
-            return new Uint8Array(fd.buffer, fd.byteOffset, fd.byteLength);
-        } catch (e) {
-            console.error(`[Touchpoint Build] Failed to find base APK for ${brandKey}:`, e);
-            return null;
-        }
+        return null;
     }
 }
 

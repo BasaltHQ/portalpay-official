@@ -11,7 +11,6 @@
 !.yarn/versions
 /portal
 /android
-!/android/launcher/recovered/portalpay-unsigned.apk
 /mobile
 /dist
 
