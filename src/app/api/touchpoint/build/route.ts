@@ -402,8 +402,16 @@ async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpo
         if (iconBuffers[filename]) continue;
 
         // Filter out Adaptive Icons (XML) to force usage of our PNGs
-        if (filename.includes("mipmap-anydpi-v26") && filename.includes("ic_launcher")) {
-            console.log(`[Touchpoint Build] Removing adaptive icon to force PNG usage: ${filename}`);
+        // This includes:
+        // - res/mipmap-anydpi-v26/ic_launcher*.xml (adaptive icon definitions)
+        // - res/drawable/ic_launcher_foreground.xml (foreground layer)
+        // - res/drawable/ic_launcher_background.xml (background layer)
+        const isAdaptiveIcon = (
+            (filename.includes("mipmap-anydpi") && filename.includes("ic_launcher")) ||
+            (filename.includes("drawable") && filename.includes("ic_launcher") && filename.endsWith(".xml"))
+        );
+        if (isAdaptiveIcon) {
+            console.log(`[Touchpoint Build] Removing adaptive icon XML: ${filename}`);
             continue;
         }
 

@@ -4,7 +4,8 @@ import os
 # Check a signed output APK if it exists
 # Otherwise check the master
 candidates = [
-    "tmp/xoinpay-touchpoint-signed.apk",  # If downloaded
+    "tmp/deployed_xoinpay.apk",  # Downloaded from Azure
+    "tmp/xoinpay-touchpoint-signed.apk",
     "tmp/master.apk",
 ]
 
