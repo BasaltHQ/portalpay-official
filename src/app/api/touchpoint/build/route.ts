@@ -75,21 +75,27 @@ async function getBaseTouchpointApk(brandKey: string = ""): Promise<Uint8Array |
  * Modify touchpoint APK to set brand-specific endpoint
  * Similar to modifyApkEndpoint but for touchpoint configuration
  */
+import archiver from "archiver";
+import { Readable } from "node:stream";
+
+/**
+ * Modify touchpoint APK to set brand-specific endpoint
+ * Uses simple string replacement for wrap.html and robust re-zipping
+ * to ensure resources.arsc remains uncompressed (Android R+ requirement).
+ */
 async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpoint: string): Promise<Uint8Array> {
     const apkZip = await JSZip.loadAsync(apkBytes);
 
-    // Find and modify wrap.html in assets folder
+    // 1. Prepare Modified wrap.html content
     const wrapHtmlPath = "assets/wrap.html";
     const wrapHtmlFile = apkZip.file(wrapHtmlPath);
+    let modifiedWrapHtml: Buffer | null = null;
 
     if (wrapHtmlFile) {
         let content = await wrapHtmlFile.async("string");
 
-        // We want to replace the basic URL assignment with a robust installationId handler.
-        // Target: var qp = new URLSearchParams(...); var src = ...;
-        // matching the block to replace it entirely
+        // Target and replace content
         const targetBlockRegex = /var\s+qp\s*=\s*new\s*URLSearchParams\(window\.location\.search\);\s*var\s+src\s*=\s*qp\.get\s*\(\s*["']src["']\s*\)\s*\|\|\s*["'][^"']+["'];/;
-
         const injectionScript = `
         // --- INJECTED: Installation ID & Endpoint Logic ---
         var installationId = localStorage.getItem("installationId");
@@ -113,45 +119,65 @@ async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpo
         // --------------------------------------------------
         `;
 
-        // Attempt replacement
         if (targetBlockRegex.test(content)) {
             content = content.replace(targetBlockRegex, injectionScript);
             console.log(`[Touchpoint APK] Injected installationId logic and endpoint: ${endpoint}`);
         } else {
             console.warn("[Touchpoint APK] Could not find exact JS block to replace in wrap.html. Falling back to simple endpoint replacement.");
-            // Fallback: Just replace the URL string if the block match fails
-            content = content.replace(
-                /https:\/\/[a-z0-9-]+\.azurewebsites\.net/g,
-                endpoint
-            );
+            content = content.replace(/https:\/\/[a-z0-9-]+\.azurewebsites\.net/g, endpoint);
         }
-
-        apkZip.file(wrapHtmlPath, content);
+        modifiedWrapHtml = Buffer.from(content);
     } else {
         console.warn(`[Touchpoint APK] wrap.html not found at ${wrapHtmlPath}`);
     }
 
-    // Remove old signature files (Uber signer handles this, but good practice to clear)
-    const filesToRemove: string[] = [];
-    apkZip.forEach((relativePath) => {
-        if (relativePath.startsWith("META-INF/")) {
-            filesToRemove.push(relativePath);
-        }
+    // 2. Stream Re-Zipping using Archiver (Critical for APK alignment rules)
+    // Android R+ requires resources.arsc to be STORED (uncompressed) and 4-byte aligned.
+    // uber-apk-signer handles alignment, but we must ensure it is NOT compressed beforehand.
+    console.log("[Touchpoint APK] Re-packing APK with mixed compression (STORE resources.arsc)...");
+
+    // Create archiver instance
+    const archive = archiver("zip", { zlib: { level: 6 } });
+    const buffers: Buffer[] = [];
+
+    // Capture output
+    const outputPromise = new Promise<void>((resolve, reject) => {
+        archive.on("data", (data) => buffers.push(data));
+        archive.on("end", () => resolve());
+        archive.on("error", (err) => reject(err));
     });
-    for (const file of filesToRemove) {
-        apkZip.remove(file);
+
+    // Iterate files from source JSZip
+    const files = Object.keys(apkZip.files);
+    for (const filename of files) {
+        // Skip signatures (META-INF)
+        if (filename.startsWith("META-INF/")) continue;
+
+        // Skip wrap.html (we add modified version later)
+        if (filename === wrapHtmlPath) continue;
+
+        const file = apkZip.file(filename);
+        if (!file || file.dir) continue;
+
+        // Determine compression method
+        // resources.arsc MUST be STORED (store: true). Everything else DEFLATE (store: false).
+        const isArsc = filename === "resources.arsc" || filename.endsWith(".so");
+        const store = isArsc;
+
+        const content = await file.async("nodebuffer");
+        archive.append(content, { name: filename, store: store });
     }
-    console.log(`[Touchpoint APK] Removed ${filesToRemove.length} signature files`);
 
-    // Re-generate APK (unsigned)
-    // Note: JSZip GenerateAsync is slow but necessary to serialize the modified zip
-    const modifiedApkUnsigned = await apkZip.generateAsync({
-        type: "nodebuffer",
-        platform: "UNIX",
-        compression: "DEFLATE",
-        compressionOptions: { level: 6 }, // 6 provides good balance of speed vs size
-    });
+    // Add modified wrap.html
+    if (modifiedWrapHtml) {
+        archive.append(modifiedWrapHtml, { name: wrapHtmlPath }); // Default DEFLATE
+    }
 
+    // Finalize
+    await archive.finalize();
+    await outputPromise;
+
+    const modifiedApkUnsigned = Buffer.concat(buffers);
     console.log(`[Touchpoint APK] Generated unsigned APK (${modifiedApkUnsigned.byteLength} bytes). Starting signing process...`);
 
     // --- SIGNING PROCESS ---
@@ -166,24 +192,19 @@ async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpo
     await fs.writeFile(unsignedPath, modifiedApkUnsigned);
 
     // 2. Spawn Java Process to sign
-    // Requires java on PATH and tools/uber-apk-signer.jar
-    // Command: java -jar tools/uber-apk-signer.jar -a tmp/x.apk --allowResign
     const signerPath = path.join(process.cwd(), "tools", "uber-apk-signer.jar");
 
-    // Check if signer exists
     try {
         await fs.access(signerPath);
     } catch {
         console.error("[Touchpoint APK] CRITICAL: uber-apk-signer.jar not found in tools/. Returning unsigned APK.");
         await fs.unlink(unsignedPath).catch(() => { });
-        return new Uint8Array(modifiedApkUnsigned.buffer, modifiedApkUnsigned.byteOffset, modifiedApkUnsigned.byteLength);
+        return new Uint8Array(modifiedApkUnsigned);
     }
 
     // Determine Java Executable
     let javaPath = "java"; // Default to global PATH
     const localJrePath = path.join(process.cwd(), "tools", "jre-linux", "bin", "java");
-
-    // Check if local portable JRE exists (only on Linux/Production usually)
     try {
         await fs.access(localJrePath);
         javaPath = localJrePath;
@@ -208,7 +229,7 @@ async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpo
         child.stdout?.on("data", (d) => {
             const s = d.toString();
             stdout += s;
-            process.stdout.write(`[Signer STDOUT] ${s}`); // streaming log
+            process.stdout.write(`[Signer STDOUT] ${s}`);
         });
 
         child.stderr?.on("data", (d) => {
@@ -239,10 +260,9 @@ async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpo
         await fs.unlink(unsignedPath).catch(() => { });
         await fs.unlink(signedPath).catch(() => { });
 
-        return new Uint8Array(signedData.buffer, signedData.byteOffset, signedData.byteLength);
+        return new Uint8Array(signedData);
     } catch (e) {
         console.error("[Touchpoint APK] Failed to read signed APK:", e);
-        // Do NOT fallback to unsigned. Fail hard so we know.
         throw e;
     }
 }
