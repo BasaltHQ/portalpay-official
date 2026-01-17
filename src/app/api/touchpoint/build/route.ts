@@ -259,34 +259,26 @@ async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpo
     if (wrapHtmlFile) {
         let content = await wrapHtmlFile.async("string");
 
-        // Target: var qp = ...; var src = ...;
-        // Use a more relaxed regex to capture the block including newlines
-        // Note: [\s\S] matches any char including newlines
-        const targetBlockRegex = /var\s+qp\s*=\s*new\s*URLSearchParams\([^)]+\);[\s\S]*?var\s+src\s*=\s*qp\.get\([^)]+\)\s*\|\|\s*["'][^"']+["'];/;
-
-        const injectionScript = `
-        // --- INJECTED: Installation ID & Endpoint Logic ---
+        // Target: var src = qp.get("src") || "https://paynex.azurewebsites.net";
+        const targetString = 'var src = qp.get("src") || "https://paynex.azurewebsites.net";';
+        const replacementString = `
+        var src = qp.get("src") || "${endpoint}";
+        
+        // --- INJECTED: Installation ID & Debug Logic ---
         var installationId = localStorage.getItem("installationId");
         if (!installationId) {
-            // Generate UUID v4
-            installationId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+             installationId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
             localStorage.setItem("installationId", installationId);
         }
-
-        var qp = new URLSearchParams(window.location.search);
-        var src = qp.get("src") || "${endpoint}";
-
-        // Append installationId
         if (src) {
              var sep = src.indexOf("?") !== -1 ? "&" : "?";
              src += sep + "installationId=" + installationId;
         }
-        
-        // --- DEBUG OVERLAY ---
-        // Verify what is actually loading
+
+        // DEBUG OVERLAY
         var debugDiv = document.createElement("div");
         debugDiv.style.position = "fixed";
         debugDiv.style.bottom = "10px";
@@ -299,23 +291,24 @@ async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpo
         debugDiv.style.pointerEvents = "none";
         debugDiv.innerHTML = "<b>Target:</b> " + src + "<br><b>ID:</b> " + installationId;
         document.body.appendChild(debugDiv);
-        // ---------------------
-        // --------------------------------------------------
+        // ----------------------------------------------
         `;
 
-        // Debug log
-        console.log("[Touchpoint Build] wrap.html content snippet upstream:", content.substring(content.indexOf("var qp"), content.indexOf("var src") + 100));
-
-        if (targetBlockRegex.test(content)) {
-            content = content.replace(targetBlockRegex, injectionScript);
-            console.log(`[Touchpoint APK] Injected installationId logic via REGEX MATCH. Endpoint: ${endpoint}`);
+        if (content.includes(targetString)) {
+            content = content.replace(targetString, replacementString);
+            console.log(`[Touchpoint APK] Injected logic via EXACT STRING replacement. Endpoint: ${endpoint}`);
         } else {
-            console.warn("[Touchpoint APK] Regex failed. Fallback: String replacement.");
-            // Log what we missed
-            // Fallback
-            content = content.replace(/https:\/\/[a-z0-9-]+\.azurewebsites\.net/g, endpoint);
-            console.log(`[Touchpoint APK] Applied fallback replacement. Endpoint: ${endpoint}`);
+            // Fallback to regex if exact string mismatch (e.g. whitespace)
+            console.warn("[Touchpoint APK] Exact string match failed. Trying regex...");
+            const regex = /var\s+src\s*=\s*qp\.get\("src"\)\s*\|\|\s*"[^"]+";/;
+            if (regex.test(content)) {
+                content = content.replace(regex, replacementString);
+                console.log(`[Touchpoint APK] Injected logic via REGEX replacement.`);
+            } else {
+                console.warn("[Touchpoint APK] All replacements failed! App will load default site.");
+            }
         }
+
         modifiedWrapHtml = Buffer.from(content);
     } else {
         console.warn(`[Touchpoint APK] wrap.html not found at ${wrapHtmlPath}`);
@@ -366,8 +359,9 @@ async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpo
                     const resized = await sharp(sourceLogoBuffer).resize(size, size).toBuffer();
                     iconBuffers[`res/${folder}/ic_launcher.png`] = resized;
                     iconBuffers[`res/${folder}/ic_launcher_round.png`] = resized;
-                } catch (e) {
+                } catch (e: any) {
                     console.error(`[Touchpoint Build] Failed to resize icon for ${folder}:`, e);
+                    throw new Error(`[Touchpoint Build] specific icon generation failed: ${e.message}`);
                 }
             }
         } else if (!sourceLogoBuffer) {
@@ -406,6 +400,12 @@ async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpo
 
         // Skip icons if we have replacements
         if (iconBuffers[filename]) continue;
+
+        // Filter out Adaptive Icons (XML) to force usage of our PNGs
+        if (filename.includes("mipmap-anydpi-v26") && filename.includes("ic_launcher")) {
+            console.log(`[Touchpoint Build] Removing adaptive icon to force PNG usage: ${filename}`);
+            continue;
+        }
 
         const file = apkZip.file(filename);
         if (!file || file.dir) continue;
