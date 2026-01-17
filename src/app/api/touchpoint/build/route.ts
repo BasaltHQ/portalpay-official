@@ -7,11 +7,16 @@ import archiver from "archiver";
 import { Readable } from "node:stream";
 
 // Try to import sharp safely (it might not be available in all envs)
+// Try to import sharp safely (it might not be available in all envs)
 let sharp: any;
 try {
     sharp = require("sharp");
 } catch (e) {
-    console.warn("[Touchpoint Build] 'sharp' not found. Icon generation will be skipped.");
+    console.error("[Touchpoint Build] CRITICAL: 'sharp' dependency not found. APK icon generation will fail.", e);
+    // process.exit(1)? No, we are in a route.
+    // We will let it be undefined but fail later if we try to use it?
+    // Better to throw here if we want to enforce it.
+    // However, for now let's just log VERY LOUDLY.
 }
 
 export const runtime = "nodejs";
@@ -146,8 +151,11 @@ async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpo
     if (wrapHtmlFile) {
         let content = await wrapHtmlFile.async("string");
 
-        // Target and replace content
-        const targetBlockRegex = /var\s+qp\s*=\s*new\s*URLSearchParams\(window\.location\.search\);\s*var\s+src\s*=\s*qp\.get\s*\(\s*["']src["']\s*\)\s*\|\|\s*["'][^"']+["'];/;
+        // Target: var qp = ...; var src = ...;
+        // Use a more relaxed regex to capture the block including newlines
+        // Note: [\s\S] matches any char including newlines
+        const targetBlockRegex = /var\s+qp\s*=\s*new\s*URLSearchParams\([^)]+\);[\s\S]*?var\s+src\s*=\s*qp\.get\([^)]+\)\s*\|\|\s*["'][^"']+["'];/;
+
         const injectionScript = `
         // --- INJECTED: Installation ID & Endpoint Logic ---
         var installationId = localStorage.getItem("installationId");
@@ -171,12 +179,18 @@ async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpo
         // --------------------------------------------------
         `;
 
+        // Debug log
+        console.log("[Touchpoint Build] wrap.html content snippet upstream:", content.substring(content.indexOf("var qp"), content.indexOf("var src") + 100));
+
         if (targetBlockRegex.test(content)) {
             content = content.replace(targetBlockRegex, injectionScript);
-            console.log(`[Touchpoint APK] Injected installationId logic and endpoint: ${endpoint}`);
+            console.log(`[Touchpoint APK] Injected installationId logic via REGEX MATCH. Endpoint: ${endpoint}`);
         } else {
-            console.warn("[Touchpoint APK] Could not find exact JS block to replace in wrap.html. Falling back to simple endpoint replacement.");
+            console.warn("[Touchpoint APK] Regex failed. Fallback: String replacement.");
+            // Log what we missed
+            // Fallback
             content = content.replace(/https:\/\/[a-z0-9-]+\.azurewebsites\.net/g, endpoint);
+            console.log(`[Touchpoint APK] Applied fallback replacement. Endpoint: ${endpoint}`);
         }
         modifiedWrapHtml = Buffer.from(content);
     } else {
@@ -198,7 +212,11 @@ async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpo
                     console.error(`[Touchpoint Build] Failed to resize icon for ${folder}:`, e);
                 }
             }
+        } else {
+            console.warn(`[Touchpoint Build] No brand logo found for ${brandKey}. Skipping icon injection.`);
         }
+    } else {
+        throw new Error("[Touchpoint Build] 'sharp' dependency is missing. Cannot generate branded APK icons. Please ensure 'sharp' is installed and native binaries are present.");
     }
 
     // 3. Stream Re-Zipping using Archiver (Critical for APK alignment rules)
