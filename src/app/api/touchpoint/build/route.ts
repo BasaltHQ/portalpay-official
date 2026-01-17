@@ -244,294 +244,273 @@ async function getBrandLogoBuffer(brandKey: string): Promise<Buffer | null> {
 
 
 /**
- * Modify touchpoint APK to set brand-specific endpoint
- * Uses simple string replacement for wrap.html and robust re-zipping
- * to ensure resources.arsc remains uncompressed (Android R+ requirement).
+ * Modify touchpoint APK using apktool to decompile, modify Smali/XML, and rebuild.
+ * 
+ * This approach directly modifies:
+ * 1. MainActivity.smali - Changes hardcoded TARGET_URL to the brand endpoint
+ * 2. AndroidManifest.xml - Changes app label from "PortalPay" to brand name
+ * 3. Icon PNGs - Injects brand-specific icons
+ * 
+ * This replaces the broken wrap.html/iframe approach which didn't work with GeckoView.
  */
 async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpoint: string): Promise<Uint8Array> {
-    const apkZip = await JSZip.loadAsync(apkBytes);
+    const { execSync, spawn } = await import("child_process");
+    const os = await import("os");
 
-    // 1. Prepare Modified wrap.html content
-    const wrapHtmlPath = "assets/wrap.html";
-    const wrapHtmlFile = apkZip.file(wrapHtmlPath);
-    let modifiedWrapHtml: Buffer | null = null;
-
-    if (wrapHtmlFile) {
-        let content = await wrapHtmlFile.async("string");
-
-        // Target: var src = qp.get("src") || "https://paynex.azurewebsites.net";
-        const targetString = 'var src = qp.get("src") || "https://paynex.azurewebsites.net";';
-        const replacementString = `
-        var src = qp.get("src") || "${endpoint}";
-        
-        // --- INJECTED: Installation ID & Debug Logic ---
-        var installationId = localStorage.getItem("installationId");
-        if (!installationId) {
-             installationId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-            localStorage.setItem("installationId", installationId);
-        }
-        if (src) {
-             var sep = src.indexOf("?") !== -1 ? "&" : "?";
-             src += sep + "installationId=" + installationId;
-        }
-
-        // DEBUG OVERLAY
-        var debugDiv = document.createElement("div");
-        debugDiv.style.position = "fixed";
-        debugDiv.style.bottom = "10px";
-        debugDiv.style.left = "10px";
-        debugDiv.style.backgroundColor = "rgba(0,0,0,0.8)";
-        debugDiv.style.color = "#0f0";
-        debugDiv.style.padding = "10px";
-        debugDiv.style.fontSize = "12px";
-        debugDiv.style.zIndex = "99999";
-        debugDiv.style.pointerEvents = "none";
-        debugDiv.innerHTML = "<b>Target:</b> " + src + "<br><b>ID:</b> " + installationId;
-        document.body.appendChild(debugDiv);
-        // ----------------------------------------------
-        `;
-
-        if (content.includes(targetString)) {
-            content = content.replace(targetString, replacementString);
-            console.log(`[Touchpoint APK] Injected logic via EXACT STRING replacement. Endpoint: ${endpoint}`);
-        } else {
-            // Fallback to regex if exact string mismatch (e.g. whitespace)
-            console.warn("[Touchpoint APK] Exact string match failed. Trying regex...");
-            const regex = /var\s+src\s*=\s*qp\.get\("src"\)\s*\|\|\s*"[^"]+";/;
-            if (regex.test(content)) {
-                content = content.replace(regex, replacementString);
-                console.log(`[Touchpoint APK] Injected logic via REGEX replacement.`);
-            } else {
-                console.warn("[Touchpoint APK] All replacements failed! App will load default site.");
-            }
-        }
-
-        modifiedWrapHtml = Buffer.from(content);
-    } else {
-        console.warn(`[Touchpoint APK] wrap.html not found at ${wrapHtmlPath}`);
-    }
-
-    // 2. Prepare Brand Icons
-    // Priority: 
-    // 1. Remote Blob Zip (icons.zip)
-    // 2. Local Folder (res/)
-    // 3. Remote Blob Logo (logo.png) -> Sharp
-    // 4. Local File (logo.png) -> Sharp
-
-    let iconBuffers: Record<string, Buffer> = {};
-    let sourceLogoBuffer: Buffer | null = null;
-
-    // Check Remote Assets first
-    const remoteAssets = await getBrandAssetsFromBlob(brandKey);
-    if (remoteAssets?.icons) {
-        console.log("[Touchpoint Build] Using remote pre-generated icons.");
-        iconBuffers = remoteAssets.icons;
-    }
-
-    // If no remote icons, check local folder
-    if (Object.keys(iconBuffers).length === 0) {
-        const folderIcons = await getBrandIconsFromFolder(brandKey);
-        if (folderIcons) {
-            console.log("[Touchpoint Build] Using local pre-generated icons.");
-            iconBuffers = folderIcons;
-        }
-    }
-
-    // If still no icons, we need to generate them via Sharp
-    if (Object.keys(iconBuffers).length === 0) {
-        // Did we get a remote logo?
-        if (remoteAssets?.logo) {
-            sourceLogoBuffer = remoteAssets.logo;
-            console.log("[Touchpoint Build] Using remote logo for generation.");
-        } else {
-            // Check local logo
-            sourceLogoBuffer = await getBrandLogoBuffer(brandKey);
-            if (sourceLogoBuffer) console.log("[Touchpoint Build] Using local logo for generation.");
-        }
-
-        if (sourceLogoBuffer && sharp) {
-            console.log("[Touchpoint Build] Generating brand icons from logo...");
-            for (const [folder, size] of Object.entries(ICON_SIZES)) {
-                try {
-                    const resized = await sharp(sourceLogoBuffer).resize(size, size).toBuffer();
-                    iconBuffers[`res/${folder}/ic_launcher.png`] = resized;
-                    iconBuffers[`res/${folder}/ic_launcher_round.png`] = resized;
-                } catch (e: any) {
-                    console.error(`[Touchpoint Build] Failed to resize icon for ${folder}:`, e);
-                    throw new Error(`[Touchpoint Build] specific icon generation failed: ${e.message}`);
-                }
-            }
-        } else if (!sourceLogoBuffer) {
-            console.warn(`[Touchpoint Build] No brand logo found (remote or local). Skipping icon injection.`);
-        } else if (!sharp) {
-            // We have a logo but no sharp
-            // Only throw if we strictly need generation
-            throw new Error("[Touchpoint Build] 'sharp' dependency is missing AND no pre-generated icons found. Cannot brand this APK.");
-        }
-    }
-
-    // 3. Stream Re-Zipping using Archiver (Critical for APK alignment rules)
-    // Android R+ requires resources.arsc to be STORED (uncompressed) and 4-byte aligned.
-    // uber-apk-signer handles alignment, but we must ensure it is NOT compressed beforehand.
-    console.log("[Touchpoint APK] Re-packing APK with mixed compression (STORE resources.arsc)...");
-
-    // Create archiver instance
-    const archive = archiver("zip", { zlib: { level: 6 } });
-    const buffers: Buffer[] = [];
-
-    // Capture output
-    const outputPromise = new Promise<void>((resolve, reject) => {
-        archive.on("data", (data) => buffers.push(data));
-        archive.on("end", () => resolve());
-        archive.on("error", (err) => reject(err));
-    });
-
-    // Iterate files from source JSZip
-    const files = Object.keys(apkZip.files);
-    for (const filename of files) {
-        // Skip signatures (META-INF)
-        if (filename.startsWith("META-INF/")) continue;
-
-        // Skip wrap.html (we add modified version later)
-        if (filename === wrapHtmlPath) continue;
-
-        // Skip icons if we have replacements
-        if (iconBuffers[filename]) continue;
-
-        // Filter out Adaptive Icons (XML) to force usage of our PNGs
-        // This includes:
-        // - res/mipmap-anydpi-v26/ic_launcher*.xml (adaptive icon definitions)
-        // - res/drawable/ic_launcher_foreground.xml (foreground layer)
-        // - res/drawable/ic_launcher_background.xml (background layer)
-        const isAdaptiveIcon = (
-            (filename.includes("mipmap-anydpi") && filename.includes("ic_launcher")) ||
-            (filename.includes("drawable") && filename.includes("ic_launcher") && filename.endsWith(".xml"))
-        );
-        if (isAdaptiveIcon) {
-            console.log(`[Touchpoint Build] Removing adaptive icon XML: ${filename}`);
-            continue;
-        }
-
-        const file = apkZip.file(filename);
-        if (!file || file.dir) continue;
-
-        // Determine compression method
-        // resources.arsc MUST be STORED (store: true). Everything else DEFLATE (store: false).
-        const isArsc = filename === "resources.arsc" || filename.endsWith(".so");
-        const store = isArsc;
-
-        if (store) {
-            console.log(`[Touchpoint Build] Storing uncompressed: ${filename}`);
-        }
-
-        const content = await file.async("nodebuffer");
-        archive.append(content, { name: filename, store: store });
-    }
-
-    // Add modified wrap.html
-    if (modifiedWrapHtml) {
-        archive.append(modifiedWrapHtml, { name: wrapHtmlPath }); // Default DEFLATE
-    }
-
-    // Add injected icons
-    for (const [path, buffer] of Object.entries(iconBuffers)) {
-        archive.append(buffer, { name: path });
-    }
-
-    // Finalize
-    await archive.finalize();
-    await outputPromise;
-
-    const modifiedApkUnsigned = Buffer.concat(buffers);
-    console.log(`[Touchpoint APK] Generated unsigned APK (${modifiedApkUnsigned.byteLength} bytes). Starting signing process...`);
-
-    // --- SIGNING PROCESS ---
-    // 1. Write temp unsigned APK
-    const tempDir = path.join(process.cwd(), "tmp");
+    // Create unique temp directory for this build
+    const buildId = `${brandKey}-${Date.now()}`;
+    const tempDir = path.join(os.tmpdir(), `touchpoint-${buildId}`);
     await fs.mkdir(tempDir, { recursive: true });
-    const tempId = Math.random().toString(36).substring(7);
-    const unsignedPath = path.join(tempDir, `${brandKey}-${tempId}-unsigned.apk`);
-    // uber-apk-signer intelligently strips "-unsigned" before appending suffixes
-    const signedPath = path.join(tempDir, `${brandKey}-${tempId}-aligned-debugSigned.apk`);
 
-    await fs.writeFile(unsignedPath, modifiedApkUnsigned);
+    const baseApkPath = path.join(tempDir, "base.apk");
+    const decompDir = path.join(tempDir, "decompiled");
+    const rebuiltApkPath = path.join(tempDir, "rebuilt.apk");
+    const signedPath = path.join(tempDir, `${brandKey}-signed.apk`);
 
-    // 2. Spawn Java Process to sign
+    // Tool paths
+    const apktoolPath = path.join(process.cwd(), "tools", "apktool.jar");
     const signerPath = path.join(process.cwd(), "tools", "uber-apk-signer.jar");
 
-    try {
-        await fs.access(signerPath);
-    } catch {
-        console.error("[Touchpoint APK] CRITICAL: uber-apk-signer.jar not found in tools/. Returning unsigned APK.");
-        await fs.unlink(unsignedPath).catch(() => { });
-        return new Uint8Array(modifiedApkUnsigned);
-    }
-
-    // Determine Java Executable
-    let javaPath = "java"; // Default to global PATH
+    // Determine Java executable
+    let javaPath = "java";
     const localJrePath = path.join(process.cwd(), "tools", "jre-linux", "bin", "java");
     try {
         await fs.access(localJrePath);
         javaPath = localJrePath;
-        console.log(`[Touchpoint APK] Using portable JRE: ${javaPath}`);
+        console.log(`[Touchpoint Build] Using portable JRE: ${javaPath}`);
     } catch {
-        console.log("[Touchpoint APK] Portable JRE not found, using global 'java'");
+        console.log("[Touchpoint Build] Using global 'java'");
     }
 
-    // 3. Spawn Java Process to sign
-    console.log(`[Touchpoint APK] Executing signer: ${javaPath} -jar ${signerPath} -a ${unsignedPath} --allowResign`);
-
-    const { spawn } = await import("child_process");
-
-    await new Promise<void>((resolve, reject) => {
-        const child = spawn(javaPath, ["-jar", signerPath, "-a", unsignedPath, "--allowResign"], {
-            stdio: "pipe", // Capture stdio
-        });
-
-        let stdout = "";
-        let stderr = "";
-
-        child.stdout?.on("data", (d) => {
-            const s = d.toString();
-            stdout += s;
-            process.stdout.write(`[Signer STDOUT] ${s}`);
-        });
-
-        child.stderr?.on("data", (d) => {
-            const s = d.toString();
-            stderr += s;
-            process.stderr.write(`[Signer STDERR] ${s}`);
-        });
-
-        child.on("close", (code) => {
-            if (code === 0) resolve();
-            else reject(new Error(`Signer process exited with code ${code}.\nSTDERR: ${stderr}\nSTDOUT: ${stdout}`));
-        });
-
-        child.on("error", (err) => reject(err));
-    });
-
-    // 4. Read signed APK
-    console.log("[Touchpoint APK] Signing complete. Reading output...");
     try {
-        if (!await fs.stat(signedPath).catch(() => false)) {
-            throw new Error("Signed output file verification failed: File does not exist: " + signedPath);
+        // 1. Write base APK to disk
+        console.log(`[Touchpoint Build] Writing base APK (${apkBytes.length} bytes) to ${baseApkPath}`);
+        await fs.writeFile(baseApkPath, apkBytes);
+
+        // 2. Decompile with apktool
+        console.log(`[Touchpoint Build] Decompiling APK with apktool...`);
+        try {
+            execSync(`"${javaPath}" -jar "${apktoolPath}" d -f -o "${decompDir}" "${baseApkPath}"`, {
+                stdio: "pipe",
+                timeout: 180000,
+                maxBuffer: 50 * 1024 * 1024 // 50MB buffer
+            });
+        } catch (e: any) {
+            console.error(`[Touchpoint Build] Decompilation failed:`, e.stderr?.toString() || e.message);
+            throw new Error(`APK decompilation failed: ${e.message}`);
+        }
+        console.log(`[Touchpoint Build] Decompilation complete.`);
+
+        // 3. Modify MainActivity.smali - Replace TARGET_URL
+        const smaliPath = path.join(decompDir, "smali", "com", "pos", "valorpay", "portalpay", "MainActivity.smali");
+        try {
+            let smaliContent = await fs.readFile(smaliPath, "utf-8");
+
+            // The TARGET_URL is: const-string v0, "https://paynex.azurewebsites.net?scale=0.75"
+            const urlWithScale = `${endpoint}?scale=0.75`;
+
+            // Try exact match first
+            const oldUrlExact = 'const-string v0, "https://paynex.azurewebsites.net?scale=0.75"';
+            const newUrlString = `const-string v0, "${urlWithScale}"`;
+
+            if (smaliContent.includes(oldUrlExact)) {
+                smaliContent = smaliContent.replace(oldUrlExact, newUrlString);
+                console.log(`[Touchpoint Build] Replaced TARGET_URL (exact match): ${urlWithScale}`);
+            } else {
+                // Try generic pattern
+                const genericPattern = /const-string v0, "https:\/\/[a-zA-Z0-9.-]+\.azurewebsites\.net[^"]*"/g;
+                if (genericPattern.test(smaliContent)) {
+                    smaliContent = smaliContent.replace(genericPattern, newUrlString);
+                    console.log(`[Touchpoint Build] Replaced TARGET_URL (generic match): ${urlWithScale}`);
+                } else {
+                    console.warn(`[Touchpoint Build] WARNING: Could not find TARGET_URL pattern in MainActivity.smali!`);
+                }
+            }
+            await fs.writeFile(smaliPath, smaliContent);
+        } catch (e: any) {
+            console.error(`[Touchpoint Build] Failed to modify MainActivity.smali:`, e);
+            // Continue anyway - URL might already be correct
         }
 
-        const signedData = await fs.readFile(signedPath);
-        console.log(`[Touchpoint APK] Successfully read signed APK (${signedData.byteLength} bytes)`);
+        // 4. Modify AndroidManifest.xml - Change app label
+        const manifestPath = path.join(decompDir, "AndroidManifest.xml");
+        try {
+            let manifestContent = await fs.readFile(manifestPath, "utf-8");
 
-        // Cleanup
-        await fs.unlink(unsignedPath).catch(() => { });
-        await fs.unlink(signedPath).catch(() => { });
+            // Change app label from PortalPay to brand name
+            const brandDisplayName = brandKey.charAt(0).toUpperCase() + brandKey.slice(1);
+            manifestContent = manifestContent.replace(/android:label="PortalPay"/g, `android:label="${brandDisplayName}"`);
+            console.log(`[Touchpoint Build] Changed app label to: ${brandDisplayName}`);
+            await fs.writeFile(manifestPath, manifestContent);
+        } catch (e: any) {
+            console.error(`[Touchpoint Build] Failed to modify AndroidManifest.xml:`, e);
+        }
+
+        // 5. Inject brand icons
+        let iconBuffers: Record<string, Buffer> = {};
+
+        const remoteAssets = await getBrandAssetsFromBlob(brandKey);
+        if (remoteAssets?.icons) {
+            console.log("[Touchpoint Build] Using remote pre-generated icons.");
+            iconBuffers = remoteAssets.icons;
+        }
+
+        if (Object.keys(iconBuffers).length === 0) {
+            const folderIcons = await getBrandIconsFromFolder(brandKey);
+            if (folderIcons) {
+                console.log("[Touchpoint Build] Using local pre-generated icons.");
+                iconBuffers = folderIcons;
+            }
+        }
+
+        if (Object.keys(iconBuffers).length === 0) {
+            let sourceLogoBuffer: Buffer | null = null;
+
+            if (remoteAssets?.logo) {
+                sourceLogoBuffer = remoteAssets.logo;
+                console.log("[Touchpoint Build] Using remote logo for generation.");
+            } else {
+                sourceLogoBuffer = await getBrandLogoBuffer(brandKey);
+                if (sourceLogoBuffer) console.log("[Touchpoint Build] Using local logo for generation.");
+            }
+
+            if (sourceLogoBuffer && sharp) {
+                console.log("[Touchpoint Build] Generating brand icons from logo...");
+                for (const [folder, size] of Object.entries(ICON_SIZES)) {
+                    try {
+                        const resized = await sharp(sourceLogoBuffer).resize(size, size).toBuffer();
+                        iconBuffers[`res/${folder}/ic_launcher.png`] = resized;
+                        iconBuffers[`res/${folder}/ic_launcher_round.png`] = resized;
+                    } catch (e: any) {
+                        console.error(`[Touchpoint Build] Failed to resize icon for ${folder}:`, e);
+                    }
+                }
+            }
+        }
+
+        // Write icon files to decompiled directory
+        for (const [iconPath, buffer] of Object.entries(iconBuffers)) {
+            const fullPath = path.join(decompDir, iconPath);
+            await fs.mkdir(path.dirname(fullPath), { recursive: true });
+            await fs.writeFile(fullPath, buffer);
+            console.log(`[Touchpoint Build] Wrote icon: ${iconPath}`);
+        }
+
+        // 6. Remove adaptive icon XMLs
+        const adaptiveIconPaths = [
+            path.join(decompDir, "res", "mipmap-anydpi-v26", "ic_launcher.xml"),
+            path.join(decompDir, "res", "mipmap-anydpi-v26", "ic_launcher_round.xml"),
+            path.join(decompDir, "res", "drawable", "ic_launcher_foreground.xml"),
+        ];
+        for (const p of adaptiveIconPaths) {
+            try {
+                await fs.unlink(p);
+                console.log(`[Touchpoint Build] Removed adaptive icon: ${path.basename(p)}`);
+            } catch {
+                // File doesn't exist
+            }
+        }
+
+        // 7. Rebuild with apktool
+        console.log(`[Touchpoint Build] Rebuilding APK with apktool...`);
+        try {
+            execSync(`"${javaPath}" -jar "${apktoolPath}" b -o "${rebuiltApkPath}" "${decompDir}"`, {
+                stdio: "pipe",
+                timeout: 300000,
+                maxBuffer: 50 * 1024 * 1024
+            });
+        } catch (e: any) {
+            console.error(`[Touchpoint Build] Full rebuild failed:`, e.stderr?.toString() || e.message);
+
+            // --- FALLBACK: Smali-Only Build (No Resources) ---
+            // If resource rebuilding failed (common with aapt issues), we try again by IGNORING resources.
+            // This sacrifices the App Name/Icon changes but SAVES the Critical 403 Fix.
+            console.log("[Touchpoint Build] Attempting Fallback: Smali-Only Build (Fixing 403, skipping cosmetics)...");
+
+            // Cleanup
+            await fs.rm(decompDir, { recursive: true, force: true });
+
+            // 1. Decompile with -r (No Resources)
+            execSync(`"${javaPath}" -jar "${apktoolPath}" d -r -f -o "${decompDir}" "${baseApkPath}"`, {
+                stdio: "pipe", timeout: 180000
+            });
+
+            // 2. Modify Smali (Same logic as before)
+            const smaliPathFallback = path.join(decompDir, "smali", "com", "pos", "valorpay", "portalpay", "MainActivity.smali");
+            let smaliContent = await fs.readFile(smaliPathFallback, "utf-8");
+            const urlWithScale = `${endpoint}?scale=0.75`;
+            const oldUrlExact = 'const-string v0, "https://paynex.azurewebsites.net?scale=0.75"';
+            const newUrlString = `const-string v0, "${urlWithScale}"`;
+
+            if (smaliContent.includes(oldUrlExact)) {
+                smaliContent = smaliContent.replace(oldUrlExact, newUrlString);
+                console.log(`[Touchpoint Build] Fallback: Replaced TARGET_URL (exact match).`);
+            } else {
+                const genericPattern = /const-string v0, "https:\/\/[a-zA-Z0-9.-]+\.azurewebsites\.net[^"]*"/g;
+                if (genericPattern.test(smaliContent)) {
+                    smaliContent = smaliContent.replace(genericPattern, newUrlString);
+                    console.log(`[Touchpoint Build] Fallback: Replaced TARGET_URL (generic match).`);
+                }
+            }
+            await fs.writeFile(smaliPathFallback, smaliContent);
+
+            // 3. Rebuild (No Resources)
+            console.log(`[Touchpoint Build] Rebuilding Fallback APK...`);
+            execSync(`"${javaPath}" -jar "${apktoolPath}" b -o "${rebuiltApkPath}" "${decompDir}"`, {
+                stdio: "pipe", timeout: 180000
+            });
+            console.log(`[Touchpoint Build] Fallback Rebuild Complete.`);
+        }
+        console.log(`[Touchpoint Build] Rebuild complete.`);
+
+        // 8. Sign with uber-apk-signer
+        console.log(`[Touchpoint Build] Signing APK...`);
+        try {
+            await fs.access(signerPath);
+        } catch {
+            console.error("[Touchpoint Build] uber-apk-signer.jar not found. Returning unsigned APK.");
+            const unsignedData = await fs.readFile(rebuiltApkPath);
+            return new Uint8Array(unsignedData);
+        }
+
+        await new Promise<void>((resolve, reject) => {
+            const child = spawn(javaPath, ["-jar", signerPath, "-a", rebuiltApkPath, "--allowResign", "-o", tempDir], {
+                stdio: "pipe",
+            });
+
+            let stderr = "";
+            child.stderr?.on("data", (d) => { stderr += d.toString(); });
+            child.on("close", (code) => {
+                if (code === 0) resolve();
+                else reject(new Error(`Signer exited with code ${code}: ${stderr}`));
+            });
+            child.on("error", reject);
+        });
+
+        // Find the signed output file
+        const files = await fs.readdir(tempDir);
+        const signedFile = files.find(f => f.includes("aligned") && f.includes("Signed") && f.endsWith(".apk"));
+
+        if (!signedFile) {
+            console.error("[Touchpoint Build] Could not find signed APK output.");
+            const unsignedData = await fs.readFile(rebuiltApkPath);
+            return new Uint8Array(unsignedData);
+        }
+
+        const finalSignedPath = path.join(tempDir, signedFile);
+        const signedData = await fs.readFile(finalSignedPath);
+        console.log(`[Touchpoint Build] Successfully created signed APK (${signedData.length} bytes)`);
 
         return new Uint8Array(signedData);
-    } catch (e) {
-        console.error("[Touchpoint APK] Failed to read signed APK:", e);
-        throw e;
+
+    } catch (error: any) {
+        console.error(`[Touchpoint Build] APK modification failed:`, error);
+        throw new Error(`APK modification failed: ${error.message}`);
+    } finally {
+        // Cleanup temp directory
+        try {
+            await fs.rm(tempDir, { recursive: true, force: true });
+        } catch { }
     }
 }
 
