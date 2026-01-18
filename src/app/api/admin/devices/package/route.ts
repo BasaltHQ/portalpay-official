@@ -302,60 +302,21 @@ async function modifyApkEndpoint(apkBytes: Uint8Array, endpoint: string): Promis
     console.warn(`[APK] wrap.html not found at ${wrapHtmlPath}`);
   }
 
-  // Remove old signature files - APK will be unsigned after modification
-  const filesToRemove: string[] = [];
-  apkZip.forEach((relativePath) => {
-    if (relativePath.startsWith("META-INF/")) {
-      filesToRemove.push(relativePath);
-    }
-  });
-  for (const file of filesToRemove) {
-    apkZip.remove(file);
-  }
-  console.log(`[APK] Removed ${filesToRemove.length} signature files from META-INF/`);
+  // NOTE: We preserve META-INF signature files - the original APK is already properly signed and aligned
+  // Removing them would require re-signing with JSZip which loses 4-byte alignment (breaks Android R+)
 
-  // Re-generate APK with proper per-file compression
-  // IMPORTANT: resources.arsc MUST be uncompressed for Android R+ (API 30+)
-  const mustBeUncompressed = (filePath: string): boolean => {
-    const name = filePath.split("/").pop() || "";
-    // resources.arsc MUST be uncompressed and aligned for Android R+
-    if (name === "resources.arsc") return true;
-    // .so files CAN be compressed - Android extracts them at install time
-    return false;
-  };
+  // Generate APK directly from modified apkZip
+  // IMPORTANT: We don't rebuild file-by-file anymore - that loses alignment!
+  // JSZip's generateAsync preserves the original compression method for unmodified files
+  console.log(`[APK] Generating modified APK (preserving original structure)...`);
 
-  // Create a new ZIP with proper per-file compression settings
-  const newApkZip = new JSZip();
-
-  // Copy all files with appropriate compression
-  const allFiles: { path: string; file: JSZip.JSZipObject }[] = [];
-  apkZip.forEach((relativePath, file) => {
-    if (!file.dir) {
-      allFiles.push({ path: relativePath, file });
-    }
-  });
-
-  // Sequential processing for deterministic ZIP generation
-  // (Fixes potential race/memory issues with JSZip on large files)
-  let uncompressedCount = 0;
-  for (const { path: filePath, file } of allFiles) {
-    const content = await file.async("nodebuffer");
-    const compress = !mustBeUncompressed(filePath);
-
-    if (!compress) uncompressedCount++;
-
-    newApkZip.file(filePath, content, {
-      compression: compress ? "DEFLATE" : "STORE",
-      compressionOptions: compress ? { level: 6 } : undefined,
-    });
-  }
-  console.log(`[APK] ${uncompressedCount} files stored uncompressed (resources.arsc)`);
-
-  const modifiedApk = await newApkZip.generateAsync({
+  const modifiedApk = await apkZip.generateAsync({
     type: "nodebuffer",
     platform: "UNIX",
+    // Let JSZip use original compression for each file
   });
 
+  console.log(`[APK] Modified APK generated (${modifiedApk.byteLength} bytes)`);
   return new Uint8Array(modifiedApk.buffer, modifiedApk.byteOffset, modifiedApk.byteLength);
 }
 
@@ -619,15 +580,8 @@ async function generateAndUploadPackage(
     }
   }
 
-  // Sign the APK (required for installation on devices)
-  try {
-    console.log(`[APK] Signing APK for ${brandKey}...`);
-    finalApkBytes = await signApk(finalApkBytes, brandKey);
-    console.log(`[APK] APK signed successfully (${finalApkBytes.byteLength} bytes)`);
-  } catch (e: any) {
-    console.error(`[APK] Failed to sign APK: ${e?.message}`);
-    // Continue with unsigned APK if signing fails
-  }
+  // NOTE: We skip signApk - the original APK is already properly signed and 4-byte aligned
+  // Re-signing with JSZip would break alignment (causes Android R+ install failure)
 
   // Create ZIP
   const zip = new JSZip();
@@ -982,5 +936,57 @@ export async function GET(req: NextRequest) {
       exists: false,
       error: e?.message || "Failed to check package"
     });
+  }
+}
+
+/**
+ * DELETE /api/admin/devices/package?brandKey=xoinpay
+ * 
+ * Delete a package from blob storage.
+ * This allows regenerating a fresh package.
+ */
+export async function DELETE(req: NextRequest) {
+  // Auth: Admin or Superadmin only
+  try {
+    const c = await requireThirdwebAuth(req);
+    const roles = Array.isArray(c?.roles) ? c.roles : [];
+    if (!roles.includes("admin") && !roles.includes("superadmin")) {
+      return json({ error: "forbidden" }, { status: 403 });
+    }
+  } catch {
+    return json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const url = new URL(req.url);
+  const brandKey = url.searchParams.get("brandKey")?.toLowerCase().trim();
+
+  if (!brandKey) {
+    return json({ error: "brandKey_required" }, { status: 400 });
+  }
+
+  const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
+  const container = String(process.env.PP_PACKAGES_CONTAINER || "device-packages").trim();
+
+  if (!conn) {
+    return json({ error: "storage_not_configured" }, { status: 500 });
+  }
+
+  try {
+    const { BlobServiceClient } = await import("@azure/storage-blob");
+    const bsc = BlobServiceClient.fromConnectionString(conn);
+    const cont = bsc.getContainerClient(container);
+    const blobName = `${brandKey}/${brandKey}-installer.zip`;
+    const blob = cont.getBlockBlobClient(blobName);
+
+    if (!(await blob.exists())) {
+      return json({ deleted: false, error: "Package not found", brandKey });
+    }
+
+    await blob.delete();
+    console.log(`[APK] Deleted package: ${blobName}`);
+
+    return json({ deleted: true, brandKey, blobName });
+  } catch (e: any) {
+    return json({ deleted: false, error: e?.message || "Failed to delete package" }, { status: 500 });
   }
 }
