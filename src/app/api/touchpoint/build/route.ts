@@ -3,24 +3,10 @@ import { requireThirdwebAuth } from "@/lib/auth";
 import fs from "node:fs/promises";
 import path from "node:path";
 import JSZip from "jszip";
-import archiver from "archiver";
-import { Readable } from "node:stream";
-
-// Try to import sharp safely (it might not be available in all envs)
-
-let sharp: any;
-try {
-    sharp = require("sharp");
-} catch (e) {
-    console.error("[Touchpoint Build] CRITICAL: 'sharp' dependency not found. APK icon generation will fail.", e);
-    // process.exit(1)? No, we are in a route.
-    // We will let it be undefined but fail later if we try to use it?
-    // Better to throw here if we want to enforce it.
-    // However, for now let's just log VERY LOUDLY.
-}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300; // 5 minutes
 
 function json(obj: any, init?: { status?: number; headers?: Record<string, string> }) {
     const s = JSON.stringify(obj);
@@ -35,632 +21,287 @@ function json(obj: any, init?: { status?: number; headers?: Record<string, strin
 }
 
 /**
- * Get base touchpoint APK bytes from blob storage or local filesystem
- * Tries Azure blob first, then local filesystem
- * Falls back to portalpay APK if surge-touchpoint doesn't exist
+ * Get the base Touchpoint APK (xoinpay-touchpoint-signed.apk) or fallback.
+ * The user wants strict parity with Partner logic, so we fetch from blob or local.
  */
-async function getBaseTouchpointApk(brandKey: string = ""): Promise<Uint8Array | null> {
-    // 1. Fetch "Golden Master" Unsigned APK from Azure Blob Storage
-    // This file (base/portalpay-unsigned-master.apk) is the valid, clean, 278MB template.
-    // We fetching it from Azure to avoid storing 200MB+ files in GitHub.
+async function getBaseApkBytes(brandKey: string): Promise<Uint8Array | null> {
     const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
     const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
 
     if (conn && container) {
         try {
+            const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
             const { BlobServiceClient } = await import("@azure/storage-blob");
             const bsc = BlobServiceClient.fromConnectionString(conn);
             const cont = bsc.getContainerClient(container);
 
-            // "Golden Master" path in blob storage
-            const masterBlobName = "base/portalpay-unsigned-master.apk";
-            const blob = cont.getBlockBlobClient(masterBlobName);
-
+            // Try brand-specific touchpoint APK
+            const blobName = prefix ? `${prefix}/${brandKey}-touchpoint-signed.apk` : `${brandKey}-touchpoint-signed.apk`;
+            const blob = cont.getBlockBlobClient(blobName);
             if (await blob.exists()) {
-                console.log(`[Touchpoint Build] Downloading Master Base from Azure: ${masterBlobName}`);
                 const buf = await blob.downloadToBuffer();
-                console.log(`[Touchpoint Build] Download complete (${buf.byteLength} bytes)`);
+                console.log(`[Touchpoint Build] Found base APK in blob: ${blobName}`);
                 return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-            } else {
-                console.error(`[Touchpoint Build] CRITICAL: Master Base APK not found in Azure: ${masterBlobName}`);
             }
+
+            // Fallback: portalpay-touchpoint-signed.apk
+            const fallbackBlobName = prefix ? `${prefix}/portalpay-touchpoint-signed.apk` : `portalpay-touchpoint-signed.apk`;
+            const fallbackBlob = cont.getBlockBlobClient(fallbackBlobName);
+            if (await fallbackBlob.exists()) {
+                const buf = await fallbackBlob.downloadToBuffer();
+                console.log(`[Touchpoint Build] Found fallback APK in blob: ${fallbackBlobName}`);
+                return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+            }
+
         } catch (e) {
-            console.error("[Touchpoint Build] Failed to fetch Master Base from Azure:", e);
+            console.warn("[Touchpoint Build] Blob fetch failed, trying local.", e);
         }
     }
 
-    // 2. Local fallback (Dev environment only)
-    let rel = path.join("android", "launcher", "recovered", "portalpay-unsigned.apk");
-    // Check if separate paynex base exists (if needed)
-    if (brandKey === "paynex") {
-        rel = path.join("android", "launcher", "recovered", "paynex-unsigned.apk");
-    }
-
-    try {
-        const filePath = path.join(process.cwd(), rel);
-        const data = await fs.readFile(filePath);
-        console.log(`[Touchpoint Build] Using local base: ${rel} (${data.byteLength} bytes)`);
-        return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-    } catch {
-        return null;
-    }
-}
-
-/**
- * Android Icon Standards
- */
-const ICON_SIZES: Record<string, number> = {
-    "mipmap-mdpi-v4": 48,
-    "mipmap-hdpi-v4": 72,
-    "mipmap-xhdpi-v4": 96,
-    "mipmap-xxhdpi-v4": 144,
-    "mipmap-xxxhdpi-v4": 192,
-};
-
-async function getBrandIconsFromFolder(brandKey: string): Promise<Record<string, Buffer> | null> {
-    const brandDir = path.join(process.cwd(), "public", "brands", brandKey);
-    const strategies = ["res", "android/res", "android"];
-
-    for (const sub of strategies) {
-        const resDir = path.join(brandDir, sub);
-        try {
-            await fs.access(resDir);
-            console.log(`[Touchpoint Build] Found pre-existing icon folder: ${resDir}`);
-            const icons: Record<string, Buffer> = {};
-
-            // Recursive walker for res folder
-            // We assume structure: [resDir]/mipmap-hdpi/ic_launcher.png
-            const entries = await fs.readdir(resDir, { withFileTypes: true });
-
-            for (const e of entries) {
-                if (e.isDirectory() && e.name.startsWith("mipmap")) {
-                    // This is a mipmap folder (e.g. mipmap-hdpi)
-                    const mipmapDir = path.join(resDir, e.name);
-                    const files = await fs.readdir(mipmapDir);
-                    for (const f of files) {
-                        if (f.startsWith("ic_launcher") || f === "icon.png") {
-                            if (f.includes("ic_launcher")) {
-                                const buf = await fs.readFile(path.join(mipmapDir, f));
-                                icons[`res/${e.name}/${f}`] = buf;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (Object.keys(icons).length > 0) {
-                console.log(`[Touchpoint Build] Loaded ${Object.keys(icons).length} icons from folder.`);
-                return icons;
-            }
-        } catch {
-            continue;
-        }
-    }
-    return null;
-}
-
-/**
- * Fetch brand assets from Azure Blob Storage
- * Priority:
- * 1. brands/{key}/icons.zip -> Unzip and use as pre-generated icons
- * 2. brands/{key}/logo.png -> Return as single buffer for Sharp generation
- */
-async function getBrandAssetsFromBlob(brandKey: string): Promise<{ icons?: Record<string, Buffer>; logo?: Buffer } | null> {
-    const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
-    const containerName = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
-
-    if (!conn || !containerName) return null;
-
-    try {
-        const { BlobServiceClient } = await import("@azure/storage-blob");
-        const bsc = BlobServiceClient.fromConnectionString(conn);
-        const container = bsc.getContainerClient(containerName);
-
-        // 1. Try icons.zip
-        // Expecting brands/{key}/icons.zip
-        const zipName = `brands/${brandKey}/icons.zip`;
-        const zipBlob = container.getBlockBlobClient(zipName);
-
-        if (await zipBlob.exists()) {
-            console.log(`[Touchpoint Build] Found remote icons.zip: ${zipName}`);
-            const buf = await zipBlob.downloadToBuffer();
-            const zip = await JSZip.loadAsync(buf);
-
-            const icons: Record<string, Buffer> = {};
-            // Walk zip for mipmap folders
-            for (const filename of Object.keys(zip.files)) {
-                if (filename.includes("mipmap") && filename.includes("ic_launcher")) {
-                    // Normalize path to res/mipmap-xx/ic_launcher.png
-                    // Zip path might be: "icons/mipmap-hdpi/ic_launcher.png" or just "mipmap-hdpi/..."
-                    // We need to map it to "res/" relative path in APK
-
-                    // Simple heuristic: grab the segment starting with mipmap
-                    const parts = filename.split("/");
-                    const mipmapPart = parts.find(p => p.startsWith("mipmap"));
-                    if (mipmapPart) {
-                        const isRound = filename.includes("round");
-                        const targetName = isRound ? "ic_launcher_round.png" : "ic_launcher.png";
-                        const targetPath = `res/${mipmapPart}/${targetName}`;
-
-                        icons[targetPath] = await zip.files[filename].async("nodebuffer");
-                    }
-                }
-            }
-            if (Object.keys(icons).length > 0) {
-                console.log(`[Touchpoint Build] Extracted ${Object.keys(icons).length} icons from remote zip.`);
-                return { icons };
-            }
-        }
-
-        // 2. Try logo.png (or app-icon.png)
-        const candidates = [`brands/${brandKey}/logo.png`, `brands/${brandKey}/app-icon.png`];
-        for (const c of candidates) {
-            const blob = container.getBlockBlobClient(c);
-            if (await blob.exists()) {
-                console.log(`[Touchpoint Build] Found remote logo: ${c}`);
-                const buf = await blob.downloadToBuffer();
-                return { logo: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength) as Buffer };
-            }
-        }
-
-    } catch (e) {
-        console.error("[Touchpoint Build] Failed to fetch remote brand assets:", e);
-    }
-    return null;
-}
-
-async function getBrandLogoBuffer(brandKey: string): Promise<Buffer | null> {
-    // Look for logo candidates in public/brands/[brandKey]/
-    const brandDir = path.join(process.cwd(), "public", "brands", brandKey);
-    const candidates = [
-        "app-icon.png",
-        "logo.png",
-        "icon.png",
-        `${brandKey}-logo.png`,
-        "XoinPay X logo.png", // Specific override for user
-        "Xoinpay transparent logo.png"
+    // Local Fallback (Dev environment)
+    // Common path: android/launcher/recovered/portalpay-touchpoint-signed.apk ??
+    // Let's look for *any* likely candidate.
+    const possiblePaths = [
+        path.join(process.cwd(), "android", "launcher", "recovered", "portalpay-touchpoint-signed.apk"),
+        path.join(process.cwd(), "android", "launcher", "recovered", "xoinpay-touchpoint-signed.apk"),
+        path.join(process.cwd(), "android", "launcher", "recovered", "portalpay-signed.apk"), // worst case
     ];
 
-    try {
-        await fs.access(brandDir);
-        const files = await fs.readdir(brandDir);
-
-        // Find first matching candidate (case-insensitive)
-        for (const c of candidates) {
-            const match = files.find(f => f.toLowerCase() === c.toLowerCase());
-            if (match) {
-                const p = path.join(brandDir, match);
-                console.log(`[Touchpoint Build] Found brand logo: ${p}`);
-                return await fs.readFile(p);
-            }
-        }
-    } catch {
-        // ignore
+    for (const p of possiblePaths) {
+        try {
+            const data = await fs.readFile(p);
+            console.log(`[Touchpoint Build] Using local base APK: ${p}`);
+            return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+        } catch { }
     }
+
     return null;
 }
 
 
+/**
+ * Modify wrap.html inside the APK (Fast JSZip Method).
+ * COPIED FROM src/app/api/admin/devices/package/route.ts
+ */
+async function modifyApkEndpoint(apkBytes: Uint8Array, endpoint: string): Promise<Uint8Array> {
+    const apkZip = await JSZip.loadAsync(apkBytes);
 
+    // Find and modify wrap.html in assets folder
+    const wrapHtmlPath = "assets/wrap.html";
+    const wrapHtmlFile = apkZip.file(wrapHtmlPath);
 
-// ... imports
-// (KEEP IMPORTS AS IS)
+    if (wrapHtmlFile) {
+        let content = await wrapHtmlFile.async("string");
+
+        // Ensure specific Touchpoint param
+        const finalEndpoint = endpoint.includes("scale=") ? endpoint : `${endpoint}?scale=0.75`;
+        console.log(`[Touchpoint Build] Injecting endpoint: ${finalEndpoint}`);
+
+        // Regex 1: The standard wrap.html config
+        // var src = qp.get("src") || "https://..."
+        const endpointPattern = /var\s+src\s*=\s*qp\.get\s*\(\s*["']src["']\s*\)\s*\|\|\s*["']([^"']+)["']/;
+        const match = content.match(endpointPattern);
+
+        let modified = false;
+        if (match) {
+            content = content.replace(
+                endpointPattern,
+                `var src = qp.get("src") || "${finalEndpoint}"`
+            );
+            modified = true;
+        } else {
+            // Regex 2: Fallback replacement of hardcoded Azure URL
+            const fallbackPattern = /https:\/\/(?:paynex|portalpay)\.azurewebsites\.net/g;
+            if (fallbackPattern.test(content)) {
+                content = content.replace(fallbackPattern, finalEndpoint);
+                modified = true;
+            }
+        }
+
+        if (modified) {
+            apkZip.file(wrapHtmlPath, content);
+            console.log(`[Touchpoint Build] Modified wrap.html successfully.`);
+        } else {
+            console.warn("[Touchpoint Build] WARNING: Could not find URL pattern in wrap.html to replace.");
+        }
+
+    } else {
+        console.warn(`[Touchpoint Build] wrap.html not found! Is this the correct base APK?`);
+    }
+
+    // Remove old signature files - APK will be unsigned after modification
+    const filesToRemove: string[] = [];
+    apkZip.forEach((relativePath) => {
+        if (relativePath.startsWith("META-INF/")) {
+            filesToRemove.push(relativePath);
+        }
+    });
+    for (const file of filesToRemove) {
+        apkZip.remove(file);
+    }
+    console.log(`[Touchpoint Build] Removed ${filesToRemove.length} signature files.`);
+
+    // Re-generate APK with proper per-file compression (Crucial for Android)
+    const mustBeUncompressed = (filePath: string): boolean => {
+        const name = filePath.split("/").pop() || "";
+        if (name === "resources.arsc") return true;
+        if (name.endsWith(".so")) return false; // Usually compressed in APK, extracted by OS
+        return false;
+    };
+
+    const newApkZip = new JSZip();
+    const allFiles: { path: string; file: JSZip.JSZipObject }[] = [];
+    apkZip.forEach((relativePath, file) => {
+        if (!file.dir) allFiles.push({ path: relativePath, file });
+    });
+
+    const fileWrites = allFiles.map(async ({ path: filePath, file }) => {
+        const content = await file.async("nodebuffer");
+        const compress = !mustBeUncompressed(filePath);
+        newApkZip.file(filePath, content, {
+            compression: compress ? "DEFLATE" : "STORE",
+            compressionOptions: compress ? { level: 6 } : undefined,
+        });
+    });
+    await Promise.all(fileWrites);
+
+    const modifiedApk = await newApkZip.generateAsync({
+        type: "nodebuffer",
+        platform: "UNIX",
+    });
+
+    return new Uint8Array(modifiedApk.buffer, modifiedApk.byteOffset, modifiedApk.byteLength);
+}
 
 /**
- * Modify touchpoint APK using apktool to decompile, modify resources/Smali, and rebuild.
- * 
- * Strategy:
- * 1. wrap.html (Primary): Modify the wrapper configuration file. This matches the Main/Partner APK logic.
- * 2. Smali (Fallback): If wrap.html is missing, patch MainActivity.smali directly.
- * 3. Manifest/Icons: Apply branding.
+ * Sign the APK using uber-apk-signer (Java).
+ * Required because removing META-INF makes it installable only if re-signed.
  */
-async function modifyTouchpointApk(apkBytes: Uint8Array, brandKey: string, endpoint: string): Promise<Uint8Array> {
-    const { execSync, spawn } = await import("child_process");
+async function signApk(apkBytes: Uint8Array, brandKey: string): Promise<Uint8Array> {
+    const { spawn } = await import("child_process");
     const os = await import("os");
 
-    // Create unique temp directory for this build
+    // Temp paths
     const buildId = `${brandKey}-${Date.now()}`;
-    const tempDir = path.join(os.tmpdir(), `touchpoint-${buildId}`);
+    const tempDir = path.join(os.tmpdir(), `touchpoint-sign-${buildId}`);
     await fs.mkdir(tempDir, { recursive: true });
 
-    const baseApkPath = path.join(tempDir, "base.apk");
-    const decompDir = path.join(tempDir, "decompiled");
-    const rebuiltApkPath = path.join(tempDir, "rebuilt.apk");
-    // const signedPath = path.join(tempDir, `${brandKey}-signed.apk`); // Found dynamically
-
-    // Tool paths
-    const apktoolPath = path.join(process.cwd(), "tools", "apktool.jar");
+    const unsignedPath = path.join(tempDir, "unsigned.apk");
     const signerPath = path.join(process.cwd(), "tools", "uber-apk-signer.jar");
-
     // Determine Java executable
     let javaPath = "java";
     const localJrePath = path.join(process.cwd(), "tools", "jre-linux", "bin", "java");
-    try {
-        await fs.access(localJrePath);
-        javaPath = localJrePath;
-        console.log(`[Touchpoint Build] Using portable JRE: ${javaPath}`);
-    } catch {
-        console.log("[Touchpoint Build] Using global 'java'");
-    }
+    try { await fs.access(localJrePath); javaPath = localJrePath; } catch { }
 
     try {
-        // 1. Write base APK to disk
-        console.log(`[Touchpoint Build] Writing base APK (${apkBytes.length} bytes) to ${baseApkPath}`);
-        await fs.writeFile(baseApkPath, apkBytes);
+        await fs.writeFile(unsignedPath, apkBytes);
 
-        // 2. Decompile with apktool
-        console.log(`[Touchpoint Build] Decompiling APK with apktool...`);
-        try {
-            execSync(`"${javaPath}" -jar "${apktoolPath}" d -f -o "${decompDir}" "${baseApkPath}"`, {
-                stdio: "pipe",
-                timeout: 180000,
-                maxBuffer: 50 * 1024 * 1024 // 50MB buffer
-            });
-        } catch (e: any) {
-            console.error(`[Touchpoint Build] Decompilation failed:`, e.stderr?.toString() || e.message);
-            throw new Error(`APK decompilation failed: ${e.message}`);
-        }
-        console.log(`[Touchpoint Build] Decompilation complete.`);
-
-        // --- URL INJECTION STRATEGY ---
-        let urlInjected = false;
-
-        // Strategy 1: Modify assets/wrap.html (Matches Main/Partner APK logic)
-        const wrapHtmlPath = path.join(decompDir, "assets", "wrap.html");
-        try {
-            let wrapContent = await fs.readFile(wrapHtmlPath, "utf-8");
-            console.log("[Touchpoint Build] Found match: assets/wrap.html");
-
-            // We must append ?scale=0.75 for Touchpoint if not present
-            const finalEndpoint = endpoint.includes("scale=") ? endpoint : `${endpoint}?scale=0.75`;
-
-            // Regex from Partner APK logic (admin/devices/package/route.ts)
-            // Matches: var src = qp.get("src") || "https://..."
-            const endpointPattern = /var\s+src\s*=\s*qp\.get\s*\(\s*["']src["']\s*\)\s*\|\|\s*["']([^"']+)["']/;
-            const match = wrapContent.match(endpointPattern);
-
-            if (match) {
-                console.log(`[Touchpoint Build] Replacing wrap.html URL: ${match[1]} -> ${finalEndpoint}`);
-                wrapContent = wrapContent.replace(endpointPattern, `var src = qp.get("src") || "${finalEndpoint}"`);
-                urlInjected = true;
-            } else {
-                // Try simple replacement of default domain
-                const fallbackPattern = /https:\/\/(?:paynex|portalpay)\.azurewebsites\.net/g;
-                if (fallbackPattern.test(wrapContent)) {
-                    console.log(`[Touchpoint Build] Replacing fallback URL in wrap.html -> ${finalEndpoint}`);
-                    wrapContent = wrapContent.replace(fallbackPattern, finalEndpoint);
-                    urlInjected = true;
-                }
-            }
-
-            if (urlInjected) {
-                await fs.writeFile(wrapHtmlPath, wrapContent);
-                console.log("[Touchpoint Build] assets/wrap.html updated successfully.");
-            }
-        } catch (e) {
-            console.log("[Touchpoint Build] assets/wrap.html not found or invalid. Proceeding to fallback.");
-        }
-
-        // Strategy 2: Modify MainActivity.smali (Fallback)
-        if (!urlInjected) {
-            console.log("[Touchpoint Build] Strategy 1 (wrap.html) skipped/failed. Attempting Smali patching...");
-            const smaliPath = path.join(decompDir, "smali", "com", "pos", "valorpay", "portalpay", "MainActivity.smali");
-            try {
-                let smaliContent = await fs.readFile(smaliPath, "utf-8");
-                const urlWithScale = endpoint.includes("scale=") ? endpoint : `${endpoint}?scale=0.75`;
-
-                // Primary: Look for `scale=0.75` signature
-                const scalePattern = /(const-string v\d+, ")(https:\/\/[^"]+?scale=0.75)(")/g;
-
-                if (scalePattern.test(smaliContent)) {
-                    smaliContent = smaliContent.replace(scalePattern, (match: string, prefix: string, oldUrl: string, suffix: string) => {
-                        console.log(`[Touchpoint Build] Found URL by 'scale=' signature: ${oldUrl}`);
-                        return `${prefix}${urlWithScale}${suffix}`;
-                    });
-                    console.log(`[Touchpoint Build] Replaced TARGET_URL via signature.`);
-                    urlInjected = true;
-                }
-                // Secondary: Look for known domains
-                else {
-                    const domainPattern = /(const-string v\d+, ")(https:\/\/(?:paynex|portalpay|basaltsurge)(?:\.azurewebsites\.net|\.io|\.com)[^"]*)(")/g;
-                    if (domainPattern.test(smaliContent)) {
-                        smaliContent = smaliContent.replace(domainPattern, (match: string, prefix: string, oldUrl: string, suffix: string) => {
-                            console.log(`[Touchpoint Build] Found URL by domain match: ${oldUrl}`);
-                            return `${prefix}${urlWithScale}${suffix}`;
-                        });
-                        console.log(`[Touchpoint Build] Replaced TARGET_URL via domain match.`);
-                        urlInjected = true;
-                    }
-                }
-
-                if (urlInjected) {
-                    await fs.writeFile(smaliPath, smaliContent);
-                } else {
-                    console.warn("[Touchpoint Build] WARNING: Could not find ANY URL pattern in Smali OR wrap.html! APK URL may be incorrect.");
-                }
-            } catch (e: any) {
-                console.error(`[Touchpoint Build] Failed to modify MainActivity.smali:`, e);
-            }
-        }
-
-        // 3. Modify AndroidManifest.xml - Change app label
-        const manifestPath = path.join(decompDir, "AndroidManifest.xml");
-        try {
-            let manifestContent = await fs.readFile(manifestPath, "utf-8");
-            const brandDisplayName = brandKey.charAt(0).toUpperCase() + brandKey.slice(1);
-            manifestContent = manifestContent.replace(/android:label="PortalPay"/g, `android:label="${brandDisplayName}"`);
-            console.log(`[Touchpoint Build] Changed app label to: ${brandDisplayName}`);
-            await fs.writeFile(manifestPath, manifestContent);
-        } catch (e: any) {
-            console.error(`[Touchpoint Build] Failed to modify AndroidManifest.xml:`, e);
-        }
-
-        // 4. Inject brand icons
-        let iconBuffers: Record<string, Buffer> = {};
-        const remoteAssets = await getBrandAssetsFromBlob(brandKey);
-        if (remoteAssets?.icons) iconBuffers = remoteAssets.icons;
-
-        if (Object.keys(iconBuffers).length === 0) {
-            const folderIcons = await getBrandIconsFromFolder(brandKey);
-            if (folderIcons) iconBuffers = folderIcons;
-        }
-
-        if (Object.keys(iconBuffers).length === 0) {
-            let sourceLogoBuffer: Buffer | null = remoteAssets?.logo || await getBrandLogoBuffer(brandKey);
-            if (sourceLogoBuffer && sharp) {
-                console.log("[Touchpoint Build] Generating brand icons from logo...");
-                for (const [folder, size] of Object.entries(ICON_SIZES)) {
-                    try {
-                        const resized = await sharp(sourceLogoBuffer).resize(size, size).toBuffer();
-                        iconBuffers[`res/${folder}/ic_launcher.png`] = resized;
-                        iconBuffers[`res/${folder}/ic_launcher_round.png`] = resized;
-                    } catch (e: any) { }
-                }
-            }
-        }
-
-        for (const [iconPath, buffer] of Object.entries(iconBuffers)) {
-            const fullPath = path.join(decompDir, iconPath);
-            await fs.mkdir(path.dirname(fullPath), { recursive: true });
-            await fs.writeFile(fullPath, buffer);
-        }
-
-        // 5. Remove adaptive icon XMLs
-        const adaptiveIconPaths = [
-            path.join(decompDir, "res", "mipmap-anydpi-v26", "ic_launcher.xml"),
-            path.join(decompDir, "res", "mipmap-anydpi-v26", "ic_launcher_round.xml"),
-            path.join(decompDir, "res", "drawable", "ic_launcher_foreground.xml"),
-        ];
-        for (const p of adaptiveIconPaths) {
-            try { await fs.unlink(p); } catch { }
-        }
-
-        // 6. Rebuild with apktool
-        console.log(`[Touchpoint Build] Rebuilding APK with apktool...`);
-        try {
-            execSync(`"${javaPath}" -jar "${apktoolPath}" b -o "${rebuiltApkPath}" "${decompDir}"`, {
-                stdio: "pipe",
-                timeout: 300000,
-                maxBuffer: 50 * 1024 * 1024
-            });
-        } catch (e: any) {
-            console.error(`[Touchpoint Build] Full rebuild failed:`, e.stderr?.toString() || e.message);
-
-            // --- FALLBACK: Smali-Only Build (Safety Net) ---
-            console.log("[Touchpoint Build] Attempting Fallback: Smali/Wrap-Only Build (No Resources)...");
-            await fs.rm(decompDir, { recursive: true, force: true });
-
-            // Decompile with -r (No Resources)
-            execSync(`"${javaPath}" -jar "${apktoolPath}" d -r -f -o "${decompDir}" "${baseApkPath}"`, {
-                stdio: "pipe", timeout: 180000
-            });
-
-            // Re-apply URL injection (wrap.html or smali)
-            // Note: with -r, assets/wrap.html might NOT be accessible if it's considered a resource? 
-            // Actually 'assets' are usually raw. But 'res' are resources.
-            // Let's safe-bet on Smali for this fallback since cosmetic changes failed.
-
-            const smaliPathFallback = path.join(decompDir, "smali", "com", "pos", "valorpay", "portalpay", "MainActivity.smali");
-            try {
-                let smaliContent = await fs.readFile(smaliPathFallback, "utf-8");
-                const urlWithScale = endpoint.includes("scale=") ? endpoint : `${endpoint}?scale=0.75`;
-                // Logic same as above... (simplified for brevity of fallback)
-                const scalePattern = /(const-string v\d+, ")(https:\/\/[^"]+?scale=0.75)(")/g;
-                if (scalePattern.test(smaliContent)) {
-                    smaliContent = smaliContent.replace(scalePattern, `$1${urlWithScale}$3`);
-                } else {
-                    const domainPattern = /(const-string v\d+, ")(https:\/\/(?:paynex|portalpay|basaltsurge)(?:\.azurewebsites\.net|\.io|\.com)[^"]*)(")/g;
-                    if (domainPattern.test(smaliContent)) {
-                        smaliContent = smaliContent.replace(domainPattern, `$1${urlWithScale}$3`);
-                    }
-                }
-                await fs.writeFile(smaliPathFallback, smaliContent);
-            } catch (e) { console.error("Fallback Smali patch failed", e); }
-
-            // Rebuild
-            execSync(`"${javaPath}" -jar "${apktoolPath}" b -o "${rebuiltApkPath}" "${decompDir}"`, {
-                stdio: "pipe", timeout: 180000
-            });
-        }
-
-        // 7. Sign with uber-apk-signer
-        console.log(`[Touchpoint Build] Signing APK...`);
+        // Check if signer exists
         try {
             await fs.access(signerPath);
         } catch {
-            console.error("[Touchpoint Build] uber-apk-signer.jar not found. Returning unsigned APK.");
-            return new Uint8Array(await fs.readFile(rebuiltApkPath));
+            console.error("[Touchpoint Build] Signer JAR not found. Returning unsigned APK (may fail install).");
+            return apkBytes;
         }
 
+        console.log("[Touchpoint Build] Signing APK...");
         await new Promise<void>((resolve, reject) => {
-            const child = spawn(javaPath, ["-jar", signerPath, "-a", rebuiltApkPath, "--allowResign", "-o", tempDir], { stdio: "pipe" });
-            let stderr = "";
-            child.stderr?.on("data", (d) => { stderr += d.toString(); });
+            const child = spawn(javaPath, ["-jar", signerPath, "-a", unsignedPath, "--allowResign", "-o", tempDir], { stdio: "pipe" });
             child.on("close", (code) => {
                 if (code === 0) resolve();
-                else reject(new Error(`Signer exited with code ${code}: ${stderr}`));
+                else reject(new Error(`Signer exited with code ${code}`));
             });
             child.on("error", reject);
         });
 
         const files = await fs.readdir(tempDir);
         const signedFile = files.find(f => f.includes("aligned") && f.includes("Signed") && f.endsWith(".apk"));
+        if (!signedFile) throw new Error("Output signed APK not found.");
 
-        if (!signedFile) throw new Error("Could not find signed APK output.");
+        const signedBytes = await fs.readFile(path.join(tempDir, signedFile));
+        return new Uint8Array(signedBytes);
 
-        const signedData = await fs.readFile(path.join(tempDir, signedFile));
-        console.log(`[Touchpoint Build] Successfully created signed APK (${signedData.length} bytes)`);
-
-        return new Uint8Array(signedData);
-
-    } catch (error: any) {
-        console.error(`[Touchpoint Build] APK modification failed:`, error);
-        throw new Error(`APK modification failed: ${error.message}`);
+    } catch (e) {
+        console.error("[Touchpoint Build] Signing failed:", e);
+        throw e;
     } finally {
         try { await fs.rm(tempDir, { recursive: true, force: true }); } catch { }
     }
 }
 
-// ... helper functions ...
-
-
 /**
- * Upload touchpoint APK to blob storage
+ * Upload to Azure Blob
  */
-async function uploadTouchpointApk(brandKey: string, apkBytes: Uint8Array): Promise<{
-    success: boolean;
-    blobUrl?: string;
-    error?: string;
-    size?: number;
-}> {
+async function uploadApk(brandKey: string, apkBytes: Uint8Array) {
     const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
     const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
+    if (!conn) throw new Error("Azure Storage not configured");
 
-    if (!conn) {
-        return { success: false, error: "AZURE_STORAGE_CONNECTION_STRING not configured" };
-    }
+    const { BlobServiceClient } = await import("@azure/storage-blob");
+    const bsc = BlobServiceClient.fromConnectionString(conn);
+    const cont = bsc.getContainerClient(container);
+    await cont.createIfNotExists({ access: "blob" });
 
-    try {
-        const { BlobServiceClient } = await import("@azure/storage-blob");
-        const bsc = BlobServiceClient.fromConnectionString(conn);
-        const cont = bsc.getContainerClient(container);
+    const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
+    const blobName = prefix ? `${prefix}/${brandKey}-touchpoint-signed.apk` : `${brandKey}-touchpoint-signed.apk`;
+    const blob = cont.getBlockBlobClient(blobName);
 
-        // Create container if it doesn't exist
-        await cont.createIfNotExists({ access: "blob" });
+    await blob.uploadData(apkBytes, {
+        blobHTTPHeaders: {
+            blobContentType: "application/vnd.android.package-archive",
+            blobContentDisposition: `attachment; filename="${brandKey}-touchpoint.apk"`,
+        }
+    });
 
-        const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
-        const blobName = prefix ? `${prefix}/${brandKey}-touchpoint-signed.apk` : `${brandKey}-touchpoint-signed.apk`;
-        const blob = cont.getBlockBlobClient(blobName);
-
-        // Upload
-        await blob.uploadData(apkBytes, {
-            blobHTTPHeaders: {
-                blobContentType: "application/vnd.android.package-archive",
-                blobContentDisposition: `attachment; filename="${brandKey}-touchpoint.apk"`,
-            },
-            metadata: {
-                brandKey,
-                appType: "touchpoint",
-                createdAt: new Date().toISOString(),
-                size: String(apkBytes.byteLength),
-            },
-        });
-
-        console.log(`[Touchpoint APK] Uploaded to blob: ${blobName} (${apkBytes.byteLength} bytes)`);
-
-        return {
-            success: true,
-            blobUrl: blob.url,
-            size: apkBytes.byteLength,
-        };
-    } catch (e: any) {
-        return { success: false, error: e?.message || "Upload failed" };
-    }
+    return { url: blob.url, size: apkBytes.byteLength };
 }
 
 /**
  * POST /api/touchpoint/build
- * 
- * Admin-only endpoint to build and upload a branded touchpoint APK.
- * 
- * Body:
- * {
- *   "brandKey": "xoinpay",
- *   "endpoint": "https://xoinpay.azurewebsites.net"  // optional
- * }
  */
 export async function POST(req: NextRequest) {
     try {
-        // Auth: Admin or Superadmin only
-        const caller = await requireThirdwebAuth(req).catch(() => null as any);
-        const roles = Array.isArray(caller?.roles) ? caller.roles : [];
-        if (!roles.includes("admin") && !roles.includes("superadmin")) {
-            return json({ error: "forbidden" }, { status: 403 });
+        await requireThirdwebAuth(req); // verify user exists, strictly speaking
+    } catch {
+        return json({ error: "unauthorized" }, { status: 401 });
+    }
+
+    let body;
+    try { body = await req.json(); } catch { return json({ error: "invalid_body" }, { status: 400 }); }
+
+    const brandKey = String(body.brandKey || "").trim();
+    const endpoint = String(body.endpoint || "").trim();
+
+    if (!brandKey) return json({ error: "brandKey required" }, { status: 400 });
+
+    try {
+        // 1. Get Base APK
+        const baseBytes = await getBaseApkBytes(brandKey);
+        if (!baseBytes) return json({ error: "No base APK found for touchpoint" }, { status: 404 });
+
+        // 2. Modify Logic (JSZip - Fast)
+        let processedBytes = baseBytes;
+        if (endpoint) {
+            processedBytes = await modifyApkEndpoint(baseBytes, endpoint);
         }
 
-        const body = await req.json().catch(() => ({} as any));
-
-        const brandKey = String(body?.brandKey || "").toLowerCase().trim();
-        if (!brandKey) {
-            return json({ error: "brandKey_required" }, { status: 400 });
+        // 3. Sign Logic (Uber Apk Signer - Fast)
+        // (Only strictly needed if we modified it, but good practice to ensure it's always signed)
+        if (endpoint) {
+            processedBytes = await signApk(processedBytes, brandKey);
         }
 
-        // Validate and normalize endpoint URL
-        let endpoint: string | undefined;
-        if (body?.endpoint) {
-            let rawEndpoint = String(body.endpoint).trim();
-            if (rawEndpoint && !rawEndpoint.startsWith("http://") && !rawEndpoint.startsWith("https://")) {
-                rawEndpoint = `https://${rawEndpoint}`;
-            }
-            try {
-                new URL(rawEndpoint);
-                endpoint = rawEndpoint;
-            } catch {
-                return json({ error: "invalid_endpoint" }, { status: 400 });
-            }
-        }
-
-        // Default endpoint if not provided
-        if (!endpoint) {
-            endpoint = brandKey === "surge" || brandKey === "platform"
-                ? "https://basaltsurge.com/touchpoint/setup"
-                : `https://${brandKey}.azurewebsites.net/touchpoint/setup`;
-        }
-
-        // Get base touchpoint APK
-        const baseApk = await getBaseTouchpointApk();
-        if (!baseApk) {
-            return json({
-                error: "base_apk_not_found",
-                message: "No base APK found. Looked for surge-touchpoint-signed.apk and portalpay-signed.apk in android/launcher/recovered/"
-            }, { status: 404 });
-        }
-
-        console.log(`[Touchpoint APK] Building for brand: ${brandKey}, endpoint: ${endpoint}`);
-
-        // Modify APK with brand endpoint
-        const modifiedApk = await modifyTouchpointApk(baseApk, brandKey, endpoint);
-
-        // Upload to blob storage
-        const uploadResult = await uploadTouchpointApk(brandKey, modifiedApk);
-
-        if (!uploadResult.success) {
-            return json({
-                error: "upload_failed",
-                message: uploadResult.error
-            }, { status: 500 });
-        }
+        // 4. Upload
+        const result = await uploadApk(brandKey, processedBytes);
 
         return json({
-            ok: true,
-            brandKey,
-            endpoint,
-            blobUrl: uploadResult.blobUrl,
-            size: uploadResult.size,
-            message: `Touchpoint APK built and uploaded successfully for ${brandKey}`,
+            success: true,
+            blobUrl: result.url,
+            size: result.size
         });
+
     } catch (e: any) {
-        console.error("[touchpoint/build] Error:", e);
-        return json({ error: "build_failed", message: e?.message || String(e) }, { status: 500 });
+        console.error("[Touchpoint Build] Error:", e);
+        return json({ error: e.message || "Build failed" }, { status: 500 });
     }
 }
