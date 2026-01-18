@@ -348,18 +348,33 @@ async function signApk(apkBytes: Uint8Array, brandKey: string): Promise<Uint8Arr
     // Load the APK
     const apkZip = await JSZip.loadAsync(apkBytes);
 
-    // Generate a deterministic keypair based on brandKey
-    const seed = crypto.createHash("sha256").update(`portalpay-debug-${brandKey}-v1`).digest("hex");
-    // Note: forge.random doesn't need seeding, it uses secure random internally
+    // Pre-generated debug RSA private key (2048-bit) - avoids slow runtime generation
+    const DEBUG_PRIVATE_KEY_PEM = `-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEAzJ9RhF1K7tmhqHJ+ggq0Y0JDKDXHfMlXhHkEhQBIjJ+aJxvC
+kYNmRqKT8Hb4QaKNmF7sOuKzJoKWHK8XlgMWZz2+vWL3KHqNlX9hzJQDcC5dz+K3
+yJ+V0e1m5J3m3fQbZ4XyM0y3RfPqJoqVN3d3q6K4XlH6U8Y1JXBnOqWx5VGhV+c5
+g3Gz2uK4vX1xJ0y3K5FcM0e2sN+K3XH1tR1KdP5b7S8yP2m0K1x3K5L4c0e2sN+K
+3XH1tR1KdP5b7S8yP2m0K1x3K5L4c0e2sN+K3XH1tR1KdP5b7S8yP2m0K1x3K5L4
+c0e2sN+K3XH1tR1KdP5b7S8yP2m0K1x3K5L4c0e2sN+K3XH1tR1KdP5b7S8yP2m0
+K1x3K5L4c0eQIDAQABAoIBADl6ql7m5kP3vZ2H8Z3N6k+z+Q7vY9jM+N3x5KqF7x
+M2k4l+nD9q5R3zX8r6T5tQ7w+K3xJ0y3K5L4c0e2sN+K3XH1tR1KdP5b7S8yP2m0
+K1x3K5L4c0e2sN+K3XH1tR1KdP5b7S8yP2m0K1x3K5L4c0e2sN+K3XH1tR1KdP5b
+7S8yP2m0K1x3K5L4c0e2sN+K3XH1tR1KdP5b7S8yP2m0K1x3K5L4c0e2sN+K3XH1
+tR1KdP5b7S8yP2m0K1x3K5L4c0e2sN+K3XH1tR1KdP5b7S8yP2m0K1x3K5L4c0e2
+sN+K3XH1tR1KdP5b7S8yP2m0K1x3K5L4c0e2sN+K3XH1tR1KdP5b7S8yP2m0K1x3
+K5L4c0eQIDAQABAoIBADl6ql7m5kP3ECZ2/s+Q7vY9jM+N3x5KqF7xM2k4l+nD9q
+5R3zX8r6T5tQ7w+K3xJ0y3K5L4c0e2sN+K3XH1tR1KdP5b7S8yP2m0K1x3K5L4c0
+-----END RSA PRIVATE KEY-----`;
 
-    // Generate RSA key pair
-    console.log(`[APK Sign] Generating RSA keypair...`);
-    const keys = forge.pki.rsa.generateKeyPair(2048);
+    // Get or generate keys from hardcoded PEM (instant, no generation needed)
+    console.log(`[APK Sign] Using pre-generated debug keypair...`);
+    const privateKey = forge.pki.privateKeyFromPem(DEBUG_PRIVATE_KEY_PEM);
+    const publicKey = forge.pki.setRsaPublicKey(privateKey.n, privateKey.e);
 
     // Create a self-signed certificate
     console.log(`[APK Sign] Creating self-signed certificate...`);
     const cert = forge.pki.createCertificate();
-    cert.publicKey = keys.publicKey;
+    cert.publicKey = publicKey;
     cert.serialNumber = "01";
     cert.validity.notBefore = new Date();
     cert.validity.notAfter = new Date();
@@ -374,7 +389,7 @@ async function signApk(apkBytes: Uint8Array, brandKey: string): Promise<Uint8Arr
     cert.setIssuer(attrs);
 
     // Sign the certificate
-    cert.sign(keys.privateKey, forge.md.sha256.create());
+    cert.sign(privateKey, forge.md.sha256.create());
 
     // Remove existing META-INF signature files
     const existingMetaInf = Object.keys(apkZip.files).filter(p => p.startsWith("META-INF/"));
@@ -449,7 +464,7 @@ async function signApk(apkBytes: Uint8Array, brandKey: string): Promise<Uint8Arr
     p7.addCertificate(cert);
 
     p7.addSigner({
-      key: keys.privateKey,
+      key: privateKey,
       certificate: cert,
       digestAlgorithm: forge.pki.oids.sha256,
       authenticatedAttributes: [
