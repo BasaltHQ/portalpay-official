@@ -642,9 +642,12 @@ async function generateAndUploadPackage(
     // Generate SAS URL for download (valid for 24 hours)
     let sasUrl: string | undefined;
     try {
-      const accountMatch = conn.match(/AccountName=([^;]+)/i);
-      const keyMatch = conn.match(/AccountKey=([^;]+)/i);
+      // More robust regex for parsing connection string
+      const accountMatch = conn.match(/AccountName\s*=\s*([^;]+)/i);
+      const keyMatch = conn.match(/AccountKey\s*=\s*([^;]+)/i);
+
       if (accountMatch && keyMatch) {
+        console.log(`[APK] Generating SAS for ${blobName} using account ${accountMatch[1]}`);
         const sharedKeyCredential = new StorageSharedKeyCredential(accountMatch[1], keyMatch[1]);
         const sasToken = generateBlobSASQueryParameters({
           containerName: container,
@@ -655,8 +658,16 @@ async function generateAndUploadPackage(
         }, sharedKeyCredential).toString();
 
         sasUrl = `${blob.url}?${sasToken}`;
+        console.log(`[APK] SAS URL generated successfully`);
+      } else {
+        console.warn(`[APK] Could not parse AccountName/AccountKey from connection string. SAS generation skipped.`);
+        // Log obscured connection string for debugging
+        const obscured = conn.replace(/AccountKey=[^;]+/, "AccountKey=***");
+        console.log(`[APK] Connection string format: ${obscured}`);
       }
-    } catch { }
+    } catch (e: any) {
+      console.error(`[APK] Failed to generate SAS: ${e?.message}`);
+    }
 
     return {
       success: true,
@@ -866,24 +877,42 @@ export async function GET(req: NextRequest) {
     // Get properties
     const props = await blob.getProperties();
 
-    // Generate SAS URL
+    // Generate SAS URL for download (valid for 24 hours)
     let sasUrl: string | undefined;
     try {
-      const accountMatch = conn.match(/AccountName=([^;]+)/i);
-      const keyMatch = conn.match(/AccountKey=([^;]+)/i);
+      // More robust regex for parsing connection string
+      const accountMatch = conn.match(/AccountName\s*=\s*([^;]+)/i);
+      const keyMatch = conn.match(/AccountKey\s*=\s*([^;]+)/i);
+
       if (accountMatch && keyMatch) {
+        console.log(`[APK] Generating SAS for ${blobName} using account ${accountMatch[1]}`);
         const sharedKeyCredential = new StorageSharedKeyCredential(accountMatch[1], keyMatch[1]);
         const sasToken = generateBlobSASQueryParameters({
           containerName: container,
           blobName,
           permissions: BlobSASPermissions.parse("r"),
           startsOn: new Date(),
-          expiresOn: new Date(Date.now() + 1 * 3600 * 1000), // 1 hour
+          expiresOn: new Date(Date.now() + 24 * 3600 * 1000),
         }, sharedKeyCredential).toString();
 
         sasUrl = `${blob.url}?${sasToken}`;
+        console.log(`[APK] SAS URL generated successfully`);
+      } else {
+        console.warn(`[APK] Could not parse AccountName/AccountKey from connection string. SAS generation skipped.`);
+        // Log obscured connection string for debugging
+        const obscured = conn.replace(/AccountKey=[^;]+/, "AccountKey=***");
+        console.log(`[APK] Connection string format: ${obscured}`);
       }
-    } catch { }
+    } catch (e: any) {
+      console.error(`[APK] Failed to generate SAS: ${e?.message}`);
+      // Fallback: Check if the connection string itself is a SAS URL
+      if (conn.includes("SharedAccessSignature") || conn.includes("sig=")) {
+        // If conn is a SAS, blob.url might already have it? 
+        // Actually BlockBlobClient from SAS conn usually includes the SAS token in its .url or keeps it in pipeline.
+        // But let's just log this case.
+        console.log("[APK] Connection string appears to be SAS-based.");
+      }
+    }
 
     return json({
       exists: true,
