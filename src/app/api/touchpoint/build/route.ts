@@ -318,8 +318,7 @@ async function uploadPackage(brandKey: string, apkBytes: Uint8Array, endpoint?: 
 
     const zipBuffer = await zip.generateAsync({
         type: "nodebuffer",
-        compression: "DEFLATE",
-        compressionOptions: { level: 9 }
+        compression: "STORE"
     });
 
     const { BlobServiceClient } = await import("@azure/storage-blob");
