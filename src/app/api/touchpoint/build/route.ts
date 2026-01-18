@@ -171,7 +171,7 @@ function buildReadme(brandKey: string, endpoint?: string): string {
 
     lines.push(
         `Contents:`,
-        `- ${brandKey}-touchpoint.apk  (signed APK)`,
+        `- ${brandKey}-touchpoint.apk  (unsigned APK - enable install from unknown sources / unsigned)`,
         `- install_${brandKey}.bat  (Windows installer script using adb)`,
         `- install_${brandKey}.sh   (macOS/Linux installer script using adb)`,
         ``,
@@ -298,61 +298,7 @@ async function modifyApkEndpoint(apkBytes: Uint8Array, endpoint: string): Promis
 
 
 
-/**
- * Sign the APK using uber-apk-signer (Java).
- * Required because removing META-INF makes it installable only if re-signed.
- */
-async function signApk(apkBytes: Uint8Array, brandKey: string): Promise<Uint8Array> {
-    const { spawn } = await import("child_process");
-    const os = await import("os");
 
-    // Temp paths
-    const buildId = `${brandKey}-${Date.now()}`;
-    const tempDir = path.join(os.tmpdir(), `touchpoint-sign-${buildId}`);
-    await fs.mkdir(tempDir, { recursive: true });
-
-    const unsignedPath = path.join(tempDir, "unsigned.apk");
-    const signerPath = path.join(process.cwd(), "tools", "uber-apk-signer.jar");
-    // Determine Java executable
-    let javaPath = "java";
-    const localJrePath = path.join(process.cwd(), "tools", "jre-linux", "bin", "java");
-    try { await fs.access(localJrePath); javaPath = localJrePath; } catch { }
-
-    try {
-        await fs.writeFile(unsignedPath, apkBytes);
-
-        // Check if signer exists
-        try {
-            await fs.access(signerPath);
-        } catch {
-            console.error("[Touchpoint Build] Signer JAR not found. Returning unsigned APK (may fail install).");
-            return apkBytes;
-        }
-
-        console.log("[Touchpoint Build] Signing APK...");
-        await new Promise<void>((resolve, reject) => {
-            const child = spawn(javaPath, ["-jar", signerPath, "-a", unsignedPath, "--allowResign", "-o", tempDir], { stdio: "pipe" });
-            child.on("close", (code) => {
-                if (code === 0) resolve();
-                else reject(new Error(`Signer exited with code ${code}`));
-            });
-            child.on("error", reject);
-        });
-
-        const files = await fs.readdir(tempDir);
-        const signedFile = files.find(f => f.includes("aligned") && f.includes("Signed") && f.endsWith(".apk"));
-        if (!signedFile) throw new Error("Output signed APK not found.");
-
-        const signedBytes = await fs.readFile(path.join(tempDir, signedFile));
-        return new Uint8Array(signedBytes);
-
-    } catch (e) {
-        console.error("[Touchpoint Build] Signing failed:", e);
-        throw e;
-    } finally {
-        try { await fs.rm(tempDir, { recursive: true, force: true }); } catch { }
-    }
-}
 
 /**
  * Setup ZIP package and upload
@@ -430,9 +376,11 @@ export async function POST(req: NextRequest) {
             processedBytes = await modifyApkEndpoint(baseBytes, endpoint);
         }
 
-        // 3. Sign Logic (Uber Apk Signer - Fast)
-        // User confirmed strict parity requires signing
-        processedBytes = await signApk(processedBytes, brandKey);
+        // 3. Sign Logic SKIPPED (Strict Parity with Partner Logic)
+        // Code parity: Partner logic strips META-INF but does not re-sign.
+        // This avoids timeout (524) and matches the Xoinpay process.
+        // processedBytes = await signApk(processedBytes, brandKey);
+
 
         // 4. Upload Package (ZIP)
         const result = await uploadPackage(brandKey, processedBytes, endpoint);
