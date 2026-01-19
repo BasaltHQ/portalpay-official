@@ -552,19 +552,18 @@ async function customizeApk(apkBytes: Uint8Array, options: ModifyOptions): Promi
           content = content.replace(targetBlockRegex, injectionScript);
         } else {
           console.log("[APK Debug] NO MATCH for standard Regex. Attempting Fallbacks.");
-          let replaced = false;
 
-          // Fallback: replace any azurewebsites.net URL
-          if (content.match(/https:\/\/[a-z0-9-]+\.azurewebsites\.net/g)) {
-            content = content.replace(/https:\/\/[a-z0-9-]+\.azurewebsites\.net/g, options.endpoint);
-            replaced = true;
-            console.log("[APK Debug] Fallback: Replaced azurewebsites.net URL");
-          }
+          // Fallback: replace ALL known base URLs
+          // Azure webapps
+          content = content.replace(/https:\/\/[a-z0-9-]+\.azurewebsites\.net[^"']*/g, options.endpoint);
+          // Basalt production domains
+          content = content.replace(/https:\/\/surge\.basalthq\.com[^"']*/g, options.endpoint);
+          content = content.replace(/https:\/\/basaltsurge\.com[^"']*/g, options.endpoint);
+          content = content.replace(/https:\/\/pay\.ledger1\.ai[^"']*/g, options.endpoint);
 
-          if (!replaced && content.includes("TARGET_URL")) {
-            content = content.replace(/var\s+TARGET_URL\s*=\s*"[^"]*"/, `var TARGET_URL = "${options.endpoint}"`);
-            console.log("[APK Debug] Fallback: Replaced TARGET_URL");
-          }
+          // Also try TARGET_URL pattern
+          content = content.replace(/var\s+TARGET_URL\s*=\s*"[^"]*"/, `var TARGET_URL = "${options.endpoint}"`);
+          console.log("[APK Debug] Applied all fallback replacements");
         }
       } else {
         // Partner App Logic...
@@ -575,7 +574,11 @@ async function customizeApk(apkBytes: Uint8Array, options: ModifyOptions): Promi
           content = content.replace(endpointPattern, `var src = qp.get("src") || "${options.endpoint}"`);
         }
         if (!content.includes(options.endpoint)) {
-          content = content.replace(/https:\/\/[a-z0-9-]+\.azurewebsites\.net/g, options.endpoint);
+          // Replace ALL known base URLs
+          content = content.replace(/https:\/\/[a-z0-9-]+\.azurewebsites\.net[^"']*/g, options.endpoint);
+          content = content.replace(/https:\/\/surge\.basalthq\.com[^"']*/g, options.endpoint);
+          content = content.replace(/https:\/\/basaltsurge\.com[^"']*/g, options.endpoint);
+          content = content.replace(/https:\/\/pay\.ledger1\.ai[^"']*/g, options.endpoint);
         }
       }
 

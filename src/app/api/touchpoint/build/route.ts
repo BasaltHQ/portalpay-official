@@ -365,11 +365,24 @@ async function customizeTouchpointApk(apkBytes: Uint8Array, endpoint: string, ic
             content = content.replace(/var\s+TARGET_URL\s*=\s*"[^"]*"/, `var TARGET_URL = "${endpoint}"`);
             content = content.replace(/const\s+TARGET_URL\s*=\s*"[^"]*"/, `const TARGET_URL = "${endpoint}"`);
 
-            // Robust catch-all
+            // Robust catch-all - replace ALL known base URLs
             if (!content.includes(endpoint)) {
-                content = content.replace(/https:\/\/[a-z0-9-]+\.azurewebsites\.net/g, endpoint);
+                // Azure webapps
+                content = content.replace(/https:\/\/[a-z0-9-]+\.azurewebsites\.net[^"']*/g, endpoint);
+                // Basalt production domains
+                content = content.replace(/https:\/\/surge\.basalthq\.com[^"']*/g, endpoint);
+                content = content.replace(/https:\/\/basaltsurge\.com[^"']*/g, endpoint);
+                content = content.replace(/https:\/\/pay\.ledger1\.ai[^"']*/g, endpoint);
             }
             console.log(`[Touchpoint APK] Applied fallback replacement`);
+        }
+
+        // VERIFY the endpoint was injected
+        if (content.includes(endpoint)) {
+            console.log(`[Touchpoint APK] SUCCESS: wrap.html contains endpoint ${endpoint}`);
+        } else {
+            console.error(`[Touchpoint APK] CRITICAL: wrap.html does NOT contain ${endpoint}!`);
+            console.error(`[Touchpoint APK] Current content sample: ${content.substring(0, 500)}`);
         }
 
         apkZip.file(wrapHtmlPath, content, { compression: "DEFLATE" });
