@@ -68,12 +68,14 @@ async function getApkBytes(brandKey: string): Promise<{ bytes: Uint8Array; sourc
       const blobName = prefix ? `${prefix}/${brandKey}-signed.apk` : `${brandKey}-signed.apk`;
       const blob = cont.getBlockBlobClient(blobName);
       if (await blob.exists()) {
+        console.log(`[APK Debug] Found brand-specific APK in blob: ${blobName}`);
         const buf = await blob.downloadToBuffer();
         return {
           bytes: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength),
           source: `blob:${blobName}`
         };
       }
+      console.log(`[APK Debug] Brand-specific APK not in blob: ${blobName}`);
     } catch { }
 
     // Fall back to base PortalPay APK for white-label brands
@@ -82,12 +84,14 @@ async function getApkBytes(brandKey: string): Promise<{ bytes: Uint8Array; sourc
         const fallbackBlobName = prefix ? `${prefix}/portalpay-signed.apk` : `portalpay-signed.apk`;
         const fallbackBlob = cont.getBlockBlobClient(fallbackBlobName);
         if (await fallbackBlob.exists()) {
+          console.log(`[APK Debug] Using fallback base APK from blob: ${fallbackBlobName}`);
           const buf = await fallbackBlob.downloadToBuffer();
           return {
             bytes: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength),
             source: `blob:${fallbackBlobName} (base APK for white-label)`
           };
         }
+        console.log(`[APK Debug] Fallback APK not in blob: ${fallbackBlobName}`);
       } catch { }
     }
   }
@@ -621,18 +625,19 @@ async function customizeApk(apkBytes: Uint8Array, options: ModifyOptions): Promi
 async function getBrandIconUrl(brandKey: string): Promise<string | null> {
   try {
     const container = await getContainer();
-    // Strip -touchpoint suffix if present to find the parent brand application
-    const lookupKey = brandKey.replace(/-touchpoint$/, "");
+    console.log(`[APK Debug] Looking up icon for brandKey: '${brandKey}'`);
 
     // Query for partner application
     const q = {
       query: "SELECT TOP 1 * FROM c WHERE c.brandKey = @brandKey AND c.type = 'partner_application' ORDER BY c.createdAt DESC",
-      parameters: [{ name: "@brandKey", value: lookupKey }]
+      parameters: [{ name: "@brandKey", value: brandKey }]
     };
     const { resources } = await container.items.query(q).fetchAll();
     if (resources.length > 0 && resources[0].logos?.app) {
+      console.log(`[APK Debug] Found icon: ${resources[0].logos.app}`);
       return resources[0].logos.app;
     }
+    console.log(`[APK Debug] No icon found for ${brandKey}`);
   } catch (e: any) {
     console.error("[APK] Failed to fetch brand icon:", e?.message);
   }

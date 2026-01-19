@@ -237,7 +237,7 @@ export default function InstallerPackagesPanel() {
       const res = await fetch("/api/admin/devices/package", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brandKey: `${brandKey}-touchpoint`, endpoint: touchpointEndpoint }),
+        body: JSON.stringify({ brandKey, endpoint: touchpointEndpoint }),
       });
 
       if (!res.ok) {
