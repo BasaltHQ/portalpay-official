@@ -505,6 +505,8 @@ interface ModifyOptions {
  * 2. Replace icons (if iconBuffer provided) and remove adaptive icon XMLs to force PNG usage
  */
 async function customizeApk(apkBytes: Uint8Array, options: ModifyOptions): Promise<Uint8Array> {
+  console.log(`[APK Debug] customizeApk started. Endpoint: ${options.endpoint}, Icon: ${!!options.iconBuffer}, Brand: ${options.brandKey}`);
+
   // Load ZIP
   const apkZip = await JSZip.loadAsync(apkBytes);
 
@@ -516,6 +518,7 @@ async function customizeApk(apkBytes: Uint8Array, options: ModifyOptions): Promi
       let content = await wrapHtmlFile.async("string");
 
       const isTouchpoint = (options.brandKey && options.brandKey.endsWith("-touchpoint")) || (options.endpoint && options.endpoint.includes("/touchpoint"));
+      console.log(`[APK Debug] isTouchpoint: ${isTouchpoint}`);
 
       if (isTouchpoint) {
         // Injection script with installationId and endpoint (for Touchpoints)
@@ -538,71 +541,78 @@ async function customizeApk(apkBytes: Uint8Array, options: ModifyOptions): Promi
           // --------------------------------------------------
           `;
 
-        // Try to replace the target block (standard pattern)
         const targetBlockRegex = /var\s+qp\s*=\s*new\s*URLSearchParams\(window\.location\.search\);\s*var\s+src\s*=\s*qp\.get\s*\(\s*["']src["']\s*\)\s*\|\|\s*["'][^"']+["'];/;
 
         if (targetBlockRegex.test(content)) {
+          console.log("[APK Debug] Match found for standard Regex. Injecting script.");
           content = content.replace(targetBlockRegex, injectionScript);
         } else {
+          console.log("[APK Debug] NO MATCH for standard Regex. Attempting Fallbacks.");
+          let replaced = false;
+
           // Fallback: replace any azurewebsites.net URL
-          content = content.replace(/https:\/\/[a-z0-9-]+\.azurewebsites\.net/g, options.endpoint);
+          if (content.match(/https:\/\/[a-z0-9-]+\.azurewebsites\.net/g)) {
+            content = content.replace(/https:\/\/[a-z0-9-]+\.azurewebsites\.net/g, options.endpoint);
+            replaced = true;
+            console.log("[APK Debug] Fallback: Replaced azurewebsites.net URL");
+          }
+
+          if (!replaced && content.includes("TARGET_URL")) {
+            content = content.replace(/var\s+TARGET_URL\s*=\s*"[^"]*"/, `var TARGET_URL = "${options.endpoint}"`);
+            console.log("[APK Debug] Fallback: Replaced TARGET_URL");
+          }
         }
       } else {
-        // Standard replacement (Partner App)
-
-        // Replace TARGET_URL (if present)
+        // Partner App Logic...
         content = content.replace(/var\s+TARGET_URL\s*=\s*"[^"]*"/, `var TARGET_URL = "${options.endpoint}"`);
         content = content.replace(/const\s+TARGET_URL\s*=\s*"[^"]*"/, `const TARGET_URL = "${options.endpoint}"`);
-
-        // Replace src fallback (if present)
         const endpointPattern = /var\s+src\s*=\s*qp\.get\s*\(\s*["']src["']\s*\)\s*\|\|\s*["']([^"']+)["']/;
         if (endpointPattern.test(content)) {
           content = content.replace(endpointPattern, `var src = qp.get("src") || "${options.endpoint}"`);
         }
-
-        // Fallback: Replace specific domains if simpler patterns fail
         if (!content.includes(options.endpoint)) {
-          content = content.split("https://pay.ledger1.ai").join(options.endpoint);
-          content = content.split("https://paynex.azurewebsites.net").join(options.endpoint);
-          // Robust catch-all for defaults
           content = content.replace(/https:\/\/[a-z0-9-]+\.azurewebsites\.net/g, options.endpoint);
         }
       }
 
+      // Verification
+      if (content.includes(options.endpoint)) {
+        console.log(`[APK Debug] SUCCESS: wrap.html now contains endpoint.`);
+      } else {
+        console.error(`[APK Debug] CRITICAL FAILURE: wrap.html DOES NOT contain endpoint after modification!`);
+      }
+
       apkZip.file(wrapHtmlPath, content, { compression: "DEFLATE" });
-      console.log(`[APK] Updated wrap.html endpoint to ${options.endpoint} (Touchpoint: ${isTouchpoint})`);
     } else {
-      console.warn("[APK] assets/wrap.html not found. Endpoint modification skipped.");
+      console.warn("[APK Debug] assets/wrap.html not found.");
     }
   }
 
   // 2. Replace Icons
   if (options.iconBuffer) {
-    // Standard mipmap folders
+    console.log(`[APK Debug] Starting Icon Replacement. Buffer size: ${options.iconBuffer.length}`);
     const densities = ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"];
     const fileNames = ["ic_launcher.png", "ic_launcher_round.png"];
 
-    // Replace all density PNGs
     for (const density of densities) {
       for (const fileName of fileNames) {
-        // Write to both standard and -v4 paths to be safe
         apkZip.file(`res/mipmap-${density}/${fileName}`, options.iconBuffer, { compression: "DEFLATE" });
         apkZip.file(`res/mipmap-${density}-v4/${fileName}`, options.iconBuffer, { compression: "DEFLATE" });
       }
     }
 
-    // CRITICAL: Remove adaptive icon XMLs (anydpi) to force Android to use the PNGs we just updated
     const adaptivePaths = [
       "res/mipmap-anydpi-v26/ic_launcher.xml",
       "res/mipmap-anydpi-v26/ic_launcher_round.xml"
     ];
+    let removedCount = 0;
     for (const p of adaptivePaths) {
       if (apkZip.file(p)) {
         apkZip.remove(p);
-        console.log(`[APK] Removed adaptive icon definition: ${p}`);
+        removedCount++;
       }
     }
-    console.log(`[APK] Replaced icons`);
+    console.log(`[APK Debug] Icons replaced. Removed ${removedCount} adaptive icons.`);
   }
 
   return await apkZip.generateAsync({ type: "uint8array" });
