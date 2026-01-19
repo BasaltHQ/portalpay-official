@@ -569,22 +569,55 @@ async function generateAndUploadPackage(
   size?: number;
   endpoint?: string;
 }> {
-  // IMPORTANT: Do NOT modify the APK - it would break 4-byte alignment required by Android R+
-  // The original APK is pre-signed and properly aligned. Modifying it with JSZip breaks alignment.
-  // Instead, the endpoint should be configured via:
-  // 1. URL parameter when launching the app (e.g., ?src=https://xoinpay.azurewebsites.net)
-  // 2. Server-side configuration that the app fetches on first launch
-  // 3. Pre-built APKs for each brand (recommended)
-
+  // Modify APK with endpoint using the aligned builder (preserves Android R+ 4-byte alignment)
   let finalApkBytes = apkBytes;
 
   if (endpoint) {
-    console.log(`[APK] NOTE: Endpoint ${endpoint} requested but APK modification is disabled.`);
-    console.log(`[APK] The original APK must remain unmodified to preserve Android R+ alignment.`);
-    console.log(`[APK] Configure the endpoint via server-side branding or use a pre-built brand APK.`);
+    try {
+      const { modifyApkWithAlignment, signAlignedApk } = await import("@/lib/apk-builder");
+
+      // Load original APK to get wrap.html
+      const originalZip = await JSZip.loadAsync(apkBytes);
+      const wrapHtmlFile = originalZip.file("assets/wrap.html");
+
+      const modifications = new Map<string, Buffer>();
+
+      if (wrapHtmlFile) {
+        let content = await wrapHtmlFile.async("string");
+
+        // Replace the endpoint URL
+        const endpointPattern = /var\s+src\s*=\s*qp\.get\s*\(\s*["']src["']\s*\)\s*\|\|\s*["']([^"']+)["']/;
+        const match = content.match(endpointPattern);
+
+        if (match) {
+          content = content.replace(endpointPattern, `var src = qp.get("src") || "${endpoint}"`);
+          console.log(`[APK] Modified wrap.html endpoint: ${match[1]} -> ${endpoint}`);
+        } else {
+          // Fallback: replace any azurewebsites.net URL
+          content = content.replace(/https:\/\/[a-z0-9-]+\.azurewebsites\.net/g, endpoint);
+          console.log(`[APK] Replaced URL with: ${endpoint}`);
+        }
+
+        modifications.set("assets/wrap.html", Buffer.from(content, "utf8"));
+      }
+
+      if (modifications.size > 0) {
+        console.log(`[APK] Building APK with 4-byte alignment...`);
+        const modifiedApk = await modifyApkWithAlignment(apkBytes, modifications);
+
+        console.log(`[APK] Signing APK...`);
+        const signedApk = await signAlignedApk(modifiedApk);
+
+        finalApkBytes = new Uint8Array(signedApk.buffer, signedApk.byteOffset, signedApk.byteLength);
+        console.log(`[APK] Modification complete. Size: ${finalApkBytes.byteLength} bytes`);
+      }
+    } catch (e: any) {
+      console.error(`[APK] Failed to modify APK: ${e?.message}`);
+      console.log(`[APK] Using original APK as fallback`);
+    }
   }
 
-  // Create ZIP with the ORIGINAL, unmodified APK
+  // Create ZIP with the modified APK
   const zip = new JSZip();
   zip.file(`${brandKey}.apk`, finalApkBytes);
   zip.file(`install_${brandKey}.bat`, buildInstallerBat(brandKey));
