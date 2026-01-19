@@ -134,7 +134,8 @@ export default function TouchpointMonitoringPanel() {
 
         setBuilding(true);
         try {
-            const res = await fetch("/api/touchpoint/build", {
+            // Trigger GitHub Actions workflow to build APK
+            const res = await fetch("/api/build", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -149,12 +150,19 @@ export default function TouchpointMonitoringPanel() {
                 throw new Error(data?.message || data?.error || "Build failed");
             }
 
-            alert(`Touchpoint Installer Package (ZIP) built successfully for ${brand}!\n\nUploaded to: ${data.blobUrl}\nSize: ${Math.round(data.size / 1024 / 1024 * 10) / 10} MB\n\nDownload and extract the ZIP to find the APK and installer scripts.`);
+            // Show success message with download URL
+            alert(
+                `✅ Build Started for ${data.appName || brand}!\n\n` +
+                `The APK is being compiled via GitHub Actions.\n` +
+                `Estimated time: ${data.estimatedTime || "~2 minutes"}\n\n` +
+                `Once complete, download from:\n${data.downloadUrl}\n\n` +
+                `Note: Refresh this URL after a few minutes to access the APK.`
+            );
             setShowBuildForm(false);
             setBuildBrandKey("");
             setBuildEndpoint("");
         } catch (e: any) {
-            alert(`Error: ${e?.message || "Failed to build APK"}`);
+            alert(`Error: ${e?.message || "Failed to start build"}`);
         } finally {
             setBuilding(false);
         }

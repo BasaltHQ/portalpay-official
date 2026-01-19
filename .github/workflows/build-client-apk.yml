@@ -1,0 +1,88 @@
+name: Build Client APK
+
+on:
+    workflow_dispatch:
+        inputs:
+            brandKey:
+                description: "Brand Folder Name (e.g., xoinpay, surge)"
+                required: true
+            appName:
+                description: "App Display Name (e.g., Xoinpay, Surge)"
+                required: true
+            baseDomain:
+                description: "Client Domain (e.g., https://xoinpay.azurewebsites.net)"
+                required: true
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Set up JDK 17
+              uses: actions/setup-java@v4
+              with:
+                  java-version: "17"
+                  distribution: "temurin"
+                  cache: gradle
+
+            - name: Prepare Brand Icon
+              run: |
+                  # Copy brand icon to Android resource directory
+                  # Icons should be named 'icon.png' in public/brands/{brandKey}/
+                  BRAND_KEY="${{ github.event.inputs.brandKey }}"
+                  ICON_SRC="public/brands/${BRAND_KEY}/icon.png"
+                  ICON_DEST="android/app/src/main/res/drawable/ic_launcher_foreground.png"
+
+                  if [ -f "$ICON_SRC" ]; then
+                    echo "Found icon at $ICON_SRC"
+                    cp "$ICON_SRC" "$ICON_DEST"
+                    echo "Icon copied successfully"
+                  else
+                    echo "Warning: No icon.png found at $ICON_SRC"
+                    echo "Available files in public/brands/${BRAND_KEY}/:"
+                    ls -la "public/brands/${BRAND_KEY}/" 2>/dev/null || echo "Brand folder not found"
+                  fi
+
+            - name: Build APK with Gradle
+              run: |
+                  cd android
+                  chmod +x gradlew
+                  ./gradlew assembleDebug \
+                    -PAPP_NAME="${{ github.event.inputs.appName }}" \
+                    -PBASE_DOMAIN="${{ github.event.inputs.baseDomain }}"
+
+            - name: Upload to Azure Blob Storage
+              uses: azure/CLI@v1
+              with:
+                  inlineScript: |
+                      # Upload the built APK to Azure Blob Storage
+                      # Must match the location expected by the ZIP download route:
+                      # Container: portalpay (from PP_APK_CONTAINER)
+                      # Prefix: brands (from PP_APK_BLOB_PREFIX)
+                      # Blob name: brands/{brandKey}-touchpoint-signed.apk
+
+                      BRAND_KEY="${{ github.event.inputs.brandKey }}"
+                      APK_FILE="android/app/build/outputs/apk/debug/app-debug.apk"
+
+                      # Storage configuration (must match existing infrastructure)
+                      CONTAINER="portalpay"
+                      PREFIX="brands"
+                      BLOB_NAME="${PREFIX}/${BRAND_KEY}-touchpoint-signed.apk"
+
+                      echo "Uploading APK to Azure Blob Storage..."
+                      echo "  Account: ${{ secrets.AZURE_STORAGE_ACCOUNT }}"
+                      echo "  Container: ${CONTAINER}"
+                      echo "  Blob Name: ${BLOB_NAME}"
+
+                      az storage blob upload \
+                        --account-name ${{ secrets.AZURE_STORAGE_ACCOUNT }} \
+                        --container-name "${CONTAINER}" \
+                        --name "${BLOB_NAME}" \
+                        --file "${APK_FILE}" \
+                        --account-key ${{ secrets.AZURE_STORAGE_KEY }} \
+                        --overwrite
+
+                      echo "✅ APK uploaded successfully!"
+                      echo "Download URL: https://${{ secrets.AZURE_STORAGE_ACCOUNT }}.blob.core.windows.net/${CONTAINER}/${BLOB_NAME}"
