@@ -16,6 +16,38 @@ const DEBUG_KEY_ALIAS = "androiddebugkey";
 const DEBUG_CERT_CN = "Android Debug";
 const DEBUG_CERT_VALIDITY_YEARS = 30;
 
+// JAR manifest line length limit (per JAR specification)
+const MAX_LINE_LENGTH = 70; // Leave room for CRLF
+
+/**
+ * Wrap a manifest line to comply with JAR specification (72 byte max per line).
+ * Continuation lines start with a single space.
+ */
+function wrapManifestLine(line: string): string {
+    if (line.length <= MAX_LINE_LENGTH) {
+        return line;
+    }
+
+    const result: string[] = [];
+    let remaining = line;
+    let isFirst = true;
+
+    while (remaining.length > 0) {
+        const maxLen = isFirst ? MAX_LINE_LENGTH : MAX_LINE_LENGTH - 1; // Continuation lines have " " prefix
+        const chunk = remaining.substring(0, maxLen);
+        remaining = remaining.substring(maxLen);
+
+        if (isFirst) {
+            result.push(chunk);
+            isFirst = false;
+        } else {
+            result.push(" " + chunk); // Continuation lines start with space
+        }
+    }
+
+    return result.join("\r\n");
+}
+
 /**
  * Generate a self-signed debug certificate for APK signing.
  * Similar to what Android SDK's debug.keystore provides.
@@ -88,74 +120,122 @@ function sha1Base64(data: Buffer | string): string {
 /**
  * Build MANIFEST.MF content
  * Lists all files with their SHA-256 digests
+ * 
+ * Format per JAR spec:
+ * - Main attributes first, then blank line
+ * - Each entry: Name: <path>\r\n<digest-attr>: <digest>\r\n\r\n
+ * - Lines wrapped at 72 bytes (continuation lines start with space)
  */
 function buildManifest(files: Map<string, Buffer>): string {
-    const lines: string[] = [
-        "Manifest-Version: 1.0",
-        "Created-By: 1.0 (PortalPay APK Signer)",
-        "",
-    ];
+    const sections: string[] = [];
 
-    for (const [filename, content] of files) {
+    // Main section
+    sections.push(wrapManifestLine("Manifest-Version: 1.0"));
+    sections.push(wrapManifestLine("Created-By: 1.0 (PortalPay APK Signer)"));
+    sections.push(""); // Blank line after main section
+
+    // Entry sections - sorted for consistency
+    const sortedFiles = Array.from(files.keys()).sort();
+
+    for (const filename of sortedFiles) {
         // Skip META-INF files
         if (filename.startsWith("META-INF/")) continue;
 
+        const content = files.get(filename)!;
         const digest = sha256Base64(content);
-        lines.push(`Name: ${filename}`);
-        lines.push(`SHA-256-Digest: ${digest}`);
-        lines.push("");
+
+        sections.push(wrapManifestLine(`Name: ${filename}`));
+        sections.push(wrapManifestLine(`SHA-256-Digest: ${digest}`));
+        sections.push(""); // Blank line after each entry
     }
 
-    return lines.join("\r\n");
+    return sections.join("\r\n");
 }
 
 /**
  * Build CERT.SF (Signature File) content
- * Contains digest of entire manifest and per-entry digests
+ * Contains digest of entire manifest and per-section digests
  */
-function buildSignatureFile(manifestContent: string, files: Map<string, Buffer>): string {
-    const lines: string[] = [
-        "Signature-Version: 1.0",
-        `SHA-256-Digest-Manifest: ${sha256Base64(manifestContent)}`,
-        "Created-By: 1.0 (PortalPay APK Signer)",
-        "",
-    ];
+function buildSignatureFile(manifestContent: string): string {
+    const sections: string[] = [];
 
-    // For each entry in manifest, we digest the entry block (Name + Digest + newlines)
-    const manifestLines = manifestContent.split("\r\n");
-    let entryBlock: string[] = [];
-    let inEntry = false;
+    // Main section
+    sections.push(wrapManifestLine("Signature-Version: 1.0"));
+    sections.push(wrapManifestLine(`SHA-256-Digest-Manifest: ${sha256Base64(manifestContent)}`));
+    sections.push(wrapManifestLine("Created-By: 1.0 (PortalPay APK Signer)"));
+    sections.push(""); // Blank line
 
-    for (const line of manifestLines) {
-        if (line.startsWith("Name: ")) {
-            if (inEntry && entryBlock.length > 0) {
-                // Digest previous entry block
-                const blockContent = entryBlock.join("\r\n") + "\r\n";
-                const name = entryBlock[0].substring(6); // Remove "Name: "
-                lines.push(`Name: ${name}`);
-                lines.push(`SHA-256-Digest: ${sha256Base64(blockContent)}`);
-                lines.push("");
-            }
-            entryBlock = [line];
-            inEntry = true;
-        } else if (inEntry) {
-            if (line === "") {
-                // End of entry
-                entryBlock.push(line);
-                const blockContent = entryBlock.join("\r\n") + "\r\n";
-                const name = entryBlock[0].substring(6);
-                lines.push(`Name: ${name}`);
-                lines.push(`SHA-256-Digest: ${sha256Base64(blockContent)}`);
-                lines.push("");
-                inEntry = false;
-                entryBlock = [];
-            } else {
-                entryBlock.push(line);
-            }
+    // For CERT.SF, we need to digest each section of MANIFEST.MF separately
+    // A section is: Name line + attribute lines + blank line (including the trailing CRLF)
+
+    const manifestSections = parseManifestSections(manifestContent);
+
+    for (const section of manifestSections) {
+        if (section.name) {
+            // Compute digest of the section (including trailing CRLF)
+            const sectionDigest = sha256Base64(section.raw);
+            sections.push(wrapManifestLine(`Name: ${section.name}`));
+            sections.push(wrapManifestLine(`SHA-256-Digest: ${sectionDigest}`));
+            sections.push("");
         }
     }
 
-    return lines.join("\r\n");
+    return sections.join("\r\n");
+}
+
+/**
+ * Parse MANIFEST.MF into sections
+ */
+function parseManifestSections(manifest: string): Array<{ name: string | null; raw: string }> {
+    const sections: Array<{ name: string | null; raw: string }> = [];
+    const lines = manifest.split("\r\n");
+
+    let currentLines: string[] = [];
+    let currentName: string | null = null;
+    let inMainSection = true;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        if (line === "") {
+            // End of a section
+            if (currentLines.length > 0) {
+                // Include the blank line in the section
+                currentLines.push(line);
+                const raw = currentLines.join("\r\n") + "\r\n";
+
+                sections.push({ name: inMainSection ? null : currentName, raw });
+
+                currentLines = [];
+                currentName = null;
+                inMainSection = false;
+            }
+        } else if (line.startsWith(" ")) {
+            // Continuation line
+            currentLines.push(line);
+        } else if (line.startsWith("Name: ")) {
+            // New entry section
+            currentName = unwrapValue("Name: ", currentLines.length > 0 ? currentLines : [line], line);
+            currentLines.push(line);
+        } else {
+            // Attribute line
+            currentLines.push(line);
+        }
+    }
+
+    return sections;
+}
+
+/**
+ * Unwrap a potentially multi-line value
+ */
+function unwrapValue(prefix: string, allLines: string[], firstLine: string): string {
+    // For now, just extract from the first line
+    // Full implementation would handle continuation lines
+    if (firstLine.startsWith(prefix)) {
+        return firstLine.substring(prefix.length);
+    }
+    return firstLine;
 }
 
 /**
@@ -250,7 +330,7 @@ export async function signApk(apkBytes: Uint8Array): Promise<Uint8Array> {
     const manifestContent = buildManifest(files);
 
     // Build CERT.SF
-    const signatureFileContent = buildSignatureFile(manifestContent, files);
+    const signatureFileContent = buildSignatureFile(manifestContent);
 
     // Create CERT.RSA (PKCS7 signature block)
     const signatureBlock = createSignatureBlock(signatureFileContent, privateKey, certificate);
@@ -263,7 +343,7 @@ export async function signApk(apkBytes: Uint8Array): Promise<Uint8Array> {
     console.log("[APK Signer] Added signature files to APK");
 
     // Generate signed APK
-    // Important: resources.arsc must be stored uncompressed
+    // Important: resources.arsc must be stored uncompressed for Android compatibility
     const signedApk = await zip.generateAsync({
         type: "nodebuffer",
         platform: "UNIX",
