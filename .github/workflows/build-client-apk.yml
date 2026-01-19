@@ -16,6 +16,9 @@ on:
 jobs:
     build:
         runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: android
         steps:
             - name: Checkout Repository
               uses: actions/checkout@v4
@@ -25,9 +28,16 @@ jobs:
               with:
                   java-version: "17"
                   distribution: "temurin"
-                  cache: gradle
+                  # Don't use Gradle cache since our project is in a subdirectory
+                  # cache: gradle
+
+            - name: Setup Gradle
+              uses: gradle/actions/setup-gradle@v3
+              with:
+                  build-root-directory: android
 
             - name: Prepare Brand Icon
+              working-directory: .
               run: |
                   # Copy brand icon to Android resource directory
                   # Icons should be named 'icon.png' in public/brands/{brandKey}/
@@ -47,7 +57,6 @@ jobs:
 
             - name: Build APK with Gradle
               run: |
-                  cd android
                   chmod +x gradlew
                   ./gradlew assembleDebug \
                     -PAPP_NAME="${{ github.event.inputs.appName }}" \
