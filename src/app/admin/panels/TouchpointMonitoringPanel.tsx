@@ -35,6 +35,15 @@ export default function TouchpointMonitoringPanel() {
     const [buildEndpoint, setBuildEndpoint] = useState("");
     const [building, setBuilding] = useState(false);
 
+    // Build status tracking
+    const [buildRunId, setBuildRunId] = useState<number | null>(null);
+    const [buildStatus, setBuildStatus] = useState<string>("");
+    const [buildProgress, setBuildProgress] = useState<number>(0);
+    const [buildMessage, setBuildMessage] = useState<string>("");
+    const [buildDownloadUrl, setBuildDownloadUrl] = useState<string>("");
+    const [buildComplete, setBuildComplete] = useState(false);
+    const [buildSuccess, setBuildSuccess] = useState<boolean | null>(null);
+
     const fetchDevices = useCallback(async () => {
         setLoading(true);
         setError("");
@@ -132,7 +141,14 @@ export default function TouchpointMonitoringPanel() {
             return;
         }
 
+        // Reset build tracking state
+        setBuildComplete(false);
+        setBuildSuccess(null);
+        setBuildProgress(0);
+        setBuildMessage("Starting build...");
+        setBuildStatus("starting");
         setBuilding(true);
+
         try {
             // Trigger GitHub Actions workflow to build APK
             const res = await fetch("/api/build", {
@@ -150,22 +166,96 @@ export default function TouchpointMonitoringPanel() {
                 throw new Error(data?.message || data?.error || "Build failed");
             }
 
-            // Show success message with download URL
-            alert(
-                `✅ Build Started for ${data.appName || brand}!\n\n` +
-                `The APK is being compiled via GitHub Actions.\n` +
-                `Estimated time: ${data.estimatedTime || "~2 minutes"}\n\n` +
-                `Once complete, download from:\n${data.downloadUrl}\n\n` +
-                `Note: Refresh this URL after a few minutes to access the APK.`
-            );
-            setShowBuildForm(false);
+            // Store the run ID and download URL for tracking
+            setBuildRunId(data.runId);
+            setBuildDownloadUrl(data.downloadUrl);
+            setBuildMessage(data.message || "Build triggered, waiting for status...");
+            setBuildProgress(10);
+
+            // Start polling for status if we have a run ID
+            if (data.runId) {
+                pollBuildStatus(data.runId);
+            } else {
+                // No run ID available, show basic success
+                setBuildComplete(true);
+                setBuildSuccess(true);
+                setBuildMessage("Build triggered! Check GitHub Actions for status.");
+                setBuilding(false);
+            }
+
+            // Clear form inputs but keep modal open to show progress
             setBuildBrandKey("");
             setBuildEndpoint("");
         } catch (e: any) {
-            alert(`Error: ${e?.message || "Failed to start build"}`);
-        } finally {
+            setBuildComplete(true);
+            setBuildSuccess(false);
+            setBuildMessage(`Error: ${e?.message || "Failed to start build"}`);
             setBuilding(false);
         }
+    }
+
+    async function pollBuildStatus(runId: number) {
+        const maxAttempts = 60; // 10 minutes max (10s intervals)
+        let attempts = 0;
+
+        const poll = async () => {
+            if (attempts >= maxAttempts) {
+                setBuildComplete(true);
+                setBuildSuccess(null);
+                setBuildMessage("Build timed out. Check GitHub Actions for status.");
+                setBuilding(false);
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/build/status?runId=${runId}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    // If 404, the run might not be registered yet
+                    if (res.status === 404 && attempts < 5) {
+                        attempts++;
+                        setTimeout(poll, 5000);
+                        return;
+                    }
+                    throw new Error(data?.error || "Status check failed");
+                }
+
+                setBuildStatus(data.status);
+                setBuildProgress(data.progress || 0);
+                setBuildMessage(data.message || `Status: ${data.status}`);
+
+                if (data.status === "completed") {
+                    setBuildComplete(true);
+                    setBuildSuccess(data.conclusion === "success");
+                    setBuilding(false);
+                    return;
+                }
+
+                // Continue polling
+                attempts++;
+                setTimeout(poll, 10000); // Poll every 10 seconds
+            } catch (e: any) {
+                console.error("Poll error:", e);
+                // Continue polling on error
+                attempts++;
+                setTimeout(poll, 10000);
+            }
+        };
+
+        poll();
+    }
+
+    function resetBuildState() {
+        setShowBuildForm(false);
+        setBuildRunId(null);
+        setBuildStatus("");
+        setBuildProgress(0);
+        setBuildMessage("");
+        setBuildDownloadUrl("");
+        setBuildComplete(false);
+        setBuildSuccess(null);
+        setBuilding(false);
     }
 
     function formatDate(dateStr?: string | null) {
@@ -329,60 +419,127 @@ export default function TouchpointMonitoringPanel() {
                     <div className="flex items-center justify-between">
                         <h4 className="font-semibold">Build Touchpoint APK</h4>
                         <button
-                            onClick={() => setShowBuildForm(false)}
+                            onClick={resetBuildState}
                             className="h-6 w-6 rounded hover:bg-neutral-700 flex items-center justify-center"
                         >
                             <X className="h-4 w-4" />
                         </button>
                     </div>
 
-                    <div className="space-y-3">
-                        <div>
-                            <label className="text-xs text-muted-foreground block mb-1">Brand Key</label>
-                            <input
-                                type="text"
-                                value={buildBrandKey}
-                                onChange={(e) => setBuildBrandKey(e.target.value)}
-                                placeholder="e.g. xoinpay, surge"
-                                className="w-full h-9 px-3 rounded-md border bg-background text-sm"
-                            />
-                            <p className="text-[10px] text-muted-foreground mt-1">
-                                The brand this APK will be configured for
-                            </p>
-                        </div>
+                    {/* Show form when not building */}
+                    {!building && !buildComplete && (
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs text-muted-foreground block mb-1">Brand Key</label>
+                                <input
+                                    type="text"
+                                    value={buildBrandKey}
+                                    onChange={(e) => setBuildBrandKey(e.target.value)}
+                                    placeholder="e.g. xoinpay, surge"
+                                    className="w-full h-9 px-3 rounded-md border bg-background text-sm"
+                                />
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                    The brand this APK will be configured for
+                                </p>
+                            </div>
 
-                        <div>
-                            <label className="text-xs text-muted-foreground block mb-1">Endpoint URL (Optional)</label>
-                            <input
-                                type="text"
-                                value={buildEndpoint}
-                                onChange={(e) => setBuildEndpoint(e.target.value)}
-                                placeholder="https://xoinpay.azurewebsites.net"
-                                className="w-full h-9 px-3 rounded-md border bg-background text-sm font-mono"
-                            />
-                            <p className="text-[10px] text-muted-foreground mt-1">
-                                Leave empty to use default: https://{buildBrandKey || "brand"}.azurewebsites.net
-                            </p>
-                        </div>
-                    </div>
+                            <div>
+                                <label className="text-xs text-muted-foreground block mb-1">Endpoint URL (Optional)</label>
+                                <input
+                                    type="text"
+                                    value={buildEndpoint}
+                                    onChange={(e) => setBuildEndpoint(e.target.value)}
+                                    placeholder="https://xoinpay.azurewebsites.net"
+                                    className="w-full h-9 px-3 rounded-md border bg-background text-sm font-mono"
+                                />
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                    Leave empty to use default: https://{buildBrandKey || "brand"}.azurewebsites.net
+                                </p>
+                            </div>
 
-                    <button
-                        onClick={handleBuildApk}
-                        disabled={building}
-                        className="w-full h-9 px-3 rounded-md bg-blue-600 hover:bg-blue-500 disabled:bg-neutral-700 disabled:text-neutral-500 text-white text-sm font-medium flex items-center justify-center gap-2"
-                    >
-                        {building ? (
-                            <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                                Building & Uploading...
-                            </>
-                        ) : (
-                            <>
+                            <button
+                                onClick={handleBuildApk}
+                                className="w-full h-9 px-3 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium flex items-center justify-center gap-2"
+                            >
                                 <Smartphone className="h-4 w-4" />
                                 Build & Upload APK
-                            </>
-                        )}
-                    </button>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Show progress while building */}
+                    {building && (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+                                <span className="text-sm">{buildMessage}</span>
+                            </div>
+
+                            {/* Progress bar */}
+                            <div className="w-full bg-neutral-700 rounded-full h-2">
+                                <div
+                                    className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                                    style={{ width: `${buildProgress}%` }}
+                                ></div>
+                            </div>
+                            <p className="text-xs text-muted-foreground text-center">
+                                {buildProgress}% - This may take 2-3 minutes
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Show result when complete */}
+                    {buildComplete && (
+                        <div className="space-y-4">
+                            {buildSuccess === true && (
+                                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
+                                    <div className="flex items-center gap-2 text-emerald-400 mb-2">
+                                        <Check className="h-5 w-5" />
+                                        <span className="font-medium">Build Successful!</span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mb-3">{buildMessage}</p>
+                                    {buildDownloadUrl && (
+                                        <a
+                                            href={buildDownloadUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-md"
+                                        >
+                                            <Smartphone className="h-4 w-4" />
+                                            Download APK
+                                        </a>
+                                    )}
+                                </div>
+                            )}
+
+                            {buildSuccess === false && (
+                                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md">
+                                    <div className="flex items-center gap-2 text-red-400 mb-2">
+                                        <X className="h-5 w-5" />
+                                        <span className="font-medium">Build Failed</span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">{buildMessage}</p>
+                                </div>
+                            )}
+
+                            {buildSuccess === null && (
+                                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
+                                    <div className="flex items-center gap-2 text-yellow-400 mb-2">
+                                        <Clock className="h-5 w-5" />
+                                        <span className="font-medium">Status Unknown</span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">{buildMessage}</p>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={resetBuildState}
+                                className="w-full h-9 px-3 rounded-md border hover:bg-foreground/5 text-sm font-medium"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 

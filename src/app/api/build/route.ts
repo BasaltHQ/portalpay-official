@@ -13,6 +13,41 @@ function capitalizeFirst(str: string): string {
 }
 
 /**
+ * Get the most recent workflow run for our workflow
+ */
+async function getLatestWorkflowRun(githubPat: string, brandKey: string): Promise<{ id: number; status: string } | null> {
+    const repoOwner = "Ledger1-ai";
+    const repoName = "portalpay-official";
+    const workflowFile = "build-client-apk.yml";
+
+    // Wait a moment for GitHub to register the new run
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    const url = `https://api.github.com/repos/${repoOwner}/${repoName}/actions/workflows/${workflowFile}/runs?per_page=1`;
+
+    const response = await fetch(url, {
+        headers: {
+            "Authorization": `Bearer ${githubPat}`,
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+    });
+
+    if (!response.ok) {
+        console.error(`[/api/build] Failed to get workflow runs: ${response.status}`);
+        return null;
+    }
+
+    const data = await response.json();
+    if (data.workflow_runs && data.workflow_runs.length > 0) {
+        const run = data.workflow_runs[0];
+        return { id: run.id, status: run.status };
+    }
+
+    return null;
+}
+
+/**
  * POST /api/build
  * 
  * Triggers GitHub Actions workflow to build a branded APK.
@@ -27,8 +62,9 @@ function capitalizeFirst(str: string): string {
  * 
  * Returns:
  * {
- *   "message": "Build started...",
- *   "downloadUrl": "https://..."  // Expected APK location after build completes
+ *   "ok": true,
+ *   "runId": 12345,             // GitHub Actions run ID for status polling
+ *   "downloadUrl": "https://..."
  * }
  */
 export async function POST(req: NextRequest) {
@@ -118,7 +154,11 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: `Failed to trigger build: ${response.status}` }, { status: 500 });
         }
 
-        // 7. Build expected download URL
+        // 7. Get the workflow run ID for status tracking
+        const workflowRun = await getLatestWorkflowRun(githubPat, brandKey);
+        const runId = workflowRun?.id;
+
+        // 8. Build expected download URL
         // The workflow uploads to: portalpay container with brands/ prefix
         // Path: brands/{brandKey}-touchpoint-signed.apk
         const storageAccount = process.env.AZURE_BLOB_ACCOUNT_NAME || "engram1";
@@ -132,16 +172,16 @@ export async function POST(req: NextRequest) {
             ? `${publicBaseUrl}/${container}/${blobName}`
             : `https://${storageAccount}.blob.core.windows.net/${container}/${blobName}`;
 
-        console.log(`[/api/build] Workflow triggered successfully. Expected APK at: ${downloadUrl}`);
+        console.log(`[/api/build] Workflow triggered successfully. Run ID: ${runId}, Expected APK at: ${downloadUrl}`);
 
         return NextResponse.json({
             ok: true,
-            message: `Build started for ${appName}! Your APK will be ready in approximately 2 minutes.`,
+            message: `Build started for ${appName}!`,
+            runId,
             brandKey,
             appName,
             baseDomain,
             downloadUrl,
-            estimatedTime: "~2 minutes",
         });
 
     } catch (e: any) {
