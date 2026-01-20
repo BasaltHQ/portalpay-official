@@ -171,7 +171,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                 <div className="flex items-center gap-4">
                     {logoUrl && <img src={logoUrl} className="h-10 w-10 object-contain" />}
                     <div>
-                        <h1 className="text-2xl font-bold">{brandName || "Terminal"}</h1>
+                        <h1 className="text-md font-bold">{brandName || "Terminal"}</h1>
                         {employeeName && <div className="text-sm text-muted-foreground">Operator: {employeeName}</div>}
                     </div>
                 </div>
