@@ -1648,7 +1648,7 @@ export default function DeviceInstallerPanel() {
   const effectiveBrandKey = targetBrand || (brand?.key || "").toLowerCase();
   const effectiveBrandName = targetBrand
     ? (partners.find(p => p.brandKey === targetBrand)?.name || targetBrand)
-    : (brand?.name || "Surge");
+    : (brand?.name || "BasaltSurge");
   const touchpointApkName = `${effectiveBrandName.replace(/\s+/g, "")}Touchpoint`;
 
   function downloadTouchpointApk() {
@@ -1703,7 +1703,7 @@ export default function DeviceInstallerPanel() {
               value={targetBrand}
               onChange={(e) => setTargetBrand(e.target.value)}
             >
-              <option value="">Surge (Platform Default)</option>
+              <option value="">BasaltSurge (Platform Default)</option>
               {partners.map((p) => (
                 <option key={p.brandKey} value={p.brandKey}>
                   {p.name || p.brandKey}

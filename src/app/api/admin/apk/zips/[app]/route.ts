@@ -58,10 +58,10 @@ async function getApkStream(appKey: string): Promise<{ stream: Readable; length?
 
         // 2. Try aliases
         if (!result) {
-            if (appKey === "surge-touchpoint") {
+            if (appKey === "basaltsurge-touchpoint") {
                 result = await tryBlob("basaltsurge-touchpoint");
             } else if (appKey === "basaltsurge-touchpoint") {
-                result = await tryBlob("surge-touchpoint");
+                result = await tryBlob("basaltsurge-touchpoint");
             }
         }
 
@@ -72,7 +72,7 @@ async function getApkStream(appKey: string): Promise<{ stream: Readable; length?
     const APP_TO_PATH: Record<string, string> = {
         portalpay: path.join("android", "launcher", "recovered", "portalpay-signed.apk"),
         paynex: path.join("android", "launcher", "recovered", "paynex-signed.apk"),
-        "surge-touchpoint": path.join("android", "launcher", "recovered", "surge-touchpoint-signed.apk"),
+        "basaltsurge-touchpoint": path.join("android", "launcher", "recovered", "basaltsurge-touchpoint-signed.apk"),
     };
     const rel = APP_TO_PATH[appKey];
     if (!rel) return null;
@@ -240,7 +240,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ app: string
             } else {
                 effectiveKey = (envBrand && containerType === "partner")
                     ? `${envBrand}-touchpoint`
-                    : "surge-touchpoint";
+                    : "basaltsurge-touchpoint";
             }
         }
 

@@ -435,7 +435,7 @@ export default function TouchpointMonitoringPanel() {
                                     type="text"
                                     value={buildBrandKey}
                                     onChange={(e) => setBuildBrandKey(e.target.value)}
-                                    placeholder="e.g. xoinpay, surge"
+                                    placeholder="e.g. xoinpay, basaltsurge"
                                     className="w-full h-9 px-3 rounded-md border bg-background text-sm"
                                 />
                                 <p className="text-[10px] text-muted-foreground mt-1">
@@ -449,7 +449,7 @@ export default function TouchpointMonitoringPanel() {
                                     type="text"
                                     value={buildEndpoint}
                                     onChange={(e) => setBuildEndpoint(e.target.value)}
-                                    placeholder="https://xoinpay.azurewebsites.net"
+                                    placeholder="https://surge.basalthq.com"
                                     className="w-full h-9 px-3 rounded-md border bg-background text-sm font-mono"
                                 />
                                 <p className="text-[10px] text-muted-foreground mt-1">
