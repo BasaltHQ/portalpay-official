@@ -24,10 +24,10 @@ class MainActivity : ComponentActivity() {
         runtime = GeckoRuntime.create(this)
         val session = GeckoSession()
         session.open(runtime!!)
-        session.loadUri("https://xoinpay.azurewebsites.net/touchpoint/setup")
+        //session.loadUri("https://xoinpay.azurewebsites.net/touchpoint/setup")
         // Use BASE_DOMAIN from BuildConfig and append the setup path
-        //val setupUrl = "${BuildConfig.BASE_DOMAIN}/touchpoint/setup"
-        //session.loadUri(setupUrl)
+        val setupUrl = "${BuildConfig.BASE_DOMAIN}/touchpoint/setup"
+        session.loadUri(setupUrl)
 
         enableEdgeToEdge()
         setContent {
