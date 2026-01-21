@@ -20,7 +20,7 @@ android {
 
         // Dynamic URL
         val baseDomain = project.findProperty("BASE_DOMAIN") as? String ?: "https://surge.basalthq.com"
-        buildConfigField("String", "BASE_DOMAIN", "\"$baseDomain\"")
+        buildConfigField("String", "BASE_DOMAIN", "\"$baseDomain\"?scale=0.75")
 
         // Dynamic App Name
         val appName = project.findProperty("APP_NAME") as? String ?: "BasaltSurge"
