@@ -29,7 +29,7 @@ function isJwtExpired(token: string): boolean {
 }
 
 /**
- * Middleware responsibilities:
+ * Proxy responsibilities:
  * 1) Vanity slug rewrite: route root-level slugs to /shop/[slug]
  * 2) Global security headers: CSP, frame-ancestors, HSTS, referrer-policy, etc.
  */
@@ -153,7 +153,7 @@ function applySecurityHeaders(req: NextRequest, res: NextResponse) {
   res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const url = req.nextUrl;
 
   // Attach container type header for SSR/client awareness
