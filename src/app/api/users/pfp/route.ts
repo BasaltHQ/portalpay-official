@@ -70,31 +70,85 @@ export async function GET(req: NextRequest) {
       if (pfpUrl) {
         return NextResponse.redirect(pfpUrl, { status: 307 });
       }
-    } catch {}
+    } catch { }
 
     // Fallback to legacy pfp doc: if blobUrl present, redirect; else serve base64
+    // Fallback to legacy pfp doc: if blobUrl present, redirect; else serve base64
     const id = `${wallet}:pfp`;
-    const { resource } = await container.item(id, wallet).read<any>();
-    if (!resource || (!resource.data && !resource.blobUrl)) {
-      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    let pfpData: any = undefined;
+    try {
+      const { resource } = await container.item(id, wallet).read<any>();
+      pfpData = resource;
+    } catch { }
+
+    if (pfpData?.blobUrl) {
+      return NextResponse.redirect(String(pfpData.blobUrl), { status: 307 });
     }
-    if (resource.blobUrl) {
-      return NextResponse.redirect(String(resource.blobUrl), { status: 307 });
+    if (pfpData?.data) {
+      const binary = fromBase64(String(pfpData.data));
+      const type = String(pfpData.contentType || "image/png");
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(binary);
+          controller.close();
+        },
+      });
+      return new NextResponse(stream, {
+        headers: { "Content-Type": type, "Cache-Control": "public, max-age=86400, transform-max-age=86400" },
+      });
     }
-    const binary = fromBase64(String(resource.data));
-    const type = String(resource.contentType || "image/png");
-    const stream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(binary);
-        controller.close();
+
+    // No PFP found: return generated mesh gradient SVG
+    const svg = generateMeshGradient(wallet);
+    return new NextResponse(svg, {
+      headers: {
+        "Content-Type": "image/svg+xml",
+        "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
-    return new NextResponse(stream, {
-      headers: { "Content-Type": type, "Cache-Control": "no-store, max-age=0, must-revalidate" },
-    });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "failed" }, { status: 500 });
+    // On any error, also fallback to mesh gradient to prevent 500s on images
+    try {
+      const wallet = String(req.nextUrl.searchParams.get("wallet") || "0x00").toLowerCase();
+      const svg = generateMeshGradient(wallet);
+      return new NextResponse(svg, { headers: { "Content-Type": "image/svg+xml" } });
+    } catch {
+      return NextResponse.json({ error: e?.message || "failed" }, { status: 500 });
+    }
   }
+}
+
+function generateMeshGradient(wallet: string): string {
+  // Deterministic seed from wallet
+  let hash = 0;
+  for (let i = 0; i < wallet.length; i++) {
+    hash = wallet.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  // Generate 4 vibrant colors
+  const h1 = Math.abs(hash % 360);
+  const h2 = Math.abs((hash >> 3) % 360);
+  const h3 = Math.abs((hash >> 6) % 360);
+  const h4 = Math.abs((hash >> 9) % 360);
+
+  const c1 = `hsl(${h1}, 85%, 65%)`;
+  const c2 = `hsl(${h2}, 90%, 60%)`;
+  const c3 = `hsl(${h3}, 80%, 55%)`;
+  const c4 = `hsl(${h4}, 75%, 50%)`;
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="40" />
+    </filter>
+  </defs>
+  <rect width="256" height="256" fill="${c1}" />
+  <circle cx="0" cy="0" r="160" fill="${c2}" filter="url(#blur)" opacity="0.7" />
+  <circle cx="256" cy="0" r="160" fill="${c3}" filter="url(#blur)" opacity="0.7" />
+  <circle cx="256" cy="256" r="160" fill="${c4}" filter="url(#blur)" opacity="0.7" />
+  <circle cx="0" cy="256" r="160" fill="${c1}" filter="url(#blur)" opacity="0.7" />
+</svg>`;
 }
 
 export async function POST(req: NextRequest) {
@@ -142,7 +196,7 @@ export async function POST(req: NextRequest) {
           ok: false,
           metadata: { error: e?.message || "rate_limited", resetAt }
         });
-      } catch {}
+      } catch { }
       return NextResponse.json(
         { error: e?.message || "rate_limited", resetAt, correlationId },
         { status: e?.status || 429, headers: { "x-correlation-id": correlationId, "x-ratelimit-reset": resetAt ? String(resetAt) : "" } }
@@ -190,7 +244,7 @@ export async function POST(req: NextRequest) {
           const u = new URL(storageUrl);
           return `${publicBase}${u.pathname}`;
         }
-      } catch {}
+      } catch { }
       return storageUrl;
     })();
 
@@ -220,7 +274,7 @@ export async function POST(req: NextRequest) {
           lastSeen: Date.now(),
         };
         await container.items.upsert(next as any);
-      } catch {}
+      } catch { }
     } catch (e: any) {
       // If Cosmos unavailable, still return URL (client can use it directly)
       try {
@@ -233,7 +287,7 @@ export async function POST(req: NextRequest) {
           ok: true,
           metadata: { degraded: true, reason: e?.message || "cosmos_unavailable" }
         });
-      } catch {}
+      } catch { }
       return NextResponse.json(
         { ok: true, degraded: true, reason: e?.message || "cosmos_unavailable", url, correlationId },
         { headers: { "x-correlation-id": correlationId } }
@@ -249,11 +303,11 @@ export async function POST(req: NextRequest) {
         correlationId,
         ok: true
       });
-    } catch {}
+    } catch { }
     return NextResponse.json({ ok: true, url, correlationId }, { headers: { "x-correlation-id": correlationId } });
   } catch (e: any) {
     const msg = e?.message || "failed";
-    
+
     // Determine appropriate HTTP status code based on error type
     let status = 500;
     if (msg === "unauthorized") {
@@ -265,7 +319,7 @@ export async function POST(req: NextRequest) {
     } else if (msg === "invalid" || msg.includes("too_large") || msg.includes("unsupported_content_type")) {
       status = 400;
     }
-    
+
     return NextResponse.json({ error: msg }, { status });
   }
 }
