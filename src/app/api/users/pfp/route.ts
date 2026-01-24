@@ -142,12 +142,17 @@ function generateMeshGradient(wallet: string): string {
     <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
       <feGaussianBlur in="SourceGraphic" stdDeviation="40" />
     </filter>
+    <clipPath id="circle">
+      <circle cx="128" cy="128" r="128" />
+    </clipPath>
   </defs>
-  <rect width="256" height="256" fill="${c1}" />
-  <circle cx="0" cy="0" r="160" fill="${c2}" filter="url(#blur)" opacity="0.7" />
-  <circle cx="256" cy="0" r="160" fill="${c3}" filter="url(#blur)" opacity="0.7" />
-  <circle cx="256" cy="256" r="160" fill="${c4}" filter="url(#blur)" opacity="0.7" />
-  <circle cx="0" cy="256" r="160" fill="${c1}" filter="url(#blur)" opacity="0.7" />
+  <g clip-path="url(#circle)">
+    <rect width="256" height="256" fill="${c1}" />
+    <circle cx="0" cy="0" r="160" fill="${c2}" filter="url(#blur)" opacity="0.7" />
+    <circle cx="256" cy="0" r="160" fill="${c3}" filter="url(#blur)" opacity="0.7" />
+    <circle cx="256" cy="256" r="160" fill="${c4}" filter="url(#blur)" opacity="0.7" />
+    <circle cx="0" cy="256" r="160" fill="${c1}" filter="url(#blur)" opacity="0.7" />
+  </g>
 </svg>`;
 }
 
