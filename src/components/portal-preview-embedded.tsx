@@ -213,7 +213,11 @@ export function PortalPreviewEmbedded({
   // No longer fetching partner info redundantly - we rely on the dynamic theme prop
   const rawThemeName = String(theme?.brandName || "").trim();
   const keyForDisplay = String(((theme as any)?.brandKey || (brandCtx as any)?.key || "")).trim();
-  const titleizedKey = (keyForDisplay && keyForDisplay.toLowerCase() !== "portalpay") ? keyForDisplay.charAt(0).toUpperCase() + keyForDisplay.slice(1) : "BasaltSurge";
+  const titleizedKey = (() => {
+    const k = keyForDisplay.toLowerCase();
+    if (k === "portalpay" || k === "basaltsurge") return "BasaltSurge";
+    return keyForDisplay.charAt(0).toUpperCase() + keyForDisplay.slice(1);
+  })();
 
   // Detect partner container from HTML attribute to treat 'PortalPay' as generic placeholder in partner envs
   const isPartnerContainerNow =
@@ -224,7 +228,8 @@ export function PortalPreviewEmbedded({
     /^ledger\d*$/i.test(rawThemeName) ||
     /^partner\d*$/i.test(rawThemeName) ||
     /^default$/i.test(rawThemeName) ||
-    /^portalpay$/i.test(rawThemeName);
+    /^portalpay$/i.test(rawThemeName) ||
+    /^basaltsurge$/i.test(rawThemeName);
 
   const displayBrandName = (!rawThemeName || isGenericThemeName) ? titleizedKey : rawThemeName;
 
