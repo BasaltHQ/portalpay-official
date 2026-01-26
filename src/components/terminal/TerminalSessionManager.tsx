@@ -6,8 +6,8 @@ import TerminalAdminDashboard from "@/components/terminal/TerminalAdminDashboard
 import { ShopConfig } from "@/app/shop/[slug]/ShopClient";
 
 // ThirdWeb Imports
-import { ConnectButton, useActiveAccount } from "thirdweb/react";
-import { client, chain } from "@/lib/thirdweb/client";
+import { ConnectButton, useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
+import { client, chain, getWallets } from "@/lib/thirdweb/client";
 import { usePortalThirdwebTheme, getConnectButtonStyle, connectButtonClass } from "@/lib/thirdweb/theme";
 
 // Handles Authenticating the Employee via PIN before showing the interface
@@ -19,8 +19,23 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
 
     // Admin / Wallet
     const account = useActiveAccount();
+    const activeWallet = useActiveWallet();
+    const { disconnect } = useDisconnect();
     const twTheme = usePortalThirdwebTheme();
     const [isLoggedOut, setIsLoggedOut] = useState(false);
+
+    // Load wallets and handle mounting to prevent hydration mismatch
+    const [wallets, setWallets] = useState<any[]>([]);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        setMounted(true);
+        getWallets().then((w) => {
+            if (isMounted) setWallets(w);
+        });
+        return () => { isMounted = false; };
+    }, []);
 
     // Session State
     const [activeSession, setActiveSession] = useState<{
@@ -49,18 +64,28 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
     // Admin Access Check
     useEffect(() => {
         const w = (account?.address || "").toLowerCase();
+        const m = (merchantWallet || "").toLowerCase();
 
         // Reset manual logout flag if wallet disconnects
-        if (!w) setIsLoggedOut(false);
-
-        // If wallet is connected and matches merchant (or we allow any wallet for admin-demo purposes, but better to be strict or allow explicit trigger)
-        // For now, let's allow switching to admin if a wallet is connected AND we are on the PIN screen AND not manually logged out.
-        if (w && view === "pin" && !isLoggedOut) {
-            // In a real scenario we might check strict ownership or role mappings.
-            // For now, assume if they connect on this specific screen, they want admin access.
-            setView("admin");
+        if (!w) {
+            setIsLoggedOut(false);
+            // PERSIST UNAUTHORIZED ERROR: Do not clear error if it was an auth failure
+            // if (error && error.includes("Unauthorized")) setError(""); 
+            return;
         }
-    }, [account?.address, view, merchantWallet, isLoggedOut]);
+
+        // If wallet is connected and matches merchant
+        if (w && view === "pin" && !isLoggedOut) {
+            if (m && w === m) {
+                setView("admin");
+                setError("");
+            } else if (m && w !== m) {
+                // Unauthorized - Disconnect immediately
+                setError("Unauthorized: Wallet is not the merchant");
+                if (activeWallet) disconnect(activeWallet);
+            }
+        }
+    }, [account?.address, view, merchantWallet, isLoggedOut, disconnect, activeWallet]);
 
     // Poll for stats
     useEffect(() => {
@@ -286,11 +311,11 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                     <div className="pt-8 mt-4 border-t border-dashed border-white/10">
                         <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-4">Merchant Access</p>
                         <div className="flex justify-center">
-                            {/* Client-only render to avoid hydration mismatch on styles */}
-                            {typeof window !== 'undefined' && (
+                            {mounted && wallets.length > 0 ? (
                                 <ConnectButton
                                     client={client}
                                     chain={chain}
+                                    wallets={wallets}
                                     connectButton={{
                                         label: "Admin Login",
                                         className: connectButtonClass,
@@ -299,12 +324,42 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                                             fontSize: "14px",
                                             padding: "10px 24px",
                                             backgroundColor: "rgba(255,255,255,0.05)",
-                                            borderColor: "rgba(255,255,255,0.1)",
+                                            border: "1px solid rgba(255,255,255,0.1)",
                                             color: "white"
                                         }
                                     }}
+                                    detailsButton={{
+                                        displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+                                    }}
+                                    detailsModal={{
+                                        payOptions: {
+                                            buyWithFiat: {
+                                                prefillSource: {
+                                                    currency: "USD",
+                                                },
+                                            },
+                                            prefillBuy: {
+                                                chain: chain,
+                                                token: {
+                                                    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                                                    name: "USD Coin",
+                                                    symbol: "USDC",
+                                                },
+                                            },
+                                        },
+                                    }}
+                                    connectModal={{
+                                        title: "Merchant Login",
+                                        titleIcon: "/Surge.png",
+                                        size: "compact",
+                                        showThirdwebBranding: false
+                                    }}
                                     theme={twTheme}
                                 />
+                            ) : (
+                                <div className="h-[28px] flex items-center justify-center text-xs text-muted-foreground animate-pulse">
+                                    Loading...
+                                </div>
                             )}
                         </div>
                     </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ConnectButton } from "thirdweb/react";
-import { client, chain } from "@/lib/thirdweb/client";
+import { client, chain, getWallets } from "@/lib/thirdweb/client";
 import { usePortalThirdwebTheme, getConnectButtonStyle, connectButtonClass } from "@/lib/thirdweb/theme";
 
 interface PinEntryScreenProps {
@@ -25,7 +25,17 @@ export default function PinEntryScreen({
     const [pin, setPin] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [wallets, setWallets] = useState<any[]>([]);
     const twTheme = usePortalThirdwebTheme();
+
+    // Load wallets to ensure consistent SCA address generation
+    useEffect(() => {
+        let mounted = true;
+        getWallets()
+            .then((w) => { if (mounted) setWallets(w as any[]); })
+            .catch(() => setWallets([]));
+        return () => { mounted = false; };
+    }, []);
 
     // Standard keypad digits
     const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9, "", 0, "⌫"];
@@ -138,22 +148,55 @@ export default function PinEntryScreen({
                         Merchant Access
                     </p>
                     <div className="flex justify-center invert-0">
-                        <ConnectButton
-                            client={client}
-                            chain={chain}
-                            connectButton={{
-                                label: "Admin Wallet Login",
-                                className: connectButtonClass,
-                                style: {
-                                    ...getConnectButtonStyle(),
-                                    fontSize: "14px",
-                                    padding: "10px 20px",
-                                    backgroundColor: "rgba(255,255,255,0.05)", // Ensure it has some background
-                                    borderColor: "rgba(255,255,255,0.1)"
-                                }
-                            }}
-                            theme={twTheme}
-                        />
+                        {wallets.length > 0 ? (
+                            <ConnectButton
+                                client={client}
+                                chain={chain}
+                                wallets={wallets}
+                                connectButton={{
+                                    label: "Admin Login",
+                                    className: connectButtonClass,
+                                    style: {
+                                        ...getConnectButtonStyle(),
+                                        fontSize: "14px",
+                                        padding: "10px 24px",
+                                        backgroundColor: "rgba(255,255,255,0.05)",
+                                        border: "1px solid rgba(255,255,255,0.1)"
+                                    }
+                                }}
+                                detailsButton={{
+                                    displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+                                }}
+                                detailsModal={{
+                                    payOptions: {
+                                        buyWithFiat: {
+                                            prefillSource: {
+                                                currency: "USD",
+                                            },
+                                        },
+                                        prefillBuy: {
+                                            chain: chain,
+                                            token: {
+                                                address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                                                name: "USD Coin",
+                                                symbol: "USDC",
+                                            },
+                                        },
+                                    },
+                                }}
+                                connectModal={{
+                                    title: "Merchant Login",
+                                    titleIcon: "/Surge.png",
+                                    size: "compact",
+                                    showThirdwebBranding: false
+                                }}
+                                theme={twTheme}
+                            />
+                        ) : (
+                            <div className="h-[44px] flex items-center justify-center text-xs text-muted-foreground animate-pulse">
+                                Loading login options...
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

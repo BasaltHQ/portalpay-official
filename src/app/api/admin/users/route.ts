@@ -28,16 +28,16 @@ export async function GET(req: NextRequest) {
   const qBrand = String(url.searchParams.get("brandKey") || "").toLowerCase();
   let currentBrandKey = getBrandKey();
   // Normalize basaltsurge to portalpay for unmigrated legacy data
-  if (currentBrandKey === "basaltsurge") currentBrandKey = "portalpay";
+  // if (currentBrandKey === "basaltsurge") currentBrandKey = "portalpay";
 
   let envBrandKey = String(process.env.BRAND_KEY || "").toLowerCase();
   // Normalize basaltsurge to portalpay for unmigrated legacy data
-  if (envBrandKey === "basaltsurge") envBrandKey = "portalpay";
+  // if (envBrandKey === "basaltsurge") envBrandKey = "portalpay";
 
   const containerType = String(process.env.CONTAINER_TYPE || "platform").toLowerCase();
   let effectiveBrand = (qBrand || envBrandKey || currentBrandKey).toLowerCase();
   // Normalize basaltsurge to portalpay for unmigrated legacy data
-  if (effectiveBrand === "basaltsurge") effectiveBrand = "portalpay";
+  // if (effectiveBrand === "basaltsurge") effectiveBrand = "portalpay";
 
   const brandFilter = effectiveBrand;
   try {
@@ -321,8 +321,8 @@ export async function GET(req: NextRequest) {
         // Strict brand matching to ensure the correct split is returned:
         // - If querying for a partner brand (not portalpay), ONLY accept rows that explicitly match that brand
         // - If querying for portalpay or no filter, accept rows with empty/portalpay brandKey
-        const isPlatformQuery = !brandFilter || brandFilter === "portalpay";
-        const rowIsPlatform = !rowBrand || rowBrand === "portalpay";
+        const isPlatformQuery = !brandFilter || brandFilter === "portalpay" || brandFilter === "basaltsurge";
+        const rowIsPlatform = !rowBrand || rowBrand === "portalpay" || rowBrand === "basaltsurge";
         const brandMatches = isPlatformQuery ? rowIsPlatform : (rowBrand === brandFilter);
 
         if (brandMatches) {
