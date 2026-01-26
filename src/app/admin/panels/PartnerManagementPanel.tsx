@@ -101,6 +101,12 @@ export default function PartnerManagementPanel() {
       if (typeof config?.name === "string") body.name = config.name;
       if (config?.colors) body.colors = config.colors;
       if (config?.logos) body.logos = config.logos;
+      if (config?.email) {
+        body.email = {
+          senderName: config.email.senderName,
+          senderEmail: config.email.senderEmail
+        };
+      }
 
       // If nothing to persist, skip
       if (!body.appUrl && !body.partnerFeeBps && !body.defaultMerchantFeeBps && !body.partnerWallet && !body.name && !body.colors && !body.logos) {
@@ -776,6 +782,14 @@ export default function PartnerManagementPanel() {
       if (typeof config?.defaultMerchantFeeBps === "number")
         body.defaultMerchantFeeBps = Math.max(0, Math.min(10000, Math.floor(Number(config.defaultMerchantFeeBps))));
       if (config?.partnerWallet) body.partnerWallet = String(config.partnerWallet);
+
+      // Email Config
+      if (config?.email) {
+        body.email = {
+          senderName: config.email.senderName,
+          senderEmail: config.email.senderEmail
+        };
+      }
 
       // Theme preview/edit (lightweight in Partners panel)
       if (typeof config?.name === "string") body.name = config.name;
@@ -1858,6 +1872,73 @@ export default function PartnerManagementPanel() {
             </div>
           </div>
 
+
+
+          {/* Email Sender Configuration */}
+          <div className="glass-pane rounded-xl border p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">Email Sender</div>
+              <button
+                onClick={async () => {
+                  try {
+                    const email = prompt("Enter email to send test report to:");
+                    if (!email) return;
+                    const k = String(brandKey || "").toLowerCase();
+                    const r = await fetch(`/api/terminal/reports/email`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", "x-wallet": account?.address || "" },
+                      body: JSON.stringify({
+                        email,
+                        reportType: "Test",
+                        startTs: Math.floor(Date.now() / 1000),
+                        endTs: Math.floor(Date.now() / 1000),
+                        brandKey: k
+                      })
+                    });
+                    const j = await r.json();
+                    if (j.success) alert(`Test email sent from ${config?.email?.senderEmail || "default"}!`);
+                    else alert("Failed: " + (j.error || "Unknown error"));
+                  } catch (e: any) {
+                    alert("Error: " + e.message);
+                  }
+                }}
+                className="text-xs px-3 py-1.5 rounded-md border hover:bg-white/5"
+              >
+                Send Test Email
+              </button>
+            </div>
+            <div className="microtext text-muted-foreground">
+              Configure the sender identity for terminal reports. Requires domain verification in Resend.
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Sender Name</label>
+                <input
+                  type="text"
+                  value={config?.email?.senderName || ""}
+                  onChange={(e) => setConfig({ ...config, email: { ...(config?.email || {}), senderName: e.target.value } })}
+                  className="w-full bg-black/40 border border-white/10 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500/50"
+                  placeholder="e.g. BasaltSurge Reports"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Sender Email</label>
+                <input
+                  type="email"
+                  value={config?.email?.senderEmail || ""}
+                  onChange={(e) => setConfig({ ...config, email: { ...(config?.email || {}), senderEmail: e.target.value } })}
+                  className="w-full bg-black/40 border border-white/10 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500/50"
+                  placeholder="e.g. reports@basaltsurge.com"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end pt-2">
+              <button className="px-3 py-1.5 rounded-md border text-sm" onClick={saveConfig} disabled={saving}>
+                {saving ? "Saving…" : "Save Email Settings"}
+              </button>
+            </div>
+          </div>
+
           {/* Container Deployment */}
           <div className="glass-pane rounded-xl border p-5 space-y-3">
             <div className="text-sm font-medium">Container Deployment — {brandKey}</div>
@@ -1935,6 +2016,9 @@ export default function PartnerManagementPanel() {
                   onChange={(e) => setPortalpayApiBase(e.target.value)}
                 />
               </div>
+
+
+
               <div>
                 <label className="microtext text-muted-foreground">APIM Subscription Key</label>
                 <input
@@ -2542,7 +2626,8 @@ export default function PartnerManagementPanel() {
             </div>
           </div>
         </>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }

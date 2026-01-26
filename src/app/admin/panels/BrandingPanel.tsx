@@ -1,6 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { UploadCloud, Palette, Type, Layout, Mail, Globe, ArrowRight, Loader2 } from "lucide-react";
+import { getContainer } from "@/lib/cosmos";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useActiveAccount } from "thirdweb/react";
 import { useBrand } from "@/contexts/BrandContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -9,8 +13,11 @@ import ImageUploadField from "@/components/forms/ImageUploadField";
 /** ---------------- Branding Panel (Partner Admin) ---------------- */
 export default function BrandingPanel() {
   const account = useActiveAccount();
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const brand = useBrand();
-  const { refetch } = useTheme();
+  // const { refreshBrand } = useBrand(); // Not available in context yet
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+  const { theme, refetch } = useTheme();
   const [appUrl, setAppUrl] = useState<string>("");
   const [partnerFeeBps, setPartnerFeeBps] = useState<number>(0);
   const [platformFeeBps, setPlatformFeeBps] = useState<number>(50);
@@ -18,6 +25,9 @@ export default function BrandingPanel() {
   const [partnerWallet, setPartnerWallet] = useState<string>("");
   // Theme controls
   const [brandDisplayName, setBrandDisplayName] = useState<string>("");
+  // Email controls
+  const [senderName, setSenderName] = useState<string>("");
+  const [senderEmail, setSenderEmail] = useState<string>("");
   const [primaryColor, setPrimaryColor] = useState<string>("#0ea5e9");
   const [accentColor, setAccentColor] = useState<string>("#22c55e");
   const [logoAppUrl, setLogoAppUrl] = useState<string>("");
@@ -34,10 +44,20 @@ export default function BrandingPanel() {
   const [containerAppName, setContainerAppName] = useState<string>("");
   const [containerFqdn, setContainerFqdn] = useState<string>("");
   const [containerState, setContainerState] = useState<string>("");
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("general");
+
+  // Test Email State
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const [testEmailInput, setTestEmailInput] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+
+  // Feedback Modal State
+  const [feedback, setFeedback] = useState<{ open: boolean, title: string, message: string, type: 'success' | 'error' | 'info' }>({
+    open: false, title: "", message: "", type: 'info'
+  });
 
   // Fee edit lock for partner containers post-deploy
   const isPartnerContainer = String(process.env.CONTAINER_TYPE || process.env.NEXT_PUBLIC_CONTAINER_TYPE || "platform").toLowerCase() === "partner";
@@ -86,6 +106,7 @@ export default function BrandingPanel() {
             ),
             socialDefault: String(((cfg?.theme?.logos as any)?.socialDefault) || ""),
           },
+          email: cfg?.email || {},
           appleTouchIconUrl: String(cfg?.theme?.appleTouchIconUrl || ""),
           meta: (cfg?.theme?.meta as any) || {},
         };
@@ -133,6 +154,9 @@ export default function BrandingPanel() {
       setAppleTouchIconUrl(String((eff as any)?.appleTouchIconUrl || ""));
       setOgTitle(String(eff?.meta?.ogTitle || ""));
       setOgDescription(String(eff?.meta?.ogDescription || ""));
+      // Email
+      setSenderName(String(eff?.email?.senderName || ""));
+      setSenderEmail(String(eff?.email?.senderEmail || ""));
       // Shape
       try {
         const rawShape = (String((eff as any)?.theme?.brandLogoShape || (eff as any)?.brandLogoShape || "").toLowerCase());
@@ -250,6 +274,12 @@ export default function BrandingPanel() {
         ...(ogTitle ? { ogTitle } : {}),
         ...(ogDescription ? { ogDescription } : {}),
       };
+      if (senderName || senderEmail) {
+        body.email = {
+          senderName: senderName || undefined,
+          senderEmail: senderEmail || undefined
+        };
+      }
       let r: Response;
       let j: any;
       const isPortalPay = String(brand.key || "").toLowerCase() === "portalpay" || String(brand.key || "").toLowerCase() === "basaltsurge";
@@ -285,6 +315,8 @@ export default function BrandingPanel() {
         if (body.meta) theme.meta = body.meta;
         theme.brandLogoShape = brandLogoShape;
         if (Object.keys(theme).length > 0) payload.theme = theme;
+        // Pass email config directly to root of site config update (which maps to brand)
+        if (body.email) payload.email = body.email;
 
         const walletParam = effectiveRecipient ? `?wallet=${encodeURIComponent(effectiveRecipient)}` : "";
         r = await fetch(`/api/site/config${walletParam}`, {
@@ -437,6 +469,152 @@ export default function BrandingPanel() {
                 Display name shown across receipts, portal, and admin surfaces.
               </div>
             </div>
+
+            {/* Email Sender Configuration */}
+            <div className="md:col-span-2 rounded-md border p-3 bg-foreground/5 mt-2">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm font-medium">Email Sender</div>
+                <div className="flex items-center gap-2">
+                  <select
+                    id="testReportType"
+                    className="h-7 text-xs border rounded bg-background px-2"
+                    defaultValue="End of Day"
+                  >
+                    <option value="End of Day">End of Day</option>
+                    <option value="Session Summary">Session Summary</option>
+                    <option value="Sales Summary">Sales Summary</option>
+                    <option value="All Variants">All Variants (Batch Test)</option>
+                  </select>
+                  <button
+                    onClick={() => setIsTestModalOpen(true)}
+                    className="text-xs px-2 py-1 border rounded hover:bg-white/5"
+                  >
+                    Send Test Email
+                  </button>
+                </div>
+              </div>
+
+              {/* Test Email Modal */}
+              <Dialog open={isTestModalOpen} onOpenChange={setIsTestModalOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Send Test Report</DialogTitle>
+                    <div className="text-sm text-muted-foreground">
+                      Enter recipient email(s). Separate multiple emails with commas.
+                    </div>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <Input
+                      placeholder="e.g. owner@example.com, staff@example.com"
+                      value={testEmailInput}
+                      onChange={(e) => setTestEmailInput(e.target.value)}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <button
+                      className="px-4 py-2 text-sm rounded bg-muted/20 hover:bg-muted/40"
+                      onClick={() => setIsTestModalOpen(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded hover:brightness-110"
+                      onClick={async () => {
+                        if (!testEmailInput) {
+                          setFeedback({ open: true, title: "Missing Email", message: "Please enter at least one email address.", type: 'error' });
+                          return;
+                        }
+
+                        try {
+                          setIsTestModalOpen(false);
+                          const rType = (document.getElementById("testReportType") as HTMLSelectElement)?.value || "End of Day";
+                          const k = String(brand.key || "").toLowerCase();
+
+                          // Handle Batch vs Single
+                          const typesToSend = rType === "All Variants"
+                            ? ["End of Day", "Session Summary", "Sales Summary"]
+                            : [rType];
+
+                          setFeedback({ open: true, title: "Sending...", message: `Sending ${typesToSend.length} report(s). Please wait.`, type: 'info' });
+
+                          let successCount = 0;
+                          for (const type of typesToSend) {
+                            const r = await fetch(`/api/terminal/reports/email`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json", "x-wallet": account?.address || "" },
+                              body: JSON.stringify({
+                                email: testEmailInput,
+                                reportType: type,
+                                startTs: Math.floor(Date.now() / 1000),
+                                endTs: Math.floor(Date.now() / 1000),
+                                brandKey: k,
+                                isTest: true
+                              })
+                            });
+                            const j = await r.json();
+                            if (j.success) successCount++;
+                          }
+
+                          if (successCount === typesToSend.length) {
+                            setFeedback({ open: true, title: "Success", message: `Successfully sent ${successCount} reports to ${testEmailInput}`, type: 'success' });
+                          } else {
+                            setFeedback({ open: true, title: "Partial Success", message: `Sent ${successCount}/${typesToSend.length} reports. Some failed.`, type: 'error' });
+                          }
+                        } catch (e: any) {
+                          setFeedback({ open: true, title: "Error", message: e.message || "Failed to send reports", type: 'error' });
+                        }
+                      }}
+                    >
+                      Send Now
+                    </button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Feedback Modal */}
+              <Dialog open={feedback.open} onOpenChange={(open) => setFeedback(prev => ({ ...prev, open }))}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle className={feedback.type === 'error' ? "text-red-500" : feedback.type === 'success' ? "text-green-500" : ""}>
+                      {feedback.title}
+                    </DialogTitle>
+                    <DialogDescription>{feedback.message}</DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <button
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded hover:brightness-110"
+                      onClick={() => setFeedback(prev => ({ ...prev, open: false }))}
+                    >
+                      OK
+                    </button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="microtext text-muted-foreground">Sender Name</label>
+                  <input
+                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    placeholder="e.g. BasaltSurge Reports"
+                    value={senderName}
+                    onChange={(e) => setSenderName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="microtext text-muted-foreground">Sender Email</label>
+                  <input
+                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    placeholder="e.g. reports@basaltsurge.com"
+                    value={senderEmail}
+                    onChange={(e) => setSenderEmail(e.target.value)}
+                  />
+                  <div className="microtext text-muted-foreground mt-1">
+                    * Domain must be verified in Resend.
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="microtext text-muted-foreground">Primary Color</label>
@@ -621,7 +799,8 @@ export default function BrandingPanel() {
             </button>
           </div>
         </>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }

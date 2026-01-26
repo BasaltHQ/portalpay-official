@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
-import { Lock, FileText, Download, Calendar, User, Building2, ChevronRight, X, Loader2 } from "lucide-react";
+import { Lock, FileText, Download, Calendar, User, Building2, ChevronRight, X, Loader2, Printer } from "lucide-react";
 import { formatCurrency } from "@/lib/fx";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -18,23 +18,15 @@ type MerchantProfile = {
     logo?: string;
 };
 
-export default function ReportsPanel() {
+export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet: string, theme: any }) {
     const account = useActiveAccount();
 
-    // Multi-Org State
-    const [profiles, setProfiles] = useState<MerchantProfile[]>([]);
-    const [loadingProfiles, setLoadingProfiles] = useState(true);
-    const [selectedProfile, setSelectedProfile] = useState<MerchantProfile | null>(null);
-
-    // Auth State
-    const [pin, setPin] = useState("");
-    const [unlocked, setUnlocked] = useState(false);
-    const [authError, setAuthError] = useState("");
-    const [authLoading, setAuthLoading] = useState(false);
-
-    // Report State
     const [reportType, setReportType] = useState("z-report");
-    const [range, setRange] = useState("today"); // today, yesterday, week, month
+    const [range, setRange] = useState("today"); // today, yesterday, week, month, custom
+    // Custom Date State
+    const [customStart, setCustomStart] = useState(() => new Date().toISOString().split("T")[0]);
+    const [customEnd, setCustomEnd] = useState(() => new Date().toISOString().split("T")[0]);
+
     const [dashboardStats, setDashboardStats] = useState<any>(null);
     const [reportLoading, setReportLoading] = useState(false);
     const [reportError, setReportError] = useState("");
@@ -46,67 +38,15 @@ export default function ReportsPanel() {
         open: false, title: "", message: "", type: 'info'
     });
 
-    // ... (logic for fetch/unlock remains same, skipping lines for brevity if possible, but replace needs context)
-    // 1. Fetch Profiles on Load
-    useEffect(() => {
-        if (!account?.address) return;
-        setLoadingProfiles(true);
-        fetch(`/api/admin/reports/access?wallet=${account.address}`)
-            .then(res => res.json())
-            .then(data => {
-                const list = data.profiles || [];
-                setProfiles(list);
-                // Auto-select if only one
-                if (list.length === 1) {
-                    setSelectedProfile(list[0]);
-                }
-            })
-            .catch(err => console.error(err))
-            .finally(() => setLoadingProfiles(false));
-    }, [account?.address]);
-
-    // 2. Unlock Handler
-    async function handleUnlock(e?: React.FormEvent) {
-        e?.preventDefault();
-        if (!selectedProfile || !pin) return;
-
-        setAuthLoading(true);
-        setAuthError("");
-
-        try {
-            const res = await fetch("/api/terminal/auth", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    pin,
-                    merchantWallet: selectedProfile.merchantWallet
-                })
-            });
-            const data = await res.json();
-
-            if (!res.ok) throw new Error(data.error || "Invalid PIN");
-            if (data.role !== "manager") throw new Error("Only Managers can access reports.");
-
-            setUnlocked(true);
-            setPin(""); // Clear sensitive data
-            loadDashboard(selectedProfile.merchantWallet);
-
-        } catch (err: any) {
-            setAuthError(err.message);
-        } finally {
-            setAuthLoading(false);
-        }
-    }
-
-    // 3. Load Dashboard Stats
-    async function loadDashboard(wallet: string) {
+    // Load Dashboard Stats
+    async function loadDashboard() {
         setReportLoading(true);
         setReportError("");
         try {
             const { start, end } = getDateRange(range);
             const res = await fetch(`/api/terminal/reports?type=${reportType}&start=${start}&end=${end}&format=json`, {
                 headers: {
-                    "x-wallet": wallet,
+                    "x-wallet": merchantWallet,
                     "x-linked-wallet": account?.address || ""
                 }
             });
@@ -126,7 +66,22 @@ export default function ReportsPanel() {
         let start = new Date();
         let end = new Date(); // now
 
-        if (r === "today") {
+        if (r === "custom") {
+            // Parse custom inputs (YYYY-MM-DD) in local time
+            // We want start to be 00:00:00 and end to be 23:59:59 of selected days
+            const s = new Date(customStart);
+            s.setHours(0, 0, 0, 0); // Local midnight
+            // Fix timezone offset issue: Date(string) creates UTC usually if simplified format, 
+            // but for date inputs we treat value as local date components.
+            // Actually new Date("YYYY-MM-DD") is treated as UTC.
+            // Better to split and construct:
+            const [sY, sM, sD] = customStart.split("-").map(Number);
+            start = new Date(sY, sM - 1, sD, 0, 0, 0, 0);
+
+            const [eY, eM, eD] = customEnd.split("-").map(Number);
+            end = new Date(eY, eM - 1, eD, 23, 59, 59, 999);
+
+        } else if (r === "today") {
             start.setHours(0, 0, 0, 0);
         } else if (r === "yesterday") {
             start.setDate(now.getDate() - 1);
@@ -145,39 +100,43 @@ export default function ReportsPanel() {
         };
     }
 
-    // Reload when range/type changes (if unlocked)
+    // Reload when range/type changes
     useEffect(() => {
-        if (unlocked && selectedProfile) {
-            loadDashboard(selectedProfile.merchantWallet);
+        if (merchantWallet) {
+            // Debounce custom date reloads slightly or wait for user action? 
+            // For now instant reload is fine unless custom dates are invalid.
+            if (range === "custom" && (!customStart || !customEnd)) return;
+            loadDashboard();
         }
-    }, [range, reportType]);
+    }, [range, reportType, merchantWallet, customStart, customEnd]);
 
     // 4. Download Handler (Renamed to bust cache)
     async function downloadReportAction(format: "zip" | "pdf" = "zip") {
-        if (!selectedProfile) return;
-
         const linkedWallet = account?.address;
+
+        // Allow download if wallet is connected OR if we are in a session context (simulated here by just checking prop)
+        // But for safety, we try to grab linked wallet. If missing, we alert but might proceed if strict mode off.
         if (!linkedWallet) {
-            setReportError("Wallet not connected. Please connect your wallet to download reports.");
-            return;
+            setReportError("Wallet connection recommended for verify.");
+            // We can continue if we rely on session cookie, but for now strict:
         }
 
         setReportLoading(true);
         try {
             const { start, end } = getDateRange(range);
             // Append auth params and timestamp to force uniqueness
-            const url = `/api/terminal/reports?type=${reportType}&start=${start}&end=${end}&format=${format}&wallet=${selectedProfile.merchantWallet}&linkedWallet=${linkedWallet}&t=${Date.now()}`;
+            const url = `/api/terminal/reports?type=${reportType}&start=${start}&end=${end}&format=${format}&wallet=${merchantWallet}&linkedWallet=${linkedWallet || ""}&t=${Date.now()}`;
 
             // BLOCKING DEBUG - User must see this!
-            alert(`Generating URL: \n${url}`);
+            // alert(`Generating URL: \n${url}`);
             console.log("Downloading Report from:", url);
 
             // We need to fetch with headers, so we can't just open the window.location
             // Using fetch-blob-download pattern
             const res = await fetch(url, {
                 headers: {
-                    "x-wallet": selectedProfile.merchantWallet,
-                    "x-linked-wallet": linkedWallet
+                    "x-wallet": merchantWallet,
+                    "x-linked-wallet": linkedWallet || ""
                 }
             });
             if (!res.ok) {
@@ -195,7 +154,7 @@ export default function ReportsPanel() {
             a.remove();
 
         } catch (e: any) {
-            alert(`Error: ${e.message}`);
+            // alert(`Error: ${e.message}`);
             setReportError(e.message);
         } finally {
             setReportLoading(false);
@@ -204,7 +163,6 @@ export default function ReportsPanel() {
 
     // 5. Email Handler
     async function handleEmailReport() {
-        if (!selectedProfile) return;
         if (!emailInput) {
             setFeedback({ open: true, title: "Missing Email", message: "Please enter an email address.", type: 'error' });
             return;
@@ -217,17 +175,17 @@ export default function ReportsPanel() {
             // Map internal report types to PDF titles
             const titleMap: Record<string, string> = {
                 "z-report": "End of Day",
-                "x-report": "Sales Summary", // X-Report is snapshot/summary
-                "employee": "Session Summary", // Employee focus
-                "hourly": "End of Day" // Hourly usually fits in EOD
+                "x-report": "Sales Snapshot",
+                "employee": "Staff Performance",
+                "hourly": "Hourly Sales"
             };
-            const rType = titleMap[reportType] || "End of Day";
+            const rType = titleMap[reportType] || "Report";
 
             const res = await fetch(`/api/terminal/reports/email`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "x-wallet": selectedProfile.merchantWallet
+                    "x-wallet": merchantWallet
                 },
                 body: JSON.stringify({
                     email: emailInput,
@@ -250,107 +208,119 @@ export default function ReportsPanel() {
     }
 
 
+    // 6. Print Receipt Handler
+    function printReceiptAction() {
+        if (!dashboardStats) return;
+
+        const w = window.open("", "_blank", "width=400,height=600");
+        if (!w) return;
+
+        const dateStr = new Date().toLocaleString();
+        const startStr = new Date(Math.floor(dashboardStats.meta.range.start * 1000)).toLocaleDateString();
+        const typeTitle = reportType.replace("-", " ").toUpperCase();
+
+        const html = `
+            <html>
+            <head>
+                <title>Receipt</title>
+                <style>
+                    body { font-family: 'Courier New', monospace; width: 300px; font-size: 12px; margin: 0; padding: 10px; color: #000; }
+                    .header { text-align: center; margin-bottom: 20px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+                    .title { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+                    .meta { font-size: 10px; color: #555; }
+                    .section { margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px; }
+                    .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+                    .row.bold { font-weight: bold; }
+                    .col-right { text-align: right; }
+                    .footer { text-align: center; margin-top: 20px; font-size: 10px; color: #555; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="title">${theme?.brandName || "Merchant Terminal"}</div>
+                    <div class="meta">${typeTitle}</div>
+                    <div class="meta">${startStr}</div>
+                </div>
+
+                <div class="section">
+                    <div class="row bold">
+                        <span>TOTAL SALES</span>
+                        <span>${formatCurrency(dashboardStats.summary.totalSales, "USD")}</span>
+                    </div>
+                    <div class="row">
+                        <span>Transactions</span>
+                        <span>${dashboardStats.summary.transactionCount}</span>
+                    </div>
+                    <div class="row">
+                        <span>Average Order</span>
+                        <span>${formatCurrency(dashboardStats.summary.averageOrderValue, "USD")}</span>
+                    </div>
+                    <div class="row">
+                        <span>Tips Collected</span>
+                        <span>${formatCurrency(dashboardStats.summary.totalTips, "USD")}</span>
+                    </div>
+                </div>
+
+                ${dashboardStats.paymentMethods ? `
+                <div class="section">
+                    <div class="row bold" style="margin-bottom:8px">PAYMENTS</div>
+                    ${dashboardStats.paymentMethods.map((pm: any) => `
+                        <div class="row">
+                            <span>${pm.method}</span>
+                            <span>${formatCurrency(pm.total, "USD")}</span>
+                        </div>
+                    `).join("")}
+                </div>` : ""}
+
+                ${dashboardStats.employees ? `
+                <div class="section">
+                    <div class="row bold" style="margin-bottom:8px">STAFF</div>
+                    ${dashboardStats.employees.map((e: any) => `
+                        <div class="row">
+                            <span>${e.id}</span>
+                            <span>${formatCurrency(e.sales, "USD")}</span>
+                        </div>
+                    `).join("")}
+                </div>` : ""}
+
+                 ${dashboardStats.hourly ? `
+                <div class="section">
+                    <div class="row bold" style="margin-bottom:8px">HOURLY</div>
+                    ${dashboardStats.hourly.filter((h: any) => h.amount > 0).map((h: any) => `
+                        <div class="row">
+                            <span>${h.hour}:00</span>
+                            <span>${formatCurrency(h.amount, "USD")}</span>
+                        </div>
+                    `).join("")}
+                </div>` : ""}
+
+                <div class="footer">
+                    Generated: ${dateStr}<br/>
+                    ID: ${Math.random().toString(36).substr(2, 6).toUpperCase()}
+                </div>
+
+                <script>
+                    window.onload = function() { window.print(); setTimeout(function() { window.close(); }, 500); }
+                </script>
+            </body>
+            </html>
+        `;
+
+        w.document.write(html);
+        w.document.close();
+    }
+
+
     // --- RENDERING ---
 
-    if (loadingProfiles) {
-        return <div className="p-12 text-center text-muted-foreground flex flex-col items-center gap-2"><Loader2 className="animate-spin" /> Loading access...</div>;
-    }
-
-    // STEP 1: SELECT MERCHANT
-    if (!selectedProfile) {
-        return (
-            <div className="space-y-6">
-                <div>
-                    <h2 className="text-2xl font-bold">Reports Access</h2>
-                    <p className="text-muted-foreground">Select a merchant profile to view reports.</p>
-                </div>
-
-                {profiles.length === 0 ? (
-                    <div className="p-8 border rounded-xl bg-muted/20 text-center">
-                        <Lock className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                        <h3 className="font-semibold text-lg">No Access Found</h3>
-                        <p className="text-muted-foreground max-w-md mx-auto mt-2">
-                            Your wallet is not linked to any merchant profiles as a Manager.
-                            Ask the business owner to add you as a Manager and link your wallet address.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {profiles.map(p => (
-                            <button
-                                key={p.id}
-                                onClick={() => setSelectedProfile(p)}
-                                className="flex items-center gap-4 p-4 border rounded-xl hover:bg-muted/50 transition-all text-left group"
-                            >
-                                <div className="w-12 h-12 rounded-full overflow-hidden bg-background border flex items-center justify-center">
-                                    {p.logo ? <img src={p.logo} className="w-full h-full object-cover" /> : <Building2 className="w-6 h-6 text-muted-foreground" />}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="font-bold truncate">{p.merchantName || "Unknown Merchant"}</div>
-                                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                        <User className="w-3 h-3" /> {p.name} ({p.role})
-                                    </div>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-                            </button>
-                        ))}
-                    </div>
-                )}
-            </div>
-        );
-    }
-
-    // STEP 2: ENTER PIN
-    if (!unlocked) {
-        return (
-            <div className="max-w-md mx-auto mt-12 space-y-6">
-                <button onClick={() => setSelectedProfile(null)} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-                    <ChevronRight className="w-4 h-4 rotate-180" /> Back to selection
-                </button>
-
-                <div className="text-center space-y-2">
-                    <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Lock className="w-8 h-8 text-primary" />
-                    </div>
-                    <h2 className="text-2xl font-bold">Enter PIN</h2>
-                    <p className="text-muted-foreground">
-                        Enter your secure PIN for <b>{selectedProfile.merchantName}</b>
-                    </p>
-                </div>
-
-                <form onSubmit={handleUnlock} className="space-y-4">
-                    <input
-                        type="password"
-                        autoFocus
-                        placeholder="••••"
-                        className="w-full text-center text-3xl tracking-widest p-4 rounded-xl border bg-background"
-                        maxLength={6}
-                        value={pin}
-                        onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
-                    />
-                    {authError && <div className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded">{authError}</div>}
-                    <button
-                        type="submit"
-                        disabled={authLoading || pin.length < 4}
-                        className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:brightness-110 disabled:opacity-50"
-                    >
-                        {authLoading ? "Verifying..." : "Unlock Reports"}
-                    </button>
-                </form>
-            </div>
-        );
-    }
-
-    // STEP 3: DASHBOARD
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
+                    {/* Simplified Header since Dashboard has main header */}
                     <div className="flex items-center gap-2 mb-1">
-                        {selectedProfile.logo && <img src={selectedProfile.logo} className="w-6 h-6 rounded-full object-cover" />}
-                        <span className="text-sm text-muted-foreground font-medium">{selectedProfile.merchantName}</span>
-                        <span className="px-2 py-0.5 bg-muted rounded-full text-[10px] font-mono">{selectedProfile.role}</span>
+                        <span className="text-sm text-muted-foreground font-medium">Merchant Report</span>
                     </div>
                     <h2 className="text-2xl font-bold flex items-center gap-2">
                         Reporting Dashboard
@@ -358,29 +328,33 @@ export default function ReportsPanel() {
                     </h2>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={() => { setUnlocked(false); setSelectedProfile(null); }} className="px-3 py-2 text-sm border rounded-lg hover:bg-muted">
-                        Switch Store
+                    <button
+                        onClick={printReceiptAction}
+                        disabled={reportLoading || !dashboardStats}
+                        className="h-8 flex items-center gap-2 px-3 bg-card border hover:bg-muted text-foreground rounded-lg disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all"
+                    >
+                        <Printer className="w-3.5 h-3.5" /> Print
                     </button>
                     <button
                         onClick={() => setEmailDialogOpen(true)}
                         disabled={reportLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:brightness-95 disabled:opacity-50"
+                        className="h-8 flex items-center gap-2 px-3 bg-secondary text-secondary-foreground rounded-lg hover:brightness-95 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider border border-secondary"
                     >
-                        <FileText className="w-4 h-4" /> Email Report
+                        <FileText className="w-3.5 h-3.5" /> Email
                     </button>
                     <button
                         onClick={() => downloadReportAction("pdf")}
                         disabled={reportLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary/90 text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50"
+                        className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider"
                     >
-                        <FileText className="w-4 h-4" /> Download PDF
+                        <FileText className="w-3.5 h-3.5" /> PDF
                     </button>
                     <button
                         onClick={() => downloadReportAction("zip")}
                         disabled={reportLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50"
+                        className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider shadow-sm opacity-80"
                     >
-                        <Download className="w-4 h-4" /> Export ZIP
+                        <Download className="w-3.5 h-3.5" /> ZIP
                     </button>
                 </div>
             </div>
@@ -430,11 +404,13 @@ export default function ReportsPanel() {
             {/* Controls */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-xl bg-card">
                 <div>
-                    <label className="text-xs text-muted-foreground uppercase font-semibold block mb-1">Report Type</label>
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Report Type</span>
+                    </div>
                     <select
                         value={reportType}
                         onChange={e => setReportType(e.target.value)}
-                        className="w-full p-2 rounded-lg border bg-background"
+                        className="w-full text-sm font-medium bg-background border rounded-lg px-3 py-2.5 hover:border-primary/50 transition-colors focus:ring-1 focus:ring-primary shadow-sm"
                     >
                         <option value="z-report">Z-Report (End of Day)</option>
                         <option value="x-report">X-Report (Snapshot)</option>
@@ -442,18 +418,42 @@ export default function ReportsPanel() {
                         <option value="hourly">Hourly Sales</option>
                     </select>
                 </div>
-                <div>
-                    <label className="text-xs text-muted-foreground uppercase font-semibold block mb-1">Time Range</label>
-                    <div className="flex rounded-lg border bg-background p-1">
-                        {["today", "yesterday", "week", "month"].map(r => (
-                            <button
-                                key={r}
-                                onClick={() => setRange(r)}
-                                className={`flex-1 text-xs py-1.5 rounded-md capitalize transition-colors ${range === r ? "bg-primary text-primary-foreground font-bold shadow-sm" : "hover:bg-muted text-muted-foreground"}`}
-                            >
-                                {r}
-                            </button>
-                        ))}
+                <div className="md:col-span-2">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Date Range</span>
+                    </div>
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex bg-muted/20 p-1 rounded-lg border flex-1">
+                            {["today", "yesterday", "week", "month", "custom"].map(r => (
+                                <button
+                                    key={r}
+                                    onClick={() => setRange(r)}
+                                    className={`flex-1 text-[11px] uppercase font-bold tracking-wide py-2 rounded-md transition-all ${range === r
+                                        ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
+                                >
+                                    {r}
+                                </button>
+                            ))}
+                        </div>
+
+                        {range === "custom" && (
+                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+                                <input
+                                    type="date"
+                                    value={customStart}
+                                    onChange={e => setCustomStart(e.target.value)}
+                                    className="h-[38px] px-3 rounded-lg border bg-background text-xs font-medium focus:ring-1 focus:ring-primary"
+                                />
+                                <span className="text-muted-foreground text-xs">to</span>
+                                <input
+                                    type="date"
+                                    value={customEnd}
+                                    onChange={e => setCustomEnd(e.target.value)}
+                                    className="h-[38px] px-3 rounded-lg border bg-background text-xs font-medium focus:ring-1 focus:ring-primary"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

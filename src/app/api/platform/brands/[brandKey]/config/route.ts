@@ -30,6 +30,11 @@ type BrandConfigDoc = {
   defaultMerchantFeeBps?: number;
   // Partner Split config
   partnerWallet?: string;
+  // Email Configuration
+  email?: {
+    senderName?: string;
+    senderEmail?: string;
+  };
   // APIM product aliasing/curation
   apimCatalog?: ApimCatalogEntry[];
   // Container Apps deployment status for Partners panel
@@ -148,6 +153,18 @@ function normalizePatch(raw: any): Partial<BrandConfigDoc> {
 
   if (typeof raw?.partnerWallet === "string" && isHexAddress(raw.partnerWallet)) {
     out.partnerWallet = raw.partnerWallet;
+  }
+
+  // Email settings for reports
+  if (raw?.email && typeof raw.email === "object") {
+    const senderName = typeof raw.email.senderName === "string" ? String(raw.email.senderName).trim() : undefined;
+    const senderEmail = typeof raw.email.senderEmail === "string" ? String(raw.email.senderEmail).trim() : undefined;
+    if (senderName || senderEmail) {
+      out.email = {
+        ...(senderName ? { senderName } : {}),
+        ...(senderEmail ? { senderEmail } : {}),
+      };
+    }
   }
 
   // Theme: name, colors, logos, meta

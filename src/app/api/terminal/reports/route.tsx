@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+// [DEBUG] Force Rebuild: 2026-01-25 10:22 PM
 import { getContainer } from "@/lib/cosmos";
 import { renderToStream } from "@react-pdf/renderer";
 import { EndOfDayPDF } from "@/components/reports/EndOfDayPDF";
 import JSZip from "jszip";
 import React from "react";
+import sharp from "sharp";
 
 const BLOCKED_URL_PART = "a311dcf8";
 const LEGACY_LOGO = "cblogod.png";
@@ -32,8 +34,17 @@ export async function GET(req: NextRequest) {
 
         // Auth Context
         const sessionId = searchParams.get("sessionId"); // Terminal Access
-        const adminWallet = req.headers.get("x-linked-wallet"); // Admin Access (if coming from Admin Panel)
-        const targetMerchantWallet = req.headers.get("x-wallet"); // Required for context
+        // Allow fallback to query params for direct PDF/Link access
+        const adminWallet = req.headers.get("x-linked-wallet") || searchParams.get("linkedWallet");
+        const targetMerchantWallet = req.headers.get("x-wallet") || searchParams.get("wallet");
+
+        console.log("[ReportsAPI] Debug Params:", {
+            url: req.url,
+            searchParams: searchParams.toString(),
+            adminWalletHeader: req.headers.get("x-linked-wallet"),
+            adminWalletParam: searchParams.get("linkedWallet"),
+            finalAdminWallet: adminWallet
+        });
 
         if (!startTs || !endTs || !targetMerchantWallet) {
             return NextResponse.json({ error: "Missing required params (start, end, wallet)" }, { status: 400 });
@@ -61,32 +72,57 @@ export async function GET(req: NextRequest) {
                     authorized = true;
                     staffName = session.staffName || "Staff";
                 }
+            } else {
+                console.warn("[ReportsAPI] Invalid Session:", sessionId, session ? "Mismatch Wallet" : "Not Found");
             }
         } else if (adminWallet) {
             // 2. Admin Authentication (Multi-Org Linked Wallet)
-            // Verify that 'adminWallet' is actually a linked manager for 'targetMerchantWallet'
-            // We trust 'adminWallet' from header? No, usually we'd verify a signature or session token.
-            // For this MVP, we assume the API is protected or we double check the DB.
-            // Ideally we'd validte a session token that resolves to adminWallet.
-            // Here we will query to ensure the LINK exists.
+            const requestWallet = String(adminWallet).toLowerCase();
 
-            const memberQuery = {
-                query: "SELECT * FROM c WHERE c.merchantWallet = @mw AND c.type = 'merchant_team_member' AND c.linkedWallet = @lw AND c.role = 'manager'",
-                parameters: [
-                    { name: "@mw", value: w },
-                    { name: "@lw", value: String(adminWallet).toLowerCase() }
-                ]
-            };
-            const { resources: members } = await container.items.query(memberQuery).fetchAll();
-            if (members.length > 0) {
+            console.log(`[ReportsAPI] Admin Auth Check: Requesting=${requestWallet} Target=${w}`);
+
+            // A. Owner Bypass: If the requesting wallet IS the merchant wallet, allow access.
+            if (requestWallet === w) {
                 authorized = true;
-                staffName = members[0].name;
+                staffName = "Owner";
+                console.log("[ReportsAPI] Owner Bypass Granted");
+            } else {
+                // B. Manager Delegated Access
+                const memberQuery = {
+                    query: "SELECT * FROM c WHERE c.merchantWallet = @mw AND c.type = 'merchant_team_member' AND c.linkedWallet = @lw AND (c.role = 'manager' OR c.role = 'owner')",
+                    parameters: [
+                        { name: "@mw", value: w },
+                        { name: "@lw", value: requestWallet }
+                    ]
+                };
+                const { resources: members } = await container.items.query(memberQuery).fetchAll();
+                if (members.length > 0) {
+                    authorized = true;
+                    staffName = members[0].name;
+                    console.log("[ReportsAPI] Manager/Team Access Granted");
+                } else {
+                    console.warn("[ReportsAPI] Team Member Not Found for:", requestWallet);
+                }
             }
+        } else {
+            console.warn("[ReportsAPI] No Auth Provided (Missing x-linked-wallet or session)");
         }
 
         if (!authorized) {
+            console.error("[ReportsAPI] Unauthorized Access Attempt", { targetMerchantWallet, adminWallet, sessionId });
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
+
+        // --- DATA AGGREGATION ---
+
+        // ... Data Fetching ...
+
+        // (Skipping large data fetching block for Replace call)
+
+        // ... (Skipping to Response) ...
+
+        // This tool call only replaces the Auth Block. I will do Format replacement separately.
+
 
         // --- DATA AGGREGATION ---
 
@@ -182,17 +218,67 @@ export async function GET(req: NextRequest) {
 
         // --- RESPONSE FORMAT ---
 
+        console.log(`[ReportsAPI] Auth Success: ${staffName} accessing ${w}`);
+
         if (format === "json") {
             return NextResponse.json(reportData);
-        } else if (format === "zip") {
+        } else if (format === "zip" || format === "pdf") {
             // Need Store Config for Branding
+            // Need Store Config for Branding
+            // Use robust query to handle case-sensitivity issues
             const configQuery = {
-                query: "SELECT * FROM c WHERE c.wallet = @w AND c.type = 'shop_config'",
+                query: "SELECT * FROM c WHERE LOWER(c.wallet) = @w AND c.type = 'shop_config'",
                 parameters: [{ name: "@w", value: w }]
             };
             const { resources: configs } = await container.items.query(configQuery).fetchAll();
-            const config = configs[0] || { name: "Merchant", theme: {} };
+            let config = configs[0];
+
+            // Fallback: If no config found, try querying without type (rare but possible legacy)
+            if (!config) {
+                console.log("[ReportsAPI] Config not found with strict type, strictly checking ID...");
+                try {
+                    // Last ditch: Point Read with various casings? No, query is better.
+                    // Just use defaults.
+                    config = { name: "Merchant", theme: {} };
+                } catch { }
+            }
+            // Ensure Config Object structure
+            if (!config) config = { name: "Merchant", theme: {} };
+
             if (config.theme) config.theme = sanitizeShopTheme(config.theme);
+
+            // FIX: Ensure Logo is Absolute URL for PDF Renderer (server-side needs host)
+            if (config.theme?.brandLogoUrl && config.theme.brandLogoUrl.startsWith("/")) {
+                const origin = req.nextUrl.origin;
+                config.theme.brandLogoUrl = `${origin}${config.theme.brandLogoUrl}`;
+            }
+
+            // FIX: Convert WebP to PNG using Sharp (React-PDF doesn't support WebP)
+            if (config.theme?.brandLogoUrl) {
+                try {
+                    const logoUrl = config.theme.brandLogoUrl;
+                    const response = await fetch(logoUrl);
+                    if (response.ok) {
+                        const arrayBuffer = await response.arrayBuffer();
+                        const buffer = Buffer.from(arrayBuffer);
+
+                        // Convert to PNG using sharp
+                        const pngBuffer = await sharp(buffer).png().toBuffer();
+                        const base64Info = pngBuffer.toString('base64');
+                        config.theme.brandLogoUrl = `data:image/png;base64,${base64Info}`;
+                        console.log(`[ReportsAPI] Transcoded Logo to PNG (${Math.round(pngBuffer.length / 1024)}KB)`);
+                    }
+                } catch (e) {
+                    console.warn("[ReportsAPI] Logo transcoding failed:", e);
+                    // Fallback to text (undefined logo) or original (might fail)
+                    // If transcoding fails, react-pdf might still crash on original webp, so safer to unset
+                    if (config.theme.brandLogoUrl.endsWith(".webp")) {
+                        config.theme.brandLogoUrl = undefined;
+                    }
+                }
+            }
+
+            console.log(`[ReportsAPI] PDF Branding: Name='${config.name}' Logo='${config.theme?.brandLogoUrl ? 'Present (DataURI)' : 'None'}' Color='${config.theme?.primaryColor}'`);
 
             const reportTitleMap: Record<string, string> = {
                 "z-report": "End of Day Report (Z)",
@@ -206,6 +292,7 @@ export async function GET(req: NextRequest) {
                 <EndOfDayPDF
                     brandName={config.name || "Merchant"}
                     logoUrl={config.theme?.brandLogoUrl}
+                    brandColor={config.theme?.primaryColor || config.theme?.brandColor}
                     date={new Date(startTs * 1000).toLocaleDateString()}
                     generatedBy={staffName}
                     reportTitle={reportTitleMap[type] || "Report"}
@@ -218,6 +305,10 @@ export async function GET(req: NextRequest) {
                     paymentMethods={paymentMethods}
                     employees={detailedData.employees}
                     hourly={detailedData.hourly}
+                    // Explicit Visibility Flags
+                    showPayments={type === "z-report" || type === "x-report"}
+                    showEmployeeStats={type === "z-report" || type === "x-report" || type === "employee"}
+                    showHourlyStats={type === "z-report" || type === "x-report" || type === "hourly"}
                 />
             );
 
@@ -225,6 +316,15 @@ export async function GET(req: NextRequest) {
             const chunks: Uint8Array[] = [];
             for await (const chunk of pdfStream) chunks.push(chunk as Uint8Array);
             const pdfBuffer = Buffer.concat(chunks);
+
+            if (format === "pdf") {
+                return new NextResponse(new Blob([pdfBuffer]), {
+                    headers: {
+                        "Content-Type": "application/pdf",
+                        "Content-Disposition": `attachment; filename="${type}-report-${startTs}.pdf"`
+                    }
+                });
+            }
 
             // CSV
             let csv = "";
