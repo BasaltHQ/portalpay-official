@@ -74,7 +74,7 @@ export default function TerminalAdminDashboard({
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className="px-6 py-3 text-sm font-semibold capitalize transition-colors hover:bg-muted/50"
+                        className="term-admin-tab-menu-padding-inline py-3 text-sm font-semibold capitalize transition-colors hover:bg-muted/50"
                         style={tabStyle(tab)}
                     >
                         {tab}
