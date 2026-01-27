@@ -323,7 +323,9 @@ export function Navbar() {
                         setShowAccessPending(true);
                     } else if (isPrivate && !isApproved) {
                         // Private mode + Not Approved -> SHOW PENDING, DO NOT SHOW AUTH (SIGNING)
-                        setShowAccessPending(true);
+                        if (!showSignupWizard) {
+                            setShowAccessPending(true);
+                        }
                         // Do NOT show AuthModal - that asks for signature/login which we don't want yet
                     } else if (!me?.authed) {
                         // Public mode or Approved Private User -> PROCEED TO LOGIN
@@ -336,7 +338,7 @@ export function Navbar() {
                 checkingAuth.current = false;
             }
         })();
-    }, [account, account?.address, activeWallet?.id, brand, container]);
+    }, [account, account?.address, activeWallet?.id, brand, container, showSignupWizard]);
 
     // Broadcast login/logout so ThemeLoader can immediately apply merchant-scoped theme
     useEffect(() => {
