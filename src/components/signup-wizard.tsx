@@ -189,6 +189,14 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
     // Application Form State
     const [connectedWallet, setConnectedWallet] = useState<string>("");
     const [shopName, setShopName] = useState("");
+    // KYB State
+    const [legalName, setLegalName] = useState("");
+    const [businessType, setBusinessType] = useState("llc");
+    const [ein, setEin] = useState("");
+    const [website, setWebsite] = useState("");
+    const [phone, setPhone] = useState("");
+    const [address, setAddress] = useState({ street: "", city: "", state: "", zip: "", country: "US" });
+
     const [logoUrl, setLogoUrl] = useState("");
     const [notes, setNotes] = useState("");
     const [submitting, setSubmitting] = useState(false);
@@ -278,9 +286,18 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
 
     async function submitApplication() {
         if (!shopName.trim()) {
-            setSubmitError("Business Name is required");
+            setSubmitError("Doing Business As (DBA) Name is required");
             return;
         }
+        if (!legalName.trim()) {
+            setSubmitError("Legal Business Name is required");
+            return;
+        }
+        if (!ein.trim()) {
+            setSubmitError("Tax ID / EIN is required");
+            return;
+        }
+
         setSubmitting(true);
         setSubmitError("");
         try {
@@ -292,6 +309,12 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
                 },
                 body: JSON.stringify({
                     shopName,
+                    legalBusinessName: legalName,
+                    businessType,
+                    ein,
+                    website,
+                    phone,
+                    businessAddress: address,
                     logoUrl,
                     notes
                 })
@@ -340,33 +363,32 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
 
     return createPortal(
         <>
-            {/* Backdrop */}
+            {/* Backdrop - High Z-Index for Mobile Overlay */}
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[900] bg-black/80 backdrop-blur-md"
+                className="fixed inset-0 z-[9998] bg-black/90 backdrop-blur-md"
                 onClick={onClose}
             />
 
-            {/* Modal Container */}
-            <div className="fixed inset-0 z-[901] flex items-center justify-center p-4 pointer-events-none">
+            {/* Modal Container - Max Z-Index, Full Screen Mobile aware */}
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none p-0 sm:p-4 pt-[safe-area-inset-top]">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                    className="relative w-full max-w-[400px] rounded-2xl border border-white/10 shadow-2xl overflow-hidden pointer-events-auto flex flex-col"
+                    className="relative w-full h-full sm:h-auto sm:max-h-[85vh] sm:max-w-[480px] sm:rounded-2xl border-0 sm:border border-white/10 shadow-2xl overflow-hidden pointer-events-auto flex flex-col bg-black/95 sm:bg-black/90"
                     style={{
-                        background: 'linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.98) 100%)',
-                        maxHeight: 'calc(100vh - 64px)',
+                        background: 'linear-gradient(180deg, rgba(10,10,10,1) 0%, rgba(5,5,5,1) 100%)',
                     }}
                 >
-                    {/* Header */}
-                    <div className="relative p-6 pb-4 border-b border-white/10 shrink-0">
-                        <div className="flex items-center justify-between mb-4">
+                    {/* Header - Sticky */}
+                    <div className="relative p-6 pb-4 border-b border-white/10 shrink-0 bg-black/50 backdrop-blur-sm z-10 pt-safe-top">
+                        <div className="flex items-center justify-between mb-4 mt-2 sm:mt-0">
                             <div className="flex items-center gap-3">
-                                <div className="relative w-10 h-10">
+                                <div className="relative w-10 h-10 shrink-0">
                                     <Image src={brandLogo} alt={brandName} fill className="object-contain" />
                                 </div>
                                 <div>
@@ -393,8 +415,8 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
                         )}
                     </div>
 
-                    {/* Content */}
-                    <div className="p-6 flex-1 overflow-y-auto">
+                    {/* Content - Scrollable */}
+                    <div className="p-6 flex-1 overflow-y-auto pb-safe-bottom">
                         <AnimatePresence mode="wait">
                             {isApplicationSuccess ? (
                                 <motion.div
@@ -425,7 +447,7 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
                                     animate={{ opacity: 1, x: 0 }}
                                 >
                                     <h2 className="text-xl font-bold text-white mb-1">Apply for Access</h2>
-                                    <p className="text-sm text-gray-400 mb-5">Tell us about your business</p>
+                                    <p className="text-sm text-gray-400 mb-5">Please provide your business details for KYB verification.</p>
 
                                     <div className="space-y-4">
                                         <div>
@@ -435,14 +457,103 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
                                             </div>
                                         </div>
 
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs text-gray-400 block mb-1">Legal Business Name <span className="text-red-400">*</span></label>
+                                                <input
+                                                    value={legalName}
+                                                    onChange={e => setLegalName(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                    placeholder="Official Legal Name"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-gray-400 block mb-1">DBA / Shop Name <span className="text-red-400">*</span></label>
+                                                <input
+                                                    value={shopName}
+                                                    onChange={e => setShopName(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                    placeholder="Doing Business As"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs text-gray-400 block mb-1">Business Type</label>
+                                                <select
+                                                    value={businessType}
+                                                    onChange={e => setBusinessType(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors appearance-none"
+                                                >
+                                                    <option value="llc">LLC</option>
+                                                    <option value="corp">Corporation</option>
+                                                    <option value="sole_prop">Sole Proprietorship</option>
+                                                    <option value="partnership">Partnership</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-gray-400 block mb-1">Tax ID / EIN <span className="text-red-400">*</span></label>
+                                                <input
+                                                    value={ein}
+                                                    onChange={e => setEin(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                    placeholder="xx-xxxxxxx"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs text-gray-400 block mb-1">Website</label>
+                                                <input
+                                                    value={website}
+                                                    onChange={e => setWebsite(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                    placeholder="https://"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-gray-400 block mb-1">Phone Number</label>
+                                                <input
+                                                    value={phone}
+                                                    onChange={e => setPhone(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                    placeholder="+1 (555) 000-0000"
+                                                />
+                                            </div>
+                                        </div>
+
                                         <div>
-                                            <label className="text-xs text-gray-400 block mb-1">Business Name <span className="text-red-400">*</span></label>
-                                            <input
-                                                value={shopName}
-                                                onChange={e => setShopName(e.target.value)}
-                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
-                                                placeholder="e.g. Acme Corp"
-                                            />
+                                            <label className="text-xs text-gray-400 block mb-1">Business Address</label>
+                                            <div className="space-y-2">
+                                                <input
+                                                    value={address.street}
+                                                    onChange={e => setAddress({ ...address, street: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors mb-2"
+                                                    placeholder="Street Address"
+                                                />
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <input
+                                                        value={address.city}
+                                                        onChange={e => setAddress({ ...address, city: e.target.value })}
+                                                        className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                        placeholder="City"
+                                                    />
+                                                    <input
+                                                        value={address.state}
+                                                        onChange={e => setAddress({ ...address, state: e.target.value })}
+                                                        className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                        placeholder="State"
+                                                    />
+                                                    <input
+                                                        value={address.zip}
+                                                        onChange={e => setAddress({ ...address, zip: e.target.value })}
+                                                        className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                        placeholder="ZIP"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div>
@@ -457,7 +568,7 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
                                         </div>
 
                                         <div>
-                                            <label className="text-xs text-gray-400 block mb-1">Notes / Website</label>
+                                            <label className="text-xs text-gray-400 block mb-1">Notes / Description</label>
                                             <textarea
                                                 value={notes}
                                                 onChange={e => setNotes(e.target.value)}
@@ -477,8 +588,9 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
                                             disabled={submitting}
                                             className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100"
                                         >
-                                            {submitting ? "Submitting..." : "Submit Application"}
+                                            {submitting ? "Submitting Application..." : "Submit Application"}
                                         </button>
+                                        <div className="h-6" /> {/* Extra padding for scroll */}
                                     </div>
                                 </motion.div>
                             ) : (
@@ -489,6 +601,7 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
                                     exit={{ opacity: 0, x: -20 }}
                                     transition={{ duration: 0.2 }}
                                 >
+
                                     <div className="mb-1">
                                         <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">
                                             Step {currentStep + 1} of {WIZARD_STEPS.length}

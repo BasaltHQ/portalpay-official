@@ -24,6 +24,18 @@ type ClientRequestDoc = {
     brandKey: string;
     status: "pending" | "approved" | "rejected";
     shopName: string;
+    legalBusinessName?: string;
+    businessType?: string;
+    ein?: string;
+    website?: string;
+    phone?: string;
+    businessAddress?: {
+        street: string;
+        city: string;
+        state: string;
+        zip: string;
+        country: string;
+    };
     logoUrl?: string;
     faviconUrl?: string;
     primaryColor?: string;
@@ -125,6 +137,12 @@ export async function POST(req: NextRequest) {
             brandKey,
             status: "pending",
             shopName,
+            legalBusinessName: typeof body?.legalBusinessName === "string" ? body.legalBusinessName : undefined,
+            businessType: typeof body?.businessType === "string" ? body.businessType : undefined,
+            ein: typeof body?.ein === "string" ? body.ein : undefined,
+            website: typeof body?.website === "string" ? body.website : undefined,
+            phone: typeof body?.phone === "string" ? body.phone : undefined,
+            businessAddress: body?.businessAddress || undefined,
             logoUrl: typeof body?.logoUrl === "string" ? body.logoUrl : undefined,
             faviconUrl: typeof body?.faviconUrl === "string" ? body.faviconUrl : undefined,
             primaryColor: typeof body?.primaryColor === "string" ? body.primaryColor : undefined,
