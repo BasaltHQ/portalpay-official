@@ -366,9 +366,7 @@ export function Navbar() {
     }, []);
 
     const items = useMemo<NavItem[]>(() => {
-        const base: NavItem[] = [
-            { href: "/terminal", label: "Terminal" },
-        ];
+        const base: NavItem[] = [];
         if (authed && account?.address) base.push({ href: "/profile", label: tNavbar("profile"), authOnly: true });
         if (authed && account?.address) base.push({ href: "/shop", label: tNavbar("shop"), authOnly: true });
         if (authed && account?.address) base.push({ href: "/admin", label: tNavbar("admin"), authOnly: true });

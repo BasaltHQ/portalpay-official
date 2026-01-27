@@ -1543,3 +1543,4 @@ function TerminalPageInner({ session, theme, onLogout, merchantWallet }: { sessi
   );
 }
 
+export default TerminalPage;
