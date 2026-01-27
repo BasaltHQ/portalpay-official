@@ -314,6 +314,12 @@ export function Navbar() {
                 // Show authentication modal for both social and external wallets (or pending modal if blocked)
                 setAuthed(false);
                 setTimeout(() => {
+                    // Safety check: if wizard is open, do absolutely nothing
+                    if (showSignupWizard) {
+                        checkingAuth.current = false;
+                        return;
+                    }
+
                     const isApproved = me?.authed || me?.approved; // Check if user is approved
 
                     if (blocked && isApproved) {
@@ -1200,7 +1206,7 @@ export function Navbar() {
                 }}
             />
             <AccessPendingModal
-                isOpen={showAccessPending}
+                isOpen={showAccessPending && !showSignupWizard}
                 onClose={() => {
                     setShowAccessPending(false);
                     if (activeWallet) {

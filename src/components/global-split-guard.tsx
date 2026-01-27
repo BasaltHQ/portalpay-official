@@ -89,6 +89,11 @@ function derivePreviewBps(
  * - Deploy uses ensureSplitForWallet() and persists address idempotently
  */
 export default function GlobalSplitGuard() {
+  const brand = useBrand();
+  // ...
+  const accessMode = (brand as any)?.accessMode || "open";
+  const isPrivate = accessMode === "request";
+
   // Do not run Split Guard on public shop pages (buyers should not be prompted here)
   if (typeof window !== "undefined") {
     try {
@@ -101,6 +106,7 @@ export default function GlobalSplitGuard() {
   }
 
   const account = useActiveAccount();
+
   const wallet = useActiveWallet();
   const [open, setOpen] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -120,7 +126,6 @@ export default function GlobalSplitGuard() {
   const platformRecipient = (process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
   const platformValid = isValidHex(platformRecipient);
 
-  const brand = useBrand();
   let brandKey = String((brand as any)?.key || "portalpay").toLowerCase();
   const partnerContext = brandKey !== "portalpay" && brandKey !== "basaltsurge";
   const meAddr = String(account?.address || "").toLowerCase();
@@ -261,7 +266,17 @@ export default function GlobalSplitGuard() {
         const authCheck = await fetch('/api/auth/me', { cache: 'no-store' })
           .then(r => r.ok ? r.json() : { authed: false })
           .catch(() => ({ authed: false }));
+
+        // SUPPRESSION: If private mode and not approved, do NOT show split modal.
+        // User should see AccessPendingModal instead (handled by Navbar).
+        if (isPrivate && !authCheck.authed && !authCheck.approved) {
+          setOpen(false);
+          setChecking(false);
+          return;
+        }
+
         try {
+
           const roles = Array.isArray((authCheck as any)?.roles) ? (authCheck as any).roles : [];
           const adminByRole = roles.includes('admin');
           const partnerAdmin = partnerContext && partnerValid && meAddr === partnerAddr;
