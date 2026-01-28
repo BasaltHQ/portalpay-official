@@ -1,6 +1,60 @@
+"use client";
+
 import React from "react";
+import { useBrand } from "@/contexts/BrandContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { cachedFetch } from "@/lib/client-api-cache";
 
 export default function TermsOfServicePage() {
+    const brand = useBrand();
+    const { theme: rawTheme } = useTheme();
+    const [containerBrandKey, setContainerBrandKey] = React.useState<string>("");
+    const [containerType, setContainerType] = React.useState<string>("");
+
+    // Fetch container identity to get brandKey for partner containers
+    React.useEffect(() => {
+        let cancelled = false;
+        cachedFetch("/api/site/container", { cache: "no-store" })
+            .then((ci: any) => {
+                if (cancelled) return;
+                setContainerBrandKey(String(ci?.brandKey || "").trim());
+                setContainerType(String(ci?.containerType || "").trim());
+            })
+            .catch(() => { });
+        return () => { cancelled = true; };
+    }, []);
+
+    // Detect if this is a partner container
+    const isPartnerContainer = React.useMemo(() => {
+        const ctFromState = containerType.toLowerCase();
+        const ctFromAttr = typeof document !== "undefined"
+            ? (document.documentElement.getAttribute("data-pp-container-type") || "").toLowerCase()
+            : "";
+        return ctFromState === "partner" || ctFromAttr === "partner";
+    }, [containerType]);
+
+    const displayBrandName = React.useMemo(() => {
+        // Helper to fix BasaltSurge capitalization
+        const fixBasaltSurge = (name: string) =>
+            name.toLowerCase() === "basaltsurge" ? "BasaltSurge" : name;
+
+        try {
+            const raw = String(rawTheme?.brandName || "").trim();
+            const generic = /^ledger\d*$/i.test(raw) || /^partner\d*$/i.test(raw) || /^default$/i.test(raw);
+            // In partner containers, also treat "PortalPay" as generic to force using the brand key
+            const treatAsGeneric = generic || (isPartnerContainer && /^portalpay$/i.test(raw));
+            // Prefer container brand key over context brand key
+            const key = containerBrandKey || String((brand as any)?.key || "").trim();
+            const titleizedKey = key ? key.charAt(0).toUpperCase() + key.slice(1) : "BasaltSurge";
+            const result = (!raw || treatAsGeneric) ? titleizedKey : raw;
+            return fixBasaltSurge(result);
+        } catch {
+            const key = containerBrandKey || String((brand as any)?.key || "").trim();
+            const fallback = key ? key.charAt(0).toUpperCase() + key.slice(1) : "BasaltSurge";
+            return fixBasaltSurge(fallback);
+        }
+    }, [rawTheme?.brandName, containerBrandKey, (brand as any)?.key, isPartnerContainer]);
+
     return (
         <div className="min-h-screen bg-background text-foreground font-sans selection:bg-indigo-500/30">
             <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
@@ -17,7 +71,7 @@ export default function TermsOfServicePage() {
                     <section>
                         <h2 className="text-2xl font-semibold mb-4 text-foreground">1. Agreement to Terms</h2>
                         <p className="text-muted-foreground leading-relaxed">
-                            These Terms of Service (&quot;Terms&quot;) constitute a legally binding agreement between you and BasaltSurge (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) governing your access to and use of our website, mobile applications, and payment processing services (collectively, the &quot;Services&quot;).
+                            These Terms of Service (&quot;Terms&quot;) constitute a legally binding agreement between you and {displayBrandName} (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) governing your access to and use of our website, mobile applications, and payment processing services (collectively, the &quot;Services&quot;).
                         </p>
                         <p className="text-muted-foreground leading-relaxed mt-4">
                             By accessing or using our Services, you agree to be bound by these Terms. If you disagree with any part of these Terms, you may not access or use our Services.
@@ -61,7 +115,7 @@ export default function TermsOfServicePage() {
                     <section>
                         <h2 className="text-2xl font-semibold mb-4 text-foreground">4. Services Description</h2>
                         <p className="text-muted-foreground leading-relaxed">
-                            BasaltSurge provides payment processing services that enable merchants to accept cryptocurrency and fiat currency payments. Our Services include:
+                            {displayBrandName} provides payment processing services that enable merchants to accept cryptocurrency and fiat currency payments. Our Services include:
                         </p>
                         <ul className="list-disc pl-6 mt-4 space-y-2 text-muted-foreground">
                             <li>Cryptocurrency payment processing and settlement</li>
@@ -110,7 +164,7 @@ export default function TermsOfServicePage() {
                     <section>
                         <h2 className="text-2xl font-semibold mb-4 text-foreground">7. Intellectual Property</h2>
                         <p className="text-muted-foreground leading-relaxed">
-                            The Services and all content, features, and functionality (including but not limited to software, text, graphics, logos, icons, and images) are owned by BasaltSurge or its licensors and are protected by copyright, trademark, and other intellectual property laws.
+                            The Services and all content, features, and functionality (including but not limited to software, text, graphics, logos, icons, and images) are owned by {displayBrandName} or its licensors and are protected by copyright, trademark, and other intellectual property laws.
                         </p>
                         <p className="text-muted-foreground leading-relaxed mt-4">
                             You may not copy, modify, distribute, sell, or lease any part of our Services without our prior written consent. You may not reverse engineer or attempt to extract the source code of our software.
@@ -130,7 +184,7 @@ export default function TermsOfServicePage() {
                     <section>
                         <h2 className="text-2xl font-semibold mb-4 text-foreground">9. Limitation of Liability</h2>
                         <p className="text-muted-foreground leading-relaxed">
-                            TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL BASALTSURGE OR BASALTHQ, ITS DIRECTORS, EMPLOYEES, PARTNERS, AGENTS, SUPPLIERS, OR AFFILIATES BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO:
+                            TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL {displayBrandName}, ITS DIRECTORS, EMPLOYEES, PARTNERS, AGENTS, SUPPLIERS, OR AFFILIATES BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO:
                         </p>
                         <ul className="list-disc pl-6 mt-4 space-y-2 text-muted-foreground">
                             <li>Loss of profits, revenue, or data</li>
@@ -147,7 +201,7 @@ export default function TermsOfServicePage() {
                     <section>
                         <h2 className="text-2xl font-semibold mb-4 text-foreground">10. Indemnification</h2>
                         <p className="text-muted-foreground leading-relaxed">
-                            You agree to indemnify, defend, and hold harmless BasaltSurge and its officers, directors, employees, agents, and affiliates from and against any claims, liabilities, damages, losses, costs, or expenses (including reasonable attorneys&apos; fees) arising out of or relating to:
+                            You agree to indemnify, defend, and hold harmless {displayBrandName} and its officers, directors, employees, agents, and affiliates from and against any claims, liabilities, damages, losses, costs, or expenses (including reasonable attorneys&apos; fees) arising out of or relating to:
                         </p>
                         <ul className="list-disc pl-6 mt-4 space-y-2 text-muted-foreground">
                             <li>Your use of our Services</li>
@@ -214,15 +268,15 @@ export default function TermsOfServicePage() {
                             If you have any questions about these Terms, please contact us at:
                         </p>
                         <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                            <p className="text-muted-foreground"><strong>BasaltHQ</strong></p>
-                            <p className="text-muted-foreground">Email: <a href="mailto:info@basalthq.com">info@basalthq.com</a></p>
-                            <p className="text-muted-foreground">Website: <a href="https://basalthq.com">https://basalthq.com</a></p>
+                            <p className="text-muted-foreground"><strong>{displayBrandName}</strong></p>
+                            <p className="text-muted-foreground">Email: <a href="mailto:info@basalthq.com" className="text-indigo-400 hover:text-indigo-300">info@basalthq.com</a></p>
+                            <p className="text-muted-foreground">Website: <a href="https://basalthq.com" className="text-indigo-400 hover:text-indigo-300">https://basalthq.com</a></p>
                         </div>
                     </section>
                 </div>
 
                 <footer className="mt-20 pt-8 border-t text-center text-sm text-muted-foreground">
-                    &copy; {new Date().getFullYear()} BasaltHQ. All rights reserved.
+                    &copy; {new Date().getFullYear()} {displayBrandName}. All rights reserved.
                 </footer>
             </div>
         </div>

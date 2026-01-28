@@ -1,6 +1,60 @@
+"use client";
+
 import React from "react";
+import { useBrand } from "@/contexts/BrandContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { cachedFetch } from "@/lib/client-api-cache";
 
 export default function PrivacyPolicyPage() {
+    const brand = useBrand();
+    const { theme: rawTheme } = useTheme();
+    const [containerBrandKey, setContainerBrandKey] = React.useState<string>("");
+    const [containerType, setContainerType] = React.useState<string>("");
+
+    // Fetch container identity to get brandKey for partner containers
+    React.useEffect(() => {
+        let cancelled = false;
+        cachedFetch("/api/site/container", { cache: "no-store" })
+            .then((ci: any) => {
+                if (cancelled) return;
+                setContainerBrandKey(String(ci?.brandKey || "").trim());
+                setContainerType(String(ci?.containerType || "").trim());
+            })
+            .catch(() => { });
+        return () => { cancelled = true; };
+    }, []);
+
+    // Detect if this is a partner container
+    const isPartnerContainer = React.useMemo(() => {
+        const ctFromState = containerType.toLowerCase();
+        const ctFromAttr = typeof document !== "undefined"
+            ? (document.documentElement.getAttribute("data-pp-container-type") || "").toLowerCase()
+            : "";
+        return ctFromState === "partner" || ctFromAttr === "partner";
+    }, [containerType]);
+
+    const displayBrandName = React.useMemo(() => {
+        // Helper to fix BasaltSurge capitalization
+        const fixBasaltSurge = (name: string) =>
+            name.toLowerCase() === "basaltsurge" ? "BasaltSurge" : name;
+
+        try {
+            const raw = String(rawTheme?.brandName || "").trim();
+            const generic = /^ledger\d*$/i.test(raw) || /^partner\d*$/i.test(raw) || /^default$/i.test(raw);
+            // In partner containers, also treat "PortalPay" as generic to force using the brand key
+            const treatAsGeneric = generic || (isPartnerContainer && /^portalpay$/i.test(raw));
+            // Prefer container brand key over context brand key
+            const key = containerBrandKey || String((brand as any)?.key || "").trim();
+            const titleizedKey = key ? key.charAt(0).toUpperCase() + key.slice(1) : "BasaltSurge";
+            const result = (!raw || treatAsGeneric) ? titleizedKey : raw;
+            return fixBasaltSurge(result);
+        } catch {
+            const key = containerBrandKey || String((brand as any)?.key || "").trim();
+            const fallback = key ? key.charAt(0).toUpperCase() + key.slice(1) : "BasaltSurge";
+            return fixBasaltSurge(fallback);
+        }
+    }, [rawTheme?.brandName, containerBrandKey, (brand as any)?.key, isPartnerContainer]);
+
     return (
         <div className="min-h-screen bg-background text-foreground font-sans selection:bg-indigo-500/30">
             <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
@@ -17,7 +71,7 @@ export default function PrivacyPolicyPage() {
                     <section>
                         <h2 className="text-2xl font-semibold mb-4 text-foreground">1. Introduction</h2>
                         <p className="text-muted-foreground leading-relaxed">
-                            Welcome to BasaltSurge (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or use our payment processing services.
+                            Welcome to {displayBrandName} (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or use our payment processing services.
                         </p>
                         <p className="text-muted-foreground leading-relaxed mt-4">
                             Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access our services.
@@ -111,7 +165,7 @@ export default function PrivacyPolicyPage() {
                             <li><strong>Withdrawal of Consent:</strong> Withdraw consent at any time where we rely on consent to process your information.</li>
                         </ul>
                         <p className="text-muted-foreground leading-relaxed mt-4">
-                            To exercise these rights, please contact us at <a href="mailto:info@basalthq.com">info@basalthq.com</a>. We will respond to your request within 30 days.
+                            To exercise these rights, please contact us at <a href="mailto:info@basalthq.com" className="text-indigo-400 hover:text-indigo-300">info@basalthq.com</a>. We will respond to your request within 30 days.
                         </p>
                     </section>
 
@@ -159,15 +213,15 @@ export default function PrivacyPolicyPage() {
                             If you have questions or comments about this privacy policy, or if you wish to exercise your privacy rights, please contact us at:
                         </p>
                         <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                            <p className="text-muted-foreground"><strong>BasaltHQ</strong></p>
-                            <p className="text-muted-foreground">Email: <a href="mailto:info@basalthq.com">info@basalthq.com</a></p>
-                            <p className="text-muted-foreground">Website: <a href="https://basalthq.com">https://basalthq.com</a></p>
+                            <p className="text-muted-foreground"><strong>{displayBrandName}</strong></p>
+                            <p className="text-muted-foreground">Email: <a href="mailto:info@basalthq.com" className="text-indigo-400 hover:text-indigo-300">info@basalthq.com</a></p>
+                            <p className="text-muted-foreground">Website: <a href="https://basalthq.com" className="text-indigo-400 hover:text-indigo-300">https://basalthq.com</a></p>
                         </div>
                     </section>
                 </div>
 
                 <footer className="mt-20 pt-8 border-t text-center text-sm text-muted-foreground">
-                    &copy; {new Date().getFullYear()} BasaltHQ. All rights reserved.
+                    &copy; {new Date().getFullYear()} {displayBrandName}. All rights reserved.
                 </footer>
             </div>
         </div>
