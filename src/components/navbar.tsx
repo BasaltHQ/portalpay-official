@@ -322,6 +322,7 @@ export function Navbar() {
 
                     const platformWallet = (process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
                     const isPlatformAdmin = !!platformWallet && !!account?.address && account.address.toLowerCase() === platformWallet;
+
                     const isApproved = me?.authed || me?.approved || isPlatformAdmin; // Check if user is approved (or super admin)
 
                     if (blocked && isApproved) {
