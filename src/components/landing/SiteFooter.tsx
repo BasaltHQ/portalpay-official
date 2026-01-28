@@ -195,10 +195,10 @@ export default function SiteFooter() {
             © {new Date().getFullYear()} {theme.brandName || "BasaltSurge"}. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <Link href="/privacy" className="text-gray-500 text-xs hover:text-white transition-colors">
+            <Link href="/legal/privacy" className="text-gray-500 text-xs hover:text-white transition-colors">
               Privacy Policy
             </Link>
-            <Link href="/terms" className="text-gray-500 text-xs hover:text-white transition-colors">
+            <Link href="/legal/terms" className="text-gray-500 text-xs hover:text-white transition-colors">
               Terms of Service
             </Link>
           </div>
