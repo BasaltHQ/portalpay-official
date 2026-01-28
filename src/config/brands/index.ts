@@ -41,6 +41,9 @@ export type BrandConfig = {
   defaultMerchantFeeBps?: number; // optional default merchant add-on bps
   partnerWallet?: string; // optional wallet for partner recipient in split
 
+  // Contact information
+  contactEmail?: string; // support/contact email for the brand
+
   // New: APIM product aliasing/curation for Partner Developer portal
   apimCatalog?: ApimCatalogEntry[];
 

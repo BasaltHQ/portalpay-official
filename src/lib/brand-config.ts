@@ -42,6 +42,8 @@ export type BrandConfigDoc = {
   defaultMerchantFeeBps?: number;
   // Partner Split config
   partnerWallet?: string;
+  // Contact information
+  contactEmail?: string;
   // APIM product aliasing/curation
   apimCatalog?: ApimCatalogEntry[];
   // Container Apps deployment status for Partners panel
@@ -255,6 +257,7 @@ export function toEffectiveBrand(brandKey: string, overrides?: Partial<BrandConf
       }
       : withDefaults.meta,
     appUrl: overrides.appUrl ?? withDefaults.appUrl,
+    contactEmail: typeof overrides.contactEmail === "string" ? overrides.contactEmail : withDefaults.contactEmail,
     platformFeeBps: typeof overrides.platformFeeBps === "number" ? overrides.platformFeeBps : withDefaults.platformFeeBps,
     partnerFeeBps: typeof overrides.partnerFeeBps === "number" ? overrides.partnerFeeBps : withDefaults.partnerFeeBps,
     defaultMerchantFeeBps: typeof overrides.defaultMerchantFeeBps === "number" ? overrides.defaultMerchantFeeBps : withDefaults.defaultMerchantFeeBps,

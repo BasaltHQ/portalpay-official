@@ -214,8 +214,21 @@ export default function PrivacyPolicyPage() {
                         </p>
                         <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                             <p className="text-muted-foreground"><strong>{displayBrandName}</strong></p>
-                            <p className="text-muted-foreground">Email: <a href="mailto:info@basalthq.com" className="text-indigo-400 hover:text-indigo-300">info@basalthq.com</a></p>
-                            <p className="text-muted-foreground">Website: <a href="https://basalthq.com" className="text-indigo-400 hover:text-indigo-300">https://basalthq.com</a></p>
+                            {isPartnerContainer ? (
+                                <>
+                                    {(brand as any)?.contactEmail && (
+                                        <p className="text-muted-foreground">Email: <a href={`mailto:${(brand as any).contactEmail}`} className="text-indigo-400 hover:text-indigo-300">{(brand as any).contactEmail}</a></p>
+                                    )}
+                                    {(brand as any)?.appUrl && (
+                                        <p className="text-muted-foreground">Website: <a href={(brand as any).appUrl} className="text-indigo-400 hover:text-indigo-300">{(brand as any).appUrl}</a></p>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-muted-foreground">Email: <a href="mailto:info@basalthq.com" className="text-indigo-400 hover:text-indigo-300">info@basalthq.com</a></p>
+                                    <p className="text-muted-foreground">Website: <a href="https://basalthq.com" className="text-indigo-400 hover:text-indigo-300">https://basalthq.com</a></p>
+                                </>
+                            )}
                         </div>
                     </section>
                 </div>
