@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getComparisonData, getAllComparisons } from '@/lib/landing-pages/comparisons';
 import LogoTile from '@/components/landing/LogoTile';
+import { SignupButton } from '@/components/landing/SignupButton';
 import PortalPayVideo from '@/components/landing/PortalPayVideo';
 import { getBrandConfig } from '@/config/brands';
 import { getBaseUrl } from '@/lib/base-url';
@@ -430,18 +431,11 @@ export default async function ComparisonPage({
             Lower fees, better features, instant settlement.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link
-              href="/admin"
-              className="px-8 py-4 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] text-lg font-semibold hover:opacity-90 transition"
+            <SignupButton
+              className="px-8 py-4 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] text-lg font-bold hover:opacity-90 transition"
             >
-              Start Saving Today
-            </Link>
-            <Link
-              href="/terminal"
-              className="px-8 py-4 rounded-md border text-lg font-semibold hover:bg-accent transition"
-            >
-              Try Demo Portal
-            </Link>
+              Sign Up Now
+            </SignupButton>
           </div>
           <p className="text-sm text-muted-foreground mt-4">
             No bank account required • No monthly fees • Switch in minutes

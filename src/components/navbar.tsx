@@ -370,9 +370,14 @@ export function Navbar() {
                 setShowAuthModal(true);
             } catch { }
         }
+        function onWizardOpen() {
+            setShowSignupWizard(true);
+        }
         window.addEventListener("pp:auth:prompt", onPrompt as any);
+        window.addEventListener("pp:wizard:open", onWizardOpen);
         return () => {
             window.removeEventListener("pp:auth:prompt", onPrompt as any);
+            window.removeEventListener("pp:wizard:open", onWizardOpen);
         };
     }, []);
 

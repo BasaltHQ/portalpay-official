@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { ShopConfig, ShopTheme, InventoryArrangement } from "@/app/shop/page";
 import ImageUploadField from "@/components/forms/ImageUploadField";
 import ShopClient from "@/app/shop/[slug]/ShopClient";
@@ -72,12 +73,23 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
         return fallback;
     };
 
-    return (
-        <div className="fixed inset-0 z-[9999] flex bg-background overflow-hidden">
+    // Use portal to break out of stacking contexts
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+        // Lock body scroll
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, []);
+
+    const content = (
+        <div className="fixed inset-0 z-[2147483647] flex bg-background overflow-hidden overscroll-none touch-none">
             {/* Left Sidebar: Form */}
             <div className="w-full md:w-[450px] flex flex-col border-r bg-background h-full shadow-2xl z-10">
                 {/* Header */}
-                <div className="p-6 border-b flex items-center justify-between">
+                <div className="p-6 border-b flex items-center justify-between shrink-0">
                     <div>
                         <h2 className="text-xl font-bold">Shop Setup</h2>
                         <div className="text-xs text-muted-foreground mt-1">
@@ -327,7 +339,7 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-6 border-t bg-muted/10 flex justify-between items-center">
+                <div className="p-6 border-t bg-muted/10 flex justify-between items-center shrink-0">
                     {step !== "essentials" ? (
                         <button onClick={prevStep} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
                             Back
@@ -410,4 +422,7 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
             </div>
         </div>
     );
+
+    if (!mounted) return null;
+    return createPortal(content, document.body);
 }

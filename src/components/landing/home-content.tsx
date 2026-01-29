@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SignupButton } from "@/components/landing/SignupButton";
 import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { buildPortalUrlForTest } from "@/lib/receipts";
@@ -455,40 +456,12 @@ export default function HomeContent() {
             </ul>
 
             <div className="mt-auto pt-2 flex flex-wrap items-center gap-3">
-              <button
-                onClick={handleAdminClick}
-                className="group relative overflow-hidden px-5 py-3 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-medium transition-all hover:opacity-100 shadow-lg hover:shadow-xl"
+              <SignupButton
+                variant="shiny"
+                className="group relative overflow-hidden px-8 py-4 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-bold text-lg transition-all hover:opacity-100 shadow-lg hover:shadow-xl"
               >
-                <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                  style={{
-                    backgroundImage: `radial-gradient(circle at 75% 10%, ${siteTheme.primaryColor}, transparent 55%), radial-gradient(circle at 25% 90%, ${siteTheme.primaryColor}, transparent 55%)`,
-                    backgroundColor: "#000000",
-                    backgroundSize: "400% 400%",
-                    animation: "bg-pan 15s ease infinite alternate",
-                  }}
-                />
-                {/* Deep Glow Overlay (Subtle) */}
-                <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none mix-blend-screen"
-                  style={{
-                    background: `radial-gradient(circle at 60% -10%, ${siteTheme.primaryColor}40, transparent 70%), radial-gradient(circle at 0% 100%, ${siteTheme.primaryColor}20, transparent 60%)`
-                  }}
-                />
-
-                <span className="relative z-10 flex items-center gap-2">
-                  Start accepting crypto
-                </span>
-              </button>
-              <Link href="/terminal" className="px-5 py-3 rounded-md border hover:bg-foreground/5 transition-colors">
-                Try the portal
-              </Link>
-              <a
-                href={buildPortalUrlForTest(recipient)}
-                className="px-5 py-3 rounded-md border hover:bg-foreground/5 transition-colors"
-              >
-                Scan a demo receipt
-              </a>
+                Sign Up Now
+              </SignupButton>
             </div>
           </div>
 
@@ -595,21 +568,11 @@ export default function HomeContent() {
               </div>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
-              <button
-                onClick={handleAdminClick}
-                className="px-4 py-2 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-medium transition-opacity hover:opacity-90"
+              <SignupButton
+                className="px-8 py-3 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-bold text-lg transition-opacity hover:opacity-90"
               >
-                Open Admin
-              </button>
-              <Link href="/terminal" className="px-4 py-2 rounded-md border hover:bg-foreground/5 transition-colors">
-                Portal Preview
-              </Link>
-              <a
-                href={buildPortalUrlForTest(recipient)}
-                className="px-4 py-2 rounded-md border hover:bg-foreground/5 transition-colors"
-              >
-                Scan Demo Receipt
-              </a>
+                Sign Up Now
+              </SignupButton>
             </div>
           </div>
         </section>
@@ -689,21 +652,11 @@ export default function HomeContent() {
                 />
               </div>
               <div className="space-y-3">
-                <button
-                  onClick={handleAdminClick}
-                  className="block w-full text-center px-4 py-3 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-medium transition-opacity hover:opacity-90"
+                <SignupButton
+                  className="block w-full text-center px-4 py-3 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-bold transition-opacity hover:opacity-90"
                 >
-                  Open Admin
-                </button>
-                <Link href="/terminal" className="block text-center px-4 py-3 rounded-md border hover:bg-foreground/5 transition-colors">
-                  Try the Portal Preview
-                </Link>
-                <a
-                  href={buildPortalUrlForTest(recipient)}
-                  className="block text-center px-4 py-3 rounded-md border hover:bg-foreground/5 transition-colors"
-                >
-                  Scan a Demo Receipt
-                </a>
+                  Sign Up Now
+                </SignupButton>
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import * as Tabs from '@radix-ui/react-tabs';
 import Link from 'next/link';
+import { SignupButton } from '@/components/landing/SignupButton';
 import { PortalPreviewEmbedded } from '@/components/portal-preview-embedded';
 import { useTheme } from "@/contexts/ThemeContext";
 import { CostCalculator } from '@/components/landing/CostCalculator';
@@ -93,18 +94,11 @@ export default function IndustryTabs({ slugs, initialSlug, className = '' }: Ind
                 </p>
 
                 <div className="flex flex-wrap gap-3 mb-6">
-                  <Link
-                    href={data.heroCTA.primaryLink}
-                    className="px-6 py-3 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-semibold hover:opacity-90 transition"
+                  <SignupButton
+                    className="px-6 py-3 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-bold hover:opacity-90 transition"
                   >
                     {data.heroCTA.primary}
-                  </Link>
-                  <Link
-                    href={data.heroCTA.secondaryLink}
-                    className="px-6 py-3 rounded-md border font-semibold hover:bg-accent transition"
-                  >
-                    {data.heroCTA.secondary}
-                  </Link>
+                  </SignupButton>
                 </div>
 
                 {/* Key Stats */}
@@ -280,38 +274,15 @@ export default function IndustryTabs({ slugs, initialSlug, className = '' }: Ind
                 Set up in minutes, no monthly costs, no hidden fees.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
-                <Link
-                  href="/admin"
-                  className="px-8 py-4 rounded-md bg-pp-secondary text-[var(--primary-foreground)] text-lg font-semibold hover:opacity-90 transition"
+                <SignupButton
+                  className="px-8 py-4 rounded-md bg-pp-secondary text-[var(--primary-foreground)] text-lg font-bold hover:opacity-90 transition"
                 >
-                  Get Started Free
-                </Link>
-                <a
-                  href={buildPortalUrlForTest(recipient)}
-                  className="px-8 py-4 rounded-md border text-lg font-semibold hover:bg-accent transition"
-                >
-                  Try Demo Portal
-                </a>
+                  {data.heroCTA.primary}
+                </SignupButton>
               </div>
             </section>
 
-            {/* Related Industries */}
-            {data.relatedIndustries.length > 0 && (
-              <section className="mt-4">
-                <h4 className="text-lg font-semibold mb-4">Related Industries</h4>
-                <div className="flex flex-wrap gap-2">
-                  {data.relatedIndustries.map((riSlug) => (
-                    <Link
-                      key={riSlug}
-                      href={`/crypto-payments/${riSlug}`}
-                      className="px-4 py-2 rounded-md border hover:bg-accent transition capitalize"
-                    >
-                      {riSlug.replace('-', ' ')}
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
+
           </Tabs.Content>
         );
       })}

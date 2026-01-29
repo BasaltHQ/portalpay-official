@@ -2,6 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 const plugins = [
     {
@@ -101,7 +102,7 @@ export default function PluginsSection() {
             </div>
 
             <div className="mt-8 text-center text-sm text-zinc-500">
-                Don&apos;t see your platform? <span className="text-emerald-500 cursor-pointer hover:underline">View the API Docs</span> to build a custom integration.
+                Don&apos;t see your platform? <Link href="/developers" className="text-emerald-500 cursor-pointer hover:underline">View the API Docs</Link> to build a custom integration.
             </div>
         </section>
     );

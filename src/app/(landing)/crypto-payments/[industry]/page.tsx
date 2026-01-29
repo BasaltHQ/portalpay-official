@@ -10,6 +10,7 @@ import { getRecipientAddress } from '@/lib/thirdweb/client';
 import InteractiveChecklist from '@/components/ui/interactive-checklist';
 import { buildPortalUrlForTest } from '@/lib/receipts';
 import AcceptedServices from '@/components/landing/AcceptedServices';
+import { SignupButton } from '@/components/landing/SignupButton';
 import PortalPayVideo from '@/components/landing/PortalPayVideo';
 import { getBrandConfig } from '@/config/brands';
 import { getBaseUrl } from '@/lib/base-url';
@@ -212,18 +213,11 @@ export default async function IndustryLandingPage({ params }: { params: Promise<
             </p>
 
             <div className="flex flex-wrap gap-3 mb-6">
-              <Link
-                href={data.heroCTA.primaryLink}
-                className="px-6 py-3 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-semibold hover:opacity-90 transition"
+              <SignupButton
+                className="px-6 py-3 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-bold hover:opacity-90 transition"
               >
                 {data.heroCTA.primary}
-              </Link>
-              <Link
-                href={data.heroCTA.secondaryLink}
-                className="px-6 py-3 rounded-md border font-semibold hover:bg-accent transition"
-              >
-                {data.heroCTA.secondary}
-              </Link>
+              </SignupButton>
             </div>
 
             {/* Key Stats */}
@@ -394,38 +388,15 @@ export default async function IndustryLandingPage({ params }: { params: Promise<
             Set up in minutes, no monthly costs, no hidden fees.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link
-              href="/admin"
-              className="px-8 py-4 rounded-md bg-pp-secondary text-[var(--primary-foreground)] text-lg font-semibold hover:opacity-90 transition"
+            <SignupButton
+              className="px-8 py-4 rounded-md bg-pp-secondary text-[var(--primary-foreground)] text-lg font-bold hover:opacity-90 transition"
             >
-              Get Started Free
-            </Link>
-            <a
-              href={buildPortalUrlForTest(recipient)}
-              className="px-8 py-4 rounded-md border text-lg font-semibold hover:bg-accent transition"
-            >
-              Try Demo Portal
-            </a>
+              Sign Up Now
+            </SignupButton>
           </div>
         </section>
 
-        {/* Related Industries */}
-        {data.relatedIndustries.length > 0 && (
-          <section className="mt-12">
-            <h3 className="text-lg font-semibold mb-4">Related Industries</h3>
-            <div className="flex flex-wrap gap-2">
-              {data.relatedIndustries.map((slug) => (
-                <Link
-                  key={slug}
-                  href={`/crypto-payments/${slug}`}
-                  className="px-4 py-2 rounded-md border hover:bg-accent transition capitalize"
-                >
-                  {slug.replace('-', ' ')}
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
+
       </div>
     </div>
   );
