@@ -97,9 +97,11 @@ export default async function LocationPage({ params }: PageProps) {
         <IndustryTabs slugs={data.popularIndustries} />
       </section>
 
-      <section className="mt-16">
-        <PortalPayVideo />
-      </section>
+      {!isPartner && (
+        <section className="mt-16">
+          <PortalPayVideo />
+        </section>
+      )}
     </div>
   );
 }

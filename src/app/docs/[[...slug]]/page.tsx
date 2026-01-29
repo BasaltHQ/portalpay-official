@@ -10,6 +10,9 @@ import Link from 'next/link';
 import { getBaseUrl } from '@/lib/base-url';
 import { getBrandConfig } from '@/config/brands';
 
+// Force dynamic rendering to apply brand-specific replacements at runtime
+export const dynamic = 'force-dynamic';
+
 export async function generateStaticParams() {
   return [
     { slug: [] },
@@ -111,8 +114,14 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
     // with dynamic brand key and URLs based on the current brand config
     const { replacePlatformReferences } = await import('@/lib/platformBranding');
     const appUrl = brand.appUrl || process.env.NEXT_PUBLIC_APP_URL || '';
-    processedContent = replacePlatformReferences(processedContent, brand.key, brand.name, appUrl);
-  } catch { }
+    const brandKey = brand.key || 'basaltsurge';
+    console.log('[docs] Replacing with brandKey:', brandKey, 'appUrl:', appUrl);
+    console.log('[docs] Content before (sample):', content.substring(0, 200));
+    processedContent = replacePlatformReferences(processedContent, brandKey, brand.name, appUrl);
+    console.log('[docs] Content after (sample):', processedContent.substring(0, 200));
+  } catch (e) {
+    console.error('[docs] Error applying brand replacement:', e);
+  }
 
   const currentPath = slug.length === 0 ? '/docs' : `/docs/${slug.join('/')}`;
   const pageTitle = slug.length > 0

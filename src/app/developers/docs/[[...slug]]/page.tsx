@@ -12,7 +12,7 @@ import LoginGateLink from '@/components/login-gate-link';
 import { getBaseUrl } from '@/lib/base-url';
 import { getBrandConfig } from '@/config/brands';
 import { isPartnerContext } from '@/lib/env';
-import { resolveBrandAppLogo, getDefaultBrandName } from "@/lib/branding";
+import { resolveBrandAppLogo, getDefaultBrandName, normalizeBrandName } from "@/lib/branding";
 import { dePortalContent } from "@/lib/brand-content";
 import { DocsSidebarProvider } from "@/contexts/DocsSidebarContext";
 import { DocsContentWrapper } from "@/components/docs/docs-content-wrapper";
@@ -81,7 +81,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
   const metaBrandKey = String((runtimeBrand as any)?.key || "").trim();
   const nm = String(runtimeBrand?.name || "").trim();
   const metaGeneric = /^ledger\d*$/i.test(nm) || /^partner\d*$/i.test(nm) || /^default$/i.test(nm);
-  const displayNameMeta = (!nm || metaGeneric) ? getDefaultBrandName(metaBrandKey) : nm;
+  // Use normalizeBrandName for proper capitalization (e.g., "BasaltSurge" not "Basaltsurge")
+  const displayNameMeta = (!nm || metaGeneric) ? normalizeBrandName(nm, metaBrandKey) : normalizeBrandName(nm, metaBrandKey);
 
   return {
     title: `${title} | ${displayNameMeta} Docs`,
@@ -188,12 +189,12 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
   }
   let processedContent: string = content;
   try {
-    // Detect partner context: either via env or by brand key not being platform brands
-    const isPlatformBrand = ['portalpay', 'basaltsurge'].includes((brand.key || '').toLowerCase());
-    const isPartner = isPartnerContext() || !isPlatformBrand;
-    if (processedContent && isPartner && !isPlatformBrand) {
-      processedContent = dePortalContent(processedContent, brand as any);
-    }
+    // Always apply platform branding to replace hardcoded portalpay/PortalPay references
+    // with the current brand (basaltsurge for platform, partner brand for partner containers)
+    const { replacePlatformReferences } = await import('@/lib/platformBranding');
+    const appUrl = brand.appUrl || getBaseUrl();
+    const brandKey = brand.key || 'basaltsurge';
+    processedContent = replacePlatformReferences(processedContent, brandKey, brand.name || 'BasaltSurge', appUrl);
   } catch { }
 
   const currentPath = slug.length === 0 ? '/developers/docs' : `/developers/docs/${slug.join('/')}`;
@@ -208,8 +209,8 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
   const rawName = String(brand?.name || "").trim();
   const isGenericName = /^ledger\d*$/i.test(rawName) || /^partner\d*$/i.test(rawName) || /^default$/i.test(rawName);
   const keyForDisplay = String((brand as any)?.key || "").trim();
-  const titleizedKey = keyForDisplay ? keyForDisplay.charAt(0).toUpperCase() + keyForDisplay.slice(1) : "PortalPay";
-  const displayBrandName = (!rawName || isGenericName) ? titleizedKey : rawName;
+  // Use normalizeBrandName for proper capitalization (e.g., "BasaltSurge" not "Basaltsurge")
+  const displayBrandName = (!rawName || isGenericName) ? normalizeBrandName(rawName, keyForDisplay) : normalizeBrandName(rawName, keyForDisplay);
 
   return (
     <div className="min-h-screen bg-background">

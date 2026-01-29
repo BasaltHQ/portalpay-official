@@ -338,13 +338,15 @@ export default async function ComparisonPage({
           </div>
         </section>
 
-        {/* Demo Video */}
-        <section className="mb-12">
-          <div className="glass-pane rounded-xl border p-6">
-            <h2 className="text-2xl font-bold mb-4">See {brand.name} in Action</h2>
-            <PortalPayVideo />
-          </div>
-        </section>
+        {/* Demo Video - hide for partner containers */}
+        {!isPartner && (
+          <section className="mb-12">
+            <div className="glass-pane rounded-xl border p-6">
+              <h2 className="text-2xl font-bold mb-4">See {brand.name} in Action</h2>
+              <PortalPayVideo />
+            </div>
+          </section>
+        )}
 
         {/* FAQ Section */}
         <section className="mb-12">

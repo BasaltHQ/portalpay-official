@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { getBrandConfig } from '@/config/brands';
+import { useBrand } from '@/contexts/BrandContext';
 
 interface CompetitorPricing {
   processingFee: number;
@@ -24,7 +24,7 @@ export function CostCalculator({
   className = '',
 }: CostCalculatorProps) {
   const [monthlyVolume, setMonthlyVolume] = useState(defaultVolume);
-  const brand = getBrandConfig();
+  const brand = useBrand();
 
   const calculations = useMemo(() => {
     const results: Record<string, { monthly: number; annual: number; breakdown: string }> = {};
