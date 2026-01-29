@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
 
     // Check for Shop Config status (for Partner Access Gating)
     let shopStatus = "none";
+    let blocked = false;
     const platformWallet = (process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
     const isPlatformAdmin = !!platformWallet && wallet.toLowerCase() === platformWallet;
 
@@ -38,20 +39,32 @@ export async function GET(req: NextRequest) {
       try {
         const brandKey = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge").toLowerCase();
         const container = await getContainer();
-        const query = "SELECT top 1 c.status FROM c WHERE c.type = 'shop_config' AND c.wallet = @w AND c.brandKey = @b";
-        const { resources } = await container.items.query({
-          query,
+
+        // Check shop_config status
+        const shopQuery = "SELECT top 1 c.status FROM c WHERE c.type = 'shop_config' AND c.wallet = @w AND c.brandKey = @b";
+        const { resources: shopResources } = await container.items.query({
+          query: shopQuery,
           parameters: [{ name: "@w", value: wallet }, { name: "@b", value: brandKey }]
         }).fetchAll();
-        if (resources.length > 0) {
-          shopStatus = resources[0].status || "approved";
+        if (shopResources.length > 0) {
+          shopStatus = shopResources[0].status || "approved";
+        }
+
+        // Check if wallet is blocked via client_request
+        const blockQuery = "SELECT top 1 c.status FROM c WHERE c.type = 'client_request' AND c.wallet = @w AND c.brandKey = @b AND c.status = 'blocked'";
+        const { resources: blockResources } = await container.items.query({
+          query: blockQuery,
+          parameters: [{ name: "@w", value: wallet.toLowerCase() }, { name: "@b", value: brandKey }]
+        }).fetchAll();
+        if (blockResources.length > 0) {
+          blocked = true;
         }
       } catch (e) {
         // ignore, default to none
       }
     }
 
-    return NextResponse.json({ authed: true, wallet, roles, shopStatus, isPlatformAdmin });
+    return NextResponse.json({ authed: true, wallet, roles, shopStatus, isPlatformAdmin, blocked });
   } catch (e: any) {
     return NextResponse.json({ authed: false, error: e?.message || "failed" }, { status: 500 });
   }

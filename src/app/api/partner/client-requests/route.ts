@@ -23,7 +23,7 @@ type ClientRequestDoc = {
     wallet: string; // Partition key = requesting wallet
     type: "client_request";
     brandKey: string;
-    status: "pending" | "approved" | "rejected";
+    status: "pending" | "approved" | "rejected" | "blocked";
     shopName: string;
     legalBusinessName?: string;
     businessType?: string;
@@ -56,7 +56,13 @@ export async function GET(req: NextRequest) {
     try {
         const caller = await requireThirdwebAuth(req).catch(() => null as any);
         const roles = Array.isArray(caller?.roles) ? caller.roles : [];
-        if (!roles.includes("admin") && !roles.includes("superadmin")) {
+
+        // Platform wallet always has superadmin access
+        const platformWallet = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
+        const callerWallet = String(caller?.wallet || "").toLowerCase();
+        const isPlatformAdmin = !!platformWallet && platformWallet === callerWallet;
+
+        if (!isPlatformAdmin && !roles.includes("admin") && !roles.includes("superadmin")) {
             return json({ error: "forbidden" }, { status: 403 });
         }
 
@@ -134,7 +140,7 @@ export async function POST(req: NextRequest) {
 
         // Check for existing pending request
         const existingQuery = {
-            query: `SELECT c.id FROM c WHERE c.type = 'client_request' AND c.wallet = @w AND c.brandKey = @brand AND c.status = 'pending'`,
+            query: `SELECT c.id, c.status FROM c WHERE c.type = 'client_request' AND c.wallet = @w AND c.brandKey = @brand`,
             parameters: [
                 { name: "@w", value: w },
                 { name: "@brand", value: brandKey }
@@ -142,7 +148,15 @@ export async function POST(req: NextRequest) {
         };
         const { resources: existing } = await container.items.query(existingQuery).fetchAll();
 
-        if (existing.length > 0) {
+        // Check if user is blocked
+        const blockedRequest = existing.find((r: any) => r.status === "blocked");
+        if (blockedRequest) {
+            return json({ error: "blocked", message: "Your account has been blocked from applying." }, { status: 403 });
+        }
+
+        // Check for pending request
+        const pendingRequest = existing.find((r: any) => r.status === "pending");
+        if (pendingRequest) {
             return json({ error: "pending_request_exists", message: "You already have a pending request." }, { status: 409 });
         }
 
@@ -187,7 +201,13 @@ export async function PATCH(req: NextRequest) {
     try {
         const caller = await requireThirdwebAuth(req).catch(() => null as any);
         const roles = Array.isArray(caller?.roles) ? caller.roles : [];
-        if (!roles.includes("admin") && !roles.includes("superadmin")) {
+
+        // Platform wallet always has superadmin access
+        const platformWallet = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
+        const callerWallet = String(caller?.wallet || "").toLowerCase();
+        const isPlatformAdmin = !!platformWallet && platformWallet === callerWallet;
+
+        if (!isPlatformAdmin && !roles.includes("admin") && !roles.includes("superadmin")) {
             return json({ error: "forbidden" }, { status: 403 });
         }
 
@@ -204,8 +224,8 @@ export async function PATCH(req: NextRequest) {
             return json({ error: "request_id_required" }, { status: 400 });
         }
 
-        if (newStatus !== "approved" && newStatus !== "rejected") {
-            return json({ error: "invalid_status", message: "status must be 'approved' or 'rejected'" }, { status: 400 });
+        if (newStatus !== "pending" && newStatus !== "approved" && newStatus !== "rejected" && newStatus !== "blocked") {
+            return json({ error: "invalid_status", message: "status must be 'pending', 'approved', 'rejected', or 'blocked'" }, { status: 400 });
         }
 
         const container = await getContainer();
@@ -262,5 +282,64 @@ export async function PATCH(req: NextRequest) {
     } catch (e: any) {
         console.error("[client-requests] PATCH Error:", e);
         return json({ error: e?.message || "update_failed" }, { status: 500 });
+    }
+}
+
+/**
+ * DELETE /api/partner/client-requests
+ * 
+ * Partner Admins: Delete a client request (allows user to apply again fresh).
+ * Body: { requestId }
+ */
+export async function DELETE(req: NextRequest) {
+    try {
+        const caller = await requireThirdwebAuth(req).catch(() => null as any);
+        const roles = Array.isArray(caller?.roles) ? caller.roles : [];
+
+        // Platform wallet always has superadmin access
+        const platformWallet = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
+        const callerWallet = String(caller?.wallet || "").toLowerCase();
+        const isPlatformAdmin = !!platformWallet && platformWallet === callerWallet;
+
+        if (!isPlatformAdmin && !roles.includes("admin") && !roles.includes("superadmin")) {
+            return json({ error: "forbidden" }, { status: 403 });
+        }
+
+        const brandKey = getBrandKey();
+        if (!brandKey) {
+            return json({ error: "missing_brand_key" }, { status: 500 });
+        }
+
+        const body = await req.json().catch(() => ({} as any));
+        const requestId = String(body?.requestId || "").trim();
+
+        if (!requestId) {
+            return json({ error: "request_id_required" }, { status: 400 });
+        }
+
+        const container = await getContainer();
+
+        // Find the request (query by type + id since partition key is wallet)
+        const findQuery = {
+            query: `SELECT * FROM c WHERE c.type = 'client_request' AND c.id = @id AND c.brandKey = @brand`,
+            parameters: [
+                { name: "@id", value: requestId },
+                { name: "@brand", value: brandKey }
+            ]
+        };
+        const { resources: requests } = await container.items.query<ClientRequestDoc>(findQuery).fetchAll();
+        const request = requests[0];
+
+        if (!request) {
+            return json({ error: "request_not_found" }, { status: 404 });
+        }
+
+        // Delete the request document
+        await container.item(request.id, request.wallet).delete();
+
+        return json({ ok: true, requestId, deleted: true });
+    } catch (e: any) {
+        console.error("[client-requests] DELETE Error:", e);
+        return json({ error: e?.message || "delete_failed" }, { status: 500 });
     }
 }

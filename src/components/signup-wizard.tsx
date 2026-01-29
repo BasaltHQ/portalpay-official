@@ -203,7 +203,7 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
     const [notes, setNotes] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState("");
-    const [applicationStatus, setApplicationStatus] = useState<"none" | "pending" | "success">("none");
+    const [applicationStatus, setApplicationStatus] = useState<"none" | "pending" | "success" | "blocked">("none");
 
     // Get brand-specific values with Platform normalization
     const rawName = brand?.name || "BasaltSurge";
@@ -270,13 +270,16 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
 
         // Private Mode Logic
         try {
-            // Check if user is already approved
+            // Check if user is already approved or blocked
             const res = await fetch("/api/auth/me", { cache: "no-store" });
             const me = await res.json().catch(() => ({}));
 
             // If already approved, allow login (skip application)
             if (me?.authed || me?.approved) {
                 onComplete();
+            } else if (me?.blocked) {
+                // User is blocked - show blocked alert
+                setApplicationStatus("blocked");
             } else {
                 // Not approved -> Show Application Form
                 // Force state update to ensure UI switches
@@ -361,6 +364,7 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
     // If in application flow, override step content
     const isApplicationForm = isPrivate && applicationStatus === "pending" && connectedWallet;
     const isApplicationSuccess = isPrivate && applicationStatus === "success";
+    const isBlocked = isPrivate && applicationStatus === "blocked" && connectedWallet;
 
     if (!isOpen) return null;
     if (typeof document === 'undefined') return null;
@@ -397,8 +401,8 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
                                     <Image src={brandLogo} alt={brandName} fill className="object-contain" />
                                 </div>
                                 <div>
-                                    <div className="text-[10px] font-mono text-emerald-400 tracking-widest">
-                                        {isApplicationSuccess ? "APPLICATION_SENT" : (isApplicationForm ? "PARTNER_APPLICATION" : "SIGNUP_WIZARD")}
+                                    <div className={`text-[10px] font-mono tracking-widest ${isBlocked ? 'text-red-400' : 'text-emerald-400'}`}>
+                                        {isBlocked ? "ACCOUNT_BLOCKED" : isApplicationSuccess ? "APPLICATION_SENT" : (isApplicationForm ? "PARTNER_APPLICATION" : "SIGNUP_WIZARD")}
                                     </div>
                                     <div className="text-white font-semibold text-sm">{brandName}</div>
                                 </div>
@@ -411,7 +415,7 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
                         </div>
 
                         {/* Progress Indicator */}
-                        {!isApplicationSuccess && !isApplicationForm && (
+                        {!isApplicationSuccess && !isApplicationForm && !isBlocked && (
                             <div className="flex items-center gap-2">
                                 {WIZARD_STEPS.map((s, i) => (
                                     <div key={s.id} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= currentStep ? 'bg-emerald-500' : 'bg-white/10'}`} />
@@ -423,7 +427,29 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
                     {/* Content - Scrollable */}
                     <div className="p-6 flex-1 overflow-y-auto pb-safe-bottom">
                         <AnimatePresence mode="wait">
-                            {isApplicationSuccess ? (
+                            {isBlocked ? (
+                                <motion.div
+                                    key="blocked"
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="text-center py-8"
+                                >
+                                    <div className="w-16 h-16 mx-auto bg-red-500/10 rounded-full flex items-center justify-center mb-4 border border-red-500/20">
+                                        <span className="text-3xl">🚫</span>
+                                    </div>
+                                    <h2 className="text-xl font-bold text-white mb-2">Account Blocked</h2>
+                                    <p className="text-sm text-gray-400 mb-6 max-w-md mx-auto">
+                                        Your wallet has been blocked from accessing {brandName}. If you believe this is an error, please contact support.
+                                    </p>
+                                    <div className="p-3 bg-red-500/5 rounded-lg border border-red-500/20 mb-6 max-w-md mx-auto">
+                                        <div className="text-[10px] font-mono text-gray-500 uppercase">Wallet</div>
+                                        <div className="text-xs font-mono text-red-400 truncate">{connectedWallet}</div>
+                                    </div>
+                                    <button onClick={onClose} className="w-full max-w-xs mx-auto py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold transition-colors block">
+                                        Close
+                                    </button>
+                                </motion.div>
+                            ) : isApplicationSuccess ? (
                                 <motion.div
                                     key="success"
                                     initial={{ opacity: 0, scale: 0.9 }}

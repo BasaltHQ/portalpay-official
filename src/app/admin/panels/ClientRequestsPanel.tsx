@@ -8,7 +8,7 @@ type ClientRequest = {
     wallet: string;
     type: "client_request";
     brandKey: string;
-    status: "pending" | "approved" | "rejected";
+    status: "pending" | "approved" | "rejected" | "blocked";
     shopName: string;
     legalBusinessName?: string;
     businessType?: string;
@@ -68,7 +68,7 @@ export default function ClientRequestsPanel() {
         load();
     }, [account?.address]);
 
-    async function updateStatus(id: string, status: "approved" | "rejected") {
+    async function updateStatus(id: string, status: "pending" | "approved" | "rejected" | "blocked") {
         try {
             setError("");
             setInfo("");
@@ -90,6 +90,36 @@ export default function ClientRequestsPanel() {
         } catch (e: any) {
             setError(e?.message || "Action failed");
         }
+    }
+
+    async function deleteRequest(id: string) {
+        if (!confirm("Delete this request? The user will be able to apply again.")) return;
+        try {
+            setError("");
+            setInfo("");
+            const r = await fetch("/api/partner/client-requests", {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-wallet": account?.address || "",
+                },
+                body: JSON.stringify({ requestId: id }),
+            });
+            const j = await r.json().catch(() => ({}));
+            if (!r.ok || j?.error) {
+                setError(j?.error || "Delete failed");
+                return;
+            }
+            setInfo("Request deleted. User can apply again.");
+            await load();
+        } catch (e: any) {
+            setError(e?.message || "Delete failed");
+        }
+    }
+
+    async function blockUser(id: string) {
+        if (!confirm("Block this applicant? They will not be able to apply again until unblocked.")) return;
+        await updateStatus(id, "blocked");
     }
 
     const toggleExpand = (id: string) => {
@@ -133,7 +163,8 @@ export default function ClientRequestsPanel() {
                             const badgeClass =
                                 req.status === "approved" ? "bg-green-500/10 text-green-500 border-green-500/20" :
                                     req.status === "rejected" ? "bg-red-500/10 text-red-500 border-red-500/20" :
-                                        "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
+                                        req.status === "blocked" ? "bg-purple-500/10 text-purple-500 border-purple-500/20" :
+                                            "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
                             const isExpanded = expandedIds.has(req.id);
 
                             return (
@@ -184,22 +215,48 @@ export default function ClientRequestsPanel() {
                                             {submitted}
                                         </td>
                                         <td className="px-4 py-3 align-top text-right">
-                                            {req.status === "pending" && (
-                                                <div className="flex items-center justify-end gap-2">
+                                            <div className="flex items-center justify-end gap-2 flex-wrap">
+                                                {req.status === "pending" && (
+                                                    <>
+                                                        <button
+                                                            className="px-3 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20 text-xs font-semibold transition-colors"
+                                                            onClick={() => updateStatus(req.id, "approved")}
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                        <button
+                                                            className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 text-xs font-semibold transition-colors"
+                                                            onClick={() => updateStatus(req.id, "rejected")}
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {req.status === "blocked" && (
                                                     <button
-                                                        className="px-3 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20 text-xs font-semibold transition-colors"
-                                                        onClick={() => updateStatus(req.id, "approved")}
+                                                        className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-semibold transition-colors"
+                                                        onClick={() => updateStatus(req.id, "pending")}
                                                     >
-                                                        Approve
+                                                        Unblock
                                                     </button>
+                                                )}
+                                                {req.status !== "blocked" && (
                                                     <button
-                                                        className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 text-xs font-semibold transition-colors"
-                                                        onClick={() => updateStatus(req.id, "rejected")}
+                                                        className="px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 text-xs font-semibold transition-colors"
+                                                        onClick={() => blockUser(req.id)}
+                                                        title="Block this user from applying again"
                                                     >
-                                                        Reject
+                                                        Block
                                                     </button>
-                                                </div>
-                                            )}
+                                                )}
+                                                <button
+                                                    className="px-3 py-1.5 rounded-lg bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 border border-gray-500/20 text-xs font-semibold transition-colors"
+                                                    onClick={() => deleteRequest(req.id)}
+                                                    title="Delete request (allows re-application)"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     {isExpanded && (
