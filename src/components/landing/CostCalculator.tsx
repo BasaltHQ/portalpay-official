@@ -138,11 +138,13 @@ export function CostCalculator({
         {/* Competitor Rows */}
         {Object.entries(competitors).map(([name, pricing]) => {
           const calc = calculations[name];
+          // Replace BasaltSurge in competitor names with partner brand name for whitelabel
+          const displayName = name.replace('BasaltSurge', brand.name || 'BasaltSurge');
           return (
             <div key={name} className="rounded-lg border p-3 bg-background/50">
               <div className="flex justify-between items-center mb-1">
                 <span className="font-medium capitalize">
-                  {name.replace('-', ' ')}
+                  {displayName.replace('-', ' ')}
                 </span>
                 <span className="text-lg font-semibold">
                   ${calc.monthly.toFixed(2)}/mo

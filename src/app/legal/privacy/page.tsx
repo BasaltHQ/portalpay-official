@@ -165,7 +165,12 @@ export default function PrivacyPolicyPage() {
                             <li><strong>Withdrawal of Consent:</strong> Withdraw consent at any time where we rely on consent to process your information.</li>
                         </ul>
                         <p className="text-muted-foreground leading-relaxed mt-4">
-                            To exercise these rights, please contact us at <a href="mailto:info@basalthq.com" className="text-indigo-400 hover:text-indigo-300">info@basalthq.com</a>. We will respond to your request within 30 days.
+                            To exercise these rights, please contact us at{' '}
+                            {isPartnerContainer && (brand as any)?.contactEmail ? (
+                                <a href={`mailto:${(brand as any).contactEmail}`} className="text-indigo-400 hover:text-indigo-300">{(brand as any).contactEmail}</a>
+                            ) : (
+                                <a href="mailto:info@basalthq.com" className="text-indigo-400 hover:text-indigo-300">info@basalthq.com</a>
+                            )}. We will respond to your request within 30 days.
                         </p>
                     </section>
 
