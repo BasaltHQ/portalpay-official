@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { getContainer } from "@/lib/cosmos";
-import { requireThirdwebAuth } from "@/lib/auth";
+import { requireThirdwebAuth, getAuthenticatedWallet } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -118,10 +118,31 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
     try {
-        const caller = await requireThirdwebAuth(req).catch(() => null as any);
-        if (!caller?.wallet) {
+        // Try full JWT auth first, then fall back to basic wallet auth
+        // This allows new users (who just connected but haven't signed yet) to submit applications
+        let wallet: string | null = null;
+
+        try {
+            const caller = await requireThirdwebAuth(req);
+            wallet = caller?.wallet || null;
+        } catch {
+            // Fall back to basic authenticated wallet (cookie-based)
+            wallet = await getAuthenticatedWallet(req);
+        }
+
+        // If no authenticated session, check for x-wallet header (Unauthenticated submission for new users)
+        if (!wallet) {
+            const headerWallet = req.headers.get("x-wallet");
+            if (headerWallet && /^0x[a-fA-F0-9]{40}$/.test(headerWallet)) {
+                wallet = headerWallet;
+            }
+        }
+
+        if (!wallet) {
             return json({ error: "unauthorized" }, { status: 401 });
         }
+
+        const w = wallet.toLowerCase();
 
         const brandKey = getBrandKey();
         if (!brandKey) {
@@ -136,7 +157,6 @@ export async function POST(req: NextRequest) {
         }
 
         const container = await getContainer();
-        const w = caller.wallet.toLowerCase();
 
         // Check for existing pending request
         const existingQuery = {

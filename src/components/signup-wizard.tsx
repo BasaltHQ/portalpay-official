@@ -314,6 +314,7 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
                     "Content-Type": "application/json",
                     "x-wallet": connectedWallet // Identifying the wallet
                 },
+                credentials: "include", // Send auth cookies
                 body: JSON.stringify({
                     shopName,
                     legalBusinessName: legalName,
