@@ -270,7 +270,8 @@ export function proxy(req: NextRequest) {
         hostname === "127.0.0.1" ||
         hostname === "0.0.0.0" ||
         hostname.includes("azurewebsites.net") ||
-        hostname.includes("vercel.app"); // Add other platform domains as needed
+        hostname.includes("vercel.app") ||
+        hostname.includes("xpaypass.com"); // Add other platform domains as needed
 
     if (!isMainDomain) {
         // It's a custom domain!
