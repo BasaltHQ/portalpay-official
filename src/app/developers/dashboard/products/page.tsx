@@ -430,7 +430,7 @@ export default function ProductsPage() {
       const data = ev.data;
       if (!data || typeof data !== "object") return;
 
-      if (data.type === "portalpay-card-success") {
+      if (data.type === "gateway-card-success" || data.type === "portalpay-card-success") {
         const token = String(data.token || "");
         if (cardMode === "subscription") {
           confirmCardAndSubscribe(token);
@@ -439,7 +439,7 @@ export default function ProductsPage() {
           setCardOpen(false);
           performSubscribeStarterTip(false);
         }
-      } else if (data.type === "portalpay-card-cancel") {
+      } else if (data.type === "gateway-card-cancel" || data.type === "portalpay-card-cancel") {
         setCardOpen(false);
         setInfoTitle("Card checkout cancelled");
         setInfoDesc("You cancelled the card checkout. You can try again.");
@@ -452,7 +452,7 @@ export default function ProductsPage() {
             : []
         );
         setInfoOpen(true);
-      } else if (data.type === "portalpay-preferred-height") {
+      } else if (data.type === "gateway-preferred-height" || data.type === "portalpay-preferred-height") {
         const h = Number((data as any).height || 0);
         if (Number.isFinite(h) && h > 0) {
           const extra = 16; // make it a smidge taller than content

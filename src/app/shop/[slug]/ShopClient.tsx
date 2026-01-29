@@ -1240,15 +1240,17 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
         function onMessage(ev: MessageEvent) {
             const d: any = ev.data || {};
             if (d && typeof d === "object") {
-                if (d.type === "portalpay-preferred-height" && typeof d.height === "number") {
-                    try {
-                        const winH = typeof window !== "undefined" ? window.innerHeight : 0;
-                        const clamp = Math.max(480, Math.min(d.height + 24, winH > 0 ? winH - 24 : d.height + 24));
-                        setPortalPreferredHeight(clamp);
-                    } catch {
-                        setPortalPreferredHeight(d.height);
+                if (d.type === "gateway-preferred-height" || d.type === "portalpay-preferred-height") {
+                    if (typeof d.height === "number") {
+                        try {
+                            const winH = typeof window !== "undefined" ? window.innerHeight : 0;
+                            const clamp = Math.max(480, Math.min(d.height + 24, winH > 0 ? winH - 24 : d.height + 24));
+                            setPortalPreferredHeight(clamp);
+                        } catch {
+                            setPortalPreferredHeight(d.height);
+                        }
                     }
-                } else if (d.type === "portalpay-card-cancel" || d.type === "portalpay-card-success") {
+                } else if (d.type === "gateway-card-cancel" || d.type === "gateway-card-success" || d.type === "portalpay-card-cancel" || d.type === "portalpay-card-success") {
                     closeEmbeddedCheckout();
                 }
             }

@@ -163,8 +163,8 @@ const invoiceUrlByMode = `https://pay.ledger1.ai/portal/${receiptId}?recipient=$
 
 ### Sizing & Presentation
 - Set `embedded=1` when rendering in an iframe to enable transparent background.
-- Width should be `100%`. Height should be managed via the PostMessage event `portalpay-preferred-height`.
-- The portal posts `portalpay-preferred-height` as content changes; set your iframe height to the provided value.
+- Width should be `100%`. Height should be managed via the PostMessage event `gateway-preferred-height`.
+- The portal posts `gateway-preferred-height` as content changes; set your iframe height to the provided value.
 - Typical minimum heights:
   - Compact: ~560–600px
   - Wide: ~800px
@@ -190,14 +190,14 @@ function PaymentModal({ receiptId, recipient, onClose }: {
   useEffect(() => {
     // Listen for height adjustments from portal
     function handleMessage(event: MessageEvent) {
-      if (event.data?.type === 'portalpay-preferred-height') {
+      if (event.data?.type === 'gateway-preferred-height') {
         setIframeHeight(event.data.height);
       }
-      if (event.data?.type === 'portalpay-card-success') {
+      if (event.data?.type === 'gateway-card-success') {
         // Payment succeeded
         onClose();
       }
-      if (event.data?.type === 'portalpay-card-cancel') {
+      if (event.data?.type === 'gateway-card-cancel') {
         // User cancelled
         onClose();
       }
@@ -304,24 +304,24 @@ The portal communicates with parent windows via postMessage for embedded scenari
 
 ### Events Sent from Portal
 
-#### 1. Preferred Height (`portalpay-preferred-height`)
+#### 1. Preferred Height (`gateway-preferred-height`)
 Sent when portal content size changes for responsive iframe sizing.
 
 ```typescript
 {
-  type: 'portalpay-preferred-height',
+  type: 'gateway-preferred-height',
   height: number,           // Preferred height in pixels
   correlationId?: string,   // Your tracking ID
   receiptId: string        // Receipt ID
 }
 ```
 
-#### 2. Payment Success (`portalpay-card-success`)
+#### 2. Payment Success (`gateway-card-success`)
 Sent when payment completes successfully.
 
 ```typescript
 {
-  type: 'portalpay-card-success',
+  type: 'gateway-card-success',
   token: string,           // Confirmation token (ppc_{receiptId}_{timestamp})
   correlationId?: string,  // Your tracking ID
   receiptId: string,      // Receipt ID
@@ -329,12 +329,12 @@ Sent when payment completes successfully.
 }
 ```
 
-#### 3. Payment Cancel (`portalpay-card-cancel`)
+#### 3. Payment Cancel (`gateway-card-cancel`)
 Sent when user cancels the payment.
 
 ```typescript
 {
-  type: 'portalpay-card-cancel',
+  type: 'gateway-card-cancel',
   correlationId?: string,  // Your tracking ID
   receiptId: string,      // Receipt ID
   recipient: string       // Merchant wallet
@@ -351,18 +351,18 @@ useEffect(() => {
     if (event.origin !== trustedOrigin) return;
     
     switch (event.data?.type) {
-      case 'portalpay-preferred-height':
+      case 'gateway-preferred-height':
         // Adjust iframe height
         setIframeHeight(event.data.height);
         break;
         
-      case 'portalpay-card-success':
+      case 'gateway-card-success':
         // Payment succeeded
         console.log('Payment confirmed:', event.data.token);
         handlePaymentSuccess(event.data.receiptId);
         break;
         
-      case 'portalpay-card-cancel':
+      case 'gateway-card-cancel':
         // User cancelled
         handlePaymentCancel();
         break;

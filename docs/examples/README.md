@@ -158,13 +158,13 @@ function PaymentModal({
       if (event.origin !== 'https://pay.ledger1.ai') return;
       
       switch (event.data?.type) {
-        case 'portalpay-preferred-height':
+        case 'gateway-preferred-height':
           setIframeHeight(event.data.height);
           break;
-        case 'portalpay-card-success':
+        case 'gateway-card-success':
           onSuccess();
           break;
-        case 'portalpay-card-cancel':
+        case 'gateway-card-cancel':
           onCancel();
           break;
       }
@@ -261,7 +261,7 @@ function InvoiceCheckoutPage({ receiptId, recipient }: {
 ```
 
 Sizing notes:
-- Manage height dynamically using the `portalpay-preferred-height` postMessage to avoid scrollbars.
+- Manage height dynamically using the `gateway-preferred-height` postMessage to avoid scrollbars.
 - Typical minimum heights:
   - Compact: ~560–600px
   - Wide: ~800px

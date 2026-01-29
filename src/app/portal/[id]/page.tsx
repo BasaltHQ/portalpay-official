@@ -1179,6 +1179,9 @@ export default function PortalReceiptPage() {
         const last = lastPreferredHeightRef.current || 0;
         if (Math.abs(h - last) > 8) {
           lastPreferredHeightRef.current = h;
+          // New event name (primary)
+          window.parent.postMessage({ type: "gateway-preferred-height", height: h, correlationId, receiptId }, targetOrigin);
+          // DEPRECATED: Remove after 2026-04-30 - kept for backwards compatibility
           window.parent.postMessage({ type: "portalpay-preferred-height", height: h, correlationId, receiptId }, targetOrigin);
         }
       } catch { }
@@ -1803,9 +1806,11 @@ export default function PortalReceiptPage() {
               style={{ color: "var(--pp-text-header)" }}
               onClick={() => {
                 try {
-                  const msg = { type: "portalpay-card-cancel", correlationId, receiptId, recipient: merchantWallet || recipient };
                   if (typeof window !== "undefined" && window.parent && window.parent !== window) {
-                    window.parent.postMessage(msg, targetOrigin);
+                    // New event name (primary)
+                    window.parent.postMessage({ type: "gateway-card-cancel", correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                    // DEPRECATED: Remove after 2026-04-30 - kept for backwards compatibility
+                    window.parent.postMessage({ type: "portalpay-card-cancel", correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
                   }
                 } catch { }
               }}
@@ -2211,8 +2216,10 @@ export default function PortalReceiptPage() {
                               try {
                                 if (typeof window !== "undefined" && window.parent && window.parent !== window) {
                                   const confirmToken = `ppc_${receiptId}_${Date.now()}`;
-                                  const msg = { type: "portalpay-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient };
-                                  window.parent.postMessage(msg, targetOrigin);
+                                  // New event name (primary)
+                                  window.parent.postMessage({ type: "gateway-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                  // DEPRECATED: Remove after 2026-04-30 - kept for backwards compatibility
+                                  window.parent.postMessage({ type: "portalpay-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
                                 }
                               } catch { }
                             } catch { }
@@ -2567,8 +2574,10 @@ export default function PortalReceiptPage() {
                             try {
                               if (typeof window !== "undefined" && window.parent && window.parent !== window) {
                                 const confirmToken = `ppc_${receiptId}_${Date.now()}`;
-                                const msg = { type: "portalpay-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient };
-                                window.parent.postMessage(msg, targetOrigin);
+                                // New event name (primary)
+                                window.parent.postMessage({ type: "gateway-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                // DEPRECATED: Remove after 2026-04-30 - kept for backwards compatibility
+                                window.parent.postMessage({ type: "portalpay-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
                               }
                             } catch { }
                           } catch { }
@@ -2608,8 +2617,10 @@ export default function PortalReceiptPage() {
                             type="button"
                             onClick={() => {
                               try {
-                                const msg = { type: "portalpay-card-cancel", correlationId, receiptId, recipient: merchantWallet || recipient };
-                                window.parent.postMessage(msg, targetOrigin);
+                                // New event name (primary)
+                                window.parent.postMessage({ type: "gateway-card-cancel", correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                // DEPRECATED: Remove after 2026-04-30 - kept for backwards compatibility
+                                window.parent.postMessage({ type: "portalpay-card-cancel", correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
                               } catch { }
                             }}
                             className="px-3 py-1.5 rounded-md border bg-background hover:bg-foreground/5 transition-colors text-xs"
