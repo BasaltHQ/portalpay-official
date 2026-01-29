@@ -294,6 +294,8 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
 
   const isWideLogo = (theme?.navbarMode === 'logo');
 
+  const isRequestMode = brand?.accessMode === 'request';
+
   const groups: NavItem[] = [
     {
       title: 'General',
@@ -346,12 +348,14 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
           icon: <Brush className="w-4 h-4" />,
           items: [
             { title: 'Devices', key: 'devices' as AdminTabKey },
-            { title: 'Split Config', key: 'splitConfig' as AdminTabKey },
+            // Split Config: Show only in OPEN mode (or superadmin debug), as Request mode configures per-split
+            ...(!isRequestMode || isSuperadmin ? [{ title: 'Split Config', key: 'splitConfig' as AdminTabKey }] : []),
             { title: 'Branding', key: 'branding' as AdminTabKey },
             { title: 'Merchants', key: 'users' as AdminTabKey },
             { title: 'SEO Pages', key: 'seoPages' as AdminTabKey },
             { title: 'Plugins', key: 'shopifyPartner' as AdminTabKey },
-            ...((canBranding || isSuperadmin) ? [{ title: 'Client Requests', key: 'clientRequests' as AdminTabKey }] : []),
+            // Client Requests: Show only in REQUEST mode (private) or superadmin
+            ...((canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) ? [{ title: 'Client Requests', key: 'clientRequests' as AdminTabKey }] : []),
             ...(canAdmins ? [
               { title: 'Admin Users', key: 'admins' as AdminTabKey },
             ] : []),

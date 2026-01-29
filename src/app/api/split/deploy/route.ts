@@ -459,9 +459,12 @@ export async function POST(req: NextRequest) {
     }
 
     const partnerWalletPrev = String((prev as any)?.partnerWallet || "").toLowerCase();
-    const partnerWallet = isHexAddress(partnerWalletBrand)
-      ? (partnerWalletBrand as `0x${string}`)
-      : (isHexAddress(partnerWalletPrev) ? (partnerWalletPrev as `0x${string}`) : ("" as any));
+    const bodyPartnerWallet = String((body as any)?.partnerWallet || "").toLowerCase();
+    const partnerWallet = isHexAddress(bodyPartnerWallet)
+      ? (bodyPartnerWallet as `0x${string}`)
+      : (isHexAddress(partnerWalletBrand)
+        ? (partnerWalletBrand as `0x${string}`)
+        : (isHexAddress(partnerWalletPrev) ? (partnerWalletPrev as `0x${string}`) : ("" as any)));
 
     const sanitizedPost = getSanitizedSplitBps();
     const envPartnerBpsPost = typeof sanitizedPost?.partner === "number" ? Math.max(0, Math.min(10000, sanitizedPost.partner)) : 0;

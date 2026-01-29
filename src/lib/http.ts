@@ -29,12 +29,35 @@ export const buildApiUrl = (path: string): string => {
 
 /**
  * Partner brand-aware API base:
- * - For partner brands, use the Azure App Service subdomain (https://{brandKey}.azurewebsites.net)
+ * - If we're already on the partner container (matching BRAND_KEY env or hostname), use relative paths
+ * - For partner brands when on a different container, use the Azure App Service subdomain (https://{brandKey}.azurewebsites.net)
  * - For platform/portalpay or empty brandKey, fall back to NEXT_PUBLIC_APP_URL via getApiBase()
  */
 export const getBrandApiBase = (brandKey: string): string => {
   try {
     const key = String(brandKey || "").toLowerCase();
+
+    // Check if we're already on this brand's container
+    const currentBrandKey = String(
+      process.env.BRAND_KEY ||
+      process.env.NEXT_PUBLIC_BRAND_KEY ||
+      ""
+    ).toLowerCase();
+
+    // If the requested brandKey matches our current container's brand key, use relative path
+    if (key && currentBrandKey && key === currentBrandKey) {
+      return ""; // Relative path - we're already on the right container
+    }
+
+    // Also check hostname for partner containers with custom domains
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname.toLowerCase();
+      // If hostname starts with brandKey or contains it, we're likely on the right container
+      if (key && (host.startsWith(key + ".") || host.includes(key))) {
+        return ""; // Relative path
+      }
+    }
+
     if (key && key !== "portalpay" && key !== "basaltsurge") {
       return `https://${key}.azurewebsites.net`;
     }

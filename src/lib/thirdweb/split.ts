@@ -29,7 +29,8 @@ export async function ensureSplitForWallet(
   brandKeyOverride?: string,
   partnerFeeBpsOverride?: number,
   merchantWalletOverride?: string,
-  extraAgents?: { wallet: string, bps: number }[]
+  extraAgents?: { wallet: string, bps: number }[],
+  partnerWalletOverride?: string
 ): Promise<string | undefined> {
   try {
     const signerAddress = String((account?.address || "")).toLowerCase();
@@ -82,15 +83,8 @@ export async function ensureSplitForWallet(
       const j = await r.json().catch(() => ({}));
       const existing = String(j?.split?.address || "").toLowerCase();
       // Only redeploy if explicit flag or partner misconfiguration
-      // Note: We don't automatically check for agent mismatch here to avoid deploy loops, 
-      // but the UI calling this usually implies an intent to deploy new settings.
       if (isValidHexAddress(existing)) {
         if (!j?.misconfiguredSplit?.needsRedeploy) {
-          // For agents, we might want to force redeploy if requested, but checking equality is hard.
-          // We'll assume if this function is called, the UI verified the need (or we can add a force flag).
-          // For now, return existing if "ok". Caller logic in UI (Deploy button) usually implies "Make it so".
-          // Actually, if we are in "Configure" mode, we might WANT to redeploy.
-          // But existing logic returns early. We'll stick to that unless we detect critical issues.
           return existing;
         }
       }
@@ -121,14 +115,27 @@ export async function ensureSplitForWallet(
     // Fetch effective brand config (with Cosmos overrides) to get current partnerFeeBps and partnerWallet
     let brand: any;
     try {
-      const r = await fetch(buildBrandApiUrl(brandKey as string, `/api/platform/brands/${encodeURIComponent(brandKey as string)}/config`), { cache: 'no-store', credentials: "include" });
+      const apiUrl = buildBrandApiUrl(brandKey as string, `/api/platform/brands/${encodeURIComponent(brandKey as string)}/config`);
+      console.log("[ensureSplitForWallet] Fetching brand config from:", apiUrl);
+      const r = await fetch(apiUrl, { cache: 'no-store', credentials: "include" });
       const j = await r.json().catch(() => ({}));
       brand = j?.brand ? j.brand : getBrandConfig(brandKey as string);
-    } catch {
+      console.log("[ensureSplitForWallet] Brand config response:", {
+        brandKey,
+        partnerWallet: brand?.partnerWallet,
+        partnerFeeBps: brand?.partnerFeeBps,
+        platformFeeBps: brand?.platformFeeBps,
+        fromApi: !!j?.brand
+      });
+    } catch (e) {
+      console.error("[ensureSplitForWallet] Failed to fetch brand config:", e);
       brand = getBrandConfig(brandKey as string);
     }
 
-    const partner = String(brand?.partnerWallet || "").toLowerCase();
+    // Resolve partner wallet: prefer override, then brand config
+    const partner = partnerWalletOverride && isValidHexAddress(partnerWalletOverride)
+      ? partnerWalletOverride.toLowerCase()
+      : String(brand?.partnerWallet || "").toLowerCase();
 
     const platformBps = typeof brand?.platformFeeBps === "number"
       ? Math.max(0, Math.min(10000, brand.platformFeeBps))
@@ -145,6 +152,19 @@ export async function ensureSplitForWallet(
     const partnerBps = !isPartner ? 0 : (isValidHexAddress(partner) && typeof effectivePartnerBps === "number")
       ? Math.max(0, Math.min(10000 - platformBps, effectivePartnerBps))
       : 0;
+
+    console.log("[ensureSplitForWallet] Split calculation:", {
+      brandKey,
+      isPartner,
+      partner,
+      isValidPartner: isValidHexAddress(partner),
+      effectivePartnerBps,
+      partnerBps,
+      platformBps,
+      merchant,
+      agentsBps: agentSharesBps,
+      partnerWalletOverride
+    });
 
     // Merchant gets remainder after Platform, Partner, and Agents
     const merchantBps = Math.max(0, 10000 - platformBps - partnerBps - agentSharesBps);
@@ -193,7 +213,8 @@ export async function ensureSplitForWallet(
           wallet: merchant,
           splitAddress: addr,
           brandKey,
-          agents // Send agents to persist them in site config
+          agents, // Send agents to persist them in site config
+          partnerWallet: partner
         }),
       });
       // If POST failed (e.g., CSRF or auth), keep modal open by returning undefined

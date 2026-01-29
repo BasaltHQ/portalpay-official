@@ -129,7 +129,17 @@ export default function GlobalSplitGuard() {
   let brandKey = String((brand as any)?.key || "portalpay").toLowerCase();
   const partnerContext = brandKey !== "portalpay" && brandKey !== "basaltsurge";
   const meAddr = String(account?.address || "").toLowerCase();
-  const partnerAddr = String((brand as any)?.partnerWallet || "").toLowerCase();
+
+  const detectedPartnerAddr = React.useMemo(() => {
+    if (!previewRecipients) return "";
+    const found = previewRecipients.find((r: any) => {
+      const a = String(r?.address || "").toLowerCase();
+      return a !== meAddr && a !== platformRecipient;
+    });
+    return found ? String(found.address) : "";
+  }, [previewRecipients, meAddr, platformRecipient]);
+
+  const partnerAddr = String((brand as any)?.partnerWallet || detectedPartnerAddr || "").toLowerCase();
   const partnerValid = isValidHex(partnerAddr);
   // Platform share from runtime brand config (fallback to 50 bps if unspecified)
   const platformBps = (() => {
@@ -341,6 +351,18 @@ export default function GlobalSplitGuard() {
         const misconfigured = !!(j?.misconfiguredSplit && j.misconfiguredSplit.needsRedeploy === true);
         const recipientCount = Array.isArray(j?.split?.recipients) ? j.split.recipients.length : 0;
 
+        // Derive partner from fetched recipients if brand missing (support per-merchant split overrides)
+        const recipientsList = Array.isArray(j?.split?.recipients) ? j.split.recipients : [];
+        let effectivePartnerAddr = partnerAddr;
+        if (!isValidHex(effectivePartnerAddr) && partnerContext) {
+          const found = recipientsList.find((r: any) => {
+            const a = String(r?.address || "").toLowerCase();
+            return a !== merchant && a !== platformRecipient;
+          });
+          if (found) effectivePartnerAddr = String(found.address).toLowerCase();
+        }
+        const effectivePartnerValid = isValidHex(effectivePartnerAddr);
+
         // Treat partner container with a 2-recipient split as misconfigured, even if server didn't flag it
         const partnerMisconfigured = partnerContext && has && recipientCount > 0 && recipientCount < 3;
 
@@ -354,7 +376,7 @@ export default function GlobalSplitGuard() {
         // Determine proper configuration state by container type
         const properlyConfigured =
           (!partnerContext && has && platformValid && !misconfigured) ||
-          (partnerContext && has && partnerValid && !partnerMisconfigured && !misconfigured);
+          (partnerContext && has && effectivePartnerValid && !partnerMisconfigured && !misconfigured);
 
         // Respect server flags; never attempt silent redeploy
         const requiresDeploy = (j?.requiresDeploy === true) || (partnerContext && !has);

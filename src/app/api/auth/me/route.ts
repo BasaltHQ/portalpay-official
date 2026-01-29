@@ -70,6 +70,18 @@ export async function GET(req: NextRequest) {
         if (blockResources.length > 0) {
           blocked = true;
         }
+
+        // Check if wallet has a pending client_request (application awaiting approval)
+        if (shopStatus === "none") {
+          const pendingQuery = "SELECT top 1 c.status FROM c WHERE c.type = 'client_request' AND c.wallet = @w AND c.brandKey = @b AND c.status = 'pending'";
+          const { resources: pendingResources } = await container.items.query({
+            query: pendingQuery,
+            parameters: [{ name: "@w", value: wallet.toLowerCase() }, { name: "@b", value: brandKey }]
+          }).fetchAll();
+          if (pendingResources.length > 0) {
+            shopStatus = "pending";
+          }
+        }
       } catch (e) {
         // ignore, default to none
       }

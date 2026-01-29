@@ -56,6 +56,7 @@ export function Navbar() {
     const checkingAuth = useRef(false);
     const [authed, setAuthed] = useState(false);
     const [showAccessPending, setShowAccessPending] = useState(false);
+    const [hasPendingApplication, setHasPendingApplication] = useState(false);
     const [pendingAdminNav, setPendingAdminNav] = useState(false);
     const router = useRouter();
     const brand = useBrand();
@@ -335,6 +336,8 @@ export function Navbar() {
                         setShowAccessPending(true);
                     } else if (isPrivate && !isApproved) {
                         // Private mode + Not Approved -> SHOW PENDING, DO NOT SHOW AUTH (SIGNING)
+                        // Check if user has a pending application
+                        setHasPendingApplication(me?.shopStatus === "pending");
                         if (!showSignupWizard) {
                             setShowAccessPending(true);
                         }
@@ -1229,6 +1232,7 @@ export function Navbar() {
                     setShowAccessPending(false);
                     setShowSignupWizard(true);
                 }}
+                hasPendingApplication={hasPendingApplication}
             />
 
         </>

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import { ensureSplitForWallet } from "@/lib/thirdweb/split";
+import { useBrand } from "@/contexts/BrandContext";
 
 type ClientRequest = {
     id: string;
@@ -49,6 +50,7 @@ export default function ClientRequestsPanel() {
     const [platformBps] = useState(25); // Locked platform fee (0.25%)
 
     const [partnerBps, setPartnerBps] = useState(50); // Default partner fee (0.5%)
+    const [partnerWallet, setPartnerWallet] = useState("");
     const [agents, setAgents] = useState<{ wallet: string; bps: number }[]>([]);
     const [deploying, setDeploying] = useState(false);
     const [deployResult, setDeployResult] = useState<string>("");
@@ -117,9 +119,16 @@ export default function ClientRequestsPanel() {
         }
     }
 
+    const brand = useBrand();
+
+
+
     const openApprovalModal = (id: string, existingSplit?: { partnerBps: number, agents?: { wallet: string, bps: number }[] }) => {
         setApprovingId(id);
         setDeployResult("");
+        const envPartner = process.env.NEXT_PUBLIC_PARTNER_WALLET_ADDRESS || "";
+        const brandPartner = (brand as any)?.partnerWallet || "";
+        setPartnerWallet(brandPartner || envPartner || "");
         if (existingSplit) {
             setPartnerBps(existingSplit.partnerBps);
             setAgents(existingSplit.agents || []);
@@ -143,7 +152,8 @@ export default function ClientRequestsPanel() {
                 brandKey,
                 partnerBps,
                 req.wallet,
-                agents
+                agents,
+                partnerWallet // Pass explicit partner wallet override
             );
 
             if (addr) {
@@ -454,6 +464,21 @@ export default function ClientRequestsPanel() {
                             </div>
 
                             <div className="p-6 space-y-6">
+                                {/* Partner Wallet Input */}
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-xs uppercase tracking-wider font-mono text-zinc-500">
+                                        <span>Partner Wallet</span>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={partnerWallet}
+                                        onChange={(e) => setPartnerWallet(e.target.value)}
+                                        placeholder="0x..."
+                                        className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none font-mono"
+                                    />
+                                    <p className="text-[10px] text-zinc-500">Destination wallet for partner fees.</p>
+                                </div>
+
                                 {/* Platform Fee (Locked) */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-xs uppercase tracking-wider font-mono text-zinc-500">
@@ -461,7 +486,7 @@ export default function ClientRequestsPanel() {
                                         <span>Locked</span>
                                     </div>
                                     <div className="p-3 rounded-lg bg-black/20 border border-white/5 flex justify-between items-center opacity-70">
-                                        <span className="text-zinc-400 text-sm">PortalPay Platform</span>
+                                        <span className="text-zinc-400 text-sm">Platform</span>
                                         <span className="font-mono text-emerald-500">{(platformBps / 100).toFixed(2)}%</span>
                                     </div>
                                 </div>

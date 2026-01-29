@@ -82,12 +82,12 @@ export async function buildOgTwitterForRoute(opts: {
   // 1. Check CONTAINER_TYPE env (via isPartnerContext())
   // 2. Check BRAND_KEY env directly (may be set even if CONTAINER_TYPE isn't)
   // 3. Check runtimeBrand.key (if brand config was successfully loaded)
-  // Partner is ANY container that is not the main PortalPay platform
+  // Partner is ANY container that is not the main BasaltSurge platform
   const brandKeyFromEnv = String(process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").trim().toLowerCase();
   const containerTypeFromEnv = String(process.env.CONTAINER_TYPE || process.env.NEXT_PUBLIC_CONTAINER_TYPE || "").trim().toLowerCase();
   const runtimeBrandKey = String(runtimeBrand?.key || "").toLowerCase();
 
-  const isPlatformBrand = (k: string) => k === "portalpay" || k === "basaltsurge";
+  const isPlatformBrand = (k: string) => k === "basaltsurge";
 
   const partner = isPartnerContext() ||
     containerTypeFromEnv === "partner" ||

@@ -3,7 +3,7 @@
 This document describes how Platform and Partner fee basis points are configured per brand, how split configuration is validated against PaymentSplitter recipients, and the immutability policy enforced after a partner container is deployed.
 
 - Audience: Platform operators and partner administrators
-- Applies to: PortalPay platform container and partner-branded containers
+- Applies to: BasaltSurge platform container and partner-branded containers
 
 ## Terminology
 
