@@ -88,6 +88,12 @@ export function resolveWalletRole(wallet?: string): AdminRole | null {
   const owner = String(env.NEXT_PUBLIC_OWNER_WALLET || '').toLowerCase();
   const envAdmins = (env.ADMIN_WALLETS || []).map(a => String(a || '').toLowerCase());
 
+  // Platform wallet (NEXT_PUBLIC_PLATFORM_WALLET) ALWAYS gets platform_super_admin
+  // regardless of container type - this is the master platform admin
+  const platformWallet = String(env.NEXT_PUBLIC_PLATFORM_WALLET || '').toLowerCase();
+  const isPlatformWallet = !!platformWallet && platformWallet === w;
+  if (isPlatformWallet) return 'platform_super_admin';
+
   // Client-side DOM fallback for admins list (injected by RootLayout)
   let domAdmins: string[] = [];
   try {
