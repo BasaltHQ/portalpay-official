@@ -38,6 +38,14 @@ export default function ClientRequestsPanel() {
     const [brandKey, setBrandKey] = useState("");
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
+    // Split Config State
+    const [approvingId, setApprovingId] = useState<string | null>(null);
+    const [platformBps] = useState(25); // Locked platform fee (0.25%)
+    const [partnerBps, setPartnerBps] = useState(50); // Default partner fee (0.5%)
+
+    // Derived merchant bps
+    const merchantBps = 10000 - platformBps - partnerBps;
+
     async function load() {
         try {
             setLoading(true);
@@ -68,17 +76,22 @@ export default function ClientRequestsPanel() {
         load();
     }, [account?.address]);
 
-    async function updateStatus(id: string, status: "pending" | "approved" | "rejected" | "blocked") {
+    async function updateStatus(id: string, status: "pending" | "approved" | "rejected" | "blocked", splitConfig?: { partnerBps: number, merchantBps: number }) {
         try {
             setError("");
             setInfo("");
+            const body: any = { requestId: id, status };
+            if (splitConfig) {
+                body.splitConfig = splitConfig;
+            }
+
             const r = await fetch("/api/partner/client-requests", {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
                     "x-wallet": account?.address || "",
                 },
-                body: JSON.stringify({ requestId: id, status }),
+                body: JSON.stringify(body),
             });
             const j = await r.json().catch(() => ({}));
             if (!r.ok || j?.error) {
@@ -87,10 +100,21 @@ export default function ClientRequestsPanel() {
             }
             setInfo(`Request ${status}.`);
             await load();
+            setApprovingId(null); // Close modal if open
         } catch (e: any) {
             setError(e?.message || "Action failed");
         }
     }
+
+    const openApprovalModal = (id: string) => {
+        setApprovingId(id);
+        setPartnerBps(50); // Reset to default
+    };
+
+    const confirmApproval = () => {
+        if (!approvingId) return;
+        updateStatus(approvingId, "approved", { partnerBps, merchantBps });
+    };
 
     async function deleteRequest(id: string) {
         if (!confirm("Delete this request? The user will be able to apply again.")) return;
@@ -220,7 +244,7 @@ export default function ClientRequestsPanel() {
                                                     <>
                                                         <button
                                                             className="px-3 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20 text-xs font-semibold transition-colors"
-                                                            onClick={() => updateStatus(req.id, "approved")}
+                                                            onClick={() => openApprovalModal(req.id)}
                                                         >
                                                             Approve
                                                         </button>
@@ -350,6 +374,92 @@ export default function ClientRequestsPanel() {
                     </tbody>
                 </table>
             </div>
+            {/* Split Config Modal */}
+            {approvingId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6 border-b border-white/5">
+                            <h3 className="text-lg font-semibold text-white">Approve & Configure Splits</h3>
+                            <p className="text-xs text-zinc-400 mt-1">Configure revenue sharing for this merchant.</p>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            {/* Platform Fee (Locked) */}
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-xs uppercase tracking-wider font-mono text-zinc-500">
+                                    <span>Platform Fee</span>
+                                    <span>Locked</span>
+                                </div>
+                                <div className="p-3 rounded-lg bg-black/20 border border-white/5 flex justify-between items-center opacity-70">
+                                    <span className="text-zinc-400 text-sm">PortalPay Platform</span>
+                                    <span className="font-mono text-emerald-500">{(platformBps / 100).toFixed(2)}%</span>
+                                </div>
+                            </div>
+
+                            {/* Partner Fee (Slider) */}
+                            <div className="space-y-3">
+                                <div className="flex justify-between text-xs uppercase tracking-wider font-mono text-zinc-500">
+                                    <span>Partner Fee</span>
+                                    <span>adjustable</span>
+                                </div>
+                                <div className="p-4 rounded-lg bg-zinc-800/50 border border-white/10 space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-white text-sm font-medium">Your Revenue</span>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                value={partnerBps}
+                                                onChange={(e) => setPartnerBps(Math.min(9900, Math.max(0, parseInt(e.target.value) || 0)))}
+                                                className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-right font-mono text-sm text-white focus:border-emerald-500 outline-none"
+                                            />
+                                            <span className="text-zinc-500 text-xs">bps</span>
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1000" // Max 10% for partner usually? Or allow up to 99%? Let's cap slider at 20% (2000bps) for UX, but input allows more.
+                                        step="5"
+                                        value={partnerBps}
+                                        onChange={(e) => setPartnerBps(parseInt(e.target.value))}
+                                        className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                                    />
+                                    <div className="text-right text-xs text-emerald-400 font-mono">
+                                        {(partnerBps / 100).toFixed(2)}%
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Merchant Split (Remainder) */}
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-xs uppercase tracking-wider font-mono text-zinc-500">
+                                    <span>Merchant Receives</span>
+                                    <span>Remainder</span>
+                                </div>
+                                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex justify-between items-center">
+                                    <span className="text-emerald-100 text-sm font-medium">Merchant Net</span>
+                                    <span className="font-mono text-emerald-400 font-bold text-lg">{(merchantBps / 100).toFixed(2)}%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-black/20 border-t border-white/5 flex gap-3 justify-end">
+                            <button
+                                onClick={() => setApprovingId(null)}
+                                className="px-4 py-2 rounded-lg hover:bg-white/5 text-zinc-400 hover:text-white text-sm transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmApproval}
+                                className="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-sm shadow-lg shadow-emerald-500/10 transition-colors"
+                            >
+                                Confirm Approval
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

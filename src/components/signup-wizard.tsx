@@ -271,11 +271,15 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
         // Private Mode Logic
         try {
             // Check if user is already approved or blocked
-            const res = await fetch("/api/auth/me", { cache: "no-store" });
+            const res = await fetch("/api/auth/me", {
+                cache: "no-store",
+                headers: { "x-wallet": wallet } // Send wallet for public status check
+            });
             const me = await res.json().catch(() => ({}));
 
             // If already approved, allow login (skip application)
-            if (me?.authed || me?.approved) {
+            // Note: me.approved is legacy, me.shopStatus is current
+            if (me?.authed || me?.approved || me?.shopStatus === "approved") {
                 onComplete();
             } else if (me?.blocked) {
                 // User is blocked - show blocked alert

@@ -248,6 +248,20 @@ export async function PATCH(req: NextRequest) {
             return json({ error: "invalid_status", message: "status must be 'pending', 'approved', 'rejected', or 'blocked'" }, { status: 400 });
         }
 
+        const splitConfig = body?.splitConfig;
+
+        if (newStatus === "approved" && splitConfig) {
+            const { partnerBps, merchantBps } = splitConfig;
+            const partner = Number(partnerBps || 0);
+            const merchant = Number(merchantBps || 0);
+            const platform = 10000 - partner - merchant;
+
+            // Basic validation
+            if (partner < 0 || merchant < 0 || platform < 0 || (partner + merchant + platform) !== 10000) {
+                return json({ error: "invalid_split_config", message: "Split configuration must sum to 100% (10000 bps)" }, { status: 400 });
+            }
+        }
+
         const container = await getContainer();
 
         // Find the request (query by type + id since partition key is wallet)
@@ -278,7 +292,12 @@ export async function PATCH(req: NextRequest) {
         // On approve: Create minimal shop_config for the user
         if (newStatus === "approved") {
             const shopConfigId = `shop:${request.wallet}`;
-            const shopConfig = {
+            // If splitConfig provided, use it. Otherwise defaults.
+            // Note: If no splitConfig provided, we just create the shop config without explicit splits, 
+            // relying on system defaults later or forcing manual update if needed.
+            // But we prefer explicit if provided.
+
+            const shopConfig: any = {
                 id: shopConfigId,
                 wallet: request.wallet,
                 type: "shop_config",
@@ -294,6 +313,15 @@ export async function PATCH(req: NextRequest) {
                 approvedAt: Date.now(),
                 createdAt: Date.now()
             };
+
+            if (splitConfig) {
+                shopConfig.splitConfig = {
+                    partnerBps: Number(splitConfig.partnerBps),
+                    merchantBps: Number(splitConfig.merchantBps)
+                    // Platform bps is implicit/remainder in some contexts or explicit in others.
+                    // We'll store what we received. 
+                };
+            }
 
             await container.items.upsert(shopConfig);
         }

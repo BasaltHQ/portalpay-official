@@ -7,7 +7,18 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     // Validate auth via cookie/JWT
-    const wallet = await getAuthenticatedWallet(req);
+    // Validate auth via cookie/JWT
+    let wallet = await getAuthenticatedWallet(req);
+    let sessionAuthed = !!wallet;
+
+    if (!wallet) {
+      // Check for x-wallet header (Public status check for onboarding)
+      const headerWallet = req.headers.get("x-wallet");
+      if (headerWallet && /^0x[a-fA-F0-9]{40}$/.test(headerWallet)) {
+        wallet = headerWallet.toLowerCase();
+      }
+    }
+
     if (!wallet) {
       return NextResponse.json({ authed: false }, { status: 401 });
     }
@@ -64,7 +75,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ authed: true, wallet, roles, shopStatus, isPlatformAdmin, blocked });
+    return NextResponse.json({ authed: sessionAuthed, wallet, roles, shopStatus, isPlatformAdmin, blocked });
   } catch (e: any) {
     return NextResponse.json({ authed: false, error: e?.message || "failed" }, { status: 500 });
   }
