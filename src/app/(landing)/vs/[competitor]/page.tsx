@@ -154,6 +154,14 @@ export default async function ComparisonPage({
                 <div className="text-sm text-muted-foreground">Settlement Time</div>
               </div>
             </div>
+
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+              <SignupButton
+                className="px-8 py-3 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] font-bold hover:opacity-90 transition text-lg"
+              >
+                Start Saving Now
+              </SignupButton>
+            </div>
           </div>
         </section>
 

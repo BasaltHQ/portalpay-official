@@ -55,7 +55,14 @@ export function replacePlatformReferences(
     // Match /portalpay followed by / or end of word (using word boundary-like pattern)
     result = result.replace(/\/portalpay(?=\/|[^a-zA-Z0-9_-]|$)/gi, `/${brandKey}`);
 
-    // Replace brand name (case-sensitive for proper nouns)
+    // Replace hardcoded "PortalPay" in environment variables (e.g., PORTALPAY_SUBSCRIPTION_KEY)
+    result = result.replace(/PORTALPAY_SUBSCRIPTION_KEY/g, "APP_SUBSCRIPTION_KEY");
+
+    // Replace filenames or paths like "webhooks/portalpay" -> "webhooks/payment"
+    result = result.replace(/webhooks\/portalpay/g, "webhooks/payment");
+
+    // Replace generic "PortalPay" text references (case-sensitive for proper nouns)
+    // Avoid replacing if it's part of a larger word that wasn't caught above, though "PortalPay" is usually distinct.
     result = result.replace(/PortalPay/g, brandName);
 
     return result;
