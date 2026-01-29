@@ -643,6 +643,7 @@ export default async function RootLayout({
       data-pp-theme-lock="user"
       data-pp-container-type={containerIdentity.containerType}
       data-pp-brand-key={brand.key}
+      data-pp-brand-name={brand.name}
       data-pp-owner-wallet={getEnv().NEXT_PUBLIC_OWNER_WALLET}
       data-pp-admin-wallets={(getEnv().ADMIN_WALLETS || []).join(",")}
       data-pp-brand-primary={brand.colors.primary}

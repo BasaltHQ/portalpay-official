@@ -108,7 +108,7 @@ export function CostCalculator({
 
       {/* Savings Summary */}
       <div className="bg-[var(--pp-secondary)] text-[var(--primary-foreground)] rounded-lg p-4 mb-6">
-        <div className="text-sm opacity-90 mb-1">You Save with PortalPay</div>
+        <div className="text-sm opacity-90 mb-1">You Save with {brand.name}</div>
         <div className="text-3xl font-bold mb-1">
           ${savings.annual.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           <span className="text-lg">/year</span>
@@ -138,11 +138,13 @@ export function CostCalculator({
         {/* Competitor Rows */}
         {Object.entries(competitors).map(([name, pricing]) => {
           const calc = calculations[name];
+          // Replace BasaltSurge in competitor names with partner brand name for whitelabel
+          const displayName = name.replace('BasaltSurge', brand.name || 'BasaltSurge');
           return (
             <div key={name} className="rounded-lg border p-3 bg-background/50">
               <div className="flex justify-between items-center mb-1">
                 <span className="font-medium capitalize">
-                  {name.replace('-', ' ')}
+                  {displayName.replace('-', ' ')}
                 </span>
                 <span className="text-lg font-semibold">
                   ${calc.monthly.toFixed(2)}/mo

@@ -13,6 +13,7 @@ import { getBaseUrl } from '@/lib/base-url';
 import { getBrandConfig } from '@/config/brands';
 import { isPartnerContext } from '@/lib/env';
 import { resolveBrandAppLogo, getDefaultBrandName } from "@/lib/branding";
+import { dePortalContent } from "@/lib/brand-content";
 import { DocsSidebarProvider } from "@/contexts/DocsSidebarContext";
 import { DocsContentWrapper } from "@/components/docs/docs-content-wrapper";
 
@@ -187,8 +188,11 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
   }
   let processedContent: string = content;
   try {
-    if (processedContent && isPartnerContext()) {
-      processedContent = processedContent.replaceAll('PortalPay', brand.name);
+    // Detect partner context: either via env or by brand key not being platform brands
+    const isPlatformBrand = ['portalpay', 'basaltsurge'].includes((brand.key || '').toLowerCase());
+    const isPartner = isPartnerContext() || !isPlatformBrand;
+    if (processedContent && isPartner && !isPlatformBrand) {
+      processedContent = dePortalContent(processedContent, brand as any);
     }
   } catch { }
 
@@ -215,7 +219,7 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center">
               <Image
-                src={resolveBrandAppLogo(brand?.logos?.app, brand?.key || "portalpay")}
+                src={resolveBrandAppLogo(brand?.logos?.app, brand?.key || "portalpay") || "/bssymbol.png"}
                 alt={displayBrandName}
                 width={160}
                 height={40}
