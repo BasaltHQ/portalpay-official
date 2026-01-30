@@ -115,6 +115,7 @@ export default function GlobalSplitGuard() {
   const [ack, setAck] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [splitExists, setSplitExists] = useState(false);
   const { disconnect } = useDisconnect();
   // Re-check trigger for split guard after auth events (login/logout)
   const [recheckNonce, setRecheckNonce] = useState(0);
@@ -347,6 +348,7 @@ export default function GlobalSplitGuard() {
         try { setPreviewRecipients(Array.isArray(j?.split?.recipients) ? j.split.recipients : null); } catch { }
         const addr = String(j?.split?.address || "").toLowerCase();
         const has = isValidHex(addr);
+        setSplitExists(has);
         const isLegacy = j?.legacy === true;
         const misconfigured = !!(j?.misconfiguredSplit && j.misconfiguredSplit.needsRedeploy === true);
         const recipientCount = Array.isArray(j?.split?.recipients) ? j.split.recipients.length : 0;
@@ -591,11 +593,12 @@ export default function GlobalSplitGuard() {
           )}
 
           {/* Deploy Button - Hidden for non-admin partners unless split exists (then it becomes Acknowledge) */}
-          {(!partnerContext || isAdmin || has) && (
+          {/* Deploy Button - Hidden for non-admin partners unless split exists (then it becomes Acknowledge) */}
+          {(!partnerContext || isAdmin || splitExists) && (
             <button
               className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={async () => {
-                if (partnerContext && !isAdmin && has) {
+                if (partnerContext && !isAdmin && splitExists) {
                   // Acknowledge/Confirm flow for Merchant
                   try {
                     setAck(false);
@@ -619,6 +622,7 @@ export default function GlobalSplitGuard() {
 
                   const addr = await ensureSplitForWallet(account as any, brandKey, undefined, undefined, extraAgents);
                   if (addr) {
+                    setSplitExists(true);
                     // success: close modal
                     setOpen(false);
                   } else {
@@ -634,23 +638,23 @@ export default function GlobalSplitGuard() {
                   setDeploying(false);
                 }
               }}
-              disabled={deploying || (!has && !platformValid) || !ack}
+              disabled={deploying || (!splitExists && !platformValid) || !ack}
               title={
-                !platformValid && !has
+                !platformValid && !splitExists
                   ? "Platform recipient not configured"
                   : !ack
                     ? "Please acknowledge to continue"
-                    : (partnerContext && !isAdmin && has)
+                    : (partnerContext && !isAdmin && splitExists)
                       ? "Confirm details and access dashboard"
                       : "Deploy payment distribution contract"
               }
             >
-              {partnerContext && !isAdmin && has ? "Confirm & Access" : (deploying ? "Deploying..." : "Confirm & Deploy")}
+              {partnerContext && !isAdmin && splitExists ? "Confirm & Access" : (deploying ? "Deploying..." : "Confirm & Deploy")}
             </button>
           )}
 
           {/* Partner Restriction Message (instead of Deploy button) */}
-          {partnerContext && !isAdmin && !has && (
+          {partnerContext && !isAdmin && !splitExists && (
             <div className="flex-1 flex items-center justify-end">
               <span className="text-xs text-amber-500 font-medium italic">
                 Waiting for partner configuration...

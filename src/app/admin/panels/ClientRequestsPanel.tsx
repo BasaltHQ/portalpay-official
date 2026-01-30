@@ -642,17 +642,32 @@ export default function ClientRequestsPanel() {
                                 {/* Deployment Status & History */}
                                 <div className="pt-2 border-t border-white/5 space-y-3">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-xs uppercase tracking-wider font-mono text-zinc-500">Split Contract</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs uppercase tracking-wider font-mono text-zinc-500">Split Contract</span>
+                                            {(() => {
+                                                const _req = items.find(r => r.id === approvingId);
+                                                const count = (_req?.splitHistory?.length || 0);
+                                                if (count > 0 || _req?.deployedSplitAddress) {
+                                                    return <span className="text-[10px] text-zinc-600 font-mono">Version {count || 1}</span>
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
                                         {deployResult ? (
                                             <span className="text-xs font-mono text-emerald-400">{deployResult.startsWith("Deployed") ? "Active" : "Error"}</span>
                                         ) : (
-                                            (items.find(r => r.id === approvingId)?.deployedSplitAddress) ? (
-                                                <span className="text-xs font-mono text-emerald-400">
-                                                    {(items.find(r => r.id === approvingId)?.deployedSplitAddress || "").slice(0, 6)}...{(items.find(r => r.id === approvingId)?.deployedSplitAddress || "").slice(-4)}
-                                                </span>
-                                            ) : (
-                                                <span className="text-xs font-mono text-zinc-600">Not Deployed</span>
-                                            )
+                                            (() => {
+                                                const _req = items.find(r => r.id === approvingId);
+                                                const addr = _req?.deployedSplitAddress || (_req?.splitHistory && _req.splitHistory.length > 0 ? _req.splitHistory[0].address : "");
+                                                if (addr) {
+                                                    return (
+                                                        <span className="text-xs font-mono text-emerald-400" title={addr}>
+                                                            {addr.slice(0, 6)}...{addr.slice(-4)}
+                                                        </span>
+                                                    );
+                                                }
+                                                return <span className="text-xs font-mono text-zinc-600">Not Deployed</span>;
+                                            })()
                                         )}
                                     </div>
 
