@@ -442,6 +442,18 @@ export async function POST(req: NextRequest) {
     const platformWallet = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0x00fe4f0104a989ca65df6b825a6c1682413bca56").toLowerCase();
     const isPlatformAdmin = callerWallet === platformWallet;
 
+    console.log("[SPLIT_DEPLOY_AUTH_DEBUG]", {
+      callerWallet,
+      walletHeader,
+      platformWallet,
+      brandPartnerWallet: brand?.partnerWallet,
+      isOwner,
+      isPartnerAdmin,
+      isAdmin,
+      isPlatformAdmin,
+      brandKey
+    });
+
     if (!isOwner && !isPartnerAdmin && !isAdmin && !isPlatformAdmin) {
       // Special case: Deployment Pipeline (no signer, just valid x-wallet + idempotency check could go here if needed)
       // But for standard flow, we require auth.
