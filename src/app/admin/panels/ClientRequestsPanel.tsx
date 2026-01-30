@@ -49,13 +49,17 @@ export default function ClientRequestsPanel() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [info, setInfo] = useState("");
-    const [brandKey, setBrandKey] = useState("");
+    const [brandKey, setBrandKey] = useState(brand?.key || "");
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
     // Split Config State
     const [approvingId, setApprovingId] = useState<string | null>(null);
     const [platformBps, setPlatformBps] = useState(50); // Default platform fee
     const [historyViewerId, setHistoryViewerId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (brand?.key) setBrandKey(brand.key);
+    }, [brand?.key]);
 
     useEffect(() => {
         if (!brandKey) return;
@@ -95,7 +99,7 @@ export default function ClientRequestsPanel() {
             setLoading(true);
             setError("");
             setInfo("");
-            const r = await fetch("/api/partner/client-requests", {
+            const r = await fetch(`/api/partner/client-requests?brandKey=${encodeURIComponent(brandKey)}`, {
                 cache: "no-store",
                 credentials: "include",
             });

@@ -66,13 +66,17 @@ export async function GET(req: NextRequest) {
             return json({ error: "forbidden" }, { status: 403 });
         }
 
-        const brandKey = getBrandKey();
+        const url = new URL(req.url);
+        const statusFilter = url.searchParams.get("status") || "";
+        // Allow brandKey override via query param for Platform Admins managing partners
+        const queryBrandKey = url.searchParams.get("brandKey");
+        const envBrandKey = getBrandKey();
+
+        const brandKey = (queryBrandKey || envBrandKey || "").toLowerCase();
+
         if (!brandKey) {
             return json({ error: "missing_brand_key" }, { status: 500 });
         }
-
-        const url = new URL(req.url);
-        const statusFilter = url.searchParams.get("status") || "";
 
         const container = await getContainer();
 
