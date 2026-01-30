@@ -34,6 +34,11 @@ type ClientRequest = {
         merchantBps: number;
         agents?: { wallet: string; bps: number }[];
     };
+    splitHistory?: Array<{
+        address: string;
+        deployedAt: number;
+        recipients?: string[];
+    }>;
 };
 
 export default function ClientRequestsPanel() {
@@ -144,7 +149,7 @@ export default function ClientRequestsPanel() {
         }
     };
 
-    const handleDeploy = async () => {
+    const handleDeploy = async (force = false) => {
         if (!approvingId || !account) return;
         const req = items.find(i => i.id === approvingId);
         if (!req) return;
@@ -160,7 +165,8 @@ export default function ClientRequestsPanel() {
                 req.wallet,
                 agents,
                 partnerWallet, // Pass explicit partner wallet override
-                platformBps // Pass explicit platform fee override
+                platformBps, // Pass explicit platform fee override
+                force // forceRedeploy
             );
 
             if (addr) {
@@ -599,34 +605,52 @@ export default function ClientRequestsPanel() {
                                     </div>
                                 </div>
 
-                                {/* Deployment Status */}
-                                <div className="pt-2 border-t border-white/5">
-                                    <div className="flex justify-between items-center mb-2">
+                                {/* Deployment Status & History */}
+                                <div className="pt-2 border-t border-white/5 space-y-3">
+                                    <div className="flex justify-between items-center">
                                         <span className="text-xs uppercase tracking-wider font-mono text-zinc-500">Split Contract</span>
                                         {deployResult && <span className="text-xs font-mono text-emerald-400">{deployResult.startsWith("Deployed") ? "Active" : "Error"}</span>}
                                     </div>
+
+                                    {/* History List */}
+                                    {items.find(r => r.id === approvingId)?.splitHistory && (items.find(r => r.id === approvingId)?.splitHistory?.length || 0) > 0 && (
+                                        <div className="bg-black/20 rounded border border-white/5 p-2 space-y-1 mb-2">
+                                            <div className="text-[10px] text-zinc-500 uppercase font-mono mb-1">Version History</div>
+                                            {(items.find(r => r.id === approvingId)?.splitHistory || []).map((h: any, i: number) => (
+                                                <div key={i} className="flex justify-between items-center text-xs font-mono">
+                                                    <span className="text-zinc-400">{h.address.slice(0, 6)}...{h.address.slice(-4)}</span>
+                                                    <span className="text-zinc-600">{new Date(h.deployedAt).toLocaleDateString()}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     {deployResult ? (
                                         <div className="bg-black/40 p-3 rounded border border-white/10 text-xs font-mono break-all text-white">
                                             {deployResult}
                                         </div>
                                     ) : (
-                                        <button
-                                            onClick={handleDeploy}
-                                            disabled={deploying}
-                                            className="w-full py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-600/40 rounded-lg text-xs font-mono transition-colors flex items-center justify-center gap-2"
-                                        >
-                                            {deploying ? (
-                                                <>
-                                                    <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                                                    Processing...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-                                                    Deploy / Verify Contract
-                                                </>
-                                            )}
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleDeploy(false)}
+                                                disabled={deploying}
+                                                className="flex-1 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-600/40 rounded-lg text-xs font-mono transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                {deploying ? "Checking..." : "Verify / Deploy"}
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm("Force redeployment? This will archive the current split and deploy a new one.")) {
+                                                        handleDeploy(true);
+                                                    }
+                                                }}
+                                                disabled={deploying}
+                                                className="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/40 text-amber-400 border border-amber-600/40 rounded-lg text-xs font-mono transition-colors"
+                                                title="Force Redeploy (Archive current)"
+                                            >
+                                                ↻
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>

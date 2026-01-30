@@ -31,32 +31,17 @@ export async function ensureSplitForWallet(
   merchantWalletOverride?: string,
   extraAgents?: { wallet: string, bps: number }[],
   partnerWalletOverride?: string,
-  platformFeeBpsOverride?: number
+  platformFeeBpsOverride?: number,
+  forceRedeploy?: boolean
 ): Promise<string | undefined> {
+  const brandKey = brandKeyOverride || getBrandKey();
+  const callerWallet = account?.address || "";
+  if (!callerWallet) return undefined;
+
   try {
-    const signerAddress = String((account?.address || "")).toLowerCase();
-    const merchant = merchantWalletOverride ? String(merchantWalletOverride).toLowerCase() : signerAddress;
+    const merchant = merchantWalletOverride ? String(merchantWalletOverride).toLowerCase() : String(callerWallet).toLowerCase();
 
     if (!isValidHexAddress(merchant)) return undefined;
-
-    // Resolve brand key: prefer override from caller, else env, else hostname fallback
-    let brandKey: string | undefined = brandKeyOverride;
-    if (!brandKey) {
-      try {
-        brandKey = getBrandKey();
-      } catch {
-        try {
-          if (typeof window !== "undefined") {
-            const host = window.location.hostname || "";
-            const parts = host.split(".");
-            // Fallback for Azure App Service subdomain style
-            if (parts.length >= 3 && host.endsWith(".azurewebsites.net")) {
-              brandKey = parts[0].toLowerCase();
-            }
-          }
-        } catch { }
-      }
-    }
 
     // Agent calculation helpers
     const agents = Array.isArray(extraAgents) ? extraAgents : [];
@@ -79,18 +64,21 @@ export async function ensureSplitForWallet(
     }
 
     // Check existing split config (brand-scoped)
-    try {
-      const r = await fetch(buildBrandApiUrl(brandKey, `/api/split/deploy?wallet=${encodeURIComponent(merchant)}&brandKey=${encodeURIComponent(brandKey)}`), { cache: "no-store", credentials: "include" });
-      const j = await r.json().catch(() => ({}));
-      const existing = String(j?.split?.address || "").toLowerCase();
-      // Only redeploy if explicit flag or partner misconfiguration
-      if (isValidHexAddress(existing)) {
-        if (!j?.misconfiguredSplit?.needsRedeploy) {
-          return existing;
+    // SKIPPED if forceRedeploy is true
+    if (!forceRedeploy) {
+      try {
+        const r = await fetch(buildBrandApiUrl(brandKey, `/api/split/deploy?wallet=${encodeURIComponent(merchant)}&brandKey=${encodeURIComponent(brandKey)}`), { cache: "no-store", credentials: "include" });
+        const j = await r.json().catch(() => ({}));
+        const existing = String(j?.split?.address || "").toLowerCase();
+        // Only return existing if valid and not misconfigured
+        if (isValidHexAddress(existing)) {
+          if (!j?.misconfiguredSplit?.needsRedeploy) {
+            return existing;
+          }
         }
+      } catch {
+        // continue to deploy if read failed
       }
-    } catch {
-      // continue to deploy if read failed
     }
 
     // Resolve platform recipient from env
@@ -117,17 +105,10 @@ export async function ensureSplitForWallet(
     let brand: any;
     try {
       const apiUrl = buildBrandApiUrl(brandKey as string, `/api/platform/brands/${encodeURIComponent(brandKey as string)}/config`);
-      console.log("[ensureSplitForWallet] Fetching brand config from:", apiUrl);
+      // console.log("[ensureSplitForWallet] Fetching brand config from:", apiUrl);
       const r = await fetch(apiUrl, { cache: 'no-store', credentials: "include" });
       const j = await r.json().catch(() => ({}));
       brand = j?.brand ? j.brand : getBrandConfig(brandKey as string);
-      console.log("[ensureSplitForWallet] Brand config response:", {
-        brandKey,
-        partnerWallet: brand?.partnerWallet,
-        partnerFeeBps: brand?.partnerFeeBps,
-        platformFeeBps: brand?.platformFeeBps,
-        fromApi: !!j?.brand
-      });
     } catch (e) {
       console.error("[ensureSplitForWallet] Failed to fetch brand config:", e);
       brand = getBrandConfig(brandKey as string);
@@ -155,19 +136,6 @@ export async function ensureSplitForWallet(
     const partnerBps = !isPartner ? 0 : (isValidHexAddress(partner) && typeof effectivePartnerBps === "number")
       ? Math.max(0, Math.min(10000 - platformBps, effectivePartnerBps))
       : 0;
-
-    console.log("[ensureSplitForWallet] Split calculation:", {
-      brandKey,
-      isPartner,
-      partner,
-      isValidPartner: isValidHexAddress(partner),
-      effectivePartnerBps,
-      partnerBps,
-      platformBps,
-      merchant,
-      agentsBps: agentSharesBps,
-      partnerWalletOverride
-    });
 
     // Merchant gets remainder after Platform, Partner, and Agents
     const merchantBps = Math.max(0, 10000 - platformBps - partnerBps - agentSharesBps);

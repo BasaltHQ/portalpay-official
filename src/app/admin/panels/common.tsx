@@ -28,6 +28,10 @@ export type ReserveBalancesResponse = {
     totalCustomerXp: number;
     transactionCount: number;
   };
+  splitHistory?: Array<{
+    address: string;
+    deployedAt: number;
+  }>;
 };
 
 export type SiteConfig = {

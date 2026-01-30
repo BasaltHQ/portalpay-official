@@ -169,6 +169,7 @@ export default function PartnerManagementPanel() {
   const [releaseResults, setReleaseResults] = useState<Map<string, any[]>>(new Map());
   const [platformReleasableCache, setPlatformReleasableCache] = useState<Map<string, Record<string, { units: number }>>>(new Map());
   const [partnerReleasableCache, setPartnerReleasableCache] = useState<Map<string, Record<string, { units: number }>>>(new Map());
+  const [selectedMerchantSplitVersion, setSelectedMerchantSplitVersion] = useState<Record<string, string>>({});
 
   // Split versions (platform view) and inferred merchant mapping
   type SplitVersion = {
@@ -2391,9 +2392,32 @@ export default function PartnerManagementPanel() {
                                 <div className="flex items-center justify-between">
                                   <div className="microtext text-muted-foreground">
                                     Split: {b && b.splitAddressUsed ? (
-                                      <a className="underline" href={`https://base.blockscout.com/address/${b.splitAddressUsed}`} target="_blank" rel="noopener noreferrer">
-                                        <TruncatedAddress address={b.splitAddressUsed} />
-                                      </a>
+                                      <div className="flex items-center gap-2 inline-flex">
+                                        <a className="underline" href={`https://base.blockscout.com/address/${b.splitAddressUsed}`} target="_blank" rel="noopener noreferrer">
+                                          <TruncatedAddress address={b.splitAddressUsed} />
+                                        </a>
+                                        {b.splitHistory && b.splitHistory.length > 0 && (
+                                          <select
+                                            className="ml-2 h-6 text-xs border rounded bg-background px-1"
+                                            value={b.splitAddressUsed}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              setSelectedMerchantSplitVersion(prev => ({ ...prev, [w]: val }));
+                                              fetchMerchantBalances(w, val);
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            {/* Include current/latest option if not in history explicitly, or just map history */}
+                                            {/* Usually history includes all past. Current might be the latest. let's assume history is complete or we add current */}
+                                            {/* The API returns splitHistory which usually includes all deployed splits. */}
+                                            {b.splitHistory.map((h, i) => (
+                                              <option key={h.address} value={h.address}>
+                                                {i === 0 ? "Latest" : `v${b.splitHistory!.length - i}`} ({h.address.slice(0, 6)}...)
+                                              </option>
+                                            ))}
+                                          </select>
+                                        )}
+                                      </div>
                                     ) : "Not configured"}
                                   </div>
                                 </div>

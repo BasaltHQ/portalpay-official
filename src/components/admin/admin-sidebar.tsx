@@ -294,7 +294,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
 
   const isWideLogo = (theme?.navbarMode === 'logo');
 
-  const isRequestMode = brand?.accessMode === 'request';
+  const isRequestMode = (brand?.accessMode || "").toLowerCase().includes('request');
 
   const groups: NavItem[] = [
     {

@@ -110,6 +110,7 @@ export async function GET(req: NextRequest) {
             const enriched = {
                 ...r,
                 deployedSplitAddress: deployedAddress,
+                splitHistory: conf?.splitHistory || [],
                 // If there's a deployed split, it supersedes the request config? 
                 // Maybe just attach it as separate field so UI can show "Deployed: X"
             };

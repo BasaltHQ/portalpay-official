@@ -238,7 +238,8 @@ export async function GET(req: NextRequest) {
         balances,
         rates,
         totalUsd,
-        indexedMetrics
+        indexedMetrics,
+        splitHistory: (await getSiteConfigForWallet(wallet) as any)?.splitHistory || []
       },
       { headers: { "x-correlation-id": correlationId } }
     );

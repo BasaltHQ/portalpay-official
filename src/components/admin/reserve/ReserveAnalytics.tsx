@@ -31,6 +31,10 @@ type ReserveBalancesResponse = {
     totalCustomerXp: number;
     transactionCount: number;
   };
+  splitHistory?: Array<{
+    address: string;
+    deployedAt: number;
+  }>;
 };
 
 export function ReserveAnalytics() {
@@ -38,6 +42,7 @@ export function ReserveAnalytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [indexing, setIndexing] = useState(false);
+  const [selectedSplitVersion, setSelectedSplitVersion] = useState<string>("");
   const account = useActiveAccount();
 
 
@@ -264,11 +269,17 @@ export function ReserveAnalytics() {
     setWithdrawProcessed(fn);
   }
 
-  async function fetchBalances() {
+  async function fetchBalances(overrideSplitAddress?: string) {
     try {
       setLoading(true);
       setError("");
-      const r = await fetch("/api/reserve/balances", {
+
+      let url = "/api/reserve/balances";
+      if (overrideSplitAddress) {
+        url += `?splitAddress=${encodeURIComponent(overrideSplitAddress)}`;
+      }
+
+      const r = await fetch(url, {
         headers: {
           "x-wallet": account?.address || "",
         },
@@ -278,6 +289,13 @@ export function ReserveAnalytics() {
         setError(j.reason || "Degraded data");
       }
       setData(j);
+
+      // If we switched versions, ensure selectedSplitVersion matches
+      if (overrideSplitAddress) {
+        setSelectedSplitVersion(overrideSplitAddress);
+      } else if (!selectedSplitVersion && j.splitAddressUsed) {
+        setSelectedSplitVersion(j.splitAddressUsed);
+      }
     } catch (e: any) {
       setError(e?.message || "Failed to fetch");
     } finally {
@@ -344,12 +362,28 @@ export function ReserveAnalytics() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="text-lg font-semibold">Reserve Analytics</h3>
         <div className="flex items-center gap-2">
+          {/* Version Selector */}
+          {data?.splitHistory && data.splitHistory.length > 0 && (
+            <select
+              value={selectedSplitVersion}
+              onChange={(e) => fetchBalances(e.target.value)}
+              className="bg-black/20 border border-white/10 rounded px-2 py-1 text-xs font-mono outline-none focus:border-white/30"
+            >
+              <option value="" disabled>Select Version</option>
+              {data.splitHistory.map((h, i) => (
+                <option key={h.address} value={h.address}>
+                  {i === 0 ? "Latest" : `v${data.splitHistory!.length - i}`} ({h.address.slice(0, 6)}...)
+                </option>
+              ))}
+            </select>
+          )}
+
           {indexing && <span className="microtext text-muted-foreground animate-pulse">Indexing…</span>}
           <button
-            onClick={fetchBalances}
+            onClick={() => fetchBalances(selectedSplitVersion)}
             disabled={loading}
             className="px-2 py-1 rounded-md border text-xs"
           >

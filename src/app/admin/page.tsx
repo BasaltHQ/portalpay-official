@@ -8895,6 +8895,8 @@ function OrdersPanel() {
 // ---------------- Page ----------------
 export default function AdminPage() {
   const account = useActiveAccount();
+  const brand = useBrand();
+  const isRequestMode = (brand?.accessMode || "").toLowerCase().includes("request");
   const isConnected = !!account?.address;
   const wallet = (account?.address || "").toLowerCase();
   const isPlatform = isPlatformCtx();
@@ -9262,7 +9264,7 @@ export default function AdminPage() {
       {activeTab === "branding" && (
         <BrandingPanelExt />
       )}
-      {activeTab === "splitConfig" && ((canBranding && containerType === "partner") || (isPlatform && isSuperadmin)) && (
+      {activeTab === "splitConfig" && ((canBranding && containerType === "partner" && !isRequestMode) || (isPlatform && isSuperadmin)) && (
         <SplitConfigPanelExt />
       )}
       {activeTab === "applications" && isPlatform && isSuperadmin && (
@@ -9326,7 +9328,7 @@ export default function AdminPage() {
       {activeTab === "shopifyPlatform" && isPlatform && isSuperadmin && (
         <ShopifyIntegrationPanel />
       )}
-      {activeTab === "clientRequests" && (canBranding || isSuperadmin) && (
+      {activeTab === "clientRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
         <div className="glass-pane rounded-xl border p-6">
           <ClientRequestsPanel />
         </div>
