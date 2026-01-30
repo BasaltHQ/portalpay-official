@@ -65,6 +65,7 @@ type AdminTabKey =
   | 'supportAdmin'
   | 'writersWorkshop'
   | 'publications'
+  | 'reports'
   | 'clientRequests';
 
 interface AdminSidebarProps {

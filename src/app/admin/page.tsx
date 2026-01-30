@@ -490,8 +490,11 @@ function WithdrawalInstructionsPanel() {
           cache: "no-store",
         });
         const j = await r.json().catch(() => ({}));
+        const history = Array.isArray(j?.splitHistory) ? j.splitHistory : [];
+        const latestFromHistory = history.length > 0 ? history[history.length - 1] : null;
+
         const addrRaw =
-          (Array.isArray(j?.splitHistory) && j.splitHistory.length > 0 ? j.splitHistory[0].address : "") ||
+          (latestFromHistory?.address) ||
           (typeof j?.splitAddressUsed === "string" && j.splitAddressUsed) ||
           (typeof j?.splitAddress === "string" && j.splitAddress) ||
           (typeof j?.split?.address === "string" && j.split.address) ||
@@ -4120,6 +4123,7 @@ function UsersPanel() {
   // Superadmin: per-merchant reserve accordion state/cache
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [balancesCache, setBalancesCache] = useState<Map<string, ReserveBalancesResponse | null>>(new Map());
+  const [selectedMerchantSplitVersion, setSelectedMerchantSplitVersion] = useState<Record<string, string>>({});
   const [resLoading, setResLoading] = useState<Record<string, boolean>>({});
   const [resError, setResError] = useState<Record<string, string>>({});
   // Transaction tracking state
@@ -4482,13 +4486,17 @@ function UsersPanel() {
     }
   }
 
-  // Load reserve balances for a merchant (uses split if configured)
-  async function fetchMerchantBalances(wallet: string) {
+  // Load reserve balances for a merchant (uses split if configured, or specific override)
+  async function fetchMerchantBalances(wallet: string, overrideSplitAddress?: string) {
     try {
       const w = String(wallet || "").toLowerCase();
       setResLoading(prev => ({ ...prev, [w]: true }));
       setResError(prev => ({ ...prev, [w]: "" }));
-      const r = await fetch(`/api/reserve/balances?wallet=${encodeURIComponent(w)}`, { cache: "no-store" });
+      let url = `/api/reserve/balances?wallet=${encodeURIComponent(w)}`;
+      if (overrideSplitAddress) {
+        url += `&splitAddress=${encodeURIComponent(overrideSplitAddress)}`;
+      }
+      const r = await fetch(url, { cache: "no-store" });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || j?.error) {
         setResError(prev => ({ ...prev, [w]: j?.error || "Failed to load balances" }));
@@ -4895,7 +4903,7 @@ function UsersPanel() {
   return (
     <div className="glass-pane rounded-xl border p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Merchants (Platform)</h2>
+        <h2 className="text-xl font-semibold">Merchants</h2>
         <div className="flex items-center gap-2">
           {indexing && (
             <span className="microtext text-muted-foreground animate-pulse flex items-center gap-1">
@@ -5003,6 +5011,7 @@ function UsersPanel() {
           <thead>
             <tr className="bg-foreground/5">
               <th className="text-left px-3 py-2 font-medium">Merchant Wallet</th>
+              <th className="text-left px-3 py-2 font-medium">Split</th>
               <th className="text-left px-3 py-2 font-medium">Display Name</th>
               <th className="text-left px-3 py-2 font-medium">Tags</th>
               <th className="text-left px-3 py-2 font-medium">Total Earned (USD)</th>
@@ -5031,6 +5040,23 @@ function UsersPanel() {
                 <React.Fragment key={it.merchant}>
                   <tr className="border-t">
                     <td className="px-3 py-2"><TruncatedAddress address={it.merchant} /></td>
+                    <td className="px-3 py-2">
+                      {(() => {
+                        if (!b || !b.splitAddressUsed) return <span className="microtext text-muted-foreground">—</span>;
+                        const hist = Array.isArray(b.splitHistory) ? b.splitHistory : [];
+                        // History is ascending (oldest first).
+                        const idx = hist.findIndex(h => String(h.address).toLowerCase() === String(b.splitAddressUsed).toLowerCase());
+                        const ver = idx >= 0 ? `v${idx + 1}` : "Custom";
+                        return (
+                          <div className="flex flex-col">
+                            <span className="text-xs font-mono">{ver}</span>
+                            <span className="microtext text-muted-foreground font-mono">
+                              {b.splitAddressUsed.slice(0, 6)}...{b.splitAddressUsed.slice(-4)}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="px-3 py-2">{it.displayName || "—"}</td>
                     <td className="px-3 py-2">{Array.isArray(it.tags) && it.tags.length ? it.tags.join(", ") : "—"}</td>
                     <td className="px-3 py-2">${Number(it.totalEarnedUsd || 0).toFixed(2)}</td>
@@ -5099,13 +5125,35 @@ function UsersPanel() {
 
                   {isExpanded && (
                     <tr className="border-t bg-foreground/5">
-                      <td className="px-3 py-3" colSpan={9}>
+                      <td className="px-3 py-3" colSpan={10}>
                         <div className="rounded-md border p-3 space-y-3">
                           <div className="flex items-center justify-between">
                             <div className="microtext text-muted-foreground">
-                              Split: {b && b.splitAddressUsed
-                                ? <TruncatedAddress address={b.splitAddressUsed || ""} />
-                                : "Not configured"}
+                              Split: {b && b.splitAddressUsed ? (
+                                <div className="flex items-center gap-2 inline-flex">
+                                  <a className="underline" href={`https://base.blockscout.com/address/${b.splitAddressUsed}`} target="_blank" rel="noopener noreferrer">
+                                    <TruncatedAddress address={b.splitAddressUsed} />
+                                  </a>
+                                  {b.splitHistory && b.splitHistory.length > 0 && (
+                                    <select
+                                      className="ml-2 h-6 text-xs border rounded bg-background px-1"
+                                      value={b.splitAddressUsed}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setSelectedMerchantSplitVersion(prev => ({ ...prev, [w]: val }));
+                                        fetchMerchantBalances(w, val);
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {b.splitHistory.map((h, i) => (
+                                        <option key={h.address} value={h.address}>
+                                          v{i + 1} ({h.address.slice(0, 6)}...) {i === b.splitHistory!.length - 1 ? "(Latest)" : ""}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  )}
+                                </div>
+                              ) : "Not configured"}
                             </div>
                             <div className="flex items-center gap-2">
                               <button
@@ -8150,7 +8198,7 @@ function TerminalPanel() {
               <div className="text-lg font-semibold mb-2">Present to Buyer</div>
               <div className="thermal-paper relative mx-auto">
                 <div className="grid place-items-center my-2">
-                  <QRCodeCanvas value={portalUrl} size={140} includeMargin fgColor="#000000" bgColor="#ffffff" />
+                  <QRCode value={portalUrl} size={140} quietZone={10} fgColor="#000000" bgColor="#ffffff" />
                 </div>
                 <div className="thermal-footer">Scan to pay or visit</div>
                 <div className="thermal-footer" style={{ wordBreak: "break-all" }}>{portalUrl}</div>
@@ -8945,6 +8993,8 @@ export default function AdminPage() {
     | "publications"
     | "endpoints"
     | "team"
+    | "reports"
+    | "clientRequests"
   >("reserve");
   const [industryPack, setIndustryPack] = useState<string | null>(null);
   const containerType = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || "platform").toLowerCase();
