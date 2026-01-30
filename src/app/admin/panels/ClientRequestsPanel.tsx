@@ -193,6 +193,7 @@ export default function ClientRequestsPanel() {
 
             if (addr) {
                 setDeployResult(`Deployed: ${addr}`);
+                await load(); // Refresh list to show updated history/config
             } else {
                 setDeployResult("Deployment failed or cancelled.");
             }

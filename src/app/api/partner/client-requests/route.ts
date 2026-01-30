@@ -416,10 +416,37 @@ export async function DELETE(req: NextRequest) {
             return json({ error: "request_not_found" }, { status: 404 });
         }
 
-        // Delete the request document
-        await container.item(request.id, request.wallet).delete();
+        const merchantWallet = request.wallet;
 
-        return json({ ok: true, requestId, deleted: true });
+        // 1. Delete the specific request document
+        await container.item(request.id, merchantWallet).delete();
+
+        // 2. Query for all other documents belonging to this merchant wallet
+        // Includes: site_config, shop_config, inventory, orders, split_index, etc.
+        // We delete everything where partition key matches the wallet.
+        const relatedQuery = {
+            query: `SELECT * FROM c WHERE c.wallet = @w`,
+            parameters: [{ name: "@w", value: merchantWallet }]
+        };
+        const { resources: relatedDocs } = await container.items.query(relatedQuery).fetchAll();
+
+        // Batch delete all related documents
+        // Using Promise.all for parallelism, but could throttle if many docs
+        await Promise.all(relatedDocs.map(async (doc: any) => {
+            try {
+                // If the doc ID is different from request ID (already deleted), delete it
+                if (doc.id !== request.id) {
+                    await container.item(doc.id, merchantWallet).delete();
+                }
+            } catch (err) {
+                console.warn(`[client-requests] Failed to delete doc ${doc.id}:`, err);
+            }
+        }));
+
+        // Also clean up any brand-scoped legacy configs that might use a different ID structure but same wallet
+        // (Though c.wallet query above should catch most partitioning cases)
+
+        return json({ ok: true, requestId, deleted: true, relatedDocsDeleted: relatedDocs.length });
     } catch (e: any) {
         console.error("[client-requests] DELETE Error:", e);
         return json({ error: e?.message || "delete_failed" }, { status: 500 });
