@@ -158,14 +158,16 @@ export async function getSiteConfig(): Promise<SiteConfig> {
   }
 }
 
-export async function getSiteConfigForWallet(wallet?: string): Promise<SiteConfig> {
+export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?: string): Promise<SiteConfig> {
   try {
     const c = await getContainer();
 
     // Prefer brand-scoped site config when a brand is configured (safe fallback to legacy).
+    // Use override if provided, otherwise env
     let brandKey: string | undefined = undefined;
     try {
-      brandKey = getBrandKey();
+      const bRaw = brandKeyOverride || getBrandKey();
+      brandKey = bRaw;
       // Explicitly alias basaltsurge to portalpay to ensure it shares the exact same config/split logic
       // This forces the lookup to treat basaltsurge exactly like the main portalpay instance
       if (brandKey && String(brandKey).toLowerCase() === "basaltsurge") {

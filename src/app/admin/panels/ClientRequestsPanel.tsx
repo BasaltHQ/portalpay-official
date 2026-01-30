@@ -39,6 +39,7 @@ type ClientRequest = {
 export default function ClientRequestsPanel() {
     const account = useActiveAccount();
     const [items, setItems] = useState<ClientRequest[]>([]);
+    const brand = useBrand();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [info, setInfo] = useState("");
@@ -47,7 +48,12 @@ export default function ClientRequestsPanel() {
 
     // Split Config State
     const [approvingId, setApprovingId] = useState<string | null>(null);
-    const [platformBps] = useState(25); // Locked platform fee (0.25%)
+    const [platformBps, setPlatformBps] = useState(50); // Default platform fee, updated from brand
+    useEffect(() => {
+        if (typeof (brand as any)?.platformFeeBps === "number") {
+            setPlatformBps((brand as any).platformFeeBps);
+        }
+    }, [brand]);
 
     const [partnerBps, setPartnerBps] = useState(50); // Default partner fee (0.5%)
     const [partnerWallet, setPartnerWallet] = useState("");
@@ -119,7 +125,7 @@ export default function ClientRequestsPanel() {
         }
     }
 
-    const brand = useBrand();
+
 
 
 
@@ -153,7 +159,8 @@ export default function ClientRequestsPanel() {
                 partnerBps,
                 req.wallet,
                 agents,
-                partnerWallet // Pass explicit partner wallet override
+                partnerWallet, // Pass explicit partner wallet override
+                platformBps // Pass explicit platform fee override
             );
 
             if (addr) {

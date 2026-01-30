@@ -76,31 +76,55 @@ export async function GET(req: NextRequest) {
 
         const container = await getContainer();
 
-        let query = `SELECT * FROM c WHERE c.type = 'client_request' AND c.brandKey = @brand`;
+        // Fetch requests AND their corresponding site configs (for split persistence)
+        let query = `SELECT * FROM c WHERE (c.type = 'client_request' OR c.type = 'site_config') AND c.brandKey = @brand`;
         const params: any[] = [{ name: "@brand", value: brandKey }];
 
-        if (statusFilter === "pending" || statusFilter === "approved" || statusFilter === "rejected") {
-            query += ` AND c.status = @status`;
-            params.push({ name: "@status", value: statusFilter });
-        }
+        // Note: Status filter only applies to client_request items, but we need site_config regardless.
+        // So we filter in memory or adjust query. Since we need site_config for *any* request, we query all.
+        // We can optimize if status filter is restrictive, but fetching all config for brand is acceptable (usually 1 per merchant).
 
         query += ` ORDER BY c.createdAt DESC`;
 
         const { resources } = await container.items.query({ query, parameters: params }).fetchAll();
 
+        const requests = resources.filter((r: any) => r.type === "client_request" && (!statusFilter || statusFilter === r.status));
+        const configs = resources.filter((r: any) => r.type === "site_config");
+
+        // Map configs by wallet
+        const configMap = new Map<string, any>();
+        configs.forEach((c: any) => {
+            if (c.wallet) configMap.set(String(c.wallet).toLowerCase(), c);
+        });
+
         // Decrypt and mask SSN/EIN for admin view security
-        const maskedResources = resources.map((r: any) => {
+        // And attach split info
+        const maskedResources = requests.map((r: any) => {
+            const wallet = String(r.wallet || "").toLowerCase();
+            const conf = configMap.get(wallet);
+
+            // Merge actual deployed split info over the request's "proposed" splitConfig
+            const deployedSplit = conf?.split;
+            const deployedAddress = conf?.splitAddress || conf?.split?.address;
+
+            const enriched = {
+                ...r,
+                deployedSplitAddress: deployedAddress,
+                // If there's a deployed split, it supersedes the request config? 
+                // Maybe just attach it as separate field so UI can show "Deployed: X"
+            };
+
             if (r.ein) {
                 try {
                     const decrypted = decrypt(r.ein);
                     // Show last 4 digits only
                     const last4 = decrypted.length > 4 ? decrypted.slice(-4) : decrypted;
-                    return { ...r, ein: `***-**-${last4}` };
+                    return { ...enriched, ein: `***-**-${last4}` };
                 } catch {
-                    return r;
+                    return enriched;
                 }
             }
-            return r;
+            return enriched;
         });
 
         return json({ ok: true, requests: maskedResources, brandKey });

@@ -101,10 +101,33 @@ function resolvePlatformBpsFromBrand(bKey: string | undefined, brand: any, overr
   }
 }
 
+
+/**
+ * Helper to add CORS headers to a response
+ */
+function cors(res: NextResponse) {
+  res.headers.set("Access-Control-Allow-Origin", "*");
+  res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, x-wallet, x-forwarded-host, x-forwarded-proto");
+  return res;
+}
+
+/**
+ * Handle CORS preflight requests
+ */
+export async function OPTIONS() {
+  return cors(new NextResponse(null, { status: 204 }));
+}
+
+function jsonResponse(body: any, init?: any): NextResponse {
+  return cors(NextResponse.json(body, init));
+}
+
 export async function GET(req: NextRequest) {
   try {
     let caller: any;
     try {
+
       caller = await requireApimOrJwt(req, ["split:read"]);
     } catch (e: any) {
       // Fallback: allow x-wallet header for read access (consistent with POST)
@@ -172,11 +195,11 @@ export async function GET(req: NextRequest) {
               { address: partnerWallet as `0x${string}`, sharesBps: partnerShares },
               { address: platformRecipient as `0x${string}`, sharesBps: platformSharesBps },
             ];
-            return NextResponse.json({ split, brandKey: bKey, requiresDeploy: true, reason: "unauthenticated_preview" });
+            return jsonResponse({ split, brandKey: bKey, requiresDeploy: true, reason: "unauthenticated_preview" });
           }
-          return NextResponse.json({ split, brandKey: bKey, requiresDeploy: true, reason: "partner_config_missing" });
+          return jsonResponse({ split, brandKey: bKey, requiresDeploy: true, reason: "partner_config_missing" });
         } catch (e: any) {
-          return NextResponse.json({ error: e?.message || "unauthorized" }, { status: e?.status || 401 });
+          return jsonResponse({ error: e?.message || "unauthorized" }, { status: e?.status || 401 });
         }
       }
     }
@@ -213,7 +236,7 @@ export async function GET(req: NextRequest) {
 
     // PRIMARY: Use getSiteConfigForWallet
     try {
-      const cfg = await getSiteConfigForWallet(wallet);
+      const cfg = await getSiteConfigForWallet(wallet, docBrandKey);
       let splitAddr = (cfg as any)?.splitAddress || (cfg as any)?.split?.address;
       let split: any = (cfg as any)?.split;
 
@@ -238,7 +261,7 @@ export async function GET(req: NextRequest) {
         split = split || { address: splitAddr, recipients: [] };
         // Ensure response brand key matches the request context for consistency
         const responseBrandKey = originalBrandKey || (cfg as any)?.brandKey || "portalpay";
-        return NextResponse.json({
+        return jsonResponse({
           split: { ...split, address: splitAddr, brandKey: String(responseBrandKey).toLowerCase() },
           brandKey: responseBrandKey,
           legacy: true,
@@ -292,14 +315,14 @@ export async function GET(req: NextRequest) {
             { address: partnerWallet as `0x${string}`, sharesBps: partnerShares },
             { address: platformRecipient as `0x${string}`, sharesBps: platformSharesBps },
           ];
-          return NextResponse.json({
+          return jsonResponse({
             split: { address: undefined, recipients },
             brandKey: originalBrandKey,
             requiresDeploy: true,
             reason: "no_split_for_partner_brand"
           });
         } else {
-          return NextResponse.json({
+          return jsonResponse({
             split: { address: undefined, recipients: [] },
             brandKey: originalBrandKey,
             requiresDeploy: true,
@@ -316,7 +339,7 @@ export async function GET(req: NextRequest) {
           ]
           : [{ address: wallet, sharesBps: merchantShares }];
 
-        return NextResponse.json({
+        return jsonResponse({
           split: { address: undefined, recipients },
           brandKey: originalBrandKey,
           requiresDeploy: true,
@@ -324,10 +347,10 @@ export async function GET(req: NextRequest) {
         });
       }
     } catch (e) {
-      return NextResponse.json({ split: undefined, brandKey: originalBrandKey });
+      return jsonResponse({ split: undefined, brandKey: originalBrandKey });
     }
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "failed" }, { status: 500 });
+    return jsonResponse({ error: e?.message || "failed" }, { status: 500 });
   }
 }
 
@@ -346,7 +369,7 @@ export async function POST(req: NextRequest) {
         caller = { wallet: String(req.headers.get("x-wallet") || "") };
         const w = String(caller.wallet || "").toLowerCase();
         if (!isHexAddress(w)) {
-          return NextResponse.json({ error: "forbidden" }, { status: 403 });
+          return jsonResponse({ error: "forbidden" }, { status: 403 });
         }
       }
     }
@@ -371,7 +394,7 @@ export async function POST(req: NextRequest) {
         brandKey = aliasBrandKey(brandKey);
       }
     } catch {
-      return NextResponse.json({ error: "brand_not_configured" }, { status: 400 });
+      return jsonResponse({ error: "brand_not_configured" }, { status: 400 });
     }
 
     // Fetch effective brand config (with Cosmos overrides) to get current partnerFeeBps and partnerWallet
@@ -419,7 +442,7 @@ export async function POST(req: NextRequest) {
       // But for standard flow, we require auth.
       // If we fell back to x-wallet in 'caller' block above (no auth), then isOwner is true by definition.
       // So this block hits if we DID have auth (e.g. signer) but it didn't match target and wasn't partner.
-      return NextResponse.json({ error: "forbidden_partner_only" }, { status: 403 });
+      return jsonResponse({ error: "forbidden_partner_only" }, { status: 403 });
     }
 
     const wallet = (isHexAddress(walletHeader) ? walletHeader : callerWallet).toLowerCase() as `0x${string}`;
@@ -434,12 +457,12 @@ export async function POST(req: NextRequest) {
       const skipCsrf = (hasProvided && hasHeaderWallet) || isPartnerAdmin;
       if (!skipCsrf) requireCsrf(req);
     } catch (e: any) {
-      return NextResponse.json({ error: e?.message || "bad_origin" }, { status: e?.status || 403 });
+      return jsonResponse({ error: e?.message || "bad_origin" }, { status: e?.status || 403 });
     }
 
     const platformRecipient = String(process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.PLATFORM_WALLET || "").toLowerCase();
     if (!isHexAddress(platformRecipient)) {
-      return NextResponse.json({ error: "platform_recipient_not_configured" }, { status: 400 });
+      return jsonResponse({ error: "platform_recipient_not_configured" }, { status: 400 });
     }
     const partnerWalletBrand = String(brand?.partnerWallet || "").toLowerCase();
     // Platform share derived from brand config/env/static defaults
@@ -515,9 +538,19 @@ export async function POST(req: NextRequest) {
       const providedIsNew = !!(splitAddress && splitAddress !== String(prev.splitAddress || "").toLowerCase());
 
       if (providedIsNew) {
+        // Archive: Add current split to history
+        const historyEntry = {
+          address: prev.splitAddress,
+          recipients: prev.split?.recipients || prev.recipients || [],
+          deployedAt: prev.updatedAt || Date.now(),
+          archivedAt: Date.now()
+        };
+        const splitHistory = Array.isArray(prev.splitHistory) ? [historyEntry, ...prev.splitHistory] : [historyEntry];
+
         // IMPORTANT: Explicitly preserve theme and other merchant-specific data when updating split
         const nextConfigOverride: any = {
           ...(prev || {}),
+          splitHistory,
           id: docId,
           wallet,
           brandKey,
@@ -569,7 +602,7 @@ export async function POST(req: NextRequest) {
         };
         await c.items.upsert(legacyMirrorOverride);
 
-        return NextResponse.json({
+        return jsonResponse({
           ok: true,
           split: {
             address: nextConfigOverride.split.address,
@@ -581,7 +614,7 @@ export async function POST(req: NextRequest) {
       if (misconfiguredPrev || platformBpsMismatchPrev) {
         // Do NOT rewrite recipients on a legacy/misconfigured address without a new address.
         // Signal the client to redeploy a new split with correct recipients and platform bps.
-        return NextResponse.json({
+        return jsonResponse({
           ok: true,
           requiresRedeploy: true,
           split: {
@@ -593,7 +626,7 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      return NextResponse.json({
+      return jsonResponse({
         ok: true,
         split: {
           address: prev.splitAddress,
@@ -662,7 +695,7 @@ export async function POST(req: NextRequest) {
     await c.items.upsert(legacyMirror);
 
     if (effectiveSplitAddress) {
-      return NextResponse.json({
+      return jsonResponse({
         ok: true,
         split: {
           address: effectiveSplitAddress,
@@ -674,7 +707,7 @@ export async function POST(req: NextRequest) {
     // If we don't have an address, report degraded.
     // Partner container: immutable_partner_container (address must be bound by platform)
     // Platform/local: deployment_not_configured (no on-chain deploy in this route)
-    return NextResponse.json({
+    return jsonResponse({
       ok: true,
       degraded: true,
       reason: "deployment_not_configured",

@@ -30,7 +30,8 @@ export async function ensureSplitForWallet(
   partnerFeeBpsOverride?: number,
   merchantWalletOverride?: string,
   extraAgents?: { wallet: string, bps: number }[],
-  partnerWalletOverride?: string
+  partnerWalletOverride?: string,
+  platformFeeBpsOverride?: number
 ): Promise<string | undefined> {
   try {
     const signerAddress = String((account?.address || "")).toLowerCase();
@@ -137,9 +138,11 @@ export async function ensureSplitForWallet(
       ? partnerWalletOverride.toLowerCase()
       : String(brand?.partnerWallet || "").toLowerCase();
 
-    const platformBps = typeof brand?.platformFeeBps === "number"
-      ? Math.max(0, Math.min(10000, brand.platformFeeBps))
-      : 50;
+    const platformBps = typeof platformFeeBpsOverride === "number"
+      ? Math.max(0, Math.min(10000, platformFeeBpsOverride))
+      : (typeof brand?.platformFeeBps === "number"
+        ? Math.max(0, Math.min(10000, brand.platformFeeBps))
+        : 50);
     // Platform container never has partner recipient
     const isPartner = brandKey !== "portalpay" && brandKey !== "basaltsurge";
 
