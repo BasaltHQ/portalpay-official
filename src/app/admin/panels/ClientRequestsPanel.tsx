@@ -171,11 +171,98 @@ export default function ClientRequestsPanel() {
         } else {
             setPartnerBps(50); // Reset to default
             setAgents([]);
+            setLastVerifiedConfig(null); // No verified config for new splits
         }
     };
 
     // Calculate aggregate fee for display and updates
     const totalFeeBps = platformBps + partnerBps + agentsBps;
+
+    const [lastVerifiedConfig, setLastVerifiedConfig] = useState<{ partnerBps: number; agents: { wallet: string; bps: number }[] } | null>(null);
+
+    // Deep compare to check for changes
+    const hasChanges = React.useMemo(() => {
+        if (!lastVerifiedConfig) return true; // Enable by default if never verified (assume new)
+
+        const currentPartnerBps = partnerBps;
+        const verifiedPartnerBps = lastVerifiedConfig.partnerBps;
+
+        if (currentPartnerBps !== verifiedPartnerBps) return true;
+
+        if (agents.length !== lastVerifiedConfig.agents.length) return true;
+
+        // Sort by wallet to compare agnostic of order
+        const currentAgents = [...agents].sort((a, b) => a.wallet.localeCompare(b.wallet));
+        const verifiedAgents = [...lastVerifiedConfig.agents].sort((a, b) => a.wallet.localeCompare(b.wallet));
+
+        for (let i = 0; i < currentAgents.length; i++) {
+            if (currentAgents[i].wallet.toLowerCase() !== verifiedAgents[i].wallet.toLowerCase()) return true;
+            if (currentAgents[i].bps !== verifiedAgents[i].bps) return true;
+        }
+
+        return false;
+    }, [partnerBps, agents, lastVerifiedConfig]);
+
+    const handleVerify = async () => {
+        if (!approvingId) return;
+        const req = items.find(i => i.id === approvingId);
+        if (!req) return;
+
+        setDeploying(true);
+        setDeployResult("");
+
+        try {
+            // 1. Get the expected address (from request or history)
+            const addr = req.deployedSplitAddress || (req.splitHistory && req.splitHistory.length > 0 ? req.splitHistory[0].address : "");
+
+            if (!addr) {
+                setDeployResult("No deployment found to verify.");
+                setDeploying(false);
+                return;
+            }
+
+            // 2. Fetch live config
+            const { getSplitConfig } = await import("@/lib/thirdweb/split");
+            const liveConfig = await getSplitConfig(addr);
+
+            if (liveConfig && liveConfig.recipients) {
+                const platformW = (process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "").toLowerCase();
+                const partnerW = partnerWallet.toLowerCase();
+                const merchantW = req.wallet.toLowerCase();
+
+                let foundPartnerBps = 0;
+                const foundAgents: { wallet: string; bps: number }[] = [];
+
+                liveConfig.recipients.forEach(r => {
+                    const w = r.address.toLowerCase();
+                    if (w === platformW) {
+                        // Platform fee
+                    } else if (w === merchantW) {
+                        // Merchant share
+                    } else if (w === partnerW && partnerW) {
+                        foundPartnerBps += r.bps;
+                    } else {
+                        // Assume agent
+                        foundAgents.push({ wallet: r.address, bps: r.bps });
+                    }
+                });
+
+                // Update UI and Verified Config state
+                setPartnerBps(foundPartnerBps);
+                setAgents(foundAgents);
+                setLastVerifiedConfig({ partnerBps: foundPartnerBps, agents: foundAgents });
+                setDeployResult(`Verified & Synced: ${addr}`);
+            } else {
+                setDeployResult("Verification failed: Could not read contract.");
+            }
+
+        } catch (e: any) {
+            console.error(e);
+            setDeployResult("Error: " + (e?.message || "Verification failed"));
+        } finally {
+            setDeploying(false);
+        }
+    };
 
     const handleDeploy = async (force = false) => {
         if (!approvingId || !account) return;
@@ -203,6 +290,9 @@ export default function ClientRequestsPanel() {
             if (addr) {
                 setDeployResult(`Deployed: ${addr}`);
                 await load(); // Refresh list to show updated history/config
+
+                // Update verified config to match what we just deployed
+                setLastVerifiedConfig({ partnerBps, agents });
             } else {
                 setDeployResult("Deployment failed or cancelled.");
             }
@@ -781,13 +871,28 @@ export default function ClientRequestsPanel() {
                                                 </div>
                                             ) : (
                                                 <div className="flex gap-2">
+                                                    {/* Verify Button */}
                                                     <button
-                                                        onClick={() => handleDeploy(false)}
+                                                        onClick={handleVerify}
                                                         disabled={deploying}
                                                         className="flex-1 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-600/40 rounded-lg text-xs font-mono transition-colors flex items-center justify-center gap-2"
                                                     >
-                                                        {deploying ? "Checking..." : "Verify / Deploy"}
+                                                        {deploying && !deployResult ? "Loading..." : "Verify On-Chain"}
                                                     </button>
+
+                                                    {/* Deploy Button: Enabled only if changes detected */}
+                                                    <button
+                                                        onClick={() => handleDeploy(false)}
+                                                        disabled={deploying || !hasChanges}
+                                                        className={`flex-1 py-2 rounded-lg text-xs font-mono transition-colors flex items-center justify-center gap-2 border ${hasChanges
+                                                            ? "bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border-emerald-600/40"
+                                                            : "bg-zinc-800/50 text-zinc-500 border-zinc-700 cursor-not-allowed"
+                                                            }`}
+                                                        title={hasChanges ? "Deploy updated configuration" : "No changes detected"}
+                                                    >
+                                                        Deploy
+                                                    </button>
+
                                                     <button
                                                         onClick={() => {
                                                             if (confirm("Force redeployment? This will archive the current split and deploy a new one.")) {

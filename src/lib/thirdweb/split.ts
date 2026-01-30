@@ -213,3 +213,64 @@ export async function ensureSplitForWallet(
     return undefined;
   }
 }
+
+/**
+ * Fetch the live configuration from a deployed Split contract.
+ * Iterates through payees until failure to reconstruct the list.
+ */
+export async function getSplitConfig(splitAddress: string) {
+  if (!isValidHexAddress(splitAddress)) return null;
+
+  try {
+    const { getContract, readContract, resolveMethod } = await import("thirdweb");
+    const contract = getContract({
+      client,
+      chain,
+      address: splitAddress,
+    });
+
+    const payees: string[] = [];
+    let index = BigInt(0);
+    // Safety limit of 20 payees
+    while (index < BigInt(20)) {
+      try {
+        const payee = await readContract({
+          contract,
+          method: "function payee(uint256) view returns (address)",
+          params: [index],
+        });
+        if (!payee || payee === "0x0000000000000000000000000000000000000000") break;
+        payees.push(payee.toLowerCase());
+        index++;
+      } catch (e) {
+        break;
+      }
+    }
+
+    const totalSharesRef = await readContract({
+      contract,
+      method: "function totalShares() view returns (uint256)",
+      params: [],
+    }).catch(() => BigInt(0));
+
+    const totalShares = Number(totalSharesRef);
+
+    const shares: { address: string; bps: number }[] = [];
+    for (const p of payees) {
+      const s = await readContract({
+        contract,
+        method: "function shares(address) view returns (uint256)",
+        params: [p],
+      }).catch(() => BigInt(0));
+      shares.push({ address: p, bps: Number(s) });
+    }
+
+    return {
+      totalShares,
+      recipients: shares
+    };
+  } catch (e) {
+    console.error("Failed to read split config:", e);
+    return null;
+  }
+}
