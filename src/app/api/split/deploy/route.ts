@@ -578,6 +578,13 @@ export async function POST(req: NextRequest) {
             recipients,
             brandKey,
           },
+          // Persist splitConfig for site/config route logic (fees)
+          splitConfig: {
+            merchantBps: merchantSharesBps,
+            partnerBps: partnerSharesBps,
+            platformBps: platformSharesBps,
+            agents: agents.map((a: any) => ({ wallet: a.wallet, bps: a.bps })),
+          },
           // Explicitly preserve theme to prevent data loss when updating split config
           theme: (prev as any)?.theme || undefined,
           // Preserve other merchant-specific fields
@@ -667,6 +674,13 @@ export async function POST(req: NextRequest) {
         address: effectiveSplitAddress || "",
         recipients,
         brandKey, // duplicate inside split for split_index generators
+      },
+      // Persist splitConfig for site/config route logic (fees)
+      splitConfig: {
+        merchantBps: merchantSharesBps,
+        partnerBps: partnerSharesBps,
+        platformBps: platformSharesBps,
+        agents: agents.map((a: any) => ({ wallet: a.wallet, bps: a.bps })),
       },
       // Explicitly preserve theme to prevent data loss when updating split config
       theme: (prev as any)?.theme || undefined,

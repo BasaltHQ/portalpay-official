@@ -53,12 +53,30 @@ export default function ClientRequestsPanel() {
 
     // Split Config State
     const [approvingId, setApprovingId] = useState<string | null>(null);
-    const [platformBps, setPlatformBps] = useState(50); // Default platform fee, updated from brand
+    const [platformBps, setPlatformBps] = useState(50); // Default platform fee
+
     useEffect(() => {
-        if (typeof (brand as any)?.platformFeeBps === "number") {
-            setPlatformBps((brand as any).platformFeeBps);
-        }
-    }, [brand]);
+        if (!brandKey) return;
+        (async () => {
+            try {
+                // Fetch authoritative brand config
+                const r = await fetch(`/api/platform/brands/${encodeURIComponent(brandKey)}/config`);
+                const j = await r.json().catch(() => ({}));
+                const b = j?.brand as any;
+                if (b && typeof b.platformFeeBps === "number") {
+                    setPlatformBps(Math.max(0, Math.min(10000, b.platformFeeBps)));
+                } else if (typeof (brand as any)?.platformFeeBps === "number") {
+                    // Fallback to context
+                    setPlatformBps((brand as any).platformFeeBps);
+                }
+            } catch {
+                // on error fallback to context
+                if (typeof (brand as any)?.platformFeeBps === "number") {
+                    setPlatformBps((brand as any).platformFeeBps);
+                }
+            }
+        })();
+    }, [brandKey, brand]);
 
     const [partnerBps, setPartnerBps] = useState(50); // Default partner fee (0.5%)
     const [partnerWallet, setPartnerWallet] = useState("");
@@ -148,6 +166,9 @@ export default function ClientRequestsPanel() {
             setAgents([]);
         }
     };
+
+    // Calculate aggregate fee for display and updates
+    const totalFeeBps = platformBps + partnerBps + agentsBps;
 
     const handleDeploy = async (force = false) => {
         if (!approvingId || !account) return;
@@ -501,6 +522,12 @@ export default function ClientRequestsPanel() {
                                     <div className="p-3 rounded-lg bg-black/20 border border-white/5 flex justify-between items-center opacity-70">
                                         <span className="text-zinc-400 text-sm">Platform</span>
                                         <span className="font-mono text-emerald-500">{(platformBps / 100).toFixed(2)}%</span>
+                                    </div>
+                                    <div className="text-[10px] text-zinc-500 font-mono flex justify-between">
+                                        <span>Wallet</span>
+                                        <span className="select-all">
+                                            {process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0x..."}
+                                        </span>
                                     </div>
                                 </div>
 

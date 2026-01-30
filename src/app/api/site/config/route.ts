@@ -397,11 +397,18 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
       }
     }
 
-    // Add base platform fee (platform + partner fees) as a percentage for Terminal display
-    // This replaces the hardcoded 0.5% with actual brand-specific fees
-    const platformBps = brandFeesConfig.platformFeeBps ?? 50;
-    const partnerBps = brandFeesConfig.partnerFeeBps ?? 0;
-    cfg.basePlatformFeePct = (platformBps + partnerBps) / 100; // Convert bps to percent
+    // Add base platform fee (platform + partner + agent fees) as a percentage for Terminal display
+    // This replaces the hardcoded 0.5% with actual brand-specific fees + merchant specific agents
+    const splitConf = (cfg as any).splitConfig || {};
+    const agents = Array.isArray(splitConf.agents) ? splitConf.agents : [];
+    const agentBps = agents.reduce((sum: number, a: any) => sum + (Number(a.bps) || 0), 0);
+
+    // Prefer per-merchant fee overrides from splitConfig if present, otherwise use brand defaults
+    // Note: splitConfig.platformBps might not be set by some legacy logic, so fallback to brand
+    const platformBps = typeof splitConf.platformBps === "number" ? splitConf.platformBps : (brandFeesConfig.platformFeeBps ?? 50);
+    const partnerBps = typeof splitConf.partnerBps === "number" ? splitConf.partnerBps : (brandFeesConfig.partnerFeeBps ?? 0);
+
+    cfg.basePlatformFeePct = (platformBps + partnerBps + agentBps) / 100; // Convert bps to percent
 
     // Platform / BasaltSurge merchants should inherit the global split if they don't have one
     if (!isExplicitPartner && !cfg.splitAddress && !cfg.split?.address) {

@@ -346,10 +346,15 @@ export async function PATCH(req: NextRequest) {
             if (splitConfig) {
                 shopConfig.splitConfig = {
                     partnerBps: Number(splitConfig.partnerBps),
-                    merchantBps: Number(splitConfig.merchantBps)
+                    merchantBps: Number(splitConfig.merchantBps),
+                    agents: Array.isArray(splitConfig.agents) ? splitConfig.agents : []
                     // Platform bps is implicit/remainder in some contexts or explicit in others.
                     // We'll store what we received. 
                 };
+            }
+
+            if (typeof body.processingFeePct === "number") {
+                shopConfig.processingFeePct = Number(body.processingFeePct);
             }
 
             await container.items.upsert(shopConfig);
