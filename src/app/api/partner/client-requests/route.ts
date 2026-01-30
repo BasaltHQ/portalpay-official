@@ -82,6 +82,16 @@ export async function GET(req: NextRequest) {
 
         const { resources } = await container.items.query({ query, parameters: params }).fetchAll();
 
+        // Sort by createdAt desc, fallback to updatedAt or _ts (system timestamp)
+        resources.sort((a: any, b: any) => {
+            const tA = a.createdAt || a.updatedAt || (a._ts * 1000) || 0;
+            const tB = b.createdAt || b.updatedAt || (b._ts * 1000) || 0;
+            return tB - tA;
+        });
+
+        // Debug logging for split persistence
+        const debugLogs: any[] = [];
+
         const requestsMap = new Map<string, any>();
         const configMap = new Map<string, any>();
         const allWallets = new Set<string>();
@@ -96,13 +106,17 @@ export async function GET(req: NextRequest) {
                     const existing = configMap.get(w);
                     // Prioritize site_config over shop_config
                     // And since we sort by DESC, the first site_config we see is the newest.
-                    // Do NOT overwrite existing site_config with older ones.
                     if (!existing || (r.type === "site_config" && existing.type !== "site_config")) {
                         configMap.set(w, r);
+                        debugLogs.push({ msg: "Set Config", wallet: w, type: r.type, id: r.id, split: r.splitAddress || r.split?.address });
+                    } else {
+                        debugLogs.push({ msg: "Skip Config (Existing preferred)", wallet: w, type: r.type, id: r.id, existingType: existing.type });
                     }
                 }
             }
         });
+
+        if (debugLogs.length > 0) console.log("[client-requests] Config Resolution:", JSON.stringify(debugLogs));
 
         const result = Array.from(allWallets).map((wallet) => {
             const req = requestsMap.get(wallet);

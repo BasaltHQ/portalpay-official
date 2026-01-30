@@ -570,6 +570,7 @@ export async function POST(req: NextRequest) {
           wallet,
           brandKey,
           type: "site_config",
+          createdAt: (prev as any)?.createdAt || Date.now(),
           updatedAt: Date.now(),
           splitAddress: splitAddress || prev.splitAddress,
           partnerWallet: partnerWallet || undefined,
@@ -667,6 +668,7 @@ export async function POST(req: NextRequest) {
       wallet,
       brandKey, // persist brand scoping for isolation/indexers
       type: "site_config",
+      createdAt: (prev as any)?.createdAt || Date.now(),
       updatedAt: Date.now(),
       splitAddress: effectiveSplitAddress || undefined,
       partnerWallet: partnerWallet || undefined,
