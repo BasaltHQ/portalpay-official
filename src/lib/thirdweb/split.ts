@@ -104,7 +104,7 @@ export async function ensureSplitForWallet(
     // Fetch effective brand config (with Cosmos overrides) to get current partnerFeeBps and partnerWallet
     let brand: any;
     try {
-      const apiUrl = buildBrandApiUrl(brandKey as string, `/api/platform/brands/${encodeURIComponent(brandKey as string)}/config`);
+      const apiUrl = buildApiUrl(`/api/platform/brands/${encodeURIComponent(brandKey as string)}/config`);
       // console.log("[ensureSplitForWallet] Fetching brand config from:", apiUrl);
       const r = await fetch(apiUrl, { cache: 'no-store', credentials: "include" });
       const j = await r.json().catch(() => ({}));
