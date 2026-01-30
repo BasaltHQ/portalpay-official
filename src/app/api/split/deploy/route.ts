@@ -465,8 +465,8 @@ export async function POST(req: NextRequest) {
       return jsonResponse({ error: "platform_recipient_not_configured" }, { status: 400 });
     }
     const partnerWalletBrand = String(brand?.partnerWallet || "").toLowerCase();
-    // Platform share derived from brand config/env/static defaults
-    const platformSharesBps = resolvePlatformBpsFromBrand(brandKey, brand, undefined);
+    // Platform share derived from brand config/env/static defaults; allow body override (client-asserted)
+    const platformSharesBps = resolvePlatformBpsFromBrand(brandKey, brand, body);
     // Partner recipient present when brandKey !== 'portalpay' and partner is configured
     const isPartnerBrand = !isPlatformBrand(String(brandKey || "").toLowerCase());
 

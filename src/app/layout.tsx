@@ -52,7 +52,9 @@ const KNOWN_PARTNER_PATTERNS: Record<string, string> = {
 const KNOWN_PARTNER_DOMAINS: Record<string, string> = {
   "paynex.azurewebsites.net": "paynex",
   "xoinpay.azurewebsites.net": "xoinpay",
-  "icunow.azurewebsites.net": "icunow-store"
+  "icunow.azurewebsites.net": "icunow-store",
+  "xpaypass.com": "xoinpay",
+  "www.xpaypass.com": "xoinpay"
   // Add more custom partner domains here as needed
 };
 

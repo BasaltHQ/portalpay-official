@@ -217,7 +217,8 @@ export async function ensureSplitForWallet(
           splitAddress: addr,
           brandKey,
           agents, // Send agents to persist them in site config
-          partnerWallet: partner
+          partnerWallet: partner,
+          platformFeeBps: Math.floor(platformBps) // Persist the actual platform bps used in contract
         }),
       });
       // If POST failed (e.g., CSRF or auth), keep modal open by returning undefined
