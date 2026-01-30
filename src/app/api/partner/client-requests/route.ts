@@ -77,58 +77,82 @@ export async function GET(req: NextRequest) {
         const container = await getContainer();
 
         // Fetch requests AND their corresponding site configs (for split persistence)
-        let query = `SELECT * FROM c WHERE (c.type = 'client_request' OR c.type = 'site_config') AND c.brandKey = @brand`;
+        let query = `SELECT * FROM c WHERE (c.type = 'client_request' OR c.type = 'site_config' OR c.type = 'shop_config') AND c.brandKey = @brand ORDER BY c.createdAt DESC`;
         const params: any[] = [{ name: "@brand", value: brandKey }];
-
-        // Note: Status filter only applies to client_request items, but we need site_config regardless.
-        // So we filter in memory or adjust query. Since we need site_config for *any* request, we query all.
-        // We can optimize if status filter is restrictive, but fetching all config for brand is acceptable (usually 1 per merchant).
-
-        query += ` ORDER BY c.createdAt DESC`;
 
         const { resources } = await container.items.query({ query, parameters: params }).fetchAll();
 
-        const requests = resources.filter((r: any) => r.type === "client_request" && (!statusFilter || statusFilter === r.status));
-        const configs = resources.filter((r: any) => r.type === "site_config");
-
-        // Map configs by wallet
+        const requestsMap = new Map<string, any>();
         const configMap = new Map<string, any>();
-        configs.forEach((c: any) => {
-            if (c.wallet) configMap.set(String(c.wallet).toLowerCase(), c);
-        });
+        const allWallets = new Set<string>();
 
-        // Decrypt and mask SSN/EIN for admin view security
-        // And attach split info
-        const maskedResources = requests.map((r: any) => {
-            const wallet = String(r.wallet || "").toLowerCase();
-            const conf = configMap.get(wallet);
-
-            // Merge actual deployed split info over the request's "proposed" splitConfig
-            const deployedSplit = conf?.split;
-            const deployedAddress = conf?.splitAddress || conf?.split?.address;
-
-            const enriched = {
-                ...r,
-                deployedSplitAddress: deployedAddress,
-                splitHistory: conf?.splitHistory || [],
-                // If there's a deployed split, it supersedes the request config? 
-                // Maybe just attach it as separate field so UI can show "Deployed: X"
-            };
-
-            if (r.ein) {
-                try {
-                    const decrypted = decrypt(r.ein);
-                    // Show last 4 digits only
-                    const last4 = decrypted.length > 4 ? decrypted.slice(-4) : decrypted;
-                    return { ...enriched, ein: `***-**-${last4}` };
-                } catch {
-                    return enriched;
+        resources.forEach((r: any) => {
+            if (r.wallet) {
+                const w = String(r.wallet).toLowerCase();
+                allWallets.add(w);
+                if (r.type === "client_request" && (!statusFilter || statusFilter === r.status)) {
+                    requestsMap.set(w, r);
+                } else if (r.type === "site_config" || r.type === "shop_config") {
+                    if (!configMap.has(w) || r.type === "site_config") {
+                        configMap.set(w, r);
+                    }
                 }
             }
-            return enriched;
         });
 
-        return json({ ok: true, requests: maskedResources, brandKey });
+        const result = Array.from(allWallets).map((wallet) => {
+            const req = requestsMap.get(wallet);
+            const conf = configMap.get(wallet);
+
+            if (!req && !conf) return null; // Should not happen
+            // If filtering by status and we have no request (orphan), orphan implies 'active' or specific status.
+            // If statusFilter is set to 'pending', we skip orphans.
+            if (statusFilter && statusFilter === "pending" && !req) return null;
+
+            // Decrypt helpers
+            const maskEin = (ein: string) => {
+                try {
+                    const d = decrypt(ein);
+                    return `***-**-${d.length > 4 ? d.slice(-4) : d}`;
+                } catch { return ein; }
+            };
+
+            // If we have a request, enrich it
+            if (req) {
+                const deployedSplit = conf?.split;
+                const deployedAddress = conf?.splitAddress || conf?.split?.address;
+                const enriched = {
+                    ...req,
+                    deployedSplitAddress: deployedAddress,
+                    splitHistory: conf?.splitHistory || [],
+                    splitConfig: conf?.splitConfig || req.splitConfig, // Prefer deployed config
+                    shopName: conf?.shopName || req.shopName, // Prefer deployed name
+                };
+                if (req.ein) enriched.ein = maskEin(req.ein);
+                return enriched;
+            }
+
+            // Orphan handling: No request but has config
+            // Synthesize a request object so it appears in the list and can be deleted
+            return {
+                id: conf.id || `orphan-${wallet.slice(0, 8)}`,
+                wallet: wallet,
+                brandKey: conf.brandKey || brandKey,
+                shopName: conf.shopName || conf.displayName || "Orphaned Merchant",
+                legalBusinessName: "Data Missing (Orphaned)",
+                businessType: "unknown",
+                contactEmail: "",
+                status: "orphaned", // Distinct status
+                createdAt: (conf._ts || 0) * 1000,
+                updatedAt: (conf._ts || 0) * 1000,
+                splitConfig: conf.splitConfig,
+                deployedSplitAddress: conf.splitAddress || conf.split?.address,
+                splitHistory: conf.splitHistory || [],
+                note: "This merchant has a configuration but no request record. Delete to effectively remove access.",
+            };
+        }).filter(Boolean); // Remove nulls
+
+        return json({ ok: true, requests: result, brandKey });
     } catch (e: any) {
         console.error("[client-requests] GET Error:", e);
         return json({ error: e?.message || "query_failed" }, { status: 500 });
@@ -196,7 +220,7 @@ export async function POST(req: NextRequest) {
         // Check if user is blocked
         const blockedRequest = existing.find((r: any) => r.status === "blocked");
         if (blockedRequest) {
-            return json({ error: "blocked", message: "Your account has been blocked from applying." }, { status: 403 });
+            return json({ error: "blocked", message: "Your account has been blocked from applying." }, { status: 430 });
         }
 
         // Check for pending request
@@ -394,32 +418,48 @@ export async function DELETE(req: NextRequest) {
 
         const body = await req.json().catch(() => ({} as any));
         const requestId = String(body?.requestId || "").trim();
+        const targetWallet = String(body?.wallet || "").toLowerCase();
 
-        if (!requestId) {
-            return json({ error: "request_id_required" }, { status: 400 });
+        if (!requestId && !targetWallet) {
+            return json({ error: "request_id_or_wallet_required" }, { status: 400 });
         }
 
         const container = await getContainer();
 
-        // Find the request (query by type + id since partition key is wallet)
-        const findQuery = {
-            query: `SELECT * FROM c WHERE c.type = 'client_request' AND c.id = @id AND c.brandKey = @brand`,
-            parameters: [
-                { name: "@id", value: requestId },
-                { name: "@brand", value: brandKey }
-            ]
-        };
-        const { resources: requests } = await container.items.query<ClientRequestDoc>(findQuery).fetchAll();
-        const request = requests[0];
+        let merchantWallet = "";
+        let requestIdToDelete = requestId;
 
-        if (!request) {
+        // Strategy 1: Look up by Request ID (standard flow)
+        if (requestId) {
+            const findQuery = {
+                query: `SELECT * FROM c WHERE c.type = 'client_request' AND c.id = @id AND c.brandKey = @brand`,
+                parameters: [
+                    { name: "@id", value: requestId },
+                    { name: "@brand", value: brandKey }
+                ]
+            };
+            const { resources: requests } = await container.items.query<ClientRequestDoc>(findQuery).fetchAll();
+            if (requests[0]) {
+                merchantWallet = requests[0].wallet;
+                requestIdToDelete = requests[0].id;
+            }
+        }
+
+        // Strategy 2: If no request found but wallet provided (Orphan / Admin cleanup flow)
+        if (!merchantWallet && targetWallet) {
+            merchantWallet = targetWallet;
+        }
+
+        if (!merchantWallet) {
             return json({ error: "request_not_found" }, { status: 404 });
         }
 
-        const merchantWallet = request.wallet;
-
-        // 1. Delete the specific request document
-        await container.item(request.id, merchantWallet).delete();
+        // 1. Delete the specific request document if we have a valid ID and it's not synthetic
+        if (requestIdToDelete && !requestIdToDelete.startsWith("orphan-") && !requestIdToDelete.startsWith("site:")) {
+            try {
+                await container.item(requestIdToDelete, merchantWallet).delete();
+            } catch (e) { /* ignore */ }
+        }
 
         // 2. Query for all other documents belonging to this merchant wallet
         // Includes: site_config, shop_config, inventory, orders, split_index, etc.
@@ -431,22 +471,17 @@ export async function DELETE(req: NextRequest) {
         const { resources: relatedDocs } = await container.items.query(relatedQuery).fetchAll();
 
         // Batch delete all related documents
-        // Using Promise.all for parallelism, but could throttle if many docs
         await Promise.all(relatedDocs.map(async (doc: any) => {
             try {
-                // If the doc ID is different from request ID (already deleted), delete it
-                if (doc.id !== request.id) {
-                    await container.item(doc.id, merchantWallet).delete();
-                }
+                // Determine partition key (usually wallet, but some might differ? No, query was by wallet)
+                // Use the doc's own partition key value just in case, but here it's merchantWallet
+                await container.item(doc.id, merchantWallet).delete();
             } catch (err) {
                 console.warn(`[client-requests] Failed to delete doc ${doc.id}:`, err);
             }
         }));
 
-        // Also clean up any brand-scoped legacy configs that might use a different ID structure but same wallet
-        // (Though c.wallet query above should catch most partitioning cases)
-
-        return json({ ok: true, requestId, deleted: true, relatedDocsDeleted: relatedDocs.length });
+        return json({ ok: true, requestId, wallet: merchantWallet, deleted: true, relatedDocsDeleted: relatedDocs.length });
     } catch (e: any) {
         console.error("[client-requests] DELETE Error:", e);
         return json({ error: e?.message || "delete_failed" }, { status: 500 });

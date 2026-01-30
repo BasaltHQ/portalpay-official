@@ -590,11 +590,23 @@ export default function GlobalSplitGuard() {
             </button>
           )}
 
-          {/* Deploy Button - Hidden for non-admin partners */}
-          {(!partnerContext || isAdmin) && (
+          {/* Deploy Button - Hidden for non-admin partners unless split exists (then it becomes Acknowledge) */}
+          {(!partnerContext || isAdmin || has) && (
             <button
               className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={async () => {
+                if (partnerContext && !isAdmin && has) {
+                  // Acknowledge/Confirm flow for Merchant
+                  try {
+                    setAck(false);
+                    setOpen(false);
+                    // Persist suppression so it doesn't pop up again for this version
+                    const key = suppressKey(brandKey, meAddr);
+                    window.localStorage.setItem(key, "1");
+                  } catch { }
+                  return;
+                }
+
                 try {
                   setError("");
                   setDeploying(true);
@@ -622,21 +634,23 @@ export default function GlobalSplitGuard() {
                   setDeploying(false);
                 }
               }}
-              disabled={deploying || !platformValid || !ack}
+              disabled={deploying || (!has && !platformValid) || !ack}
               title={
-                !platformValid
+                !platformValid && !has
                   ? "Platform recipient not configured"
                   : !ack
                     ? "Please acknowledge to continue"
-                    : "Deploy payment distribution contract"
+                    : (partnerContext && !isAdmin && has)
+                      ? "Confirm details and access dashboard"
+                      : "Deploy payment distribution contract"
               }
             >
-              {deploying ? "Deploying..." : "Confirm & Deploy"}
+              {partnerContext && !isAdmin && has ? "Confirm & Access" : (deploying ? "Deploying..." : "Confirm & Deploy")}
             </button>
           )}
 
           {/* Partner Restriction Message (instead of Deploy button) */}
-          {partnerContext && !isAdmin && (
+          {partnerContext && !isAdmin && !has && (
             <div className="flex-1 flex items-center justify-end">
               <span className="text-xs text-amber-500 font-medium italic">
                 Waiting for partner configuration...

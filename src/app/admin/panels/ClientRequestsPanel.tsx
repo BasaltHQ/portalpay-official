@@ -10,7 +10,7 @@ type ClientRequest = {
     wallet: string;
     type: "client_request";
     brandKey: string;
-    status: "pending" | "approved" | "rejected" | "blocked";
+    status: "pending" | "approved" | "rejected" | "blocked" | "orphaned";
     shopName: string;
     legalBusinessName?: string;
     businessType?: string;
@@ -212,6 +212,7 @@ export default function ClientRequestsPanel() {
 
     async function deleteRequest(id: string) {
         if (!confirm("Delete this request? The user will be able to apply again.")) return;
+        const targetReq = items.find(i => i.id === id);
         try {
             setError("");
             setInfo("");
@@ -221,7 +222,10 @@ export default function ClientRequestsPanel() {
                     "Content-Type": "application/json",
                     "x-wallet": account?.address || "",
                 },
-                body: JSON.stringify({ requestId: id }),
+                body: JSON.stringify({
+                    requestId: id,
+                    wallet: targetReq?.wallet // Pass wallet to allow orphan deletion
+                }),
             });
             const j = await r.json().catch(() => ({}));
             if (!r.ok || j?.error) {
@@ -280,9 +284,10 @@ export default function ClientRequestsPanel() {
                             const submitted = new Date(Number(req.createdAt || 0)).toLocaleString();
                             const badgeClass =
                                 req.status === "approved" ? "bg-green-500/10 text-green-500 border-green-500/20" :
-                                    req.status === "rejected" ? "bg-red-500/10 text-red-500 border-red-500/20" :
-                                        req.status === "blocked" ? "bg-purple-500/10 text-purple-500 border-purple-500/20" :
-                                            "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
+                                    req.status === "orphaned" ? "bg-zinc-500/10 text-zinc-500 border-zinc-500/20 border-dashed" :
+                                        req.status === "rejected" ? "bg-red-500/10 text-red-500 border-red-500/20" :
+                                            req.status === "blocked" ? "bg-purple-500/10 text-purple-500 border-purple-500/20" :
+                                                "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
                             const isExpanded = expandedIds.has(req.id);
 
                             return (
