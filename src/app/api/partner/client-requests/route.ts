@@ -366,46 +366,79 @@ export async function PATCH(req: NextRequest) {
 
         await container.item(request.id, request.wallet).replace(updatedDoc);
 
-        // On approve: Create minimal shop_config for the user
+        // On approve/update: Sync minimal shop_config OR update existing config
         if (newStatus === "approved") {
             const shopConfigId = `shop:${request.wallet}`;
-            // If splitConfig provided, use it. Otherwise defaults.
-            // Note: If no splitConfig provided, we just create the shop config without explicit splits, 
-            // relying on system defaults later or forcing manual update if needed.
-            // But we prefer explicit if provided.
 
-            const shopConfig: any = {
-                id: shopConfigId,
-                wallet: request.wallet,
-                type: "shop_config",
-                brandKey,
-                name: request.shopName,
-                theme: {
-                    primaryColor: request.primaryColor || "#0ea5e9",
-                    brandLogoUrl: request.logoUrl,
-                    brandFaviconUrl: request.faviconUrl
-                },
-                status: "approved",
-                approvedBy: caller.wallet,
-                approvedAt: Date.now(),
-                createdAt: Date.now()
+            // Check if ANY config exists for this wallet (site_config OR shop_config)
+            // We want to update the ACTIVE one, not accidentally shadow a site_config with a new shop_config
+            const configQuery = {
+                query: `SELECT * FROM c WHERE (c.type = 'site_config' OR c.type = 'shop_config') AND c.wallet = @w ORDER BY c.createdAt DESC`,
+                parameters: [{ name: "@w", value: request.wallet }]
             };
+            const { resources: existingConfigs } = await container.items.query(configQuery).fetchAll();
 
-            if (splitConfig) {
-                shopConfig.splitConfig = {
-                    partnerBps: Number(splitConfig.partnerBps),
-                    merchantBps: Number(splitConfig.merchantBps),
-                    agents: Array.isArray(splitConfig.agents) ? splitConfig.agents : []
-                    // Platform bps is implicit/remainder in some contexts or explicit in others.
-                    // We'll store what we received. 
+            // Prefer site_config if present, else shop_config
+            const activeConfig = existingConfigs.find((c: any) => c.type === "site_config") || existingConfigs[0];
+
+            if (activeConfig) {
+                // UPDATE existing config (Merge logic)
+                const newConfig = {
+                    ...activeConfig,
+                    status: "approved",
+                    approvedBy: caller.wallet,
+                    approvedAt: Date.now()
                 };
-            }
 
-            if (typeof body.processingFeePct === "number") {
-                shopConfig.processingFeePct = Number(body.processingFeePct);
-            }
+                if (splitConfig) {
+                    newConfig.splitConfig = {
+                        partnerBps: Number(splitConfig.partnerBps),
+                        merchantBps: Number(splitConfig.merchantBps),
+                        agents: Array.isArray(splitConfig.agents) ? splitConfig.agents : []
+                    };
+                }
 
-            await container.items.upsert(shopConfig);
+                if (typeof body.processingFeePct === "number") {
+                    newConfig.processingFeePct = Number(body.processingFeePct);
+                }
+
+                await container.item(activeConfig.id, activeConfig.wallet).replace(newConfig);
+
+            } else {
+                // CREATE new shop_config
+                const shopConfig: any = {
+                    id: shopConfigId,
+                    wallet: request.wallet,
+                    type: "shop_config",
+                    brandKey,
+                    name: request.shopName,
+                    theme: {
+                        primaryColor: request.primaryColor || "#0ea5e9",
+                        brandLogoUrl: request.logoUrl,
+                        brandFaviconUrl: request.faviconUrl
+                    },
+                    status: "approved",
+                    approvedBy: caller.wallet,
+                    approvedAt: Date.now(),
+                    createdAt: Date.now()
+                };
+
+                if (splitConfig) {
+                    shopConfig.splitConfig = {
+                        partnerBps: Number(splitConfig.partnerBps),
+                        merchantBps: Number(splitConfig.merchantBps),
+                        agents: Array.isArray(splitConfig.agents) ? splitConfig.agents : []
+                        // Platform bps is implicit/remainder in some contexts or explicit in others.
+                        // We'll store what we received. 
+                    };
+                }
+
+                if (typeof body.processingFeePct === "number") {
+                    shopConfig.processingFeePct = Number(body.processingFeePct);
+                }
+
+                await container.items.upsert(shopConfig);
+            }
         }
 
         return json({ ok: true, requestId, status: newStatus });
