@@ -432,12 +432,17 @@ export async function POST(req: NextRequest) {
     // 1. If caller matches x-wallet, allow (Self-Deploy)
     // 2. If caller matches brand.partnerWallet, allow (Partner-Deploy)
     // 3. If caller has JWT claim, allow (Admin)
+    // 4. If caller is the platform wallet, allow (Platform Admin)
     const callerWallet = String(caller.wallet || "").toLowerCase();
     const isOwner = callerWallet === walletHeader;
     const isPartnerAdmin = isHexAddress(brand?.partnerWallet) && callerWallet === String(brand.partnerWallet).toLowerCase();
     const isAdmin = caller.role === "admin" || (caller.permissions && caller.permissions.includes("split:write"));
 
-    if (!isOwner && !isPartnerAdmin && !isAdmin) {
+    // Platform admin check: allow if caller is the canonical platform wallet
+    const platformWallet = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0x00fe4f0104a989ca65df6b825a6c1682413bca56").toLowerCase();
+    const isPlatformAdmin = callerWallet === platformWallet;
+
+    if (!isOwner && !isPartnerAdmin && !isAdmin && !isPlatformAdmin) {
       // Special case: Deployment Pipeline (no signer, just valid x-wallet + idempotency check could go here if needed)
       // But for standard flow, we require auth.
       // If we fell back to x-wallet in 'caller' block above (no auth), then isOwner is true by definition.
@@ -453,8 +458,8 @@ export async function POST(req: NextRequest) {
       const xw = String(req.headers.get("x-wallet") || "").toLowerCase();
       const hasProvided = /^0x[a-f0-9]{40}$/i.test(provided);
       const hasHeaderWallet = /^0x[a-f0-9]{40}$/i.test(xw);
-      // Skip CSRF if Partner Admin or if providing address (pipeline)
-      const skipCsrf = (hasProvided && hasHeaderWallet) || isPartnerAdmin;
+      // Skip CSRF if Partner Admin, Platform Admin, or if providing address (pipeline)
+      const skipCsrf = (hasProvided && hasHeaderWallet) || isPartnerAdmin || isPlatformAdmin;
       if (!skipCsrf) requireCsrf(req);
     } catch (e: any) {
       return jsonResponse({ error: e?.message || "bad_origin" }, { status: e?.status || 403 });
