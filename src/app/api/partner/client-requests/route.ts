@@ -388,10 +388,9 @@ export async function PATCH(req: NextRequest) {
             const isPlatform = !brandKey || brandKey === "portalpay" || brandKey === "basaltsurge";
             const configId = isPlatform ? "shop:config" : `shop:config:${brandKey}`;
 
-            // Check for EXISTING config to avoid overwriting or duplicating
-            // MUST be scoped to the brand, otherwise we might pull the Platform config and "approve" it instead of creating a Partner config
+            // Check for EXISTING config to avoid overwriting or duplicating (FUZZY MATCH for safety)
             const configQuery = {
-                query: `SELECT * FROM c WHERE (c.type = 'site_config' OR c.type = 'shop_config') AND c.wallet = @w AND c.brandKey = @brand ORDER BY c.createdAt DESC`,
+                query: `SELECT * FROM c WHERE (c.type = 'site_config' OR c.type = 'shop_config') AND StringEquals(c.wallet, @w, true) AND StringEquals(c.brandKey, @brand, true) ORDER BY c.createdAt DESC`,
                 parameters: [
                     { name: "@w", value: request.wallet },
                     { name: "@brand", value: brandKey }
@@ -402,12 +401,16 @@ export async function PATCH(req: NextRequest) {
 
             if (activeConfig) {
                 // UPDATE existing config (Merge logic)
+                // FORCE LOWERCASE on update to heal any legacy data
                 const newConfig = {
                     ...activeConfig,
+                    wallet: request.wallet.toLowerCase(),
+                    brandKey: brandKey.toLowerCase(),
                     status: (newStatus === "approved" || activeConfig.status === "approved") ? "approved" : activeConfig.status,
                     approvedBy: caller.wallet,
                     approvedAt: Date.now()
                 };
+                console.log("[client-requests] Updating Shop Config (Auto-Heal):", JSON.stringify(newConfig));
 
                 if (splitConfig) {
                     newConfig.splitConfig = {
@@ -434,9 +437,9 @@ export async function PATCH(req: NextRequest) {
                 // CREATE new shop_config
                 const shopConfig: any = {
                     id: configId,
-                    wallet: request.wallet,
+                    wallet: request.wallet.toLowerCase(), // Force lowercase to ensure auth/me match
                     type: "shop_config",
-                    brandKey,
+                    brandKey: brandKey.toLowerCase(), // Ensure brand key is normalized
                     name: (shopConfigUpdate?.name) || request.shopName,
                     theme: {
                         primaryColor: (shopConfigUpdate?.theme?.primaryColor) || request.primaryColor || "#0ea5e9",
@@ -464,6 +467,7 @@ export async function PATCH(req: NextRequest) {
 
                 if (shopConfigUpdate?.slug) shopConfig.slug = shopConfigUpdate.slug;
 
+                console.log("[client-requests] Creating Shop Config:", JSON.stringify(shopConfig));
                 await container.items.upsert(shopConfig);
             }
         }
