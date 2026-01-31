@@ -7,9 +7,14 @@ import { requireThirdwebAuth, getAuthenticatedWallet } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function getBrandKey(): string {
+function getBrandKey(req?: NextRequest): string {
     const ct = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || process.env.CONTAINER_TYPE || "platform").toLowerCase();
     const envKey = String(process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase();
+
+    // Check header first (for multi-tenant platform hosting partners)
+    const headerKey = req?.headers.get("x-brand-key");
+    if (headerKey) return headerKey.toLowerCase();
+
     if (ct === "partner") return envKey;
     return envKey || "basaltsurge";
 }
@@ -217,7 +222,7 @@ export async function POST(req: NextRequest) {
 
         const w = wallet.toLowerCase();
 
-        const brandKey = getBrandKey();
+        const brandKey = getBrandKey(req);
         if (!brandKey) {
             return json({ error: "missing_brand_key" }, { status: 500 });
         }
@@ -304,7 +309,7 @@ export async function PATCH(req: NextRequest) {
             return json({ error: "forbidden" }, { status: 403 });
         }
 
-        const brandKey = getBrandKey();
+        const brandKey = getBrandKey(req);
         if (!brandKey) {
             return json({ error: "missing_brand_key" }, { status: 500 });
         }
@@ -486,7 +491,7 @@ export async function DELETE(req: NextRequest) {
             return json({ error: "forbidden" }, { status: 403 });
         }
 
-        const brandKey = getBrandKey();
+        const brandKey = getBrandKey(req);
         if (!brandKey) {
             return json({ error: "missing_brand_key" }, { status: 500 });
         }

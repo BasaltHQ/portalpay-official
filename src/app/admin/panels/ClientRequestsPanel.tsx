@@ -215,6 +215,7 @@ export default function ClientRequestsPanel() {
                 headers: {
                     "Content-Type": "application/json",
                     "x-wallet": account?.address || "",
+                    "x-brand-key": (brand as any)?.key || "",
                 },
                 body: JSON.stringify(body),
             });
@@ -643,21 +644,30 @@ export default function ClientRequestsPanel() {
                                                     </>
                                                 )}
                                                 {req.status === "approved" && (
-                                                    <button
-                                                        className="px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-xs font-semibold transition-colors flex items-center gap-1"
-                                                        onClick={() => openApprovalModal(req.id, req.splitConfig)}
-                                                        title="Update Revenue Split"
-                                                    >
-                                                        <span>
-                                                            {req.splitConfig
-                                                                ? `${(req.splitConfig.partnerBps / 100).toFixed(2)}% Split${(req.splitConfig.agents?.length || 0) > 0 ? ` (+${req.splitConfig.agents?.length} Agents)` : ''}`
-                                                                : "Set Split"}
-                                                        </span>
-                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        </svg>
-                                                    </button>
+                                                    <>
+                                                        <button
+                                                            className="px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-xs font-semibold transition-colors flex items-center gap-1"
+                                                            onClick={() => openApprovalModal(req.id, req.splitConfig)}
+                                                            title="Update Revenue Split"
+                                                        >
+                                                            <span>
+                                                                {req.splitConfig
+                                                                    ? `${(req.splitConfig.partnerBps / 100).toFixed(2)}% Split${(req.splitConfig.agents?.length || 0) > 0 ? ` (+${req.splitConfig.agents?.length} Agents)` : ''}`
+                                                                    : "Set Split"}
+                                                            </span>
+                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            </svg>
+                                                        </button>
+                                                        <button
+                                                            className="px-3 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 text-xs font-semibold transition-colors"
+                                                            onClick={() => updateStatus(req.id, "pending")}
+                                                            title="Revert to Pending"
+                                                        >
+                                                            Revert
+                                                        </button>
+                                                    </>
                                                 )}
                                                 {req.status === "blocked" && (
                                                     <button

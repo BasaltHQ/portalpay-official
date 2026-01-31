@@ -282,6 +282,7 @@ export function Navbar() {
         (async () => {
             try {
                 // Check if already authenticated (Passing x - wallet to detect approved but unauthenticated users)
+                console.log("[Navbar] Checking Auth:", { wallet: w, brandKey: (brand as any)?.key });
                 const me = await fetch('/api/auth/me', {
                     cache: 'no-store',
                     headers: {
