@@ -177,13 +177,24 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
     })
     .fetchAll();
 
-  const config = configs[0] as (ShopConfig & { wallet: string }) | undefined;
+  // 2. Select Best Match (Prioritize active brand key to avoid slug collisions)
+  const envBrandKey = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge").toLowerCase();
+
+  const config = (
+    // 1. Exact match for current brand environment
+    configs.find((c: any) => (c.brandKey || "").toLowerCase() === envBrandKey) ||
+    // 2. Fallback for platform: baslatsurge, portalpay, or legacy (no brandKey)
+    ((envBrandKey === "basaltsurge" || envBrandKey === "portalpay")
+      ? configs.find((c: any) => !c.brandKey || c.brandKey === "portalpay" || c.brandKey === "basaltsurge")
+      : undefined) ||
+    // 3. Fallback to first result (should be avoided in strict environments but keeps legacy working)
+    configs[0]
+  ) as (ShopConfig & { wallet: string }) | undefined;
 
   // Merge site_config for payment preferences (defaultPaymentToken / accumulationMode)
   if (config && config.wallet) {
     const foundWallet = config.wallet.toLowerCase();
     // 1. Determine Brand Key
-    const envBrandKey = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge").toLowerCase();
     const brandKey = (config as any).brandKey || envBrandKey;
 
     // 2. Resolve Doc IDs

@@ -1380,14 +1380,19 @@ export default function PortalReceiptPage() {
           ? (cfg.tokens as TokenDef[])
           : availableTokens;
 
-        if (dynamicToken) {
+        let urlOverride = null;
+        if (searchParams?.get("token")) {
+          const tParam = String(searchParams.get("token")).trim().toUpperCase();
+          const avail = effectiveTokens.find((x) => x.symbol === tParam || (tParam === "ETH" && x.symbol === "ETH"));
+          const ok = tParam === "ETH" || (!!avail?.address && isValidHexAddress(String(avail.address)));
+          if (ok) urlOverride = tParam;
+        }
+
+        if (urlOverride) {
+          selected = urlOverride;
+        } else if (dynamicToken) {
           selected = dynamicToken;
           console.log("[PORTAL] Dynamic Reserve Strategy selected:", selected);
-        } else if (searchParams?.get("token")) {
-          const tParam = String(searchParams.get("token")).trim().toUpperCase();
-          const avail = effectiveTokens.find((x) => x.symbol === tParam);
-          const ok = tParam === "ETH" || (!!avail?.address && isValidHexAddress(String(avail.address)));
-          if (ok) selected = tParam;
         } else if (typeof t === "string") {
           const avail = effectiveTokens.find((x) => x.symbol === t);
           const ok = t === "ETH" || (!!avail?.address && isValidHexAddress(String(avail.address)));
