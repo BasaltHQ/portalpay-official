@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
         }
 
         const container = await getContainer();
-        const w = String(merchantWallet).toLowerCase();
+        const w = String(merchantWallet).trim().toLowerCase();
 
         // Enforce Partner Isolation
         const ct = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || process.env.CONTAINER_TYPE || "platform").toLowerCase();
@@ -62,13 +62,35 @@ export async function POST(req: NextRequest) {
         }
 
         const container = await getContainer();
-        const w = String(merchantWallet).toLowerCase();
+        const w = String(merchantWallet).trim().toLowerCase();
         const pinHash = createHash("sha256").update(String(pin)).digest("hex");
+
+        // Resolve Brand Key
+        const envBrandKey = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase();
+        let finalBrandKey = envBrandKey;
+
+        // If no global brand key, check if shop has one
+        if (!finalBrandKey) {
+            try {
+                const { resources: shops } = await container.items
+                    .query({
+                        query: "SELECT c.brandKey FROM c WHERE c.type = 'shop_config' AND c.wallet = @w",
+                        parameters: [{ name: "@w", value: w }]
+                    })
+                    .fetchAll();
+                if (shops.length > 0 && shops[0].brandKey) {
+                    finalBrandKey = shops[0].brandKey;
+                }
+            } catch { }
+        }
+
+        const branding = { key: finalBrandKey };
 
         const newMember = {
             id: randomUUID(),
             type: "merchant_team_member",
             merchantWallet: w,
+            brandKey: branding.key || undefined,
             name,
             role: role || "staff",
             pinHash,
@@ -98,7 +120,9 @@ export async function PATCH(req: NextRequest) {
         }
 
         const container = await getContainer();
-        const { resource: member } = await container.item(id, id).read();
+        const w = String(merchantWallet).trim().toLowerCase();
+        // Correct Partition Key Usage: (id, merchantWallet)
+        const { resource: member } = await container.item(id, w).read();
 
         // Security check: ensure member belongs to this merchant
         if (!member || member.merchantWallet !== merchantWallet.toLowerCase()) {
@@ -111,7 +135,7 @@ export async function PATCH(req: NextRequest) {
         if (pin) updates.pinHash = createHash("sha256").update(String(pin)).digest("hex");
 
         const updatedMember = { ...member, ...updates };
-        await container.item(id, id).replace(updatedMember);
+        await container.item(id, w).replace(updatedMember);
 
         return NextResponse.json({ success: true, member: updatedMember });
     } catch (e: any) {
@@ -134,13 +158,14 @@ export async function DELETE(req: NextRequest) {
         }
 
         const container = await getContainer();
-        const { resource: member } = await container.item(id, id).read();
+        const w = String(merchantWallet).trim().toLowerCase();
+        const { resource: member } = await container.item(id, w).read();
 
-        if (!member || member.merchantWallet !== merchantWallet.toLowerCase()) {
+        if (!member || member.merchantWallet !== w) {
             return NextResponse.json({ error: "Member not found" }, { status: 404 });
         }
 
-        await container.item(id, id).delete();
+        await container.item(id, w).delete();
 
         return NextResponse.json({ success: true });
     } catch (e: any) {

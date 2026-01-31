@@ -227,9 +227,24 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
     return notFound();
   }
 
-  // 2. Fetch Inventory (Reverted to Client-Side Fetching due to data issues)
-  // We pass empty array to trigger ShopClient's useEffect to fetch from API
-  const items: InventoryItem[] = [];
+  // 2. Fetch Inventory & Publishing Items
+  const resolvedWallet = config.wallet || configs.find((c: any) => c.wallet)?.wallet || "";
+
+  const { resources: items } = await container.items
+    .query({
+      query: `
+        SELECT * FROM c 
+        WHERE 
+          (c.type = 'inventory_item' AND c.shopSlug = @slug)
+          OR 
+          (c.type = 'publishing_item' AND c.status = 'approved' AND (c.shopSlug = @slug OR c.authorWallet = @wallet))
+      `,
+      parameters: [
+        { name: "@slug", value: config.slug || cleanSlug },
+        { name: "@wallet", value: resolvedWallet.toLowerCase() }
+      ]
+    })
+    .fetchAll();
 
   // 3. Fetch Reviews
   const { resources: reviews } = await container.items
@@ -239,7 +254,7 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
     })
     .fetchAll();
 
-  const resolvedWallet = config.wallet || configs.find((c: any) => c.wallet)?.wallet || "";
+
 
   return (
     <ShopClient

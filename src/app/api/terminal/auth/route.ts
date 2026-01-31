@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
         }
 
         const container = await getContainer();
-        const w = String(merchantWallet).toLowerCase();
+        const w = String(merchantWallet).trim().toLowerCase();
 
         // Enforce Partner Isolation
         const ct = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || process.env.CONTAINER_TYPE || "platform").toLowerCase();
