@@ -368,7 +368,7 @@ export function Navbar() {
                 window.dispatchEvent(new CustomEvent("pp:auth:logged_out"));
             }
         } catch { }
-    }, [account?.address]);
+    }, [account?.address, brand, (brand as any)?.key]);
 
     // Listen for explicit auth prompt triggers (e.g., clicking gated links)
     useEffect(() => {

@@ -89,9 +89,15 @@ export default function SiteFooter() {
                       {!isPartner && <div className="shield-gleam-container" />}
                     </div>
                     <div>
-                      <span className="text-white text-xl tracking-widest font-bold uppercase" style={{ fontFamily: theme.fontFamily }}>
-                        {theme.brandName || "Brand"}
-                      </span>
+                      {theme.brandName === "BasaltSurge" ? (
+                        <span className="text-white text-xl tracking-widest uppercase font-vox whitespace-nowrap" style={{ fontFamily: 'vox, sans-serif' }}>
+                          <span style={{ fontWeight: 300 }}>BASALT</span><span style={{ fontWeight: 700 }}>SURGE</span>
+                        </span>
+                      ) : (
+                        <span className="text-white text-xl tracking-widest font-bold uppercase" style={{ fontFamily: theme.fontFamily }}>
+                          {theme.brandName || "Brand"}
+                        </span>
+                      )}
                       {!isPartner && (
                         <p className="text-[10px] font-mono mt-1 whitespace-nowrap" style={{ color: theme.primaryColor }}>AI-POWERED RELATIONSHIPS</p>
                       )}
