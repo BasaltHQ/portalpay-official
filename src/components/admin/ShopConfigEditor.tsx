@@ -121,6 +121,12 @@ export default function ShopConfigEditor({ wallet, brandKey, initialData, onSave
             }, "image/png");
         } catch (e) {
             console.error("Error generating favicon from logo", e);
+            // Fallback: If canvas fails (CORS), just use the logo URL directly.
+            // Better to have a large favicon than none.
+            setConfig((prev: any) => ({
+                ...prev,
+                theme: { ...prev.theme, brandFaviconUrl: logoUrl }
+            }));
         }
     };
 
