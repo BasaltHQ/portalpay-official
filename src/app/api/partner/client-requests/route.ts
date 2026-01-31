@@ -389,9 +389,13 @@ export async function PATCH(req: NextRequest) {
             const configId = isPlatform ? "shop:config" : `shop:config:${brandKey}`;
 
             // Check for EXISTING config to avoid overwriting or duplicating
+            // MUST be scoped to the brand, otherwise we might pull the Platform config and "approve" it instead of creating a Partner config
             const configQuery = {
-                query: `SELECT * FROM c WHERE (c.type = 'site_config' OR c.type = 'shop_config') AND c.wallet = @w ORDER BY c.createdAt DESC`,
-                parameters: [{ name: "@w", value: request.wallet }]
+                query: `SELECT * FROM c WHERE (c.type = 'site_config' OR c.type = 'shop_config') AND c.wallet = @w AND c.brandKey = @brand ORDER BY c.createdAt DESC`,
+                parameters: [
+                    { name: "@w", value: request.wallet },
+                    { name: "@brand", value: brandKey }
+                ]
             };
             const { resources: existingConfigs } = await container.items.query(configQuery).fetchAll();
             const activeConfig = existingConfigs.find((c: any) => c.type === "site_config") || existingConfigs[0];
