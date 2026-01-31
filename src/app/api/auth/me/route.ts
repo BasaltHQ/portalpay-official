@@ -53,11 +53,13 @@ export async function GET(req: NextRequest) {
         const container = await getContainer();
 
         // Check shop_config status
-        const shopQuery = "SELECT top 1 c.status FROM c WHERE c.type = 'shop_config' AND c.wallet = @w AND c.brandKey = @b";
+        const shopQuery = "SELECT top 1 c.status, c.brandKey, c.id FROM c WHERE c.type = 'shop_config' AND c.wallet = @w AND c.brandKey = @b";
+        console.log("[AuthMe] Checking Access:", { wallet, brandKey, isPlatformAdmin });
         const { resources: shopResources } = await container.items.query({
           query: shopQuery,
           parameters: [{ name: "@w", value: wallet }, { name: "@b", value: brandKey }]
         }).fetchAll();
+        console.log("[AuthMe] DB Result:", shopResources);
         if (shopResources.length > 0) {
           shopStatus = shopResources[0].status || "approved";
         }
