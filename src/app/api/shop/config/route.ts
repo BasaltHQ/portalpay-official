@@ -26,7 +26,7 @@ const DOC_ID = "shop:config";
 function getDocIdForBrand(brandKey?: string): string {
   try {
     const key = String(brandKey || "").toLowerCase();
-    if (!key || key === "portalpay" || key === "basaltsurge") return DOC_ID;
+    if (!key || key === "portalpay") return DOC_ID;
     return `${DOC_ID}:${key}`;
   } catch {
     return DOC_ID;
@@ -459,10 +459,26 @@ export async function GET(req: NextRequest) {
                 if (resource) {
                   // Merge site_config for payment preferences
                   let siteConf: any = null;
+                  const siteDocId = getDocIdForBrand(brandKey).replace("shop:config", "site:config");
+                  // 1. Try brand-scoped site config
                   try {
-                    const { resource: sc } = await c.item(getDocIdForBrand(brandKey).replace("shop:config", "site:config"), foundWallet).read<any>();
+                    const { resource: sc } = await c.item(siteDocId, foundWallet).read<any>();
                     siteConf = sc;
                   } catch { }
+
+                  // 2. Fallback: If no result, try legacy "site:config:portalpay" (old shared ID) and "site:config" (global)
+                  if (!siteConf && siteDocId !== "site:config:portalpay") {
+                    try {
+                      const { resource: sc } = await c.item("site:config:portalpay", foundWallet).read<any>();
+                      siteConf = sc;
+                    } catch { }
+                  }
+                  if (!siteConf && siteDocId !== "site:config") {
+                    try {
+                      const { resource: sc } = await c.item("site:config", foundWallet).read<any>();
+                      siteConf = sc;
+                    } catch { }
+                  }
 
                   const n = normalize(resource, brandKey);
                   // Inject payment tokens
