@@ -319,91 +319,140 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
             {/* QR Modal */}
             {/* QR / Payment Modal */}
             {qrOpen && selected && typeof window !== "undefined" && createPortal(
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm grid place-items-center p-4 animate-in fade-in">
-                    <div className="bg-[#0f0f12] text-white rounded-2xl max-w-sm w-full text-center relative shadow-2xl p-8 border border-white/10">
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm grid place-items-center p-4 animate-in fade-in receipt-modal-overlay">
+                    <div className="bg-[#0f0f12] text-white rounded-2xl max-w-sm w-full text-center relative shadow-2xl p-8 border border-white/10 print-no-bg">
                         <button
                             onClick={() => setQrOpen(false)}
-                            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+                            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors print-hidden"
                         >
                             <span className="opacity-70 group-hover:opacity-100">
                                 <XIcon />
                             </span>
                         </button>
 
-                        <h2 className="text-2xl font-bold mb-6">Scan to Pay</h2>
+                        <div className="print-hidden">
+                            <h2 className="text-2xl font-bold mb-6">Scan to Pay</h2>
 
-                        <div className="inline-block mb-4 p-2 rounded-xl border border-white/10 relative">
-                            <QRCode
-                                value={portalUrl}
-                                size={200}
-                                fgColor="#ffffff"
-                                bgColor="transparent"
-                                qrStyle="dots"
-                                eyeRadius={10}
-                                eyeColor={(theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#ffffff"}
-                                logoImage={logoUrl}
-                                logoWidth={40}
-                                logoHeight={40}
-                                removeQrCodeBehindLogo={true}
-                                logoPadding={5}
-                                ecLevel="H"
-                                quietZone={10}
-                            />
-                            {/* Success Overlay */}
-                            {selected?.status === "paid" && (
-                                <div className="absolute inset-0 z-10 bg-black/80 flex items-center justify-center backdrop-blur-sm rounded-lg animate-in fade-in duration-300">
-                                    <div className="bg-green-500 rounded-full p-4 shadow-[0_0_30px_-5px_var(--pp-brand-green)]">
-                                        <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                        </svg>
+                            <div className="inline-block mb-4 p-2 rounded-xl border border-white/10 relative">
+                                <QRCode
+                                    value={portalUrl}
+                                    size={200}
+                                    fgColor="#ffffff"
+                                    bgColor="transparent"
+                                    qrStyle="dots"
+                                    eyeRadius={10}
+                                    eyeColor={(theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#ffffff"}
+                                    logoImage={logoUrl}
+                                    logoWidth={40}
+                                    logoHeight={40}
+                                    removeQrCodeBehindLogo={true}
+                                    logoPadding={5}
+                                    ecLevel="H"
+                                    quietZone={10}
+                                />
+                                {/* Success Overlay */}
+                                {selected?.status === "paid" && (
+                                    <div className="absolute inset-0 z-10 bg-black/80 flex items-center justify-center backdrop-blur-sm rounded-lg animate-in fade-in duration-300">
+                                        <div className="bg-green-500 rounded-full p-4 shadow-[0_0_30px_-5px_var(--pp-brand-green)]">
+                                            <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="text-4xl font-mono font-bold mb-2 tracking-tight">
+                                {formatCurrency(totalConverted, terminalCurrency)}
+                            </div>
+
+                            <div className="text-xs text-muted-foreground px-4 opacity-50 mb-4 font-mono whitespace-nowrap overflow-hidden text-ellipsis w-full max-w-[300px] mx-auto">
+                                {portalUrl}
+                            </div>
+
+                            {/* Polling / Fallback Status */}
+                            {selected?.status !== "paid" && (
+                                <div className="mb-6 space-y-2">
+                                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                        <span>Waiting for payment...</span>
+                                    </div>
+                                    <div className="text-[10px] text-gray-500 font-mono">
+                                        Checking chain every 10s • <span className="opacity-70">Detecting {terminalCurrency}</span>
                                     </div>
                                 </div>
                             )}
-                        </div>
 
-                        <div className="text-4xl font-mono font-bold mb-2 tracking-tight">
-                            {formatCurrency(totalConverted, terminalCurrency)}
-                        </div>
-
-                        <div className="text-xs text-muted-foreground px-4 opacity-50 mb-4 font-mono whitespace-nowrap overflow-hidden text-ellipsis w-full max-w-[300px] mx-auto">
-                            {portalUrl}
-                        </div>
-
-                        {/* Polling / Fallback Status */}
-                        {selected?.status !== "paid" && (
-                            <div className="mb-6 space-y-2">
-                                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                                    <span>Waiting for payment...</span>
-                                </div>
-                                <div className="text-[10px] text-gray-500 font-mono">
-                                    Checking chain every 10s • <span className="opacity-70">Detecting {terminalCurrency}</span>
-                                </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => window.print()}
+                                    className="px-4 py-3 border border-white/10 rounded-xl font-semibold hover:bg-white/5 transition-colors"
+                                >
+                                    Print
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (selected?.status === 'paid') {
+                                            setQrOpen(false);
+                                            clearAmount();
+                                            setItemLabel("");
+                                        } else {
+                                            setQrOpen(false);
+                                        }
+                                    }}
+                                    className="px-4 py-3 text-white rounded-xl font-bold shadow-lg hover:brightness-110 active:scale-95 transition-all"
+                                    style={{ backgroundColor: selected?.status === 'paid' ? '#22c55e' : ((theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#000") }}
+                                >
+                                    {selected?.status === 'paid' ? "New Sale" : "Cancel"}
+                                </button>
                             </div>
-                        )}
+                        </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                            <button
-                                onClick={() => window.print()}
-                                className="px-4 py-3 border border-white/10 rounded-xl font-semibold hover:bg-white/5 transition-colors"
-                            >
-                                Print
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (selected?.status === 'paid') {
-                                        setQrOpen(false);
-                                        clearAmount();
-                                        setItemLabel("");
-                                    } else {
-                                        setQrOpen(false);
-                                    }
-                                }}
-                                className="px-4 py-3 text-white rounded-xl font-bold shadow-lg hover:brightness-110 active:scale-95 transition-all"
-                                style={{ backgroundColor: selected?.status === 'paid' ? '#22c55e' : ((theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#000") }}
-                            >
-                                {selected?.status === 'paid' ? "New Sale" : "Cancel"}
-                            </button>
+                        {/* Printable Receipt - Hidden on Screen */}
+                        <div className="thermal-paper hidden print:block text-black text-left mx-auto font-mono leading-tight">
+                            <div className="flex flex-col items-center mb-2">
+                                {logoUrl && <img src={logoUrl} className="w-8 h-8 object-contain grayscale mb-1" />}
+                                <h2 className="font-bold text-center text-sm">{brandName || "Terminal"}</h2>
+                                {employeeName && <div className="text-[10px] mt-0.5">Op: {employeeName.split('•')[0].trim()}</div>}
+                            </div>
+
+                            <div className="border-b border-black border-dashed opacity-50 my-2" />
+
+                            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[10px]">
+                                <span className="text-gray-600">Time</span>
+                                <span className="text-right">{new Date().toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true })}</span>
+
+                                <span className="text-gray-600">Rcpt</span>
+                                <span className="text-right truncate">{selected.receiptId.slice(0, 8)}</span>
+                            </div>
+
+                            <div className="border-b border-black border-dashed opacity-50 my-2" />
+
+                            <div className="flex justify-between items-center text-sm font-bold my-2">
+                                <span>{itemLabel || "Sale"}</span>
+                                <span>{formatCurrency(totalConverted, terminalCurrency)}</span>
+                            </div>
+
+                            <div className="border-b border-black border-dashed opacity-50 my-2" />
+
+                            <div className="flex justify-center my-2">
+                                <QRCode
+                                    value={portalUrl}
+                                    size={100}
+                                    fgColor="#000000"
+                                    bgColor="transparent"
+                                    qrStyle="dots"
+                                    eyeRadius={4}
+                                    removeQrCodeBehindLogo={false}
+                                    logoImage=""
+                                    ecLevel="M"
+                                    quietZone={0}
+                                />
+                            </div>
+
+                            <div className="text-center text-[8px] font-mono break-all opacity-70 mt-1">
+                                {window.location.host}/portal/{selected.receiptId.slice(0, 8)}...
+                            </div>
                         </div>
                     </div>
                 </div>,

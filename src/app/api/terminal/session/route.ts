@@ -6,7 +6,8 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const sessionId = searchParams.get("sessionId");
-        const merchantWallet = req.headers.get("x-wallet"); // Passed from client context if possible, or we rely on just ID
+        // Prefer header, fallback to query param (client sends it in query)
+        const merchantWallet = req.headers.get("x-wallet") || searchParams.get("merchantWallet");
 
         if (!sessionId) {
             return NextResponse.json({ error: "Missing session ID" }, { status: 400 });
@@ -32,7 +33,14 @@ export async function GET(req: NextRequest) {
         const session = resources[0];
 
         // Aggregate stats from receipts for this session
-        const statsQuery = {
+        // FIXED: Include c.wallet in retrieval to ensure single-partition query if possible
+        const statsQuery = merchantWallet ? {
+            query: "SELECT VALUE { totalSales: SUM(c.totalUsd), totalTips: SUM(c.tipAmount), count: COUNT(1) } FROM c WHERE c.type = 'receipt' AND c.sessionId = @sid AND c.wallet = @wallet",
+            parameters: [
+                { name: "@sid", value: sessionId },
+                { name: "@wallet", value: merchantWallet.toLowerCase() }
+            ]
+        } : {
             query: "SELECT VALUE { totalSales: SUM(c.totalUsd), totalTips: SUM(c.tipAmount), count: COUNT(1) } FROM c WHERE c.type = 'receipt' AND c.sessionId = @sid",
             parameters: [{ name: "@sid", value: sessionId }]
         };

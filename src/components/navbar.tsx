@@ -1006,7 +1006,7 @@ export function Navbar() {
                                         prefillBuy: { chain: chain, token: { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", name: "USD Coin", symbol: "USDC" } },
                                     },
                                 }}
-                                connectModal={{ title: tCommon("login"), titleIcon: "/Surge.png", size: "compact", showThirdwebBranding: false }}
+                                connectModal={{ title: tCommon("login"), titleIcon: effectiveLogo, size: "compact", showThirdwebBranding: false }}
                                 theme={twTheme}
                                 onDisconnect={async () => {
                                     try {
@@ -1168,7 +1168,7 @@ export function Navbar() {
                                         className: "!text-white !w-full !justify-center !rounded-lg !py-3",
                                         style: { backgroundColor: secondaryColor }
                                     }}
-                                    connectModal={{ title: tCommon("login"), titleIcon: "/Surge.png", size: "compact", showThirdwebBranding: false }}
+                                    connectModal={{ title: tCommon("login"), titleIcon: effectiveLogo, size: "compact", showThirdwebBranding: false }}
                                     theme={twTheme}
                                 />
                             </div>
