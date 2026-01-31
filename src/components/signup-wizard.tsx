@@ -11,6 +11,7 @@ import { client, chain, getWallets } from "@/lib/thirdweb/client";
 import { usePortalThirdwebTheme } from "@/lib/thirdweb/theme";
 import { useBrand } from "@/contexts/BrandContext";
 import ImageUploadField from "./forms/ImageUploadField";
+import { Eye, EyeOff } from "lucide-react";
 
 interface SignupWizardProps {
     isOpen: boolean;
@@ -148,6 +149,29 @@ const WIZARD_STEPS = [
     },
 ];
 
+// Text Formatters
+function formatPhoneNumber(value: string) {
+    const phone = value.replace(/\D/g, '');
+    const match = phone.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+    if (!match) return value;
+    if (!match[2]) return match[1];
+    if (!match[3]) return `(${match[1]}) ${match[2]}`;
+    return `(${match[1]}) ${match[2]}-${match[3]}`;
+}
+
+function formatEin(value: string) { // XX-XXXXXXX
+    const v = value.replace(/\D/g, '').slice(0, 9);
+    if (v.length > 2) return `${v.slice(0, 2)}-${v.slice(2)}`;
+    return v;
+}
+
+function formatSSN(value: string) { // XXX-XX-XXXX
+    const v = value.replace(/\D/g, '').slice(0, 9);
+    if (v.length > 5) return `${v.slice(0, 3)}-${v.slice(3, 5)}-${v.slice(5)}`;
+    if (v.length > 3) return `${v.slice(0, 3)}-${v.slice(3)}`;
+    return v;
+}
+
 // Generate wizard steps dynamically based on brand
 function getWizardSteps(brandName: string) {
     return WIZARD_STEPS.map(step => {
@@ -206,6 +230,7 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState("");
     const [applicationStatus, setApplicationStatus] = useState<"none" | "pending" | "success" | "blocked" | "awaiting_approval">("none");
+    const [showSensitive, setShowSensitive] = useState(false);
 
     // Get brand-specific values with Platform normalization
     const rawName = brand?.name || "BasaltSurge";
@@ -564,39 +589,32 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
                                             <label className="text-xs text-gray-400 block mb-1">
                                                 {businessType === "sole_prop" ? "SSN (Encrypted)" : "Tax ID / EIN"} <span className="text-red-400">*</span>
                                             </label>
-                                            <input
-                                                value={ein}
-                                                onChange={e => {
-                                                    const val = e.target.value;
-                                                    if (businessType === "sole_prop") {
-                                                        // For sole prop (SSN), we might want to mask as they type or keep it plain text here and rely on type="password"?
-                                                        // User asked: "once the ssn is entered, it should only display the last 4 digits."
-                                                        // This implies onBlur masking.
-                                                        setEin(val);
-                                                    } else {
-                                                        setEin(val);
-                                                    }
-                                                }}
-                                                onBlur={() => {
-                                                    // Simple masking effect for display, but re-focusing clears it?
-                                                    // Actually, user wants it to display last 4 digits.
-                                                    // If we overwrite `ein` state with masked value, we lose the real value.
-                                                    // We need a separate state for real value if we want to submit it? 
-                                                    // OR just use type="password" to hide it entirely? 
-                                                    // "only display the last 4 digits" -> we can't easily do partial mask in standard input without complex logic.
-                                                    // Simplest robust solution: Use password field or just leave it for now since I can't add new state in this replace block easily without losing context.
-                                                    // WAIT: I can add new state in the component body above, but I'm editing the render block here.
-                                                    // I will use `type={businessType === 'sole_prop' ? 'password' : 'text'}` for now to secure it. 
-                                                    // Implementing "show last 4" requires splitting state (display vs value).
-                                                    // I will just use normal input for now to avoid breaking state, 
-                                                    // but I will add a "type" switch.
-                                                }}
-                                                type={businessType === "sole_prop" ? "password" : "text"}
-                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
-                                                placeholder={businessType === "sole_prop" ? "AAA-GG-SSSS" : "xx-xxxxxxx"}
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    value={ein}
+                                                    onChange={e => {
+                                                        const val = e.target.value;
+                                                        if (businessType === "sole_prop") {
+                                                            setEin(formatSSN(val));
+                                                        } else {
+                                                            setEin(formatEin(val));
+                                                        }
+                                                    }}
+                                                    type={showSensitive ? "text" : "password"}
+                                                    className="w-full pl-3 pr-10 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors placeholder:text-gray-600 font-mono"
+                                                    placeholder={businessType === "sole_prop" ? "XXX-XX-XXXX" : "XX-XXXXXXX"}
+                                                    maxLength={businessType === "sole_prop" ? 11 : 10}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowSensitive(!showSensitive)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                                                >
+                                                    {showSensitive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                </button>
+                                            </div>
                                             {businessType === "sole_prop" && (
-                                                <div className="text-[10px] text-emerald-400 mt-1">
+                                                <div className="text-[10px] text-emerald-400 mt-1 flex items-center gap-1">
                                                     🔒 Securely encrypted
                                                 </div>
                                             )}
@@ -605,9 +623,10 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
                                             <label className="text-xs text-gray-400 block mb-1">Phone Number</label>
                                             <input
                                                 value={phone}
-                                                onChange={e => setPhone(e.target.value)}
-                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
-                                                placeholder="+1 (555) 000-0000"
+                                                onChange={e => setPhone(formatPhoneNumber(e.target.value))}
+                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors placeholder:text-gray-600 font-mono"
+                                                placeholder="(555) 000-0000"
+                                                maxLength={14}
                                             />
                                         </div>
 
