@@ -307,6 +307,7 @@ export function Navbar() {
 
                 if (me?.authed && !blocked) {
                     setAuthed(true);
+                    setShowAccessPending(false); // Clear any stale blocked state
                     // Already authenticated, just register user
                     try {
                         await fetch('/api/users/register', {
