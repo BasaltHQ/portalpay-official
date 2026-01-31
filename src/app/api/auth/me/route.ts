@@ -13,13 +13,15 @@ export async function GET(req: NextRequest) {
 
     if (!wallet) {
       // Check for x-wallet header (Public status check for onboarding)
-      const headerWallet = req.headers.get("x-wallet");
-      if (headerWallet && /^0x[a-fA-F0-9]{40}$/.test(headerWallet)) {
+      // Allow any reasonable variation of a wallet address to avoid blocking status checks (strict auth happens later)
+      const headerWallet = (req.headers.get("x-wallet") || "").trim();
+      if (headerWallet && headerWallet.length >= 40) {
         wallet = headerWallet.toLowerCase();
       }
     }
 
     if (!wallet) {
+      // Only 401 if we truly cannot identify the user at all
       return NextResponse.json({ authed: false }, { status: 401 });
     }
 
