@@ -1359,7 +1359,13 @@ export default function PortalReceiptPage() {
         const ratios = (cfg as any)?.reserveRatios as Record<string, number> | undefined;
         let selected = "ETH";
 
-        const dynamicToken = selectTokenFromRatios(ratios, availableTokens); // Use updated availableTokens from closure or hope it's consistent? 
+        // Dynamic Strategy (Respect accumulationMode):
+        const accumulationMode = (cfg as any)?.accumulationMode;
+        let dynamicToken = null;
+        if (accumulationMode !== "fixed") {
+          dynamicToken = selectTokenFromRatios(ratios, availableTokens);
+        }
+
         // Actually, availableTokens in this scope is the OLD state. We should use runtimeTokens if present, else availableTokens state.
         const effectiveTokens = (cfg?.tokens && Array.isArray(cfg.tokens) && cfg.tokens.length > 0)
           ? (cfg.tokens as TokenDef[])
