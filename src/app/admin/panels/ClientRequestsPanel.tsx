@@ -198,7 +198,7 @@ export default function ClientRequestsPanel() {
         load();
     }, [account?.address]);
 
-    async function updateStatus(id: string, status: "pending" | "approved" | "rejected" | "blocked", splitConfig?: { partnerBps: number, merchantBps: number, agents?: { wallet: string, bps: number }[] }, shouldClose = true, shopConfigUpdate?: any) {
+    async function updateStatus(id: string, status: "pending" | "approved" | "rejected" | "blocked" | "orphaned", splitConfig?: { partnerBps: number, merchantBps: number; agents?: { wallet: string; bps: number }[] }, shouldClose = true, shopConfigUpdate?: any) {
         try {
             setError("");
             setInfo("");

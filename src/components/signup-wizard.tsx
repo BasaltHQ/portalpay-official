@@ -16,9 +16,11 @@ interface SignupWizardProps {
     isOpen: boolean;
     onClose: () => void;
     onComplete: () => void;
+    inline?: boolean;
 }
 
 const WIZARD_STEPS = [
+
     {
         id: "welcome",
         title: "Welcome to BasaltSurge",
@@ -181,7 +183,7 @@ function getWizardSteps(brandName: string) {
     });
 }
 
-export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps) {
+export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: SignupWizardProps) {
     const account = useActiveAccount();
     const [currentStep, setCurrentStep] = useState(0);
     const [wallets, setWallets] = useState<any[]>([]);
@@ -376,34 +378,36 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
     const isAwaitingApproval = isPrivate && applicationStatus === "awaiting_approval" && connectedWallet;
 
     if (!isOpen) return null;
-    if (typeof document === 'undefined') return null;
 
-    return createPortal(
+    const content = (
         <>
-            {/* Backdrop - High Z-Index for Mobile Overlay */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-md"
-                onClick={onClose}
-            />
+            {/* Backdrop - High Z-Index for Mobile Overlay - Only if not inline */}
+            {!inline && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-md"
+                    onClick={onClose}
+                />
+            )}
 
-            {/* Modal Container - High Z-Index, Full Screen Mobile aware (Lowered from MAX_INT to allow Connect Modal on top) */}
-            <div className="fixed inset-0 z-[1001] flex items-center justify-center pointer-events-none p-0 sm:p-4 pt-[safe-area-inset-top] sm:pt-20">
+            {/* Modal Container - Fixed if modal, Relative if inline */}
+            <div className={`${inline ? 'relative z-10 w-full flex items-center justify-center p-0' : 'fixed inset-0 z-[1001] flex items-center justify-center pointer-events-none p-0 sm:p-4 pt-[safe-area-inset-top] sm:pt-20'}`}>
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     transition={{ type: "spring", damping: 25, stiffness: 300 }}
                     // WIDER LAYOUT: Changed max-w-[480px] to max-w-3xl
-                    className="relative w-full h-full sm:h-auto sm:max-h-[85vh] sm:max-w-3xl sm:rounded-2xl border-0 sm:border border-white/10 shadow-2xl overflow-hidden pointer-events-auto flex flex-col bg-black/95 sm:bg-black/90"
+                    className={`relative w-full ${inline ? 'h-auto max-w-3xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden bg-black/80 backdrop-blur-xl' : 'h-full sm:h-auto sm:max-h-[85vh] sm:max-w-3xl sm:rounded-2xl border-0 sm:border border-white/10 shadow-2xl overflow-hidden pointer-events-auto flex flex-col bg-black/95 sm:bg-black/90'}`}
                     style={{
-                        background: 'linear-gradient(180deg, rgba(10,10,10,1) 0%, rgba(5,5,5,1) 100%)',
+                        background: inline ? 'rgba(0,0,0,0.6)' : 'linear-gradient(180deg, rgba(10,10,10,1) 0%, rgba(5,5,5,1) 100%)',
+                        backdropFilter: inline ? 'blur(20px)' : undefined
                     }}
                 >
                     {/* Header - Sticky */}
-                    <div className="relative p-6 pb-4 border-b border-white/10 shrink-0 bg-black/50 backdrop-blur-sm z-10 pt-safe-top">
+                    <div className={`relative p-6 pb-4 border-b border-white/10 shrink-0 z-10 pt-safe-top ${inline ? 'bg-white/5' : 'bg-black/50 backdrop-blur-sm'}`}>
                         <div className="flex items-center justify-between mb-4 mt-2 sm:mt-0">
                             <div className="flex items-center gap-3">
                                 <div className="relative w-10 h-10 shrink-0">
@@ -814,7 +818,10 @@ export function SignupWizard({ isOpen, onClose, onComplete }: SignupWizardProps)
                     )}
                 </motion.div>
             </div>
-        </>,
-        document.body
+        </>
     );
+
+    if (inline) return content;
+    if (typeof document === 'undefined') return null;
+    return createPortal(content, document.body);
 }

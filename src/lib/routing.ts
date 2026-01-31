@@ -10,6 +10,7 @@ export const EXCLUDE_PREFIXES = new Set<string>([
     "admin",
     "analytics",
     "audio-setup",
+    "apply", // dedicated application page
     "shop", // exclude builder route from vanity slug rewrite
     "cblink-setup",
     "console",
