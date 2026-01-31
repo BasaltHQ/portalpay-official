@@ -11,7 +11,7 @@ import { client, chain, getWallets } from "@/lib/thirdweb/client";
 import { usePortalThirdwebTheme } from "@/lib/thirdweb/theme";
 import { useBrand } from "@/contexts/BrandContext";
 import ImageUploadField from "./forms/ImageUploadField";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ChevronDown } from "lucide-react";
 
 interface SignupWizardProps {
     isOpen: boolean;
@@ -574,16 +574,19 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
 
                                         <div className="md:col-span-4">
                                             <label className="text-xs text-gray-400 block mb-1">Business Type</label>
-                                            <select
-                                                value={businessType}
-                                                onChange={e => setBusinessType(e.target.value)}
-                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors appearance-none"
-                                            >
-                                                <option value="llc">LLC</option>
-                                                <option value="corp">Corporation</option>
-                                                <option value="sole_prop">Sole Proprietorship</option>
-                                                <option value="partnership">Partnership</option>
-                                            </select>
+                                            <div className="relative">
+                                                <select
+                                                    value={businessType}
+                                                    onChange={e => setBusinessType(e.target.value)}
+                                                    className="w-full pl-3 pr-10 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors appearance-none cursor-pointer"
+                                                >
+                                                    <option value="llc" className="bg-zinc-900 text-white">LLC</option>
+                                                    <option value="corp" className="bg-zinc-900 text-white">Corporation</option>
+                                                    <option value="sole_prop" className="bg-zinc-900 text-white">Sole Proprietorship</option>
+                                                    <option value="partnership" className="bg-zinc-900 text-white">Partnership</option>
+                                                </select>
+                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                            </div>
                                         </div>
                                         <div className="md:col-span-4">
                                             <label className="text-xs text-gray-400 block mb-1">
