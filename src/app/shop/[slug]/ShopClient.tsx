@@ -54,6 +54,8 @@ export type ShopConfig = {
     links?: LinkItem[];
     customDomain?: string;
     customDomainVerified?: boolean;
+    defaultPaymentToken?: string;
+    accumulationMode?: string;
 };
 
 type CartLine = {
@@ -1361,8 +1363,8 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
         if (cleanSlug) q.set("shop", cleanSlug);
 
         // Pass preferred token if set in shop/site config
-        if ((cfg as any)?.defaultPaymentToken) {
-            q.set("token", (cfg as any).defaultPaymentToken);
+        if (cfg?.defaultPaymentToken) {
+            q.set("token", cfg.defaultPaymentToken);
         }
 
         q.set("embedded", "1");

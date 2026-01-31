@@ -161,7 +161,7 @@ export function ReserveSettings() {
 
   function handleSliderChange(changedSymbol: string, newValue: number) {
     const tokens = ["USDC", "USDT", "cbBTC", "cbXRP", "ETH", "SOL"];
-    const clampedValue = Math.max(0, Math.min(1, newValue);
+    const clampedValue = Math.max(0, Math.min(1, newValue));
 
     const remaining = 1 - clampedValue;
     const otherTokens = tokens.filter((t) => t !== changedSymbol);
@@ -233,6 +233,8 @@ export function ReserveSettings() {
       <div className="h-10 bg-muted/20 rounded-md w-full"></div>
     </div>;
   }
+
+  const currentTotal = Object.values(ratios).reduce((sum, val) => sum + (val || 0), 0);
 
   return (
     <div className="space-y-4">
