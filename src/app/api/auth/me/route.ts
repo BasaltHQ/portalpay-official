@@ -23,6 +23,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ authed: false }, { status: 401 });
     }
 
+    // CRITICAL: Normalize wallet to lowercase for all DB queries
+    // The DB stores wallets in lowercase (forced by POST).
+    // If we use checksummed address here, Shop Config lookup fails (uses raw val),
+    // but Pending lookup succeeds (uses .toLowerCase()).
+    wallet = wallet.toLowerCase();
+
     // Try to enrich with roles (non-fatal if unavailable)
     let roles: string[] = [];
     try {
