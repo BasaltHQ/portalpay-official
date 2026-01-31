@@ -63,6 +63,8 @@ type Receipt = {
   taxRate?: number;
   taxComponents?: string[];
   tipAmount?: number;
+  employeeId?: string;
+  sessionId?: string;
 };
 
 type TokenDef = {
@@ -545,7 +547,7 @@ export default function PortalReceiptPage() {
 
             // Auto-titleize brandKey if brand name is missing or generic
             const titleizedKey = bk ? bk.charAt(0).toUpperCase() + bk.slice(1) : "";
-            const isGenericName = !rawBrandName || /^(ledger\d*|partner\d*|default|portalpay)$/i.test(rawBrandName);
+            const isGenericName = !rawBrandName || /^(ledger\d*|partner\d*|default|portalpay|basaltsurge)$/i.test(rawBrandName);
             const partnerName = isGenericName ? titleizedKey : rawBrandName;
 
             console.log("[PORTAL] Partner brand fetched:", { bk, primary, accent, partnerName, logoApp, logoSymbol, logoFavicon });
@@ -636,11 +638,18 @@ export default function PortalReceiptPage() {
   // Using useLayoutEffect to apply theme synchronously before browser paint
   React.useLayoutEffect(() => {
     const currentMerchantKey = String(merchantWallet || "").toLowerCase();
+
+    // Check if we are upgrading from a default/generic theme to a partner theme
+    const isDefaultTheme = theme.brandName === "BasaltSurge" || theme.brandName === "PortalPay";
+    // Check if we have partner data available to upgrade to
+    const canUpgradeToPartner = isDefaultTheme && (!!partnerBrandColors?.primary || !!partnerBrandName);
+
     const alreadyLoaded = loadedMerchantWalletRef.current === currentMerchantKey && walletThemeLoaded;
 
     console.log('[PORTAL THEME DEBUG] useLayoutEffect triggered', {
       currentMerchantKey,
       alreadyLoaded,
+      canUpgradeToPartner,
       hasMerchantForTheme,
       walletThemeLoaded,
       forcePortalTheme,
@@ -649,7 +658,8 @@ export default function PortalReceiptPage() {
     });
 
     // If we already loaded this merchant's theme in this instance, just re-apply CSS vars and skip refetch
-    if (alreadyLoaded && hasMerchantForTheme) {
+    // UNLESS we are upgrading to a partner theme from a default state
+    if (alreadyLoaded && hasMerchantForTheme && !canUpgradeToPartner) {
       console.log('[PORTAL THEME DEBUG] Re-applying cached theme from memory');
       try {
         const root = document.documentElement;
@@ -696,7 +706,11 @@ export default function PortalReceiptPage() {
     }
 
     // If we have a cached theme, apply it immediately and mark as loaded
-    if (cachedTheme && hasMerchantForTheme) {
+    // BUT IGNORE CACHE if we are upgrading to partner branding and the cache is generic
+    const isCachedGeneric = cachedTheme && (cachedTheme.brandName === "BasaltSurge" || cachedTheme.brandName === "PortalPay");
+    const ignoreCache = isCachedGeneric && canUpgradeToPartner;
+
+    if (cachedTheme && hasMerchantForTheme && !ignoreCache) {
       console.log('[PORTAL THEME DEBUG] Applying cached theme immediately');
       setTheme(cachedTheme);
       try {
@@ -732,11 +746,11 @@ export default function PortalReceiptPage() {
     // otherwise keep the currently applied theme to avoid snapping back to defaults.
     if (hasMerchantForTheme && !walletThemeLoaded) {
       setTheme({
-        primaryColor: "#10b981",
-        secondaryColor: "#2dd4bf",
-        brandLogoUrl: getDefaultBrandSymbol(),
-        brandFaviconUrl: "/favicon-32x32.png",
-        brandName: "BasaltSurge",
+        primaryColor: partnerBrandColors?.primary || "#10b981",
+        secondaryColor: partnerBrandColors?.accent || "#2dd4bf",
+        brandLogoUrl: partnerLogoApp || getDefaultBrandSymbol(),
+        brandFaviconUrl: partnerLogoFavicon || "/favicon-32x32.png",
+        brandName: partnerBrandName || "BasaltSurge",
         fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
         receiptBackgroundUrl: "/watermark.png",
         brandLogoShape: "round",
@@ -859,14 +873,14 @@ export default function PortalReceiptPage() {
         const t = j?.config?.theme;
         console.log('[PORTAL THEME DEBUG] API response received', { hasTheme: !!t, theme: t });
         if (!cancelled && t) {
-          // Build complete theme object
+          // Build complete theme object with Partner Fallbacks
           const merchantTheme = {
-            primaryColor: typeof t.primaryColor === "string" ? t.primaryColor : "#10b981",
-            secondaryColor: typeof t.secondaryColor === "string" ? t.secondaryColor : "#2dd4bf",
-            brandLogoUrl: typeof t.brandLogoUrl === "string" ? t.brandLogoUrl : getDefaultBrandSymbol(t.brandKey),
-            brandFaviconUrl: typeof t.brandFaviconUrl === "string" ? t.brandFaviconUrl : "/favicon-32x32.png",
-            symbolLogoUrl: typeof (t as any)?.logos?.symbol === "string" ? (t as any).logos.symbol : undefined,
-            brandName: typeof t.brandName === "string" ? t.brandName : "PortalPay",
+            primaryColor: (typeof t.primaryColor === "string" ? t.primaryColor : undefined) || partnerBrandColors?.primary || "#10b981",
+            secondaryColor: (typeof t.secondaryColor === "string" ? t.secondaryColor : undefined) || partnerBrandColors?.accent || "#2dd4bf",
+            brandLogoUrl: (typeof t.brandLogoUrl === "string" ? t.brandLogoUrl : undefined) || partnerLogoApp || getDefaultBrandSymbol(t.brandKey),
+            brandFaviconUrl: (typeof t.brandFaviconUrl === "string" ? t.brandFaviconUrl : undefined) || partnerLogoFavicon || "/favicon-32x32.png",
+            symbolLogoUrl: (typeof (t as any)?.logos?.symbol === "string" ? (t as any).logos.symbol : undefined) || partnerLogoSymbol,
+            brandName: (typeof t.brandName === "string" ? t.brandName : undefined) || partnerBrandName || "BasaltSurge",
             fontFamily: typeof t.fontFamily === "string" ? t.fontFamily : "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
             receiptBackgroundUrl: typeof t.receiptBackgroundUrl === "string" ? t.receiptBackgroundUrl : "/watermark.png",
             brandLogoShape: t.brandLogoShape === "round" ? "round" : "square" as "round" | "square",
@@ -932,7 +946,25 @@ export default function PortalReceiptPage() {
             window.dispatchEvent(new CustomEvent("pp:theme:ready", { detail: merchantTheme }));
           } catch { }
         } else if (!cancelled) {
-          console.log('[PORTAL THEME DEBUG] No theme returned from API');
+          console.log('[PORTAL THEME DEBUG] No theme returned from API, applying fallbacks');
+          // Fallback to Partner or Default if API returns nothing
+          const fallbackTheme = {
+            primaryColor: partnerBrandColors?.primary || "#10b981",
+            secondaryColor: partnerBrandColors?.accent || "#2dd4bf",
+            brandLogoUrl: partnerLogoApp || getDefaultBrandSymbol(),
+            brandFaviconUrl: partnerLogoFavicon || "/favicon-32x32.png",
+            brandName: partnerBrandName || "BasaltSurge",
+            fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+            receiptBackgroundUrl: "/watermark.png",
+            brandLogoShape: "round",
+            textColor: "#ffffff",
+            headerTextColor: "#ffffff",
+            bodyTextColor: "#e5e7eb",
+          } as any;
+
+          setTheme(fallbackTheme);
+          setWalletThemeLoaded(true);
+
           try {
             const rootEl = document.documentElement;
             rootEl.setAttribute("data-pp-theme-merchant-available", "0");
@@ -949,7 +981,7 @@ export default function PortalReceiptPage() {
             const rootEl = document.documentElement;
             rootEl.setAttribute("data-pp-theme-merchant-available", "0");
             rootEl.setAttribute("data-pp-theme-ready", "1");
-            window.dispatchEvent(new CustomEvent("pp:theme:ready", { detail: { source: "portal", reason: "merchant_unavailable" } }));
+            window.dispatchEvent(new CustomEvent("pp:theme:ready", { detail: { source: "portal", reason: "error" } }));
             setMerchantAvail(false);
             setConfigReady(true);
           } catch { }
@@ -957,7 +989,7 @@ export default function PortalReceiptPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [merchantWallet, receiptId, hasMerchantForTheme, forcePortalTheme, effectiveMerchantWallet]);
+  }, [merchantWallet, receiptId, hasMerchantForTheme, forcePortalTheme, effectiveMerchantWallet, partnerBrandColors, partnerBrandName, partnerLogoApp, partnerLogoSymbol, partnerLogoFavicon]);
 
   // Background style only (no CSS vars inline to avoid hydration mismatch)
   const backgroundStyle = useMemo(() => {
@@ -997,7 +1029,7 @@ export default function PortalReceiptPage() {
     return app || sym || fav || "";
   })();
   const fileName = (fullLogoCandidate.split("/").pop() || "").toLowerCase();
-  const genericRe = /^(portalpay(\d*)\.png|ppsymbol(\.png)?|favicon\-[0-9]+x[0-9]+\.png|next\.svg)$/i;
+  const genericRe = /^(basaltsurge.*\.png|portalpay(\d*)\.png|ppsymbol(\.png)?|favicon\-[0-9]+x[0-9]+\.png|next\.svg)$/i;
   const hasPartnerPath = fullLogoCandidate.includes("/brands/");
   const canUseFullLogo = !!fullLogoCandidate && (hasPartnerPath || !genericRe.test(fileName));
   const effectiveNavbarMode: "symbol" | "logo" = (navbarMode === "logo" && canUseFullLogo) ? "logo" : "symbol";
@@ -1413,6 +1445,11 @@ export default function PortalReceiptPage() {
     setTokenIcons(STATIC_TOKEN_ICONS);
   }, [STATIC_TOKEN_ICONS]);
 
+  // Payment Confirmation State & Polling
+  const [paymentConfirmed, setPaymentConfirmed] = useState<{ txHash: string; amount: number; token: string } | null>(null);
+
+
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -1552,6 +1589,50 @@ export default function PortalReceiptPage() {
     }
     return "0";
   }, [token, tokenDef?.decimals, tokenDef?.symbol, ethAmount, totalUsd, btcUsd, xrpUsd, usdRates]);
+
+  useEffect(() => {
+    let active = true;
+    let timer: NodeJS.Timeout;
+
+    if (!receipt || paymentConfirmed || loadingReceipt) return;
+
+    const checkPayment = async () => {
+      try {
+        const res = await fetch("/api/terminal/check-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            wallet: merchantWallet,
+            receiptId: receiptId,
+            since: receipt.createdAt,
+            amount: Number(widgetAmount),
+            currency: token
+          })
+        });
+        const data = await res.json();
+        if (data.ok && data.paid && active) {
+          setPaymentConfirmed({
+            txHash: data.txHash || "",
+            amount: totalUsd, // Display USD amount 
+            token: token
+          });
+          // Also trigger postStatus
+          await postStatus("checkout_success_poll", { txHash: data.txHash });
+        }
+      } catch (e) {
+        console.error("Poll error", e);
+      }
+    };
+
+    // Poll every 5s if we have a valid receipt configuration
+    if (merchantWallet && receiptId) {
+      timer = setInterval(checkPayment, 5000);
+      // Initial check delayed slightly
+      setTimeout(checkPayment, 2000);
+    }
+
+    return () => { active = false; clearInterval(timer); };
+  }, [receipt, paymentConfirmed, loadingReceipt, merchantWallet, receiptId, totalUsd, widgetAmount, token]);
 
   const amountReady = useMemo(() => {
     if (isFiatFlow && widgetFiatAmount) {
@@ -2545,12 +2626,36 @@ export default function PortalReceiptPage() {
                             taxUsd,
                             processingFeeUsd: processingFeeUsd,
                             feePct: (basePlatformFeePct + Number(processingFeePct || 0)),
+                            employeeId: receipt?.employeeId,
+                            sessionId: receipt?.sessionId,
                           },
                         }}
-                        onSuccess={async () => {
+                        onSuccess={async (data: any) => {
                           try {
                             const wallet = (account?.address || "").toLowerCase();
-                            await postStatus("checkout_success", { buyer: wallet });
+
+                            // Robust txHash extraction from Thirdweb SDK response
+                            // data: { quote: BridgePrepareResult; statuses: Array<CompletedStatusResult>; }
+                            let txHash = "";
+                            const statuses = Array.isArray(data?.statuses) ? data.statuses : [];
+
+                            // 1. Try to find a transaction hash in statuses
+                            const txStatus = statuses.find((s: any) => s.transactionHash);
+                            if (txStatus) txHash = txStatus.transactionHash;
+
+                            // 2. Fallback to top-level property (older SDK versions)
+                            if (!txHash && data?.transactionHash) txHash = data.transactionHash;
+
+                            // 3. Last resort fallback
+                            if (!txHash) txHash = "";
+
+                            setPaymentConfirmed({
+                              txHash,
+                              amount: totalUsd,
+                              token: currency
+                            });
+
+                            await postStatus("checkout_success", { buyer: wallet, txHash });
                             await fetch("/api/billing/purchase", {
                               method: "POST",
                               headers: {
@@ -2575,12 +2680,18 @@ export default function PortalReceiptPage() {
                               if (typeof window !== "undefined" && window.parent && window.parent !== window) {
                                 const confirmToken = `ppc_${receiptId}_${Date.now()}`;
                                 // New event name (primary)
-                                window.parent.postMessage({ type: "gateway-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                window.parent.postMessage({ type: "gateway-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient, txHash }, targetOrigin);
                                 // DEPRECATED: Remove after 2026-04-30 - kept for backwards compatibility
                                 window.parent.postMessage({ type: "portalpay-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
                               }
                             } catch { }
-                          } catch { }
+                          } catch (err) {
+                            console.error("Checkout success handler error", err);
+                          }
+                        }}
+                        onError={(error) => {
+                          console.error("CheckoutWidget Error:", error);
+                          postStatus("checkout_error", { error: error.message });
                         }}
                       />
                     ) : (
@@ -2657,6 +2768,40 @@ export default function PortalReceiptPage() {
           style={{ background: effectiveSecondaryColor, color: "var(--pp-text-header)" }}
         >
           Trustless, permissionless on-chain settlement via {effectiveBrandName}. Full-page view applies your configured branding and theme.
+        </div>
+      )}
+
+      {/* Success Animation Overlay */}
+      {paymentConfirmed && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-500">
+          <div className="text-center p-6 max-w-sm mx-auto">
+            <div className="mb-6 flex justify-center">
+              <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-[0_0_50px_-5px_rgba(34,197,94,0.6)] animate-in zoom-in duration-300">
+                <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-3xl font-bold mb-2 text-white">Payment Complete!</h2>
+            <div className="text-5xl font-mono font-bold mb-2 text-white tracking-tight">
+              {formatCurrency(paymentConfirmed.amount, "USD")}
+            </div>
+            <div className="text-sm text-gray-400 mb-8">
+              Transaction Confirmed
+            </div>
+
+            {paymentConfirmed.txHash && (
+              <a
+                href={`https://basescan.org/tx/${paymentConfirmed.txHash}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-mono transition-colors border border-white/10"
+              >
+                <span>View on Basescan</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+              </a>
+            )}
+          </div>
         </div>
       )}
     </div>

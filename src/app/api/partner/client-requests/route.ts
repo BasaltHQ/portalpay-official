@@ -323,6 +323,8 @@ export async function PATCH(req: NextRequest) {
 
         const splitConfig = body?.splitConfig;
 
+        const shopConfigUpdate = body?.shopConfigUpdate;
+
         if (newStatus === "approved" && splitConfig) {
             const { partnerBps, merchantBps } = splitConfig;
             const partner = Number(partnerBps || 0);
@@ -355,7 +357,7 @@ export async function PATCH(req: NextRequest) {
         // Update the request
         const updatedDoc: any = {
             ...request,
-            status: newStatus,
+            status: newStatus || request.status, // Preserve status if not changing
             reviewedBy: caller.wallet,
             reviewedAt: Date.now()
         };
@@ -364,28 +366,36 @@ export async function PATCH(req: NextRequest) {
             updatedDoc.splitConfig = splitConfig;
         }
 
+        // Apply shop config updates to the request doc mostly for list view consistency
+        if (shopConfigUpdate) {
+            if (shopConfigUpdate.name) updatedDoc.shopName = shopConfigUpdate.name;
+            if (shopConfigUpdate.theme?.brandLogoUrl) updatedDoc.logoUrl = shopConfigUpdate.theme.brandLogoUrl;
+            if (shopConfigUpdate.theme?.brandFaviconUrl) updatedDoc.faviconUrl = shopConfigUpdate.theme.brandFaviconUrl;
+            if (shopConfigUpdate.theme?.primaryColor) updatedDoc.primaryColor = shopConfigUpdate.theme.primaryColor;
+        }
+
         await container.item(request.id, request.wallet).replace(updatedDoc);
 
-        // On approve/update: Sync minimal shop_config OR update existing config
-        if (newStatus === "approved") {
-            const shopConfigId = `shop:${request.wallet}`;
+        // On approve/update: Sync shop_config
+        if (newStatus === "approved" || shopConfigUpdate) {
+            // MATCHING LOGIC with api/shop/config/route.ts
+            // Default ID is "shop:config". For partners: "shop:config:brandKey".
+            const isPlatform = !brandKey || brandKey === "portalpay" || brandKey === "basaltsurge";
+            const configId = isPlatform ? "shop:config" : `shop:config:${brandKey}`;
 
-            // Check if ANY config exists for this wallet (site_config OR shop_config)
-            // We want to update the ACTIVE one, not accidentally shadow a site_config with a new shop_config
+            // Check for EXISTING config to avoid overwriting or duplicating
             const configQuery = {
                 query: `SELECT * FROM c WHERE (c.type = 'site_config' OR c.type = 'shop_config') AND c.wallet = @w ORDER BY c.createdAt DESC`,
                 parameters: [{ name: "@w", value: request.wallet }]
             };
             const { resources: existingConfigs } = await container.items.query(configQuery).fetchAll();
-
-            // Prefer site_config if present, else shop_config
             const activeConfig = existingConfigs.find((c: any) => c.type === "site_config") || existingConfigs[0];
 
             if (activeConfig) {
                 // UPDATE existing config (Merge logic)
                 const newConfig = {
                     ...activeConfig,
-                    status: "approved",
+                    status: (newStatus === "approved" || activeConfig.status === "approved") ? "approved" : activeConfig.status,
                     approvedBy: caller.wallet,
                     approvedAt: Date.now()
                 };
@@ -402,22 +412,30 @@ export async function PATCH(req: NextRequest) {
                     newConfig.processingFeePct = Number(body.processingFeePct);
                 }
 
+                if (shopConfigUpdate) {
+                    newConfig.name = shopConfigUpdate.name || newConfig.name;
+                    newConfig.theme = { ...(newConfig.theme || {}), ...shopConfigUpdate.theme };
+                    if (shopConfigUpdate.slug) newConfig.slug = shopConfigUpdate.slug;
+                    // Additional fields as needed
+                }
+
                 await container.item(activeConfig.id, activeConfig.wallet).replace(newConfig);
 
             } else {
                 // CREATE new shop_config
                 const shopConfig: any = {
-                    id: shopConfigId,
+                    id: configId,
                     wallet: request.wallet,
                     type: "shop_config",
                     brandKey,
-                    name: request.shopName,
+                    name: (shopConfigUpdate?.name) || request.shopName,
                     theme: {
-                        primaryColor: request.primaryColor || "#0ea5e9",
-                        brandLogoUrl: request.logoUrl,
-                        brandFaviconUrl: request.faviconUrl
+                        primaryColor: (shopConfigUpdate?.theme?.primaryColor) || request.primaryColor || "#0ea5e9",
+                        brandLogoUrl: (shopConfigUpdate?.theme?.brandLogoUrl) || request.logoUrl,
+                        brandFaviconUrl: (shopConfigUpdate?.theme?.brandFaviconUrl) || request.faviconUrl,
+                        ...(shopConfigUpdate?.theme || {})
                     },
-                    status: "approved",
+                    status: newStatus === "approved" ? "approved" : "pending",
                     approvedBy: caller.wallet,
                     approvedAt: Date.now(),
                     createdAt: Date.now()
@@ -428,8 +446,6 @@ export async function PATCH(req: NextRequest) {
                         partnerBps: Number(splitConfig.partnerBps),
                         merchantBps: Number(splitConfig.merchantBps),
                         agents: Array.isArray(splitConfig.agents) ? splitConfig.agents : []
-                        // Platform bps is implicit/remainder in some contexts or explicit in others.
-                        // We'll store what we received. 
                     };
                 }
 
@@ -437,11 +453,13 @@ export async function PATCH(req: NextRequest) {
                     shopConfig.processingFeePct = Number(body.processingFeePct);
                 }
 
+                if (shopConfigUpdate?.slug) shopConfig.slug = shopConfigUpdate.slug;
+
                 await container.items.upsert(shopConfig);
             }
         }
 
-        return json({ ok: true, requestId, status: newStatus });
+        return json({ ok: true, requestId, status: newStatus || request.status });
     } catch (e: any) {
         console.error("[client-requests] PATCH Error:", e);
         return json({ error: e?.message || "update_failed" }, { status: 500 });

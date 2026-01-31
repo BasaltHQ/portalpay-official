@@ -165,7 +165,7 @@ interface EndOfDayProps {
         averageOrderValue: number;
     };
     paymentMethods: { method: string; total: number }[];
-    employees?: { id: string; sales: number; tips: number; count: number; aov: number }[];
+    employees?: { id: string; name?: string; sales: number; tips: number; count: number; aov: number }[];
     hourly?: { hour: number; amount: number }[];
     reportTitle?: string;
     showPayments?: boolean;
@@ -268,7 +268,7 @@ export const EndOfDayPDF = ({ brandName, logoUrl, brandColor, date, generatedBy,
                             </View>
                             {employees.map((e, i) => (
                                 <View key={i} style={[styles.tableRow, i % 2 === 1 ? styles.tableRowStriped : {}]}>
-                                    <Text style={styles.cell50}>{e.id}</Text>
+                                    <Text style={styles.cell50}>{e.name || e.id}</Text>
                                     <Text style={styles.cell25}>{e.count}</Text>
                                     <Text style={styles.cell25}>{fmt(e.sales)}</Text>
                                 </View>

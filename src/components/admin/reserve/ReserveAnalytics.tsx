@@ -158,6 +158,20 @@ export function ReserveAnalytics() {
           outputs: [],
           stateMutability: "nonpayable",
         },
+        {
+          type: "function",
+          name: "distribute",
+          inputs: [],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "distribute",
+          inputs: [{ name: "token", type: "address" }],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
       ] as const;
 
       const contract = getContract({
@@ -181,8 +195,8 @@ export function ReserveAnalytics() {
           if (symbol === "ETH") {
             tx = (prepareContractCall as any)({
               contract: contract as any,
-              method: "function release(address account)",
-              params: [merchant as `0x${string}`],
+              method: "function distribute()",
+              params: [],
             });
           } else {
             const t = envTokens[symbol];
@@ -202,8 +216,8 @@ export function ReserveAnalytics() {
             }
             tx = (prepareContractCall as any)({
               contract: contract as any,
-              method: "function release(address token, address account)",
-              params: [tokenAddr, merchant as `0x${string}`],
+              method: "function distribute(address token)",
+              params: [tokenAddr],
             });
           }
 

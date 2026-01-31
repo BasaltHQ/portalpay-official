@@ -846,8 +846,8 @@ export default function PartnerManagementPanel() {
 
       // PaymentSplitter ABI
       const PAYMENT_SPLITTER_ABI = [
-        { type: "function", name: "release", inputs: [{ name: "account", type: "address" }], outputs: [], stateMutability: "nonpayable" },
-        { type: "function", name: "release", inputs: [{ name: "token", type: "address" }, { name: "account", type: "address" }], outputs: [], stateMutability: "nonpayable" },
+        { type: "function", name: "distribute", inputs: [], outputs: [], stateMutability: "nonpayable" },
+        { type: "function", name: "distribute", inputs: [{ name: "token", type: "address" }], outputs: [], stateMutability: "nonpayable" },
       ] as const;
 
       const contract = getContract({ client, chain, address: split as `0x${string}`, abi: PAYMENT_SPLITTER_ABI as any });
@@ -861,8 +861,8 @@ export default function PartnerManagementPanel() {
           if (symbol === "ETH") {
             tx = (prepareContractCall as any)({
               contract: contract as any,
-              method: "function release(address account)",
-              params: [platformRecipient as `0x${string}`],
+              method: "function distribute()",
+              params: [],
             });
           } else {
             const t = envTokens[symbol];
@@ -873,8 +873,8 @@ export default function PartnerManagementPanel() {
             }
             tx = (prepareContractCall as any)({
               contract: contract as any,
-              method: "function release(address token, address account)",
-              params: [tokenAddr, platformRecipient as `0x${string}`],
+              method: "function distribute(address token)",
+              params: [tokenAddr],
             });
           }
           await sendTransaction({ account: account as any, transaction: tx });
@@ -1334,8 +1334,8 @@ export default function PartnerManagementPanel() {
       });
 
       const PAYMENT_SPLITTER_ABI = [
-        { type: "function", name: "release", inputs: [{ name: "account", type: "address" }], outputs: [], stateMutability: "nonpayable" },
-        { type: "function", name: "release", inputs: [{ name: "token", type: "address" }, { name: "account", type: "address" }], outputs: [], stateMutability: "nonpayable" },
+        { type: "function", name: "distribute", inputs: [], outputs: [], stateMutability: "nonpayable" },
+        { type: "function", name: "distribute", inputs: [{ name: "token", type: "address" }], outputs: [], stateMutability: "nonpayable" },
       ] as const;
       const contract = getContract({ client, chain, address: split as `0x${string}`, abi: PAYMENT_SPLITTER_ABI as any });
 
@@ -1345,8 +1345,8 @@ export default function PartnerManagementPanel() {
           if (symbol === "ETH") {
             tx = (prepareContractCall as any)({
               contract: contract as any,
-              method: "function release(address account)",
-              params: [recipientWallet as `0x${string}`],
+              method: "function distribute()",
+              params: [],
             });
           } else {
             // Prioritize address from API response, then env, then hardcoded fallback
@@ -1391,8 +1391,8 @@ export default function PartnerManagementPanel() {
             }
             tx = (prepareContractCall as any)({
               contract: contract as any,
-              method: "function release(address token, address account)",
-              params: [tokenAddr, recipientWallet as `0x${string}`],
+              method: "function distribute(address token)",
+              params: [tokenAddr],
             });
           }
 

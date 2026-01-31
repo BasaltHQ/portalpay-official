@@ -4686,18 +4686,15 @@ function UsersPanel() {
       const PAYMENT_SPLITTER_ABI = [
         {
           type: "function",
-          name: "release",
-          inputs: [{ name: "account", type: "address" }],
+          name: "distribute",
+          inputs: [],
           outputs: [],
           stateMutability: "nonpayable",
         },
         {
           type: "function",
-          name: "release",
-          inputs: [
-            { name: "token", type: "address" },
-            { name: "account", type: "address" },
-          ],
+          name: "distribute",
+          inputs: [{ name: "token", type: "address" }],
           outputs: [],
           stateMutability: "nonpayable",
         },
@@ -4730,8 +4727,8 @@ function UsersPanel() {
           if (symbol === "ETH") {
             tx = (prepareContractCall as any)({
               contract: contract as any,
-              method: "function release(address account)",
-              params: [recipientWallet as `0x${string}`],
+              method: "function distribute()",
+              params: [],
             });
           } else {
             // Prioritize address from API response, then env, then hardcoded fallback
@@ -4782,8 +4779,8 @@ function UsersPanel() {
             }
             tx = (prepareContractCall as any)({
               contract: contract as any,
-              method: "function release(address token, address account)",
-              params: [tokenAddr, recipientWallet as `0x${string}`],
+              method: "function distribute(address token)",
+              params: [tokenAddr],
             });
           }
 

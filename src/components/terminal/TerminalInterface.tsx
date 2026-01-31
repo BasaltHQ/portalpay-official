@@ -109,6 +109,41 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
         }
     }
 
+    // Polling Logic for Fallback
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (qrOpen && selected && selected.status !== "paid") {
+            const poll = async () => {
+                try {
+                    const res = await fetch("/api/terminal/check-payment", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            wallet: merchantWallet,
+                            receiptId: selected.receiptId,
+                            since: selected.createdAt,
+                            amount: totalConverted,
+                            currency: terminalCurrency
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.ok && data.paid) {
+                        // Confirmed!
+                        setSelected((prev: any) => ({ ...prev, status: "paid", txHash: data.txHash }));
+                        // Optional: Play sound or vibrate
+                    }
+                } catch (e) {
+                    console.error("Poll failed", e);
+                }
+            };
+
+            // Initial poll after 5s, then every 10s
+            timer = setInterval(poll, 10000);
+            poll(); // Immediate check? No, give it a sec.
+        }
+        return () => clearInterval(timer);
+    }, [qrOpen, selected, merchantWallet, totalConverted, terminalCurrency]);
+
     // End of Day / Summary Logic
     const [summaryOpen, setSummaryOpen] = useState(false);
     const [reportData, setReportData] = useState<any>(null);
@@ -159,9 +194,24 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
 
     // Portal URL for QR
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const portalUrl = selected
-        ? `${origin}/portal/${encodeURIComponent(selected.receiptId)}?recipient=${encodeURIComponent(merchantWallet)}`
-        : "";
+    const portalUrl = useMemo(() => {
+        if (!selected) return "";
+        const base = `${origin}/portal/${encodeURIComponent(selected.receiptId)}?recipient=${encodeURIComponent(merchantWallet)}`;
+        const params = new URLSearchParams();
+
+        // Inject theme overrides to ensure consistent branding on the portal even if API fetch fails/differs
+        if (theme?.primaryColor) params.set("t_primary", theme.primaryColor);
+        if (theme?.secondaryColor) params.set("t_secondary", theme.secondaryColor);
+        if (theme?.textColor) params.set("t_text", theme.textColor);
+        if (theme?.fontFamily) params.set("t_font", theme.fontFamily);
+        if (brandName) params.set("t_brand", brandName);
+        if (logoUrl) params.set("t_logo", logoUrl);
+        // Explicitly set layout to wide for better mobile experience if requested, otherwise default (compact) is fine
+        // params.set("layout", "wide"); // User example had wide, but compact is safer for phone scans. omit for default.
+
+        const queryString = params.toString();
+        return queryString ? `${base}&${queryString}` : base;
+    }, [selected, merchantWallet, theme, brandName, origin, logoUrl]);
 
     const isManagerOrKeyholder = employeeRole === 'manager' || employeeRole === 'keyholder';
 
@@ -282,7 +332,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
 
                         <h2 className="text-2xl font-bold mb-6">Scan to Pay</h2>
 
-                        <div className="inline-block mb-4 p-2 rounded-xl border border-white/10">
+                        <div className="inline-block mb-4 p-2 rounded-xl border border-white/10 relative">
                             <QRCode
                                 value={portalUrl}
                                 size={200}
@@ -299,15 +349,38 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                 ecLevel="H"
                                 quietZone={10}
                             />
+                            {/* Success Overlay */}
+                            {selected?.status === "paid" && (
+                                <div className="absolute inset-0 z-10 bg-black/80 flex items-center justify-center backdrop-blur-sm rounded-lg animate-in fade-in duration-300">
+                                    <div className="bg-green-500 rounded-full p-4 shadow-[0_0_30px_-5px_var(--pp-brand-green)]">
+                                        <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="text-4xl font-mono font-bold mb-2 tracking-tight">
                             {formatCurrency(totalConverted, terminalCurrency)}
                         </div>
 
-                        <div className="text-xs text-muted-foreground break-all px-4 opacity-50 mb-8 font-mono">
+                        <div className="text-xs text-muted-foreground px-4 opacity-50 mb-4 font-mono whitespace-nowrap overflow-hidden text-ellipsis w-full max-w-[300px] mx-auto">
                             {portalUrl}
                         </div>
+
+                        {/* Polling / Fallback Status */}
+                        {selected?.status !== "paid" && (
+                            <div className="mb-6 space-y-2">
+                                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                    <span>Waiting for payment...</span>
+                                </div>
+                                <div className="text-[10px] text-gray-500 font-mono">
+                                    Checking chain every 10s • <span className="opacity-70">Detecting {terminalCurrency}</span>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-2 gap-3">
                             <button
@@ -317,11 +390,19 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                 Print
                             </button>
                             <button
-                                onClick={() => setQrOpen(false)}
+                                onClick={() => {
+                                    if (selected?.status === 'paid') {
+                                        setQrOpen(false);
+                                        clearAmount();
+                                        setItemLabel("");
+                                    } else {
+                                        setQrOpen(false);
+                                    }
+                                }}
                                 className="px-4 py-3 text-white rounded-xl font-bold shadow-lg hover:brightness-110 active:scale-95 transition-all"
-                                style={{ backgroundColor: (theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#000" }}
+                                style={{ backgroundColor: selected?.status === 'paid' ? '#22c55e' : ((theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#000") }}
                             >
-                                Done
+                                {selected?.status === 'paid' ? "New Sale" : "Cancel"}
                             </button>
                         </div>
                     </div>
@@ -407,6 +488,31 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                                     <div key={idx} className="flex justify-between items-center p-3 text-sm">
                                                         <span className="font-medium">{pm.method}</span>
                                                         <span>{formatCurrency(pm.total, "USD")}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Employee Performance */}
+                                    {reportData.employees && reportData.employees.length > 0 && (
+                                        <div className="space-y-2">
+                                            <h3 className="text-sm font-semibold text-gray-400 uppercase">Employee Performance</h3>
+                                            <div className="bg-white/5 rounded-lg border border-white/5 divide-y divide-white/5">
+                                                <div className="flex justify-between items-center p-3 text-xs text-muted-foreground bg-white/5 font-semibold uppercase">
+                                                    <span>Staff Member</span>
+                                                    <span className="text-right">Sales (Tips)</span>
+                                                </div>
+                                                {reportData.employees.map((emp: any, idx: number) => (
+                                                    <div key={idx} className="flex justify-between items-center p-3 text-sm">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium">{emp.name || emp.id}</span>
+                                                            <span className="text-xs text-muted-foreground">{emp.count} orders • {formatCurrency(emp.aov, "USD")} avg</span>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="font-bold">{formatCurrency(emp.sales, "USD")}</div>
+                                                            {emp.tips > 0 && <div className="text-xs text-muted-foreground">+{formatCurrency(emp.tips, "USD")} tips</div>}
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>

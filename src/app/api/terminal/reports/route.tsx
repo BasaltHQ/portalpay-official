@@ -191,7 +191,7 @@ export async function GET(req: NextRequest) {
         // Specialized Data based on Type
         let detailedData: any = {};
 
-        if (type === "employee") {
+        if (type === "employee" || type === "z-report") {
             const empMap = new Map<string, { sales: number, tips: number, count: number }>();
             for (const r of receipts) {
                 const eid = r.employeeId || "Unknown";
@@ -215,6 +215,26 @@ export async function GET(req: NextRequest) {
                 hourMap[h] += (r.totalUsd || 0);
             }
             detailedData.hourly = hourMap.map((amount, hour) => ({ hour, amount }));
+        }
+
+        // Enrich Employee Names
+        if (detailedData.employees) {
+            const ids = detailedData.employees.map((e: any) => e.id).filter((id: string) => id !== "Unknown");
+            if (ids.length > 0) {
+                // Fetch names for IDs
+                const nameQuery = {
+                    query: `SELECT c.id, c.name FROM c WHERE c.type = 'merchant_team_member' AND c.merchantWallet = @w AND ARRAY_CONTAINS(@ids, c.id)`,
+                    parameters: [{ name: "@w", value: w }, { name: "@ids", value: ids }]
+                };
+                const { resources: members } = await container.items.query(nameQuery).fetchAll();
+                const nameMap: Record<string, string> = {};
+                members.forEach((m: any) => nameMap[m.id] = m.name);
+
+                detailedData.employees = detailedData.employees.map((e: any) => ({
+                    ...e,
+                    name: nameMap[e.id] || e.id
+                }));
+            }
         }
 
         const reportData = {

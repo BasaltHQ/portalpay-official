@@ -529,6 +529,8 @@ function TeamMemberModal({
    ========================= */
 import { ensureSplitForWallet } from "@/lib/thirdweb/split";
 import { useActiveAccount } from "thirdweb/react";
+import { getContract, prepareContractCall, sendTransaction } from "thirdweb";
+import { client, chain } from "@/lib/thirdweb/client";
 // Removed duplicate React imports
 
 function SettingsPanel({ merchantWallet, theme, splitAddress, reserveRatios, accumulationMode }: PanelProps & { splitAddress?: string; reserveRatios?: Record<string, number>; accumulationMode?: "fixed" | "dynamic" }) {
@@ -576,6 +578,7 @@ function SettingsPanel({ merchantWallet, theme, splitAddress, reserveRatios, acc
                     theme={theme}
                     reserveRatios={reserveRatios}
                     accumulationMode={accumulationMode}
+                    splitAddress={splitAddress}
                 />
             )}
         </div>
@@ -690,9 +693,10 @@ interface ReserveSettingsProps {
     theme: any;
     reserveRatios?: Record<string, number>;
     accumulationMode?: "fixed" | "dynamic";
+    splitAddress?: string;
 }
 
-function ReserveSettings({ merchantWallet, theme, reserveRatios, accumulationMode = "fixed" }: ReserveSettingsProps) {
+function ReserveSettings({ merchantWallet, theme, reserveRatios, accumulationMode = "fixed", splitAddress }: ReserveSettingsProps) {
     const [loading, setLoading] = useState(true);
     const [analytics, setAnalytics] = useState<any>(null);
     const [balances, setBalances] = useState<any>(null);
@@ -837,40 +841,41 @@ function ReserveSettings({ merchantWallet, theme, reserveRatios, accumulationMod
     // Success Modal State
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-    useEffect(() => {
-        async function fetchAll() {
-            try {
-                // Fetch Analytics & Balances
-                const res = await fetch(`/api/reserve/balances?wallet=${merchantWallet}`);
-                const data = await res.json();
-                if (data.indexedMetrics) {
-                    setAnalytics(data.indexedMetrics);
-                }
-                if (data.balances) {
-                    setBalances(data.balances);
-                }
-
-                // Fetch Split Config
-                try {
-                    const splitRes = await fetch(`/api/split/deploy?wallet=${merchantWallet}`);
-                    const splitData = await splitRes.json();
-                    if (splitData?.split?.recipients && Array.isArray(splitData.split.recipients)) {
-                        const recipients = splitData.split.recipients;
-                        const merchantRec = recipients.find((r: any) => r.address.toLowerCase() === merchantWallet.toLowerCase());
-                        const merchantBps = merchantRec ? Number(merchantRec.sharesBps || 0) : 0;
-                        const feeBps = Math.max(0, 10000 - merchantBps);
-                        setSplitInfo({ merchantBps, feeBps });
-                    }
-                } catch (e) {
-                    console.error("Failed to fetch split config", e);
-                }
-
-            } catch (e) {
-                console.error("Failed to load reserve data", e);
-            } finally {
-                setLoading(false);
+    const fetchAll = async () => {
+        try {
+            // Fetch Analytics & Balances
+            const res = await fetch(`/api/reserve/balances?wallet=${merchantWallet}`);
+            const data = await res.json();
+            if (data.indexedMetrics) {
+                setAnalytics(data.indexedMetrics);
             }
+            if (data.balances) {
+                setBalances(data.balances);
+            }
+
+            // Fetch Split Config
+            try {
+                const splitRes = await fetch(`/api/split/deploy?wallet=${merchantWallet}`);
+                const splitData = await splitRes.json();
+                if (splitData?.split?.recipients && Array.isArray(splitData.split.recipients)) {
+                    const recipients = splitData.split.recipients;
+                    const merchantRec = recipients.find((r: any) => r.address.toLowerCase() === merchantWallet.toLowerCase());
+                    const merchantBps = merchantRec ? Number(merchantRec.sharesBps || 0) : 0;
+                    const feeBps = Math.max(0, 10000 - merchantBps);
+                    setSplitInfo({ merchantBps, feeBps });
+                }
+            } catch (e) {
+                console.error("Failed to fetch split config", e);
+            }
+
+        } catch (e) {
+            console.error("Failed to load reserve data", e);
+        } finally {
+            setLoading(false);
         }
+    };
+
+    useEffect(() => {
         fetchAll();
     }, [merchantWallet]);
 
@@ -904,6 +909,158 @@ function ReserveSettings({ merchantWallet, theme, reserveRatios, accumulationMod
             setSaving(false);
         }
     };
+
+    const [withdrawing, setWithdrawing] = useState<Record<string, boolean>>({});
+
+    const handleWithdraw = async (symbol: string, tokenAddr?: string) => {
+        if (!merchantWallet) return;
+
+        // Ensure we have a split address
+        let targetSplit = splitAddress;
+        if (!targetSplit && balances?.splitAddressUsed) {
+            targetSplit = balances.splitAddressUsed;
+        }
+
+        if (!targetSplit || !/^0x[a-f0-9]{40}$/i.test(targetSplit)) {
+            alert("No split contract found. Please deploy one in General Settings first.");
+            return;
+        }
+
+        if (!confirm(`Withdraw ${symbol}? This will distribute funds to your wallet and the platform.`)) return;
+
+        setWithdrawing(prev => ({ ...prev, [symbol]: true }));
+
+        try {
+            // Minimal ABI for PaymentSplitter with distribute
+            const PAYMENT_SPLITTER_ABI = [
+                {
+                    type: "function",
+                    name: "distribute",
+                    inputs: [],
+                    outputs: [],
+                    stateMutability: "nonpayable",
+                },
+                {
+                    type: "function",
+                    name: "distribute",
+                    inputs: [{ name: "token", type: "address" }],
+                    outputs: [],
+                    stateMutability: "nonpayable",
+                },
+            ] as const;
+
+            const contract = getContract({
+                client,
+                chain,
+                address: targetSplit as `0x${string}`,
+                abi: PAYMENT_SPLITTER_ABI as any,
+            });
+
+            const account = { address: merchantWallet } as any; // We need a signer, wait. useActiveAccount provides it? 
+            // unique issue: merchantWallet prop might be different from connected account if admin is viewing? 
+            // But in Terminal, we are usually the merchant. 
+            // We should use the *connected* account to sign.
+
+            // We need the ACTUAL signer from the hook, not just the address string passed as prop.
+            // We don't have the signer object here easily unless we use the hook again or assume `client` handles it if we pass account?
+            // `sendTransaction` needs the account object from `useActiveAccount`.
+        } catch (e: any) {
+            alert(e.message || "Withdrawal failed");
+        } finally {
+            setWithdrawing(prev => ({ ...prev, [symbol]: false }));
+        }
+    };
+
+    // We need the active account object for signing
+    const activeAccount = useActiveAccount();
+
+    const executeWithdraw = async (symbol: string, tokenAddr?: string) => {
+        if (!activeAccount) {
+            alert("Wallet not connected");
+            return;
+        }
+
+        // Verify ownership if needed, but contract will fail if not authorized usually (or allows anyone to distribute)
+        // Split contracts usually allow anyone to call distribute/release.
+
+        // Ensure we have a split address
+        let targetSplit = splitAddress;
+        if (!targetSplit && balances?.splitAddressUsed) {
+            targetSplit = balances.splitAddressUsed;
+        }
+
+        if (!targetSplit || !/^0x[a-f0-9]{40}$/i.test(targetSplit)) {
+            alert("No split contract found. Please deploy one in General Settings first.");
+            return;
+        }
+
+        // if(!confirm(`Withdraw ${symbol}? This will distribute funds to your wallet and the platform.`)) return;
+
+        setWithdrawing(prev => ({ ...prev, [symbol]: true }));
+
+        try {
+            const PAYMENT_SPLITTER_ABI = [
+                {
+                    type: "function",
+                    name: "distribute",
+                    inputs: [],
+                    outputs: [],
+                    stateMutability: "nonpayable",
+                },
+                {
+                    type: "function",
+                    name: "distribute",
+                    inputs: [{ name: "token", type: "address" }],
+                    outputs: [],
+                    stateMutability: "nonpayable",
+                },
+            ] as const;
+
+            const contract = getContract({
+                client,
+                chain,
+                address: targetSplit as `0x${string}`,
+                abi: PAYMENT_SPLITTER_ABI as any,
+            });
+
+            let tx;
+            if (symbol === "ETH") {
+                tx = (prepareContractCall as any)({
+                    contract: contract as any,
+                    method: "function distribute()",
+                    params: [],
+                });
+            } else {
+                if (!tokenAddr || !/^0x[a-f0-9]{40}$/i.test(tokenAddr)) {
+                    throw new Error("Invalid token address for withdrawal");
+                }
+                tx = (prepareContractCall as any)({
+                    contract: contract as any,
+                    method: "function distribute(address token)",
+                    params: [tokenAddr],
+                });
+            }
+
+            await sendTransaction({
+                account: activeAccount,
+                transaction: tx,
+            });
+
+            alert("Withdrawal submitted! Balances will update shortly.");
+            alert("Withdrawal submitted! Balances will update shortly.");
+
+            setTimeout(() => {
+                try { (window as any).triggerReserveRefresh?.(); } catch { }
+                fetchAll();
+            }, 2000);
+
+        } catch (e: any) {
+            console.error(e);
+            alert(e.message || "Withdrawal failed");
+        } finally {
+            setWithdrawing(prev => ({ ...prev, [symbol]: false }));
+        }
+    }
 
     const formatCurrency = (amount: number, currency: string) => {
         return new Intl.NumberFormat('en-US', {
@@ -1220,6 +1377,15 @@ function ReserveSettings({ merchantWallet, theme, reserveRatios, accumulationMod
                                             {data.address.slice(0, 6)}...{data.address.slice(-4)}
                                         </div>
                                     )}
+                                    <div className="mt-1">
+                                        <button
+                                            onClick={() => executeWithdraw(token, data.address)}
+                                            disabled={withdrawing[token] || !(data.units > 0)}
+                                            className="text-[10px] px-2 py-1 bg-background border rounded hover:bg-muted disabled:opacity-50 transition-colors"
+                                        >
+                                            {withdrawing[token] ? "Withdrawing..." : "Withdraw"}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -1250,6 +1416,6 @@ function ReserveSettings({ merchantWallet, theme, reserveRatios, accumulationMod
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }

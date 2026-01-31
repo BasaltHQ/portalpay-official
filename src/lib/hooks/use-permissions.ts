@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 
-export type Permission = 
+export type Permission =
   | 'dashboard'
   | 'scheduling'
-  | 'inventory' 
+  | 'inventory'
   | 'invoicing'
   | 'inventory:financial' // Financial data like costs, purchase orders
   | 'team'
@@ -36,7 +36,7 @@ export interface User {
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   'Super Admin': [
     'dashboard',
-    'scheduling', 
+    'scheduling',
     'inventory',
     'inventory:financial',
     'team',
@@ -96,18 +96,44 @@ export function usePermissions() {
         console.error('Failed to parse user data:', error);
       }
     }
-    setLoading(false);
+
+    // Sync with server to get latest status/permissions
+    const syncWithServer = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authed && data.shopStatus === 'approved') {
+            // If server says approved, ensure local user reflects "Manager" or appropriate role if currently "pending" or missing
+            // This is a simplified sync to fix the "Access Restricted" issue immediately
+            const current = userData ? JSON.parse(userData) : {};
+            if (current.role !== 'Manager' && current.role !== 'Super Admin') {
+              // Upgrade to Manager if approved but locally restricted
+              const updated = { ...current, role: 'Manager', permissions: ROLE_PERMISSIONS['Manager'] };
+              setUser(updated);
+              localStorage.setItem('user', JSON.stringify(updated));
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Permission sync failed', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    syncWithServer();
   }, []);
 
   const hasPermission = (permission: Permission): boolean => {
     if (!user) return false;
-    
+
     // Super Admin has all permissions
     if (user.role === 'Super Admin') return true;
-    
+
     // Check explicit permissions array first
     if (user.permissions && user.permissions.includes(permission)) return true;
-    
+
     // Fall back to role-based permissions
     const rolePermissions = ROLE_PERMISSIONS[user.role] || [];
     return rolePermissions.includes(permission);

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import { ensureSplitForWallet } from "@/lib/thirdweb/split";
 import { useBrand } from "@/contexts/BrandContext";
+import ShopConfigEditor from "@/components/admin/ShopConfigEditor";
 
 type ClientRequest = {
     id: string;
@@ -17,6 +18,7 @@ type ClientRequest = {
     ein?: string;
     website?: string;
     phone?: string;
+    email?: string;
     businessAddress?: {
         street: string;
         city: string;
@@ -25,6 +27,8 @@ type ClientRequest = {
         country: string;
     };
     logoUrl?: string;
+    faviconUrl?: string;
+    primaryColor?: string;
     notes?: string;
     reviewedBy?: string;
     reviewedAt?: number;
@@ -56,6 +60,7 @@ export default function ClientRequestsPanel() {
     const [approvingId, setApprovingId] = useState<string | null>(null);
     const [platformBps, setPlatformBps] = useState(50); // Default platform fee
     const [historyViewerId, setHistoryViewerId] = useState<string | null>(null);
+    const [activeTabs, setActiveTabs] = useState<Record<string, string>>({});
 
     useEffect(() => {
         if (brand?.key) setBrandKey(brand.key);
@@ -90,7 +95,73 @@ export default function ClientRequestsPanel() {
     const [deploying, setDeploying] = useState(false);
     const [deployResult, setDeployResult] = useState<string>("");
 
-    // Derived merchant bps
+    // Search & Filter State
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<"all" | ClientRequest["status"]>("all");
+    const [sortField, setSortField] = useState<"createdAt" | "shopName" | "status">("createdAt");
+    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, statusFilter, itemsPerPage]);
+
+    // Derived Data
+    const { filtered: filteredItems, counts } = React.useMemo(() => {
+        let res = items || [];
+
+        // 1. Search (Global)
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            res = res.filter(i =>
+                (i.shopName || "").toLowerCase().includes(q) ||
+                (i.wallet || "").toLowerCase().includes(q) ||
+                (i.legalBusinessName || "").toLowerCase().includes(q) ||
+                (i.businessType || "").toLowerCase().includes(q) ||
+                (i.email || "").toLowerCase().includes(q)
+            );
+        }
+
+        // 2. Compute Counts (based on search results)
+        const newCounts: Record<string, number> = { all: res.length, pending: 0, approved: 0, rejected: 0, blocked: 0, orphaned: 0 };
+        res.forEach(r => {
+            if (newCounts[r.status] !== undefined) newCounts[r.status]++;
+        });
+
+        // 3. Filter by Status
+        let finalRes = res;
+        if (statusFilter !== "all") {
+            finalRes = finalRes.filter(i => i.status === statusFilter);
+        }
+
+        // 4. Sort
+        finalRes.sort((a, b) => {
+            let valA: any = a[sortField];
+            let valB: any = b[sortField];
+
+            if (sortField === "createdAt") {
+                valA = Number(a.createdAt || 0);
+                valB = Number(b.createdAt || 0);
+            } else {
+                valA = String(valA || "").toLowerCase();
+                valB = String(valB || "").toLowerCase();
+            }
+
+            if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+            if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+            return 0;
+        });
+
+        return { filtered: finalRes, counts: newCounts };
+    }, [items, searchQuery, statusFilter, sortField, sortDirection]);
+
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     const agentsBps = agents.reduce((sum, a) => sum + (Number(a.bps) || 0), 0);
     const merchantBps = 10000 - platformBps - partnerBps - agentsBps;
 
@@ -124,13 +195,16 @@ export default function ClientRequestsPanel() {
         load();
     }, [account?.address]);
 
-    async function updateStatus(id: string, status: "pending" | "approved" | "rejected" | "blocked", splitConfig?: { partnerBps: number, merchantBps: number, agents?: { wallet: string, bps: number }[] }, shouldClose = true) {
+    async function updateStatus(id: string, status: "pending" | "approved" | "rejected" | "blocked", splitConfig?: { partnerBps: number, merchantBps: number, agents?: { wallet: string, bps: number }[] }, shouldClose = true, shopConfigUpdate?: any) {
         try {
             setError("");
             setInfo("");
             const body: any = { requestId: id, status };
             if (splitConfig) {
                 body.splitConfig = splitConfig;
+            }
+            if (shopConfigUpdate) {
+                body.shopConfigUpdate = shopConfigUpdate;
             }
 
             const r = await fetch("/api/partner/client-requests", {
@@ -367,6 +441,89 @@ export default function ClientRequestsPanel() {
             {error && <div className="microtext text-red-500">{error}</div>}
             {info && <div className="microtext text-green-600">{info}</div>}
 
+            {/* Filters & Controls */}
+            <div className="flex flex-col space-y-4 bg-black/20 p-4 rounded-lg border border-white/5">
+                {/* Top Row: Search & Items Per Page */}
+                <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+                    {/* Search */}
+                    <div className="relative w-full md:w-72">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search requests..."
+                            className="pl-9 pr-4 py-2 w-full text-sm bg-black/40 border border-white/10 rounded-lg focus:ring-1 focus:ring-emerald-500/50"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex items-center gap-3">
+                        <select
+                            className="h-9 text-sm bg-black/40 border border-white/10 rounded-lg px-2 focus:ring-1 focus:ring-emerald-500/50"
+                            value={itemsPerPage}
+                            onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                        >
+                            <option value={5} className="bg-zinc-900 text-white">5 per page</option>
+                            <option value={10} className="bg-zinc-900 text-white">10 per page</option>
+                            <option value={20} className="bg-zinc-900 text-white">20 per page</option>
+                            <option value={50} className="bg-zinc-900 text-white">50 per page</option>
+                        </select>
+
+                        <div className="h-6 w-px bg-white/10 hidden md:block" />
+
+                        <select
+                            className="h-9 text-sm bg-black/40 border border-white/10 rounded-lg px-2 focus:ring-1 focus:ring-emerald-500/50"
+                            value={sortField}
+                            onChange={(e) => setSortField(e.target.value as any)}
+                        >
+                            <option value="createdAt" className="bg-zinc-900 text-white">Date</option>
+                            <option value="shopName" className="bg-zinc-900 text-white">Name</option>
+                            <option value="status" className="bg-zinc-900 text-white">Status</option>
+                        </select>
+
+                        <button
+                            onClick={() => setSortDirection(prev => prev === "asc" ? "desc" : "asc")}
+                            className="h-9 w-9 flex items-center justify-center rounded-lg bg-black/40 border border-white/10 hover:bg-white/5 transition-colors"
+                            title={`Sort ${sortDirection === "asc" ? "Ascending" : "Descending"}`}
+                        >
+                            {sortDirection === "asc" ? "↑" : "↓"}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Status Tabs */}
+                <div className="flex flex-wrap gap-1 border-b border-white/5">
+                    {[
+                        { id: "all", label: "All Requests" },
+                        { id: "pending", label: "Pending" },
+                        { id: "approved", label: "Approved" },
+                        { id: "rejected", label: "Rejected" },
+                        { id: "blocked", label: "Blocked" },
+                        { id: "orphaned", label: "Orphaned" }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setStatusFilter(tab.id as any)}
+                            className={`px-3 py-2 text-xs uppercase tracking-wide font-medium border-b-2 transition-all flex items-center gap-2 ${statusFilter === tab.id
+                                ? "border-emerald-500 text-emerald-400 bg-emerald-500/5"
+                                : "border-transparent text-muted-foreground hover:text-zinc-300 hover:border-white/10"
+                                }`}
+                        >
+                            {tab.label}
+                            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono ${statusFilter === tab.id ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 text-zinc-500"
+                                }`}>
+                                {counts[tab.id as keyof typeof counts] || 0}
+                            </span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             <div className="overflow-auto rounded-md border bg-black/20">
                 <table className="min-w-full text-sm">
                     <thead>
@@ -379,7 +536,7 @@ export default function ClientRequestsPanel() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-foreground/5">
-                        {(items || []).map((req) => {
+                        {paginatedItems.map((req, idx) => {
                             const submitted = new Date(Number(req.createdAt || 0)).toLocaleString();
                             const badgeClass =
                                 req.status === "approved" ? "bg-green-500/10 text-green-500 border-green-500/20" :
@@ -390,7 +547,7 @@ export default function ClientRequestsPanel() {
                             const isExpanded = expandedIds.has(req.id);
 
                             return (
-                                <React.Fragment key={req.id}>
+                                <React.Fragment key={`${req.id}-${idx}`}>
                                     <tr className={`hover:bg-foreground/5 transition-colors ${isExpanded ? "bg-foreground/5" : ""}`}>
                                         <td className="px-4 py-3 align-top">
                                             <div className="flex items-start gap-3">
@@ -532,75 +689,108 @@ export default function ClientRequestsPanel() {
                                         isExpanded && (
                                             <tr className="bg-foreground/[0.02]">
                                                 <td colSpan={5} className="px-4 py-4 border-t border-foreground/5">
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                        <div className="space-y-3">
-                                                            <h4 className="text-xs font-mono uppercase text-muted-foreground tracking-wider mb-2">Business Details</h4>
-                                                            <div className="space-y-2">
-                                                                <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
-                                                                    <span className="text-muted-foreground">Legal Name</span>
-                                                                    <span className="select-all">{req.legalBusinessName || "—"}</span>
-                                                                </div>
-                                                                <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
-                                                                    <span className="text-muted-foreground">DBA Name</span>
-                                                                    <span className="select-all">{req.shopName}</span>
-                                                                </div>
-                                                                <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
-                                                                    <span className="text-muted-foreground">Type</span>
-                                                                    <span className="uppercase">{req.businessType || "—"}</span>
-                                                                </div>
-                                                                <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
-                                                                    <span className="text-muted-foreground">EIN/Tax ID (Last 4)</span>
-                                                                    <span className="font-mono text-emerald-400 select-all">{req.ein || "—"}</span>
+                                                    <div className="flex items-center gap-4 mb-4 border-b border-white/5 pb-2">
+                                                        {["details", "config"].map(tab => (
+                                                            <button
+                                                                key={tab}
+                                                                onClick={() => setActiveTabs(prev => ({ ...prev, [req.id]: tab }))}
+                                                                className={`text-xs uppercase tracking-wider font-semibold pb-2 -mb-2.5 px-2 border-b-2 transition-colors ${(activeTabs[req.id] || "details") === tab
+                                                                    ? "border-emerald-500 text-white"
+                                                                    : "border-transparent text-muted-foreground hover:text-zinc-300"
+                                                                    }`}
+                                                            >
+                                                                {tab === "details" ? "Details" : "Shop Config"}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    {(activeTabs[req.id] || "details") === "details" ? (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                            <div className="space-y-3">
+                                                                <h4 className="text-xs font-mono uppercase text-muted-foreground tracking-wider mb-2">Business Details</h4>
+                                                                <div className="space-y-2">
+                                                                    <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
+                                                                        <span className="text-muted-foreground">Legal Name</span>
+                                                                        <span className="select-all">{req.legalBusinessName || "—"}</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
+                                                                        <span className="text-muted-foreground">DBA Name</span>
+                                                                        <span className="select-all">{req.shopName}</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
+                                                                        <span className="text-muted-foreground">Type</span>
+                                                                        <span className="uppercase">{req.businessType || "—"}</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
+                                                                        <span className="text-muted-foreground">EIN/Tax ID (Last 4)</span>
+                                                                        <span className="font-mono text-emerald-400 select-all">{req.ein || "—"}</span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
 
-                                                        <div className="space-y-3">
-                                                            <h4 className="text-xs font-mono uppercase text-muted-foreground tracking-wider mb-2">Contact & Location</h4>
-                                                            <div className="space-y-2">
-                                                                <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
-                                                                    <span className="text-muted-foreground">Address</span>
-                                                                    <span>
-                                                                        {req.businessAddress ? (
-                                                                            <>
-                                                                                {req.businessAddress.street}<br />
-                                                                                {req.businessAddress.city}, {req.businessAddress.state} {req.businessAddress.zip}<br />
-                                                                                {req.businessAddress.country}
-                                                                            </>
+                                                            <div className="space-y-3">
+                                                                <h4 className="text-xs font-mono uppercase text-muted-foreground tracking-wider mb-2">Contact & Location</h4>
+                                                                <div className="space-y-2">
+                                                                    <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
+                                                                        <span className="text-muted-foreground">Address</span>
+                                                                        <span>
+                                                                            {req.businessAddress ? (
+                                                                                <>
+                                                                                    {req.businessAddress.street}<br />
+                                                                                    {req.businessAddress.city}, {req.businessAddress.state} {req.businessAddress.zip}<br />
+                                                                                    {req.businessAddress.country}
+                                                                                </>
+                                                                            ) : "—"}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
+                                                                        <span className="text-muted-foreground">Website</span>
+                                                                        {req.website ? (
+                                                                            <a href={req.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline truncate">
+                                                                                {req.website}
+                                                                            </a>
                                                                         ) : "—"}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
-                                                                    <span className="text-muted-foreground">Website</span>
-                                                                    {req.website ? (
-                                                                        <a href={req.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline truncate">
-                                                                            {req.website}
-                                                                        </a>
-                                                                    ) : "—"}
-                                                                </div>
-                                                                <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
-                                                                    <span className="text-muted-foreground">Phone</span>
-                                                                    <a href={`tel:${req.phone}`} className="hover:text-white transition-colors">{req.phone || "—"}</a>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
+                                                                        <span className="text-muted-foreground">Phone</span>
+                                                                        <a href={`tel:${req.phone}`} className="hover:text-white transition-colors">{req.phone || "—"}</a>
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
 
-                                                        <div className="space-y-3">
-                                                            <h4 className="text-xs font-mono uppercase text-muted-foreground tracking-wider mb-2">Metadata</h4>
-                                                            <div className="space-y-2">
-                                                                <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
-                                                                    <span className="text-muted-foreground">Wallet</span>
-                                                                    <div className="font-mono text-xs break-all select-all opacity-80">{req.wallet}</div>
-                                                                </div>
-                                                                <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
-                                                                    <span className="text-muted-foreground">Notes</span>
-                                                                    <div className="text-xs italic bg-black/20 p-2 rounded border border-white/5 max-h-[80px] overflow-y-auto">
-                                                                        {req.notes || "No notes provided."}
+                                                            <div className="space-y-3">
+                                                                <h4 className="text-xs font-mono uppercase text-muted-foreground tracking-wider mb-2">Metadata</h4>
+                                                                <div className="space-y-2">
+                                                                    <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
+                                                                        <span className="text-muted-foreground">Wallet</span>
+                                                                        <div className="font-mono text-xs break-all select-all opacity-80">{req.wallet}</div>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
+                                                                        <span className="text-muted-foreground">Notes</span>
+                                                                        <div className="text-xs italic bg-black/20 p-2 rounded border border-white/5 max-h-[80px] overflow-y-auto">
+                                                                            {req.notes || "No notes provided."}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
+                                                    ) : (
+                                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                                                            <div className="w-full">
+                                                                <ShopConfigEditor
+                                                                    wallet={req.wallet}
+                                                                    brandKey={brandKey}
+                                                                    initialData={{
+                                                                        name: req.shopName,
+                                                                        logoUrl: req.logoUrl,
+                                                                        faviconUrl: req.faviconUrl,
+                                                                        primaryColor: req.primaryColor,
+                                                                    }}
+                                                                    onSave={async (data) => updateStatus(req.id, req.status, undefined, false, data)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </td>
                                             </tr>
                                         )
@@ -621,6 +811,36 @@ export default function ClientRequestsPanel() {
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex justify-between items-center bg-black/20 p-4 rounded-lg border border-white/5 mt-4">
+                    <div className="text-xs text-muted-foreground">
+                        Showing <span className="text-white font-mono">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="text-white font-mono">{Math.min(currentPage * itemsPerPage, filteredItems.length)}</span> of <span className="text-white font-mono">{filteredItems.length}</span> results
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1.5 rounded-lg border border-white/10 text-xs disabled:opacity-50 hover:bg-white/5 disabled:hover:bg-transparent transition-colors"
+                        >
+                            Previous
+                        </button>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono text-zinc-500">
+                                Page {currentPage} of {totalPages}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1.5 rounded-lg border border-white/10 text-xs disabled:opacity-50 hover:bg-white/5 disabled:hover:bg-transparent transition-colors"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
             {/* Split Config Modal */}
             {
                 approvingId && (
