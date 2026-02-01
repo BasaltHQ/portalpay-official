@@ -348,9 +348,18 @@ function GeneratePackageForm({
   // Auto-suggest endpoint when brand key changes
   React.useEffect(() => {
     const key = brandKey.trim().toLowerCase();
+
+    // Get current container context (naive check via env or prop if passed, but window.location is safer for "current")
+    const layoutDetails = {
+      isPartner: process.env.NEXT_PUBLIC_CONTAINER_TYPE === "partner",
+      currentBrand: (process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase()
+    };
+
     if (key && !endpoint) {
-      // Suggest endpoint based on brand key
-      if (key === "basaltsurge") {
+      if (layoutDetails.isPartner && key === layoutDetails.currentBrand && typeof window !== 'undefined') {
+        // If building for SELF on a Partner Container, use the current browser URL
+        setEndpoint(window.location.origin);
+      } else if (key === "basaltsurge") {
         setEndpoint("https://surge.basalthq.com");
       } else if (key === "paynex") {
         setEndpoint("https://paynex.azurewebsites.net");
@@ -359,7 +368,7 @@ function GeneratePackageForm({
         setEndpoint(`https://${key}.azurewebsites.net`);
       }
     }
-  }, [brandKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [brandKey, endpoint]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

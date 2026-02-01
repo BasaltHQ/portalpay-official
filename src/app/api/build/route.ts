@@ -79,7 +79,20 @@ export async function POST(req: NextRequest) {
         // 2. Parse request body
         const body = await req.json().catch(() => ({} as any));
 
-        const brandKey = String(body?.brandKey || "").toLowerCase().trim();
+        let brandKey = String(body?.brandKey || "").toLowerCase().trim();
+
+        // Strict Partner Isolation
+        const containerType = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || process.env.CONTAINER_TYPE || "platform").toLowerCase();
+        const envBrandKey = String(process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase();
+
+        if (containerType === "partner") {
+            if (!envBrandKey) {
+                return NextResponse.json({ error: "Server configuration error: Partner container missing BRAND_KEY" }, { status: 500 });
+            }
+            // Enforce the environment brand key
+            brandKey = envBrandKey;
+        }
+
         if (!brandKey) {
             return NextResponse.json({ error: "brandKey is required" }, { status: 400 });
         }

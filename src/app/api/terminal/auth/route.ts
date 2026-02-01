@@ -73,17 +73,37 @@ export async function POST(req: NextRequest) {
         // Find the staff member with this PIN
         const pinHash = createHash("sha256").update(String(pin)).digest("hex");
 
+        let staffQuery = "SELECT c.id, c.name, c.role FROM c WHERE c.type = 'merchant_team_member' AND c.merchantWallet = @w AND c.pinHash = @ph";
+        const staffParams = [
+            { name: "@w", value: w },
+            { name: "@ph", value: pinHash }
+        ];
+
+        // Strict Isolation: Ensure staff member belongs to this environment's brand
+        const envBrandKey = branding.key || "";
+        // Note: branding.key is derived from config/env in this route earlier.
+
+        if (envBrandKey && envBrandKey !== "portalpay" && envBrandKey !== "basaltsurge") {
+            // Partner Mode
+            staffQuery += " AND c.brandKey = @bk";
+            staffParams.push({ name: "@bk", value: envBrandKey });
+        } else {
+            // Platform Mode
+            staffQuery += " AND (NOT IS_DEFINED(c.brandKey) OR c.brandKey = 'portalpay' OR c.brandKey = 'basaltsurge')";
+        }
+
         const querySpec = {
-            query: "SELECT c.id, c.name, c.role FROM c WHERE c.type = 'merchant_team_member' AND c.merchantWallet = @w AND c.pinHash = @ph",
-            parameters: [
-                { name: "@w", value: w },
-                { name: "@ph", value: pinHash }
-            ]
+            query: staffQuery,
+            parameters: staffParams
         };
 
         const { resources: staff } = await container.items.query(querySpec).fetchAll();
 
         if (!staff || staff.length === 0) {
+            // Check specifically if it was a brand mismatch? 
+            // Hard to tell without separate query, but for security simply "Invalid PIN" (or generic failure) is fine.
+            // But we might want to hint if it's a valid PIN but wrong Brand?
+            // For now, standard behavior: Not Found = Invalid.
             return NextResponse.json({ error: "Invalid PIN" }, { status: 401 });
         }
 

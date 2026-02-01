@@ -15,12 +15,22 @@ export async function GET(req: NextRequest) {
         }
         const merchantWallet = walletHeader.toLowerCase();
 
-        // Query by partition key (merchantWallet) if possible, or just query.
-        // Assuming container partition key is /merchant or similar, we must include it in query or feed options.
-        const querySpec = {
-            query: "SELECT * FROM c WHERE c.type = 'merchant_team_member' AND c.merchantWallet = @wallet",
-            parameters: [{ name: "@wallet", value: merchantWallet }]
-        };
+        // Strict Isolation Logic
+        const envBrandKey = String(process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase();
+
+        let query = "SELECT * FROM c WHERE c.type = 'merchant_team_member' AND c.merchantWallet = @wallet";
+        const parameters = [{ name: "@wallet", value: merchantWallet }];
+
+        if (envBrandKey && envBrandKey !== "portalpay" && envBrandKey !== "basaltsurge") {
+            // Partner Container: Strict filter matching THIS brand
+            query += " AND c.brandKey = @brandKey";
+            parameters.push({ name: "@brandKey", value: envBrandKey });
+        } else {
+            // Platform Container: Show only Platform members (no brandKey or default brands)
+            query += " AND (NOT IS_DEFINED(c.brandKey) OR c.brandKey = 'portalpay' OR c.brandKey = 'basaltsurge')";
+        }
+
+        const querySpec = { query, parameters };
 
         const { resources } = await container.items.query(querySpec).fetchAll();
 
@@ -81,7 +91,9 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// Helper to find doc and its partition key
+// Helper to find doc and its partition key. Caches the PK path for performance.
+let cachedPkPath: string | null = null;
+
 async function findDocAndPk(container: any, id: string) {
     const querySpec = {
         query: "SELECT * FROM c WHERE c.id = @id",
@@ -91,6 +103,11 @@ async function findDocAndPk(container: any, id: string) {
     if (!resources || resources.length === 0) return null;
     const doc = resources[0];
 
+    // Try to use cached PK path first (Optimized for "flawless" performance)
+    if (cachedPkPath) {
+        return { doc, pkValue: doc[cachedPkPath] };
+    }
+
     // Dynamically resolve Partition Key definition to be 100% sure
     try {
         const { resource: containerDef } = await container.read();
@@ -98,33 +115,17 @@ async function findDocAndPk(container: any, id: string) {
         if (pkPaths && pkPaths.length > 0) {
             // Usually "/wallet" or "/brandKey". Strip leading slash.
             const pkPath = pkPaths[0].substring(1);
+            cachedPkPath = pkPath; // CACHE IT
+
             // Access the property dynamically
             const pkValue = doc[pkPath];
-            // If the value is undefined in the doc, we must return undefined (for usage in item(id, undefined))
-            // However, verify if 'undefined' is explicitly valid for the SDK or if we need a special handling.
-            // Usually passing undefined as partition key value works for undefined partitions.
             return { doc, pkValue };
         }
     } catch (e) {
         console.error("Failed to read container PK def", e);
     }
 
-    // Determine PK: Try 'brandKey' (Partner Mode), then 'wallet' (standard), then legacy
-    // If we are in a Partner Container, checking 'brandKey' is crucial if that's the partition.
-    // However, we don't know the container config.
-    // We assume that the document HAS the property that acts as the partition key.
-    // If brandKey is present on doc, it MIGHT be the PK.
-    // If wallet is present, it MIGHT be the PK.
-    // We rely on the fact that usually only ONE of these is the defined PK for the container.
-    // But failing that, we return the most specific one available or try a prioritized list.
-
-    // HEURISTIC: If process.env.BRAND_KEY is set, we might be in a brand-partitioned container?
-    // But usually simple "payportal" containers are partitioned by /wallet.
-    // Only dedicated partner containers MIGHT be partitioned by /brandKey?
-    // Let's assume standard /wallet unless brandKey is strongly implied.
-    // Actually, if doc.wallet is set, that's usually the safer bet for legacy support.
-    // BUT user specifically mentioned brandKey.
-
+    // Fallback Heuristics
     const pkValue = doc.wallet || doc.merchant || doc.merchantWallet || doc.brandKey;
     return { doc, pkValue };
 }
@@ -165,10 +166,8 @@ export async function PATCH(req: NextRequest) {
             ops.push({ op: "set", path: "/pinHash", value: ph });
         }
 
-        // If 'wallet' field is missing in legacy doc, backfill it
-        if (!doc.wallet) {
-            ops.push({ op: "set", path: "/wallet", value: merchantWallet });
-        }
+        // REMOVED: Do not try to backfill 'wallet' (Partition Key) via PATCH. 
+        // Changing/Setting PK on existing doc is forbidden and causes 400 Bad Request.
 
         ops.push({ op: "set", path: "/updatedAt", value: Math.floor(Date.now() / 1000) });
 

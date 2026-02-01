@@ -31,7 +31,11 @@ export default function TouchpointMonitoringPanel() {
 
     // Build APK state
     const [showBuildForm, setShowBuildForm] = useState(false);
-    const [buildBrandKey, setBuildBrandKey] = useState("");
+    const [buildBrandKey, setBuildBrandKey] = useState(
+        process.env.NEXT_PUBLIC_CONTAINER_TYPE === "partner"
+            ? (process.env.NEXT_PUBLIC_BRAND_KEY || "")
+            : ""
+    );
     const [buildEndpoint, setBuildEndpoint] = useState("");
     const [building, setBuilding] = useState(false);
 
@@ -66,6 +70,10 @@ export default function TouchpointMonitoringPanel() {
 
     useEffect(() => {
         fetchDevices();
+        // Default build endpoint to current browser origin (custom domain support)
+        if (typeof window !== "undefined") {
+            setBuildEndpoint(window.location.origin);
+        }
     }, [fetchDevices]);
 
     async function handleProvision() {
@@ -461,24 +469,26 @@ export default function TouchpointMonitoringPanel() {
                                     value={buildBrandKey}
                                     onChange={(e) => setBuildBrandKey(e.target.value)}
                                     placeholder="e.g. xoinpay, basaltsurge"
-                                    className="w-full h-9 px-3 rounded-md border bg-background text-sm"
+                                    className="w-full h-9 px-3 rounded-md border bg-background text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={process.env.NEXT_PUBLIC_CONTAINER_TYPE === "partner"}
                                 />
                                 <p className="text-[10px] text-muted-foreground mt-1">
-                                    The brand this APK will be configured for
+                                    {process.env.NEXT_PUBLIC_CONTAINER_TYPE === "partner"
+                                        ? "Locked to current partner container"
+                                        : "The brand this APK will be configured for"}
                                 </p>
                             </div>
 
                             <div>
-                                <label className="text-xs text-muted-foreground block mb-1">Endpoint URL (Optional)</label>
+                                <label className="text-xs text-muted-foreground block mb-1">Target Endpoint</label>
                                 <input
                                     type="text"
                                     value={buildEndpoint}
-                                    onChange={(e) => setBuildEndpoint(e.target.value)}
-                                    placeholder="https://surge.basalthq.com"
-                                    className="w-full h-9 px-3 rounded-md border bg-background text-sm font-mono"
+                                    readOnly
+                                    className="w-full h-9 px-3 rounded-md border bg-neutral-900/50 text-muted-foreground text-sm font-mono cursor-not-allowed"
                                 />
                                 <p className="text-[10px] text-muted-foreground mt-1">
-                                    Leave empty to use default: https://{buildBrandKey || "brand"}.azurewebsites.net
+                                    APK will connect to this domain ({buildEndpoint})
                                 </p>
                             </div>
 
