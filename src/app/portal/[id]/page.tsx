@@ -68,6 +68,7 @@ type Receipt = {
   employeeId?: string;
   sessionId?: string;
   status?: string;
+  transactionHash?: string;
 };
 
 // Helper to determine if receipt is already paid/settled
@@ -1671,7 +1672,7 @@ export default function PortalReceiptPage() {
     let active = true;
     let timer: NodeJS.Timeout;
 
-    if (!receipt || paymentConfirmed || loadingReceipt) return;
+    if (!receipt || paymentConfirmed || isSettled(receipt.status) || loadingReceipt) return;
 
     const checkPayment = async () => {
       try {
@@ -1728,7 +1729,8 @@ export default function PortalReceiptPage() {
         tokenDef &&
         hasTokenAddr &&
         !loadingReceipt &&
-        !!receipt
+        !!receipt &&
+        !isSettled(receipt.status)
       ) {
         postStatus("checkout_initialized", { token, amount: widgetAmount });
       }
@@ -2304,11 +2306,11 @@ export default function PortalReceiptPage() {
                                   Proof of Payment
                                 </div>
                                 <div className="text-lg font-bold text-white break-all">
-                                  {paymentConfirmed?.txHash ? (
-                                    <span className="font-mono text-xs">{paymentConfirmed.txHash.slice(0, 10)}...{paymentConfirmed.txHash.slice(-8)}</span>
-                                  ) : (
-                                    <span className="font-mono text-sm">Validating...</span>
-                                  )}
+                                  {(() => {
+                                    const tx = paymentConfirmed?.txHash || (receipt as any)?.transactionHash;
+                                    if (tx) return <span className="font-mono text-xs">{tx.slice(0, 10)}...{tx.slice(-8)}</span>;
+                                    return <span className="font-mono text-sm">{isSettled(receipt.status) ? "Confirmed" : "Validating..."}</span>;
+                                  })()}
                                 </div>
                                 <div className="text-xs text-emerald-400 font-medium mt-1">
                                   Show this screen to merchant
@@ -2722,11 +2724,11 @@ export default function PortalReceiptPage() {
                                 Proof of Payment
                               </div>
                               <div className="text-lg font-bold text-white break-all">
-                                {paymentConfirmed?.txHash ? (
-                                  <span className="font-mono text-xs">{paymentConfirmed.txHash.slice(0, 10)}...{paymentConfirmed.txHash.slice(-8)}</span>
-                                ) : (
-                                  <span className="font-mono text-sm">Validating...</span>
-                                )}
+                                {(() => {
+                                  const tx = paymentConfirmed?.txHash || (receipt as any)?.transactionHash;
+                                  if (tx) return <span className="font-mono text-xs">{tx.slice(0, 10)}...{tx.slice(-8)}</span>;
+                                  return <span className="font-mono text-sm">{isSettled(receipt.status) ? "Confirmed" : "Validating..."}</span>;
+                                })()}
                               </div>
                               <div className="text-xs text-emerald-400 font-medium mt-1">
                                 Show this screen to merchant

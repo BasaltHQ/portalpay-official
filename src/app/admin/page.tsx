@@ -3178,6 +3178,11 @@ function ReceiptsAdmin() {
                         onChange={(e) => setEditTransactionHash(e.target.value)}
                       >
                         <option value="">No transaction assigned</option>
+                        {editTransactionHash && !(splitTransactions || []).some((tx: any) => tx.hash === editTransactionHash) && (
+                          <option value={editTransactionHash}>
+                            {editTransactionHash.slice(0, 10)}...{editTransactionHash.slice(-8)} (Current)
+                          </option>
+                        )}
                         {(() => {
                           try {
                             // Smart recommendation: score transactions based on amount and time
