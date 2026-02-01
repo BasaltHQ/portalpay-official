@@ -34,13 +34,25 @@ export async function POST(req: NextRequest) {
                 parameters: [{ name: "@w", value: w }]
             };
             const { resources: shops } = await container.items.query(querySpec).fetchAll();
-            const shop = shops?.[0];
+
+            // Smart Selection: Prioritize config for THIS brand, then fallback to Platform
+            const currentBrandMatch = shops.find((s: any) => (s.brandKey || "").toLowerCase() === branding.key);
+            const platformMatch = shops.find((s: any) => {
+                const b = (s.brandKey || "portalpay").toLowerCase();
+                return b === "portalpay" || b === "basaltsurge";
+            });
+
+            // Use the specific brand config if available, otherwise use the platform config
+            const shop = currentBrandMatch || platformMatch;
             const shopBrand = String(shop?.brandKey || "portalpay").toLowerCase();
+
+            if (!shop) {
+                return NextResponse.json({ error: "No merchant account found" }, { status: 403 });
+            }
 
             // Allow if brands match OR if shop has no brand and we are basaltsurge (default)
             // But strict partner mode means NO cross-brand access.
             // EXCEPTION: Allow "portalpay" or "basaltsurge" (platform default) merchants to access Partner Containers
-            // They will still be subject to the 'request' mode check below.
             if (shopBrand !== branding.key && shopBrand !== "portalpay" && shopBrand !== "basaltsurge") {
                 console.warn(`[Auth] Blocked cross-brand access: Merchant ${shopBrand} trying to log in on ${branding.key}`);
                 return NextResponse.json({ error: "Invalid terminal for this account" }, { status: 403 });

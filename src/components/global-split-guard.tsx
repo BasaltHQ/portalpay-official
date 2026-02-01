@@ -95,19 +95,21 @@ export default function GlobalSplitGuard() {
   const isPrivate = accessMode === "request";
 
   // Do not run Split Guard on public shop pages (buyers should not be prompted here)
+  // Also do not run on Terminal pages (staff/PIN screen)
   if (typeof window !== "undefined") {
     try {
       const path = window.location.pathname || "";
       const isShopPage = /^\/shop\//.test(path) || !!(window as any).__pp_shopContext;
-      if (isShopPage) {
+      const isTerminalPage = /^\/terminal/.test(path);
+      if (isShopPage || isTerminalPage) {
         return null;
       }
     } catch { }
   }
 
   const account = useActiveAccount();
-
   const wallet = useActiveWallet();
+  // ... existing state ...
   const [open, setOpen] = useState(false);
   const [checking, setChecking] = useState(false);
   const [deploying, setDeploying] = useState(false);
@@ -117,18 +119,25 @@ export default function GlobalSplitGuard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [splitExists, setSplitExists] = useState(false);
   const { disconnect } = useDisconnect();
-  // Re-check trigger for split guard after auth events (login/logout)
+  // ... existing state ...
   const [recheckNonce, setRecheckNonce] = useState(0);
-  // Track awaiting auth so we re-run checks after login completes
   const [awaitAuth, setAwaitAuth] = useState(false);
   const [previewRecipients, setPreviewRecipients] = useState<any[] | null>(null);
   const prevOpenRef = useRef<boolean>(false);
 
+  // ... (keep existing const definitions like platformRecipient, brandKey, partnerContext, etc.) ...
   const platformRecipient = (process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
   const platformValid = isValidHex(platformRecipient);
 
   let brandKey = String((brand as any)?.key || "portalpay").toLowerCase();
   const partnerContext = brandKey !== "portalpay" && brandKey !== "basaltsurge";
+
+  // NEW: Check if Private Partner functionality dictates suppression
+  // If we are in a partner context AND it is private (request mode) => Only Admins should deal with splits.
+  // We can't fully know isAdmin until we check auth, but we can do an early check if we have the data.
+
+  // We will defer the final "Open Modal" decision until after auth check inside the effect, 
+  // but we can add the logic there.
   const meAddr = String(account?.address || "").toLowerCase();
 
   const detectedPartnerAddr = React.useMemo(() => {
@@ -278,23 +287,32 @@ export default function GlobalSplitGuard() {
           .then(r => r.ok ? r.json() : { authed: false })
           .catch(() => ({ authed: false }));
 
+        // Determine Admin Status from Auth
+        let userIsAdmin = false;
+        try {
+          const roles = Array.isArray((authCheck as any)?.roles) ? (authCheck as any).roles : [];
+          const adminByRole = roles.includes('admin');
+          const partnerAdmin = partnerContext && partnerValid && meAddr === partnerAddr;
+          const ownerEnv = ((typeof document !== "undefined" && document?.documentElement?.getAttribute("data-pp-owner-wallet")) || "").toLowerCase() || (process.env.NEXT_PUBLIC_OWNER_WALLET || "").toLowerCase();
+          const ownerAdmin = !!ownerEnv && ownerEnv === meAddr;
+          userIsAdmin = !!(adminByRole || partnerAdmin || ownerAdmin);
+          setIsAdmin(userIsAdmin);
+        } catch { }
+
         // SUPPRESSION: If private mode and not approved, do NOT show split modal.
-        // User should see AccessPendingModal instead (handled by Navbar).
         if (isPrivate && !authCheck.authed && !authCheck.approved) {
           setOpen(false);
           setChecking(false);
           return;
         }
 
-        try {
-
-          const roles = Array.isArray((authCheck as any)?.roles) ? (authCheck as any).roles : [];
-          const adminByRole = roles.includes('admin');
-          const partnerAdmin = partnerContext && partnerValid && meAddr === partnerAddr;
-          const ownerEnv = ((typeof document !== "undefined" && document?.documentElement?.getAttribute("data-pp-owner-wallet")) || "").toLowerCase() || (process.env.NEXT_PUBLIC_OWNER_WALLET || "").toLowerCase();
-          const ownerAdmin = !!ownerEnv && ownerEnv === meAddr;
-          setIsAdmin(adminByRole || partnerAdmin || ownerAdmin);
-        } catch { }
+        // SUPPRESSION: Private Partner Container + Non-Admin
+        // In private partner apps, the Partner (Admin) manages the split. Regular users/merchants do not.
+        if (partnerContext && isPrivate && !userIsAdmin) {
+          setOpen(false);
+          setChecking(false);
+          return;
+        }
 
         // If not authenticated, attempt an unauthenticated preview so the split modal can still show correct recipients
         if (!authCheck?.authed) {

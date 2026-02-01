@@ -2,6 +2,43 @@ import { NextRequest, NextResponse } from "next/server";
 import { getContainer } from "@/lib/cosmos";
 import { createHash, randomUUID } from "node:crypto";
 
+// Helper to find doc and its partition key. Caches the PK path for performance.
+let cachedPkPath: string | null = null;
+
+async function findDocAndPk(container: any, id: string) {
+    const querySpec = {
+        query: "SELECT * FROM c WHERE c.id = @id",
+        parameters: [{ name: "@id", value: id }]
+    };
+    const { resources } = await container.items.query(querySpec).fetchAll();
+    if (!resources || resources.length === 0) return null;
+    const doc = resources[0];
+
+    // Try to use cached PK path first (Optimized for "flawless" performance)
+    if (cachedPkPath) {
+        return { doc, pkValue: doc[cachedPkPath] };
+    }
+
+    // Dynamically resolve Partition Key definition to be 100% sure
+    try {
+        const { resource: containerDef } = await container.read();
+        const pkPaths = containerDef?.partitionKey?.paths;
+        if (pkPaths && pkPaths.length > 0) {
+            // Usually "/wallet" or "/brandKey". Strip leading slash.
+            const pkPath = pkPaths[0].substring(1);
+            cachedPkPath = pkPath; // CACHE IT
+            const pkValue = doc[pkPath];
+            return { doc, pkValue };
+        }
+    } catch (e) {
+        console.error("Failed to read container PK def", e);
+    }
+
+    // Fallback Heuristics
+    const pkValue = doc.wallet || doc.merchant || doc.merchantWallet || doc.brandKey;
+    return { doc, pkValue };
+}
+
 export async function GET(req: NextRequest) {
     try {
         const merchantWallet = req.headers.get("x-wallet");
@@ -13,35 +50,30 @@ export async function GET(req: NextRequest) {
         const w = String(merchantWallet).trim().toLowerCase();
 
         // Enforce Partner Isolation
-        const ct = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || process.env.CONTAINER_TYPE || "platform").toLowerCase();
-        const branding = {
-            key: String(process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase()
-        };
+        const envBrandKey = String(process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase();
 
-        if (ct === "partner") {
-            if (!branding.key) return NextResponse.json({ error: "Configuration error" }, { status: 500 });
+        // Build Query with strict isolation
+        let query = "SELECT * FROM c WHERE c.type = 'merchant_team_member' AND c.merchantWallet = @w";
+        const parameters = [{ name: "@w", value: w }];
 
-            // Verify merchant matches brand
-            const querySpec = {
-                query: "SELECT c.brandKey FROM c WHERE c.type = 'shop_config' AND c.wallet = @w",
-                parameters: [{ name: "@w", value: w }]
-            };
-            const { resources: shops } = await container.items.query(querySpec).fetchAll();
-            const shopBrand = String(shops?.[0]?.brandKey || "portalpay").toLowerCase();
-
-            if (shopBrand !== branding.key) {
-                return NextResponse.json({ error: "Unauthorized for this brand" }, { status: 403 });
-            }
+        if (envBrandKey && envBrandKey !== "portalpay" && envBrandKey !== "basaltsurge") {
+            // Partner Mode: Filter by THIS brand
+            query += " AND c.brandKey = @brandKey";
+            parameters.push({ name: "@brandKey", value: envBrandKey });
+        } else {
+            // Platform Mode: Only show Platform members (no brand or default)
+            query += " AND (NOT IS_DEFINED(c.brandKey) OR c.brandKey = 'portalpay' OR c.brandKey = 'basaltsurge')";
         }
 
-        const querySpec = {
-            query: "SELECT c.id, c.name, c.role FROM c WHERE c.type = 'merchant_team_member' AND c.merchantWallet = @w",
-            parameters: [{ name: "@w", value: w }]
-        };
-
+        const querySpec = { query, parameters };
         const { resources: members } = await container.items.query(querySpec).fetchAll();
 
-        return NextResponse.json({ members });
+        const sanitized = members.map((r: any) => ({
+            ...r,
+            pinHash: undefined // mask it
+        }));
+
+        return NextResponse.json({ members: sanitized });
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });
     }
@@ -65,32 +97,15 @@ export async function POST(req: NextRequest) {
         const w = String(merchantWallet).trim().toLowerCase();
         const pinHash = createHash("sha256").update(String(pin)).digest("hex");
 
-        // Resolve Brand Key
-        const envBrandKey = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase();
-        let finalBrandKey = envBrandKey;
-
-        // If no global brand key, check if shop has one
-        if (!finalBrandKey) {
-            try {
-                const { resources: shops } = await container.items
-                    .query({
-                        query: "SELECT c.brandKey FROM c WHERE c.type = 'shop_config' AND c.wallet = @w",
-                        parameters: [{ name: "@w", value: w }]
-                    })
-                    .fetchAll();
-                if (shops.length > 0 && shops[0].brandKey) {
-                    finalBrandKey = shops[0].brandKey;
-                }
-            } catch { }
-        }
-
-        const branding = { key: finalBrandKey };
+        // Use Env Brand Key (Partner Mode)
+        const brandKey = String(process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase();
 
         const newMember = {
             id: randomUUID(),
             type: "merchant_team_member",
             merchantWallet: w,
-            brandKey: branding.key || undefined,
+            wallet: w, // Ensure PK present
+            brandKey: brandKey || undefined,
             name,
             role: role || "staff",
             pinHash,
@@ -99,7 +114,7 @@ export async function POST(req: NextRequest) {
 
         await container.items.create(newMember);
 
-        return NextResponse.json({ success: true, member: newMember });
+        return NextResponse.json({ success: true, member: { ...newMember, pinHash: undefined } });
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });
     }
@@ -108,36 +123,38 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
     try {
         const merchantWallet = req.headers.get("x-wallet");
-        if (!merchantWallet) {
-            return NextResponse.json({ error: "Wallet required" }, { status: 401 });
-        }
+        if (!merchantWallet) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
         const body = await req.json();
-        const { id, name, role, pin } = body;
-
-        if (!id) {
-            return NextResponse.json({ error: "ID required" }, { status: 400 });
-        }
+        if (!body.id) return NextResponse.json({ error: "ID required" }, { status: 400 });
 
         const container = await getContainer();
         const w = String(merchantWallet).trim().toLowerCase();
-        // Correct Partition Key Usage: (id, merchantWallet)
-        const { resource: member } = await container.item(id, w).read();
 
-        // Security check: ensure member belongs to this merchant
-        if (!member || member.merchantWallet !== merchantWallet.toLowerCase()) {
-            return NextResponse.json({ error: "Member not found" }, { status: 404 });
+        // Robust Lookup
+        const found = await findDocAndPk(container, body.id);
+        if (!found) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+        const { doc, pkValue } = found;
+
+        if (doc.merchantWallet !== w) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        const updates: any = {};
-        if (name) updates.name = name;
-        if (role) updates.role = role;
-        if (pin) updates.pinHash = createHash("sha256").update(String(pin)).digest("hex");
+        // Apply Updates
+        const ops = [];
+        if (body.name) ops.push({ op: "set", path: "/name", value: body.name });
+        if (body.role) ops.push({ op: "set", path: "/role", value: body.role });
+        if (body.pin) {
+            const ph = createHash("sha256").update(String(body.pin)).digest("hex");
+            ops.push({ op: "set", path: "/pinHash", value: ph });
+        }
+        ops.push({ op: "set", path: "/updatedAt", value: Math.floor(Date.now() / 1000) });
 
-        const updatedMember = { ...member, ...updates };
-        await container.item(id, w).replace(updatedMember);
+        if (ops.length > 0) {
+            await container.item(body.id, pkValue).patch(ops as any);
+        }
 
-        return NextResponse.json({ success: true, member: updatedMember });
+        return NextResponse.json({ success: true });
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });
     }
@@ -146,26 +163,24 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
     try {
         const merchantWallet = req.headers.get("x-wallet");
-        if (!merchantWallet) {
-            return NextResponse.json({ error: "Wallet required" }, { status: 401 });
-        }
+        if (!merchantWallet) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
         const body = await req.json();
-        const { id } = body;
-
-        if (!id) {
-            return NextResponse.json({ error: "ID required" }, { status: 400 });
-        }
+        if (!body.id) return NextResponse.json({ error: "ID required" }, { status: 400 });
 
         const container = await getContainer();
         const w = String(merchantWallet).trim().toLowerCase();
-        const { resource: member } = await container.item(id, w).read();
 
-        if (!member || member.merchantWallet !== w) {
-            return NextResponse.json({ error: "Member not found" }, { status: 404 });
+        // Robust Lookup
+        const found = await findDocAndPk(container, body.id);
+        if (!found) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+        const { doc, pkValue } = found;
+
+        if (doc.merchantWallet !== w) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        await container.item(id, w).delete();
+        await container.item(body.id, pkValue).delete();
 
         return NextResponse.json({ success: true });
     } catch (e: any) {
