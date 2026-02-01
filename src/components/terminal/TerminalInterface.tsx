@@ -197,21 +197,12 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
     const portalUrl = useMemo(() => {
         if (!selected) return "";
         const base = `${origin}/portal/${encodeURIComponent(selected.receiptId)}?recipient=${encodeURIComponent(merchantWallet)}`;
-        const params = new URLSearchParams();
 
-        // Inject theme overrides to ensure consistent branding on the portal even if API fetch fails/differs
-        if (theme?.primaryColor) params.set("t_primary", theme.primaryColor);
-        if (theme?.secondaryColor) params.set("t_secondary", theme.secondaryColor);
-        if (theme?.textColor) params.set("t_text", theme.textColor);
-        if (theme?.fontFamily) params.set("t_font", theme.fontFamily);
-        if (brandName) params.set("t_brand", brandName);
-        if (logoUrl) params.set("t_logo", logoUrl);
-        // Explicitly set layout to wide for better mobile experience if requested, otherwise default (compact) is fine
-        // params.set("layout", "wide"); // User example had wide, but compact is safer for phone scans. omit for default.
+        // Removed excessive theme params to keep QR code simple/scannable
+        // The portal page will fetch the merchant's config via the wallet address
 
-        const queryString = params.toString();
-        return queryString ? `${base}&${queryString}` : base;
-    }, [selected, merchantWallet, theme, brandName, origin, logoUrl]);
+        return base;
+    }, [selected, merchantWallet, origin]);
 
     const isManagerOrKeyholder = employeeRole === 'manager' || employeeRole === 'keyholder';
 

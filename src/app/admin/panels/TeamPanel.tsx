@@ -33,8 +33,10 @@ type MemberStats = {
 
 type TabType = "overview" | "sessions" | "tips" | "performance" | "settings";
 
-export default function TeamPanel() {
+export default function TeamPanel({ overrideWallet }: { overrideWallet?: string }) {
     const account = useActiveAccount();
+    // Use override wallet if provided (for Partner Admins managing Clients), otherwise fallback to connected account
+    const activeWallet = overrideWallet || account?.address;
     const [stats, setStats] = useState<{
         sales: Record<string, number>,
         sessions: Record<string, number>,
@@ -74,7 +76,7 @@ export default function TeamPanel() {
         try {
             setLoading(true);
             setError("");
-            const headers = { "x-wallet": account?.address || "" };
+            const headers = { "x-wallet": activeWallet || "" };
 
             const [rTeam, rStats] = await Promise.all([
                 fetch("/api/merchant/team", { headers }),
@@ -106,7 +108,7 @@ export default function TeamPanel() {
         try {
             setSessionsLoading(true);
             const res = await fetch(`/api/merchant/team/sessions?memberId=${encodeURIComponent(memberId)}`, {
-                headers: { "x-wallet": account?.address || "" }
+                headers: { "x-wallet": activeWallet || "" }
             });
             const data = await res.json();
             if (res.ok && Array.isArray(data.sessions)) {
@@ -140,8 +142,9 @@ export default function TeamPanel() {
     }
 
     useEffect(() => {
-        if (account?.address) loadTeam();
-    }, [account?.address]);
+        // Load if we have ANY valid wallet context (connected or override)
+        if (activeWallet) loadTeam();
+    }, [activeWallet]);
 
     async function handleAdd() {
         if (!newName || !newPin) return;
@@ -181,7 +184,7 @@ export default function TeamPanel() {
         try {
             const r = await fetch(`/api/merchant/team?id=${id}`, {
                 method: "DELETE",
-                headers: { "x-wallet": account?.address || "" }
+                headers: { "x-wallet": activeWallet || "" }
             });
             if (!r.ok) throw new Error("Failed to delete");
             setMembers(prev => prev.filter(m => m.id !== id));
@@ -275,7 +278,7 @@ export default function TeamPanel() {
         return { totalSales, totalTips, unpaidTips, sessionCount, avgSalePerSession, lastActive };
     }, [selectedMember, stats, memberSessions]);
 
-    if (!account) return <div className="p-4 text-muted-foreground">Please connect wallet.</div>;
+    if (!activeWallet) return <div className="p-4 text-muted-foreground">Please connect wallet.</div>;
 
     const formatMoney = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n || 0);
     const formatDate = (ts: number) => ts ? format(new Date(ts * 1000), "MMM d, h:mm a") : "-";

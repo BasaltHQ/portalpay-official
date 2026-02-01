@@ -39,7 +39,9 @@ export async function POST(req: NextRequest) {
 
             // Allow if brands match OR if shop has no brand and we are basaltsurge (default)
             // But strict partner mode means NO cross-brand access.
-            if (shopBrand !== branding.key) {
+            // EXCEPTION: Allow "portalpay" or "basaltsurge" (platform default) merchants to access Partner Containers
+            // They will still be subject to the 'request' mode check below.
+            if (shopBrand !== branding.key && shopBrand !== "portalpay" && shopBrand !== "basaltsurge") {
                 console.warn(`[Auth] Blocked cross-brand access: Merchant ${shopBrand} trying to log in on ${branding.key}`);
                 return NextResponse.json({ error: "Invalid terminal for this account" }, { status: 403 });
             }

@@ -125,7 +125,7 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                 setView("terminal");
                 setPin("");
             } else {
-                setError("Invalid PIN");
+                setError(data.detail || data.error || "Invalid PIN");
                 setPin("");
             }
         } catch (e) {
