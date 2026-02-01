@@ -30,20 +30,33 @@ export async function POST(req: NextRequest) {
 
             // Verify merchant is linked to this brand & Check Access Mode
             const querySpec = {
-                query: "SELECT c.brandKey, c.status FROM c WHERE c.type = 'shop_config' AND c.wallet = @w",
+                query: "SELECT * FROM c WHERE (c.type = 'shop_config' OR c.type = 'site_config') AND c.wallet = @w",
                 parameters: [{ name: "@w", value: w }]
             };
-            const { resources: shops } = await container.items.query(querySpec).fetchAll();
+            const { resources: configs } = await container.items.query(querySpec).fetchAll();
 
-            // Smart Selection: Prioritize config for THIS brand, then fallback to Platform
-            const currentBrandMatch = shops.find((s: any) => (s.brandKey || "").toLowerCase() === branding.key);
-            const platformMatch = shops.find((s: any) => {
-                const b = (s.brandKey || "portalpay").toLowerCase();
+            // Resolve effective config for this brand
+            // Prioritize site_config for status check as approval writes there often
+            const brandConfigs = configs.filter((c: any) => (c.brandKey || "").toLowerCase() === branding.key);
+            const siteConfig = brandConfigs.find((c: any) => c.type === "site_config");
+            const shopConfig = brandConfigs.find((c: any) => c.type === "shop_config");
+
+            // Platform Fallback
+            const platformConfigs = configs.filter((c: any) => {
+                const b = (c.brandKey || "portalpay").toLowerCase();
                 return b === "portalpay" || b === "basaltsurge";
             });
+            const platformSite = platformConfigs.find((c: any) => c.type === "site_config");
+            const platformShop = platformConfigs.find((c: any) => c.type === "shop_config");
 
-            // Use the specific brand config if available, otherwise use the platform config
-            const shop = currentBrandMatch || platformMatch;
+            // Effective Shop Object (for brand/id)
+            const shop = shopConfig || siteConfig || platformShop || platformSite;
+
+            // Effective Status Resolution: Check if ANY config for this brand is approved
+            // This handles cases where status is on site:config vs shop:config or split across docs
+            const isApproved = brandConfigs.some((c: any) => c.status === 'approved') ||
+                platformConfigs.some((c: any) => c.status === 'approved');
+
             const shopBrand = String(shop?.brandKey || "portalpay").toLowerCase();
 
             if (!shop) {
@@ -66,7 +79,10 @@ export async function POST(req: NextRequest) {
 
                 if (brandConfig?.accessMode === 'request') {
                     // In Request Mode, merchant MUST be explicitly approved
-                    if (shop?.status !== 'approved') {
+                    // EXCEPTION: Platform merchants (portalpay/basaltsurge) are considered pre-approved/trusted guests
+                    const isPlatformShop = shopBrand === "portalpay" || shopBrand === "basaltsurge";
+
+                    if (!isPlatformShop && !isApproved) {
                         return NextResponse.json({
                             error: "Access pending approval",
                             detail: "Your account is pending partner approval.",

@@ -67,7 +67,23 @@ type Receipt = {
   tipAmount?: number;
   employeeId?: string;
   sessionId?: string;
+  status?: string;
 };
+
+// Helper to determine if receipt is already paid/settled
+function isSettled(status?: string): boolean {
+  if (!status) return false;
+  const s = status.toLowerCase();
+  return (
+    s === "paid" ||
+    s === "checkout_success" ||
+    s === "confirmed" ||
+    s === "reconciled" ||
+    s === "tx_mined" ||
+    s === "recipient_validated" ||
+    s.includes("refund")
+  );
+}
 
 type TokenDef = {
   symbol: "ETH" | "USDC" | "USDT" | "cbBTC" | "cbXRP" | "SOL";
@@ -2268,105 +2284,151 @@ export default function PortalReceiptPage() {
                   <div ref={payRef} className={`mt-0 md:mt-0 ${isEmbedded ? "rounded-none border-0 p-0 bg-transparent" : "rounded-2xl border p-3 bg-background/70"} flex flex-col`}>
                     <div ref={widgetRootRef} className={isEmbedded ? "mt-0 border-2 rounded-2xl p-3" : "mt-0 rounded-2xl border p-3"} style={{ minHeight: isEmbedded ? `${EMBEDDED_WIDGET_HEIGHT}px` : undefined, overflow: isEmbedded ? "hidden" : undefined, borderColor: isEmbedded ? "rgba(255,255,255,0.1)" : undefined }}>
                       {!loadingReceipt && receipt && totalUsd > 0 && amountReady && merchantWallet && tokenDef && hasTokenAddr && widgetSupported ? (
-                        <CheckoutWidget
-                          key={`${token}-${currency}-${ratesUpdatedAt ? ratesUpdatedAt.getTime() : 0}`}
-                          className="w-full"
-                          client={client}
-                          chain={chain}
-                          currency={widgetCurrency as any}
-                          amount={(isFiatFlow && widgetFiatAmount) ? (widgetFiatAmount as any) : widgetAmount}
-                          seller={sellerAddress || merchantWallet || recipient}
-                          tokenAddress={token === "ETH" ? undefined : (tokenAddr as any)}
-                          showThirdwebBranding={false}
-                          theme={darkTheme({
-                            colors: {
-                              modalBg: "transparent",
-                              borderColor: "transparent",
-                              primaryText: "#ffffff",
-                              secondaryText: "#ffffff",
-                              accentText: "#ffffff",
-                              accentButtonBg: theme.primaryColor,
-                              accentButtonText: "#ffffff",
-                              primaryButtonBg: theme.primaryColor,
-                              primaryButtonText: "#ffffff",
-                              connectedButtonBg: "rgba(255,255,255,0.04)",
-                              connectedButtonBgHover: "rgba(255,255,255,0.08)",
-                            },
-                          })}
-                          style={{
-                            width: "100%",
-                            maxWidth: "100%",
-
-                            background: "transparent",
-                            border: "none",
-                            borderRadius: 0,
-                          }}
-                          connectOptions={{ accountAbstraction: { chain, sponsorGas: true } }}
-                          purchaseData={{
-                            productId: `portal:${receiptId}`,
-                            meta: {
-                              token,
-                              currency,
-                              usd: totalUsd,
-                              tipUsd,
-                              itemsSubtotalUsd,
-                              taxUsd,
-                              processingFeeUsd: processingFeeUsd,
-                              feePct: (basePlatformFeePct + Number(processingFeePct || 0)),
-                            },
-                          }}
-                          onSuccess={(result: any) => {
-                            // Onramp Tracking: Capture success and link txHash immediately
-                            console.log("[CHECKOUT] Success:", result);
-                            const txHash = result?.transactionHash || result?.hash;
-                            const buyer = (account?.address || "").toLowerCase();
-
-                            // Link txHash to receipt immediately via receipt_claimed
-                            if (txHash && receiptId) {
-                              postStatus("receipt_claimed", {
-                                buyerWallet: buyer,
-                                txHash
-                              }).catch(e => console.error("[CHECKOUT] Failed to update status:", e));
-                            } else {
-                              postStatus("checkout_success", { buyer });
-                            }
-
-                            // Legacy post-processing steps (billing, postMessage)
-                            try {
-                              fetch("/api/billing/purchase", {
-                                method: "POST",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                  "x-wallet": buyer,
-                                  "x-recipient": merchantWallet || recipient,
+                        <>
+                          {/* Payment Complete State - Blocks Double Payment */}
+                          {(paymentConfirmed || isSettled(receipt.status)) ? (
+                            <div className="w-full flex flex-col items-center justify-center gap-4 py-8 text-center animate-in fade-in zoom-in duration-300">
+                              <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 mb-2">
+                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="text-xl font-bold text-white">Payment Complete</div>
+                                <div className="text-sm text-foreground/80">
+                                  {formatCurrency(totalUsd, "USD")} • {receiptId}
+                                </div>
+                              </div>
+                              <div className="p-4 rounded-xl bg-white/5 border border-white/10 w-full max-w-[280px] mt-2">
+                                <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
+                                  Proof of Payment
+                                </div>
+                                <div className="text-lg font-bold text-white break-all">
+                                  {paymentConfirmed?.txHash ? (
+                                    <span className="font-mono text-xs">{paymentConfirmed.txHash.slice(0, 10)}...{paymentConfirmed.txHash.slice(-8)}</span>
+                                  ) : (
+                                    <span className="font-mono text-sm">Validating...</span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-emerald-400 font-medium mt-1">
+                                  Show this screen to merchant
+                                </div>
+                              </div>
+                              <div className="mt-4 flex gap-2">
+                                <button className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium transition-colors" onClick={() => window.location.reload()}>
+                                  Refresh Receipt
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <CheckoutWidget
+                              key={`${token}-${currency}-${ratesUpdatedAt ? ratesUpdatedAt.getTime() : 0}`}
+                              className="w-full"
+                              client={client}
+                              chain={chain}
+                              currency={widgetCurrency as any}
+                              amount={(isFiatFlow && widgetFiatAmount) ? (widgetFiatAmount as any) : widgetAmount}
+                              seller={sellerAddress || merchantWallet || recipient}
+                              tokenAddress={token === "ETH" ? undefined : (tokenAddr as any)}
+                              showThirdwebBranding={false}
+                              theme={darkTheme({
+                                colors: {
+                                  modalBg: "transparent",
+                                  borderColor: "transparent",
+                                  primaryText: "#ffffff",
+                                  secondaryText: "#ffffff",
+                                  accentText: "#ffffff",
+                                  accentButtonBg: theme.primaryColor,
+                                  accentButtonText: "#ffffff",
+                                  primaryButtonBg: theme.primaryColor,
+                                  primaryButtonText: "#ffffff",
+                                  connectedButtonBg: "rgba(255,255,255,0.04)",
+                                  connectedButtonBgHover: "rgba(255,255,255,0.08)",
                                 },
-                                body: JSON.stringify({
-                                  seconds: 1,
-                                  usd: Number(totalUsd.toFixed(2)),
+                              })}
+                              style={{
+                                width: "100%",
+                                maxWidth: "100%",
+
+                                background: "transparent",
+                                border: "none",
+                                borderRadius: 0,
+                              }}
+                              connectOptions={{ accountAbstraction: { chain, sponsorGas: true } }}
+                              purchaseData={{
+                                productId: `portal:${receiptId}`,
+                                meta: {
                                   token,
-                                  wallet: buyer,
-                                  receiptId,
-                                  recipient: merchantWallet || recipient,
-                                  idempotencyKey: `portal:${receiptId}:${buyer}:${Date.now()}`,
-                                }),
-                              }).catch(() => { });
+                                  currency,
+                                  usd: totalUsd,
+                                  tipUsd,
+                                  itemsSubtotalUsd,
+                                  taxUsd,
+                                  processingFeeUsd: processingFeeUsd,
+                                  feePct: (basePlatformFeePct + Number(processingFeePct || 0)),
+                                },
+                              }}
+                              onSuccess={(result: any) => {
+                                // Onramp Tracking: Capture success and link txHash immediately
+                                console.log("[CHECKOUT] Success:", result);
+                                const txHash = result?.transactionHash || result?.hash;
+                                const buyer = (account?.address || "").toLowerCase();
 
-                              try {
-                                window.postMessage({ type: "billing:refresh" }, "*");
-                              } catch { }
+                                // IMMEDIATE STATE UPDATE TO BLOCK DOUBLE SPEND
+                                setPaymentConfirmed({
+                                  txHash: txHash || "",
+                                  amount: totalUsd,
+                                  token: token
+                                });
 
-                              try {
-                                if (typeof window !== "undefined" && window.parent && window.parent !== window) {
-                                  const confirmToken = `ppc_${receiptId}_${Date.now()}`;
-                                  // New event name (primary)
-                                  window.parent.postMessage({ type: "gateway-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
-                                  // DEPRECATED: Remove after 2026-04-30 - kept for backwards compatibility
-                                  window.parent.postMessage({ type: "portalpay-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                // Link txHash to receipt immediately via receipt_claimed
+                                if (txHash && receiptId) {
+                                  postStatus("receipt_claimed", {
+                                    buyerWallet: buyer,
+                                    txHash
+                                  }).catch(e => console.error("[CHECKOUT] Failed to update status:", e));
+                                } else {
+                                  postStatus("checkout_success", { buyer });
                                 }
-                              } catch { }
-                            } catch { }
-                          }}
-                        />
+
+                                // Legacy post-processing steps (billing, postMessage)
+                                try {
+                                  fetch("/api/billing/purchase", {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      "x-wallet": buyer,
+                                      "x-recipient": merchantWallet || recipient,
+                                    },
+                                    body: JSON.stringify({
+                                      seconds: 1,
+                                      usd: Number(totalUsd.toFixed(2)),
+                                      token,
+                                      wallet: buyer,
+                                      receiptId,
+                                      recipient: merchantWallet || recipient,
+                                      idempotencyKey: `portal:${receiptId}:${buyer}:${Date.now()}`,
+                                    }),
+                                  }).catch(() => { });
+
+                                  try {
+                                    window.postMessage({ type: "billing:refresh" }, "*");
+                                  } catch { }
+
+                                  try {
+                                    if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+                                      const confirmToken = `ppc_${receiptId}_${Date.now()}`;
+                                      // New event name (primary)
+                                      window.parent.postMessage({ type: "gateway-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                      // DEPRECATED: Remove after 2026-04-30 - kept for backwards compatibility
+                                      window.parent.postMessage({ type: "portalpay-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                    }
+                                  } catch { }
+                                } catch { }
+                              }}
+                            />
+                          )}
+                        </>
                       ) : (
                         <div className="w-full flex flex-col items-center justify-center gap-3 py-8 text-center min-h-[240px]">
                           {/* eslint-disable-next-line @next/next/no-img-element */}

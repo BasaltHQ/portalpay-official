@@ -68,6 +68,18 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
     const cfgWallet = String((cfg as any)?.wallet || "").toLowerCase();
     const isPerMerchantConfig = /^0x[a-f0-9]{40}$/.test(cfgWallet);
 
+    // Unified Fee Calculation: Prefer per-merchant fee overrides from splitConfig, fallback to brand defaults
+    // This runs for ALL configs (merchant, brand, global) to ensure consistency
+    const splitConf = (cfg as any).splitConfig || {};
+    const agents = Array.isArray(splitConf.agents) ? splitConf.agents : [];
+    const agentBps = agents.reduce((sum: number, a: any) => sum + (Number(a.bps) || 0), 0);
+
+    // Prefer per-merchant fee overrides from splitConfig if present, otherwise use brand defaults
+    const platformBps = typeof splitConf.platformBps === "number" ? splitConf.platformBps : (brandFeesConfig.platformFeeBps ?? 50);
+    const partnerBps = typeof splitConf.partnerBps === "number" ? splitConf.partnerBps : (brandFeesConfig.partnerFeeBps ?? 0);
+
+    (cfg as any).basePlatformFeePct = (platformBps + partnerBps + agentBps) / 100;
+
     // For per-merchant configs, check if they have customized their theme
     // If not, they should inherit partner brand defaults
     if (isPerMerchantConfig) {
@@ -135,24 +147,14 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
           console.error("[site/config] Failed to fetch partner brand config", e);
         }
 
-        // Ensure basePlatformFeePct is present
-        try {
-          const platBpsEff = typeof brandFeesConfig.platformFeeBps === "number" ? brandFeesConfig.platformFeeBps : 50;
-          const partBpsEff = typeof brandFeesConfig.partnerFeeBps === "number" ? brandFeesConfig.partnerFeeBps : 0;
-          (cfg as any).basePlatformFeePct = Math.max(0, (platBpsEff + partBpsEff) / 100);
-        } catch { }
+
         return cfg;
       } else {
         // Merchant has customized their theme OR is on main platform - return AS-IS
         // Use saved brandKey if present, otherwise use containerBrandKey (no forced default)
         // This allows legacy merchants to have no brandKey so the correct config loads
         (cfg.theme as any).brandKey = savedBrandKey || containerBrandKey || "";
-        // Ensure basePlatformFeePct is present for Terminal/UI fee calculations
-        try {
-          const platBpsEff = typeof brandFeesConfig.platformFeeBps === "number" ? brandFeesConfig.platformFeeBps : 50;
-          const partBpsEff = typeof brandFeesConfig.partnerFeeBps === "number" ? brandFeesConfig.partnerFeeBps : 0;
-          (cfg as any).basePlatformFeePct = Math.max(0, (platBpsEff + partBpsEff) / 100);
-        } catch { }
+
         return cfg;
       }
     }
@@ -397,18 +399,7 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
       }
     }
 
-    // Add base platform fee (platform + partner + agent fees) as a percentage for Terminal display
-    // This replaces the hardcoded 0.5% with actual brand-specific fees + merchant specific agents
-    const splitConf = (cfg as any).splitConfig || {};
-    const agents = Array.isArray(splitConf.agents) ? splitConf.agents : [];
-    const agentBps = agents.reduce((sum: number, a: any) => sum + (Number(a.bps) || 0), 0);
 
-    // Prefer per-merchant fee overrides from splitConfig if present, otherwise use brand defaults
-    // Note: splitConfig.platformBps might not be set by some legacy logic, so fallback to brand
-    const platformBps = typeof splitConf.platformBps === "number" ? splitConf.platformBps : (brandFeesConfig.platformFeeBps ?? 50);
-    const partnerBps = typeof splitConf.partnerBps === "number" ? splitConf.partnerBps : (brandFeesConfig.partnerFeeBps ?? 0);
-
-    cfg.basePlatformFeePct = (platformBps + partnerBps + agentBps) / 100; // Convert bps to percent
 
     // Platform / BasaltSurge merchants should inherit the global split if they don't have one
     if (!isExplicitPartner && !cfg.splitAddress && !cfg.split?.address) {
