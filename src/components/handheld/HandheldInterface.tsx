@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -13,7 +13,14 @@ import {
 import { useServerAssistant } from "@/hooks/useServerAssistant";
 import { buildServerAssistantPrompt } from "@/agent/prompts/serverAssistantPrompt";
 import { QRCode } from "react-qrcode-logo";
-import { ChevronLeft, ShoppingBag, Mic, MicOff, X, Volume2, VolumeX, Trash2, Plus, Minus, LayoutGrid } from "lucide-react";
+import {
+    Activity, ArrowLeft, ChevronLeft, ChevronRight, CreditCard,
+    DollarSign, Grid, History, LogOut, Menu, Mic,
+    MoreHorizontal, Printer, RefreshCw, Search, Settings,
+    Smartphone, User, Wifi, X, Zap, Trash2, CheckCircle2,
+    Minus, Plus, RotateCcw, LayoutGrid, ShoppingBag, MicOff,
+    Volume2, VolumeX, Receipt, Clock, Loader2, AlertCircle
+} from "lucide-react";
 
 // Helper for currency
 const formatCurrency = (amount: number) => {
@@ -89,7 +96,7 @@ export default function HandheldInterface({
     const primaryColor = theme?.primaryColor || "#0ea5e9";
 
     // -- STATE --
-    // -- STATE --
+
     const [activeCategory, setActiveCategory] = useState<string>("All");
     const [cart, setCart] = useState<CartItem[]>([]);
     const [view, setView] = useState<"menu" | "modifiers" | "tables" | "report" | "payment">("menu");
@@ -100,19 +107,50 @@ export default function HandheldInterface({
 
     // -- TABLE STATE --
     const [selectedTable, setSelectedTable] = useState<string | null>(null);
-    const [activeOrders, setActiveOrders] = useState<Record<string, Array<{ id: string; status: string; total: number; items: any[]; createdAt: number }>>>({});
+    const [activeOrders, setActiveOrders] = useState<Record<string, Array<{ id: string; status: string; paymentStatus: string; total: number; tipAmount?: number; items: any[]; createdAt: number }>>>({});
     const [showTableDetails, setShowTableDetails] = useState(false);
     const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<any | null>(null);
     const [isSplitting, setIsSplitting] = useState(false);
     const [splitSelection, setSplitSelection] = useState<Record<string, number>>({}); // items to split: index -> qty
+    // Cash Modal State
+    const [showCashModal, setShowCashModal] = useState(false);
+    const [cashTendered, setCashTendered] = useState("");
+    const [cashTip, setCashTip] = useState("");
+
+    // -- SPLIT STATE --
+    const [splitMode, setSplitMode] = useState<"items" | "ratio">("items");
+    const [splitParties, setSplitParties] = useState(2);
+    const [splitRatios, setSplitRatios] = useState<number[]>([0.5, 0.5]);
+    const [splitResult, setSplitResult] = useState<{ source: any; newReceipts: any[] } | null>(null);
+    const [activeHandle, setActiveHandle] = useState<number | null>(null);
+    const [resultIndex, setResultIndex] = useState(0);
+    // 5. Payment View (with Split & Print)
+
+    // Effect to set default split mode based on item count
+    useEffect(() => {
+        if (selectedOrderForPayment && (selectedOrderForPayment.items || []).length <= 1) {
+            setSplitMode("ratio");
+        }
+    }, [selectedOrderForPayment]);
+
+    // Update ratios when party count changes
+    useEffect(() => {
+        const equal = 1 / splitParties;
+        const newRatios = Array(splitParties).fill(equal);
+        newRatios[splitParties - 1] = 1 - (equal * (splitParties - 1));
+        setSplitRatios(newRatios);
+    }, [splitParties]);
 
     // -- REPORT STATE --
     const [reportData, setReportData] = useState<{ totalTips: number; totalSales: number; orders: any[] } | null>(null);
+    const [loadingReport, setLoadingReport] = useState(false);
 
     const fetchReport = async () => {
         try {
+            setLoadingReport(true);
             const res = await fetch(`/api/terminal/session?sessionId=${sessionId}&merchantWallet=${merchantWallet}&includeOrders=true`);
             const data = await res.json();
+            console.log("Report Data:", data); // DEBUG
             if (data.session && data.orders) {
                 setReportData({
                     totalTips: data.session.totalTips,
@@ -120,22 +158,37 @@ export default function HandheldInterface({
                     orders: data.orders
                 });
             }
-        } catch (e) {
-            console.error("Failed to fetch report", e);
+        } catch (err) {
+            console.error("Failed to fetch report", err);
+        } finally {
+            setLoadingReport(false);
         }
     };
+
+    // Effect: Fetch report when view changes to 'report'
+    useEffect(() => {
+        if (view === "report") {
+            fetchReport();
+        }
+    }, [view]);
 
     // 4. Report View
     const renderReportView = () => {
         return (
             <div className="absolute inset-0 z-30 flex flex-col bg-neutral-900 overflow-hidden text-white font-sans animate-in fade-in">
                 <div className="h-14 border-b border-white/10 flex items-center justify-between px-4 shrink-0 bg-neutral-900/50 backdrop-blur-md">
-                    <div className="flex items-center gap-2">
-                        <span className="font-bold text-lg">In-Service Report</span>
+                    <span className="font-bold text-lg">Server Report</span>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={fetchReport}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 active:bg-white/30 text-white transition-all"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${loadingReport ? 'animate-spin' : ''}`} />
+                        </button>
+                        <button onClick={() => setView("menu")} className="text-xs font-bold bg-white/10 px-3 py-1.5 rounded-lg hover:bg-white/20">
+                            Close
+                        </button>
                     </div>
-                    <button onClick={() => setView("menu")} className="text-xs font-bold bg-white/10 px-3 py-1.5 rounded-lg hover:bg-white/20">
-                        Close
-                    </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -188,48 +241,52 @@ export default function HandheldInterface({
     };
     // -- POLLING & STATUS --
     // Fetch active kitchen orders to update table status
-    useEffect(() => {
+    // -- POLLING & STATUS --
+    // Fetch active kitchen orders to update table status
+    const fetchOrders = useCallback(async () => {
         if (!merchantWallet) return;
-
-        const fetchOrders = async () => {
-            try {
-                const res = await fetch(`/api/kitchen/orders?wallet=${merchantWallet}&status=new,preparing,ready,completed`, {
-                    headers: { 'x-wallet': merchantWallet }
-                });
-                if (!res.ok) return;
-                const data = await res.json();
-                console.log("Handheld Polling Data:", data); // DEBUG
-                if (data.orders && Array.isArray(data.orders)) {
-                    // Map orders to tables - GROUPING them
-                    const statusMap: Record<string, Array<{ id: string; status: string; total: number; items: any[]; createdAt: number }>> = {};
-
-                    data.orders.forEach((o: any) => {
-                        console.log(`Processing Order ${o.receiptId}: Table=${o.tableNumber}, Status=${o.kitchenStatus}`); // DEBUG
-                        if (o.tableNumber && o.kitchenStatus) {
-                            if (!statusMap[o.tableNumber]) {
-                                statusMap[o.tableNumber] = [];
-                            }
-                            statusMap[o.tableNumber].push({
-                                id: o.receiptId,
-                                status: o.kitchenStatus,
-                                total: o.totalUsd,
-                                items: o.lineItems || [],
-                                createdAt: o.createdAt
-                            });
-                        }
-                    });
-                    console.log("Constructed StatusMap:", statusMap); // DEBUG
-                    setActiveOrders(statusMap);
-                }
-            } catch (e) {
-                console.error("Polling failed", e);
+        try {
+            const res = await fetch(`/api/kitchen/orders?wallet=${merchantWallet}&status=new,preparing,ready,completed&includeSplits=true`, {
+                headers: { 'x-wallet': merchantWallet }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            // DEBUG: Check for sessionId presence on orders to diagnose Report 0 issue
+            if (data.orders && data.orders.length > 0) {
+                console.log("Handheld Polling Data (First Order):", { id: data.orders[0].id, sessionId: data.orders[0].sessionId, status: data.orders[0].status });
             }
-        };
+            if (data.orders && Array.isArray(data.orders)) {
+                // Map orders to tables - GROUPING them
+                const statusMap: Record<string, Array<{ id: string; status: string; paymentStatus: string; total: number; tipAmount?: number; items: any[]; createdAt: number }>> = {};
 
+                data.orders.forEach((o: any) => {
+                    if (o.tableNumber && (o.kitchenStatus || o.lineItems?.some((i: any) => i.label?.includes("Transfer In")))) {
+                        if (!statusMap[o.tableNumber]) {
+                            statusMap[o.tableNumber] = [];
+                        }
+                        statusMap[o.tableNumber].push({
+                            id: o.receiptId,
+                            status: o.kitchenStatus,
+                            paymentStatus: o.status, // Map actual receipt/payment status
+                            total: o.totalUsd,
+                            tipAmount: o.tipAmount, // Map tip amount
+                            items: o.lineItems || [],
+                            createdAt: o.createdAt
+                        });
+                    }
+                });
+                setActiveOrders(statusMap);
+            }
+        } catch (e) {
+            console.error("Polling failed", e);
+        }
+    }, [merchantWallet]);
+
+    useEffect(() => {
         fetchOrders();
         const interval = setInterval(fetchOrders, 5000); // Poll every 5s
         return () => clearInterval(interval);
-    }, [merchantWallet]);
+    }, [fetchOrders]);
 
     // -- DATA PROCESSING --
     const restaurantItems = useMemo(() => {
@@ -386,7 +443,8 @@ export default function HandheldInterface({
                 source: "handheld",
                 staffId: employeeId,
                 servedBy: employeeName,
-                note: `Server: ${employeeName}`
+                note: `Server: ${employeeName}`,
+                sessionId
             };
 
             const res = await fetch("/api/orders", {
@@ -592,28 +650,6 @@ export default function HandheldInterface({
 
     // ... (rest of state)
     // 5. Payment View (with Split & Print)
-    const [splitMode, setSplitMode] = useState<"items" | "ratio">("items");
-
-    // Effect to set default split mode based on item count
-    useEffect(() => {
-        if (selectedOrderForPayment && (selectedOrderForPayment.items || []).length <= 1) {
-            setSplitMode("ratio");
-        }
-    }, [selectedOrderForPayment]);
-    const [splitParties, setSplitParties] = useState(2);
-    const [splitRatios, setSplitRatios] = useState<number[]>([0.5, 0.5]);
-    const [splitResult, setSplitResult] = useState<{ source: any; newReceipts: any[] } | null>(null);
-    const [resultIndex, setResultIndex] = useState(0); // For carousel
-    const [activeHandle, setActiveHandle] = useState<number | null>(null);
-
-    // Update ratios when party count changes
-    useEffect(() => {
-        const equal = 1 / splitParties;
-        const newRatios = Array(splitParties).fill(equal);
-        // Adjust last to ensure sum 1
-        newRatios[splitParties - 1] = 1 - (equal * (splitParties - 1));
-        setSplitRatios(newRatios);
-    }, [splitParties]);
 
     const renderPaymentView = () => {
         // If we have a result, show the Carousel View
@@ -654,6 +690,11 @@ export default function HandheldInterface({
                                     <div className="font-mono text-2xl font-bold text-black mt-1">
                                         {formatCurrency(currentReceipt.total || currentReceipt.totalUsd)}
                                     </div>
+                                    {(currentReceipt.status === 'paid' || currentReceipt.status === 'checkout_success') && (
+                                        <div className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200 mt-2 inline-block">
+                                            PAID
+                                        </div>
+                                    )}
                                 </div>
 
                                 <QRCode
@@ -683,6 +724,25 @@ export default function HandheldInterface({
                                 >
                                     Print Receipt #{resultIndex + 1}
                                 </button>
+
+                                <button
+                                    onClick={() => {
+                                        // Pay Cash Logic for this specific receipt
+                                        if (currentReceipt.status === 'paid' || currentReceipt.status === 'checkout_success') return;
+                                        setSelectedOrderForPayment(currentReceipt);
+                                        setCashTendered("");
+                                        setCashTip("");
+                                        setShowCashModal(true);
+                                    }}
+                                    disabled={currentReceipt.status === 'paid' || currentReceipt.status === 'checkout_success'}
+                                    className={`w-full h-12 rounded-xl font-bold active:scale-95 transition-all text-sm flex items-center justify-center gap-2 shadow-lg ${currentReceipt.status === 'paid' || currentReceipt.status === 'checkout_success'
+                                        ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none"
+                                        : "bg-emerald-500 text-black shadow-emerald-500/20"
+                                        }`}
+                                >
+                                    Mark as Paid (Cash)
+                                </button>
+
                             </div>
                         </div>
                     </div>
@@ -830,23 +890,10 @@ export default function HandheldInterface({
                             </div>
 
                             <button
-                                onClick={async () => {
-                                    try {
-                                        const res = await fetch(`/api/receipts/${selectedOrderForPayment.id}/pay`, {
-                                            method: "POST",
-                                            headers: { "Content-Type": "application/json", "x-wallet": merchantWallet },
-                                            body: JSON.stringify({ method: "cash" })
-                                        });
-                                        if (res.ok) {
-                                            alert("Payment Recorded!");
-                                            setView("tables");
-                                            setSelectedOrderForPayment(null);
-                                            setShowTableDetails(false);
-                                        }
-                                    } catch (e) {
-                                        console.error(e);
-                                        alert("Payment failed");
-                                    }
+                                onClick={() => {
+                                    setCashTendered("");
+                                    setCashTip("");
+                                    setShowCashModal(true);
                                 }}
                                 className="w-full h-16 bg-emerald-500 text-black rounded-2xl font-bold text-xl active:scale-95 transition-all shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)]"
                             >
@@ -923,145 +970,191 @@ export default function HandheldInterface({
                                     <div className="w-full space-y-2">
                                         <div className="flex justify-between items-center text-sm font-bold text-neutral-400 uppercase tracking-wider">
                                             <span>Number of Parties</span>
-                                            <div className="flex bg-white/10 rounded-lg p-1 gap-1">
-                                                <button onClick={() => setSplitParties(Math.max(2, splitParties - 1))} className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded active:bg-white/20 text-white font-bold transition-colors">-</button>
-                                                <span className="w-10 flex items-center justify-center text-white font-mono text-lg">{splitParties}</span>
-                                                <button onClick={() => setSplitParties(Math.min(6, splitParties + 1))} className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded active:bg-white/20 text-white font-bold transition-colors">+</button>
+                                            <div className="flex items-center gap-4">
+                                                {/* Reset Button */}
+                                                <button
+                                                    onClick={async () => {
+                                                        if (!confirm("Reset split? This will remove all split transfers from this receipt.")) return;
+                                                        setSplitResult(null);
+                                                        try {
+                                                            const res = await fetch(`/api/receipts/${selectedOrderForPayment.id}/split`, {
+                                                                method: "POST",
+                                                                headers: { "Content-Type": "application/json", "x-wallet": merchantWallet },
+                                                                body: JSON.stringify({ mode: "reset" })
+                                                            });
+                                                            if (res.ok) {
+                                                                const data = await res.json();
+                                                                // Update the local order state to reflect the reset immediately
+                                                                // We find the order in the activeOrders list and update it with the returned source data
+                                                                const updatedReceiptRes = await fetch(`/api/receipts/${selectedOrderForPayment.id}`, {
+                                                                    headers: { "x-wallet": merchantWallet }
+                                                                });
+                                                                if (updatedReceiptRes.ok) {
+                                                                    const updatedReceipt = await updatedReceiptRes.json();
+                                                                    // Update activeOrders state (Record<tableId, Order[]>)
+                                                                    setActiveOrders(prev => {
+                                                                        const tableId = String(updatedReceipt.tableNumber || selectedTable || "");
+                                                                        if (!tableId || !prev[tableId]) return prev;
+                                                                        return {
+                                                                            ...prev,
+                                                                            [tableId]: prev[tableId].map(o => o.id === updatedReceipt.id ? updatedReceipt : o)
+                                                                        };
+                                                                    });
+                                                                }
+
+                                                                // Refresh view
+                                                                setSelectedTable(selectedOrderForPayment.tableNumber);
+                                                                setView("tables");
+                                                            }
+                                                        } catch (e) {
+                                                            console.error(e);
+                                                        }
+                                                    }}
+                                                    className="w-10 h-10 flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                                                >
+                                                    <RotateCcw className="w-4 h-4" />
+                                                </button>
+
+                                                <div className="flex bg-white/10 rounded-lg p-1 gap-1">
+                                                    <button onClick={() => setSplitParties(Math.max(2, splitParties - 1))} className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded active:bg-white/20 text-white font-bold transition-colors">-</button>
+                                                    <span className="w-10 flex items-center justify-center text-white font-mono text-lg">{splitParties}</span>
+                                                    <button onClick={() => setSplitParties(Math.min(6, splitParties + 1))} className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded active:bg-white/20 text-white font-bold transition-colors">+</button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Multi-Slider Visualization */}
-                                    <div
-                                        className="w-full pt-8 pb-4 relative select-none touch-none"
-                                        onPointerDown={(e) => {
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            const x = e.clientX - rect.left;
-                                            const w = rect.width;
-                                            const val = Math.max(0, Math.min(1, x / w));
+                                        {/* Multi-Slider Visualization */}
+                                        <div
+                                            className="w-full pt-8 pb-4 relative select-none touch-none"
+                                            onPointerDown={(e) => {
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                const x = e.clientX - rect.left;
+                                                const w = rect.width;
+                                                const val = Math.max(0, Math.min(1, x / w));
 
-                                            // Calculate cumulative positions for handles
-                                            let currentSum = 0;
-                                            const handles = []; // indices 0 to N-2
-                                            for (let i = 0; i < splitParties - 1; i++) {
-                                                currentSum += splitRatios[i];
-                                                handles.push(currentSum);
-                                            }
-
-                                            // Find closest handle
-                                            let closestIdx = -1;
-                                            let minDist = 0.1; // Capture threshold
-
-                                            handles.forEach((hPos, idx) => {
-                                                const dist = Math.abs(val - hPos);
-                                                if (dist < minDist) {
-                                                    minDist = dist;
-                                                    closestIdx = idx;
+                                                // Calculate cumulative positions for handles
+                                                let currentSum = 0;
+                                                const handles = []; // indices 0 to N-2
+                                                for (let i = 0; i < splitParties - 1; i++) {
+                                                    currentSum += splitRatios[i];
+                                                    handles.push(currentSum);
                                                 }
-                                            });
 
-                                            if (closestIdx !== -1) {
-                                                setActiveHandle(closestIdx);
-                                                e.currentTarget.setPointerCapture(e.pointerId);
-                                            }
-                                        }}
-                                        onPointerMove={(e) => {
-                                            if (activeHandle === null) return;
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            const x = e.clientX - rect.left;
-                                            const w = rect.width;
-                                            const rawVal = x / w;
+                                                // Find closest handle
+                                                let closestIdx = -1;
+                                                let minDist = 0.1; // Capture threshold
 
-                                            // Reconstruct cumulative
-                                            let cum = [];
-                                            let s = 0;
-                                            for (let i = 0; i < splitParties - 1; i++) {
-                                                s += splitRatios[i];
-                                                cum.push(s);
-                                            }
+                                                handles.forEach((hPos, idx) => {
+                                                    const dist = Math.abs(val - hPos);
+                                                    if (dist < minDist) {
+                                                        minDist = dist;
+                                                        closestIdx = idx;
+                                                    }
+                                                });
 
-                                            // Constraints
-                                            const minGap = 0.05; // 5% min width per party
-                                            const prevLimit = (activeHandle > 0) ? cum[activeHandle - 1] + minGap : minGap;
-                                            const nextLimit = (activeHandle < cum.length - 1) ? cum[activeHandle + 1] - minGap : 1 - minGap;
+                                                if (closestIdx !== -1) {
+                                                    setActiveHandle(closestIdx);
+                                                    e.currentTarget.setPointerCapture(e.pointerId);
+                                                }
+                                            }}
+                                            onPointerMove={(e) => {
+                                                if (activeHandle === null) return;
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                const x = e.clientX - rect.left;
+                                                const w = rect.width;
+                                                const rawVal = x / w;
 
-                                            const newVal = Math.max(prevLimit, Math.min(nextLimit, rawVal));
+                                                // Reconstruct cumulative
+                                                let cum = [];
+                                                let s = 0;
+                                                for (let i = 0; i < splitParties - 1; i++) {
+                                                    s += splitRatios[i];
+                                                    cum.push(s);
+                                                }
 
-                                            // Update cum
-                                            cum[activeHandle] = newVal;
+                                                // Constraints
+                                                const minGap = 0.05; // 5% min width per party
+                                                const prevLimit = (activeHandle > 0) ? cum[activeHandle - 1] + minGap : minGap;
+                                                const nextLimit = (activeHandle < cum.length - 1) ? cum[activeHandle + 1] - minGap : 1 - minGap;
 
-                                            // Reconstruct ratios
-                                            const newRatios = [];
-                                            let prev = 0;
-                                            for (let i = 0; i < cum.length; i++) {
-                                                newRatios.push(cum[i] - prev);
-                                                prev = cum[i];
-                                            }
-                                            newRatios.push(1 - prev); // Last party
+                                                const newVal = Math.max(prevLimit, Math.min(nextLimit, rawVal));
 
-                                            setSplitRatios(newRatios);
-                                        }}
-                                        onPointerUp={(e) => {
-                                            setActiveHandle(null);
-                                            e.currentTarget.releasePointerCapture(e.pointerId);
-                                        }}
-                                    >
-                                        {/* Track */}
-                                        <div className="w-full h-12 bg-neutral-800 rounded-xl relative overflow-hidden flex shadow-inner ring-1 ring-white/10 pointer-events-none">
+                                                // Update cum
+                                                cum[activeHandle] = newVal;
+
+                                                // Reconstruct ratios
+                                                const newRatios = [];
+                                                let prev = 0;
+                                                for (let i = 0; i < cum.length; i++) {
+                                                    newRatios.push(cum[i] - prev);
+                                                    prev = cum[i];
+                                                }
+                                                newRatios.push(1 - prev); // Last party
+
+                                                setSplitRatios(newRatios);
+                                            }}
+                                            onPointerUp={(e) => {
+                                                setActiveHandle(null);
+                                                e.currentTarget.releasePointerCapture(e.pointerId);
+                                            }}
+                                        >
+                                            {/* Track */}
+                                            <div className="w-full h-12 bg-neutral-800 rounded-xl relative overflow-hidden flex shadow-inner ring-1 ring-white/10 pointer-events-none">
+                                                {splitRatios.map((r, i) => (
+                                                    <div key={i} style={{ width: `${r * 100}%` }} className={`h-full border-r border-black/20 last:border-0 ${i % 2 === 0 ? "bg-blue-600" : "bg-purple-600"
+                                                        } flex items-center justify-center transition-all duration-75 ease-out relative group`}>
+                                                        <span className="text-sm font-bold text-white drop-shadow-md select-none">{Math.round(r * 100)}%</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Handles */}
+                                            {Array.from({ length: splitParties - 1 }).map((_, i) => {
+                                                // Calculate pos
+                                                const pos = splitRatios.slice(0, i + 1).reduce((a, b) => a + b, 0);
+                                                return (
+                                                    <div
+                                                        key={i}
+                                                        className={`absolute top-8 bottom-4 w-4 -ml-2 z-10 cursor-col-resize group outline-none isolate ${activeHandle === i ? 'z-50' : 'z-20'}`}
+                                                        style={{ left: `${pos * 100}%` }}
+                                                    >
+                                                        {/* Visual Handle */}
+                                                        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full shadow-xl flex items-center justify-center transition-transform ${activeHandle === i ? "scale-110 bg-white shadow-blue-500/50" : "bg-white/90 hover:bg-white hover:scale-105"}`}>
+                                                            <div className="w-1 h-4 bg-neutral-300 rounded mb-4 pointer-events-none" />
+                                                            <div className="w-1 h-4 bg-neutral-300 rounded mx-[1px] pointer-events-none" />
+                                                            <div className="w-1 h-4 bg-neutral-300 rounded mt-4 pointer-events-none" />
+                                                        </div>
+
+                                                        {/* Vertical Guidelines */}
+                                                        <div className={`absolute -top-8 bottom-0 w-px bg-white/50 left-1/2 pointer-events-none transition-opacity ${activeHandle === i ? "opacity-100" : "opacity-0 group-hover:opacity-50"}`} />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Breakdown List */}
+                                        <div className="w-full space-y-2">
                                             {splitRatios.map((r, i) => (
-                                                <div key={i} style={{ width: `${r * 100}%` }} className={`h-full border-r border-black/20 last:border-0 ${i % 2 === 0 ? "bg-blue-600" : "bg-purple-600"
-                                                    } flex items-center justify-center transition-all duration-75 ease-out relative group`}>
-                                                    <span className="text-sm font-bold text-white drop-shadow-md select-none">{Math.round(r * 100)}%</span>
+                                                <div key={i} className="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-2 h-2 rounded-full ${i % 2 === 0 ? "bg-blue-500" : "bg-purple-500"}`} />
+                                                        <span className="text-sm font-medium text-neutral-300">Party {i + 1}</span>
+                                                    </div>
+                                                    <div className="text-right flex items-baseline gap-2">
+                                                        <div className="text-xs text-neutral-500">{Math.round(r * 100)}%</div>
+                                                        <div className="font-bold text-white font-mono">{formatCurrency(selectedOrderForPayment.total * r)}</div>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
 
-                                        {/* Handles */}
-                                        {Array.from({ length: splitParties - 1 }).map((_, i) => {
-                                            // Calculate pos
-                                            const pos = splitRatios.slice(0, i + 1).reduce((a, b) => a + b, 0);
-                                            return (
-                                                <div
-                                                    key={i}
-                                                    className={`absolute top-8 bottom-4 w-4 -ml-2 z-10 cursor-col-resize group outline-none isolate ${activeHandle === i ? 'z-50' : 'z-20'}`}
-                                                    style={{ left: `${pos * 100}%` }}
-                                                >
-                                                    {/* Visual Handle */}
-                                                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full shadow-xl flex items-center justify-center transition-transform ${activeHandle === i ? "scale-110 bg-white shadow-blue-500/50" : "bg-white/90 hover:bg-white hover:scale-105"}`}>
-                                                        <div className="w-1 h-4 bg-neutral-300 rounded mb-4 pointer-events-none" />
-                                                        <div className="w-1 h-4 bg-neutral-300 rounded mx-[1px] pointer-events-none" />
-                                                        <div className="w-1 h-4 bg-neutral-300 rounded mt-4 pointer-events-none" />
-                                                    </div>
-
-                                                    {/* Vertical Guidelines */}
-                                                    <div className={`absolute -top-8 bottom-0 w-px bg-white/50 left-1/2 pointer-events-none transition-opacity ${activeHandle === i ? "opacity-100" : "opacity-0 group-hover:opacity-50"}`} />
-                                                </div>
-                                            );
-                                        })}
+                                        <button onClick={() => {
+                                            const equal = 1 / splitParties;
+                                            setSplitRatios(Array(splitParties).fill(equal));
+                                        }} className="w-full py-3 items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 active:bg-white/20 text-xs font-bold uppercase tracking-wider text-neutral-400 transition-colors">
+                                            Reset to Equal Split
+                                        </button>
                                     </div>
-
-                                    {/* Breakdown List */}
-                                    <div className="w-full space-y-2">
-                                        {splitRatios.map((r, i) => (
-                                            <div key={i} className="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-2 h-2 rounded-full ${i % 2 === 0 ? "bg-blue-500" : "bg-purple-500"}`} />
-                                                    <span className="text-sm font-medium text-neutral-300">Party {i + 1}</span>
-                                                </div>
-                                                <div className="text-right flex items-baseline gap-2">
-                                                    <div className="text-xs text-neutral-500">{Math.round(r * 100)}%</div>
-                                                    <div className="font-bold text-white font-mono">{formatCurrency(selectedOrderForPayment.total * r)}</div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <button onClick={() => {
-                                        const equal = 1 / splitParties;
-                                        setSplitRatios(Array(splitParties).fill(equal));
-                                    }} className="w-full py-3 items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 active:bg-white/20 text-xs font-bold uppercase tracking-wider text-neutral-400 transition-colors">
-                                        Reset to Equal Split
-                                    </button>
                                 </div>
                             )}
 
@@ -1116,7 +1209,7 @@ export default function HandheldInterface({
                             <div className="print-visible-portal">
                                 <div className="thermal-receipt">
                                     <div className="flex flex-col items-center mb-4">
-                                        {logoUrl && <img src={logoUrl} className="w-12 h-12 object-contain grayscale mb-2" />}
+                                        {logoUrl && <img src={logoUrl} className="w-12 h-12 object-contain grayscale mb-2" alt="Logo" />}
                                         <h2 className="font-bold text-center text-lg">{brandName || "Receipt"}</h2>
                                         <div className="text-xs mt-1">Server: {employeeName?.split('•')[0].trim() || "Staff"}</div>
                                         <div className="text-xs">Table: {selectedTable}</div>
@@ -1125,15 +1218,22 @@ export default function HandheldInterface({
                                     <div className="border-b border-black border-dashed opacity-50 my-2" />
 
                                     <div className="text-xs space-y-1 mb-4">
-                                        {selectedOrderForPayment.items?.map((item: any, idx: number) => (
-                                            <div key={idx} className="flex justify-between">
-                                                <span className="truncate pr-2">
-                                                    {item.qty > 1 && <span className="font-bold mr-1">{item.qty}x</span>}
-                                                    {item.label || item.name}
-                                                </span>
-                                                <span>{formatCurrency(item.priceUsd * (item.qty || 1))}</span>
-                                            </div>
-                                        ))}
+                                        {selectedOrderForPayment.items?.map((item: any, idx: number) => {
+                                            let displayPrice = item.priceUsd * (item.qty || 1);
+                                            if (item.label && item.label.includes("Retained")) {
+                                                displayPrice = selectedOrderForPayment.total;
+                                            }
+
+                                            return (
+                                                <div key={idx} className="flex justify-between">
+                                                    <span className="truncate pr-2">
+                                                        {item.qty > 1 && <span className="font-bold mr-1">{item.qty}x</span>}
+                                                        {item.label || item.name}
+                                                    </span>
+                                                    <span>{formatCurrency(displayPrice)}</span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
 
                                     <div className="border-b border-black border-dashed opacity-50 my-2" />
@@ -1209,6 +1309,35 @@ export default function HandheldInterface({
                         else if (order.status === 'ready') statusColor = "text-emerald-400 border-green-500/30 bg-green-950/20";
                         else if (order.status === 'completed') statusColor = "text-neutral-400 border-neutral-700/30 bg-neutral-900";
 
+                        // Helper to find linked split receipt
+                        const findLinkedSplit = (label: string) => {
+                            const match = label.match(/Split Part (\d+)/);
+                            if (match && match[1]) {
+                                const partNum = match[1];
+                                // Find receipt with "Split Part X Transfer In"
+                                return tableOrders.find(r =>
+                                    r.items?.some((i: any) => i.label?.includes(`Split Part ${partNum} Transfer In`))
+                                );
+                            }
+                            return null;
+                        };
+
+                        // Check if this is a Source Receipt (has Transfer Outs)
+                        const hasSplits = order.items?.some((i: any) => i.label?.includes("Transfer Out"));
+
+                        // Calculate Aggregated Tip if Source
+                        let aggregatedTip = order.tipAmount || 0;
+                        if (hasSplits) {
+                            order.items?.forEach((item: any) => {
+                                if (item.label?.includes("Transfer Out")) {
+                                    const linked = findLinkedSplit(item.label);
+                                    if (linked && linked.tipAmount) {
+                                        aggregatedTip += linked.tipAmount;
+                                    }
+                                }
+                            });
+                        }
+
                         return (
                             <div key={order.id} className={`rounded-xl border p-4 ${statusColor}`}>
                                 <div className="flex justify-between items-start mb-2">
@@ -1218,18 +1347,58 @@ export default function HandheldInterface({
                                             {order.status}
                                         </span>
                                     </div>
-                                    <span className="font-bold font-mono text-lg text-white">{formatCurrency(order.total)}</span>
+                                    <div className="flex flex-col items-end">
+                                        {/* Top Right: Shows the TOTAL for this specific receipt (as requested, 'tip for first split' interpreted as balance/financials for this split) */}
+                                        <span className="font-bold font-mono text-lg text-white">{formatCurrency(order.total)}</span>
+                                        {(() => {
+                                            // Calculate original amount if splits exist
+                                            const transfers = order.items?.filter((i: any) => i.label && i.label.includes("Transfer Out")) || [];
+                                            if (transfers.length > 0) {
+                                                const transferTotal = transfers.reduce((sum: number, t: any) => sum + Math.abs(t.priceUsd * (t.qty || 1)), 0);
+                                                // Safe access to taxRate if available, else assume 0 or roughly estimation
+                                                // For display only
+                                                const originalTotal = order.total + transferTotal;
+                                                // Note: We don't have taxRate easily here without full object, but raw sum is decent approximation for 'Original' visual
+
+                                                return (
+                                                    <span className="text-[10px] text-neutral-500 font-mono line-through">
+                                                        {formatCurrency(originalTotal)}
+                                                    </span>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
+                                    </div>
                                 </div>
                                 <div className="space-y-1 mt-3 border-t border-black/10 pt-2 opacity-80">
-                                    {order.items?.map((item: any, idx: number) => (
-                                        <div key={idx} className="flex justify-between text-sm">
-                                            <span className="text-neutral-200">
-                                                {item.qty > 1 && <span className="font-bold mr-1">{item.qty}x</span>}
-                                                {item.label}
-                                            </span>
-                                            <span className="font-mono opacity-60">{formatCurrency(item.priceUsd)}</span>
-                                        </div>
-                                    ))}
+                                    {order.items?.map((item: any, idx: number) => {
+                                        const isTransferOut = item.label?.includes("Transfer Out");
+                                        const linkedReceipt = isTransferOut ? findLinkedSplit(item.label) : null;
+                                        const isLinkedPaid = linkedReceipt && (linkedReceipt.paymentStatus === 'paid' || linkedReceipt.paymentStatus === 'checkout_success');
+
+                                        return (
+                                            <div key={idx} className="flex justify-between text-sm items-center">
+                                                <div className="flex flex-col">
+                                                    <span className="text-neutral-200">
+                                                        {item.qty > 1 && <span className="font-bold mr-1">{item.qty}x</span>}
+                                                        {item.label || item.name}
+                                                    </span>
+                                                    {/* Show Status/Tip for Linked Split Row */}
+                                                    {isLinkedPaid && (
+                                                        <span className="text-[10px] text-emerald-400 font-bold">
+                                                            Paid {(linkedReceipt?.tipAmount || 0) > 0 ? `(+${formatCurrency(linkedReceipt?.tipAmount || 0)} Tip)` : ''}
+                                                        </span>
+                                                    )}
+                                                    {isTransferOut && !isLinkedPaid && linkedReceipt && (
+                                                        <span className="text-[10px] text-orange-400">
+                                                            Unpaid
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <span className="font-mono opacity-60">{formatCurrency(item.priceUsd * (item.qty || 1))}</span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                                 <div className="mt-3 text-[10px] opacity-50 flex justify-between">
                                     <span>Placed: {new Date(order.createdAt).toLocaleTimeString()}</span>
@@ -1237,14 +1406,79 @@ export default function HandheldInterface({
                                 </div>
 
                                 {order.status === 'completed' && (
-                                    <button
-                                        onClick={() => handlePaymentClick(order)}
-                                        className="mt-4 w-full h-10 bg-emerald-600 text-white rounded-lg font-bold text-sm shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <span>Collect Payment</span>
-                                        <span className="bg-black/20 px-1.5 rounded text-xs font-mono">{formatCurrency(order.total)}</span>
-                                    </button>
+                                    <div className="mt-4 flex gap-2">
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if (!confirm("Reset this receipt to its original state? This will clear all splits.")) return;
+                                                try {
+                                                    const res = await fetch(`/api/receipts/${order.id}/split`, {
+                                                        method: "POST",
+                                                        headers: { "Content-Type": "application/json", "x-wallet": merchantWallet },
+                                                        body: JSON.stringify({ mode: "reset" })
+                                                    });
+                                                    if (res.ok) {
+                                                        alert("Receipt has been reset.");
+                                                    } else {
+                                                        alert("Failed to reset receipt.");
+                                                    }
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    alert("Error resetting receipt.");
+                                                }
+                                            }}
+                                            className="h-10 w-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg flex items-center justify-center hover:bg-red-500/20 active:scale-95 transition-all"
+                                        >
+                                            <RotateCcw className="w-4 h-4" />
+                                        </button>
+                                        {(order.paymentStatus === 'paid' || order.paymentStatus === 'checkout_success') ? (
+                                            <div className="flex-1 h-10 bg-neutral-800 text-neutral-400 border border-neutral-700 rounded-lg font-bold text-sm flex items-center justify-center gap-2">
+                                                <span>Paid</span>
+                                                {aggregatedTip > 0 && (
+                                                    <span className="text-emerald-500">+ {formatCurrency(aggregatedTip)} Tip</span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => handlePaymentClick(order)}
+                                                className="flex-1 h-10 bg-emerald-600 text-white rounded-lg font-bold text-sm shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <span>Collect Payment</span>
+                                                <span className="bg-black/20 px-1.5 rounded text-xs font-mono">{formatCurrency(order.total)}</span>
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
+
+                                {/* MARK AS SERVED for Ready Orders */}
+                                {order.status === 'ready' && (
+                                    <div className="mt-4">
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                try {
+                                                    const res = await fetch("/api/kitchen/orders", {
+                                                        method: "PATCH",
+                                                        headers: { "Content-Type": "application/json", "x-wallet": merchantWallet },
+                                                        body: JSON.stringify({ receiptId: order.id, kitchenStatus: "completed" })
+                                                    });
+                                                    if (res.ok) {
+                                                        // Optimistic update handled by poll, but could force refresh
+                                                        fetchOrders();
+                                                    }
+                                                } catch (err) {
+                                                    console.error("Failed to mark served", err);
+                                                }
+                                            }}
+                                            className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white font-bold shadow-lg shadow-emerald-900/40 active:scale-95 transition-all text-sm uppercase tracking-wide flex items-center justify-center gap-2"
+                                        >
+                                            <CheckCircle2 className="w-5 h-5" />
+                                            Mark as Served
+                                        </button>
+                                    </div>
+                                )}
+
+
                             </div>
                         );
                     })}
@@ -1260,10 +1494,188 @@ export default function HandheldInterface({
         );
     }
 
+
+    const renderCashPaymentModal = () => {
+        if (!showCashModal || !selectedOrderForPayment) return null;
+
+        const total = selectedOrderForPayment.total || selectedOrderForPayment.totalUsd || 0;
+        const tendered = parseFloat(cashTendered) || 0;
+        const tip = parseFloat(cashTip) || 0;
+        const change = tendered - (total + tip);
+        const canPay = tendered >= (total + tip);
+
+        const handleConfirmPay = async () => {
+            if (!canPay) return;
+
+            try {
+                const res = await fetch(`/api/receipts/${selectedOrderForPayment.id}/pay`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "x-wallet": merchantWallet },
+                    body: JSON.stringify({
+                        method: "cash",
+                        cashTendered: tendered,
+                        tipAmount: tip,
+                        sessionId: sessionId,
+                        employeeName: employeeName,
+                        employeeId: employeeId // Pass full attribution context
+                    })
+                });
+
+                if (res.ok) {
+                    setShowCashModal(false);
+                    setCashTendered("");
+                    setCashTip("");
+
+                    // Immediate refresh from server to ensure DB sync
+                    fetchOrders().catch(console.error);
+
+                    // If we are in a split result (Carousel), we need to update the specific receipt in the array
+                    if (splitResult) {
+                        const updatedReceipt = {
+                            ...selectedOrderForPayment,
+                            status: 'paid', // Update status to paid
+                            totalUsd: selectedOrderForPayment.total || selectedOrderForPayment.totalUsd,
+                            // Ensure numeric fields are preserved
+                        };
+
+                        setSplitResult(prev => {
+                            if (!prev) return null;
+                            const matchesId = (r: any) => r.id === selectedOrderForPayment.id || r.id === `receipt:${selectedOrderForPayment.id}`;
+
+                            // Check source
+                            let newSource = prev.source;
+                            if (matchesId(prev.source)) {
+                                newSource = { ...prev.source, status: 'paid' };
+                            }
+
+                            // Check newReceipts
+                            const newReceipts = prev.newReceipts.map(r => matchesId(r) ? { ...r, status: 'paid' } : r);
+
+                            return { source: newSource, newReceipts };
+                        });
+
+                        // Keep the modal open (Carousel View) but show updated status
+                        alert("Payment Recorded");
+                    } else {
+                        alert("Payment Recorded");
+                        setView("tables");
+                        setSelectedOrderForPayment(null);
+                        setShowTableDetails(false);
+                    }
+                } else {
+                    const j = await res.json();
+                    alert("Payment failed: " + (j.error || "Unknown"));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Payment failed");
+            }
+        };
+
+        const shortcuts = [10, 20, 50, 100];
+
+        return (
+            <div className="absolute inset-0 z-[70] bg-black/95 backdrop-blur-xl flex flex-col animate-in fade-in duration-200">
+                <div className="h-16 border-b border-white/10 flex items-center justify-between px-4 shrink-0">
+                    <button
+                        onClick={() => setShowCashModal(false)}
+                        className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-white/10 text-white"
+                    >
+                        <ChevronLeft className="w-6 h-6" />
+                    </button>
+                    <h2 className="font-bold text-xl text-white">Cash Payment</h2>
+                    <div className="w-10" />
+                </div>
+
+                <div className="flex-1 p-6 overflow-y-auto">
+                    <div className="flex flex-col items-center space-y-6 max-w-sm mx-auto">
+
+                        {/* Totals Display */}
+                        <div className="w-full bg-white/5 rounded-2xl p-6 border border-white/10 space-y-4">
+                            <div className="flex justify-between items-end">
+                                <span className="text-neutral-400 text-sm font-bold uppercase tracking-wider">Total Due</span>
+                                <span className="text-2xl font-mono font-bold text-white">{formatCurrency(total)}</span>
+                            </div>
+
+                            <div className="flex justify-between items-end">
+                                <span className="text-emerald-400 text-sm font-bold uppercase tracking-wider">Change Due</span>
+                                <span className={`text-2xl font-mono font-bold ${change >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                    {change >= 0 ? formatCurrency(change) : "-"}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Inputs */}
+                        <div className="w-full space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider ml-1">Cash Tendered</label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-lg">$</span>
+                                    <input
+                                        type="number"
+                                        inputMode="decimal"
+                                        value={cashTendered}
+                                        onChange={e => setCashTendered(e.target.value)}
+                                        placeholder="0.00"
+                                        className="w-full bg-neutral-900 border border-white/20 rounded-xl h-16 pl-8 pr-4 text-2xl font-mono font-bold text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-neutral-700"
+                                        autoFocus
+                                    />
+                                </div>
+                                {/* Shortcuts */}
+                                <div className="grid grid-cols-4 gap-2">
+                                    <button
+                                        onClick={() => setCashTendered(total.toFixed(2))}
+                                        className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-2 text-sm font-mono font-bold text-emerald-400 transition-colors"
+                                    >
+                                        Exact
+                                    </button>
+                                    {shortcuts.map(amount => (
+                                        <button
+                                            key={amount}
+                                            onClick={() => setCashTendered(amount.toString())}
+                                            className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-2 text-sm font-mono font-bold text-white transition-colors"
+                                        >
+                                            ${amount}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider ml-1">Tip Amount</label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-lg">$</span>
+                                    <input
+                                        type="number"
+                                        inputMode="decimal"
+                                        value={cashTip}
+                                        onChange={e => setCashTip(e.target.value)}
+                                        placeholder="0.00"
+                                        className="w-full bg-neutral-900 border border-white/20 rounded-xl h-14 pl-8 pr-4 text-xl font-mono font-bold text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-neutral-800"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            disabled={!canPay}
+                            onClick={handleConfirmPay}
+                            className="w-full h-16 bg-emerald-500 text-black rounded-2xl font-bold text-xl active:scale-95 transition-all shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)] disabled:opacity-50 disabled:scale-100 disabled:shadow-none mt-8 flex items-center justify-center gap-2"
+                        >
+                            <span className="text-2xl">💵</span>
+                            Complete Payment
+                        </button>
+
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     // 3. Tables Grid
     const renderTablesView = () => {
         return (
-            <div className="absolute inset-0 z-20 flex flex-col bg-neutral-900 overflow-hidden text-white font-sans animate-in fade-in">
+            <div className="absolute inset-0 z-40 flex flex-col bg-neutral-900 overflow-hidden text-white font-sans animate-in fade-in">
                 {renderTableDetails()}
 
                 <div className="h-14 border-b border-white/10 flex items-center justify-between px-4 shrink-0 bg-neutral-900/50 backdrop-blur-md">
@@ -1294,9 +1706,12 @@ export default function HandheldInterface({
                             const isActive = ongoingOrders.length > 0;
 
                             // Visuals based on occupancy
-                            const containerClass = isActive
-                                ? "bg-neutral-800 border-neutral-700"
-                                : "bg-neutral-900 border-white/5";
+                            const isSelected = selectedTable === table;
+                            const containerClass = isSelected
+                                ? "bg-emerald-500/20 border-emerald-500 ring-1 ring-emerald-500"
+                                : isActive
+                                    ? "bg-neutral-800 border-neutral-700"
+                                    : "bg-neutral-900 border-white/5";
 
                             return (
                                 <button
@@ -1316,18 +1731,24 @@ export default function HandheldInterface({
 
                                     <div className="mt-auto w-full">
                                         {isActive ? (
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {ongoingOrders.map((o, idx) => {
-                                                    let dotColor = "bg-neutral-500";
-                                                    if (o.status === 'new') dotColor = "bg-orange-500 shadow-[0_0_8px] shadow-orange-500/50";
-                                                    if (o.status === 'preparing') dotColor = "bg-yellow-500 shadow-[0_0_8px] shadow-yellow-500/50";
-                                                    if (o.status === 'ready') dotColor = "bg-emerald-500 shadow-[0_0_8px] shadow-emerald-500/50";
-                                                    if (o.status === 'completed') dotColor = "bg-neutral-600";
+                                            <div className="flex gap-1 flex-wrap mt-2">
+                                                {/* Filter out splits ("Transfer In") and completed orders from dots to avoid clutter */}
+                                                {(activeOrders[table] || []).filter(o =>
+                                                    !(o.items?.some((i: any) => i.label?.includes("Transfer In"))) &&
+                                                    (o.status !== 'completed' || o.paymentStatus !== 'paid')
+                                                ).slice(0, 1) // Only show the FIRST active/primary ticket indicator as requested ("only the first one")
+                                                    .map((o, idx) => {
+                                                        let dotColor = "bg-neutral-600";
+                                                        if (o.status === "new") dotColor = "bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.6)] animate-pulse";
+                                                        if (o.status === "preparing") dotColor = "bg-yellow-500";
+                                                        if (o.status === "ready") dotColor = "bg-emerald-500 animate-bounce";
+                                                        if (o.status === "completed") dotColor = "bg-transparent border-2 border-emerald-500 box-border";
 
-                                                    return (
-                                                        <div key={idx} className={`w-3 h-3 rounded-full ${dotColor}`} />
-                                                    );
-                                                })}
+                                                        return (
+                                                            <div key={idx} className={`w-3 h-3 rounded-full ${dotColor}`} />
+                                                        );
+                                                    })}
+                                                {/* If there are more, show a small plus? User said "only the first one", implied singular focus */}
                                             </div>
                                         ) : (
                                             <span className="text-xs uppercase font-bold tracking-widest text-neutral-600">Vacant</span>
@@ -1526,7 +1947,7 @@ export default function HandheldInterface({
                     </div>
                     <span className="font-mono text-xl tracking-tight">{formatCurrency(cartTotal)}</span>
                 </button>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2 z-40">
                     <button
                         onClick={(e) => { e.stopPropagation(); setView("tables"); }}
                         className="h-10 w-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all border border-white/5"
@@ -1607,6 +2028,9 @@ export default function HandheldInterface({
 
             {/* PAYMENT VIEW LAYER */}
             {view === "payment" && renderPaymentView()}
+
+            {/* CASH MODAL OVERLAY */}
+            {showCashModal && renderCashPaymentModal()}
 
             {/* FLOATING VOICE BUTTON */}
             <button

@@ -177,6 +177,46 @@ export default function EndpointsPanel() {
                         </div>
                     </div>
                 </div>
+
+                {/* Kitchen Display Card */}
+                <div className="border rounded-xl p-5 bg-card relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Monitor size={64} />
+                    </div>
+                    <div className="flex flex-col h-full justify-between gap-4">
+                        <div>
+                            <div className="flex items-center gap-2 mb-2">
+                                <Monitor className="text-primary" size={20} />
+                                <h3 className="font-semibold">Kitchen Display</h3>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Real-time order management screen for the kitchen. processing station.
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="bg-muted/50 p-2 rounded-md text-xs font-mono truncate border">
+                                {loading ? "Loading..." : `${origin}/kitchen/${account.address}`}
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => copyToClipboard(`${origin}/kitchen/${account.address}`)}
+                                    className="flex-1 flex items-center justify-center gap-2 text-xs font-medium py-2 px-3 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                >
+                                    <Copy size={14} /> Copy Link
+                                </button>
+                                <a
+                                    href={`${origin}/kitchen/${account.address}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 text-xs font-medium py-2 px-3 rounded-md border hover:bg-muted transition-colors"
+                                >
+                                    <ExternalLink size={14} /> Open
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 text-xs text-amber-600 dark:text-amber-400">

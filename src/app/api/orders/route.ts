@@ -219,6 +219,7 @@ export async function POST(req: NextRequest) {
     const source = typeof body?.source === "string" ? body.source : undefined;
     const kitchenStatus = typeof body?.kitchenStatus === "string" ? body.kitchenStatus : undefined;
     const servedBy = typeof body?.servedBy === "string" ? body.servedBy : undefined;
+    const sessionId = typeof body?.sessionId === "string" ? body.sessionId : undefined;
 
     // Fetch site config for brand, processing fee, tax presets, and fallback default token (prefer per-wallet, fallback global)
     const cfg = await getSiteConfigForWallet(wallet).catch(() => null as any);
@@ -892,7 +893,8 @@ export async function POST(req: NextRequest) {
       kitchenStatus,
       source,
       servedBy,
-      note
+      note,
+      sessionId
     };
 
     try {

@@ -117,8 +117,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
             if (ratios.length < 2) return NextResponse.json({ error: "need_at_least_2_parties" }, { status: 400 });
 
             const sourceBase = sourceLines.reduce((s, it) => {
-                if (["Tax", "Gratuity"].includes(it.label)) return s;
-                // Include Processing Fee and others
+                if (["Tax", "Processing Fee", "Gratuity"].includes(it.label)) return s;
+                // Include modifiers
                 let itemCost = toCents(it.priceUsd);
                 if (Array.isArray(it.modifiers)) {
                     itemCost += it.modifiers.reduce((mS: number, m: any) => mS + toCents(m.price ?? m.priceUsd ?? 0), 0);
@@ -128,23 +128,24 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
             console.log("[SplitDebug] SourceBase (Cents):", sourceBase);
 
-            let createdReceipts: any[] = [];
+            // 2. Create Transfer Out lines for others
+            // totalSplitAmount is what we are distributing to others
+            let distributed = 0;
+            const createdReceipts: any[] = [];
 
             // We iterate from 1 to N-1 (since 0 is source)
             for (let i = 1; i < ratios.length; i++) {
                 const ratio = ratios[i];
                 if (ratio <= 0) continue;
 
-                const splitBase = Math.round(sourceBase * ratio);
-                const splitAmount = fromCents(splitBase);
-                console.log(`[SplitDebug] Part ${i} Ratio: ${ratio}, Amount: ${splitAmount}`);
+                // calculating share based on sourceBase
+                const shareInCents = Math.round(sourceBase * ratio);
+                const splitAmount = fromCents(shareInCents);
 
-                const label = `Split Part ${i + 1}/${ratios.length} (${Math.round(ratio * 100)}%)`;
-
-                // Add neg to source
+                // Add Transfer Out to Source
                 sourceLines.push({
-                    label: `${label} Transfer Out`,
-                    priceUsd: -Math.abs(splitAmount),
+                    label: `Split Part ${i + 1}/${ratios.length} (${Math.round(ratio * 100)}%) Transfer Out`,
+                    priceUsd: fromCents(-shareInCents),
                     qty: 1
                 });
 
@@ -174,6 +175,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
                     status: "provisional",
                     taxRate,
                     employeeId: source.employeeId,
+                    staffId: source.staffId || source.employeeId,
+                    servedBy: source.servedBy || source.employeeName,
                     sessionId: source.sessionId,
                     statusHistory: [{ status: "provisional", ts }],
                     lastUpdatedAt: ts,
@@ -236,6 +239,26 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
                 priceUsd: Math.abs(splitAmount),
                 qty: 1
             });
+
+        } else if (mode === "reset") {
+            const cleanLines = sourceLines.filter(it => !it.label.includes("Transfer Out") && !it.label.includes("Transfer In") && !it.label.includes("Split Part"));
+            const resetData = recalc(cleanLines, taxRate);
+
+            const ts = Date.now();
+            const updatedSourceDoc = {
+                ...source,
+                lineItems: resetData.lines,
+                totalUsd: resetData.total,
+                lastUpdatedAt: ts
+            };
+
+            if (isCosmos) {
+                await container.items.upsert(updatedSourceDoc);
+            } else {
+                updateReceiptContent(id, wallet, { lineItems: resetData.lines, totalUsd: resetData.total });
+            }
+
+            return NextResponse.json({ ok: true, source: { id, total: resetData.total } });
 
         } else {
             // Mode "items"
@@ -304,6 +327,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
             status: "provisional",
             taxRate,
             employeeId: source.employeeId,
+            staffId: source.staffId || source.employeeId,
+            servedBy: source.servedBy || source.employeeName,
             sessionId: source.sessionId,
             statusHistory: [{ status: "provisional", ts }],
             lastUpdatedAt: ts,

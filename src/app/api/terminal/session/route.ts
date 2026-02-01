@@ -31,35 +31,80 @@ export async function GET(req: NextRequest) {
         }
 
         const session = resources[0];
+        const staffId = session.staffId; // Assuming session has staffId (HandheldSessionManager says so)
 
-        // Aggregate stats from receipts for this session
-        // FIXED: Include c.wallet in retrieval to ensure single-partition query if possible
-        const statsQuery = merchantWallet ? {
-            query: "SELECT VALUE { totalSales: SUM(c.totalUsd), totalTips: SUM(c.tipAmount), count: COUNT(1) } FROM c WHERE c.type = 'receipt' AND c.sessionId = @sid AND c.wallet = @wallet AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed')",
+        // Calculate Start of Day (Local Server Time - simplified)
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(); // Milliseconds
+
+        // Find ALL sessions for this staff member today
+        // Removed wallet scope to avoid casing mismatches context errors.
+        // staffId should be sufficiently unique combined with today's date context? 
+        // Ideally staffId is a GUID or specific to merchant.
+        // We TRUST staffId for now.
+        const sessionQuery = {
+            query: "SELECT VALUE c.id FROM c WHERE c.type = 'terminal_session' AND c.staffId = @staffId AND c.createdAt >= @startOfDay",
             parameters: [
-                { name: "@sid", value: sessionId },
-                { name: "@wallet", value: merchantWallet.toLowerCase() }
+                { name: "@staffId", value: staffId },
+                { name: "@startOfDay", value: startOfDay }
             ]
-        } : {
-            query: "SELECT VALUE { totalSales: SUM(c.totalUsd), totalTips: SUM(c.tipAmount), count: COUNT(1) } FROM c WHERE c.type = 'receipt' AND c.sessionId = @sid AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed')",
-            parameters: [{ name: "@sid", value: sessionId }]
+        };
+        const { resources: dailySessionIds } = await container.items.query(sessionQuery).fetchAll();
+
+        // SUPER DEBUG: Log recent sessions for this staff to see what we are missing
+        const inspectSessionsQuery = {
+            query: "SELECT TOP 5 c.id, c.staffId, c.createdAt, c.wallet FROM c WHERE c.type='terminal_session' AND c.staffId = @staffId ORDER BY c.createdAt DESC",
+            parameters: [{ name: "@staffId", value: staffId }]
+        };
+        const { resources: recentSessions } = await container.items.query(inspectSessionsQuery).fetchAll();
+        console.log("DEBUG: Inspect Recent Sessions for Staff:", {
+            startOfDayMs: startOfDay,
+            recentSessions,
+            caughtSessions: dailySessionIds
+        });
+
+        // Ensure we at least include the current one if query missed it (e.g. time skew)
+        if (!dailySessionIds.includes(sessionId)) dailySessionIds.push(sessionId);
+
+        // DEBUG: Check recent receipts to verify sessionId exists
+        const debugQuery = {
+            query: "SELECT TOP 5 c.id, c.sessionId, c.status, c.totalUsd FROM c WHERE c.type='receipt' AND c.wallet=@wallet ORDER BY c.createdAt DESC",
+            parameters: [{ name: "@wallet", value: merchantWallet?.toLowerCase() || session.wallet || "" }]
+        };
+        const { resources: recentReceipts } = await container.items.query(debugQuery).fetchAll();
+        console.log("DEBUG Recent Receipts:", recentReceipts);
+
+        // Aggregate stats from receipts for ALL sessions of this staff today
+        // We MUST include wallet to target partition for aggregation, otherwise SUM over cross-partition might fail or be slow
+        // We assume all sessions are in the SAME wallet (which makes sense for a staff view)
+        // Aggregate stats from receipts for ALL sessions of this staff today
+        // We MUST include wallet to target partition for aggregation, otherwise SUM over cross-partition might fail or be slow
+        const statsQuery = {
+            query: `SELECT VALUE { totalSales: SUM(c.totalUsd), totalTips: SUM(c.tipAmount), count: COUNT(1) } FROM c WHERE c.type = 'receipt' AND c.wallet = @wallet AND (c.staffId = @staffId OR ARRAY_CONTAINS(@sessionIds, c.sessionId)) AND c.createdAt >= @startOfDay AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed')`,
+            parameters: [
+                { name: "@staffId", value: staffId },
+                { name: "@startOfDay", value: startOfDay },
+                { name: "@wallet", value: merchantWallet?.toLowerCase() || session.wallet || "" },
+                { name: "@sessionIds", value: dailySessionIds }
+            ]
         };
 
         // Let's fetch total sales and tips.
+        console.log("Daily Report Query:", { staffId, sessions: dailySessionIds, query: statsQuery.query }); // DEBUG
         const { resources: stats } = await container.items.query(statsQuery).fetchAll();
+        console.log("Only Daily Stats:", stats); // DEBUG
         const aggregated = stats[0] || { totalSales: 0, totalTips: 0, count: 0 };
 
         let orders: any[] = [];
         if (searchParams.get("includeOrders") === "true") {
-            const detailQuery = merchantWallet ? {
-                query: "SELECT c.id, c.receiptId, c.createdAt, c.totalUsd, c.tipAmount, c.status, c.tableNumber FROM c WHERE c.type = 'receipt' AND c.sessionId = @sid AND c.wallet = @wallet AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed') ORDER BY c.createdAt DESC",
+            const detailQuery = {
+                query: `SELECT c.id, c.receiptId, c.createdAt, c.totalUsd, c.tipAmount, c.status, c.tableNumber FROM c WHERE c.type = 'receipt' AND c.wallet = @wallet AND (c.staffId = @staffId OR ARRAY_CONTAINS(@sessionIds, c.sessionId)) AND c.createdAt >= @startOfDay AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed') ORDER BY c.createdAt DESC`,
                 parameters: [
-                    { name: "@sid", value: sessionId },
-                    { name: "@wallet", value: merchantWallet.toLowerCase() }
+                    { name: "@staffId", value: staffId },
+                    { name: "@startOfDay", value: startOfDay },
+                    { name: "@wallet", value: merchantWallet?.toLowerCase() || session.wallet || "" },
+                    { name: "@sessionIds", value: dailySessionIds }
                 ]
-            } : {
-                query: "SELECT c.id, c.receiptId, c.createdAt, c.totalUsd, c.tipAmount, c.status, c.tableNumber FROM c WHERE c.type = 'receipt' AND c.sessionId = @sid AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed') ORDER BY c.createdAt DESC",
-                parameters: [{ name: "@sid", value: sessionId }]
             };
             const { resources: orderList } = await container.items.query(detailQuery).fetchAll();
             orders = orderList;
@@ -76,7 +121,8 @@ export async function GET(req: NextRequest) {
         });
 
     } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 });
+        console.error("Session API Error:", e.message, e.stack); // DEBUG: Ensure we see why it failed
+        return NextResponse.json({ error: e.message, details: e.toString() }, { status: 500 });
     }
 }
 

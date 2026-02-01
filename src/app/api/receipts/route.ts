@@ -25,6 +25,9 @@ export type Receipt = {
   createdAt: number;
   brandName?: string;
   status?: string;
+  employeeId?: string;
+  employeeName?: string;
+  sessionId?: string;
 };
 
 // ... existing imports
@@ -196,6 +199,11 @@ export async function POST(req: NextRequest) {
       if (typeof cfg?.theme?.brandName === "string" && cfg.theme.brandName) brandName = cfg.theme.brandName;
     } catch { }
 
+    const employeeId = typeof body?.employeeId === "string" ? body.employeeId : undefined;
+    const employeeName = typeof body?.employeeName === "string" ? body.employeeName : undefined;
+    const sessionId = typeof body?.sessionId === "string" ? body.sessionId : undefined;
+
+
     // Compute split breakdown and effective processing fee
     const brand = getBrandConfig();
     let merchantFeeBps: number | undefined = undefined;
@@ -223,6 +231,11 @@ export async function POST(req: NextRequest) {
       brandName,
       status: "pending",
       statusHistory: [{ status: "pending", ts: now }],
+      employeeId,
+      employeeName,
+      staffId: employeeId, // Alias for consistency with Orders/Reference
+      servedBy: employeeName,
+      sessionId,
       ttl: 3600, // Auto-expire in 1h if not paid (User Request)
       // Split breakdown fields (minor units in cents)
       grossMinor,

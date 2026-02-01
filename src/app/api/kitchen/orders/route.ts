@@ -51,13 +51,17 @@ export async function GET(request: NextRequest) {
           ? `AND ARRAY_CONTAINS(@statusFilter, c.kitchenStatus)`
           : "";
 
+        const includeSplits = searchParams.get("includeSplits") === "true";
+
         const querySpec = {
           query: `
             SELECT * FROM c 
             WHERE c.type='receipt' 
             AND c.wallet=@wallet 
-            AND IS_DEFINED(c.kitchenStatus) 
-            ${statusClause}
+            AND (
+              (IS_DEFINED(c.kitchenStatus) ${statusClause})
+              ${includeSplits ? "OR EXISTS(SELECT VALUE t FROM t IN c.lineItems WHERE CONTAINS(t.label, 'Transfer In'))" : ""}
+            )
             ORDER BY c.createdAt ASC
           `,
           parameters: [
@@ -134,7 +138,9 @@ export async function GET(request: NextRequest) {
               customerName: receipt.customerName || (receipt.tableNumber ? `Table ${receipt.tableNumber}` : "Guest"),
               serverName,
               specialInstructions,
+              tipAmount: receipt.tipAmount || 0, // Pass tip amount for UI
               source: "pos",
+              sessionId: receipt.sessionId // Include sessionId for debugging/attribution checking
             });
           }
         }
