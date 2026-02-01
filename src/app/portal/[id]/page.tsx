@@ -2383,7 +2383,7 @@ export default function PortalReceiptPage() {
 
                                 // Link txHash to receipt immediately via receipt_claimed
                                 if (txHash && receiptId) {
-                                  postStatus("receipt_claimed", {
+                                  postStatus("paid", {
                                     buyerWallet: buyer,
                                     txHash
                                   }).catch(e => console.error("[CHECKOUT] Failed to update status:", e));
@@ -2814,7 +2814,7 @@ export default function PortalReceiptPage() {
                                   token: currency
                                 });
 
-                                await postStatus("paid", { buyer: wallet, txHash });
+                                await postStatus("paid", { buyerWallet: wallet, txHash });
                                 await fetch("/api/billing/purchase", {
                                   method: "POST",
                                   headers: {
