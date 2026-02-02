@@ -32,6 +32,10 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
     const [reportLoading, setReportLoading] = useState(false);
     const [reportError, setReportError] = useState("");
 
+    // Employee Filter State
+    const [employeeFilter, setEmployeeFilter] = useState<string>(""); // Empty = All employees
+    const [employees, setEmployees] = useState<{ id: string; name: string }[]>([]);
+
     // Modal State
     const [emailDialogOpen, setEmailDialogOpen] = useState(false);
     const [emailInput, setEmailInput] = useState("");
@@ -45,7 +49,13 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
         setReportError("");
         try {
             const { start, end } = getDateRange(range);
-            const res = await fetch(`/api/terminal/reports?type=${reportType}&start=${start}&end=${end}&format=json`, {
+            // Build API URL with optional employee filter
+            let apiUrl = `/api/terminal/reports?type=${reportType}&start=${start}&end=${end}&format=json`;
+            if (employeeFilter) {
+                apiUrl += `&employeeId=${encodeURIComponent(employeeFilter)}`;
+            }
+
+            const res = await fetch(apiUrl, {
                 headers: {
                     "x-wallet": merchantWallet,
                     "x-linked-wallet": account?.address || ""
@@ -54,6 +64,11 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Failed to load report");
             setDashboardStats(data);
+
+            // Extract unique employees for filter dropdown (from unfiltered data)
+            if (data.employees && employees.length === 0) {
+                setEmployees(data.employees.map((e: any) => ({ id: e.id, name: e.name || e.id })));
+            }
         } catch (e: any) {
             setReportError(e.message);
         } finally {
@@ -101,7 +116,7 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
         };
     }
 
-    // Reload when range/type changes
+    // Reload when range/type/employee changes
     useEffect(() => {
         if (merchantWallet) {
             // Debounce custom date reloads slightly or wait for user action? 
@@ -109,7 +124,7 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
             if (range === "custom" && (!customStart || !customEnd)) return;
             loadDashboard();
         }
-    }, [range, reportType, merchantWallet, customStart, customEnd]);
+    }, [range, reportType, merchantWallet, customStart, customEnd, employeeFilter]);
 
     // 4. Download Handler (Renamed to bust cache)
     async function downloadReportAction(format: "zip" | "pdf" = "zip") {
@@ -414,7 +429,7 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
             </Dialog>
 
             {/* Controls */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-xl bg-card">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-xl bg-card">
                 <div>
                     <div className="flex items-center gap-2 mb-2">
                         <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Report Type</span>
@@ -439,6 +454,25 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
                         ))}
                     </div>
                 </div>
+
+                {/* Employee Filter */}
+                <div>
+                    <div className="flex items-center gap-2 mb-2">
+                        <User className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Staff Filter</span>
+                    </div>
+                    <select
+                        value={employeeFilter}
+                        onChange={e => setEmployeeFilter(e.target.value)}
+                        className="w-full h-[38px] px-3 rounded-lg border bg-background text-xs font-medium focus:ring-1 focus:ring-primary"
+                    >
+                        <option value="">All Staff</option>
+                        {employees.map(emp => (
+                            <option key={emp.id} value={emp.id}>{emp.name}</option>
+                        ))}
+                    </select>
+                </div>
+
                 <div className="md:col-span-2">
                     <div className="flex items-center gap-2 mb-2">
                         <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Date Range</span>
@@ -519,21 +553,28 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
                                 <table className="w-full text-sm text-left">
                                     <thead className="text-xs uppercase text-muted-foreground border-b">
                                         <tr>
-                                            <th className="py-3">Staff ID</th>
+                                            <th className="py-3">Staff</th>
                                             <th className="py-3 text-right">Sales</th>
                                             <th className="py-3 text-right">Tips</th>
                                             <th className="py-3 text-right">Orders</th>
                                             <th className="py-3 text-right">Avg Ticket</th>
+                                            <th className="py-3 text-right">Sessions</th>
+                                            <th className="py-3 text-right">Active</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
                                         {dashboardStats.employees.map((e: any) => (
-                                            <tr key={e.id}>
-                                                <td className="py-3 font-medium">{e.id}</td>
-                                                <td className="py-3 text-right">{formatCurrency(e.sales, "USD")}</td>
-                                                <td className="py-3 text-right">{formatCurrency(e.tips, "USD")}</td>
+                                            <tr key={e.id} className="hover:bg-muted/20 transition-colors">
+                                                <td className="py-3">
+                                                    <div className="font-medium">{e.name || e.id}</div>
+                                                    {e.name && e.name !== e.id && <div className="text-xs text-muted-foreground">{e.id}</div>}
+                                                </td>
+                                                <td className="py-3 text-right font-mono">{formatCurrency(e.sales, "USD")}</td>
+                                                <td className="py-3 text-right font-mono text-green-500">{formatCurrency(e.tips, "USD")}</td>
                                                 <td className="py-3 text-right">{e.count}</td>
-                                                <td className="py-3 text-right">{formatCurrency(e.aov, "USD")}</td>
+                                                <td className="py-3 text-right font-mono">{formatCurrency(e.aov, "USD")}</td>
+                                                <td className="py-3 text-right">{e.sessionCount || 1}</td>
+                                                <td className="py-3 text-right text-muted-foreground">{e.activeHours ? `${e.activeHours}h` : "-"}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -542,16 +583,52 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
                         )}
 
                         {(reportType === "z-report" || reportType === "x-report") && dashboardStats.paymentMethods && (
-                            <div>
-                                <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-3">Payment Breakdown</h4>
-                                <div className="space-y-2">
-                                    {dashboardStats.paymentMethods.map((m: any) => (
-                                        <div key={m.method} className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
-                                            <span className="font-medium">{m.method}</span>
-                                            <span className="font-mono">{formatCurrency(m.total, "USD")}</span>
-                                        </div>
-                                    ))}
+                            <div className="space-y-6">
+                                <div>
+                                    <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-3">Payment Breakdown</h4>
+                                    <div className="space-y-2">
+                                        {dashboardStats.paymentMethods.map((m: any) => (
+                                            <div key={m.method} className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
+                                                <span className="font-medium">{m.method}</span>
+                                                <span className="font-mono">{formatCurrency(m.total, "USD")}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
+
+                                {/* Session Details */}
+                                {dashboardStats.sessions && dashboardStats.sessions.length > 0 && (
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-3">Session History</h4>
+                                        <div className="space-y-2">
+                                            {dashboardStats.sessions.map((s: any) => (
+                                                <div key={s.id} className="p-3 rounded-lg bg-muted/20 border border-border/50">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div>
+                                                            <span className="font-medium">{s.staffName || "Unknown Staff"}</span>
+                                                            {s.isActive && <span className="ml-2 text-xs bg-green-500/20 text-green-500 px-2 py-0.5 rounded-full">Active</span>}
+                                                        </div>
+                                                        <span className="text-xs text-muted-foreground">{s.durationFormatted || "-"}</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-4 text-sm">
+                                                        <div>
+                                                            <span className="text-muted-foreground text-xs">Started</span>
+                                                            <div className="font-mono">{new Date(s.startTime * 1000).toLocaleTimeString()}</div>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-muted-foreground text-xs">Sales</span>
+                                                            <div className="font-mono">{formatCurrency(s.totalSales || 0, "USD")}</div>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-muted-foreground text-xs">Tips</span>
+                                                            <div className="font-mono text-green-500">{formatCurrency(s.totalTips || 0, "USD")}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 

@@ -12,6 +12,7 @@ import { Utensils, ShoppingBag, Hotel, Briefcase, BookOpen } from "lucide-react"
 import ImageUploadField from "@/components/forms/ImageUploadField";
 import ShopWizard from "@/components/shop/ShopWizard";
 import ShopClient from "@/app/shop/[slug]/ShopClient";
+import { useBrand } from "@/contexts/BrandContext";
 
 export type ShopTheme = {
   primaryColor?: string;
@@ -116,6 +117,9 @@ function contrastTextFor(bg: string, fallback = "#ffffff"): string {
 export default function ShopBuilderPage() {
   const twTheme = usePortalThirdwebTheme();
   const account = useActiveAccount();
+  const brand = useBrand();
+  // Use the partner container's logo as default, fallback to BasaltSurge logo if not available
+  const defaultLogo = brand?.logos?.app || "/BasaltSurgeWideD.png";
   const isConnected = !!account?.address;
   const [wallets, setWallets] = useState<any[]>([]);
   useEffect(() => {
@@ -153,11 +157,11 @@ export default function ShopBuilderPage() {
     description: "",
     bio: "",
     theme: {
-      primaryColor: "#0ea5e9",
-      secondaryColor: "#22c55e",
+      primaryColor: brand?.colors?.primary || "#0ea5e9",
+      secondaryColor: brand?.colors?.accent || "#22c55e",
       textColor: "#0b1020",
       accentColor: "#f59e0b",
-      brandLogoUrl: "/BasaltSurgeWideD.png",
+      brandLogoUrl: "", // Will be set from brand context or loaded config
       coverPhotoUrl: "",
       fontFamily:
         "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
@@ -446,7 +450,12 @@ export default function ShopBuilderPage() {
           name: conf.name || "",
           description: conf.description || "",
           bio: conf.bio || "",
-          theme: { ...prev.theme, ...(conf.theme || {}) },
+          theme: {
+            ...prev.theme,
+            ...(conf.theme || {}),
+            // Ensure partner container logo is used as fallback
+            brandLogoUrl: conf.theme?.brandLogoUrl || prev.theme.brandLogoUrl || defaultLogo,
+          },
           arrangement: (conf.arrangement as any) || "grid",
           slug: conf.slug || "",
           links: Array.isArray(conf.links) ? conf.links : [],
@@ -503,7 +512,7 @@ export default function ShopBuilderPage() {
             ...next.theme,
             primaryColor: next.theme.primaryColor || t.primaryColor || next.theme.primaryColor,
             secondaryColor: next.theme.secondaryColor || t.secondaryColor || next.theme.secondaryColor,
-            brandLogoUrl: next.theme.brandLogoUrl || t.brandLogoUrl || next.theme.brandLogoUrl,
+            brandLogoUrl: next.theme.brandLogoUrl || t.brandLogoUrl || defaultLogo,
             fontFamily: next.theme.fontFamily || t.fontFamily || next.theme.fontFamily,
           };
         }
@@ -542,7 +551,7 @@ export default function ShopBuilderPage() {
             secondaryColor: pack.theme.secondaryColor,
             accentColor: pack.theme.accentColor,
             textColor: prev.theme.textColor || "#0b1020",
-            brandLogoUrl: currentLogo || prev.theme.brandLogoUrl || "/BasaltSurgeWideD.png",
+            brandLogoUrl: currentLogo || prev.theme.brandLogoUrl || defaultLogo,
             coverPhotoUrl: currentCover || prev.theme.coverPhotoUrl || "",
             fontFamily: pack.theme.fontFamily,
           },
@@ -753,7 +762,7 @@ export default function ShopBuilderPage() {
               connectModal={{
                 showThirdwebBranding: false,
                 title: "Login",
-                titleIcon: (cfg.theme.brandLogoUrl && !cfg.theme.brandLogoUrl.includes("a311dcf8")) ? cfg.theme.brandLogoUrl : "/BasaltSurgeWideD.png",
+                titleIcon: (cfg.theme.brandLogoUrl && !cfg.theme.brandLogoUrl.includes("a311dcf8")) ? cfg.theme.brandLogoUrl : defaultLogo,
                 size: "compact",
               }}
               theme={twTheme}

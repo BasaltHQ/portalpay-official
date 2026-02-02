@@ -5,3 +5,5 @@
 
 export { PMSCard } from './PMSCard';
 export { StatusBadge } from './StatusBadge';
+export { PropertySelector } from './PropertySelector';
+export { GuestMessages } from './GuestMessages';

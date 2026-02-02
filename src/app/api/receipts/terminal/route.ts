@@ -47,8 +47,13 @@ export type Receipt = {
   taxRate?: number;
   taxComponents?: string[];
   employeeId?: string;
+  staffId?: string;
+  employeeName?: string;
+  servedBy?: string;
   sessionId?: string;
+  sessionStartTime?: number;
   tipAmount?: number;
+  brandKey?: string;
 };
 
 function toCents(n: number) {
@@ -250,6 +255,19 @@ export async function POST(req: NextRequest) {
     const receiptId = genReceiptId();
     const ts = Date.now();
 
+    // Extract employee attribution metadata with alias support
+    const employeeId = typeof body?.employeeId === "string" ? body.employeeId : undefined;
+    const staffId = typeof body?.staffId === "string" ? body.staffId : employeeId; // Alias
+    const employeeName = typeof body?.employeeName === "string" ? body.employeeName : undefined;
+    const servedBy = typeof body?.servedBy === "string" ? body.servedBy : employeeName; // Alias
+    const sessionId = typeof body?.sessionId === "string" ? body.sessionId : undefined;
+    const sessionStartTime = typeof body?.sessionStartTime === "number" ? body.sessionStartTime : undefined;
+
+    // Brand key for isolation (from body or derive from env)
+    const brandKey = typeof body?.brandKey === "string"
+      ? body.brandKey.toLowerCase()
+      : (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "portalpay").toLowerCase();
+
     const doc = {
       id: `receipt:${receiptId}`,
       type: "receipt",
@@ -264,13 +282,20 @@ export async function POST(req: NextRequest) {
       taxRate: Math.max(0, Math.min(1, taxRate)),
       taxComponents: appliedTaxComponents,
       status: "generated",
-      employeeId: typeof body?.employeeId === "string" ? body.employeeId : undefined,
-      sessionId: typeof body?.sessionId === "string" ? body.sessionId : undefined,
+      // Employee attribution with aliases for cross-module compatibility
+      employeeId,
+      staffId,
+      employeeName,
+      servedBy,
+      sessionId,
+      sessionStartTime,
+      // Brand isolation
+      brandKey,
       statusHistory: [{ status: "generated", ts }],
       lastUpdatedAt: ts,
     };
 
-    const receipt: Receipt & { sessionId?: string } = {
+    const receipt: Receipt = {
       receiptId,
       totalUsd,
       currency,
@@ -281,8 +306,13 @@ export async function POST(req: NextRequest) {
       taxRate: Math.max(0, Math.min(1, taxRate)),
       taxComponents: appliedTaxComponents,
       status: "generated",
-      employeeId: typeof body?.employeeId === "string" ? body.employeeId : undefined,
-      sessionId: typeof body?.sessionId === "string" ? body.sessionId : undefined,
+      employeeId,
+      staffId,
+      employeeName,
+      servedBy,
+      sessionId,
+      sessionStartTime,
+      brandKey,
     };
 
     // Persist

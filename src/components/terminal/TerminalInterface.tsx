@@ -15,13 +15,14 @@ interface TerminalInterfaceProps {
     employeeName?: string;
     employeeRole?: string;
     sessionId?: string;     // Optional active session ID
+    sessionStartTime?: number; // Unix timestamp when session started
     onLogout?: () => void;
     brandName?: string;
     logoUrl?: string;
     theme?: any;
 }
 
-export default function TerminalInterface({ merchantWallet, employeeId, employeeName, employeeRole, sessionId, onLogout, brandName, logoUrl, theme }: TerminalInterfaceProps) {
+export default function TerminalInterface({ merchantWallet, employeeId, employeeName, employeeRole, sessionId, sessionStartTime, onLogout, brandName, logoUrl, theme }: TerminalInterfaceProps) {
     const [amountStr, setAmountStr] = useState<string>("");
     const [itemLabel, setItemLabel] = useState<string>("");
     const [loading, setLoading] = useState(false);
@@ -82,12 +83,21 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                 return;
             }
 
+            // Extract clean employee name (remove stats suffix if present)
+            const cleanEmployeeName = (employeeName || "").split(" • ")[0].trim();
+
             const payload = {
                 amountUsd: +amt.toFixed(2),
                 label: (itemLabel || "").trim() || "Terminal Payment",
                 currency: terminalCurrency,
-                employeeId, // Track employee
-                sessionId   // Track session
+                // Employee attribution with aliases for cross-module compatibility
+                employeeId,
+                staffId: employeeId, // Alias for reports
+                employeeName: cleanEmployeeName,
+                servedBy: cleanEmployeeName, // Alias
+                // Session tracking
+                sessionId,
+                sessionStartTime
             };
 
             const r = await fetch("/api/receipts/terminal", {

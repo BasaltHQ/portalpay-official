@@ -42,14 +42,34 @@ export async function GET(req: NextRequest) {
         // staffId should be sufficiently unique combined with today's date context? 
         // Ideally staffId is a GUID or specific to merchant.
         // We TRUST staffId for now.
-        const sessionQuery = {
-            query: "SELECT VALUE c.id FROM c WHERE c.type = 'terminal_session' AND c.staffId = @staffId AND c.createdAt >= @startOfDay",
-            parameters: [
-                { name: "@staffId", value: staffId },
-                { name: "@startOfDay", value: startOfDay }
-            ]
-        };
-        const { resources: dailySessionIds } = await container.items.query(sessionQuery).fetchAll();
+
+        // Brand isolation for partner containers
+        const ct = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || process.env.CONTAINER_TYPE || "platform").toLowerCase();
+        const brandKey = String(process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase();
+
+        let sessionQuery: { query: string; parameters: any[] };
+        if (ct === "partner" && brandKey) {
+            // Partner mode: filter by brandKey
+            sessionQuery = {
+                query: "SELECT c.id, c.startTime, c.endTime, c.totalSales, c.totalTips FROM c WHERE c.type = 'terminal_session' AND c.staffId = @staffId AND c.createdAt >= @startOfDay AND c.brandKey = @brandKey",
+                parameters: [
+                    { name: "@staffId", value: staffId },
+                    { name: "@startOfDay", value: startOfDay },
+                    { name: "@brandKey", value: brandKey }
+                ]
+            };
+        } else {
+            // Platform mode: no brand filter
+            sessionQuery = {
+                query: "SELECT c.id, c.startTime, c.endTime, c.totalSales, c.totalTips FROM c WHERE c.type = 'terminal_session' AND c.staffId = @staffId AND c.createdAt >= @startOfDay",
+                parameters: [
+                    { name: "@staffId", value: staffId },
+                    { name: "@startOfDay", value: startOfDay }
+                ]
+            };
+        }
+        const { resources: dailySessions } = await container.items.query(sessionQuery).fetchAll();
+        const dailySessionIds = dailySessions.map((s: any) => s.id);
 
         // SUPER DEBUG: Log recent sessions for this staff to see what we are missing
         const inspectSessionsQuery = {

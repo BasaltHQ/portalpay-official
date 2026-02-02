@@ -34,6 +34,8 @@ export async function GET(req: NextRequest) {
 
         // Auth Context
         const sessionId = searchParams.get("sessionId"); // Terminal Access
+        // Optional: Filter by specific employee
+        const filterEmployeeId = searchParams.get("employeeId"); // Employee filter
         // Allow fallback to query params for direct PDF/Link access
         const adminWallet = req.headers.get("x-linked-wallet") || searchParams.get("linkedWallet");
         const targetMerchantWallet = req.headers.get("x-wallet") || searchParams.get("wallet");
@@ -154,24 +156,32 @@ export async function GET(req: NextRequest) {
         // --- DATA AGGREGATION ---
 
         // Base Receipt Query
-        const receiptsQuery = {
-            query: `
-                SELECT c.totalUsd, c.tipAmount, c.currency, c.paymentMethod, c.createdAt, c.employeeId
-                FROM c 
-                WHERE c.type = 'receipt' 
-                AND c.merchantWallet = @w 
-                AND c._ts >= @start 
-                AND c._ts <= @end
-                AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed')
-            `,
-            parameters: [
-                { name: "@w", value: w },
-                { name: "@start", value: startTs },
-                { name: "@end", value: endTs }
-            ]
-        };
+        let receiptsQueryString = `
+            SELECT c.id, c.totalUsd, c.tipAmount, c.currency, c.paymentMethod, c.createdAt, 
+                   c.employeeId, c.staffId, c.employeeName, c.servedBy, c.sessionId, c.sessionStartTime
+            FROM c 
+            WHERE c.type = 'receipt' 
+            AND c.merchantWallet = @w 
+            AND c._ts >= @start 
+            AND c._ts <= @end
+            AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed')
+        `;
+        const receiptsParams: { name: string; value: any }[] = [
+            { name: "@w", value: w },
+            { name: "@start", value: startTs },
+            { name: "@end", value: endTs }
+        ];
 
-        const { resources: receipts } = await container.items.query(receiptsQuery).fetchAll();
+        // Optional employee filter
+        if (filterEmployeeId) {
+            receiptsQueryString += ` AND (c.employeeId = @empId OR c.staffId = @empId)`;
+            receiptsParams.push({ name: "@empId", value: filterEmployeeId });
+        }
+
+        const { resources: receipts } = await container.items.query({
+            query: receiptsQueryString,
+            parameters: receiptsParams
+        }).fetchAll();
 
         // Calculate Stats
         const totalSales = receipts.reduce((acc: number, r: any) => acc + (r.totalUsd || 0), 0);
@@ -193,19 +203,50 @@ export async function GET(req: NextRequest) {
         let detailedData: any = {};
 
         if (type === "employee" || type === "z-report") {
-            const empMap = new Map<string, { sales: number, tips: number, count: number }>();
+            // Track per-employee stats including sessions
+            const empMap = new Map<string, {
+                sales: number,
+                tips: number,
+                count: number,
+                name: string,
+                sessions: Set<string>,
+                firstSale: number,
+                lastSale: number
+            }>();
+
             for (const r of receipts) {
-                const eid = r.employeeId || "Unknown";
-                if (!empMap.has(eid)) empMap.set(eid, { sales: 0, tips: 0, count: 0 });
+                const eid = r.employeeId || r.staffId || "Unknown";
+                const ename = r.employeeName || r.servedBy || "";
+                if (!empMap.has(eid)) {
+                    empMap.set(eid, {
+                        sales: 0,
+                        tips: 0,
+                        count: 0,
+                        name: ename,
+                        sessions: new Set(),
+                        firstSale: r.createdAt || Date.now(),
+                        lastSale: r.createdAt || Date.now()
+                    });
+                }
                 const e = empMap.get(eid)!;
                 e.sales += (r.totalUsd || 0);
                 e.tips += (r.tipAmount || 0);
                 e.count += 1;
+                if (r.sessionId) e.sessions.add(r.sessionId);
+                if (!e.name && ename) e.name = ename;
+                if (r.createdAt && r.createdAt < e.firstSale) e.firstSale = r.createdAt;
+                if (r.createdAt && r.createdAt > e.lastSale) e.lastSale = r.createdAt;
             }
+
             detailedData.employees = Array.from(empMap.entries()).map(([id, stats]) => ({
                 id,
-                ...stats,
-                aov: stats.count > 0 ? stats.sales / stats.count : 0
+                name: stats.name || id,
+                sales: stats.sales,
+                tips: stats.tips,
+                count: stats.count,
+                aov: stats.count > 0 ? stats.sales / stats.count : 0,
+                sessionCount: stats.sessions.size,
+                activeHours: Math.round((stats.lastSale - stats.firstSale) / (1000 * 60 * 60) * 10) / 10 // hours with 1 decimal
             }));
         } else if (type === "hourly") {
             const hourMap = new Array(24).fill(0);
@@ -218,25 +259,55 @@ export async function GET(req: NextRequest) {
             detailedData.hourly = hourMap.map((amount, hour) => ({ hour, amount }));
         }
 
-        // Include Sessions for End of Day Reports
+        // Include Sessions for End of Day Reports with brandKey filtering
         if (type === "z-report" || type === "x-report") {
-            const sessionsQuery = {
-                query: `SELECT * FROM c WHERE c.type = 'terminal_session' AND c.merchantWallet = @w AND c.startTime >= @start AND c.startTime <= @end ORDER BY c.startTime DESC`,
-                parameters: [
-                    { name: "@w", value: w },
-                    { name: "@start", value: startTs },
-                    { name: "@end", value: endTs }
-                ]
-            };
-            const { resources: sess } = await container.items.query(sessionsQuery).fetchAll();
-            detailedData.sessions = sess.map((s: any) => ({
-                id: s.id,
-                staffName: s.staffName,
-                startTime: s.startTime,
-                endTime: s.endTime,
-                totalSales: s.totalSales,
-                totalTips: s.totalTips
-            }));
+            // Build session query with optional brandKey filter
+            let sessionsQueryString = `SELECT * FROM c WHERE c.type = 'terminal_session' AND c.merchantWallet = @w AND c.startTime >= @start AND c.startTime <= @end`;
+            const sessionsParams: { name: string; value: any }[] = [
+                { name: "@w", value: w },
+                { name: "@start", value: startTs },
+                { name: "@end", value: endTs }
+            ];
+
+            // Add brandKey filter for partner containers
+            if (ct === "partner" && branding.key) {
+                sessionsQueryString += ` AND c.brandKey = @bk`;
+                sessionsParams.push({ name: "@bk", value: branding.key });
+            }
+
+            // Optional employee filter for sessions
+            if (filterEmployeeId) {
+                sessionsQueryString += ` AND c.staffId = @staffId`;
+                sessionsParams.push({ name: "@staffId", value: filterEmployeeId });
+            }
+
+            sessionsQueryString += ` ORDER BY c.startTime DESC`;
+
+            const { resources: sess } = await container.items.query({
+                query: sessionsQueryString,
+                parameters: sessionsParams
+            }).fetchAll();
+
+            detailedData.sessions = sess.map((s: any) => {
+                // Calculate duration in minutes
+                const duration = s.endTime
+                    ? Math.round((s.endTime - s.startTime) / 60)
+                    : Math.round((Math.floor(Date.now() / 1000) - s.startTime) / 60);
+
+                return {
+                    id: s.id,
+                    staffId: s.staffId,
+                    staffName: s.staffName,
+                    startTime: s.startTime,
+                    endTime: s.endTime,
+                    duration, // minutes
+                    durationFormatted: `${Math.floor(duration / 60)}h ${duration % 60}m`,
+                    totalSales: s.totalSales || 0,
+                    totalTips: s.totalTips || 0,
+                    isActive: !s.endTime,
+                    brandKey: s.brandKey
+                };
+            });
         }
 
         // Enrich Employee Names

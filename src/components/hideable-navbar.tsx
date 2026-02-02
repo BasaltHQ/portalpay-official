@@ -74,6 +74,7 @@ export function HideableNavbar() {
     ((pathname === "/terminal" || pathname.startsWith("/terminal")) && isMobile && isTerminalView) ||
     pathname.match(/^\/terminal\/0x[a-fA-F0-9]{40}/) ||
     pathname === "/handheld" || pathname.startsWith("/handheld/") ||
+    pathname.startsWith("/pms/") || // PMS fullscreen mode
     isCandidateSlug(pathname);
 
   // Apply body class for navbar padding

@@ -43,6 +43,7 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
         staffId: string;
         name: string;
         role: string;
+        startTime: number; // Unix timestamp for session start
         totalSales?: number;
     } | null>(null);
 
@@ -228,6 +229,7 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                 employeeName={`${activeSession.name} • ${statsStr}`}
                 employeeRole={activeSession.role}
                 sessionId={activeSession.sessionId}
+                sessionStartTime={activeSession.startTime}
                 onLogout={handleLogout}
                 brandName={config.name}
                 logoUrl={resolvedLogoUrl}

@@ -152,7 +152,9 @@ export async function POST(req: NextRequest) {
             endTime: null,
             totalSales: 0,
             totalTips: 0,
-            createdAt: now
+            createdAt: now,
+            // Brand isolation for partner containers
+            brandKey: branding.key || "portalpay"
         };
 
         await container.items.create(sessionDoc);
