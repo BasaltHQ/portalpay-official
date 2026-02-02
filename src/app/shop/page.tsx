@@ -453,8 +453,16 @@ export default function ShopBuilderPage() {
           theme: {
             ...prev.theme,
             ...(conf.theme || {}),
-            // Ensure partner container logo is used as fallback
-            brandLogoUrl: conf.theme?.brandLogoUrl || prev.theme.brandLogoUrl || defaultLogo,
+            // Ensure partner container logo is used - filter out platform defaults
+            brandLogoUrl: (() => {
+              const loadedLogo = conf.theme?.brandLogoUrl || "";
+              const isPlatformDefault = loadedLogo.includes("BasaltSurge") ||
+                loadedLogo.includes("ppsymbol") ||
+                loadedLogo.includes("PortalPay") ||
+                !loadedLogo;
+              // If loaded logo is a platform default, use partner brand logo
+              return isPlatformDefault ? (defaultLogo.includes("BasaltSurge") ? "" : defaultLogo) : loadedLogo;
+            })(),
           },
           arrangement: (conf.arrangement as any) || "grid",
           slug: conf.slug || "",
@@ -512,7 +520,15 @@ export default function ShopBuilderPage() {
             ...next.theme,
             primaryColor: next.theme.primaryColor || t.primaryColor || next.theme.primaryColor,
             secondaryColor: next.theme.secondaryColor || t.secondaryColor || next.theme.secondaryColor,
-            brandLogoUrl: next.theme.brandLogoUrl || t.brandLogoUrl || defaultLogo,
+            // Filter out platform default logos and use partner brand logo
+            brandLogoUrl: (() => {
+              const candidateLogo = next.theme.brandLogoUrl || t.brandLogoUrl || "";
+              const isPlatformDefault = candidateLogo.includes("BasaltSurge") ||
+                candidateLogo.includes("ppsymbol") ||
+                candidateLogo.includes("PortalPay") ||
+                !candidateLogo;
+              return isPlatformDefault ? (defaultLogo.includes("BasaltSurge") ? "" : defaultLogo) : candidateLogo;
+            })(),
             fontFamily: next.theme.fontFamily || t.fontFamily || next.theme.fontFamily,
           };
         }
@@ -544,6 +560,16 @@ export default function ShopBuilderPage() {
 
       // Step 1: Apply theme (conditionally)
       if (applyPackTheme) {
+        // Filter out platform logos when applying pack theme
+        const safeCurrentLogo = (() => {
+          const logo = currentLogo || "";
+          const isPlatformDefault = logo.includes("BasaltSurge") ||
+            logo.includes("ppsymbol") ||
+            logo.includes("PortalPay") ||
+            !logo;
+          return isPlatformDefault ? (defaultLogo.includes("BasaltSurge") ? "" : defaultLogo) : logo;
+        })();
+
         setCfg(prev => ({
           ...prev,
           theme: {
@@ -551,7 +577,7 @@ export default function ShopBuilderPage() {
             secondaryColor: pack.theme.secondaryColor,
             accentColor: pack.theme.accentColor,
             textColor: prev.theme.textColor || "#0b1020",
-            brandLogoUrl: currentLogo || prev.theme.brandLogoUrl || defaultLogo,
+            brandLogoUrl: safeCurrentLogo,
             coverPhotoUrl: currentCover || prev.theme.coverPhotoUrl || "",
             fontFamily: pack.theme.fontFamily,
           },

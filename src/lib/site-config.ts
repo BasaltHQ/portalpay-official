@@ -7,8 +7,8 @@ const DOC_ID = "site:config";
 function getDocIdForBrand(brandKey?: string): string {
   try {
     const key = String(brandKey || "").toLowerCase();
-    // Legacy mapping: portalpay and basaltsurge share the 'site:config:portalpay' document ID
-    if (!key || key === "portalpay") return "site:config:portalpay";
+    // Each brand now uses its own document ID, no legacy sharing
+    if (!key) return `${DOC_ID}:basaltsurge`; // Default to basaltsurge if no key
     return `${DOC_ID}:${key}`;
   } catch {
     return DOC_ID;

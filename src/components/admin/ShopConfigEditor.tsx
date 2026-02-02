@@ -214,28 +214,45 @@ export default function ShopConfigEditor({ wallet, brandKey, initialData, onSave
                         target="brand_logo"
                         compact
                     />
-                    {initialData.logoUrl && initialData.logoUrl !== config.theme.brandLogoUrl && (
-                        <div className="flex items-center gap-2 mt-1 px-1">
-                            <div className="text-[10px] text-gray-400">Application Logo:</div>
-                            <button
-                                onClick={() => {
-                                    setConfig((prev: any) => ({
-                                        ...prev,
-                                        theme: { ...prev.theme, brandLogoUrl: initialData.logoUrl }
-                                    }));
-                                    if (!config.theme.brandFaviconUrl) {
-                                        generateFavicon(initialData.logoUrl!);
-                                    }
-                                }}
-                                className="text-[10px] text-emerald-400 hover:text-emerald-300 underline"
-                            >
-                                Use this
-                            </button>
-                            <a href={initialData.logoUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-500 hover:text-gray-300">
-                                (View)
-                            </a>
-                        </div>
-                    )}
+                    {/* Only show Application Logo suggestion if it's not a platform default logo */}
+                    {(() => {
+                        const logoUrl = initialData.logoUrl || "";
+                        const isPlatformDefault = logoUrl.includes("BasaltSurge") ||
+                            logoUrl.includes("ppsymbol") ||
+                            logoUrl.includes("PortalPay") ||
+                            !logoUrl;
+                        // Use partner brand logo from context as suggestion if initialData is platform default
+                        const suggestedLogo = isPlatformDefault ? brand?.logos?.app : logoUrl;
+                        const shouldShowSuggestion = suggestedLogo &&
+                            !suggestedLogo.includes("BasaltSurge") &&
+                            !suggestedLogo.includes("ppsymbol") &&
+                            suggestedLogo !== config.theme.brandLogoUrl;
+
+                        if (!shouldShowSuggestion) return null;
+
+                        return (
+                            <div className="flex items-center gap-2 mt-1 px-1">
+                                <div className="text-[10px] text-gray-400">Partner Logo:</div>
+                                <button
+                                    onClick={() => {
+                                        setConfig((prev: any) => ({
+                                            ...prev,
+                                            theme: { ...prev.theme, brandLogoUrl: suggestedLogo }
+                                        }));
+                                        if (!config.theme.brandFaviconUrl) {
+                                            generateFavicon(suggestedLogo!);
+                                        }
+                                    }}
+                                    className="text-[10px] text-emerald-400 hover:text-emerald-300 underline"
+                                >
+                                    Use this
+                                </button>
+                                <a href={suggestedLogo} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-500 hover:text-gray-300">
+                                    (View)
+                                </a>
+                            </div>
+                        );
+                    })()}
                 </div>
                 <div className="space-y-1">
                     <ImageUploadField
