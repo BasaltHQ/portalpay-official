@@ -6,6 +6,10 @@ import { requireThirdwebAuth } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// Valid lockdown modes
+const LOCKDOWN_MODES = ["none", "standard", "device_owner"] as const;
+type LockdownMode = typeof LOCKDOWN_MODES[number];
+
 function json(obj: any, init?: { status?: number; headers?: Record<string, string> }) {
     try {
         const s = JSON.stringify(obj);
@@ -35,6 +39,15 @@ function getBrandKey(): string {
 }
 
 /**
+ * Hash an unlock code for secure storage
+ * Uses SHA-256 with a prefix salt to prevent rainbow table attacks
+ */
+function hashUnlockCode(code: string): string {
+    const salt = "touchpoint_unlock_v1:";
+    return crypto.createHash("sha256").update(salt + code).digest("hex");
+}
+
+/**
  * POST /api/touchpoint/provision
  * 
  * Admin-only endpoint to configure a touchpoint device.
@@ -43,9 +56,11 @@ function getBrandKey(): string {
  * Body:
  * {
  *   "installationId": "uuid-v4",           // Unique device ID from APK
- *   "mode": "terminal" | "kiosk",
+ *   "mode": "terminal" | "kiosk" | "handheld",
  *   "merchantWallet": "0x...",
- *   "brandKey"?: string                     // Optional override
+ *   "brandKey"?: string,                    // Optional override (platform only)
+ *   "lockdownMode"?: "none" | "standard" | "device_owner",  // Default: "none"
+ *   "unlockCode"?: string                   // Required if lockdownMode !== "none"
  * }
  * 
  * Writes a document to Cosmos:
@@ -77,6 +92,26 @@ export async function POST(req: NextRequest) {
             return json({ error: "invalid_wallet", message: "merchantWallet must be a valid 0x address" }, { status: 400 });
         }
 
+        // Parse lockdown mode (default: "none")
+        const rawLockdownMode = String(body?.lockdownMode || "none").toLowerCase();
+        const lockdownMode: LockdownMode = LOCKDOWN_MODES.includes(rawLockdownMode as any)
+            ? (rawLockdownMode as LockdownMode)
+            : "none";
+
+        // Validate unlock code if lockdown is enabled
+        let unlockCodeHash: string | null = null;
+        if (lockdownMode !== "none") {
+            const unlockCode = String(body?.unlockCode || "").trim();
+            // Unlock code must be 4-8 digits
+            if (!/^\d{4,8}$/.test(unlockCode)) {
+                return json({
+                    error: "invalid_unlock_code",
+                    message: "unlockCode must be 4-8 digits when lockdownMode is enabled"
+                }, { status: 400 });
+            }
+            unlockCodeHash = hashUnlockCode(unlockCode);
+        }
+
         const envBrandKey = getBrandKey();
 
         // Strict check: if partner container but no brand key resolved, fail
@@ -106,6 +141,10 @@ export async function POST(req: NextRequest) {
             merchantWallet,
             brandKey,
             locked: true,
+            // New lockdown fields
+            lockdownMode,
+            unlockCodeHash,
+            // Timestamps
             configuredAt: new Date().toISOString(),
             configuredBy: caller.wallet,
             lastSeen: null as string | null,
@@ -127,6 +166,8 @@ export async function POST(req: NextRequest) {
             merchantWallet,
             brandKey,
             locked: true,
+            lockdownMode,
+            hasUnlockCode: !!unlockCodeHash,
         });
     } catch (e: any) {
         console.error("[touchpoint/provision] Error:", e);

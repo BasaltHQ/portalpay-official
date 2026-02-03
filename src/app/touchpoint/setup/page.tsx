@@ -31,6 +31,9 @@ interface TouchpointConfig {
     brandKey?: string;
     locked?: boolean;
     configuredAt?: string;
+    // Lockdown settings for Android app
+    lockdownMode?: "none" | "standard" | "device_owner";
+    unlockCodeHash?: string | null;
 }
 
 export default function TouchpointSetupPage() {
@@ -105,6 +108,21 @@ export default function TouchpointSetupPage() {
         fetchConfig(id).then(cfg => {
             setConfig(cfg);
             setLoading(false);
+
+            // Expose config to Android app via JS bridge
+            // GeckoView can inject JS to read this global
+            if (typeof window !== "undefined") {
+                (window as any).TOUCHPOINT_CONFIG = {
+                    configured: cfg.configured,
+                    mode: cfg.mode,
+                    merchantWallet: cfg.merchantWallet,
+                    brandKey: cfg.brandKey,
+                    locked: cfg.locked,
+                    lockdownMode: cfg.lockdownMode || "none",
+                    unlockCodeHash: cfg.unlockCodeHash || null,
+                };
+                console.log("[Touchpoint] Exposed config to JS bridge:", (window as any).TOUCHPOINT_CONFIG);
+            }
 
             if (cfg.configured) {
                 console.log("[Touchpoint] Device configured, redirecting...", cfg);

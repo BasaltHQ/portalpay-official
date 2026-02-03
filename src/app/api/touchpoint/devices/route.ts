@@ -115,6 +115,7 @@ export async function GET(req: NextRequest) {
                 merchantWallet: r.merchantWallet,
                 brandKey: r.brandKey,
                 locked: r.locked,
+                lockdownMode: r.lockdownMode || "none",
                 configuredAt: r.configuredAt,
                 configuredBy: r.configuredBy,
                 lastSeen: r.lastSeen,

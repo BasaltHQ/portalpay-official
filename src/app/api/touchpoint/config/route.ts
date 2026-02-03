@@ -29,10 +29,12 @@ function json(obj: any, init?: { status?: number; headers?: Record<string, strin
  * Response:
  * {
  *   "configured": true,
- *   "mode": "terminal" | "kiosk",
+ *   "mode": "terminal" | "kiosk" | "handheld",
  *   "merchantWallet": "0x...",
  *   "brandKey": "xoinpay",
- *   "locked": true
+ *   "locked": true,
+ *   "lockdownMode": "none" | "standard" | "device_owner",
+ *   "unlockCodeHash": "sha256..." | null
  * }
  * 
  * OR if not configured:
@@ -94,6 +96,9 @@ export async function GET(req: NextRequest) {
                 brandKey: resource.brandKey,
                 locked: resource.locked,
                 configuredAt: resource.configuredAt,
+                // Lockdown settings for Android app
+                lockdownMode: resource.lockdownMode || "none",
+                unlockCodeHash: resource.unlockCodeHash || null,
             });
         } catch {
             // Document doesn't exist = not configured
