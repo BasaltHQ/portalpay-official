@@ -107,26 +107,15 @@ export async function GET(req: NextRequest) {
 
     try {
       const c = await getContainer();
-      // Check slug availability within this brand's namespace only.
-      // For platform (portalpay): check docs without brandKey OR with brandKey='portalpay'
-      // For partners: check docs with explicit brandKey matching this container
-      const spec = normalizedBrand === "portalpay"
-        ? {
-          query:
-            "SELECT TOP 1 c.wallet, c.slug, c.brandKey, c.customDomain, c.customDomainVerified FROM c WHERE c.type='shop_config' AND (c.slug=@slug OR (c.customDomain=@slug AND c.customDomainVerified=true)) AND (NOT IS_DEFINED(c.brandKey) OR c.brandKey=@brandKey OR c.brandKey='')",
-          parameters: [
-            { name: "@slug", value: slug },
-            { name: "@brandKey", value: normalizedBrand },
-          ],
-        }
-        : {
-          query:
-            "SELECT TOP 1 c.wallet, c.slug, c.brandKey, c.customDomain, c.customDomainVerified FROM c WHERE c.type='shop_config' AND (c.slug=@slug OR (c.customDomain=@slug AND c.customDomainVerified=true)) AND c.brandKey=@brandKey",
-          parameters: [
-            { name: "@slug", value: slug },
-            { name: "@brandKey", value: normalizedBrand },
-          ],
-        };
+      // Check slug availability GLOBALLY across all partners/platform to ensure universal uniqueness
+      // Slugs must be unique across all containers, not just within a single brand namespace
+      const spec = {
+        query:
+          "SELECT TOP 1 c.wallet, c.slug, c.brandKey, c.customDomain, c.customDomainVerified FROM c WHERE c.type='shop_config' AND (c.slug=@slug OR (c.customDomain=@slug AND c.customDomainVerified=true))",
+        parameters: [
+          { name: "@slug", value: slug },
+        ],
+      };
       const { resources } = await c.items.query(spec as any).fetchAll();
       const row = Array.isArray(resources) && resources.length ? resources[0] : null;
 
@@ -141,8 +130,9 @@ export async function GET(req: NextRequest) {
         }
         // If exact slug match
         if (String(row.slug || "") === slug) {
+          const takenByBrand = row.brandKey || "platform";
           return NextResponse.json(
-            { available: false, wallet: String(row.wallet || ""), brandKey: normalizedBrand },
+            { available: false, wallet: String(row.wallet || ""), brandKey: takenByBrand, takenGlobally: true },
             { headers: { "x-correlation-id": correlationId } }
           );
         }
@@ -206,30 +196,21 @@ export async function POST(req: NextRequest) {
 
     const c = await getContainer();
 
-    // Check if slug is already taken by another wallet within this brand's namespace
+    // Check if slug is already taken by another wallet GLOBALLY across all containers
     try {
-      const spec = normalizedBrand === "portalpay"
-        ? {
-          query:
-            "SELECT TOP 1 c.wallet, c.slug, c.brandKey FROM c WHERE c.type='shop_config' AND c.slug=@slug AND (NOT IS_DEFINED(c.brandKey) OR c.brandKey=@brandKey OR c.brandKey='')",
-          parameters: [
-            { name: "@slug", value: slug },
-            { name: "@brandKey", value: normalizedBrand },
-          ],
-        }
-        : {
-          query:
-            "SELECT TOP 1 c.wallet, c.slug, c.brandKey FROM c WHERE c.type='shop_config' AND c.slug=@slug AND c.brandKey=@brandKey",
-          parameters: [
-            { name: "@slug", value: slug },
-            { name: "@brandKey", value: normalizedBrand },
-          ],
-        };
+      const spec = {
+        query:
+          "SELECT TOP 1 c.wallet, c.slug, c.brandKey FROM c WHERE c.type='shop_config' AND c.slug=@slug",
+        parameters: [
+          { name: "@slug", value: slug },
+        ],
+      };
       const { resources } = await c.items.query(spec as any).fetchAll();
       const row = Array.isArray(resources) && resources.length ? resources[0] : null;
       if (row && String(row.wallet || "").toLowerCase() !== wallet) {
+        const takenByBrand = row.brandKey || "platform";
         return NextResponse.json(
-          { ok: false, error: "slug_taken", brandKey: normalizedBrand },
+          { ok: false, error: "slug_taken", takenBy: takenByBrand, message: `This slug is already taken globally by ${takenByBrand}.` },
           { status: 409, headers: { "x-correlation-id": correlationId } }
         );
       }

@@ -45,6 +45,12 @@ type ClientRequestDoc = {
     logoUrl?: string;
     faviconUrl?: string;
     primaryColor?: string;
+    // Shop Configuration fields
+    slug?: string;
+    shopLogoUrl?: string;
+    secondaryColor?: string;
+    layoutMode?: "minimalist" | "balanced" | "maximalist";
+    description?: string;
     notes?: string;
     reviewedBy?: string;
     reviewedAt?: number;
@@ -275,6 +281,12 @@ export async function POST(req: NextRequest) {
             logoUrl: typeof body?.logoUrl === "string" ? body.logoUrl : undefined,
             faviconUrl: typeof body?.faviconUrl === "string" ? body.faviconUrl : undefined,
             primaryColor: typeof body?.primaryColor === "string" ? body.primaryColor : undefined,
+            // Shop Configuration fields
+            slug: typeof body?.slug === "string" ? body.slug.toLowerCase().trim() : undefined,
+            shopLogoUrl: typeof body?.shopLogoUrl === "string" ? body.shopLogoUrl : undefined,
+            secondaryColor: typeof body?.secondaryColor === "string" ? body.secondaryColor : undefined,
+            layoutMode: ["minimalist", "balanced", "maximalist"].includes(body?.layoutMode) ? body.layoutMode : undefined,
+            description: typeof body?.description === "string" ? body.description.slice(0, 500) : undefined,
             notes: typeof body?.notes === "string" ? body.notes.slice(0, 500) : undefined,
             createdAt: Date.now()
         };
@@ -509,9 +521,13 @@ export async function PATCH(req: NextRequest) {
                     type: "shop_config",
                     brandKey: brandKey.toLowerCase(), // Ensure brand key is normalized
                     name: (shopConfigUpdate?.name) || request.shopName,
+                    slug: (shopConfigUpdate?.slug) || request.slug,
+                    description: request.description,
                     theme: {
                         primaryColor: (shopConfigUpdate?.theme?.primaryColor) || request.primaryColor || "#0ea5e9",
-                        brandLogoUrl: (shopConfigUpdate?.theme?.brandLogoUrl) || request.logoUrl,
+                        secondaryColor: (shopConfigUpdate?.theme?.secondaryColor) || request.secondaryColor || "#22c55e",
+                        layoutMode: (shopConfigUpdate?.theme?.layoutMode) || request.layoutMode || "balanced",
+                        brandLogoUrl: (shopConfigUpdate?.theme?.brandLogoUrl) || request.shopLogoUrl || request.logoUrl,
                         brandFaviconUrl: (shopConfigUpdate?.theme?.brandFaviconUrl) || request.faviconUrl,
                         ...(shopConfigUpdate?.theme || {})
                     },
@@ -536,18 +552,18 @@ export async function PATCH(req: NextRequest) {
 
                 if (shopConfigUpdate?.slug) {
                     const slug = String(shopConfigUpdate.slug).toLowerCase().trim();
-                    // Check for slug collision within this brand
+                    // Check for slug collision GLOBALLY across all partners/platform to ensure universal uniqueness
                     const slugQuery = {
-                        query: "SELECT TOP 1 c.id FROM c WHERE (c.type = 'shop_config' OR c.type = 'site_config') AND c.slug = @slug AND c.brandKey = @brandKey AND c.wallet != @wallet",
+                        query: "SELECT TOP 1 c.id, c.brandKey FROM c WHERE (c.type = 'shop_config' OR c.type = 'site_config') AND c.slug = @slug AND c.wallet != @wallet",
                         parameters: [
                             { name: "@slug", value: slug },
-                            { name: "@brandKey", value: brandKey.toLowerCase() },
                             { name: "@wallet", value: request.wallet.toLowerCase() }
                         ]
                     };
                     const { resources: collisions } = await container.items.query(slugQuery).fetchAll();
                     if (collisions.length > 0) {
-                        throw new Error(`Slug '${slug}' is already taken by another shop in this domain.`);
+                        const existingBrand = collisions[0].brandKey || "platform";
+                        throw new Error(`Slug '${slug}' is already taken globally (in use by ${existingBrand}).`);
                     }
                     shopConfig.slug = slug;
                 }

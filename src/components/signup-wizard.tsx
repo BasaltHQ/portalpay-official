@@ -232,6 +232,84 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
     const [applicationStatus, setApplicationStatus] = useState<"none" | "pending" | "success" | "blocked" | "awaiting_approval">("none");
     const [showSensitive, setShowSensitive] = useState(false);
 
+    // Shop Configuration State (Step 2 of Application Form)
+    const [formStep, setFormStep] = useState<1 | 2>(1);
+    const [shopSlug, setShopSlug] = useState("");
+    const [slugStatus, setSlugStatus] = useState<"idle" | "checking" | "available" | "taken" | "error">("idle");
+    const [slugMessage, setSlugMessage] = useState("");
+    const [shopLogoUrl, setShopLogoUrl] = useState("");
+    const [shopFaviconUrl, setShopFaviconUrl] = useState("");
+    const [shopDescription, setShopDescription] = useState("");
+    const [shopPrimaryColor, setShopPrimaryColor] = useState("#10b981");
+    const [shopSecondaryColor, setShopSecondaryColor] = useState("#06b6d4");
+    const [shopLayoutMode, setShopLayoutMode] = useState<"minimalist" | "balanced" | "maximalist">("balanced");
+
+    // Check slug availability globally
+    const checkSlugAvailability = async () => {
+        const slug = shopSlug.trim();
+        if (!slug || slug.length < 2) {
+            setSlugStatus("error");
+            setSlugMessage("Slug must be at least 2 characters");
+            return;
+        }
+        setSlugStatus("checking");
+        setSlugMessage("");
+        try {
+            const res = await fetch(`/api/shop/slug?slug=${encodeURIComponent(slug)}`);
+            const data = await res.json();
+            if (data.available) {
+                setSlugStatus("available");
+                setSlugMessage("This slug is available!");
+            } else if (data.reserved) {
+                setSlugStatus("taken");
+                setSlugMessage("This is a reserved system slug");
+            } else {
+                setSlugStatus("taken");
+                setSlugMessage(`Slug taken${data.takenGlobally ? ` by ${data.brandKey}` : ""}`);
+            }
+        } catch (e) {
+            setSlugStatus("error");
+            setSlugMessage("Could not check availability");
+        }
+    };
+
+    // Generate 32x32 favicon from logo
+    const generateFavicon = async (logoUrl: string) => {
+        try {
+            const img = new window.Image();
+            img.crossOrigin = "anonymous";
+            img.src = logoUrl;
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+            });
+            const canvas = document.createElement("canvas");
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+            ctx.drawImage(img, 0, 0, 32, 32);
+            canvas.toBlob(async (blob) => {
+                if (!blob) return;
+                const form = new FormData();
+                form.append("target", "brand_favicon");
+                form.append("file", blob, "favicon.png");
+                try {
+                    const r = await fetch("/api/public/images", { method: "POST", body: form });
+                    const j = await r.json();
+                    if (j?.ok && j?.images?.[0]?.url) {
+                        setShopFaviconUrl(j.images[0].url);
+                    }
+                } catch (e) {
+                    console.error("Failed to generate favicon", e);
+                }
+            }, "image/png");
+        } catch (e) {
+            // Fallback: use logo directly as favicon
+            if (logoUrl) setShopFaviconUrl(logoUrl);
+        }
+    };
+
     // Get brand-specific values with Platform normalization
     const rawName = brand?.name || "BasaltSurge";
     const key = String(brand?.key || "").toLowerCase();
@@ -268,6 +346,7 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
         if (isOpen) {
             setCurrentStep(0);
             setConnectedWallet("");
+            setFormStep(1); // Reset to step 1 of application form
             // Do not reset application status if we are already dealing with a connected wallet in this session
             // forcing re-check will be handled by handleWalletConnected
             setApplicationStatus("none");
@@ -358,7 +437,15 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
                     phone,
                     businessAddress: address,
                     logoUrl,
-                    notes
+                    notes,
+                    // Shop Configuration (Step 2)
+                    slug: shopSlug || undefined,
+                    shopLogoUrl: shopLogoUrl || undefined,
+                    faviconUrl: shopFaviconUrl || undefined,
+                    primaryColor: shopPrimaryColor,
+                    secondaryColor: shopSecondaryColor,
+                    layoutMode: shopLayoutMode,
+                    description: shopDescription
                 })
             });
             const data = await res.json();
@@ -539,172 +626,366 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
                                 >
                                     <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-5 gap-2">
                                         <div>
-                                            <h2 className="text-xl font-bold text-white">Apply for Access</h2>
-                                            <p className="text-sm text-gray-400">Please provide your business details for KYB verification.</p>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h2 className="text-xl font-bold text-white">Apply for Access</h2>
+                                                <span className="text-[10px] font-mono bg-white/5 border border-white/10 px-2 py-0.5 rounded-full text-gray-400">
+                                                    Step {formStep} of 2
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-400">
+                                                {formStep === 1 ? "Provide your business details for KYB verification." : "Configure your shop appearance."}
+                                            </p>
                                         </div>
                                         <div className="px-3 py-1.5 bg-white/5 rounded-lg border border-white/10 font-mono text-xs text-gray-300 truncate max-w-[200px]">
                                             {connectedWallet.slice(0, 6)}...{connectedWallet.slice(-4)}
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                                        {/* Business Info Section */}
-                                        <div className="md:col-span-12">
-                                            <h3 className="text-xs font-mono uppercase text-gray-500 mb-3 tracking-wider">Business Identity</h3>
-                                        </div>
-
-                                        <div className="md:col-span-6">
-                                            <label className="text-xs text-gray-400 block mb-1">Legal Business Name <span className="text-red-400">*</span></label>
-                                            <input
-                                                value={legalName}
-                                                onChange={e => setLegalName(e.target.value)}
-                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
-                                                placeholder="Official Legal Name"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-6">
-                                            <label className="text-xs text-gray-400 block mb-1">DBA / Shop Name <span className="text-red-400">*</span></label>
-                                            <input
-                                                value={shopName}
-                                                onChange={e => setShopName(e.target.value)}
-                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
-                                                placeholder="Doing Business As"
-                                            />
-                                        </div>
-
-                                        <div className="md:col-span-4">
-                                            <label className="text-xs text-gray-400 block mb-1">Business Type</label>
-                                            <div className="relative">
-                                                <select
-                                                    value={businessType}
-                                                    onChange={e => setBusinessType(e.target.value)}
-                                                    className="w-full pl-3 pr-10 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors appearance-none cursor-pointer"
-                                                >
-                                                    <option value="llc" className="bg-zinc-900 text-white">LLC</option>
-                                                    <option value="corp" className="bg-zinc-900 text-white">Corporation</option>
-                                                    <option value="sole_prop" className="bg-zinc-900 text-white">Sole Proprietorship</option>
-                                                    <option value="partnership" className="bg-zinc-900 text-white">Partnership</option>
-                                                </select>
-                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                                            </div>
-                                        </div>
-                                        <div className="md:col-span-4">
-                                            <label className="text-xs text-gray-400 block mb-1">
-                                                {businessType === "sole_prop" ? "SSN (Encrypted)" : "Tax ID / EIN"} <span className="text-red-400">*</span>
-                                            </label>
-                                            <div className="relative">
-                                                <input
-                                                    value={ein}
-                                                    onChange={e => {
-                                                        const val = e.target.value;
-                                                        if (businessType === "sole_prop") {
-                                                            setEin(formatSSN(val));
-                                                        } else {
-                                                            setEin(formatEin(val));
-                                                        }
-                                                    }}
-                                                    type={showSensitive ? "text" : "password"}
-                                                    className="w-full pl-3 pr-10 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors placeholder:text-gray-600 font-mono"
-                                                    placeholder={businessType === "sole_prop" ? "XXX-XX-XXXX" : "XX-XXXXXXX"}
-                                                    maxLength={businessType === "sole_prop" ? 11 : 10}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowSensitive(!showSensitive)}
-                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                                                >
-                                                    {showSensitive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                </button>
-                                            </div>
-                                            {businessType === "sole_prop" && (
-                                                <div className="text-[10px] text-emerald-400 mt-1 flex items-center gap-1">
-                                                    🔒 Securely encrypted
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="md:col-span-4">
-                                            <label className="text-xs text-gray-400 block mb-1">Phone Number</label>
-                                            <input
-                                                value={phone}
-                                                onChange={e => setPhone(formatPhoneNumber(e.target.value))}
-                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors placeholder:text-gray-600 font-mono"
-                                                placeholder="(555) 000-0000"
-                                                maxLength={14}
-                                            />
-                                        </div>
-
-                                        <div className="md:col-span-12">
-                                            <h3 className="text-xs font-mono uppercase text-gray-500 mb-3 mt-2 tracking-wider">Location & Web</h3>
-                                        </div>
-
-                                        <div className="md:col-span-8">
-                                            <label className="text-xs text-gray-400 block mb-1">Street Address</label>
-                                            <input
-                                                value={address.street}
-                                                onChange={e => setAddress({ ...address, street: e.target.value })}
-                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
-                                                placeholder="123 Business Rd"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-4">
-                                            <label className="text-xs text-gray-400 block mb-1">Website</label>
-                                            <input
-                                                value={website}
-                                                onChange={e => setWebsite(e.target.value)}
-                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
-                                                placeholder="https://"
-                                            />
-                                        </div>
-
-                                        <div className="md:col-span-5">
-                                            <label className="text-xs text-gray-400 block mb-1">City</label>
-                                            <input
-                                                value={address.city}
-                                                onChange={e => setAddress({ ...address, city: e.target.value })}
-                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-4">
-                                            <label className="text-xs text-gray-400 block mb-1">State / Province</label>
-                                            <input
-                                                value={address.state}
-                                                onChange={e => setAddress({ ...address, state: e.target.value })}
-                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-3">
-                                            <label className="text-xs text-gray-400 block mb-1">ZIP / Postal</label>
-                                            <input
-                                                value={address.zip}
-                                                onChange={e => setAddress({ ...address, zip: e.target.value })}
-                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
-                                            />
-                                        </div>
-
-                                        <div className="md:col-span-12">
-                                            <h3 className="text-xs font-mono uppercase text-gray-500 mb-3 mt-2 tracking-wider">Branding & details</h3>
-                                        </div>
-                                        <div className="md:col-span-3">
-                                            <label className="text-xs text-gray-400 block mb-1">Business Logo</label>
-                                            <ImageUploadField
-                                                value={logoUrl}
-                                                onChange={(val) => setLogoUrl(Array.isArray(val) ? val[0] : val)}
-                                                target="partner_application_logo"
-                                                previewSize={80}
-                                                className="w-full"
-                                            />
-                                        </div>
-
-                                        <div className="md:col-span-9">
-                                            <label className="text-xs text-gray-400 block mb-1">Notes / Description</label>
-                                            <textarea
-                                                value={notes}
-                                                onChange={e => setNotes(e.target.value)}
-                                                className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors min-h-[80px]"
-                                                placeholder="Tell us about what you're building..."
-                                            />
-                                        </div>
+                                    {/* Step Progress Bar */}
+                                    <div className="flex items-center gap-2 mb-6">
+                                        <div className={`h-1 flex-1 rounded-full transition-all duration-300 ${formStep >= 1 ? 'bg-emerald-500' : 'bg-white/10'}`} />
+                                        <div className={`h-1 flex-1 rounded-full transition-all duration-300 ${formStep >= 2 ? 'bg-emerald-500' : 'bg-white/10'}`} />
                                     </div>
+
+                                    {formStep === 1 && (
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                            {/* Business Info Section */}
+                                            <div className="md:col-span-12">
+                                                <h3 className="text-xs font-mono uppercase text-gray-500 mb-3 tracking-wider">Business Identity</h3>
+                                            </div>
+
+                                            <div className="md:col-span-6">
+                                                <label className="text-xs text-gray-400 block mb-1">Legal Business Name <span className="text-red-400">*</span></label>
+                                                <input
+                                                    value={legalName}
+                                                    onChange={e => setLegalName(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                    placeholder="Official Legal Name"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-6">
+                                                <label className="text-xs text-gray-400 block mb-1">DBA / Shop Name <span className="text-red-400">*</span></label>
+                                                <input
+                                                    value={shopName}
+                                                    onChange={e => setShopName(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                    placeholder="Doing Business As"
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-4">
+                                                <label className="text-xs text-gray-400 block mb-1">Business Type</label>
+                                                <div className="relative">
+                                                    <select
+                                                        value={businessType}
+                                                        onChange={e => setBusinessType(e.target.value)}
+                                                        className="w-full pl-3 pr-10 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors appearance-none cursor-pointer"
+                                                    >
+                                                        <option value="llc" className="bg-zinc-900 text-white">LLC</option>
+                                                        <option value="corp" className="bg-zinc-900 text-white">Corporation</option>
+                                                        <option value="sole_prop" className="bg-zinc-900 text-white">Sole Proprietorship</option>
+                                                        <option value="partnership" className="bg-zinc-900 text-white">Partnership</option>
+                                                    </select>
+                                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                                </div>
+                                            </div>
+                                            <div className="md:col-span-4">
+                                                <label className="text-xs text-gray-400 block mb-1">
+                                                    {businessType === "sole_prop" ? "SSN (Encrypted)" : "Tax ID / EIN"} <span className="text-red-400">*</span>
+                                                </label>
+                                                <div className="relative">
+                                                    <input
+                                                        value={ein}
+                                                        onChange={e => {
+                                                            const val = e.target.value;
+                                                            if (businessType === "sole_prop") {
+                                                                setEin(formatSSN(val));
+                                                            } else {
+                                                                setEin(formatEin(val));
+                                                            }
+                                                        }}
+                                                        type={showSensitive ? "text" : "password"}
+                                                        className="w-full pl-3 pr-10 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors placeholder:text-gray-600 font-mono"
+                                                        placeholder={businessType === "sole_prop" ? "XXX-XX-XXXX" : "XX-XXXXXXX"}
+                                                        maxLength={businessType === "sole_prop" ? 11 : 10}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowSensitive(!showSensitive)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                                                    >
+                                                        {showSensitive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                    </button>
+                                                </div>
+                                                {businessType === "sole_prop" && (
+                                                    <div className="text-[10px] text-emerald-400 mt-1 flex items-center gap-1">
+                                                        🔒 Securely encrypted
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="md:col-span-4">
+                                                <label className="text-xs text-gray-400 block mb-1">Phone Number</label>
+                                                <input
+                                                    value={phone}
+                                                    onChange={e => setPhone(formatPhoneNumber(e.target.value))}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors placeholder:text-gray-600 font-mono"
+                                                    placeholder="(555) 000-0000"
+                                                    maxLength={14}
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-12">
+                                                <h3 className="text-xs font-mono uppercase text-gray-500 mb-3 mt-2 tracking-wider">Location & Web</h3>
+                                            </div>
+
+                                            <div className="md:col-span-8">
+                                                <label className="text-xs text-gray-400 block mb-1">Street Address</label>
+                                                <input
+                                                    value={address.street}
+                                                    onChange={e => setAddress({ ...address, street: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                    placeholder="123 Business Rd"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-4">
+                                                <label className="text-xs text-gray-400 block mb-1">Website</label>
+                                                <input
+                                                    value={website}
+                                                    onChange={e => setWebsite(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                    placeholder="https://"
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-5">
+                                                <label className="text-xs text-gray-400 block mb-1">City</label>
+                                                <input
+                                                    value={address.city}
+                                                    onChange={e => setAddress({ ...address, city: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-4">
+                                                <label className="text-xs text-gray-400 block mb-1">State / Province</label>
+                                                <input
+                                                    value={address.state}
+                                                    onChange={e => setAddress({ ...address, state: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-3">
+                                                <label className="text-xs text-gray-400 block mb-1">ZIP / Postal</label>
+                                                <input
+                                                    value={address.zip}
+                                                    onChange={e => setAddress({ ...address, zip: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-12">
+                                                <h3 className="text-xs font-mono uppercase text-gray-500 mb-3 mt-2 tracking-wider">Branding & details</h3>
+                                            </div>
+                                            <div className="md:col-span-3">
+                                                <label className="text-xs text-gray-400 block mb-1">Business Logo</label>
+                                                <ImageUploadField
+                                                    value={logoUrl}
+                                                    onChange={(val) => setLogoUrl(Array.isArray(val) ? val[0] : val)}
+                                                    target="partner_application_logo"
+                                                    previewSize={80}
+                                                    className="w-full"
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-9">
+                                                <label className="text-xs text-gray-400 block mb-1">Notes / Description</label>
+                                                <textarea
+                                                    value={notes}
+                                                    onChange={e => setNotes(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors min-h-[80px]"
+                                                    placeholder="Tell us about what you're building..."
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Step 2: Shop Configuration */}
+                                    {formStep === 2 && (
+                                        <div className="space-y-6">
+                                            <div className="md:col-span-12">
+                                                <h3 className="text-xs font-mono uppercase text-gray-500 mb-3 tracking-wider">Shop Identity</h3>
+                                            </div>
+
+                                            {/* Slug with Availability Check */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-xs text-gray-400 block mb-2">Shop Slug</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex items-center flex-1">
+                                                            <span className="px-3 py-2 bg-black/30 rounded-l-lg border border-r-0 border-white/10 text-xs text-gray-500">/shop/</span>
+                                                            <input
+                                                                value={shopSlug}
+                                                                onChange={e => {
+                                                                    setShopSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''));
+                                                                    setSlugStatus("idle");
+                                                                    setSlugMessage("");
+                                                                }}
+                                                                className={`flex-1 px-3 py-2 bg-black/20 rounded-r-lg border text-sm text-white focus:border-emerald-500 outline-none transition-colors ${slugStatus === "available" ? "border-emerald-500" :
+                                                                        slugStatus === "taken" ? "border-red-500" :
+                                                                            slugStatus === "error" ? "border-amber-500" : "border-white/10"
+                                                                    }`}
+                                                                placeholder="my-shop"
+                                                            />
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={checkSlugAvailability}
+                                                            disabled={slugStatus === "checking" || !shopSlug.trim()}
+                                                            className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs text-gray-300 transition-colors disabled:opacity-50"
+                                                        >
+                                                            {slugStatus === "checking" ? "..." : "Check"}
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        {slugStatus === "available" && (
+                                                            <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+                                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                                                {slugMessage}
+                                                            </span>
+                                                        )}
+                                                        {slugStatus === "taken" && (
+                                                            <span className="text-[10px] text-red-400 flex items-center gap-1">
+                                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                                                {slugMessage}
+                                                            </span>
+                                                        )}
+                                                        {slugStatus === "error" && (
+                                                            <span className="text-[10px] text-amber-400">{slugMessage}</span>
+                                                        )}
+                                                        {slugStatus === "idle" && (
+                                                            <span className="text-[10px] text-gray-500">Click Check to verify availability</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Logo and Favicon */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <ImageUploadField
+                                                        label="Shop Logo"
+                                                        value={shopLogoUrl}
+                                                        onChange={(url) => {
+                                                            const newUrl = String(url || "");
+                                                            setShopLogoUrl(newUrl);
+                                                            // Auto-generate favicon if none exists
+                                                            if (newUrl && !shopFaviconUrl) {
+                                                                generateFavicon(newUrl);
+                                                            }
+                                                        }}
+                                                        target="shop_logo"
+                                                        guidance="Square PNG/WebP recommended"
+                                                        previewSize={80}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <ImageUploadField
+                                                        label="Favicon"
+                                                        value={shopFaviconUrl}
+                                                        onChange={(url) => setShopFaviconUrl(String(url || ""))}
+                                                        target="shop_favicon"
+                                                        guidance="32x32 or 64x64 PNG recommended"
+                                                        previewSize={48}
+                                                    />
+                                                    {shopLogoUrl && !shopFaviconUrl && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => generateFavicon(shopLogoUrl)}
+                                                            className="mt-2 text-[10px] text-emerald-400 hover:text-emerald-300 underline"
+                                                        >
+                                                            Generate from logo
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="md:col-span-12">
+                                                <h3 className="text-xs font-mono uppercase text-gray-500 mb-3 tracking-wider">Shop Branding</h3>
+                                            </div>
+
+                                            {/* Color Pickers */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-xs text-gray-400 block mb-2">Primary Color</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="color"
+                                                            value={shopPrimaryColor}
+                                                            onChange={e => setShopPrimaryColor(e.target.value)}
+                                                            className="w-10 h-10 p-0 shrink-0 aspect-square rounded border border-white/10 cursor-pointer bg-transparent"
+                                                        />
+                                                        <input
+                                                            value={shopPrimaryColor}
+                                                            onChange={e => setShopPrimaryColor(e.target.value)}
+                                                            className="flex-1 px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white font-mono focus:border-emerald-500 outline-none transition-colors"
+                                                            placeholder="#10b981"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-400 block mb-2">Secondary Color</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="color"
+                                                            value={shopSecondaryColor}
+                                                            onChange={e => setShopSecondaryColor(e.target.value)}
+                                                            className="w-10 h-10 p-0 shrink-0 aspect-square rounded border border-white/10 cursor-pointer bg-transparent"
+                                                        />
+                                                        <input
+                                                            value={shopSecondaryColor}
+                                                            onChange={e => setShopSecondaryColor(e.target.value)}
+                                                            className="flex-1 px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white font-mono focus:border-emerald-500 outline-none transition-colors"
+                                                            placeholder="#06b6d4"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Layout Mode */}
+                                            <div>
+                                                <label className="text-xs text-gray-400 block mb-2">Layout Style</label>
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    {[
+                                                        { id: "minimalist", label: "Minimalist", desc: "Clean & simple" },
+                                                        { id: "balanced", label: "Balanced", desc: "Standard layout" },
+                                                        { id: "maximalist", label: "Maximalist", desc: "Rich & immersive" }
+                                                    ].map((m) => (
+                                                        <div
+                                                            key={m.id}
+                                                            onClick={() => setShopLayoutMode(m.id as any)}
+                                                            className={`p-3 rounded-lg border cursor-pointer transition-all text-center ${shopLayoutMode === m.id
+                                                                ? "border-emerald-500 bg-emerald-500/10"
+                                                                : "border-white/10 bg-white/5 hover:border-white/20"
+                                                                }`}
+                                                        >
+                                                            <div className="text-sm font-semibold text-white">{m.label}</div>
+                                                            <div className="text-[10px] text-gray-400">{m.desc}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Shop Description */}
+                                            <div>
+                                                <label className="text-xs text-gray-400 block mb-2">Shop Description</label>
+                                                <textarea
+                                                    value={shopDescription}
+                                                    onChange={e => setShopDescription(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-black/20 rounded-lg border border-white/10 text-sm text-white focus:border-emerald-500 outline-none transition-colors min-h-[100px]"
+                                                    placeholder="Tell customers about your shop..."
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {submitError && (
                                         <div className="text-xs text-red-400 bg-red-500/10 p-2 rounded border border-red-500/20 mt-4">
@@ -712,14 +993,32 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
                                         </div>
                                     )}
 
-                                    <div className="mt-6 flex justify-end">
-                                        <button
-                                            onClick={submitApplication}
-                                            disabled={submitting}
-                                            className="px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100"
-                                        >
-                                            {submitting ? "Submitting Application..." : "Submit Application"}
-                                        </button>
+                                    <div className="mt-6 flex justify-between items-center">
+                                        {formStep === 2 ? (
+                                            <button
+                                                onClick={() => setFormStep(1)}
+                                                className="px-4 py-2.5 rounded-lg text-xs font-mono uppercase tracking-wider text-gray-300 hover:text-white hover:bg-white/5 transition-all"
+                                            >
+                                                ← Back
+                                            </button>
+                                        ) : <div />}
+
+                                        {formStep === 1 ? (
+                                            <button
+                                                onClick={() => setFormStep(2)}
+                                                className="px-6 py-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-xs font-mono uppercase tracking-wider transition-all border border-white/10"
+                                            >
+                                                Continue →
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={submitApplication}
+                                                disabled={submitting}
+                                                className="px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                                            >
+                                                {submitting ? "Submitting Application..." : "Submit Application"}
+                                            </button>
+                                        )}
                                     </div>
                                     <div className="h-6" /> {/* Extra padding for scroll */}
                                 </motion.div>
