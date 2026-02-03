@@ -1019,7 +1019,7 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
     <div ref={widgetRootRef} className="mt-3 rounded-lg border p-3">
       {totalUsd > 0 && hasRecipient && tokenDef && hasTokenAddr && widgetSupported ? (
         <CheckoutWidget
-          key={`${token}-${currency}-${ratesUpdatedAt ? ratesUpdatedAt.getTime() : 0}`}
+          key={`${token}-${currency}`}
           className="w-full"
           client={client}
           chain={chain}

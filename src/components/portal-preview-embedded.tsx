@@ -1124,7 +1124,7 @@ export function PortalPreviewEmbedded({
           >
             {amountReady && widgetSupported && (token === "ETH" || (tokenDef && hasTokenAddr)) ? (
               <CheckoutWidget
-                key={`${token}-${currency}-${ratesUpdatedAt ? ratesUpdatedAt.getTime() : 0}`}
+                key={`${token}-${currency}`}
                 className="w-full"
                 client={client}
                 chain={chain}
