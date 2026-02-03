@@ -513,8 +513,19 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     const subtotalCents = cleanItems.reduce((s, it) => s + toCents(it.priceUsd), 0);
     const taxCents = Math.round(subtotalCents * Math.max(0, Math.min(1, taxRate || 0)));
     const baseWithoutFeeCents = subtotalCents + taxCents;
-    // basePlatformFeePct: platform + partner fee (e.g., 0.5% for PortalPay, 2% for Paynex)
-    const basePlatformFeePct = typeof (cfg as any)?.basePlatformFeePct === "number" ? Math.max(0, (cfg as any).basePlatformFeePct) : 0.5;
+    // basePlatformFeePct: platform + partner + agent fee from splitConfig (merchant-specific)
+    let basePlatformFeePct: number;
+    const splitCfg = (cfg as any)?.splitConfig;
+    if (splitCfg && typeof splitCfg === "object") {
+      const partnerBps = typeof splitCfg.partnerBps === "number" ? splitCfg.partnerBps : 0;
+      const platformBps = typeof splitCfg.platformBps === "number" ? splitCfg.platformBps : 0;
+      const agentBps = Array.isArray(splitCfg.agents)
+        ? splitCfg.agents.reduce((s: number, a: any) => s + (Number(a.bps) || 0), 0)
+        : 0;
+      basePlatformFeePct = (partnerBps + platformBps + agentBps) / 100;
+    } else {
+      basePlatformFeePct = typeof (cfg as any)?.basePlatformFeePct === "number" ? Math.max(0, (cfg as any).basePlatformFeePct) : 0.5;
+    }
     const totalFeePct = Math.max(0, basePlatformFeePct + Number(processingFeePct || 0));
     const feePctFraction = totalFeePct / 100;
     const processingFeeCents = Math.round(baseWithoutFeeCents * feePctFraction);

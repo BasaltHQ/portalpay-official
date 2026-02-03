@@ -218,10 +218,28 @@ export async function POST(req: NextRequest) {
     } catch { }
 
     // Processing fee add-on (above base platform fee)
-    // basePlatformFeePct: combined platform + partner fee (brand-configured; fallback to 0.5%)
-    let basePlatformFeePct: number | undefined =
-      typeof (cfg as any)?.basePlatformFeePct === "number" ? Math.max(0, Number((cfg as any).basePlatformFeePct)) : undefined;
+    // basePlatformFeePct: combined platform + partner + agent fee from splitConfig (merchant-specific)
+    let basePlatformFeePct: number | undefined = undefined;
 
+    // Priority 1: Use splitConfig from the merchant's site config (most accurate)
+    const splitCfg = (cfg as any)?.splitConfig;
+    if (splitCfg && typeof splitCfg === "object") {
+      const partnerBps = typeof splitCfg.partnerBps === "number" ? splitCfg.partnerBps : 0;
+      const platformBps = typeof splitCfg.platformBps === "number" ? splitCfg.platformBps : 0;
+      const agentBps = Array.isArray(splitCfg.agents)
+        ? splitCfg.agents.reduce((s: number, a: any) => s + (Number(a.bps) || 0), 0)
+        : 0;
+      basePlatformFeePct = (partnerBps + platformBps + agentBps) / 100;
+    }
+
+    // Priority 2: Use basePlatformFeePct if explicitly set in config
+    if (typeof basePlatformFeePct !== "number") {
+      basePlatformFeePct = typeof (cfg as any)?.basePlatformFeePct === "number"
+        ? Math.max(0, Number((cfg as any).basePlatformFeePct))
+        : undefined;
+    }
+
+    // Priority 3: Fall back to brand overrides
     if (typeof basePlatformFeePct !== "number") {
       try {
         const xfHost = req.headers.get("x-forwarded-host");
@@ -243,10 +261,10 @@ export async function POST(req: NextRequest) {
             : (typeof (fb as any)?.partnerFeeBps === "number" ? (fb as any).partnerFeeBps : 0);
           basePlatformFeePct = (platformBps + partnerBps) / 100;
         } else {
-          basePlatformFeePct = 0.5;
+          basePlatformFeePct = 0.5; // 0.5% default
         }
       } catch {
-        basePlatformFeePct = 0.5;
+        basePlatformFeePct = 0.5; // 0.5% default
       }
     }
 

@@ -57,7 +57,19 @@ function buildSample(i: number, brandName: string, wallet: string, cfg?: any) {
   })();
   const taxCents = Math.round(subtotalCents * Math.max(0, Math.min(1, taxRate)));
   const baseWithoutFeeCents = subtotalCents + taxCents;
-  const basePlatformFeePct = typeof cfg?.basePlatformFeePct === "number" ? Math.max(0, cfg.basePlatformFeePct) : 0.5;
+  // Use splitConfig for fee calculation (merchant-specific)
+  let basePlatformFeePct: number;
+  const splitCfg = cfg?.splitConfig;
+  if (splitCfg && typeof splitCfg === "object") {
+    const partnerBps = typeof splitCfg.partnerBps === "number" ? splitCfg.partnerBps : 0;
+    const platformBps = typeof splitCfg.platformBps === "number" ? splitCfg.platformBps : 0;
+    const agentBps = Array.isArray(splitCfg.agents)
+      ? splitCfg.agents.reduce((s: number, a: any) => s + (Number(a.bps) || 0), 0)
+      : 0;
+    basePlatformFeePct = (partnerBps + platformBps + agentBps) / 100;
+  } else {
+    basePlatformFeePct = typeof cfg?.basePlatformFeePct === "number" ? Math.max(0, cfg.basePlatformFeePct) : 0.5;
+  }
   const merchantAddOnPct = Math.max(0, Number(cfg?.processingFeePct || 0));
   const totalFeePct = Math.max(0, basePlatformFeePct + merchantAddOnPct);
   const processingFeeCents = Math.round(baseWithoutFeeCents * (totalFeePct / 100));
