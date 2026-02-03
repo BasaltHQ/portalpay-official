@@ -26,7 +26,7 @@ function getOrCreateInstallationId(): string {
 
 interface TouchpointConfig {
     configured: boolean;
-    mode?: "terminal" | "kiosk";
+    mode?: "terminal" | "kiosk" | "handheld";
     merchantWallet?: string;
     brandKey?: string;
     locked?: boolean;
@@ -58,6 +58,9 @@ export default function TouchpointSetupPage() {
         if (cfg.mode === "terminal") {
             // Wallet must be a path parameter for terminal to work without login
             router.replace(`/terminal/${cfg.merchantWallet}${scaleQuery}`);
+        } else if (cfg.mode === "handheld") {
+            // Handheld mode uses dedicated handheld interface
+            router.replace(`/handheld/${cfg.merchantWallet}${scaleQuery}`);
         } else {
             // Kiosk mode uses shop with wallet as path and kiosk flag
             const kioskQuery = scale ? `?kiosk=1&scale=${scale}` : "?kiosk=1";
