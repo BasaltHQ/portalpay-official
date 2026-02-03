@@ -132,12 +132,13 @@ export async function GET(req: NextRequest) {
       }
     } catch { }
 
-    const gmvAll = purchasesAll.reduce((s, p) => s + (Number(p.usd || 0) > 0 ? Number(p.usd || 0) : 0), 0);
-    const feeAll = purchasesAll.reduce((s, p) => s + (Number(p.portalFeeUsd || 0) >= 0 ? Number(p.portalFeeUsd || 0) : 0), 0);
-    const gmv24 = purchases24h.reduce((s, p) => s + (Number(p.usd || 0) > 0 ? Number(p.usd || 0) : 0), 0);
-    const fee24 = purchases24h.reduce((s, p) => s + (Number(p.portalFeeUsd || 0) >= 0 ? Number(p.portalFeeUsd || 0) : 0), 0);
-    const gmvRange = purchasesRange.reduce((s, p) => s + (Number(p.usd || 0) > 0 ? Number(p.usd || 0) : 0), 0);
-    const feeRange = purchasesRange.reduce((s, p) => s + (Number(p.portalFeeUsd || 0) >= 0 ? Number(p.portalFeeUsd || 0) : 0), 0);
+    // GMV from purchases (portal checkout)
+    const gmvPurchasesAll = purchasesAll.reduce((s, p) => s + (Number(p.usd || 0) > 0 ? Number(p.usd || 0) : 0), 0);
+    const feePurchasesAll = purchasesAll.reduce((s, p) => s + (Number(p.portalFeeUsd || 0) >= 0 ? Number(p.portalFeeUsd || 0) : 0), 0);
+    const gmvPurchases24 = purchases24h.reduce((s, p) => s + (Number(p.usd || 0) > 0 ? Number(p.usd || 0) : 0), 0);
+    const feePurchases24 = purchases24h.reduce((s, p) => s + (Number(p.portalFeeUsd || 0) >= 0 ? Number(p.portalFeeUsd || 0) : 0), 0);
+    const gmvPurchasesRange = purchasesRange.reduce((s, p) => s + (Number(p.usd || 0) > 0 ? Number(p.usd || 0) : 0), 0);
+    const feePurchasesRange = purchasesRange.reduce((s, p) => s + (Number(p.portalFeeUsd || 0) >= 0 ? Number(p.portalFeeUsd || 0) : 0), 0);
 
     // Customers from purchases (distinct buyers) and repeat rate
     const buyerCounts = new Map<string, number>();
@@ -208,6 +209,32 @@ export async function GET(req: NextRequest) {
     const ordersAll = receiptsAll.length;
     const orders24 = receipts24.length;
     const ordersRange = receiptsRange.length;
+
+    // GMV from receipts (terminal payments) - sum totalUsd from paid receipts
+    // Extract processing fee from lineItems for each receipt
+    const extractReceiptFee = (r: ReceiptRow): number => {
+      if (!Array.isArray(r.lineItems)) return 0;
+      for (const item of r.lineItems) {
+        if (/processing fee/i.test(item.label || "")) {
+          return Number(item.priceUsd || 0);
+        }
+      }
+      return 0;
+    };
+    const gmvReceiptsAll = receiptsAll.reduce((s, r) => s + (Number(r.totalUsd || 0) > 0 ? Number(r.totalUsd || 0) : 0), 0);
+    const feeReceiptsAll = receiptsAll.reduce((s, r) => s + extractReceiptFee(r), 0);
+    const gmvReceipts24 = receipts24.reduce((s, r) => s + (Number(r.totalUsd || 0) > 0 ? Number(r.totalUsd || 0) : 0), 0);
+    const feeReceipts24 = receipts24.reduce((s, r) => s + extractReceiptFee(r), 0);
+    const gmvReceiptsRange = receiptsRange.reduce((s, r) => s + (Number(r.totalUsd || 0) > 0 ? Number(r.totalUsd || 0) : 0), 0);
+    const feeReceiptsRange = receiptsRange.reduce((s, r) => s + extractReceiptFee(r), 0);
+
+    // Combined GMV from both purchases and receipts
+    const gmvAll = gmvPurchasesAll + gmvReceiptsAll;
+    const feeAll = feePurchasesAll + feeReceiptsAll;
+    const gmv24 = gmvPurchases24 + gmvReceipts24;
+    const fee24 = feePurchases24 + feeReceipts24;
+    const gmvRange = gmvPurchasesRange + gmvReceiptsRange;
+    const feeRange = feePurchasesRange + feeReceiptsRange;
 
     // Tips aggregation from receipts
     const tipsAll = receiptsAll.reduce((s, r) => s + (Number(r.tipAmount || 0) > 0 ? Number(r.tipAmount || 0) : 0), 0);
