@@ -7,9 +7,13 @@ type ShopConfigEditorProps = {
     brandKey: string;
     initialData: {
         name: string;
+        slug?: string;
+        description?: string;
         logoUrl?: string;
         faviconUrl?: string;
         primaryColor?: string;
+        secondaryColor?: string;
+        layoutMode?: "minimalist" | "balanced" | "maximalist";
     };
     onSave: (data: any) => Promise<void>;
 };
@@ -28,10 +32,12 @@ export default function ShopConfigEditor({ wallet, brandKey, initialData, onSave
 
     const [config, setConfig] = useState<any>({
         name: initialData.name,
-        slug: "",
+        slug: initialData.slug || "",
+        description: initialData.description || "",
         theme: {
             primaryColor: initialData.primaryColor || "#0ea5e9",
-            secondaryColor: "#22c55e", // Default
+            secondaryColor: initialData.secondaryColor || "#22c55e",
+            layoutMode: initialData.layoutMode || "balanced",
             brandLogoUrl: initialData.logoUrl || brand?.logos?.symbol || "",
             brandFaviconUrl: initialData.faviconUrl || "",
         }

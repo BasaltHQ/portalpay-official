@@ -33,6 +33,12 @@ type ClientRequest = {
     logoUrl?: string;
     faviconUrl?: string;
     primaryColor?: string;
+    // Shop Configuration fields
+    slug?: string;
+    shopLogoUrl?: string;
+    secondaryColor?: string;
+    layoutMode?: "minimalist" | "balanced" | "maximalist";
+    description?: string;
     notes?: string;
     reviewedBy?: string;
     reviewedAt?: number;
@@ -837,9 +843,13 @@ export default function ClientRequestsPanel() {
                                                                     brandKey={brandKey}
                                                                     initialData={{
                                                                         name: req.shopName,
-                                                                        logoUrl: req.logoUrl,
+                                                                        slug: req.slug,
+                                                                        description: req.description,
+                                                                        logoUrl: req.shopLogoUrl || req.logoUrl,
                                                                         faviconUrl: req.faviconUrl,
                                                                         primaryColor: req.primaryColor,
+                                                                        secondaryColor: req.secondaryColor,
+                                                                        layoutMode: req.layoutMode,
                                                                     }}
                                                                     onSave={async (data) => updateStatus(req.id, req.status, undefined, false, data)}
                                                                 />
