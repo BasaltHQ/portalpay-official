@@ -30,6 +30,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.lifecycleScope
 import com.example.basaltsurgemobile.ui.theme.BasaltSurgeMobileTheme
 import kotlinx.coroutines.launch
+import org.mozilla.geckoview.AllowOrDeny
+import org.mozilla.geckoview.GeckoResult
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoView
@@ -165,56 +167,28 @@ class MainActivity : ComponentActivity() {
     }
     
     private fun pollLockdownConfig(session: GeckoSession) {
-        // Poll every 2 seconds to check for config from JS bridge
-        // GeckoView doesn't have evaluateJavascript, so we use loadUri with JavaScript protocol
-        val handler = android.os.Handler(mainLooper)
-        val runnable = object : Runnable {
-            override fun run() {
-                // Inject JS that will store the config in a global variable we can access via URL scheme
-                val jsCode = """
-                    (function() {
-                        if (window.TOUCHPOINT_CONFIG) {
-                            var cfg = window.TOUCHPOINT_CONFIG;
-                            var lockdownMode = cfg.lockdownMode || 'none';
-                            var unlockCodeHash = cfg.unlockCodeHash || '';
-                            // Post message to Android - we'll detect this via NavigationDelegate
-                            window.location.hash = 'android-config:' + lockdownMode + ':' + (unlockCodeHash || 'null');
-                            // Reset hash after a short delay
-                            setTimeout(function() { 
-                                if (window.location.hash.indexOf('android-config') === 1) {
-                                    window.location.hash = '';
-                                }
-                            }, 100);
-                        }
-                    })();
-                """.trimIndent().replace("\n", " ")
-                
-                try {
-                    session.loadUri("javascript:$jsCode")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error executing JS bridge: ${e.message}")
-                }
-                
-                handler.postDelayed(this, 2000)
-            }
-        }
-        handler.postDelayed(runnable, 1000)
+        // Monitor URL changes to detect lockdown configuration
+        // The web app passes config via URL hash: #lockdown:mode:hash
+        // This is non-intrusive and doesn't interfere with page navigation
         
-        // Set up URL change listener to capture config from hash
         session.navigationDelegate = object : GeckoSession.NavigationDelegate {
             override fun onLocationChange(session: GeckoSession, url: String?, perms: MutableList<GeckoSession.PermissionDelegate.ContentPermission>, hasUserGesture: Boolean) {
                 url?.let { currentUrl ->
-                    if (currentUrl.contains("#android-config:")) {
+                    Log.d(TAG, "URL changed: $currentUrl")
+                    
+                    // Check for lockdown config in URL hash
+                    // Format: #lockdown:mode:unlockHash
+                    if (currentUrl.contains("#lockdown:")) {
                         try {
-                            val hash = currentUrl.substringAfter("#android-config:")
+                            val hash = currentUrl.substringAfter("#lockdown:")
                             val parts = hash.split(":")
-                            if (parts.size >= 2) {
+                            if (parts.isNotEmpty()) {
                                 val mode = parts[0]
-                                val hashValue = if (parts[1] == "null") null else parts[1]
+                                val hashValue = if (parts.size > 1 && parts[1] != "null" && parts[1].isNotEmpty()) parts[1] else null
                                 
                                 val newConfig = LockdownConfig(mode, hashValue)
                                 if (newConfig != lockdownConfig.value) {
-                                    Log.d(TAG, "Lockdown config updated via URL: $newConfig")
+                                    Log.d(TAG, "Lockdown config updated: $newConfig")
                                     lockdownConfig.value = newConfig
                                     
                                     if (mode == "standard" || mode == "device_owner") {
@@ -226,7 +200,34 @@ class MainActivity : ComponentActivity() {
                             Log.e(TAG, "Error parsing lockdown config from URL: ${e.message}")
                         }
                     }
+                    
+                    // Also check for lockdown mode in query parameters (alternative method)
+                    // Format: ?lockdownMode=standard&unlockHash=abc123
+                    if (currentUrl.contains("lockdownMode=")) {
+                        try {
+                            val uri = android.net.Uri.parse(currentUrl)
+                            val mode = uri.getQueryParameter("lockdownMode") ?: "none"
+                            val hashValue = uri.getQueryParameter("unlockHash")
+                            
+                            val newConfig = LockdownConfig(mode, hashValue)
+                            if (newConfig != lockdownConfig.value && mode != "none") {
+                                Log.d(TAG, "Lockdown config from query params: $newConfig")
+                                lockdownConfig.value = newConfig
+                                
+                                if (mode == "standard" || mode == "device_owner") {
+                                    enableLockTaskMode()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error parsing lockdown config from query: ${e.message}")
+                        }
+                    }
                 }
+            }
+            
+            override fun onLoadRequest(session: GeckoSession, request: GeckoSession.NavigationDelegate.LoadRequest): GeckoResult<AllowOrDeny>? {
+                // Allow all requests - don't interfere with navigation
+                return GeckoResult.fromValue(AllowOrDeny.ALLOW)
             }
         }
     }
