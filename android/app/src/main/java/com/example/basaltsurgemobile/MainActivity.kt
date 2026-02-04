@@ -101,7 +101,13 @@ class MainActivity : ComponentActivity() {
                                     showUnlockOverlay.value = false
                                     exitLockdownTemporarily()
                                 } else {
-                                    Toast.makeText(this@MainActivity, "Invalid unlock code", Toast.LENGTH_SHORT).show()
+                                    // DEBUGGING: Show why it failed
+                                    val config = lockdownConfig.value
+                                    val msg = when {
+                                        config.unlockCodeHash == null -> "Config not loaded (Hash is null)"
+                                        else -> "Invalid code (Hash mismatch)"
+                                    }
+                                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_LONG).show()
                                 }
                             }
                         )
