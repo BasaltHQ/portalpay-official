@@ -6,9 +6,10 @@ export const revalidate = 0;
 
 /**
  * POST /api/receipts/[id]/claim
- * Body: { wallet: string }
+ * Body: { wallet: string, shopSlug?: string, transactionHash?: string }
  * - Links a buyer wallet to a paid receipt (loyalty claim)
- * - Updates 'buyerWallet' field in Cosmos
+ * - Updates 'buyerWallet', 'shopSlug', and 'transactionHash' fields in Cosmos
+ * - Auto-resolves shopSlug from merchant's shop config if missing
  * - Only works if receipt is paid/settled
  */
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -23,6 +24,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     try {
         const body = await req.json().catch(() => ({}));
         const buyerWallet = String(body.wallet || "").toLowerCase();
+        let shopSlug = body.shopSlug ? String(body.shopSlug).trim() : undefined;
+        const transactionHash = body.transactionHash ? String(body.transactionHash).trim() : undefined;
 
         if (!/^0x[a-f0-9]{40}$/i.test(buyerWallet)) {
             return NextResponse.json({ ok: false, error: "invalid_wallet" }, { status: 400 });
@@ -61,12 +64,49 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         // Usually on-ramp creates a temp wallet. The user connecting is the "real" wallet.
         // Let's allow overwrite for now or if empty.
 
-        // Update
-        const patch = {
+        // Auto-resolve shopSlug from merchant's shop config if not provided and not already on receipt
+        if (!shopSlug && !existing.shopSlug) {
+            const merchantWallet = String(existing.wallet || "").toLowerCase();
+            if (merchantWallet) {
+                try {
+                    // Query for the shop config associated with this merchant
+                    const shopSpec = {
+                        query: "SELECT TOP 1 c.config.slug, c.config.name FROM c WHERE c.type='shop' AND c.wallet=@wallet",
+                        parameters: [{ name: "@wallet", value: merchantWallet }]
+                    };
+                    const { resources: shops } = await container.items.query(shopSpec).fetchAll();
+                    if (shops && shops[0]) {
+                        shopSlug = shops[0].slug || shops[0].name || undefined;
+                        console.log(`[CLAIM] Auto-resolved shopSlug="${shopSlug}" for merchant=${merchantWallet}`);
+                    }
+                } catch (e) {
+                    console.error("[CLAIM] Failed to auto-resolve shopSlug:", e);
+                }
+            }
+        }
+
+        // Update - merge new fields with existing, preserving existing values if not provided
+        const patch: Record<string, any> = {
             ...existing,
             buyerWallet: buyerWallet,
+            claimed: true,  // Mark as claimed for loyalty tracking (without changing status)
+            claimedAt: Date.now(),
             lastUpdatedAt: Date.now()
         };
+
+        // Fix: If status was incorrectly changed to 'receipt_claimed', restore it to 'paid'
+        if (existing.status === 'receipt_claimed') {
+            patch.status = 'paid';
+        }
+
+        // Only update these if provided and not already set (or being explicitly updated)
+        if (shopSlug && !existing.shopSlug) {
+            patch.shopSlug = shopSlug;
+        }
+        if (transactionHash) {
+            // Always update transactionHash if provided (it may come from the confirmation)
+            patch.transactionHash = transactionHash;
+        }
 
         await container.items.upsert(patch);
 
@@ -76,3 +116,4 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         return NextResponse.json({ ok: false, error: e.message || "failed" }, { status: 500 });
     }
 }
+

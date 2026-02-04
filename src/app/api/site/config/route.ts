@@ -402,7 +402,10 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
     if (!isExplicitPartner && !cfg.splitAddress && !cfg.split?.address) {
       try {
         const c = await getContainer();
-        const { resource: globalRes } = await c.item("site:config", "site:config").read<any>();
+        // CRITICAL FIX: Use brand-specific document ID for global config lookup
+        // BasaltSurge stores its config in site:config:basaltsurge, not site:config
+        const globalDocId = getDocIdForBrand(brandKeyForFees || brandKey || "basaltsurge");
+        const { resource: globalRes } = await c.item(globalDocId, globalDocId).read<any>();
         if (globalRes) {
           cfg.splitAddress = globalRes.splitAddress || globalRes.split?.address || undefined;
           cfg.split = globalRes.split || undefined;
@@ -412,6 +415,7 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
         }
       } catch { }
     }
+
 
     // Inject runtime token configuration from server environment variables
     // This allows the client to receive these values even if they weren't present at build time
@@ -501,6 +505,56 @@ function normalizeSiteConfig(raw?: any) {
   if (raw && typeof raw === "object") {
     Object.assign(config, raw);
   }
+
+  // CRITICAL: Propagate nested config.split to root level if missing
+  // Some brands (like BasaltSurge) store split config inside config.split but portal reads from root
+  const isHexAddr = (s: any) => /^0x[a-fA-F0-9]{40}$/.test(String(s || "").trim());
+  const nestedSplit = (config as any)?.config?.split;
+  const nestedRecipients = (config as any)?.config?.recipients;
+  if (nestedSplit && typeof nestedSplit === "object") {
+    // Propagate nested split address to root if root is missing
+    if (!config.splitAddress && isHexAddr(nestedSplit.address)) {
+      config.splitAddress = nestedSplit.address;
+    }
+    // Propagate nested split object to root if root is missing
+    if (!config.split && nestedSplit.address) {
+      config.split = {
+        address: nestedSplit.address,
+        recipients: Array.isArray(nestedSplit.recipients) ? nestedSplit.recipients : (nestedRecipients || [])
+      };
+    }
+    // Generate splitConfig if missing - compute from recipients
+    const recipientsForConfig = nestedSplit.recipients || nestedRecipients || [];
+    if (!config.splitConfig && Array.isArray(recipientsForConfig) && recipientsForConfig.length > 0) {
+      const PLATFORM_WALLET = "0x00fe4f0104a989ca65df6b825a6c1682413bca56".toLowerCase();
+      let merchantBps = 0;
+      let platformBps = 0;
+      let partnerBps = 0;
+      const merchantWallet = String(config.wallet || "").toLowerCase();
+      for (const r of recipientsForConfig) {
+        const addr = String(r?.address || "").toLowerCase();
+        const bps = Number(r?.sharesBps || 0);
+        if (addr === PLATFORM_WALLET) {
+          platformBps = bps;
+        } else if (addr === merchantWallet) {
+          merchantBps = bps;
+        } else {
+          partnerBps += bps; // Any other recipient is partner/agent
+        }
+      }
+      config.splitConfig = {
+        merchantBps,
+        partnerBps,
+        platformBps,
+        agents: []
+      };
+    }
+  }
+  // Also handle config.splitAddress without nested split object
+  if (!config.splitAddress && isHexAddr((config as any)?.config?.splitAddress)) {
+    config.splitAddress = (config as any).config.splitAddress;
+  }
+
 
   // Normalize base fields
   config.story = typeof config.story === "string" ? config.story : "";

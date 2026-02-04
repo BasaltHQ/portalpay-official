@@ -1558,14 +1558,13 @@ export default function PortalReceiptPage() {
     // We rely on the API to handle idempotency or updates.
     console.log("[RECEIPT] Attempting to claim receipt:", receiptId, "for", account.address);
 
-    fetch("/api/receipts/status", {
+    // Use the claim API directly - it sets buyerWallet without changing status
+    fetch(`/api/receipts/${receiptId}/claim`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        receiptId: receiptId,
-        wallet: merchantWallet || recipient,
-        status: "receipt_claimed",
-        buyerWallet: account.address
+        wallet: account.address,
+        // Don't pass status - claim API doesn't change status, just links buyerWallet
       })
     })
       .then(() => setHasClaimed(true))
@@ -1619,9 +1618,16 @@ export default function PortalReceiptPage() {
     const isPaid = paymentConfirmed || (receipt && isSettled(receipt.status));
     if (isPaid && account?.address && receiptId && claimStatus === "idle") {
       setClaimStatus("claiming");
+      // Get the transaction hash from either paymentConfirmed or existing receipt
+      const txHash = paymentConfirmed?.txHash || (receipt as any)?.transactionHash || "";
       fetch(`/api/receipts/${receiptId}/claim`, {
         method: "POST",
-        body: JSON.stringify({ wallet: account.address })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          wallet: account.address,
+          transactionHash: txHash || undefined,
+          // shopSlug is resolved server-side from the receipt's existing data
+        })
       }).then(r => r.json()).then(j => {
         if (j.ok) {
           setClaimStatus("success");
@@ -2370,8 +2376,31 @@ export default function PortalReceiptPage() {
                                       client={client}
                                       chain={chain}
                                       wallets={wallets}
-                                      theme={darkTheme({ colors: { primaryButtonBg: "#ec4899", primaryButtonText: "#fff" } })}
-                                      connectButton={{ label: "Connect to Claim", className: "!h-9 !px-4 !text-sm !font-semibold !rounded-full" }}
+                                      connectButton={{
+                                        label: <span className="microtext">Login to Claim</span>,
+                                        className: connectButtonClass,
+                                        style: getConnectButtonStyle(),
+                                      }}
+                                      signInButton={{
+                                        label: "Authenticate",
+                                        className: connectButtonClass,
+                                        style: getConnectButtonStyle(),
+                                      }}
+                                      detailsButton={{
+                                        displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+                                      }}
+                                      connectModal={{
+                                        showThirdwebBranding: false,
+                                        title: "Login",
+                                        titleIcon: (() => {
+                                          const c = (theme.brandLogoUrl || "").trim();
+                                          const a = (theme.symbolLogoUrl || "").trim();
+                                          const b = (theme.brandFaviconUrl || "").trim();
+                                          return resolveBrandSymbol(c || a || b, (theme as any)?.brandKey || (theme as any)?.key);
+                                        })(),
+                                        size: "compact",
+                                      }}
+                                      theme={twTheme}
                                     />
                                   </>
                                 ) : (
@@ -2380,63 +2409,41 @@ export default function PortalReceiptPage() {
                                       <div className="text-sm text-white/80 animate-pulse">Linking to wallet...</div>
                                     )}
                                     {(claimStatus === "success" || claimStatus === "base_registered") && (
-                                      <div className="space-y-1">
-                                        <div className="flex items-center justify-center gap-2 text-green-400 font-bold">
-                                          <span>✓</span> <span>Purchase Claimed</span>
-                                        </div>
-                                        {claimStatus === "base_registered" && (
-                                          <div className="text-xs text-purple-200 animate-in fade-in zoom-in">
-                                            You are now registered at {effectiveBrandName}
+                                      <>
+                                        <div className="space-y-1">
+                                          <div className="flex items-center justify-center gap-2 text-green-400 font-bold">
+                                            <span>✓</span> <span>Purchase Claimed</span>
                                           </div>
-                                        )}
-                                        <div className="text-xs text-white/50 pt-1">
-                                          Linked to {account.address.slice(0, 6)}...{account.address.slice(-4)}
+                                          {claimStatus === "base_registered" && (
+                                            <div className="text-xs text-purple-200 animate-in fade-in zoom-in">
+                                              You are now registered at {effectiveBrandName}
+                                            </div>
+                                          )}
+                                          <div className="text-xs text-white/50 pt-1">
+                                            Linked to {account.address.slice(0, 6)}...{account.address.slice(-4)}
+                                          </div>
                                         </div>
-                                      </div>
+                                        <div className="mt-4 flex flex-col gap-2 w-full">
+                                          <a
+                                            href="/"
+                                            className="px-4 py-2 rounded-lg text-white text-sm font-medium text-center transition-colors hover:opacity-90"
+                                            style={{ backgroundColor: "var(--pp-secondary, #10b981)" }}
+                                          >
+                                            Continue Shopping
+                                          </a>
+                                          <a
+                                            href="/admin?tab=purchases"
+                                            className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium text-center transition-colors"
+                                          >
+                                            View My Purchases
+                                          </a>
+                                        </div>
+                                      </>
                                     )}
                                   </div>
                                 )}
                               </div>
 
-                              {/* Claim / Link Wallet Section */}
-                              <div className="mt-8 pt-6 border-t border-white/10 w-full max-w-[320px] flex flex-col items-center animate-in slide-in-from-bottom-4 duration-500">
-                                {!account ? (
-                                  <>
-                                    <div className="text-sm font-medium text-pink-200 mb-2">Claim Loyalty Points</div>
-                                    <div className="text-xs text-white/60 mb-3 max-w-[240px]">
-                                      Connect your wallet to link this purchase and earn rewards.
-                                    </div>
-                                    <ConnectButton
-                                      client={client}
-                                      chain={chain}
-                                      wallets={wallets}
-                                      theme={darkTheme({ colors: { primaryButtonBg: "#ec4899", primaryButtonText: "#fff" } })}
-                                      connectButton={{ label: "Connect to Claim", className: "!h-9 !px-4 !text-sm !font-semibold !rounded-full" }}
-                                    />
-                                  </>
-                                ) : (
-                                  <div className="text-center">
-                                    {claimStatus === "claiming" && (
-                                      <div className="text-sm text-white/80 animate-pulse">Linking to wallet...</div>
-                                    )}
-                                    {(claimStatus === "success" || claimStatus === "base_registered") && (
-                                      <div className="space-y-1">
-                                        <div className="flex items-center justify-center gap-2 text-green-400 font-bold">
-                                          <span>✓</span> <span>Purchase Claimed</span>
-                                        </div>
-                                        {claimStatus === "base_registered" && (
-                                          <div className="text-xs text-purple-200 animate-in fade-in zoom-in">
-                                            You are now registered at {effectiveBrandName}
-                                          </div>
-                                        )}
-                                        <div className="text-xs text-white/50 pt-1">
-                                          Linked to {account.address.slice(0, 6)}...{account.address.slice(-4)}
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
                             </div>
                           ) : (
                             <CheckoutWidget
@@ -2855,6 +2862,89 @@ export default function PortalReceiptPage() {
                                 Refresh Receipt
                               </button>
                             </div>
+
+                            {/* Claim / Link Wallet Section */}
+                            <div className="mt-8 pt-6 border-t border-white/10 w-full max-w-[320px] flex flex-col items-center">
+                              {!account ? (
+                                <>
+                                  <div className="text-sm font-medium text-pink-200 mb-2">Claim Loyalty Points</div>
+                                  <div className="text-xs text-white/60 mb-3 max-w-[240px] text-center">
+                                    Connect your wallet to link this purchase and earn rewards.
+                                  </div>
+                                  <ConnectButton
+                                    client={client}
+                                    chain={chain}
+                                    wallets={wallets}
+                                    connectButton={{
+                                      label: <span className="microtext">Login to Claim</span>,
+                                      className: connectButtonClass,
+                                      style: getConnectButtonStyle(),
+                                    }}
+                                    signInButton={{
+                                      label: "Authenticate",
+                                      className: connectButtonClass,
+                                      style: getConnectButtonStyle(),
+                                    }}
+                                    detailsButton={{
+                                      displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+                                    }}
+                                    connectModal={{
+                                      showThirdwebBranding: false,
+                                      title: "Login",
+                                      titleIcon: (() => {
+                                        const c = (theme.brandLogoUrl || "").trim();
+                                        const a = (theme.symbolLogoUrl || "").trim();
+                                        const b = (theme.brandFaviconUrl || "").trim();
+                                        return resolveBrandSymbol(c || a || b, (theme as any)?.brandKey || (theme as any)?.key);
+                                      })(),
+                                      size: "compact",
+                                    }}
+                                    theme={twTheme}
+                                  />
+                                </>
+                              ) : (
+                                <div className="text-center w-full">
+                                  {claimStatus === "claiming" && (
+                                    <div className="text-sm text-white/80 animate-pulse">Linking to wallet...</div>
+                                  )}
+                                  {(claimStatus === "success" || claimStatus === "base_registered") && (
+                                    <>
+                                      <div className="space-y-1">
+                                        <div className="flex items-center justify-center gap-2 text-green-400 font-bold">
+                                          <span>✓</span> <span>Purchase Claimed</span>
+                                        </div>
+                                        {claimStatus === "base_registered" && (
+                                          <div className="text-xs text-purple-200 animate-in fade-in zoom-in">
+                                            You are now registered at {effectiveBrandName}
+                                          </div>
+                                        )}
+                                        <div className="text-xs text-white/50 pt-1">
+                                          Linked to {account.address.slice(0, 6)}...{account.address.slice(-4)}
+                                        </div>
+                                      </div>
+                                      <div className="mt-4 flex flex-col gap-2 w-full">
+                                        <a
+                                          href="/"
+                                          className="px-4 py-2 rounded-lg text-white text-sm font-medium text-center transition-colors hover:opacity-90"
+                                          style={{ backgroundColor: "var(--pp-secondary, #10b981)" }}
+                                        >
+                                          Continue Shopping
+                                        </a>
+                                        <a
+                                          href="/admin?tab=purchases"
+                                          className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium text-center transition-colors"
+                                        >
+                                          View My Purchases
+                                        </a>
+                                      </div>
+                                    </>
+                                  )}
+                                  {claimStatus === "idle" && (
+                                    <div className="text-sm text-white/60">Checking claim status...</div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <CheckoutWidget
@@ -3080,6 +3170,89 @@ export default function PortalReceiptPage() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
               </a>
             )}
+
+            {/* Claim / Link Wallet Section */}
+            <div className="mt-8 pt-6 border-t border-white/10 w-full max-w-[320px] flex flex-col items-center">
+              {!account ? (
+                <>
+                  <div className="text-sm font-medium text-pink-200 mb-2">Claim Loyalty Points</div>
+                  <div className="text-xs text-white/60 mb-3 max-w-[240px] text-center">
+                    Connect your wallet to link this purchase and earn rewards.
+                  </div>
+                  <ConnectButton
+                    client={client}
+                    chain={chain}
+                    wallets={wallets}
+                    connectButton={{
+                      label: <span className="microtext">Login to Claim</span>,
+                      className: connectButtonClass,
+                      style: getConnectButtonStyle(),
+                    }}
+                    signInButton={{
+                      label: "Authenticate",
+                      className: connectButtonClass,
+                      style: getConnectButtonStyle(),
+                    }}
+                    detailsButton={{
+                      displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+                    }}
+                    connectModal={{
+                      showThirdwebBranding: false,
+                      title: "Login",
+                      titleIcon: (() => {
+                        const c = (theme.brandLogoUrl || "").trim();
+                        const a = (theme.symbolLogoUrl || "").trim();
+                        const b = (theme.brandFaviconUrl || "").trim();
+                        return resolveBrandSymbol(c || a || b, (theme as any)?.brandKey || (theme as any)?.key);
+                      })(),
+                      size: "compact",
+                    }}
+                    theme={twTheme}
+                  />
+                </>
+              ) : (
+                <div className="text-center w-full">
+                  {claimStatus === "claiming" && (
+                    <div className="text-sm text-white/80 animate-pulse">Linking to wallet...</div>
+                  )}
+                  {(claimStatus === "success" || claimStatus === "base_registered") && (
+                    <>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-center gap-2 text-green-400 font-bold">
+                          <span>✓</span> <span>Purchase Claimed</span>
+                        </div>
+                        {claimStatus === "base_registered" && (
+                          <div className="text-xs text-purple-200 animate-in fade-in zoom-in">
+                            You are now registered at {effectiveBrandName}
+                          </div>
+                        )}
+                        <div className="text-xs text-white/50 pt-1">
+                          Linked to {account.address.slice(0, 6)}...{account.address.slice(-4)}
+                        </div>
+                      </div>
+                      <div className="mt-4 flex flex-col gap-2 w-full">
+                        <a
+                          href="/"
+                          className="px-4 py-2 rounded-lg text-white text-sm font-medium text-center transition-colors hover:opacity-90"
+                          style={{ backgroundColor: "var(--pp-secondary, #10b981)" }}
+                        >
+                          Continue Shopping
+                        </a>
+                        <a
+                          href="/admin?tab=purchases"
+                          className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium text-center transition-colors"
+                        >
+                          View My Purchases
+                        </a>
+                      </div>
+                    </>
+                  )}
+                  {claimStatus === "idle" && (
+                    <div className="text-sm text-white/60">Checking claim status...</div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
