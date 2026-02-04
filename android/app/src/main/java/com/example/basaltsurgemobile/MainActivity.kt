@@ -154,18 +154,22 @@ class MainActivity : ComponentActivity() {
         
         lifecycleScope.launch {
             val info = otaUpdateManager.checkForUpdate()
-            otaUpdateManager.recordUpdateCheck()
             
-            if (info != null && info.hasUpdate) {
-                Log.d(TAG, "Update available: ${info.latestVersion}")
-                updateInfo.value = info
-                showUpdateDialog.value = true
+            if (info != null) {
+                // Only record check time if we successfully reached the server
+                otaUpdateManager.recordUpdateCheck()
                 
-                // For Device Owner mode, auto-install if mandatory
-                val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-                if (dpm.isDeviceOwnerApp(packageName) && info.mandatory && info.downloadUrl != null) {
-                    Log.d(TAG, "Auto-installing mandatory update (Device Owner mode)")
-                    otaUpdateManager.downloadAndInstall(info.downloadUrl)
+                if (info.hasUpdate) {
+                    Log.d(TAG, "Update available: ${info.latestVersion}")
+                    updateInfo.value = info
+                    showUpdateDialog.value = true
+                    
+                    // For Device Owner mode, auto-install if mandatory
+                    val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+                    if (dpm.isDeviceOwnerApp(packageName) && info.mandatory && info.downloadUrl != null) {
+                        Log.d(TAG, "Auto-installing mandatory update (Device Owner mode)")
+                        otaUpdateManager.downloadAndInstall(info.downloadUrl)
+                    }
                 }
             }
         }

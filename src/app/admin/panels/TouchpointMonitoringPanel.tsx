@@ -52,6 +52,7 @@ export default function TouchpointMonitoringPanel() {
     const [buildDownloadUrl, setBuildDownloadUrl] = useState<string>("");
     const [buildComplete, setBuildComplete] = useState(false);
     const [buildSuccess, setBuildSuccess] = useState<boolean | null>(null);
+    const [latestVersionInfo, setLatestVersionInfo] = useState<{ code: number; name: string } | null>(null);
 
     // OTA Publish state
     const [showPublishForm, setShowPublishForm] = useState(false);
@@ -125,6 +126,38 @@ export default function TouchpointMonitoringPanel() {
             setBuildEndpoint(`https://${brand}.azurewebsites.net`);
         }
     }, [buildBrandKey]);
+
+    // Fetch latest version to pre-fill inputs
+    useEffect(() => {
+        async function fetchLatestVersion() {
+            try {
+                const res = await fetch("/api/touchpoint/version");
+                const data = await res.json();
+                if (res.ok && data.latestVersionCode) {
+                    setLatestVersionInfo({
+                        code: data.latestVersionCode,
+                        name: data.latestVersion
+                    });
+
+                    // Auto-increment for build defaults
+                    setBuildVersionCode(String(data.latestVersionCode + 1));
+
+                    // Try to auto-increment version name (e.g. 1.2 -> 1.3)
+                    const parts = data.latestVersion.split('.');
+                    if (parts.length > 0) {
+                        const last = parseInt(parts[parts.length - 1]);
+                        if (!isNaN(last)) {
+                            parts[parts.length - 1] = String(last + 1);
+                            setBuildVersionName(parts.join('.'));
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch latest version", e);
+            }
+        }
+        fetchLatestVersion();
+    }, []);
 
     async function handleProvision() {
         const wallet = provisionWallet.trim();
@@ -895,7 +928,14 @@ export default function TouchpointMonitoringPanel() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-xs text-muted-foreground block mb-1">Version Code (Integer)</label>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-xs text-muted-foreground">Version Code (Integer)</label>
+                                        {latestVersionInfo && (
+                                            <span className="text-[10px] text-blue-400">
+                                                Latest: {latestVersionInfo.code}
+                                            </span>
+                                        )}
+                                    </div>
                                     <input
                                         type="number"
                                         value={buildVersionCode}
@@ -905,7 +945,14 @@ export default function TouchpointMonitoringPanel() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs text-muted-foreground block mb-1">Version Name (String)</label>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-xs text-muted-foreground">Version Name (String)</label>
+                                        {latestVersionInfo && (
+                                            <span className="text-[10px] text-blue-400">
+                                                Latest: {latestVersionInfo.name}
+                                            </span>
+                                        )}
+                                    </div>
                                     <input
                                         type="text"
                                         value={buildVersionName}
