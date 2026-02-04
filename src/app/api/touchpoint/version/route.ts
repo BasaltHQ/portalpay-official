@@ -208,3 +208,69 @@ export async function POST(req: NextRequest) {
         return json({ error: "publish_failed", message: e?.message || String(e) }, { status: 500 });
     }
 }
+
+/**
+ * DELETE /api/touchpoint/version
+ * 
+ * Admin-only endpoint to reset version history for a brand.
+ * Warning: This deletes ALL version records for the brand.
+ */
+export async function DELETE(req: NextRequest) {
+    try {
+        // Auth: Admin or Superadmin only
+        const caller = await requireThirdwebAuth(req).catch(() => null as any);
+        const roles = Array.isArray(caller?.roles) ? caller.roles : [];
+        if (!roles.includes("admin") && !roles.includes("superadmin")) {
+            return json({ error: "forbidden" }, { status: 403 });
+        }
+
+        const url = new URL(req.url);
+        const confirm = url.searchParams.get("confirm") === "true";
+
+        if (!confirm) {
+            return json({ error: "confirmation_required", message: "Pass confirm=true to delete version history" }, { status: 400 });
+        }
+
+        const ct = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || process.env.CONTAINER_TYPE || "platform").toLowerCase();
+        let brandKey = getBrandKey();
+
+        // Platform admins can specify brandKey to reset
+        const qBrandKey = url.searchParams.get("brandKey");
+        if (ct === "platform" && qBrandKey) {
+            brandKey = qBrandKey.toLowerCase();
+        }
+
+        const dbId = String(process.env.COSMOS_PAYPORTAL_DB_ID || "payportal");
+        const containerId = "payportal_events";
+        const container = await getContainer(dbId, containerId);
+
+        // Find all version records for this brand
+        const query = `
+            SELECT * FROM c 
+            WHERE c.type = 'apk_version' 
+            AND c.brandKey = @brandKey
+        `;
+
+        const { resources } = await container.items.query({
+            query,
+            parameters: [{ name: "@brandKey", value: brandKey }]
+        } as any).fetchAll();
+
+        // Delete them
+        let deletedCount = 0;
+        for (const doc of resources) {
+            await container.item(doc.id, doc.wallet).delete();
+            deletedCount++;
+        }
+
+        return json({
+            ok: true,
+            deletedCount,
+            brandKey,
+            message: `Reset complete. Deleted ${deletedCount} version records.`
+        });
+    } catch (e: any) {
+        console.error("[touchpoint/version] DELETE Error:", e);
+        return json({ error: "delete_failed", message: e?.message || String(e) }, { status: 500 });
+    }
+}
