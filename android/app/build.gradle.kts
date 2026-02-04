@@ -12,8 +12,12 @@ android {
         minSdk = 24
         targetSdk = 35
         // Read version from project properties (passed from CI/CD)
-        val vCode = (project.findProperty("VERSION_CODE") as? String)?.toIntOrNull() ?: 1
-        val vName = (project.findProperty("VERSION_NAME") as? String) ?: "1.0"
+        // Use toString() to ensure safe conversion regardless of type
+        val vCode = project.findProperty("VERSION_CODE")?.toString()?.toIntOrNull() ?: 1
+        val vName = project.findProperty("VERSION_NAME")?.toString() ?: "1.0"
+        
+        // Print for build log verification
+        println("AppConfig: Building with VersionCode: $vCode, VersionName: $vName")
         
         versionCode = vCode
         versionName = vName
