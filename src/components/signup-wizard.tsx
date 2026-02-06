@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 const ConnectButton = dynamic(() => import("thirdweb/react").then((m) => m.ConnectButton), { ssr: false });
 import { useActiveAccount } from "thirdweb/react";
-import { client, chain, getWallets } from "@/lib/thirdweb/client";
+import { client, chain, getWallets, getPrivateWallets } from "@/lib/thirdweb/client";
 import { usePortalThirdwebTheme } from "@/lib/thirdweb/theme";
 import { useBrand } from "@/contexts/BrandContext";
 import ImageUploadField from "./forms/ImageUploadField";
@@ -335,11 +335,13 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
 
     useEffect(() => {
         let mounted = true;
-        getWallets()
+        // For private partner containers, use restricted wallets (email + phone only)
+        const loadWallets = isPrivate ? getPrivateWallets : getWallets;
+        loadWallets()
             .then((w) => { if (mounted) setWallets(w as any[]); })
             .catch(() => setWallets([]));
         return () => { mounted = false; };
-    }, []);
+    }, [isPrivate]);
 
 
     useEffect(() => {

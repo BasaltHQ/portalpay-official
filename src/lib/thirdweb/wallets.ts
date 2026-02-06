@@ -30,3 +30,55 @@ export function getWallets(chain: Chain) {
     createWallet("com.coinbase.wallet"),
   ];
 }
+
+/**
+ * Restricted wallet configuration for private partner containers requiring approval.
+ * Only allows email and phone authentication - no external wallets or social logins.
+ * Used for SIGNUP flow on private partner containers.
+ */
+export function getPrivateWallets(chain: Chain) {
+  return [
+    inAppWallet({
+      auth: {
+        options: [
+          "email",
+          "phone",
+        ],
+      },
+      executionMode: {
+        mode: "EIP4337",
+        smartAccount: {
+          chain,
+          sponsorGas: true,
+        },
+      },
+    }),
+  ];
+}
+
+/**
+ * Wallet configuration for LOGIN on private partner containers.
+ * Allows email, phone, and external wallets (MetaMask, Coinbase, WalletConnect).
+ * No social logins (Google, Apple, X, etc.)
+ */
+export function getPrivateLoginWallets(chain: Chain) {
+  return [
+    inAppWallet({
+      auth: {
+        options: [
+          "email",
+          "phone",
+        ],
+      },
+      executionMode: {
+        mode: "EIP4337",
+        smartAccount: {
+          chain,
+          sponsorGas: true,
+        },
+      },
+    }),
+    createWallet("io.metamask"),
+    createWallet("com.coinbase.wallet"),
+  ];
+}

@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useActiveAccount, useActiveWallet, useDisconnect, darkTheme } from "thirdweb/react";
 import { signLoginPayload } from "thirdweb/auth";
-import { client, chain, getWallets } from "@/lib/thirdweb/client";
+import { client, chain, getWallets, getPrivateWallets, getPrivateLoginWallets } from "@/lib/thirdweb/client";
 import { usePortalThirdwebTheme, getConnectButtonStyle, connectButtonClass } from "@/lib/thirdweb/theme";
 import { ChevronDown, Dot, Ellipsis } from "lucide-react";
 import { AuthModal } from "./auth-modal";
@@ -113,11 +113,19 @@ export function Navbar() {
     }, []);
     useEffect(() => {
         let mounted = true;
-        getWallets()
+        // Determine if this is a private partner container
+        // Private mode requires approval - use getPrivateLoginWallets for LOGIN (email + phone + external wallets)
+        const accessMode = (brand as any)?.accessMode || "open";
+        const isPrivate = accessMode === "request";
+        const isPlatformContainer = container.containerType === "platform";
+        const shouldUsePrivateWallets = isPrivate && !isPlatformContainer;
+
+        const loadWallets = shouldUsePrivateWallets ? getPrivateLoginWallets : getWallets;
+        loadWallets()
             .then((w) => { if (mounted) setWallets(w as any[]); })
             .catch(() => setWallets([]));
         return () => { mounted = false; };
-    }, []);
+    }, [brand, container.containerType]);
 
     // Detect thirdweb modal and lock body scroll to prevent content jump
     useEffect(() => {

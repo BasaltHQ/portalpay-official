@@ -59,6 +59,20 @@ export async function getWallets() {
   return mod.getWallets(chain);
 }
 
+// Restricted wallets for private partner containers (email + phone only) - for SIGNUP
+export async function getPrivateWallets() {
+  if (typeof window === "undefined") return [] as any[];
+  const mod = await import("./wallets");
+  return mod.getPrivateWallets(chain);
+}
+
+// Login wallets for private partner containers (email + phone + external wallets)
+export async function getPrivateLoginWallets() {
+  if (typeof window === "undefined") return [] as any[];
+  const mod = await import("./wallets");
+  return mod.getPrivateLoginWallets(chain);
+}
+
 export function getRecipientAddress(): `0x${string}` {
   const addr = process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || process.env.NEXT_PUBLIC_PLATFORM_WALLET || "";
   return addr as `0x${string}`;
