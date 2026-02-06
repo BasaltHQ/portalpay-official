@@ -1,48 +1,131 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 echo ===================================================
-echo   Touchpoint Kiosk - Device Setup Script
+echo   Owner Mode Setup Script (All Device Types)
 echo ===================================================
 echo.
-echo This script will help you set up an Android device as a dedicated Kiosk.
+echo This script sets up Android devices (Terminals, Tablets, Phones)
+echo with Device Owner mode for full MDM lockdown.
 echo.
 echo PREREQUISITES:
 echo 1. Android device connected via USB
-echo 2. Developer Options enabled on device
-echo 3. USB Debugging enabled on device
-echo 4. "adb" command installed and in your PATH
-echo 5. NO Google Accounts on the device (Settings > Accounts > Remove all)
+echo 2. Developer Options + USB Debugging enabled
+echo 3. NO Google Accounts on device (remove ALL accounts first)
+echo 4. "adb" command available (or you can drag-drop the APK)
 echo.
 
 :CHECK_ADB
-echo Checking for connected config...
+echo Checking for connected device...
 adb devices
 echo.
 set /p CONTINUE="Is your device listed above? (y/n): "
-if /i "%CONTINUE%" neq "y" goto :EOF
+if /i "%CONTINUE%" neq "y" (
+    echo Please connect device and enable USB Debugging.
+    pause
+    goto :EOF
+)
+
+:GET_BRAND_KEY
+echo.
+echo ===================================================
+echo   Step 1: Enter Brand Key
+echo ===================================================
+echo.
+echo Enter the brand key for this device (e.g., basaltsurge, xoinpay, etc.)
+echo This determines which branded APK to install and how the app appears.
+echo.
+set /p BRAND_KEY="Brand Key: "
+if "%BRAND_KEY%"=="" (
+    echo Brand key is required.
+    goto :GET_BRAND_KEY
+)
+echo.
+echo Brand Key: %BRAND_KEY%
+
+:GET_APK_URL
+echo.
+echo ===================================================
+echo   Step 2: APK Download URL (Optional)
+echo ===================================================
+echo.
+echo You can either:
+echo   A) Provide a direct APK download URL (from Admin Panel)
+echo   B) Skip this and use a local APK file
+echo.
+set /p APK_URL="Enter APK URL (or press Enter to skip): "
+
+if "%APK_URL%"=="" goto :LOCAL_APK
+
+:DOWNLOAD_APK
+echo.
+echo Downloading APK from URL...
+set "TEMP_APK=%TEMP%\%BRAND_KEY%-touchpoint.apk"
+
+REM Try curl first, fall back to PowerShell
+where curl >nul 2>nul
+if %ERRORLEVEL%==0 (
+    curl -L -o "%TEMP_APK%" "%APK_URL%"
+) else (
+    powershell -Command "Invoke-WebRequest -Uri '%APK_URL%' -OutFile '%TEMP_APK%'"
+)
+
+if not exist "%TEMP_APK%" (
+    echo Failed to download APK. Please check the URL.
+    pause
+    goto :GET_APK_URL
+)
+
+echo APK downloaded to: %TEMP_APK%
+set "APK_PATH=%TEMP_APK%"
+goto :INSTALL_APK
+
+:LOCAL_APK
+echo.
+echo ===================================================
+echo   Step 2b: Local APK File
+echo ===================================================
+echo.
+set /p DO_LOCAL="Do you have a local APK file to install? (y/n): "
+if /i "%DO_LOCAL%"=="y" (
+    set /p APK_PATH="Drag and drop APK file here (or enter full path): "
+    REM Remove quotes if present
+    set APK_PATH=!APK_PATH:"=!
+    if not exist "!APK_PATH!" (
+        echo File not found: !APK_PATH!
+        goto :LOCAL_APK
+    )
+    goto :INSTALL_APK
+) else (
+    echo.
+    echo WARNING: Skipping APK install. Make sure app is already installed.
+    pause
+    goto :SET_DEVICE_OWNER
+)
 
 :INSTALL_APK
 echo.
-echo Step 1: Install APK (Optional)
-set /p DO_INSTALL="Do you want to install the APK now? (y/n): "
-if /i "%DO_INSTALL%"=="y" (
-    set /p APK_PATH="Enter full path to APK file (drag and drop here): "
-    if defined APK_PATH (
-        echo Installing...
-        adb install -r -g %APK_PATH%
-        if %ERRORLEVEL% neq 0 (
-            echo Install failed. Please check the path and try again.
-            pause
-            goto :EOF
-        )
-        echo Install successful!
-    )
+echo ===================================================
+echo   Step 3: Installing APK
+echo ===================================================
+echo.
+echo Installing %APK_PATH%...
+adb install -r -g "%APK_PATH%"
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo [ERROR] APK installation failed.
+    echo Try uninstalling the app first with: adb uninstall com.example.basaltsurgemobile
+    pause
+    goto :EOF
 )
+echo [SUCCESS] APK installed!
 
 :SET_DEVICE_OWNER
 echo.
-echo Step 2: Set Device Owner Mode
-echo This allows the app to lock the screen and prevent exit.
+echo ===================================================
+echo   Step 4: Setting Device Owner Mode
+echo ===================================================
+echo.
+echo This enables full MDM lockdown (silent updates, exit protection).
 echo.
 echo Running: dpm set-device-owner ...
 adb shell dpm set-device-owner com.example.basaltsurgemobile/.AppDeviceAdminReceiver
@@ -50,31 +133,58 @@ adb shell dpm set-device-owner com.example.basaltsurgemobile/.AppDeviceAdminRece
 if %ERRORLEVEL% neq 0 (
     echo.
     echo [ERROR] Failed to set device owner.
-    echo Common reason: There are accounts on the device.
-    echo Please go to Settings > Accounts and remove ALL accounts (Google, WhatsApp, etc).
-    echo Then run this script again.
+    echo.
+    echo Common causes:
+    echo   - There are accounts on the device (remove ALL accounts)
+    echo   - App is not installed
+    echo   - Device already has a device owner
+    echo.
+    echo To reset and try again:
+    echo   1. Go to Settings ^> Accounts ^> Remove all accounts
+    echo   2. Run: adb shell dpm remove-active-admin com.example.basaltsurgemobile/.AppDeviceAdminReceiver
+    echo   3. Run this script again
     pause
     goto :EOF
 )
 
 echo.
-echo [SUCCESS] Device owner set successfully!
+echo [SUCCESS] Device Owner mode set!
 
 :GRANT_PERMISSIONS
 echo.
-echo Step 3: Granting Overlay Permissions
-echo This allows the app to auto-boot and show the unlock screen.
+echo ===================================================
+echo   Step 5: Granting Permissions
+echo ===================================================
+echo.
+echo Granting overlay permission...
 adb shell appops set com.example.basaltsurgemobile SYSTEM_ALERT_WINDOW allow
-echo Permission granted.
+echo Permissions granted.
 
 :START_APP
 echo.
-echo Step 4: Starting App...
-adb shell am start -n com.example.basaltsurgemobile/.MainActivity
+echo ===================================================
+echo   Step 6: Starting App with Brand Configuration
+echo ===================================================
+echo.
+echo Starting app with brand key: %BRAND_KEY%
+adb shell am start -n com.example.basaltsurgemobile/.MainActivity --es brandKey "%BRAND_KEY%"
 
 echo.
 echo ===================================================
-echo   Setup Complete!
-echo   Run "adb reboot" to test auto-boot.
+echo   SETUP COMPLETE!
 echo ===================================================
+echo.
+echo Device: Owner Mode enabled
+echo Brand:  %BRAND_KEY%
+echo.
+echo The device will now load the setup page.
+echo Complete provisioning from the Admin Panel:
+echo   1. Go to Admin ^> Touchpoints ^> Provision Device
+echo   2. Enter the Installation ID shown on device
+echo   3. Select mode (Terminal/Handheld/Kiosk)
+echo   4. Choose "Owner / Full Lockdown" mode
+echo   5. Click Provision
+echo.
+echo To test auto-boot: adb reboot
+echo.
 pause

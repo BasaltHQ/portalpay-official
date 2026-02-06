@@ -31,6 +31,9 @@ export default function TouchpointMonitoringPanel() {
     const [provisionLockdownMode, setProvisionLockdownMode] = useState<"none" | "standard" | "device_owner">("none");
     const [provisionUnlockCode, setProvisionUnlockCode] = useState("");
     const [provisioning, setProvisioning] = useState(false);
+    const [scriptBrandKey, setScriptBrandKey] = useState(
+        process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge"
+    );
 
     // Build APK state
     const [showBuildForm, setShowBuildForm] = useState(false);
@@ -647,16 +650,6 @@ export default function TouchpointMonitoringPanel() {
                         <Smartphone className="h-3.5 w-3.5" />
                         Build APK
                     </button>
-                    <button
-                        onClick={() => {
-                            setShowDeviceOwnerQr(true);
-                            handleFetchDeviceOwnerQr(buildBrandKey || process.env.NEXT_PUBLIC_BRAND_KEY);
-                        }}
-                        className="h-8 px-3 rounded-md bg-purple-600 hover:bg-purple-500 text-white text-xs flex items-center gap-2 font-medium"
-                    >
-                        <QrCode className="h-3.5 w-3.5" />
-                        Device Owner QR
-                    </button>
                 </div>
             </div>
 
@@ -664,116 +657,6 @@ export default function TouchpointMonitoringPanel() {
             {error && (
                 <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md text-red-400 text-sm">
                     {error}
-                </div>
-            )}
-
-            {/* Device Owner QR Code Panel */}
-            {showDeviceOwnerQr && (
-                <div className="p-4 bg-neutral-800 rounded-lg border space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h4 className="font-semibold flex items-center gap-2">
-                            <QrCode className="h-5 w-5 text-purple-400" />
-                            Device Owner Provisioning QR Code
-                        </h4>
-                        <button
-                            onClick={resetDeviceOwnerQr}
-                            className="h-6 w-6 rounded hover:bg-neutral-700 flex items-center justify-center"
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
-                    </div>
-
-                    {deviceOwnerQrLoading && (
-                        <div className="flex items-center gap-3">
-                            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-purple-500"></div>
-                            <span className="text-sm text-muted-foreground">Generating QR code...</span>
-                        </div>
-                    )}
-
-                    {deviceOwnerQrError && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md text-red-400 text-sm">
-                            {deviceOwnerQrError}
-                        </div>
-                    )}
-
-                    {deviceOwnerQrContent && (
-                        <div className="space-y-4">
-                            {/* QR Code Display - using Google Charts API */}
-                            <div className="flex flex-col items-center gap-4">
-                                <div className="p-4 bg-white rounded-lg">
-                                    <img
-                                        src={`https://quickchart.io/qr?text=${encodeURIComponent(deviceOwnerQrContent)}&size=250&margin=1`}
-                                        alt="Device Owner Provisioning QR Code"
-                                        className="w-[250px] h-[250px]"
-                                    />
-                                </div>
-                                <p className="text-xs text-muted-foreground text-center max-w-md">
-                                    Scan this QR code on a factory-reset Android device to set up as Device Owner
-                                </p>
-                            </div>
-
-                            {/* Setup Instructions */}
-                            {deviceOwnerInstructions.length > 0 && (
-                                <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-md">
-                                    <h5 className="font-medium text-purple-400 mb-2 text-sm">Setup Instructions:</h5>
-                                    <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                                        {deviceOwnerInstructions.map((instruction, i) => (
-                                            <li key={i}>{instruction.replace(/^\d+\.\s*/, "")}</li>
-                                        ))}
-                                    </ol>
-                                </div>
-                            )}
-
-                            {/* ADB Helper Script Download */}
-                            <div className="p-3 bg-neutral-900/50 rounded-md border border-white/10">
-                                <div className="flex justify-between items-center flex-wrap gap-2">
-                                    <div>
-                                        <h5 className="font-medium text-white text-sm">Internal Device Tool</h5>
-                                        <p className="text-[10px] text-muted-foreground">
-                                            For TopWise/Internal devices (no QR scan needed)
-                                        </p>
-                                    </div>
-                                    <a
-                                        href="/setup-kiosk.bat"
-                                        download="setup-kiosk.bat"
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded text-xs text-white transition-colors"
-                                    >
-                                        <Download size={14} /> Download Script
-                                    </a>
-                                </div>
-
-                                {/* Script Instructions */}
-                                <div className="text-[10px] text-muted-foreground border-t border-white/5 pt-2 mt-2">
-                                    <p className="font-medium mb-1 text-white/70">How to use:</p>
-                                    <ol className="list-decimal list-inside space-y-0.5 pl-1">
-                                        <li>Enable <strong>USB Debugging</strong> on the device</li>
-                                        <li>Remove <strong>ALL accounts</strong> (Google, etc.) from Settings</li>
-                                        <li>Connect via USB and run the downloaded script</li>
-                                    </ol>
-                                </div>
-                            </div>
-
-                            {/* APK URL Info */}
-                            {deviceOwnerApkUrl && (
-                                <div className="text-xs text-muted-foreground">
-                                    <span className="font-medium">APK URL:</span>{" "}
-                                    <code className="bg-neutral-900 px-2 py-0.5 rounded text-[10px] break-all">
-                                        {deviceOwnerApkUrl}
-                                    </code>
-                                </div>
-                            )}
-
-                            {/* Download QR Code */}
-                            <a
-                                href={`https://quickchart.io/qr?text=${encodeURIComponent(deviceOwnerQrContent)}&size=500&margin=2&download=1`}
-                                download="device-owner-qr.png"
-                                className="inline-flex items-center gap-2 px-3 py-2 border rounded-md hover:bg-foreground/5 text-sm"
-                            >
-                                <QrCode className="h-4 w-4" />
-                                Download QR Code Image
-                            </a>
-                        </div>
-                    )}
                 </div>
             )}
 
@@ -888,7 +771,7 @@ export default function TouchpointMonitoringPanel() {
                                         : "bg-background hover:bg-foreground/5"
                                         }`}
                                 >
-                                    None
+                                    None / No Lockdown
                                 </button>
                                 <button
                                     onClick={() => setProvisionLockdownMode("standard")}
@@ -897,7 +780,7 @@ export default function TouchpointMonitoringPanel() {
                                         : "bg-background hover:bg-foreground/5"
                                         }`}
                                 >
-                                    Standard
+                                    Standard Lockdown
                                 </button>
                                 <button
                                     onClick={() => setProvisionLockdownMode("device_owner")}
@@ -906,13 +789,13 @@ export default function TouchpointMonitoringPanel() {
                                         : "bg-background hover:bg-foreground/5"
                                         }`}
                                 >
-                                    Owner
+                                    Owner / Full Lockdown
                                 </button>
                             </div>
                             <p className="text-[10px] text-muted-foreground mt-1">
                                 {provisionLockdownMode === "none" && "No app lockdown - user can exit freely"}
                                 {provisionLockdownMode === "standard" && "Lock Task Mode - blocks back button, requires unlock code"}
-                                {provisionLockdownMode === "device_owner" && "Full MDM lockdown - requires factory reset to enable"}
+                                {provisionLockdownMode === "device_owner" && "Full MDM lockdown - use Terminal Setup first"}
                             </p>
 
                             {/* Setup instructions for Standard mode */}
@@ -933,16 +816,45 @@ export default function TouchpointMonitoringPanel() {
 
                             {/* Setup instructions for Device Owner mode */}
                             {provisionLockdownMode === "device_owner" && (
-                                <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-md">
-                                    <p className="text-xs font-medium text-red-400 mb-2">⚠️ Factory Reset Required</p>
+                                <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-md space-y-3">
+                                    <p className="text-xs font-medium text-red-400">⚠️ Owner / Full Lockdown Mode Setup Required</p>
+
+                                    {/* Brand Key Input for Script */}
+                                    <div className="flex items-center gap-2">
+                                        <label className="text-[10px] text-red-300/80 whitespace-nowrap">Brand Key:</label>
+                                        <input
+                                            type="text"
+                                            value={scriptBrandKey}
+                                            onChange={(e) => setScriptBrandKey(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                                            placeholder="e.g. xoinpay, paynex"
+                                            className="flex-1 h-7 px-2 rounded border bg-neutral-900 text-xs text-white placeholder:text-neutral-500"
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2">
+                                        <a
+                                            href={`/api/touchpoint/setup-script?brandKey=${scriptBrandKey || 'basaltsurge'}`}
+                                            download={`setup-${scriptBrandKey || 'basaltsurge'}-owner-mode.bat`}
+                                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-600 hover:bg-red-500 rounded text-[10px] text-white font-medium transition-colors"
+                                        >
+                                            <Download size={12} /> Download Setup Script ({scriptBrandKey || 'basaltsurge'})
+                                        </a>
+                                        <a
+                                            href="/setup-kiosk.bat"
+                                            download="setup-kiosk.bat"
+                                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-neutral-600 hover:bg-neutral-500 rounded text-[10px] text-white font-medium transition-colors"
+                                        >
+                                            <Download size={12} /> Generic Script (Manual)
+                                        </a>
+                                    </div>
+
                                     <ol className="text-[10px] text-red-300/80 space-y-1 list-decimal list-inside">
-                                        <li>Factory reset the device</li>
-                                        <li>During setup, tap the screen 6 times on the welcome screen</li>
-                                        <li>Scan the Device Owner QR code from admin settings</li>
-                                        <li>Complete the provisioning wizard</li>
+                                        <li>Enable <strong className="text-white">USB Debugging</strong> on device</li>
+                                        <li>Remove <strong className="text-white">ALL accounts</strong> from device</li>
+                                        <li>Connect via USB and run the downloaded script</li>
                                     </ol>
-                                    <p className="text-[10px] text-red-300/60 mt-2">
-                                        Device Owner mode provides silent updates and full lockdown.
+                                    <p className="text-[10px] text-red-300/60">
+                                        Enter partner brand key above, then download. Script auto-downloads their APK.
                                     </p>
                                 </div>
                             )}
