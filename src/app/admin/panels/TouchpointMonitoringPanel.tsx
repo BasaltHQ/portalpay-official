@@ -15,6 +15,9 @@ interface TouchpointDevice {
     configuredBy: string;
     lastSeen: string | null;
     ts: number;
+    // Command-pending flags (set when a remote command is queued)
+    clearDeviceOwner?: boolean;
+    wipeDevice?: boolean;
 }
 
 export default function TouchpointMonitoringPanel() {
