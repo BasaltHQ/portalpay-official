@@ -94,7 +94,7 @@ set "TEMP_APK=%TEMP%\\${brandKey}-touchpoint.apk"
 REM Try curl first, fall back to PowerShell
 where curl >nul 2>nul
 if %ERRORLEVEL%==0 (
-    curl -L -o "%TEMP_APK%" "${apkUrl}"
+    curl -f -L -o "%TEMP_APK%" "${apkUrl}"
 ) else (
     powershell -Command "Invoke-WebRequest -Uri '${apkUrl}' -OutFile '%TEMP_APK%'"
 )

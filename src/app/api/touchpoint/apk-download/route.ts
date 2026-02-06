@@ -28,14 +28,14 @@ export async function GET(req: NextRequest) {
 
         // Get APK from Azure Blob Storage
         const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
-        const container = String(process.env.PP_APK_CONTAINER || "apks").trim();
+        const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
 
         if (!conn) {
             return NextResponse.json({ error: "blob_storage_not_configured" }, { status: 503 });
         }
 
         try {
-            const prefix = String(process.env.PP_APK_BLOB_PREFIX || "").trim().replace(/^\/+|\/+$/g, "");
+            const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
             const blobName = prefix
                 ? `${prefix}/${brandKey}-touchpoint-signed.apk`
                 : `${brandKey}-touchpoint-signed.apk`;
