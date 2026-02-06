@@ -183,6 +183,7 @@ class MainActivity : ComponentActivity() {
                         Log.d(TAG, "Auto-installing mandatory update (Device Owner mode)")
                         otaUpdateManager.downloadAndInstall(info.downloadUrl)
                     }
+                }
             }
         }
     }
