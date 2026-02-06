@@ -36,7 +36,13 @@ export async function POST(req: NextRequest) {
         // For now, allow self-service creation of keys based on user roles if needed.
         // Let's assume starter is free for everyone.
 
-        const { apiKey, doc } = await createApiKeyDoc(auth.wallet, label, plan, ["default"], brandKey);
+        const defaultScopes = [
+            "receipts:read", "receipts:write",
+            "orders:read", "orders:create",
+            "inventory:read", "inventory:write",
+            "split:read", "split:write", "shop:read"
+        ];
+        const { apiKey, doc } = await createApiKeyDoc(auth.wallet, label, plan, defaultScopes, brandKey);
 
         return NextResponse.json({
             apiKey, // Return raw key once!

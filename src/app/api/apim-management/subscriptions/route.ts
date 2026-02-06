@@ -92,7 +92,12 @@ export async function POST(req: NextRequest) {
     const displayName = String(body.displayName || `${normalizedProductId} for ${wallet}`);
     const scopes = Array.isArray(body.scopes)
       ? body.scopes.map((s: any) => String(s))
-      : ["receipts:read", "receipts:write", "orders:create", "inventory:read", "inventory:write"];
+      : [
+        "receipts:read", "receipts:write",
+        "orders:read", "orders:create",
+        "inventory:read", "inventory:write",
+        "split:read", "split:write", "shop:read"
+      ];
 
     // thirdweb x402 payment enforcement:
     // - Pro and Enterprise require payment and will return 402 until settled

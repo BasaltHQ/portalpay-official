@@ -49,7 +49,13 @@ async function fetchSubscriptionDoc(subId: string): Promise<SubscriptionDoc | nu
     row.wallet = String(row.wallet || "").toLowerCase();
     row.scopes = Array.isArray(row.scopes) ? row.scopes.map((s) => String(s)) : [];
     // Runtime backfill for legacy subscriptions to ensure critical scopes are present
-    const backfill = ["receipts:read", "receipts:write", "orders:create", "inventory:read", "inventory:write"];
+    const backfill = [
+      "receipts:read", "receipts:write",
+      "orders:read", "orders:create",
+      "inventory:read", "inventory:write",
+      "split:read", "split:write", "shop:read"
+    ];
+
     for (const b of backfill) {
       if (!row.scopes.includes(b)) {
         row.scopes.push(b);
