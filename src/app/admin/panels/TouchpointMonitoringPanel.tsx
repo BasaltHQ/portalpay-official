@@ -940,11 +940,12 @@ export default function TouchpointMonitoringPanel() {
                                 <input
                                     type="text"
                                     value={buildEndpoint}
-                                    readOnly
-                                    className="w-full h-9 px-3 rounded-md border bg-neutral-900/50 text-muted-foreground text-sm font-mono cursor-not-allowed"
+                                    onChange={(e) => setBuildEndpoint(e.target.value)}
+                                    placeholder="https://your-domain.com"
+                                    className="w-full h-9 px-3 rounded-md border bg-background text-sm font-mono"
                                 />
                                 <p className="text-[10px] text-muted-foreground mt-1">
-                                    APK will connect to this domain ({buildEndpoint})
+                                    APK will connect to this domain. Override if using a custom domain (e.g., xpaypass.com instead of .azurewebsites.net)
                                 </p>
                             </div>
 
