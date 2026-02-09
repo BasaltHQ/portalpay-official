@@ -220,8 +220,8 @@ export async function getStoreDetails(storeId: string): Promise<any | null> {
  * Update store menu
  */
 export async function updateStoreMenu(storeId: string, menuPayload: any): Promise<{ ok: boolean; error?: string }> {
-    const result = await uberEatsApiCall(`/v2/eats/stores/${storeId}/menus`, {
-        method: "PUT",
+    const result = await uberEatsApiCall(`/v1/eats/stores/${storeId}/menu`, {
+        method: "POST",
         body: menuPayload
     });
     return { ok: result.ok, error: result.error };
