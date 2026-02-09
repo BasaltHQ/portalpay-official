@@ -1335,6 +1335,18 @@ function TerminalPage() {
   const [viewState, setViewState] = useState<"auth" | "terminal" | "admin">("auth");
   const [config, setConfig] = useState<SiteConfigResponse | null>(null);
 
+  // Detect Owner Mode (GeckoView in Android app) - restrict to email/phone login only
+  const isOwnerMode = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    // GeckoView user agent includes "Android" and often "Gecko" but not "Chrome"
+    // Also check for explicit ownerMode URL param
+    const urlParams = new URLSearchParams(window.location.search);
+    const ownerModeParam = urlParams.get("ownerMode") === "1" || urlParams.get("owner") === "1";
+    const isGeckoView = ua.includes("Android") && ua.includes("Gecko") && !ua.includes("Chrome");
+    return ownerModeParam || isGeckoView;
+  }, []);
+
   // Load Config (Theme & Merchant Wallet)
   useEffect(() => {
     fetch("/api/site/config", { headers: { "x-theme-caller": "terminal" } })
@@ -1418,6 +1430,7 @@ function TerminalPage() {
         brandName={theme.brandName}
         logoUrl={theme.brandLogoUrl}
         theme={theme}
+        isOwnerMode={isOwnerMode}
         onPinSuccess={handlePinSuccess}
         onAdminLogin={() => { /* Handled by thirdweb hook above */ }}
       />

@@ -31,6 +31,7 @@ export function getWallets(chain: Chain) {
   ];
 }
 
+<<<<<<< Updated upstream
 /**
  * Restricted wallet configuration for private partner containers requiring approval.
  * Only allows email and phone authentication - no external wallets or social logins.
@@ -44,6 +45,14 @@ export function getPrivateWallets(chain: Chain) {
           "email",
           "phone",
         ],
+=======
+// Owner Mode restricted wallets - only email and phone for GeckoView compatibility
+export function getOwnerModeWallets(chain: Chain) {
+  return [
+    inAppWallet({
+      auth: {
+        options: ["email", "phone"],
+>>>>>>> Stashed changes
       },
       executionMode: {
         mode: "EIP4337",
@@ -56,6 +65,7 @@ export function getPrivateWallets(chain: Chain) {
   ];
 }
 
+<<<<<<< Updated upstream
 /**
  * Wallet configuration for LOGIN on private partner containers.
  * Allows email, phone, and external wallets (MetaMask, Coinbase, WalletConnect).
@@ -82,3 +92,5 @@ export function getPrivateLoginWallets(chain: Chain) {
     createWallet("com.coinbase.wallet"),
   ];
 }
+=======
+>>>>>>> Stashed changes

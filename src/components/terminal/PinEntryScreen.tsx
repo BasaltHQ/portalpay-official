@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { ConnectButton } from "thirdweb/react";
-import { client, chain, getWallets } from "@/lib/thirdweb/client";
+import { client, chain, getWallets, getOwnerModeWallets } from "@/lib/thirdweb/client";
 import { usePortalThirdwebTheme, getConnectButtonStyle, connectButtonClass } from "@/lib/thirdweb/theme";
 
 interface PinEntryScreenProps {
@@ -10,6 +10,7 @@ interface PinEntryScreenProps {
     brandName?: string;
     logoUrl?: string;
     theme?: any;
+    isOwnerMode?: boolean; // When true, restrict to email/phone only
     onPinSuccess: (session: any) => void;
     onAdminLogin: () => void; // Called when wallet connects successfully as admin
 }
@@ -19,6 +20,7 @@ export default function PinEntryScreen({
     brandName,
     logoUrl,
     theme,
+    isOwnerMode = false,
     onPinSuccess,
     onAdminLogin
 }: PinEntryScreenProps) {
@@ -28,14 +30,15 @@ export default function PinEntryScreen({
     const [wallets, setWallets] = useState<any[]>([]);
     const twTheme = usePortalThirdwebTheme();
 
-    // Load wallets to ensure consistent SCA address generation
+    // Load wallets - use restricted options for Owner Mode (GeckoView compatibility)
     useEffect(() => {
         let mounted = true;
-        getWallets()
+        const loadWallets = isOwnerMode ? getOwnerModeWallets : getWallets;
+        loadWallets()
             .then((w) => { if (mounted) setWallets(w as any[]); })
             .catch(() => setWallets([]));
         return () => { mounted = false; };
-    }, []);
+    }, [isOwnerMode]);
 
     // Standard keypad digits
     const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9, "", 0, "⌫"];
@@ -145,8 +148,13 @@ export default function PinEntryScreen({
                 {/* Merchant/Admin Login */}
                 <div className="pt-6 text-center border-t border-dashed border-white/10">
                     <p className="text-xs text-muted-foreground mb-4 uppercase tracking-wider font-semibold">
-                        Merchant Access
+                        {isOwnerMode ? "Admin Access" : "Merchant Access"}
                     </p>
+                    {isOwnerMode && (
+                        <p className="text-xs text-muted-foreground/70 mb-3">
+                            Login with Email or Phone
+                        </p>
+                    )}
                     <div className="flex justify-center invert-0">
                         {wallets.length > 0 ? (
                             <ConnectButton
@@ -154,7 +162,7 @@ export default function PinEntryScreen({
                                 chain={chain}
                                 wallets={wallets}
                                 connectButton={{
-                                    label: "Admin Login",
+                                    label: isOwnerMode ? "Login" : "Admin Login",
                                     className: connectButtonClass,
                                     style: {
                                         ...getConnectButtonStyle(),

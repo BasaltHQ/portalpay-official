@@ -55,3 +55,6 @@ android/local.properties
 android/launcher/recovered
 
 /tools/jre-linux
+
+# resources
+/resources

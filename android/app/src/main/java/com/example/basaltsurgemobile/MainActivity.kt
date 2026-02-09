@@ -4,7 +4,9 @@ import android.app.ActivityManager
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -80,6 +82,26 @@ class MainActivity : ComponentActivity() {
         runtime = GeckoRuntime.create(this)
         val session = GeckoSession()
         session.open(runtime!!)
+        
+        // Enable popup/modal support for wallet connection dialogs (WalletConnect, etc.)
+        session.promptDelegate = object : GeckoSession.PromptDelegate {
+            override fun onAlertPrompt(
+                session: GeckoSession,
+                prompt: GeckoSession.PromptDelegate.AlertPrompt
+            ): GeckoResult<GeckoSession.PromptDelegate.PromptResponse> {
+                // Allow JavaScript alerts to display
+                Log.d(TAG, "Alert prompt: ${prompt.message}")
+                return GeckoResult.fromValue(prompt.dismiss())
+            }
+            
+            override fun onBeforeUnloadPrompt(
+                session: GeckoSession,
+                prompt: GeckoSession.PromptDelegate.BeforeUnloadPrompt
+            ): GeckoResult<GeckoSession.PromptDelegate.PromptResponse> {
+                // Allow page unload without confirmation
+                return GeckoResult.fromValue(prompt.confirm(GeckoSession.PromptDelegate.BeforeUnloadPrompt.AllowOrDeny.ALLOW))
+            }
+        }
         
         // Use BASE_DOMAIN from BuildConfig and append the setup path
         val setupUrl = "${BuildConfig.BASE_DOMAIN}/touchpoint/setup?scale=0.75"
@@ -393,7 +415,62 @@ class MainActivity : ComponentActivity() {
             }
             
             override fun onLoadRequest(session: GeckoSession, request: GeckoSession.NavigationDelegate.LoadRequest): GeckoResult<AllowOrDeny>? {
-                // Allow all requests - don't interfere with navigation
+                val url = request.uri
+                
+                // Wallet deep link schemes to intercept and launch external apps
+                val walletSchemes = listOf(
+                    "metamask://",
+                    "cbwallet://",
+                    "wc://",
+                    "trust://",
+                    "rainbow://",
+                    "uniswap://",
+                    "zerion://"
+                )
+                
+                // Check if this is a wallet deep link
+                if (walletSchemes.any { url.startsWith(it) }) {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        if (intent.resolveActivity(packageManager) != null) {
+                            Log.d(TAG, "Launching wallet app for: $url")
+                            startActivity(intent)
+                            return GeckoResult.fromValue(AllowOrDeny.DENY)
+                        } else {
+                            // Wallet app not installed - allow page to handle fallback (e.g., show QR)
+                            Log.w(TAG, "Wallet app not installed for: $url")
+                            return GeckoResult.fromValue(AllowOrDeny.ALLOW)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to launch wallet deep link: ${e.message}")
+                    }
+                }
+                
+                // Handle intent:// URLs (Android App Links used by WalletConnect)
+                if (url.startsWith("intent://")) {
+                    try {
+                        val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        if (intent.resolveActivity(packageManager) != null) {
+                            Log.d(TAG, "Launching intent URL: $url")
+                            startActivity(intent)
+                            return GeckoResult.fromValue(AllowOrDeny.DENY)
+                        } else {
+                            // Check for browser fallback URL
+                            val fallback = intent.getStringExtra("browser_fallback_url")
+                            if (!fallback.isNullOrEmpty()) {
+                                Log.d(TAG, "Using fallback URL: $fallback")
+                                session.loadUri(fallback)
+                                return GeckoResult.fromValue(AllowOrDeny.DENY)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to parse intent URL: ${e.message}")
+                    }
+                }
+                
+                // Allow all other requests
                 return GeckoResult.fromValue(AllowOrDeny.ALLOW)
             }
         }
