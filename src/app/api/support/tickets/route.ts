@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getContainer } from "@/lib/cosmos";
+import { createJiraTicket } from "@/lib/jira";
 import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +41,25 @@ export async function POST(req: NextRequest) {
         };
 
         await container.items.create(ticket);
+
+        // Sync to Jira Service Desk (fire-and-forget, don't block ticket creation)
+        try {
+            const jiraResult = await createJiraTicket(ticket as any);
+            if (jiraResult) {
+                // Update ticket with Jira reference
+                const partitionKey = ticket.wallet || ticket.user;
+                const linkedTicket = {
+                    ...ticket,
+                    jiraIssueKey: jiraResult.issueKey,
+                    jiraIssueId: jiraResult.issueId,
+                    jiraIssueUrl: jiraResult.issueUrl,
+                };
+                await container.item(ticket.id, partitionKey).replace(linkedTicket);
+                return headerJson({ ok: true, ticket: linkedTicket });
+            }
+        } catch (jiraErr) {
+            console.error("[Jira] Sync failed (non-blocking):", jiraErr);
+        }
 
         return headerJson({ ok: true, ticket });
     } catch (e: any) {

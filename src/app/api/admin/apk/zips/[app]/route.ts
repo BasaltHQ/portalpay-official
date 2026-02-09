@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireThirdwebAuth } from "@/lib/auth";
-import fs from "node:fs";
-import path from "node:path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import archiver from "archiver";
 import { Readable } from "node:stream";
 
@@ -211,7 +211,7 @@ function buildReadme(appKey: string, brandKey: string, isTouchpoint: boolean = f
     ].join("\n");
 }
 
-export async function GET(req: NextRequest, ctx: { params: Promise<{ app: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ app: string }> }) {
     try {
         const caller = await requireThirdwebAuth(req).catch(() => null);
         const roles = Array.isArray(caller?.roles) ? caller!.roles : [];
@@ -224,7 +224,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ app: string
         const { searchParams } = new URL(req.url);
         const brandParam = searchParams.get("brand");
 
-        const { app } = await ctx.params;
+        const { app } = await params;
         const requestedApp = String(app || "").toLowerCase().trim();
         if (!requestedApp) {
             return NextResponse.json({ error: "app_key_required" }, { status: 400 });

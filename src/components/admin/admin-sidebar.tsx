@@ -60,8 +60,8 @@ type AdminTabKey =
   | 'admins'
   | 'seoPages'
   | 'integrations'
-  | 'shopifyPartner'
-  | 'shopifyPlatform'
+  | 'plugins'
+  | 'pluginStudio'
   | 'support'
   | 'supportAdmin'
   | 'writersWorkshop'
@@ -356,7 +356,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
             { title: 'Branding', key: 'branding' as AdminTabKey },
             { title: 'Merchants', key: 'users' as AdminTabKey },
             { title: 'SEO Pages', key: 'seoPages' as AdminTabKey },
-            { title: 'Plugins', key: 'shopifyPartner' as AdminTabKey },
+            { title: 'Plugins', key: 'plugins' as AdminTabKey },
             // Client Requests: Show only in REQUEST mode (private) or superadmin
             ...((canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) ? [{ title: 'Client Requests', key: 'clientRequests' as AdminTabKey }] : []),
             ...(canAdmins ? [
@@ -379,7 +379,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
                 { title: 'Applications', key: 'applications' as AdminTabKey },
                 { title: 'Partners', key: 'partners' as AdminTabKey },
                 { title: 'Contracts', key: 'contracts' as AdminTabKey },
-                { title: 'Plugin Studio', key: 'shopifyPlatform' as AdminTabKey },
+                { title: 'Plugin Studio', key: 'pluginStudio' as AdminTabKey },
                 { title: 'Support Admin', key: 'supportAdmin' as AdminTabKey },
               ]
               : []),

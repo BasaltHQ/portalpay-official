@@ -293,6 +293,19 @@ export default function SupportAdminPanel() {
                                     <span>{selectedTicket.brandKey}</span>
                                     <span className="hidden sm:inline">•</span>
                                     <span>{new Date(selectedTicket.createdAt).toLocaleString()}</span>
+                                    {selectedTicket.jiraIssueKey && (
+                                        <a
+                                            href={selectedTicket.jiraIssueUrl || `https://ledger1ai.atlassian.net/browse/${selectedTicket.jiraIssueKey}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                                            title="Open in Jira"
+                                        >
+                                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M11.53 2c0 2.4 1.97 4.35 4.35 4.35h1.78v1.7c0 2.4 1.94 4.34 4.34 4.35V2.84a.84.84 0 0 0-.84-.84H11.53zM6.77 6.8a4.36 4.36 0 0 0 4.34 4.34h1.8v1.72a4.36 4.36 0 0 0 4.34 4.34V7.63a.84.84 0 0 0-.83-.83H6.77zM2 11.6a4.35 4.35 0 0 0 4.34 4.34h1.8v1.72A4.35 4.35 0 0 0 12.48 22v-9.57a.84.84 0 0 0-.84-.84H2z" /></svg>
+                                            {selectedTicket.jiraIssueKey}
+                                            <ExternalLink className="w-2.5 h-2.5" />
+                                        </a>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">

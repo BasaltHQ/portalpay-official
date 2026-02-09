@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getContainer } from "@/lib/cosmos";
+import { addJiraComment } from "@/lib/jira";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         }
 
         await container.item(existingTicket.id, partitionKey).replace(updatedTicket);
+
+        // Sync user reply to Jira (non-blocking)
+        if (existingTicket.jiraIssueKey) {
+            try {
+                await addJiraComment(
+                    existingTicket.brandKey || "platform",
+                    existingTicket.jiraIssueKey,
+                    response || "",
+                    false, // isAdmin = false (user reply)
+                    Array.isArray(attachments) ? attachments : []
+                );
+            } catch (jiraErr) {
+                console.error("[Jira] User reply sync failed (non-blocking):", jiraErr);
+            }
+        }
 
         return headerJson({ ok: true, ticket: updatedTicket });
     } catch (e: any) {

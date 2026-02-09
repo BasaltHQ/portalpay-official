@@ -11,7 +11,7 @@ import { useActiveAccount } from "thirdweb/react";
  * - Selecting Shopify opens the brand-scoped workspace below (copy/assets/extension/actions)
  * - Bottom microtext CTA asks partners to contact PortalPay LLC to enable additional plugins
  */
-export default function PartnerShopifyPanel() {
+export default function PartnerPluginsPanel() {
   const account = useActiveAccount();
 
   // Helper to resolve effective brand key
@@ -25,10 +25,13 @@ export default function PartnerShopifyPanel() {
   // Enabled states (today: only Shopify is wired; others default disabled)
   const [shopifyEnabled, setShopifyEnabled] = React.useState<boolean>(false);
   const [xshoppingEnabled, setXShoppingEnabled] = React.useState<boolean>(false);
+  const [jiraEnabled, setJiraEnabled] = React.useState<boolean>(false);
+  const [jiraConfig, setJiraConfig] = React.useState<any>({});
 
   // Workspace state
   type CatalogKey =
     | 'xshopping'
+    | 'jira'
     | 'shopify'
     | 'woocommerce'
     | 'stripe'
@@ -52,6 +55,7 @@ export default function PartnerShopifyPanel() {
   type CatalogPlugin = { key: CatalogKey; name: string; icon: string; description: string; tags: string[] };
   const catalog: CatalogPlugin[] = [
     { key: 'xshopping', name: 'X Shopping', icon: '𝕏', description: 'Sync product catalog to X', tags: ['Social', 'Commerce'] },
+    { key: 'jira', name: 'Jira Service Desk', icon: '/logos/jira.svg', description: 'Sync support tickets', tags: ['Support', 'Operations'] },
     { key: 'shopify', name: 'Shopify', icon: '/logos/shopify-payments.svg', description: 'Shopify app & checkout extension', tags: ['Commerce'] },
     { key: 'woocommerce', name: 'WooCommerce', icon: '/logos/woocommerce.svg', description: 'WooCommerce plugin (coming soon)', tags: ['Commerce'] },
     { key: 'stripe', name: 'Stripe', icon: '/logos/stripe.svg', description: 'Card payments + wallets', tags: ['Payments'] },
@@ -139,6 +143,16 @@ export default function PartnerShopifyPanel() {
         const rx = await fetch(`/api/admin/plugins/xshopping/config/${encodeURIComponent(targetBrand)}`, { cache: "no-store" });
         const jx = await rx.json().catch(() => ({}));
         setXShoppingEnabled(!!jx?.config?.enabled);
+      } catch { }
+
+      // Load Jira Config
+      try {
+        const rj = await fetch(`/api/admin/plugins/jira/config/${encodeURIComponent(targetBrand)}`, { cache: "no-store" });
+        const jj = await rj.json().catch(() => ({}));
+        if (jj?.config) {
+          setJiraConfig(jj.config);
+          setJiraEnabled(!!jj.config.enabled);
+        }
       } catch { }
 
       if (ok) {
@@ -339,6 +353,31 @@ export default function PartnerShopifyPanel() {
     }
   }
 
+  async function saveJiraConfig() {
+    setError(""); setInfo(""); setSaving(true);
+    try {
+      if (!brandKey?.trim()) { setError("Enter brandKey"); return; }
+      const targetBrand = getEffectiveBrandKey(brandKey);
+      if (!targetBrand) { setError("Invalid brandKey"); return; }
+
+      const payload = { ...jiraConfig, enabled: jiraEnabled };
+
+      const r = await fetch(`/api/admin/plugins/jira/config/${encodeURIComponent(targetBrand)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!r.ok) throw new Error("Failed to save Jira config");
+
+      setInfo("Jira configuration saved.");
+    } catch (e: any) {
+      setError(e.message || "Failed to save Jira config");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   // Catalog Item renderers with prominent disabled styling
   function enabledCornerBadge(enabled: boolean) {
     return (
@@ -371,6 +410,8 @@ export default function PartnerShopifyPanel() {
         <div className="h-12 w-12 rounded-md border bg-background flex items-center justify-center overflow-hidden">
           {plugin.key === 'xshopping' ? (
             <span className="text-3xl font-bold text-foreground">𝕏</span>
+          ) : plugin.key === 'jira' ? (
+            <span className="text-3xl font-bold text-blue-600">J</span>
           ) : (
             <img src={plugin.icon} alt={plugin.name} className={`h-8 w-8 object-contain rounded-md ${enabled ? '' : 'grayscale'}`} />
           )}
@@ -405,6 +446,8 @@ export default function PartnerShopifyPanel() {
         <div className="h-9 w-9 rounded-md border bg-background flex items-center justify-center overflow-hidden">
           {plugin.key === 'xshopping' ? (
             <span className="text-2xl font-bold text-foreground">𝕏</span>
+          ) : plugin.key === 'jira' ? (
+            <span className="text-2xl font-bold text-blue-600">J</span>
           ) : (
             <img src={plugin.icon} alt={plugin.name} className={`h-6 w-6 object-contain rounded-md ${enabled ? '' : 'grayscale'}`} />
           )}
@@ -438,6 +481,8 @@ export default function PartnerShopifyPanel() {
         <div className="h-8 w-8 rounded-md border bg-background flex items-center justify-center overflow-hidden">
           {plugin.key === 'xshopping' ? (
             <span className="text-xl font-bold text-foreground">𝕏</span>
+          ) : plugin.key === 'jira' ? (
+            <span className="text-xl font-bold text-blue-600">J</span>
           ) : (
             <img src={plugin.icon} alt={plugin.name} className={`h-6 w-6 object-contain rounded-md ${enabled ? '' : 'grayscale'}`} />
           )}
@@ -496,6 +541,9 @@ export default function PartnerShopifyPanel() {
                 } else if (p.key === 'xshopping') {
                   enabled = xshoppingEnabled;
                   configured = xshoppingEnabled;
+                } else if (p.key === 'jira') {
+                  enabled = jiraEnabled;
+                  configured = (jiraConfig?.baseUrl && jiraConfig?.userEmail && jiraConfig?.apiToken);
                 }
                 return (
                   <CatalogItemList key={p.key} plugin={p} enabled={enabled} configured={configured} onSelect={(key) => setSelectedPlugin(key)} />
@@ -514,6 +562,9 @@ export default function PartnerShopifyPanel() {
               } else if (p.key === 'xshopping') {
                 enabled = xshoppingEnabled;
                 configured = xshoppingEnabled;
+              } else if (p.key === 'jira') {
+                enabled = jiraEnabled;
+                configured = (jiraConfig?.baseUrl && jiraConfig?.userEmail && jiraConfig?.apiToken);
               }
               return viewMode === 'grid-compact'
                 ? <CatalogItemCompact key={p.key} plugin={p} enabled={enabled} configured={configured} onSelect={(key) => setSelectedPlugin(key)} />
@@ -581,6 +632,103 @@ export default function PartnerShopifyPanel() {
                 </div>
               </div>
             )}
+
+            {(info || error) && (
+              <div className={`rounded-md border p-2 text-sm ${error ? "text-red-600" : "text-emerald-600"}`}>{error || info}</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {selectedPlugin === 'jira' && (
+        <div className="rounded-md border p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-bold text-blue-600">J</span>
+              <div className="text-sm font-semibold">Jira Service Desk — {brandKey || '—'}</div>
+            </div>
+            <div className="text-xs text-muted-foreground">State: {jiraEnabled ? 'Enabled' : 'Disabled'}</div>
+          </div>
+
+          <div className="rounded-md border p-4 bg-background space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">Enable Integration</div>
+                <div className="microtext text-muted-foreground">Sync support tickets with Jira Service Desk.</div>
+              </div>
+              {/* Simple Toggle */}
+              <button
+                className={`w-12 h-6 rounded-full transition-colors flex items-center px-0.5 ${jiraEnabled ? 'bg-green-500' : 'bg-slate-200'}`}
+                onClick={() => setJiraEnabled(!jiraEnabled)}
+              >
+                <div className={`h-5 w-5 bg-white rounded-full shadow transition-transform ${jiraEnabled ? 'translate-x-[22px]' : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            {jiraEnabled && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="col-span-1 md:col-span-2">
+                  <label className="microtext">Jira Base URL (e.g. https://your-domain.atlassian.net)</label>
+                  <input
+                    className="mt-1 h-9 w-full px-3 border rounded-md bg-background"
+                    value={jiraConfig.baseUrl || ""}
+                    onChange={(e) => setJiraConfig({ ...jiraConfig, baseUrl: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <label className="microtext">User Email</label>
+                  <input
+                    className="mt-1 h-9 w-full px-3 border rounded-md bg-background"
+                    value={jiraConfig.userEmail || ""}
+                    onChange={(e) => setJiraConfig({ ...jiraConfig, userEmail: e.target.value })}
+                    placeholder="email@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="microtext">API Token</label>
+                  <input
+                    className="mt-1 h-9 w-full px-3 border rounded-md bg-background"
+                    type="password"
+                    value={jiraConfig.apiToken || ""}
+                    onChange={(e) => setJiraConfig({ ...jiraConfig, apiToken: e.target.value })}
+                    placeholder="Token"
+                  />
+                </div>
+                <div>
+                  <label className="microtext">Project Key (e.g. SUP)</label>
+                  <input
+                    className="mt-1 h-9 w-full px-3 border rounded-md bg-background"
+                    value={jiraConfig.projectKey || ""}
+                    onChange={(e) => setJiraConfig({ ...jiraConfig, projectKey: e.target.value })}
+                    placeholder="SUP"
+                  />
+                </div>
+                <div>
+                  <label className="microtext">Service Desk ID</label>
+                  <input
+                    className="mt-1 h-9 w-full px-3 border rounded-md bg-background"
+                    value={jiraConfig.serviceDeskId || ""}
+                    onChange={(e) => setJiraConfig({ ...jiraConfig, serviceDeskId: e.target.value })}
+                    placeholder="1"
+                  />
+                </div>
+                <div className="col-span-1 md:col-span-2">
+                  <label className="microtext">Webhook Secret (Optional)</label>
+                  <input
+                    className="mt-1 h-9 w-full px-3 border rounded-md bg-background"
+                    type="password"
+                    value={jiraConfig.webhookSecret || ""}
+                    onChange={(e) => setJiraConfig({ ...jiraConfig, webhookSecret: e.target.value })}
+                    placeholder="Secret for verifying webhooks"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <button type="button" className="px-3 py-1.5 border rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={saveJiraConfig} disabled={saving}>{saving ? "Saving…" : "Save Configuration"}</button>
+            </div>
 
             {(info || error) && (
               <div className={`rounded-md border p-2 text-sm ${error ? "text-red-600" : "text-emerald-600"}`}>{error || info}</div>

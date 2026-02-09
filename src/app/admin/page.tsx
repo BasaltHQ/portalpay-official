@@ -43,8 +43,8 @@ import DeviceInstallerPanel from "@/app/admin/panels/DeviceInstallerPanel";
 import TouchpointMonitoringPanel from "@/app/admin/panels/TouchpointMonitoringPanel";
 import AdminManagementPanel from "@/app/admin/panels/AdminManagementPanel";
 import IntegrationsPanel from "@/app/admin/panels/IntegrationsPanel";
-import ShopifyIntegrationPanel from "@/app/admin/panels/ShopifyIntegrationPanel";
-import PartnerShopifyPanel from "@/app/admin/panels/PartnerShopifyPanel";
+import PlatformPluginsPanel from "@/app/admin/panels/PlatformPluginsPanel";
+import PartnerPluginsPanel from "@/app/admin/panels/PartnerPluginsPanel";
 import GlobalArtPanel from "@/app/admin/panels/GlobalArtPanel";
 import GetSupportPanel from "@/app/admin/panels/GetSupportPanel";
 import SupportAdminPanel from "@/app/admin/panels/SupportAdminPanel";
@@ -9436,12 +9436,13 @@ export default function AdminPage() {
       {activeTab === "seoPages" && (canBranding || isSuperadmin) && (
         <SEOLandingPagesPanel />
       )}
-      {activeTab === "shopifyPartner" && (canBranding || isSuperadmin) && (
-        <PartnerShopifyPanel />
+      {activeTab === "plugins" && (canBranding || isSuperadmin) && (
+        <PartnerPluginsPanel />
       )}
-      {activeTab === "shopifyPlatform" && isPlatform && isSuperadmin && (
-        <ShopifyIntegrationPanel />
+      {activeTab === "pluginStudio" && isPlatform && isSuperadmin && (
+        <PlatformPluginsPanel />
       )}
+
       {activeTab === "clientRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
         <div className="glass-pane rounded-xl border p-6">
           <ClientRequestsPanel />

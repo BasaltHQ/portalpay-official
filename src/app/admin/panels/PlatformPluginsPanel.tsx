@@ -14,7 +14,7 @@ import { ShieldCheckIcon, KeyIcon, LockIcon, RefreshCwIcon, CheckCircle2Icon, Al
  * - Shopify implements full configuration; other plugins show branded placeholders for now
  * - View modes: Full Grid, Compact Grid, List. Status/tags use microtext with no infill and bold colors.
  */
-export default function ShopifyIntegrationPanel() {
+export default function PlatformPluginsPanel() {
   const account = useActiveAccount();
 
   // Brand selection
@@ -48,7 +48,8 @@ export default function ShopifyIntegrationPanel() {
     | 'authnet'
     | 'adyen'
     | 'cybersource'
-    | 'xshopping';
+    | 'xshopping'
+    | 'jira';
 
 
   type WorkspaceSection = 'overview' | 'configuration' | 'oauth' | 'extension' | 'deploy' | 'status' | 'verification' | 'publish';
@@ -77,6 +78,7 @@ export default function ShopifyIntegrationPanel() {
     { key: 'adyen', name: 'Adyen', icon: '/logos/adyen.svg', description: 'Global payments', tags: ['Payments'] },
     { key: 'cybersource', name: 'CyberSource', icon: '/logos/cybersource.svg', description: 'Payments gateway', tags: ['Gateway'] },
     { key: 'xshopping', name: 'X Shopping', icon: '𝕏', description: 'X Shopping Integration', tags: ['Commerce', 'Social'] },
+    { key: 'jira', name: 'Jira Service Desk', icon: '/logos/jira.svg', description: 'Sync support tickets', tags: ['Support'] },
   ];
 
 
@@ -99,6 +101,8 @@ export default function ShopifyIntegrationPanel() {
 
   // X Shopping Config State
   const [xshoppingConfig, setXshoppingConfig] = React.useState<{ enabled: boolean }>({ enabled: false });
+  const [jiraConfig, setJiraConfig] = React.useState<any>({});
+  const [jiraEnabled, setJiraEnabled] = React.useState<boolean>(false);
 
   // Modal State
   const [showWarningModal, setShowWarningModal] = React.useState(false);
@@ -135,6 +139,19 @@ export default function ShopifyIntegrationPanel() {
           }
         })
         .catch(e => console.error("Failed to load X Shopping config:", e));
+    } else if (selectedPlugin === 'jira') {
+      fetch(`/api/admin/plugins/jira/config/${encodeURIComponent(brandKey)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.config) {
+            setJiraConfig(data.config);
+            setJiraEnabled(!!data.config.enabled);
+          } else {
+            setJiraConfig({});
+            setJiraEnabled(false);
+          }
+        })
+        .catch(e => console.error("Failed to load Jira config:", e));
     }
   }, [selectedPlugin, brandKey]);
 
@@ -176,9 +193,30 @@ export default function ShopifyIntegrationPanel() {
 
   // ... (keep existing render helpers) ...
 
+  async function saveJiraConfig() {
+    setSaving(true);
+    setInfo("");
+    setError("");
+    try {
+      const payload = { ...jiraConfig, enabled: jiraEnabled };
+      const res = await fetch(`/api/admin/plugins/jira/config/${encodeURIComponent(brandKey)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      setInfo("Jira configuration saved.");
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function renderPluginWorkspace(section: WorkspaceSection) {
     if (selectedPlugin === 'ubereats') return renderUberEatsContent(section);
     if (selectedPlugin === 'xshopping') return renderXShoppingContent(section);
+    if (selectedPlugin === 'jira') return renderJiraContent(section);
     if (selectedPlugin === 'shopify') return renderShopifySection(section);
     return renderPlaceholderSection(section, selectedPlugin || "");
   }
@@ -241,6 +279,154 @@ export default function ShopifyIntegrationPanel() {
               <div className="pt-4 flex items-center justify-end border-t mt-2">
                 <button
                   onClick={saveXShoppingConfig}
+                  disabled={saving}
+                  className="px-6 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
+                >
+                  {saving ? "Saving..." : "Save Configuration"}
+                </button>
+              </div>
+
+              {info && (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 text-sm border border-emerald-100 dark:border-emerald-900/30">
+                  <CheckCircle2Icon className="w-4 h-4" /> {info}
+                </div>
+              )}
+              {error && (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-sm border border-red-100 dark:border-red-900/30">
+                  <AlertCircleIcon className="w-4 h-4" /> {error}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  }
+
+  function renderJiraContent(section: WorkspaceSection) {
+    switch (section) {
+      case 'overview':
+        return (
+          <div className="space-y-4 max-w-2xl">
+            <div className="rounded-md border p-6 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-3xl font-bold text-white">J</div>
+                <div>
+                  <h3 className="text-xl font-bold">Jira Service Desk</h3>
+                  <p className="text-muted-foreground">Sync PortalPay support tickets with Atlassian Jira.</p>
+                </div>
+              </div>
+              <div className="pt-4 border-t">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground">Status</div>
+                    <div className={`font-medium ${jiraEnabled ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {jiraEnabled ? 'Active' : 'Disabled'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground">Version</div>
+                    <div className="font-medium">1.0.0</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'configuration':
+        return (
+          <div className="space-y-6 animate-in fade-in duration-300 max-w-3xl">
+            <div className="glass-pane border p-6 rounded-xl space-y-6">
+              <div className="border-b pb-4">
+                <h3 className="font-semibold text-lg">Configuration</h3>
+                <p className="text-sm text-muted-foreground">Manage Jira credentials for this brand.</p>
+              </div>
+
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-background">
+                <div>
+                  <div className="font-medium">Enable Jira Integration</div>
+                  <div className="text-sm text-muted-foreground">Sync tickets for {brandKey}.</div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={jiraEnabled}
+                    onChange={(e) => setJiraEnabled(e.target.checked)}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              {jiraEnabled && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="col-span-1 md:col-span-2">
+                    <label className="block text-sm font-medium mb-1.5">Jira Base URL</label>
+                    <input
+                      type="text"
+                      className="w-full h-10 px-3 rounded-md border bg-background"
+                      value={jiraConfig.baseUrl || ""}
+                      onChange={(e) => setJiraConfig({ ...jiraConfig, baseUrl: e.target.value })}
+                      placeholder="https://your-domain.atlassian.net"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">User Email</label>
+                    <input
+                      type="text"
+                      className="w-full h-10 px-3 rounded-md border bg-background"
+                      value={jiraConfig.userEmail || ""}
+                      onChange={(e) => setJiraConfig({ ...jiraConfig, userEmail: e.target.value })}
+                      placeholder="user@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">API Token</label>
+                    <input
+                      type="password"
+                      className="w-full h-10 px-3 rounded-md border bg-background"
+                      value={jiraConfig.apiToken || ""}
+                      onChange={(e) => setJiraConfig({ ...jiraConfig, apiToken: e.target.value })}
+                      placeholder="Atlassian API Token"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Project Key</label>
+                    <input
+                      type="text"
+                      className="w-full h-10 px-3 rounded-md border bg-background"
+                      value={jiraConfig.projectKey || ""}
+                      onChange={(e) => setJiraConfig({ ...jiraConfig, projectKey: e.target.value })}
+                      placeholder="SUP"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Service Desk ID</label>
+                    <input
+                      type="text"
+                      className="w-full h-10 px-3 rounded-md border bg-background"
+                      value={jiraConfig.serviceDeskId || ""}
+                      onChange={(e) => setJiraConfig({ ...jiraConfig, serviceDeskId: e.target.value })}
+                      placeholder="1"
+                    />
+                  </div>
+                  <div className="col-span-1 md:col-span-2">
+                    <label className="block text-sm font-medium mb-1.5">Webhook Secret (Optional)</label>
+                    <input
+                      type="password"
+                      className="w-full h-10 px-3 rounded-md border bg-background"
+                      value={jiraConfig.webhookSecret || ""}
+                      onChange={(e) => setJiraConfig({ ...jiraConfig, webhookSecret: e.target.value })}
+                      placeholder="Secret for verifying webhooks"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4 flex items-center justify-end border-t mt-2">
+                <button
+                  onClick={saveJiraConfig}
                   disabled={saving}
                   className="px-6 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
                 >

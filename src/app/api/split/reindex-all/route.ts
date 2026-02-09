@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getContainer } from "@/lib/cosmos";
 import { requireRole } from "@/lib/auth";
 import { fetchEthRates, fetchBtcUsd, fetchXrpUsd, fetchSolUsd } from "@/lib/eth";
-import crypto from "node:crypto";
+import * as crypto from "node:crypto";
 import { getClient, chain } from "@/lib/thirdweb/client";
 import { getContract, readContract } from "thirdweb";
 

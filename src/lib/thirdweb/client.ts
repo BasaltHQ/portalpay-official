@@ -59,7 +59,6 @@ export async function getWallets() {
   return mod.getWallets(chain);
 }
 
-<<<<<<< Updated upstream
 // Restricted wallets for private partner containers (email + phone only) - for SIGNUP
 export async function getPrivateWallets() {
   if (typeof window === "undefined") return [] as any[];
@@ -72,13 +71,13 @@ export async function getPrivateLoginWallets() {
   if (typeof window === "undefined") return [] as any[];
   const mod = await import("./wallets");
   return mod.getPrivateLoginWallets(chain);
-=======
+}
+
 // Owner Mode restricted wallets - only email and phone for GeckoView compatibility
 export async function getOwnerModeWallets() {
   if (typeof window === "undefined") return [] as any[];
   const mod = await import("./wallets");
   return mod.getOwnerModeWallets(chain);
->>>>>>> Stashed changes
 }
 
 export function getRecipientAddress(): `0x${string}` {
