@@ -82,6 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ bra
             ...(existing || {}),
             id: docId,
             partitionKey: normalizedBrandKey,
+            wallet: normalizedBrandKey, // Required for partition key (container partitioned by /wallet)
 
             enabled: enabled ?? existing?.enabled ?? false,
             baseUrl: baseUrl || existing?.baseUrl,
