@@ -34,26 +34,22 @@ export function replacePlatformReferences(
         process.env.NEXT_PUBLIC_APP_URL ||
         '';
 
-    // Replace full API URLs (https://api.pay.ledger1.ai/portalpay → {baseUrl}/{brandKey})
-    // This handles the primary case from the docs
+    // Replace full API URLs (https://api.pay.ledger1.ai/portalpay → {baseUrl})
+    // Each container serves its own API directly — no /{brandKey} prefix needed
     result = result.replace(
         /https?:\/\/api\.pay\.ledger1\.ai\/portalpay/gi,
-        `${baseUrl}/${brandKey}`
+        baseUrl
     );
 
-    // Replace pay.ledger1.ai domain references - ensure brandKey is appended for API consistency
+    // Replace pay.ledger1.ai domain references
     result = result.replace(
         /https?:\/\/pay\.ledger1\.ai/gi,
-        `${baseUrl}/${brandKey}`
+        baseUrl
     );
 
-    // Replace remaining /portalpay path prefixes (in case there are standalone references)
-    // This catches:
-    //   - `/portalpay/api/...` in markdown headers like `## POST /portalpay/api/orders`
-    //   - Backtick-wrapped paths like `/portalpay/healthz`
-    //   - Inline code and regular text references
-    // Match /portalpay followed by / or end of word (using word boundary-like pattern)
-    result = result.replace(/\/portalpay(?=\/|[^a-zA-Z0-9_-]|$)/gi, `/${brandKey}`);
+    // Replace remaining /portalpay path prefixes (legacy docs references)
+    // /portalpay/api/... → /api/...  (each container serves routes directly)
+    result = result.replace(/\/portalpay(?=\/|[^a-zA-Z0-9_-]|$)/gi, '');
 
     // Replace hardcoded "PortalPay" in environment variables with DYNAMIC brand name
     // e.g., PORTALPAY_SUBSCRIPTION_KEY -> BASALTSURGE_SUBSCRIPTION_KEY
@@ -100,12 +96,12 @@ export function applyBrandingToTryItConfig(
     // If the config has a baseUrl with portalpay references, replace them
     if (result.baseUrl) {
         result.baseUrl = result.baseUrl
-            .replace(/https?:\/\/api\.pay\.ledger1\.ai\/portalpay/gi, `${baseUrl}/${brandKey}`)
+            .replace(/https?:\/\/api\.pay\.ledger1\.ai\/portalpay/gi, baseUrl)
             .replace(/https?:\/\/pay\.ledger1\.ai/gi, baseUrl)
-            .replace(/\/portalpay(?=\/|$)/gi, `/${brandKey}`);
+            .replace(/\/portalpay(?=\/|$)/gi, '');
     } else {
-        // Set default baseUrl based on current origin
-        result.baseUrl = `${baseUrl}/${brandKey}`;
+        // Set default baseUrl to current origin (each container serves its own API)
+        result.baseUrl = baseUrl;
     }
 
     return result;
@@ -113,8 +109,9 @@ export function applyBrandingToTryItConfig(
 
 /**
  * Get the dynamic API path prefix for the current brand.
- * Use this instead of hardcoded '/portalpay'.
+ * Each container serves its own API at /api/* — no brand prefix needed.
+ * @deprecated No longer used; each container serves routes directly.
  */
 export function getBrandApiPrefix(brandKey: string): string {
-    return `/${brandKey}`;
+    return '';
 }

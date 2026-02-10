@@ -29,7 +29,7 @@ export interface CachedToken {
  * Get API base URL based on environment
  */
 export function getApiBaseUrl(isSandbox: boolean): string {
-    return isSandbox ? "https://sandbox-api.uber.com" : "https://api.uber.com";
+    return isSandbox ? "https://test-api.uber.com" : "https://api.uber.com";
 }
 
 /**
@@ -198,6 +198,18 @@ export async function uberEatsApiCall<T = any>(
         console.error("[UberEats API] Request failed:", err);
         return { ok: false, error: err.message };
     }
+}
+
+/**
+ * List all stores accessible to this account
+ */
+export async function listStores(): Promise<any[] | null> {
+    const result = await uberEatsApiCall<any>(`/v1/eats/stores`);
+    if (!result.ok) {
+        console.error("[UberEats] Failed to list stores:", result.error);
+        return null;
+    }
+    return result.data?.stores || result.data || [];
 }
 
 /**

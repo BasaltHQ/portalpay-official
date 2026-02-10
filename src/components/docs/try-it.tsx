@@ -67,18 +67,11 @@ export function TryIt({ config }: { config: TryItConfig }) {
     }
   }, []);
 
-  // Use browser origin as the base URL, applying brand key replacement to any config baseUrl
+  // Use browser origin as the base URL (each container serves its own API directly)
   const effectiveBaseUrl = useMemo(() => {
     const origin = browserOrigin || process.env.NEXT_PUBLIC_APP_URL || '';
-    if (configBaseUrl) {
-      // Replace any hardcoded portalpay references with the current origin/brand
-      return configBaseUrl
-        .replace(/https?:\/\/api\.pay\.ledger1\.ai\/portalpay/gi, `${origin}/${brandKey}`)
-        .replace(/https?:\/\/pay\.ledger1\.ai/gi, origin)
-        .replace(/\/portalpay(?=\/|$)/gi, `/${brandKey}`);
-    }
-    return origin;
-  }, [configBaseUrl, browserOrigin, brandKey]);
+    return configBaseUrl || origin;
+  }, [configBaseUrl, browserOrigin]);
 
   const [baseUrl, setBaseUrl] = useState(effectiveBaseUrl);
 
@@ -109,19 +102,8 @@ export function TryIt({ config }: { config: TryItConfig }) {
 
   const urlWithParams = useMemo(() => {
     try {
-      const pathForUrl = (() => {
-        try {
-          const u = new URL(baseUrl);
-          const host = u.hostname.toLowerCase();
-          const pathname = u.pathname;
-          // Always route developer API calls through /{brandKey} for /api/* and /healthz
-          if (path.startsWith('/api/') || path === '/healthz') {
-            return '/' + brandKey + path;
-          }
-        } catch { }
-        return path;
-      })();
-      const url = new URL(pathForUrl, baseUrl);
+      // Routes are served directly by each container at /api/* — no brand prefix needed
+      const url = new URL(path, baseUrl);
       for (const q of query) {
         const raw = queryState[q.name];
         if (raw === undefined || raw === '') continue;
@@ -144,18 +126,9 @@ export function TryIt({ config }: { config: TryItConfig }) {
       let res: Response;
 
       if (useProxy) {
-        // Use server-side proxy to avoid CORS and ensure AFD origin enforcement
-        // Compute APIM route when targeting AFD → APIM (prefix /portalpay for /api/* paths)
-        let effectivePath = path;
-        try {
-          const u = new URL(baseUrl);
-          const host = u.hostname.toLowerCase();
-          const pathname = u.pathname;
-          // Always route developer API calls through /{brandKey} for /api/* and /healthz
-          if (path.startsWith('/api/') || path === '/healthz') {
-            effectivePath = '/' + brandKey + path;
-          }
-        } catch { }
+        // Use server-side proxy to avoid CORS
+        // Routes are served directly by each container — no brand prefix needed
+        const effectivePath = path;
         const headersObj: Record<string, string> = apiKey ? { [headerName]: apiKey } : {};
         if (includeTrace) {
           headersObj['Ocp-Apim-Trace'] = 'true';
@@ -329,7 +302,7 @@ export function TryIt({ config }: { config: TryItConfig }) {
                 placeholder={process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.example.com'}
               />
               <p className="mt-1 text-xs text-muted-foreground overflow-wrap-anywhere">
-                Default is APP_URL. For AFD, enter only the AFD endpoint host (e.g., https://afd-endpoint-...) without any path; the /{brandKey} prefix is added automatically for /api/* and /healthz.
+                Default is APP_URL. API paths (e.g., /api/shop/config) are served directly by each container.
               </p>
             </div>
             <div className="min-w-0">
@@ -415,8 +388,8 @@ export function TryIt({ config }: { config: TryItConfig }) {
           </button>
           <span className="text-xs text-muted-foreground min-w-0 leading-snug overflow-wrap-anywhere" style={{ flex: '1 1 0' }}>
             {useProxy
-              ? 'Using server-side proxy to avoid CORS. Requests go through /api/tryit-proxy to AFD/APIM.'
-              : 'Direct requests to AFD. May be blocked by CORS from local/container. Enable proxy if needed.'}
+              ? 'Using server-side proxy to avoid CORS. Requests go through /api/tryit-proxy.'
+              : 'Direct requests to the API. May be blocked by CORS from local/container. Enable proxy if needed.'}
           </span>
         </div>
 
