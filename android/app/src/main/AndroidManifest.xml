@@ -64,6 +64,15 @@
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
             </intent-filter>
         </receiver>
+
+        <!-- Rescue Receiver - For emergency ADB recovery -->
+        <receiver
+            android:name=".RescueReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.example.basaltsurgemobile.RESCUE_REMOVE_OWNER" />
+            </intent-filter>
+        </receiver>
         
         <!-- FileProvider for APK installation -->
         <provider
