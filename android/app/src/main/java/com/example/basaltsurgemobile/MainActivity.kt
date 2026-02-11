@@ -99,7 +99,7 @@ class MainActivity : ComponentActivity() {
                 prompt: GeckoSession.PromptDelegate.BeforeUnloadPrompt
             ): GeckoResult<GeckoSession.PromptDelegate.PromptResponse> {
                 // Allow page unload without confirmation
-                return GeckoResult.fromValue(prompt.confirm(GeckoSession.PromptDelegate.BeforeUnloadPrompt.AllowOrDeny.ALLOW))
+                return GeckoResult.fromValue(prompt.confirm(AllowOrDeny.ALLOW))
             }
         }
         
