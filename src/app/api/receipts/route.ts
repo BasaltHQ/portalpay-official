@@ -259,7 +259,14 @@ export async function POST(req: NextRequest) {
       } catch { }
     }
 
-    const paymentUrl = `https://surge.basalthq.com/pay/${encodeURIComponent(id)}`;
+    // Derive origin from request headers so partner containers get their own domain
+    const xfProto = req.headers.get("x-forwarded-proto");
+    const xfHost = req.headers.get("x-forwarded-host");
+    const host = req.headers.get("host");
+    const proto = xfProto || (process.env.NODE_ENV === "production" ? "https" : "http");
+    const h = xfHost || host || "";
+    const origin = h ? `${proto}://${h}` : (process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin);
+    const paymentUrl = `${origin}/portal/${encodeURIComponent(id)}`;
     return NextResponse.json(
       { id, paymentUrl, status: "pending" },
       { status: 201, headers: { "x-correlation-id": correlationId } }
