@@ -107,11 +107,14 @@ class MainActivity : ComponentActivity() {
         val setupUrl = "${BuildConfig.BASE_DOMAIN}/touchpoint/setup?scale=0.75"
         session.loadUri(setupUrl)
         
+        // Check for install permission (required for standard updates)
+        checkInstallPermission()
+        
         // Setup back button handler for lockdown mode
         setupBackPressedHandler()
         
-        // Check for OTA updates
-        checkForUpdates()
+        // Start periodic update checks
+        startUpdatePolling()
 
         enableEdgeToEdge()
         setContent {
@@ -211,6 +214,25 @@ class MainActivity : ComponentActivity() {
     }
     
     /**
+     * Check if we have permission to request package installs.
+     * Required for non-Device Owner updates on Android 8+
+     */
+    private fun checkInstallPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            if (!packageManager.canRequestPackageInstalls()) {
+                val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+                // If we are device owner, we don't need to ask (we can silent install)
+                if (!dpm.isDeviceOwnerApp(packageName)) {
+                    val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                    intent.data = Uri.parse("package:$packageName")
+                    startActivity(intent)
+                    Toast.makeText(this, "Please allow 'Install unknown apps' for updates", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+    
+    /**
      * Periodically poll the platform API for config updates and remote commands.
      * This enables:
      * - Dynamic unlock code updates without re-provisioning
@@ -268,6 +290,19 @@ class MainActivity : ComponentActivity() {
                 } catch (e: Exception) {
                     Log.e(TAG, "Config polling error: ${e.message}")
                 }
+            }
+        }
+    }
+    
+    private fun startUpdatePolling() {
+        lifecycleScope.launch {
+            // Initial check
+            checkForUpdates()
+            
+            while (true) {
+                // Check every 60 minutes
+                delay(60 * 60 * 1000L) 
+                checkForUpdates()
             }
         }
     }

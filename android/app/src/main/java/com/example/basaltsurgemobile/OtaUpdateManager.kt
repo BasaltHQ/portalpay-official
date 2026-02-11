@@ -154,7 +154,28 @@ class OtaUpdateManager(private val context: Context) {
     /**
      * Install an APK file
      */
+    /**
+     * Install an APK file
+     */
     private fun installApk(apkUri: Uri) {
+        try {
+            // Check if we are Device Owner
+            val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as android.app.admin.DevicePolicyManager
+            val isDeviceOwner = dpm.isDeviceOwnerApp(context.packageName)
+            
+            if (isDeviceOwner) {
+                Log.d(TAG, "Device Owner detected - attempting silent install")
+                installPackageSilently(apkUri)
+            } else {
+                Log.d(TAG, "Not Device Owner - attempting interactive install")
+                installPackageInteractively(apkUri)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error preparing installation: ${e.message}")
+        }
+    }
+
+    private fun installPackageInteractively(apkUri: Uri) {
         try {
             val file = File(apkUri.path ?: return)
             
@@ -174,10 +195,55 @@ class OtaUpdateManager(private val context: Context) {
             }
             
             context.startActivity(intent)
-            Log.d(TAG, "Install intent launched for: $apkUri")
+            Log.d(TAG, "Interactive install intent launched for: $apkUri")
             
         } catch (e: Exception) {
-            Log.e(TAG, "Error installing APK: ${e.message}")
+            Log.e(TAG, "Error installing APK interactively: ${e.message}")
+        }
+    }
+    
+    private fun installPackageSilently(apkUri: Uri) {
+        try {
+            val file = File(apkUri.path ?: return)
+            val inputStream = java.io.FileInputStream(file)
+            val packageInstaller = context.packageManager.packageInstaller
+            val params = android.content.pm.PackageInstaller.SessionParams(
+                android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL
+            )
+            
+            // Create a session
+            val sessionId = packageInstaller.createSession(params)
+            val session = packageInstaller.openSession(sessionId)
+            
+            // Stream the APK to the session
+            val out = session.openWrite("COSU_Update", 0, -1)
+            val buffer = ByteArray(65536)
+            var c: Int
+            while (inputStream.read(buffer).also { c = it } != -1) {
+                out.write(buffer, 0, c)
+            }
+            session.fsync(out)
+            inputStream.close()
+            out.close()
+            
+            // Create a pending intent for the result
+            val intent = Intent(context, BootReceiver::class.java)
+            intent.action = "com.example.basaltsurgemobile.INSTALL_COMPLETE"
+            val pendingIntent = android.app.PendingIntent.getBroadcast(
+                context, 
+                0, 
+                intent, 
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_MUTABLE
+            )
+            
+            // Commit the session
+            session.commit(pendingIntent.intentSender)
+            Log.d(TAG, "Silent install session committed")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during silent install: ${e.message}")
+            // Fallback to interactive
+            installPackageInteractively(apkUri)
         }
     }
     

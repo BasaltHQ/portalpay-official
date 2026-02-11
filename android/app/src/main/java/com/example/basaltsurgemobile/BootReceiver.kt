@@ -27,7 +27,8 @@ class BootReceiver : BroadcastReceiver() {
         // Handle both standard boot and quick boot (some manufacturers use this)
         if (action == Intent.ACTION_BOOT_COMPLETED || 
             action == "android.intent.action.QUICKBOOT_POWERON" ||
-            action == "com.htc.intent.action.QUICKBOOT_POWERON") {
+            action == "com.htc.intent.action.QUICKBOOT_POWERON" ||
+            action == "com.example.basaltsurgemobile.INSTALL_COMPLETE") {
             
             Log.d(TAG, "Boot completed, launching app...")
             
