@@ -98,10 +98,16 @@ export function applyBrandingToTryItConfig(
         result.baseUrl = result.baseUrl
             .replace(/https?:\/\/api\.pay\.ledger1\.ai\/portalpay/gi, baseUrl)
             .replace(/https?:\/\/pay\.ledger1\.ai/gi, baseUrl)
+            .replace(/https?:\/\/api\.pay\.ledger1\.ai/gi, baseUrl)
             .replace(/\/portalpay(?=\/|$)/gi, '');
     } else {
         // Set default baseUrl to current origin (each container serves its own API)
         result.baseUrl = baseUrl;
+    }
+
+    // Strip /portalpay prefix from path (each container serves routes directly at /api/*)
+    if (result.path && typeof result.path === 'string') {
+        result.path = result.path.replace(/^\/portalpay(?=\/|$)/i, '') || '/';
     }
 
     return result;

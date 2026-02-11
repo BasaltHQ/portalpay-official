@@ -266,7 +266,7 @@ export async function POST(req: NextRequest) {
     const proto = xfProto || (process.env.NODE_ENV === "production" ? "https" : "http");
     const h = xfHost || host || "";
     const origin = h ? `${proto}://${h}` : (process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin);
-    const paymentUrl = `${origin}/portal/${encodeURIComponent(id)}`;
+    const paymentUrl = `${origin}/portal/${encodeURIComponent(id)}?recipient=${encodeURIComponent(wallet)}`;
     return NextResponse.json(
       { id, paymentUrl, status: "pending" },
       { status: 201, headers: { "x-correlation-id": correlationId } }

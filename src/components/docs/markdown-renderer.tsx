@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CodeTabs } from './code-tabs';
 import { TryIt } from './try-it';
+import { applyBrandingToTryItConfig } from '@/lib/platformBranding';
 
 function CodeBlock({ children, className, inline }: any) {
   const [copied, setCopied] = useState(false);
@@ -35,7 +36,8 @@ function CodeBlock({ children, className, inline }: any) {
   // Render interactive TryIt blocks for fenced code with language "tryit"
   if (!inline && language === 'tryit') {
     try {
-      const cfg = JSON.parse(String(children));
+      const raw = JSON.parse(String(children));
+      const cfg = applyBrandingToTryItConfig(raw, '');
       return <TryIt config={cfg} />;
     } catch {
       return (
@@ -55,7 +57,7 @@ function CodeBlock({ children, className, inline }: any) {
   }
 
   const code = String(children).replace(/\n$/, '');
-  
+
   return (
     <div className="relative my-4">
       <span className="absolute left-3 top-3 text-xs uppercase tracking-wide text-muted-foreground">{language}</span>
@@ -125,15 +127,15 @@ function CustomLink({ href, children }: any) {
 
   // Normalize internal doc links
   let normalizedHref = href;
-  
+
   // Handle relative paths within docs
   if (href && (href.startsWith('./') || href.startsWith('../'))) {
     // Extract current doc path (everything after /developers/docs/)
     const docsPrefix = '/developers/docs/';
-    const currentDocPath = pathname?.startsWith(docsPrefix) 
-      ? pathname.slice(docsPrefix.length) 
+    const currentDocPath = pathname?.startsWith(docsPrefix)
+      ? pathname.slice(docsPrefix.length)
       : '';
-    
+
     // Handle ../public/ paths - rewrite to root
     if (href.includes('/public/')) {
       const publicIndex = href.indexOf('/public/');
@@ -149,10 +151,10 @@ function CustomLink({ href, children }: any) {
       if (currentParts.length > 0) {
         currentParts.pop();
       }
-      
+
       // Split href and filter out empty strings and dots
       const hrefParts = href.split('/').filter((part: string) => part && part !== '.');
-      
+
       // Resolve relative path
       const resolvedParts = [...currentParts];
       for (const part of hrefParts) {
@@ -162,16 +164,16 @@ function CustomLink({ href, children }: any) {
           resolvedParts.push(part);
         }
       }
-      
+
       normalizedHref = docsPrefix + resolvedParts.join('/');
     }
   }
-  
+
   // Strip .md extension
   if (normalizedHref?.endsWith('.md')) {
     normalizedHref = normalizedHref.slice(0, -3);
   }
-  
+
   // Remove trailing /README
   if (normalizedHref?.endsWith('/README')) {
     normalizedHref = normalizedHref.slice(0, -7);
@@ -190,7 +192,7 @@ function Heading({ level, children, ...props }: any) {
       if (typeof node === 'string') return node;
       if (Array.isArray(node)) return node.map(extractText).join('');
       if (node && node.props && node.props.children) return extractText(node.props.children);
-    } catch {}
+    } catch { }
     return String(node ?? '').toString();
   }
 
@@ -289,14 +291,14 @@ export function MarkdownRenderer({ content }: { content: string }) {
   // Extract code tabs and replace with placeholders
   const codeTabsMap = new Map<string, { label: string; language: string; code: string }[]>();
   let tabCounter = 0;
-  
+
   const processedContent = content.replace(
     /<!-- CODE_TABS_START -->\s*([\s\S]*?)\s*<!-- CODE_TABS_END -->/g,
     (match, tabsContent) => {
       const tabs: { label: string; language: string; code: string }[] = [];
       const tabPattern = /<!-- TAB:([^\s]+) -->\s*```(\w+)\s*([\s\S]*?)```/g;
       let tabMatch;
-      
+
       while ((tabMatch = tabPattern.exec(tabsContent)) !== null) {
         tabs.push({
           label: tabMatch[1],
@@ -304,7 +306,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
           code: tabMatch[3].trim(),
         });
       }
-      
+
       if (tabs.length > 0) {
         const id = `CODE_TABS_${tabCounter++}`;
         codeTabsMap.set(id, tabs);
@@ -316,7 +318,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
 
   // Render content with code tabs
   const parts = processedContent.split(/(__CODE_TABS_\d+__)/);
-  
+
   return (
     <>
       {parts.map((part, index) => {
@@ -325,7 +327,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
           const tabs = codeTabsMap.get(part.replace(/__/g, ''));
           return tabs ? <CodeTabs key={index} tabs={tabs} /> : null;
         }
-        
+
         return (
           <ReactMarkdown
             key={index}
@@ -351,10 +353,10 @@ export function MarkdownRenderer({ content }: { content: string }) {
                   // Check if it's a code element that will render as a block (has className with language-)
                   return (
                     child?.type === CodeBlock ||
-                    (child?.props?.className && 
-                     typeof child.props.className === 'string' && 
-                     child.props.className.includes('language-') &&
-                     !child.props.inline)
+                    (child?.props?.className &&
+                      typeof child.props.className === 'string' &&
+                      child.props.className.includes('language-') &&
+                      !child.props.inline)
                   );
                 });
                 const Tag: any = hasCodeBlock ? 'div' : 'p';
