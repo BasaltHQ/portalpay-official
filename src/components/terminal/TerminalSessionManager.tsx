@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import TerminalInterface from "@/components/terminal/TerminalInterface";
 import TerminalAdminDashboard from "@/components/terminal/TerminalAdminDashboard";
 import { ShopConfig } from "@/app/shop/[slug]/ShopClient";
+import { useApplyTheme, resolveThemeId } from "@/lib/themes";
 
 // ThirdWeb Imports
 import { ConnectButton, useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
@@ -23,6 +24,10 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
     const { disconnect } = useDisconnect();
     const twTheme = usePortalThirdwebTheme();
     const [isLoggedOut, setIsLoggedOut] = useState(false);
+
+    // Resolve and apply the touchpoint theme for Terminal
+    const terminalThemeId = resolveThemeId("terminal", config.touchpointThemes);
+    const tpTheme = useApplyTheme(terminalThemeId);
 
     // Load wallets and handle mounting to prevent hydration mismatch
     const [wallets, setWallets] = useState<any[]>([]);
@@ -236,30 +241,32 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                 brandName={config.name}
                 logoUrl={resolvedLogoUrl}
                 theme={config.theme}
+                storeCurrency={(config as any).storeCurrency}
             />
         );
     }
 
     // PIN VIEW (Default)
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ backgroundColor: "#000" }}>
-            {/* Background Gradient using Theme Primary Color */}
+        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ backgroundColor: tpTheme.primaryBg }}>
+            {/* Background Gradient using Theme */}
+            <div className="tp-ambient" />
             <div
                 className="absolute inset-0 pointer-events-none opacity-30"
                 style={{
-                    background: `radial-gradient(circle at 50% 50%, ${primaryColor}40 0%, transparent 70%)`
+                    background: `radial-gradient(circle at 50% 50%, ${tpTheme.primaryColor}40 0%, transparent 70%)`
                 }}
             />
 
-            <div className="max-w-md w-full bg-[#0f0f12] border border-white/10 rounded-2xl shadow-2xl overflow-hidden relative z-10 animate-in fade-in zoom-in duration-300">
+            <div className="max-w-md w-full tp-glass overflow-hidden relative z-10 animate-in fade-in zoom-in duration-300" style={{ fontFamily: tpTheme.fontFamily || undefined }}>
                 <div className="p-8 text-center space-y-4">
                     {resolvedLogoUrl && (
-                        <div className="mx-auto w-24 h-24 bg-white/5 rounded-2xl flex items-center justify-center p-4 shadow-inner border border-white/10">
+                        <div className="mx-auto w-24 h-24 rounded-2xl flex items-center justify-center p-4 shadow-inner" style={{ background: tpTheme.surfaceBg, border: `1px solid ${tpTheme.borderColor}` }}>
                             <img src={resolvedLogoUrl} className="h-full w-full object-contain" alt="Logo" />
                         </div>
                     )}
-                    <h1 className="text-2xl font-bold text-white">Employee Login</h1>
-                    <p className="text-gray-400 text-sm">Enter your Access PIN to start session</p>
+                    <h1 className="text-2xl font-bold" style={{ color: tpTheme.textPrimary }}>Employee Login</h1>
+                    <p className="text-sm" style={{ color: tpTheme.textSecondary }}>Enter your Access PIN to start session</p>
 
                     <div className="flex justify-center gap-2 my-6">
                         {[0, 1, 2, 3].map(i => (
@@ -267,8 +274,8 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                                 key={i}
                                 className="w-4 h-4 rounded-full border transition-all duration-300"
                                 style={{
-                                    borderColor: i < pin.length ? primaryColor : "rgba(255,255,255,0.2)",
-                                    backgroundColor: i < pin.length ? primaryColor : "transparent",
+                                    borderColor: i < pin.length ? tpTheme.primaryColor : tpTheme.borderColor,
+                                    backgroundColor: i < pin.length ? tpTheme.primaryColor : "transparent",
                                     transform: i < pin.length ? "scale(1.1)" : "scale(1)"
                                 }}
                             />
@@ -282,7 +289,8 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                             <button
                                 key={n}
                                 onClick={() => appendPin(String(n))}
-                                className="h-16 rounded-2xl bg-white/5 hover:bg-white/10 text-xl font-bold transition-all active:scale-95 text-white border border-white/5"
+                                className="h-16 text-xl font-bold transition-all active:scale-95 tp-btn"
+                                style={{ background: tpTheme.surfaceBg, color: tpTheme.textPrimary, border: `1px solid ${tpTheme.borderColor}` }}
                             >
                                 {n}
                             </button>
@@ -290,13 +298,15 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                         <div /> {/* Spacer */}
                         <button
                             onClick={() => appendPin("0")}
-                            className="h-16 rounded-2xl bg-white/5 hover:bg-white/10 text-xl font-bold transition-all active:scale-95 text-white border border-white/5"
+                            className="h-16 text-xl font-bold transition-all active:scale-95 tp-btn"
+                            style={{ background: tpTheme.surfaceBg, color: tpTheme.textPrimary, border: `1px solid ${tpTheme.borderColor}` }}
                         >
                             0
                         </button>
                         <button
                             onClick={() => setPin(prev => prev.slice(0, -1))}
-                            className="h-16 rounded-2xl bg-white/5 hover:bg-red-900/20 text-red-500 font-bold transition-all active:scale-95 flex items-center justify-center border border-white/5 group"
+                            className="h-16 bg-transparent hover:bg-red-900/20 text-red-500 font-bold transition-all active:scale-95 flex items-center justify-center group tp-btn"
+                            style={{ border: `1px solid ${tpTheme.borderColor}` }}
                         >
                             <span className="group-hover:scale-110 transition-transform">⌫</span>
                         </button>
@@ -305,15 +315,15 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                     <button
                         onClick={handleLogin}
                         disabled={loading || pin.length < 4}
-                        className="w-full h-14 text-white rounded-xl font-bold mt-6 disabled:opacity-50 shadow-lg hover:brightness-110 active:scale-95 transition-all text-lg"
-                        style={{ backgroundColor: secondaryColor }}
+                        className="w-full h-14 rounded-xl font-bold mt-6 disabled:opacity-50 shadow-lg hover:brightness-110 active:scale-95 transition-all text-lg tp-btn"
+                        style={{ backgroundColor: tpTheme.secondaryColor, color: tpTheme.textOnPrimary }}
                     >
                         {loading ? "Verifying..." : "Start Session"}
                     </button>
 
                     {/* ADMIN LOGIN */}
-                    <div className="pt-8 mt-4 border-t border-dashed border-white/10">
-                        <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-4">Merchant Access</p>
+                    <div className="pt-8 mt-4 border-t border-dashed" style={{ borderColor: tpTheme.borderColor }}>
+                        <p className="text-xs uppercase tracking-widest font-semibold mb-4" style={{ color: tpTheme.textSecondary }}>Merchant Access</p>
                         <div className="flex justify-center">
                             {mounted && wallets.length > 0 ? (
                                 <ConnectButton

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useActiveAccount } from "thirdweb/react";
+import { useApplyTheme, resolveThemeId } from "@/lib/themes";
 import {
     DndContext,
     DragOverlay,
@@ -293,6 +294,10 @@ export function KitchenInterface({ wallet }: { wallet?: string }) {
     const activeWallet = wallet || account?.address;
 
     const [orders, setOrders] = useState<KitchenOrder[]>([]);
+
+    // Resolve and apply touchpoint theme for KDS
+    const kdsThemeId = resolveThemeId("kds");
+    const tpTheme = useApplyTheme(kdsThemeId);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const pollIntervalRef = useRef<number | null>(null);
@@ -426,7 +431,7 @@ export function KitchenInterface({ wallet }: { wallet?: string }) {
 
     return (
         <DndContext sensors={sensors} collisionDetection={rectIntersection} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="h-screen w-full flex flex-col p-4 bg-black/95 text-white">
+            <div className="h-screen w-full flex flex-col p-4 text-white" style={{ backgroundColor: tpTheme.primaryBg, fontFamily: tpTheme.fontFamily || undefined }}>
                 {/* Header Bar */}
                 <div className="flex items-center justify-between px-2 mb-4">
                     <div>

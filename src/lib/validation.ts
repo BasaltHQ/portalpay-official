@@ -138,6 +138,14 @@ export const SiteConfigUpdateSchema = z.object({
   taxConfig: TaxConfigSchema.optional(),
 
   industryParams: z.record(z.string(), z.any()).optional(),
+
+  touchpointThemes: z.object({
+    terminal: z.string().max(32).optional(),
+    handheld: z.string().max(32).optional(),
+    kiosk: z.string().max(32).optional(),
+    kds: z.string().max(32).optional(),
+    portal: z.string().max(32).optional(),
+  }).optional(),
 });
 
 /**

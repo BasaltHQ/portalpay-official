@@ -33,6 +33,20 @@ html {
   --secondary: var(--pp-secondary, #f54029);
   /* Use white foreground by default for proper contrast on dark primary surfaces */
   --primary-foreground: #ffffff;
+
+  /* Touchpoint theme variables (set by applyThemeVars; defaults match minimal theme) */
+  --tp-bg-primary: #0c0c0e;
+  --tp-bg-secondary: rgba(18, 18, 22, 0.6);
+  --tp-bg-surface: rgba(26, 26, 32, 0.7);
+  --tp-text-primary: #e5e7eb;
+  --tp-text-secondary: rgba(156, 163, 175, 0.7);
+  --tp-text-on-primary: #ffffff;
+  --tp-border: rgba(75, 85, 99, 0.25);
+  --tp-radius: 8px;
+  --tp-glass-opacity: 0.35;
+  --tp-blur: 8px;
+  --tp-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  --tp-btn-radius: 12px;
 }
 
 html[data-pp-theme-lock="portalpay-default"] {
@@ -143,6 +157,76 @@ html[data-pp-route="portal"] .global-gradient-layer {
   -webkit-backdrop-filter: saturate(1.2) blur(12px);
   border: 1px solid hsl(220 10% 30% / 0.5);
   box-shadow: 0 10px 28px hsl(220 50% 2% / 0.35);
+}
+
+/* Theme-aware glass — reads from touchpoint theme vars */
+.tp-glass {
+  background-color: var(--tp-bg-secondary);
+  backdrop-filter: saturate(1.2) blur(var(--tp-blur));
+  -webkit-backdrop-filter: saturate(1.2) blur(var(--tp-blur));
+  border: 1px solid var(--tp-border);
+  border-radius: var(--tp-radius);
+  box-shadow: var(--tp-shadow);
+}
+
+/* Theme-aware surface (elevated: inputs, modals) */
+.tp-surface {
+  background-color: var(--tp-bg-surface);
+  backdrop-filter: blur(var(--tp-blur));
+  -webkit-backdrop-filter: blur(var(--tp-blur));
+  border: 1px solid var(--tp-border);
+  border-radius: var(--tp-radius);
+  box-shadow: var(--tp-shadow);
+}
+
+/* Theme-aware button */
+.tp-btn {
+  border-radius: var(--tp-btn-radius);
+  transition: all 150ms ease;
+}
+
+/* Theme ambient gradient overlay */
+.tp-ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: var(--tp-gradient, none);
+}
+
+/* ── Portal theme integration ──
+   When a touchpoint theme is active (data-tp-active="1"),
+   override portal container styling with --tp-* vars.
+   The wireframe theme (glass=0, blur=0, shadow=none) produces
+   identical output to the current default portal look. */
+.pp-portal-container[data-tp-active="1"] {
+  background-color: var(--tp-bg-secondary) !important;
+  backdrop-filter: saturate(1.2) blur(var(--tp-blur)) !important;
+  -webkit-backdrop-filter: saturate(1.2) blur(var(--tp-blur)) !important;
+  border-radius: var(--tp-radius) !important;
+  border-color: var(--tp-border) !important;
+  box-shadow: var(--tp-shadow) !important;
+}
+
+/* Portal inner panels / sections get themed surface style */
+.pp-portal-container[data-tp-active="1"] .border {
+  border-color: var(--tp-border);
+}
+
+.pp-portal-container[data-tp-active="1"] .rounded-md,
+.pp-portal-container[data-tp-active="1"] .rounded-lg,
+.pp-portal-container[data-tp-active="1"] .rounded-xl {
+  border-radius: var(--tp-radius);
+}
+
+/* Portal buttons get themed radius */
+.pp-portal-container[data-tp-active="1"] button {
+  border-radius: var(--tp-btn-radius);
+}
+
+/* Portal font override when theme specifies one */
+.pp-portal-container[data-tp-active="1"] {
+  font-family: var(--tp-font, inherit);
 }
 
 /* Floating glass (popover/menus) — darker, stronger blur for legibility */

@@ -56,6 +56,8 @@ export type ShopConfig = {
     customDomainVerified?: boolean;
     defaultPaymentToken?: string;
     accumulationMode?: string;
+    /** Per-touchpoint theme overrides (theme IDs from the theme registry) */
+    touchpointThemes?: import("@/lib/themes/types").TouchpointThemeConfig;
 };
 
 type CartLine = {

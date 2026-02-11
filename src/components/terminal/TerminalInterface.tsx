@@ -6,6 +6,7 @@ import { formatCurrency, roundForCurrency, convertFromUsd, SUPPORTED_CURRENCIES 
 import { fetchEthRates, fetchUsdRates } from "@/lib/eth";
 import { QRCode } from "react-qrcode-logo";
 import { createPortal } from "react-dom";
+import { getTheme } from "@/lib/themes";
 
 // Shared Logic extracted from TerminalPage
 // Props allow overriding the "Operator" (Merchant) vs the Connected Wallet
@@ -20,15 +21,21 @@ interface TerminalInterfaceProps {
     brandName?: string;
     logoUrl?: string;
     theme?: any;
+    storeCurrency?: string; // Default currency from reserve config
 }
 
-export default function TerminalInterface({ merchantWallet, employeeId, employeeName, employeeRole, sessionId, sessionStartTime, onLogout, brandName, logoUrl, theme }: TerminalInterfaceProps) {
+export default function TerminalInterface({ merchantWallet, employeeId, employeeName, employeeRole, sessionId, sessionStartTime, onLogout, brandName, logoUrl, theme, storeCurrency }: TerminalInterfaceProps) {
+    // Resolve the active touchpoint theme (CSS vars already applied by TerminalSessionManager)
+    const tpTheme = useMemo(() => {
+        const root = typeof document !== 'undefined' ? document.documentElement.getAttribute('data-tp-theme') : null;
+        return getTheme(root);
+    }, []);
     const [amountStr, setAmountStr] = useState<string>("");
     const [itemLabel, setItemLabel] = useState<string>("");
     const [loading, setLoading] = useState(false);
     const [reportLoading, setReportLoading] = useState(false);
     const [error, setError] = useState("");
-    const [terminalCurrency, setTerminalCurrency] = useState("USD");
+    const [terminalCurrency, setTerminalCurrency] = useState(storeCurrency || "USD");
 
     // Rates
     const [rates, setRates] = useState<Record<string, number>>({});
@@ -207,18 +214,16 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const portalUrl = useMemo(() => {
         if (!selected) return "";
-        const base = `${origin}/portal/${encodeURIComponent(selected.receiptId)}?recipient=${encodeURIComponent(merchantWallet)}`;
-
-        // Removed excessive theme params to keep QR code simple/scannable
-        // The portal page will fetch the merchant's config via the wallet address
-
-        return base;
-    }, [selected, merchantWallet, origin]);
+        // tid=1 tells the portal this came from the terminal touchpoint (0=kiosk,1=terminal,2=handheld,3=kds)
+        // cur= passes the terminal's selected currency so the portal can display in the same currency
+        return `${origin}/portal/${encodeURIComponent(selected.receiptId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=1&cur=${encodeURIComponent(terminalCurrency)}`;
+    }, [selected, merchantWallet, origin, terminalCurrency]);
 
     const isManagerOrKeyholder = employeeRole === 'manager' || employeeRole === 'keyholder';
 
     return (
-        <div className="h-[100dvh] flex flex-col overflow-hidden p-2 gap-2 md:h-auto md:overflow-visible md:max-w-4xl md:mx-auto md:p-4 md:p-6 md:space-y-6 md:gap-0">
+        <div className="h-[100dvh] flex flex-col overflow-hidden p-2 gap-2 md:h-auto md:overflow-visible md:max-w-4xl md:mx-auto md:p-4 md:p-6 md:space-y-6 md:gap-0" style={{ backgroundColor: 'var(--tp-bg-primary)', color: 'var(--tp-text-primary)', fontFamily: tpTheme.fontFamily || undefined }}>
+            <div className="tp-ambient" />
             <div className="flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">
                     {logoUrl && <img src={logoUrl} className="h-10 w-10 object-contain" />}
@@ -232,13 +237,13 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                         <button
                             onClick={openSummary}
                             disabled={reportLoading}
-                            className="px-4 py-2 text-sm border bg-background rounded-md hover:bg-muted disabled:opacity-50"
+                            className="px-3 py-1 text-xs border bg-background rounded-md hover:bg-muted disabled:opacity-50"
                         >
                             {reportLoading ? "Loading..." : "End of Day Summary"}
                         </button>
                     )}
                     {onLogout && (
-                        <button onClick={onLogout} className="px-4 py-2 text-sm border rounded-md hover:bg-muted">
+                        <button onClick={onLogout} className="px-3 py-1 text-xs border rounded-md hover:bg-muted">
                             Logout
                         </button>
                     )}
@@ -248,9 +253,9 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
             <div className="flex-1 min-h-0 flex flex-col gap-1 md:grid md:grid-cols-2 md:gap-6 md:mt-0">
                 {/* Keypad */}
                 <div className="space-y-1 md:space-y-4">
-                    <div className="bg-muted/10 border rounded-xl p-3 md:p-6 text-center space-y-2">
-                        <div className="text-sm text-muted-foreground uppercase tracking-wider">Amount</div>
-                        <div className="text-2xl md:text-4xl font-mono font-bold">{formatCurrency(baseUsd, terminalCurrency)}</div>
+                    <div className="tp-glass p-3 md:p-6 text-center space-y-2">
+                        <div className="text-sm uppercase tracking-wider" style={{ color: 'var(--tp-text-secondary)' }}>Amount</div>
+                        <div className="text-2xl md:text-4xl font-mono font-bold" style={{ color: 'var(--tp-text-primary)' }}>{formatCurrency(baseUsd, storeCurrency || "USD")}</div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 mt-2 md:mt-0">
@@ -258,34 +263,36 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                             <button
                                 key={btn}
                                 onClick={() => { if (btn === "⌫") backspace(); else if (btn === ".") appendDigit("."); else appendDigit(String(btn)); }}
-                                className="h-12 md:h-16 rounded-xl border bg-background text-lg md:text-xl font-semibold hover:bg-muted/50 active:scale-95 transition-all"
+                                className="h-16 md:h-24 text-2xl md:text-3xl font-semibold active:scale-95 transition-all tp-btn"
+                                style={{ background: 'var(--tp-bg-surface)', border: '1px solid var(--tp-border)', color: 'var(--tp-text-primary)' }}
                             >
                                 {btn}
                             </button>
                         ))}
-                        <button onClick={clearAmount} className="col-span-3 h-10 md:h-12 rounded-xl border text-sm text-muted-foreground hover:bg-red-50 hover:text-red-500 hover:border-red-200">
-                            Clear
-                        </button>
+                        <div className="col-span-3 flex gap-2">
+                            <select
+                                className="h-10 md:h-12 px-2 text-xs md:text-sm font-semibold tp-btn min-w-0 flex-shrink-0"
+                                style={{ background: 'var(--tp-bg-surface)', border: '1px solid var(--tp-border)', color: 'var(--tp-text-primary)', maxWidth: '45%' }}
+                                value={terminalCurrency}
+                                onChange={e => setTerminalCurrency(e.target.value)}
+                            >
+                                {SUPPORTED_CURRENCIES.map(c => <option key={c.code} value={c.code} style={{ background: 'var(--tp-bg-surface)', color: 'var(--tp-text-primary)' }}>{c.code} – {c.name}</option>)}
+                            </select>
+                            <button onClick={clearAmount} className="flex-1 h-10 md:h-12 text-sm tp-btn hover:bg-red-900/20 hover:text-red-400 transition-colors" style={{ border: '1px solid var(--tp-border)', color: 'var(--tp-text-secondary)' }}>
+                                Clear
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 {/* Details & Action */}
                 <div className="space-y-1 md:space-y-4 flex flex-col mt-2 md:mt-0">
-                    <div className="bg-background border rounded-xl p-3 md:p-4 space-y-2 md:space-y-4 md:flex-1">
+                    <div className="tp-glass p-3 md:p-4 space-y-2 md:space-y-4 md:flex-1">
                         <div>
-                            <label className="text-xs font-semibold uppercase text-muted-foreground">Currency</label>
-                            <select
-                                className="w-full mt-1 p-2 border rounded-md bg-background text-foreground"
-                                value={terminalCurrency}
-                                onChange={e => setTerminalCurrency(e.target.value)}
-                            >
-                                {SUPPORTED_CURRENCIES.map(c => <option key={c.code} value={c.code} className="bg-background text-foreground">{c.code} - {c.name}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-xs font-semibold uppercase text-muted-foreground">Note / Label</label>
+                            <label className="text-xs font-semibold uppercase" style={{ color: 'var(--tp-text-secondary)' }}>Note / Label</label>
                             <input
-                                className="w-full mt-1 p-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground"
+                                className="w-full mt-1 p-2 tp-btn placeholder:opacity-50"
+                                style={{ background: 'var(--tp-bg-surface)', border: '1px solid var(--tp-border)', color: 'var(--tp-text-primary)' }}
                                 placeholder="Optional description"
                                 value={itemLabel}
                                 onChange={e => setItemLabel(e.target.value)}
@@ -331,7 +338,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
             {/* QR / Payment Modal */}
             {qrOpen && selected && typeof window !== "undefined" && createPortal(
                 <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm grid place-items-center p-4 animate-in fade-in receipt-modal-overlay">
-                    <div className="bg-[#0f0f12] text-white rounded-2xl max-w-sm w-full text-center relative shadow-2xl p-8 border border-white/10 print-no-bg">
+                    <div className="tp-glass rounded-2xl max-w-sm w-full text-center relative shadow-2xl p-8 print-no-bg" style={{ color: 'var(--tp-text-primary)' }}>
                         <button
                             onClick={() => setQrOpen(false)}
                             className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors print-hidden"
@@ -344,7 +351,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                         <div className="print-hidden">
                             <h2 className="text-2xl font-bold mb-6">Scan to Pay</h2>
 
-                            <div className="inline-block mb-4 p-2 rounded-xl border border-white/10 relative">
+                            <div className="inline-block mb-4 p-2 rounded-xl relative" style={{ border: '1px solid var(--tp-border)' }}>
                                 <QRCode
                                     value={portalUrl}
                                     size={200}
@@ -394,12 +401,20 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                                 <button
                                     onClick={() => window.print()}
-                                    className="px-4 py-3 border border-white/10 rounded-xl font-semibold hover:bg-white/5 transition-colors"
+                                    className="px-4 py-3 tp-btn font-semibold transition-colors"
+                                    style={{ border: '1px solid var(--tp-border)', color: 'var(--tp-text-primary)' }}
                                 >
                                     Print
+                                </button>
+                                <button
+                                    onClick={() => { if (portalUrl) navigator.clipboard.writeText(portalUrl); }}
+                                    className="px-4 py-3 tp-btn font-semibold transition-colors"
+                                    style={{ border: '1px solid var(--tp-border)', color: 'var(--tp-text-primary)' }}
+                                >
+                                    Copy URL
                                 </button>
                                 <button
                                     onClick={() => {
@@ -473,19 +488,20 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
             {/* End of Day Summary Modal */}
             {summaryOpen && reportData && typeof window !== "undefined" && createPortal(
                 <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm grid place-items-center p-4 animate-in fade-in">
-                    <div className="rounded-2xl max-w-2xl w-full text-center relative shadow-2xl flex flex-col max-h-[90vh] border border-white/10 bg-[#0f0f12] text-white">
+                    <div className="tp-glass rounded-2xl max-w-2xl w-full text-center relative shadow-2xl flex flex-col max-h-[90vh]" style={{ color: 'var(--tp-text-primary)' }}>
                         {/* Header */}
-                        <div className="flex justify-between items-center p-6 border-b border-white/10">
+                        <div className="flex justify-between items-center p-6" style={{ borderBottom: '1px solid var(--tp-border)' }}>
                             <h2 className="text-xl font-bold">End of Day Report</h2>
                             <button
                                 onClick={() => setSummaryOpen(false)}
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                                className="w-8 h-8 flex items-center justify-center rounded-full transition-colors"
+                                style={{ background: 'var(--tp-bg-surface)' }}
                             >
                                 <XIcon />
                             </button>
                         </div>
 
-                        <div className="flex border-b border-white/10">
+                        <div className="flex" style={{ borderBottom: '1px solid var(--tp-border)' }}>
                             {[
                                 { id: "summary", label: "Summary" },
                                 { id: "details", label: "Details & Transactions" },
@@ -510,12 +526,12 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                             {activeReportTab === "summary" && (
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                                            <p className="text-xs text-gray-400 uppercase font-semibold">Total Sales</p>
+                                        <div className="p-4 rounded-xl" style={{ background: 'var(--tp-bg-surface)', border: '1px solid var(--tp-border)' }}>
+                                            <p className="text-xs uppercase font-semibold" style={{ color: 'var(--tp-text-secondary)' }}>Total Sales</p>
                                             <p className="text-3xl font-bold">{formatCurrency((reportData.summary?.totalSales || 0), "USD")}</p>
                                         </div>
-                                        <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                                            <p className="text-xs text-gray-400 uppercase font-semibold">Total Tips</p>
+                                        <div className="p-4 rounded-xl" style={{ background: 'var(--tp-bg-surface)', border: '1px solid var(--tp-border)' }}>
+                                            <p className="text-xs uppercase font-semibold" style={{ color: 'var(--tp-text-secondary)' }}>Total Tips</p>
                                             <p className="text-3xl font-bold">{formatCurrency((reportData.summary?.totalTips || 0), "USD")}</p>
                                         </div>
                                     </div>

@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { X, Search, ShoppingCart, Trash2, Plus, Minus, Tag, RotateCcw, ChevronLeft, ChevronRight, Sparkles, Ticket, Percent } from "lucide-react";
 import { InventoryItem } from "@/types/inventory";
 import { ShopConfig } from "@/app/shop/[slug]/ShopClient";
+import { resolveThemeId, useApplyTheme, getTheme } from "@/lib/themes";
 
 // ============================================================
 // THEMED MESH GRADIENT (matches shop page implementation)
@@ -174,6 +175,10 @@ export default function KioskClient({
     merchantWallet: string
 }) {
     const [items, setItems] = useState<InventoryItem[]>(initialItems);
+
+    // Resolve and apply touchpoint theme for Kiosk
+    const kioskThemeId = resolveThemeId("kiosk", config.touchpointThemes);
+    const tpTheme = useApplyTheme(kioskThemeId);
     const [cart, setCart] = useState<{ id: string; qty: number; item: InventoryItem }[]>([]);
     const [loading, setLoading] = useState(false);
     const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -574,7 +579,7 @@ export default function KioskClient({
     // MAIN KIOSK UI
     // ========================
     return (
-        <div className="h-screen w-screen overflow-hidden flex flex-col lg:flex-row bg-background">
+        <div className="h-screen w-screen overflow-hidden flex flex-col lg:flex-row" style={{ backgroundColor: tpTheme.primaryBg, color: tpTheme.textPrimary, fontFamily: tpTheme.fontFamily || undefined }}>
             {/* ======================================== */}
             {/* LEFT: MAIN CONTENT (Header + Categories sticky, Items scroll) */}
             {/* ======================================== */}

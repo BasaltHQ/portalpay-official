@@ -13,6 +13,7 @@ import {
 import { useServerAssistant } from "@/hooks/useServerAssistant";
 import { buildServerAssistantPrompt } from "@/agent/prompts/serverAssistantPrompt";
 import { QRCode } from "react-qrcode-logo";
+import { getTheme } from "@/lib/themes";
 import {
     Activity, ArrowLeft, ChevronLeft, ChevronRight, CreditCard,
     DollarSign, Grid, History, LogOut, Menu, Mic,
@@ -92,8 +93,12 @@ export default function HandheldInterface({
     tables = []
 }: HandheldInterfaceProps) {
     // -- THEME & STYLES (Dark Mode Default) --
-    // We enforce a dark theme for the handheld interface
-    const primaryColor = theme?.primaryColor || "#0ea5e9";
+    // Read the active touchpoint theme (CSS vars applied by parent TerminalSessionManager)
+    const tpTheme = useMemo(() => {
+        const root = typeof document !== 'undefined' ? document.documentElement.getAttribute('data-tp-theme') : null;
+        return getTheme(root);
+    }, []);
+    const primaryColor = theme?.primaryColor || tpTheme.primaryColor || "#0ea5e9";
 
     // -- STATE --
 
@@ -659,7 +664,7 @@ export default function HandheldInterface({
             const currentId = currentReceipt.id.replace("receipt:", "");
 
             const origin = typeof window !== "undefined" ? window.location.origin : "";
-            const portalUrl = `${origin}/portal/${encodeURIComponent(currentId)}?recipient=${encodeURIComponent(merchantWallet)}`;
+            const portalUrl = `${origin}/portal/${encodeURIComponent(currentId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
 
             return (
                 <div className="absolute inset-0 z-[70] flex flex-col bg-neutral-950 animate-in slide-in-from-bottom duration-500">
@@ -764,7 +769,7 @@ export default function HandheldInterface({
         if (!selectedOrderForPayment) return null;
 
         const origin = typeof window !== "undefined" ? window.location.origin : "";
-        const portalUrl = `${origin}/portal/${encodeURIComponent(selectedOrderForPayment.id)}?recipient=${encodeURIComponent(merchantWallet)}`;
+        const portalUrl = `${origin}/portal/${encodeURIComponent(selectedOrderForPayment.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
 
         const confirmSplit = async () => {
             // Ratio Mode Payload
@@ -1790,12 +1795,13 @@ export default function HandheldInterface({
 
     // 2. Menu View
     return (
-        <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans select-none relative">
+        <div className="flex flex-col h-screen text-white overflow-hidden font-sans select-none relative" style={{ backgroundColor: tpTheme.primaryBg, fontFamily: tpTheme.fontFamily || undefined }}>
 
             {/* BACKGROUND AMBIENCE */}
+            <div className="tp-ambient" />
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px] mix-blend-screen" />
-                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[100px] mix-blend-screen" />
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[100px] mix-blend-screen" style={{ background: `${tpTheme.primaryColor}15` }} />
+                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[100px] mix-blend-screen" style={{ background: `${tpTheme.secondaryColor || tpTheme.primaryColor}15` }} />
             </div>
 
             {/* TOP BAR */}

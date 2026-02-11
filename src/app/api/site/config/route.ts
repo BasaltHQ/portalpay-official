@@ -1382,6 +1382,18 @@ export async function POST(req: NextRequest) {
       candidate.industryParams = body.industryParams;
     }
 
+    // Optional touchpointThemes update (per-touchpoint theme IDs)
+    if (body && typeof body.touchpointThemes === "object" && body.touchpointThemes) {
+      const valid: Record<string, string> = {};
+      const allowed = ["terminal", "handheld", "kiosk", "kds", "portal"];
+      for (const key of allowed) {
+        if (typeof body.touchpointThemes[key] === "string") {
+          valid[key] = body.touchpointThemes[key];
+        }
+      }
+      candidate.touchpointThemes = Object.keys(valid).length > 0 ? valid : undefined;
+    }
+
     const normalized = normalizeSiteConfig(candidate);
 
     // Write brand-scoped doc in partner containers; use getDocIdForBrand() for consistency with GET.

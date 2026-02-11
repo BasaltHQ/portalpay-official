@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import { applyThemeVars, getTheme } from "@/lib/themes";
+import type { TouchpointType } from "@/lib/themes";
 import { CheckoutWidget, darkTheme } from "thirdweb/react";
 import { getAddress } from "thirdweb";
 import dynamic from "next/dynamic";
@@ -41,10 +43,14 @@ type SiteConfigResponse = {
     defaultPaymentToken?: "ETH" | "USDC" | "USDT" | "cbBTC" | "cbXRP" | "SOL";
     processingFeePct?: number;
     tokens?: TokenDef[];
+    touchpointThemes?: Record<string, string>;
   };
   degraded?: boolean;
   reason?: string;
 };
+
+/** Map tid URL param (0-3) to touchpoint type key */
+const TID_MAP: TouchpointType[] = ["kiosk", "terminal", "handheld", "kds"];
 
 const CURRENCIES = SUPPORTED_CURRENCIES;
 
@@ -251,6 +257,11 @@ export default function PortalReceiptPage() {
   const isEmbeddedParam = embeddedParam === "1";
   const [isIframe, setIsIframe] = useState(false);
   const isEmbedded = isEmbeddedParam || isIframe;
+
+  // Touchpoint ID from URL (0=kiosk, 1=terminal, 2=handheld, 3=kds)
+  const tidParam = searchParams?.get("tid");
+  const touchpointType: TouchpointType | null = tidParam != null ? (TID_MAP[Number(tidParam)] || null) : null;
+  const [tpThemeApplied, setTpThemeApplied] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -955,6 +966,7 @@ export default function PortalReceiptPage() {
           setConfigReady(true);
           loadedMerchantWalletRef.current = currentMerchantKey;
 
+
           console.log('[PORTAL THEME DEBUG] Theme successfully applied and ready', {
             currentMerchantKey,
             merchantTheme
@@ -1013,6 +1025,50 @@ export default function PortalReceiptPage() {
     })();
     return () => { cancelled = true; };
   }, [merchantWallet, receiptId, hasMerchantForTheme, forcePortalTheme, effectiveMerchantWallet, partnerBrandColors, partnerBrandName, partnerLogoApp, partnerLogoSymbol, partnerLogoFavicon]);
+
+  // ── Standalone touchpoint theme application ──
+  // Fires after configReady is set by ANY code path (cached, already-loaded, or fresh fetch).
+  // Uses getSiteConfigOnce which returns the already-cached config instantly.
+  useEffect(() => {
+    if (!configReady || !touchpointType) return;
+    const wallet = effectiveMerchantWallet || recipient;
+    if (!wallet) return;
+
+    (async () => {
+      try {
+        const j = await getSiteConfigOnce(wallet, wallet);
+        console.log('[PORTAL THEME] Config ready, checking touchpointThemes:', {
+          touchpointType,
+          hasTouchpointThemes: !!j?.config?.touchpointThemes,
+          touchpointThemes: j?.config?.touchpointThemes,
+          configKeys: j?.config ? Object.keys(j.config) : [],
+        });
+
+        if (j?.config?.touchpointThemes) {
+          const tpThemeId = j.config.touchpointThemes[touchpointType];
+          if (tpThemeId) {
+            const resolvedTheme = getTheme(tpThemeId);
+            console.log('[PORTAL THEME] ✅ Applying:', {
+              id: resolvedTheme.id,
+              name: resolvedTheme.name,
+              radius: resolvedTheme.borderRadius,
+              blur: resolvedTheme.blurStrength,
+              shadow: resolvedTheme.shadowIntensity,
+              glass: resolvedTheme.glassOpacity,
+            });
+            applyThemeVars(resolvedTheme);
+            setTpThemeApplied(true);
+          } else {
+            console.log('[PORTAL THEME] No theme mapped for touchpoint:', touchpointType);
+          }
+        } else {
+          console.log('[PORTAL THEME] No touchpointThemes in config');
+        }
+      } catch (e) {
+        console.error('[PORTAL THEME] ❌ Error:', e);
+      }
+    })();
+  }, [configReady, touchpointType]);
 
   // Background style only (no CSS vars inline to avoid hydration mismatch)
   const backgroundStyle = useMemo(() => {
@@ -1269,7 +1325,8 @@ export default function PortalReceiptPage() {
   // Currency and rates
   const [rates, setRates] = useState<EthRates>({});
   const [usdRates, setUsdRates] = useState<Record<string, number>>({});
-  const [currency, setCurrency] = useState("USD");
+  const curParam = searchParams?.get("cur");
+  const [currency, setCurrency] = useState(curParam || "USD");
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const currencyRef = useRef<HTMLDivElement | null>(null);
   const [ratesUpdatedAt, setRatesUpdatedAt] = useState<Date | null>(null);
@@ -1927,6 +1984,132 @@ export default function PortalReceiptPage() {
     } catch { }
   }, [isEmbedded]);
 
+  // ── Touchpoint theme DOM mutator ──
+  // Triggered AFTER applyThemeVars runs (via tpThemeApplied state).
+  // Scopes to document.body because thirdweb CheckoutWidget renders
+  // into a body-level portal, not inside .pp-portal-container.
+  useEffect(() => {
+    if (!tpThemeApplied) return;
+
+    const scopeEl = document.body;
+    const root = document.documentElement;
+
+    const applyTpStyles = () => {
+      try {
+        const rv = (v: string) => getComputedStyle(root).getPropertyValue(v).trim();
+        const tpBorder = rv("--tp-border");
+        const tpRadius = rv("--tp-radius");
+        const tpBlur = rv("--tp-blur");
+        const tpShadow = rv("--tp-shadow");
+        const tpBtnRadius = rv("--tp-btn-radius");
+        const tpBgSurface = rv("--tp-bg-surface");
+        const tpBgSecondary = rv("--tp-bg-secondary");
+
+        if (!tpBorder && !tpRadius) return; // theme vars not set yet
+
+        // ── Portal container ──
+        const container = scopeEl.querySelector(".pp-portal-container") as HTMLElement | null;
+        if (container) {
+          container.style.backgroundColor = tpBgSecondary;
+          container.style.backdropFilter = `saturate(1.2) blur(${tpBlur})`;
+          (container.style as any).webkitBackdropFilter = `saturate(1.2) blur(${tpBlur})`;
+          container.style.borderRadius = tpRadius;
+          container.style.borderColor = tpBorder;
+          container.style.boxShadow = tpShadow;
+        }
+
+        // ── Card panels inside portal (.rounded-xl.border etc) ──
+        scopeEl.querySelectorAll<HTMLElement>(
+          ".pp-portal-container .rounded-xl.border, " +
+          ".pp-portal-container .rounded-2xl.border, " +
+          ".pp-portal-container .rounded-lg.border, " +
+          ".pp-portal-container .rounded-xl.bg-background\\/80, " +
+          ".pp-portal-container .rounded-2xl.bg-background\\/70"
+        ).forEach(el => {
+          el.style.borderColor = tpBorder;
+          el.style.borderRadius = tpRadius;
+          el.style.backgroundColor = tpBgSurface;
+          el.style.backdropFilter = `saturate(1.2) blur(${tpBlur})`;
+          (el.style as any).webkitBackdropFilter = `saturate(1.2) blur(${tpBlur})`;
+          el.style.boxShadow = tpShadow;
+        });
+
+        // ── Buttons inside portal ──
+        scopeEl.querySelectorAll<HTMLElement>(".pp-portal-container button").forEach(el => {
+          el.style.borderRadius = tpBtnRadius;
+        });
+
+        // ── Inputs and selects ──
+        scopeEl.querySelectorAll<HTMLElement>(".pp-portal-container input, .pp-portal-container select").forEach(el => {
+          el.style.borderColor = tpBorder;
+          el.style.borderRadius = tpRadius;
+        });
+
+        // ── Dashed/solid borders ──
+        scopeEl.querySelectorAll<HTMLElement>(".pp-portal-container .border-dashed, .pp-portal-container .border-t").forEach(el => {
+          el.style.borderColor = tpBorder;
+        });
+
+        // ── Shadow panels ──
+        scopeEl.querySelectorAll<HTMLElement>(".pp-portal-container .shadow-md, .pp-portal-container .shadow-lg, .pp-portal-container .shadow-xl").forEach(el => {
+          el.style.backgroundColor = tpBgSurface;
+          el.style.borderColor = tpBorder;
+          el.style.borderRadius = tpRadius;
+          el.style.boxShadow = tpShadow;
+        });
+
+        // ── Thirdweb CheckoutWidget (renders to body-level portal with data-theme) ──
+        scopeEl.querySelectorAll<HTMLElement>("[data-theme]").forEach(el => {
+          // Only target thirdweb containers, not arbitrary elements
+          if (el.closest(".pp-portal-container") || el === root) return;
+          el.style.backgroundColor = tpBgSecondary;
+          el.style.backdropFilter = `saturate(1.2) blur(${tpBlur})`;
+          (el.style as any).webkitBackdropFilter = `saturate(1.2) blur(${tpBlur})`;
+          el.style.borderRadius = tpRadius;
+          el.style.border = `1px solid ${tpBorder}`;
+          el.style.boxShadow = tpShadow;
+        });
+
+        // ── Thirdweb inner elements (buttons, divs with border-radius) ──
+        scopeEl.querySelectorAll<HTMLElement>("[data-theme] button").forEach(el => {
+          el.style.borderRadius = tpBtnRadius;
+        });
+
+        // ── Also style thirdweb widget within portal container ──
+        if (container) {
+          container.querySelectorAll<HTMLElement>("[data-theme]").forEach(el => {
+            el.style.backgroundColor = tpBgSecondary;
+            el.style.backdropFilter = `saturate(1.2) blur(${tpBlur})`;
+            (el.style as any).webkitBackdropFilter = `saturate(1.2) blur(${tpBlur})`;
+            el.style.borderRadius = tpRadius;
+            el.style.border = `1px solid ${tpBorder}`;
+            el.style.boxShadow = tpShadow;
+          });
+          container.querySelectorAll<HTMLElement>("[data-theme] button").forEach(el => {
+            el.style.borderRadius = tpBtnRadius;
+          });
+        }
+      } catch { }
+    };
+
+    // Apply immediately + staggered retries (thirdweb renders async)
+    applyTpStyles();
+    const t1 = setTimeout(applyTpStyles, 100);
+    const t2 = setTimeout(applyTpStyles, 500);
+    const t3 = setTimeout(applyTpStyles, 1500);
+
+    // Re-apply whenever DOM changes (new widget elements appear)
+    const mo = new MutationObserver(() => applyTpStyles());
+    mo.observe(scopeEl, { childList: true, subtree: true });
+
+    return () => {
+      try { mo.disconnect(); } catch { }
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [tpThemeApplied]);
+
   return (
     <div
       className={`w-full flex flex-col`}
@@ -1938,7 +2121,8 @@ export default function PortalReceiptPage() {
     >
       <div
         ref={containerRef}
-        className={`pp-embed-white-text relative ${isEmbedded ? "border-2 rounded-2xl shadow-none bg-transparent" : (isInvoiceLayout ? "rounded-none border-0 shadow-none bg-transparent" : "rounded-2xl border shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur")} ${isTwoColumnLayout ? (isInvoiceLayout ? "w-full max-w-none mx-auto" : "w-full max-w-none mx-auto") : ""} ${isEmbedded ? "no-scrollbar" : ""}`}
+        className={`pp-portal-container pp-embed-white-text relative ${isEmbedded ? "border-2 rounded-2xl shadow-none bg-transparent" : (isInvoiceLayout ? "rounded-none border-0 shadow-none bg-transparent" : "rounded-2xl border shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur")} ${isTwoColumnLayout ? (isInvoiceLayout ? "w-full max-w-none mx-auto" : "w-full max-w-none mx-auto") : ""} ${isEmbedded ? "no-scrollbar" : ""}`}
+        data-tp-active={tpThemeApplied ? "1" : undefined}
         style={{
           ...backgroundStyle,
           display: "flex",
