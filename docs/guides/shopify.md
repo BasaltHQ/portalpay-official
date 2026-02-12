@@ -14,6 +14,7 @@ Developer Authentication: `Ocp-Apim-Subscription-Key: {your-subscription-key}`
 Important: Wallet identity is resolved automatically at the gateway based on your subscription. Clients do not include wallet identity.
 
 Related docs:
+
 - Quick Start: `../quickstart.md`
 - Auth & Security: `../auth.md`
 - Orders API: `../api/orders.md`
@@ -25,14 +26,16 @@ Related docs:
 ## 1) Simple Embed (App Proxy + Theme Button)
 
 This pattern adds a button to the storefront that:
+
 1. Reads the Shopify cart client-side (via `/cart.js`).
 2. Calls your backend via Shopify App Proxy to keep secrets server-side.
 3. Your backend calls `POST /api/orders` on PortalPay with cart items.
-4. Redirect customer to `https://pay.ledger1.ai/pay/{receiptId}`.
+4. Redirect customer to `https://pay.ledger1.ai/portal/{receiptId}`.
 
 Why App Proxy? It safely proxies requests from the storefront to your backend and includes an HMAC signature you can verify. This keeps the APIM key and other secrets off the client.
 
 ### Prerequisites
+
 - A private or public Shopify app with App Proxy enabled.
 - App Proxy settings (Shopify Admin → Apps → Your App → App Proxy):
   - Subpath prefix: `apps`
@@ -42,6 +45,7 @@ Why App Proxy? It safely proxies requests from the storefront to your backend an
 - APIM subscription key stored in your backend secret storage.
 
 ### Theme Button + JS (Online Store 2.0)
+
 Add a snippet to your theme (e.g., `main-cart-items.liquid` or a custom section):
 
 ```liquid
@@ -88,6 +92,7 @@ Add a snippet to your theme (e.g., `main-cart-items.liquid` or a custom section)
 ```
 
 ### Backend (App Proxy handler)
+
 Verify App Proxy HMAC and call PortalPay Orders API. Example in Node/Express:
 
 ```typescript
@@ -137,7 +142,7 @@ app.post('/shopify/app-proxy/create-order', async (req, res) => {
     }
 
     const receiptId = data.receipt?.receiptId;
-    const paymentUrl = `${BASE_URL}/pay/${receiptId}`;
+    const paymentUrl = `${BASE_URL}/portal/${receiptId}`;
     return res.json({ ok: true, receiptId, paymentUrl });
   } catch (e: any) {
     console.error('PortalPay order error', e);
@@ -149,6 +154,7 @@ app.listen(3000, () => console.log('App Proxy handler running'));
 ```
 
 Notes:
+
 - Map Shopify product/variant to `sku` expected by your PortalPay inventory. If you don’t maintain SKUs, use your backend to translate variant IDs to PortalPay SKUs.
 - Never expose `APIM_SUBSCRIPTION_KEY` to the browser. Keep all PortalPay calls on the server.
 
@@ -157,6 +163,7 @@ Notes:
 If your deployment allows embedding the PortalPay payment page, you can render it inline via an iframe instead of redirecting.
 
 Requirements:
+
 - The PortalPay origin (`https://pay.ledger1.ai`) must permit framing by your shop domain via Content-Security-Policy `frame-ancestors` (and must not send `X-Frame-Options: DENY`). Enterprise deployments can configure allowed ancestors.
 - Security best practice is to keep secrets server-side (use App Proxy as shown above) and to use `sandbox`/`allow` attributes to limit capabilities inside the iframe.
 
@@ -222,6 +229,7 @@ Theme section example (injects the payment iframe after creating the order via A
 ```
 
 Notes:
+
 - Inline embed is convenient, but redirect can provide clearer payment context and fewer cross-origin constraints. Choose based on your UX and CSP posture.
 - For kiosk/embedded contexts, coordinate with your PortalPay deployment to allow your shop domain in `frame-ancestors`.
 
@@ -230,12 +238,14 @@ Notes:
 ## 2) Advanced Buildout (Shopify App + Admin API + PortalPay)
 
 This pattern integrates tightly with Shopify:
+
 - Use Shopify Admin GraphQL to create a Draft Order when the customer selects Crypto.
 - Create a PortalPay order and redirect to PortalPay payment page.
 - When PortalPay confirms payment (your webhook), complete the Draft Order to create a real Shopify Order.
 - Optionally subscribe to Shopify `ORDERS_CREATE` webhooks for reconciliation.
 
 ### Flow Overview
+
 1. Customer clicks “Pay with Crypto” → Your app server creates `draftOrder` (Shopify Admin GQL).
 2. Your server calls PortalPay `POST /api/orders` and returns `paymentUrl`.
 3. Customer pays on PortalPay.
@@ -354,7 +364,7 @@ async function startCryptoCheckout(shopifySession, cartItems) {
   if (!data.ok) throw new Error(data.error || 'portalpay_error');
 
   const receiptId = data.receipt.receiptId;
-  const paymentUrl = `https://pay.ledger1.ai/pay/${receiptId}`;
+  const paymentUrl = `https://pay.ledger1.ai/portal/${receiptId}`;
 
   // Store mapping: receiptId -> draftOrderId for later completion
   await saveMapping({ receiptId, draftOrderId });
@@ -379,6 +389,7 @@ async function onPortalPayConfirmed(receiptId) {
 ```
 
 Notes:
+
 - Align `sku` mapping across Shopify and PortalPay inventory. Consider metafields to store PortalPay SKU on products/variants.
 - Use jurisdiction based on customer address or shop config.
 - Persist `receiptId` ↔ `draftOrderId` mapping securely.
@@ -395,11 +406,13 @@ Notes:
 ## Error Handling
 
 Common responses from PortalPay Orders API:
+
 - `split_required`: Merchant must configure split contract before orders.
 - `inventory_item_not_found`: Ensure SKU mapping exists.
 - `rate_limited`: Respect rate limit headers and backoff.
 
 Shopify Admin API:
+
 - GraphQL `userErrors`: Inspect `field` and `message`.
 - Missing scopes: Ensure the app has required scopes listed above.
 
@@ -422,16 +435,19 @@ To publish your app to the Shopify App Store, you must complete a rigorous verif
 ### 1. Verification Checklist
 
 #### Business & Legal
+
 - **Domain Ownership**: Verify domain ownership in the Partner Dashboard.
 - **Business Verification**: Submit required business documents (e.g., tax ID, incorporation).
 - **GDPR Compliance**: Ensure your app handles mandatory webhooks: `customers/data_request`, `customers/redact`, `shop/redact`.
 
 #### Technical Requirements
+
 - **Performance**: Your app must not reduce Lighthouse scores by more than 10 points.
 - **Error Handling**: No console errors or 404s/500s during operation.
 - **Billing**: Must use Shopify Billing API for any charges.
 
 #### App Listing
+
 - **App Name**: Unique, no "Shopify" in name, max 30 chars.
 - **Icon**: 1200x1200px, no text.
 - **Demo Store URL**: A live, password-protected development store with the app installed.
@@ -440,19 +456,22 @@ To publish your app to the Shopify App Store, you must complete a rigorous verif
 ### 2. Publishing Workflow & Deep Links
 
 The PortalPay admin panel generates direct deep links to your specific app in the Shopify Partner Dashboard. To enable this:
-1.  **Enter Partner Org ID**: Find this in your Partner Dashboard URL (e.g., `partners.shopify.com/12345678/...`). Enter `12345678` into the PortalPay config.
-2.  **Enter App ID**: Found in your App's overview page.
+
+1. **Enter Partner Org ID**: Find this in your Partner Dashboard URL (e.g., `partners.shopify.com/12345678/...`). Enter `12345678` into the PortalPay config.
+2. **Enter App ID**: Found in your App's overview page.
 
 Once configured, use the "Publish" tab in PortalPay to quickly navigate to:
+
 - **App Configuration**: To update URLs and scopes.
 - **Extensions**: To upload your app package.
 - **Distribution**: To create your listing and submit for review.
 
 ### 3. Submission Steps
-1.  **Generate Package**: Use the "Generate Package" button in PortalPay.
-2.  **Upload**: Go to the **Extensions** deep link and upload the ZIP.
-3.  **Create Listing**: Go to **Distribution** -> **Create Listing**. Fill in all fields (Description, Screenshots, Pricing).
-4.  **Submit**: Click "Submit for review".
+
+1. **Generate Package**: Use the "Generate Package" button in PortalPay.
+2. **Upload**: Go to the **Extensions** deep link and upload the ZIP.
+3. **Create Listing**: Go to **Distribution** -> **Create Listing**. Fill in all fields (Description, Screenshots, Pricing).
+4. **Submit**: Click "Submit for review".
 
 ---
 
@@ -460,6 +479,6 @@ Once configured, use the "Publish" tab in PortalPay to quickly navigate to:
 
 - PortalPay Orders API: `../api/orders.md`
 - PortalPay Shop Config API: `../api/shop.md`
-- Shopify Admin API GraphQL: https://shopify.dev/docs/api/admin-graphql
-- Shopify App Proxy: https://shopify.dev/docs/apps/online-store/app-proxy
-- Shopify Webhooks: https://shopify.dev/docs/apps/build/webhooks
+- Shopify Admin API GraphQL: <https://shopify.dev/docs/api/admin-graphql>
+- Shopify App Proxy: <https://shopify.dev/docs/apps/online-store/app-proxy>
+- Shopify Webhooks: <https://shopify.dev/docs/apps/build/webhooks>

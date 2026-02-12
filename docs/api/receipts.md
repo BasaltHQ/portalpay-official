@@ -5,6 +5,7 @@ View and manage receipts, generate payment payloads, and track payment status.
 ## Overview
 
 Receipt APIs allow you to:
+
 - List recent receipts
 - Create a payment receipt payload (for QR or portal checkout)
 - Retrieve a specific receipt
@@ -18,6 +19,7 @@ Receipt APIs allow you to:
 - Wallet identity is resolved automatically at the gateway based on your subscription. Clients must not send wallet identity headers; APIM strips wallet headers and stamps the resolved identity.
 
 Gateway posture:
+
 - APIM custom domain is the primary client endpoint.
 - Azure Front Door (AFD) may be configured as an optional/fallback edge; if enabled, APIM will accept an internal `x-edge-secret` per policy.
 - Rate limiting headers may be present when enabled:
@@ -50,6 +52,7 @@ List recent receipts for the merchant associated with your subscription.
 ### Request
 
 Headers:
+
 ```http
 Ocp-Apim-Subscription-Key: {your-subscription-key}
 ```
@@ -91,6 +94,7 @@ data = r.json()
 ### Response
 
 Success (200 OK):
+
 ```json
 {
   "receipts": [
@@ -112,6 +116,7 @@ Success (200 OK):
 ```
 
 Degraded Mode (Cosmos unavailable):
+
 ```json
 {
   "receipts": [ "..."],
@@ -121,6 +126,7 @@ Degraded Mode (Cosmos unavailable):
 ```
 
 Response Headers (when enabled at gateway):
+
 - `X-RateLimit-Limit`
 - `X-RateLimit-Remaining`
 - `X-RateLimit-Reset`
@@ -154,12 +160,14 @@ Create a receipt payload for a QR-code payment portal. The returned `paymentUrl`
 ### Request
 
 Headers:
+
 ```http
 Content-Type: application/json
 Ocp-Apim-Subscription-Key: {your-subscription-key}
 ```
 
 Body (JSON):
+
 ```json
 {
   "id": "rcpt_12345",
@@ -172,6 +180,7 @@ Body (JSON):
 ```
 
 Fields:
+
 - `id` (string, required): Unique receipt ID you assign
 - `lineItems` (array, required): Array of `{ label, priceUsd }` items
 - `totalUsd` (number, required): Order total in USD
@@ -238,15 +247,17 @@ data = r.json()
 ### Response
 
 Created (201):
+
 ```json
 {
   "id": "rcpt_12345",
-  "paymentUrl": "https://pay.ledger1.ai/pay/rcpt_12345",
+  "paymentUrl": "https://pay.ledger1.ai/portal/rcpt_12345",
   "status": "pending"
 }
 ```
 
 Other responses:
+
 - 400: `invalid_input`
 - 401: `unauthorized`
 - 403: `forbidden`
@@ -254,6 +265,7 @@ Other responses:
 - 500: `Server error`
 
 Response Headers (when enabled at gateway):
+
 - `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 
 ---
@@ -277,6 +289,7 @@ Retrieve a specific receipt by ID.
 ### Request
 
 Headers:
+
 ```http
 Ocp-Apim-Subscription-Key: {your-subscription-key}
 ```
@@ -288,6 +301,7 @@ Path Parameters:
 | `id` | string | Yes | Receipt ID (e.g., `rcpt_12345`) |
 
 Example:
+
 ```bash
 curl -X GET "https://api.pay.ledger1.ai/portalpay/api/receipts/rcpt_12345" \
   -H "Ocp-Apim-Subscription-Key: $APIM_SUBSCRIPTION_KEY"
@@ -296,6 +310,7 @@ curl -X GET "https://api.pay.ledger1.ai/portalpay/api/receipts/rcpt_12345" \
 ### Response
 
 Success (200 OK):
+
 ```json
 {
   "receiptId": "rcpt_12345",
@@ -317,12 +332,14 @@ Success (200 OK):
 ```
 
 Other responses:
+
 - 401: `unauthorized`
 - 403: `forbidden`
 - 404: `Not found`
 - 429: `rate_limited`
 
 Response Headers (when enabled at gateway):
+
 - `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 
 ---
@@ -349,6 +366,7 @@ Check payment status for a receipt.
 ### Request
 
 Headers:
+
 ```http
 Ocp-Apim-Subscription-Key: {your-subscription-key}
 ```
@@ -360,6 +378,7 @@ Query Parameters:
 | `receiptId` | string | Yes | Receipt ID to check |
 
 Example:
+
 ```bash
 curl -X GET "https://api.pay.ledger1.ai/portalpay/api/receipts/status?receiptId=rcpt_12345" \
   -H "Ocp-Apim-Subscription-Key: $APIM_SUBSCRIPTION_KEY"
@@ -368,6 +387,7 @@ curl -X GET "https://api.pay.ledger1.ai/portalpay/api/receipts/status?receiptId=
 ### Response
 
 Success (200 OK):
+
 ```json
 {
   "id": "rcpt_12345",
@@ -379,16 +399,19 @@ Success (200 OK):
 ```
 
 Other responses:
+
 - 401: `unauthorized`
 - 403: `forbidden`
 - 404: `Not found`
 - 429: `rate_limited`
 
 Status values:
+
 - `generated`, `pending`, `completed`, `failed`, `refunded`,
 - `tx_mined`, `recipient_validated`, `tx_mismatch`
 
 Response Headers (when enabled at gateway):
+
 - `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 
 ---
@@ -403,12 +426,14 @@ Update receipt status (tracking and sensitive events).
 ### Request
 
 Headers:
+
 ```http
 Content-Type: application/json
 Ocp-Apim-Subscription-Key: {your-subscription-key}  # when invoked via developer path
 ```
 
 Body (JSON):
+
 ```json
 {
   "receiptId": "rcpt_12345",
@@ -420,17 +445,20 @@ Body (JSON):
 ### Response
 
 Success (200 OK):
+
 ```json
 { "ok": true }
 ```
 
 Other responses:
+
 - 400: `missing_receipt_id` | `invalid_wallet` | `missing_status`
 - 403: `forbidden`
 - 429: `rate_limited`
 - 500: `failed`
 
 Response Headers:
+
 - `x-correlation-id`
 
 ---
@@ -442,12 +470,14 @@ Log a refund entry for a receipt and update status history. This operation is pe
 ### Request
 
 Headers:
+
 ```http
 Content-Type: application/json
 Cookie: cb_auth_token=...
 ```
 
 Body (JSON):
+
 ```json
 {
   "receiptId": "rcpt_12345",
@@ -464,17 +494,20 @@ Body (JSON):
 ### Response
 
 Success (200 OK):
+
 ```json
 { "ok": true }
 ```
 
 Other responses:
+
 - 400: `missing_receipt_id` | `invalid_wallet` | `invalid_buyer` | `invalid_usd`
 - 403: `forbidden`
 - 429: `rate_limited`
 - 500: `failed`
 
 Response Headers:
+
 - `x-correlation-id`
 
 ---
@@ -488,12 +521,14 @@ Generate a terminal receipt (single amount + optional tax/fees). Useful for POS-
 ### Request
 
 Headers:
+
 ```http
 Content-Type: application/json
 Cookie: cb_auth_token=...
 ```
 
 Body (JSON):
+
 ```json
 {
   "amountUsd": 25.0,
@@ -508,6 +543,7 @@ Body (JSON):
 ### Response
 
 Success (200 OK):
+
 ```json
 {
   "ok": true,
@@ -526,12 +562,14 @@ Success (200 OK):
 ```
 
 Other responses:
+
 - 400: `wallet_required` | `invalid_amount`
 - 403: `split_required`
 - 429: `rate_limited`
 - 500: `failed`
 
 Response Headers:
+
 - `x-correlation-id`
 
 ---
@@ -539,26 +577,31 @@ Response Headers:
 ## Error Responses
 
 401 Unauthorized
+
 ```json
 { "error": "unauthorized", "message": "Missing or invalid subscription key" }
 ```
 
 403 Forbidden
+
 ```json
 { "error": "forbidden", "message": "Insufficient scope or origin enforcement failed" }
 ```
 
 429 Too Many Requests
+
 ```json
 { "error": "rate_limited", "resetAt": 1698765432000 }
 ```
 
 404 Not Found
+
 ```json
 { "error": "not_found", "message": "Receipt not found" }
 ```
 
 400 Bad Request
+
 ```json
 { "error": "invalid_input", "message": "Invalid request" }
 ```
@@ -616,7 +659,7 @@ export async function getReceiptStatus(receiptId: string) {
 }
 
 export function getPaymentUrl(receiptId: string) {
-  return `${SITE_BASE}/pay/${receiptId}`;
+  return `${SITE_BASE}/portal/${receiptId}`;
 }
 ```
 
@@ -648,7 +691,7 @@ def get_receipt_status(receipt_id):
   return r.json()
 
 def get_payment_url(receipt_id):
-  return f'{SITE_BASE}/pay/{receipt_id}'
+  return f'{SITE_BASE}/portal/{receipt_id}'
 ```
 
 ---

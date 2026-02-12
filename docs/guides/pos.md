@@ -62,7 +62,7 @@ async function createTerminalOrder(items: any[]) {
 
 ```typescript
 async function displayPaymentQR(receiptId: string) {
-  const paymentUrl = `https://pay.ledger1.ai/pay/${receiptId}`;
+  const paymentUrl = `https://pay.ledger1.ai/portal/${receiptId}`;
 
   // Generate QR code locally from payment URL (admin-only terminal endpoint is JWT-only)
   const qrCode = await generateQrCode(paymentUrl); // implement with your QR library
@@ -185,7 +185,7 @@ async function printReceipt(receipt: any) {
   printer.println(`Receipt: ${receipt.receiptId}`);
   
   // QR code for digital receipt
-  printer.printQR(`https://pay.ledger1.ai/pay/${receipt.receiptId}`);
+  printer.printQR(`https://pay.ledger1.ai/portal/${receipt.receiptId}`);
   
   printer.cut();
   await printer.execute();

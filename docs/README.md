@@ -70,6 +70,7 @@ If AFD is used, it injects an internal header `x-edge-secret` which APIM validat
 ### Rate Limiting
 
 Gateway/backend quotas and rate limits apply per subscription. Responses may include:
+
 - `X-RateLimit-Limit`
 - `X-RateLimit-Remaining`
 - `X-RateLimit-Reset`
@@ -79,6 +80,7 @@ On `429 Too Many Requests`, implement exponential backoff. See [Rate Limits](./l
 ### Security Model (Summary)
 
 Defense-in-depth:
+
 - Azure API Management (APIM)
   - Products, subscriptions, scopes, quotas, rate limits
   - Diagnostics to Log Analytics/Sentinel
@@ -168,8 +170,9 @@ curl -X GET "https://api.pay.ledger1.ai/portalpay/api/receipts?limit=10" \
 ```
 
 Payment page:
+
 ```
-https://pay.ledger1.ai/pay/{receiptId}
+https://pay.ledger1.ai/portal/{receiptId}
 ```
 
 ---

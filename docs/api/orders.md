@@ -47,6 +47,7 @@ Generate an order/receipt from inventory items.
 ### Request
 
 Headers:
+
 ```http
 Content-Type: application/json
 Ocp-Apim-Subscription-Key: {your-subscription-key}
@@ -124,6 +125,7 @@ data = r.json()
 ### Response
 
 Success (200 OK):
+
 ```json
 {
   "ok": true,
@@ -168,6 +170,7 @@ Success (200 OK):
 ```
 
 Degraded Mode:
+
 ```json
 {
   "ok": true,
@@ -204,6 +207,7 @@ curl -X POST "https://api.pay.ledger1.ai/portalpay/api/orders" \
 ### Manual Tax Rate
 
 Override automatic tax with a specific rate:
+
 ```bash
 curl -X POST "https://api.pay.ledger1.ai/portalpay/api/orders" \
   -H "Content-Type: application/json" \
@@ -217,6 +221,7 @@ curl -X POST "https://api.pay.ledger1.ai/portalpay/api/orders" \
 ### Specific Tax Components
 
 Apply only specific tax components from a jurisdiction:
+
 ```bash
 curl -X POST "https://api.pay.ledger1.ai/portalpay/api/orders" \
   -H "Content-Type: application/json" \
@@ -231,6 +236,7 @@ curl -X POST "https://api.pay.ledger1.ai/portalpay/api/orders" \
 ### Tax-Exempt Items
 
 Only items marked `taxable: true` in inventory are taxed:
+
 ```typescript
 // Taxable product
 { "sku": "FOOD-001", "taxable": true }  // Will be taxed
@@ -246,10 +252,12 @@ Only items marked `taxable: true` in inventory are taxed:
 Processing fees are automatically calculated and added to orders.
 
 Fee Structure:
+
 - Base Fee: 0.5% (platform)
 - Merchant Add-On: Configurable in shop settings
 
 Examples:
+
 ```
 Subtotal: $100.00
 Tax (9.5%): $9.50
@@ -259,6 +267,7 @@ Total: $110.05
 ```
 
 With custom 1.5% merchant fee (2% total):
+
 ```
 Subtotal: $100.00
 Tax (9.5%): $9.50
@@ -274,16 +283,19 @@ Configure merchant processing fee in [Shop Configuration](./shop.md).
 ## Payment URL
 
 After generating an order, customers pay via:
+
 ```
-https://pay.ledger1.ai/pay/{receiptId}
+https://pay.ledger1.ai/portal/{receiptId}
 ```
 
 Example:
+
 ```
-https://pay.ledger1.ai/pay/R-123456
+https://pay.ledger1.ai/portal/R-123456
 ```
 
 The payment page displays:
+
 - Itemized receipt
 - QR code for mobile wallets
 - Currency selection (ETH, USDC, USDT, etc.)
@@ -312,26 +324,31 @@ generated → pending → paid → completed
 ## Error Responses
 
 401 Unauthorized
+
 ```json
 { "error": "unauthorized", "message": "Missing or invalid subscription key" }
 ```
 
 403 Forbidden
+
 ```json
 { "error": "forbidden", "message": "Insufficient scope or not allowed" }
 ```
 
 429 Too Many Requests
+
 ```json
 { "error": "rate_limited", "resetAt": 1698765432000 }
 ```
 
 400 Bad Request
+
 ```json
 { "error": "items_required", "message": "At least one item is required" }
 ```
 
 Other common error codes:
+
 - `inventory_item_not_found` – SKU or ID not found in inventory
 - `split_required` – Split contract not configured for this merchant
 - `invalid_input` – Invalid request parameters
@@ -341,6 +358,7 @@ Other common error codes:
 ## Advanced Examples
 
 ### Mixed Taxable/Non-Taxable Items (curl)
+
 ```bash
 curl -X POST "https://api.pay.ledger1.ai/portalpay/api/orders" \
   -H "Content-Type: application/json" \
@@ -355,6 +373,7 @@ curl -X POST "https://api.pay.ledger1.ai/portalpay/api/orders" \
 ```
 
 Response calculates tax only on taxable items:
+
 ```json
 {
   "lineItems": [
@@ -366,6 +385,7 @@ Response calculates tax only on taxable items:
 ```
 
 ### Bulk Orders (curl)
+
 ```bash
 curl -X POST "https://api.pay.ledger1.ai/portalpay/api/orders" \
   -H "Content-Type: application/json" \
@@ -381,6 +401,7 @@ curl -X POST "https://api.pay.ledger1.ai/portalpay/api/orders" \
 ```
 
 ### Using Item IDs (curl)
+
 ```bash
 curl -X POST "https://api.pay.ledger1.ai/portalpay/api/orders" \
   -H "Content-Type: application/json" \
@@ -398,6 +419,7 @@ curl -X POST "https://api.pay.ledger1.ai/portalpay/api/orders" \
 ## Code Examples
 
 ### JavaScript/TypeScript
+
 ```typescript
 const APIM_SUBSCRIPTION_KEY = process.env.APIM_SUBSCRIPTION_KEY!;
 const API_BASE = 'https://api.pay.ledger1.ai/portalpay';
@@ -422,7 +444,7 @@ async function createOrder(cartItems: any[], jurisdiction?: string) {
 }
 
 function getPaymentUrl(receiptId: string) {
-  return `${SITE_BASE}/pay/${receiptId}`;
+  return `${SITE_BASE}/portal/${receiptId}`;
 }
 
 async function createOrderWithTax(items: any[], taxRate: number) {
@@ -449,6 +471,7 @@ async function checkout(cart: any[]) {
 ```
 
 ### Python
+
 ```python
 import os, requests
 APIM_SUBSCRIPTION_KEY = os.environ['APIM_SUBSCRIPTION_KEY']
@@ -472,7 +495,7 @@ def create_order(cart_items, jurisdiction=None):
     return data['receipt']
 
 def get_payment_url(receipt_id):
-    return f'{SITE_BASE}/pay/{receipt_id}'
+    return f'{SITE_BASE}/portal/{receipt_id}'
 ```
 
 ---
@@ -480,6 +503,7 @@ def get_payment_url(receipt_id):
 ## Best Practices
 
 ### Inventory Validation
+
 ```typescript
 // Good: Check inventory first
 const inventory = await listProducts();
@@ -491,14 +515,18 @@ const order2 = await createOrder(cart);  // May fail if SKU missing
 ```
 
 ### Tax Jurisdiction
+
 Use customer location to set jurisdiction.
+
 ```typescript
 const jurisdiction = 'US-CA';
 const order = await createOrder(cart, jurisdiction);
 ```
 
 ### Error Handling
+
 Handle `split_required` gracefully:
+
 ```typescript
 try {
   const order = await createOrder(cart);

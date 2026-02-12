@@ -147,7 +147,7 @@ export async function POST(req: Request) {
   // Return payment URL
   return Response.json({
     receiptId: order.receipt.receiptId,
-    paymentUrl: `https://pay.ledger1.ai/pay/${order.receipt.receiptId}`,
+    paymentUrl: `https://pay.ledger1.ai/portal/${order.receipt.receiptId}`,
     total: order.receipt.totalUsd
   });
 }

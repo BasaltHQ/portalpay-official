@@ -60,7 +60,7 @@ async function createPaymentLink(amount: number, description: string) {
   
   return {
     receiptId: order.receipt.receiptId,
-    paymentUrl: `https://pay.ledger1.ai/pay/${order.receipt.receiptId}`,
+    paymentUrl: `https://pay.ledger1.ai/portal/${order.receipt.receiptId}`,
     amount: order.receipt.totalUsd
   };
 }
@@ -102,7 +102,7 @@ function CheckoutButton({ amount }: { amount: number }) {
 
 ### Embedded Portal iframe (recommended)
 
-PortalPay provides a portal route you can embed directly to collect payments. This works in dashboard modals and shop pages and specifically allows embedding from https://pay.ledger1.ai.
+PortalPay provides a portal route you can embed directly to collect payments. This works in dashboard modals and shop pages and specifically allows embedding from <https://pay.ledger1.ai>.
 
 ---
 
@@ -122,6 +122,7 @@ The portal supports multiple parameters to customize the experience:
 ### Layout Modes
 
 #### Compact Mode (Default)
+
 - **Max width**: 428px
 - **Layout**: Single column, mobile-optimized
 - **Best for**: Modal dialogs, mobile views, subscription upgrades
@@ -133,6 +134,7 @@ const compactUrl = `https://pay.ledger1.ai/portal/${receiptId}?recipient=${walle
 ```
 
 #### Wide Mode
+
 - **Max width**: 980px
 - **Layout**: Two-column grid (receipt left, payment right)
 - **Best for**: Full-page checkouts, desktop experiences
@@ -144,6 +146,7 @@ const wideUrl = `https://pay.ledger1.ai/portal/${receiptId}?recipient=${wallet}&
 ```
 
 #### Invoice Mode
+
 - Max width: responsive two-column (receipt left, payment right) with decorative gradient
 - Layout: Invoice presentation optimized for full-page, desktop/tablet
 - Best for: Invoicing flows, quotes, long line items
@@ -162,6 +165,7 @@ const invoiceUrlByMode = `https://pay.ledger1.ai/portal/${receiptId}?recipient=$
 ```
 
 ### Sizing & Presentation
+
 - Set `embedded=1` when rendering in an iframe to enable transparent background.
 - Width should be `100%`. Height should be managed via the PostMessage event `gateway-preferred-height`.
 - The portal posts `gateway-preferred-height` as content changes; set your iframe height to the provided value.
@@ -305,6 +309,7 @@ The portal communicates with parent windows via postMessage for embedded scenari
 ### Events Sent from Portal
 
 #### 1. Preferred Height (`gateway-preferred-height`)
+
 Sent when portal content size changes for responsive iframe sizing.
 
 ```typescript
@@ -317,6 +322,7 @@ Sent when portal content size changes for responsive iframe sizing.
 ```
 
 #### 2. Payment Success (`gateway-card-success`)
+
 Sent when payment completes successfully.
 
 ```typescript
@@ -330,6 +336,7 @@ Sent when payment completes successfully.
 ```
 
 #### 3. Payment Cancel (`gateway-card-cancel`)
+
 Sent when user cancels the payment.
 
 ```typescript
@@ -379,6 +386,7 @@ useEffect(() => {
 ## Receipt API Integration
 
 ### Key Points
+
 - Use the portal URL shape: `/portal/{receiptId}?recipient={wallet}&correlationId={id}`
 - `recipient` is the merchant wallet address (0x...), used as the Cosmos partition
 - `correlationId` is recommended for subscription flows (maps to a seeded receipt amount via `apim_subscription_payment`)
@@ -446,7 +454,7 @@ export async function GET(req: Request) {
 After payment, redirect customer back to your site:
 
 ```typescript
-const paymentUrl = `https://pay.ledger1.ai/pay/${receiptId}?returnUrl=${encodeURIComponent('https://yoursite.com/order-confirmation')}`;
+const paymentUrl = `https://pay.ledger1.ai/portal/${receiptId}?returnUrl=${encodeURIComponent('https://yoursite.com/order-confirmation')}`;
 ```
 
 ### Confirmation Page

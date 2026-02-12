@@ -68,7 +68,7 @@ async function onboarding() {
   const order = await orderResponse.json();
   console.log('✓ Order created:', order.receipt.receiptId);
   console.log(`  Total: $${order.receipt.totalUsd}`);
-  console.log(`  Payment URL: ${BASE_URL}/pay/${order.receipt.receiptId}`);
+  console.log(`  Payment URL: ${BASE_URL}/portal/${order.receipt.receiptId}`);
 }
 
 onboarding().catch(console.error);
@@ -124,7 +124,7 @@ def onboarding():
     receipt = order['receipt']
     print(f"✓ Order created: {receipt['receiptId']}")
     print(f"  Total: ${receipt['totalUsd']}")
-    print(f"  Payment URL: {BASE_URL}/pay/{receipt['receiptId']}")
+    print(f"  Payment URL: {BASE_URL}/portal/{receipt['receiptId']}")
 
 if __name__ == '__main__':
     onboarding()
@@ -261,6 +261,7 @@ function InvoiceCheckoutPage({ receiptId, recipient }: {
 ```
 
 Sizing notes:
+
 - Manage height dynamically using the `gateway-preferred-height` postMessage to avoid scrollbars.
 - Typical minimum heights:
   - Compact: ~560–600px
@@ -370,6 +371,7 @@ function PaymentFlow({ items }: { items: any[] }) {
 ## JavaScript/TypeScript
 
 See detailed examples in:
+
 - [Split Contract Examples](../api/split.md#code-examples)
 - [Inventory Examples](../api/inventory.md#code-examples)
 - [Order Examples](../api/orders.md#code-examples)
@@ -381,6 +383,7 @@ See detailed examples in:
 ## Python
 
 See detailed examples in:
+
 - [Split Contract Examples](../api/split.md#code-examples)
 - [Inventory Examples](../api/inventory.md#code-examples)
 - [Order Examples](../api/orders.md#code-examples)

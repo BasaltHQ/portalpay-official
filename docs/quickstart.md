@@ -9,6 +9,7 @@ Get up and running with PortalPay using the APIM custom domain and subscription-
 - All API calls: prefix with `/portalpay/api/*` (rewritten to `/api/*` for the backend by APIM policy)
 
 Example full paths:
+
 - Inventory list: `GET https://api.pay.ledger1.ai/portalpay/api/inventory`
 - Create order: `POST https://api.pay.ledger1.ai/portalpay/api/orders`
 - Receipts list: `GET https://api.pay.ledger1.ai/portalpay/api/receipts`
@@ -20,12 +21,14 @@ Example full paths:
 - The APIM policy stamps `x-subscription-id` for backend wallet resolution and strips any client-supplied wallet headers.
 
 Notes:
+
 - Treat your APIM key like a secret; rotate if compromised.
 - Client requests should not include wallet headers; the gateway resolves wallet from your subscription.
 
 ## Step 1: Set Your Subscription Key
 
 Store your key securely as an environment variable:
+
 ```bash
 # .env
 APIM_SUBSCRIPTION_KEY=your_apim_subscription_key
@@ -34,14 +37,17 @@ APIM_SUBSCRIPTION_KEY=your_apim_subscription_key
 ## Step 2: Validate Health
 
 Health check requires no subscription key:
+
 ```bash
 curl -i https://api.pay.ledger1.ai/portalpay/healthz
 ```
+
 Expect `200 OK` and a simple JSON payload.
 
 ## Step 3: Create Your First Product (Developer API)
 
 cURL:
+
 ```bash
 curl -X POST "https://api.pay.ledger1.ai/portalpay/api/inventory" \
   -H "Content-Type: application/json" \
@@ -59,6 +65,7 @@ curl -X POST "https://api.pay.ledger1.ai/portalpay/api/inventory" \
 ```
 
 Success Response (200):
+
 ```json
 {
   "ok": true,
@@ -80,6 +87,7 @@ Success Response (200):
 ## Step 4: Generate Your First Order (Developer API)
 
 cURL:
+
 ```bash
 curl -X POST "https://api.pay.ledger1.ai/portalpay/api/orders" \
   -H "Content-Type: application/json" \
@@ -93,6 +101,7 @@ curl -X POST "https://api.pay.ledger1.ai/portalpay/api/orders" \
 ```
 
 Success Response (200):
+
 ```json
 {
   "ok": true,
@@ -116,12 +125,14 @@ Success Response (200):
 ## Step 5: View Your Receipts (Developer API)
 
 cURL:
+
 ```bash
 curl -X GET "https://api.pay.ledger1.ai/portalpay/api/receipts?limit=10" \
   -H "Ocp-Apim-Subscription-Key: $APIM_SUBSCRIPTION_KEY"
 ```
 
 Success Response (200):
+
 ```json
 {
   "receipts": [
@@ -140,15 +151,19 @@ Success Response (200):
 ## Customer Payment Link
 
 Customers pay via the public portal using a payment URL:
+
 ```
-https://pay.ledger1.ai/pay/{receiptId}
+https://pay.ledger1.ai/portal/{receiptId}
 ```
+
 For receipt `R-123456`:
+
 ```
-https://pay.ledger1.ai/pay/R-123456
+https://pay.ledger1.ai/portal/R-123456
 ```
 
 The payment page shows:
+
 - Itemized receipt
 - Currency selection (ETH, USDC, USDT, etc.)
 - Wallet payment instructions and confirmation
@@ -156,11 +171,13 @@ The payment page shows:
 ## Rate Limiting and Headers
 
 When APIM policy enforcement is enabled, responses may include rate limiting headers:
+
 - `X-RateLimit-Limit`
 - `X-RateLimit-Remaining`
 - `X-RateLimit-Reset` (Unix ms)
 
 Implement backoff on HTTP 429:
+
 ```json
 { "error": "rate_limited", "resetAt": 1698765432000 }
 ```
@@ -217,7 +234,7 @@ async function createOrder() {
     })
   });
   const data = await res.json();
-  console.log('Payment URL:', `https://pay.ledger1.ai/pay/${data.receipt.receiptId}`);
+  console.log('Payment URL:', `https://pay.ledger1.ai/portal/${data.receipt.receiptId}`);
   return data;
 }
 
@@ -257,7 +274,7 @@ def create_order():
         json={'items': [{'sku': 'COFFEE-001', 'qty': 2}], 'jurisdictionCode': 'US-CA'}
     )
     data = r.json()
-    print('Payment URL:', f"https://pay.ledger1.ai/pay/{data['receipt']['receiptId']}")
+    print('Payment URL:', f"https://pay.ledger1.ai/portal/{data['receipt']['receiptId']}")
     return data
 
 if __name__ == '__main__':
@@ -268,33 +285,43 @@ if __name__ == '__main__':
 ## Common Issues
 
 Unauthorized (401)
+
 ```json
 { "error": "unauthorized", "message": "Missing or invalid subscription key" }
 ```
+
 - Ensure you pass `Ocp-Apim-Subscription-Key` on every developer API request.
 
 Forbidden (403)
+
 ```json
 { "error": "forbidden", "message": "Insufficient scope or not allowed" }
 ```
+
 - Your subscription does not have the required scope (e.g., `orders:create`, `inventory:write`).
 
 Prefix Required
+
 ```json
 { "error": "not_found", "message": "Route not found. Ensure /portalpay prefix." }
 ```
+
 - Ensure you are calling `https://api.pay.ledger1.ai/portalpay/...` and not the backend origin directly.
 
 Split Required
+
 ```json
 { "error": "split_required", "message": "Split contract not configured for this merchant" }
 ```
+
 - Configure split in the PortalPay Admin UI before creating orders.
 
 Rate Limited (429)
+
 ```json
 { "error": "rate_limited", "resetAt": 1698765432000 }
 ```
+
 - Respect rate limits. Use `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` and implement backoff.
 
 ## AFD (Optional Fallback)
