@@ -180,7 +180,7 @@ export const THEME_REGISTRY: Record<string, TouchpointTheme> = {
 };
 
 /** Default theme ID used when nothing else is configured */
-export const DEFAULT_THEME_ID = "wireframe";
+export const DEFAULT_THEME_ID = "modern";
 
 /** Get a theme by ID (falls back to wireframe) */
 export function getTheme(id: string | undefined | null): TouchpointTheme {

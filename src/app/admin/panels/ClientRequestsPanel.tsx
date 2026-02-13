@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useActiveAccount } from "thirdweb/react";
 // Forced HMR update
 import Link from "next/link";
@@ -9,6 +9,8 @@ import { ensureSplitForWallet } from "@/lib/thirdweb/split";
 import { useBrand } from "@/contexts/BrandContext";
 import ShopConfigEditor from "@/components/admin/ShopConfigEditor";
 import { ReserveSettings } from "@/components/admin/reserve/ReserveSettings";
+import { TouchpointThemeCards, ThemePickerModal } from "@/components/admin/TouchpointThemePicker";
+import type { TouchpointType } from "@/lib/themes";
 
 type ClientRequest = {
     id: string;
@@ -734,7 +736,7 @@ export default function ClientRequestsPanel() {
                                             <tr className="bg-foreground/[0.02]">
                                                 <td colSpan={5} className="px-4 py-4 border-t border-foreground/5">
                                                     <div className="flex items-center gap-4 mb-4 border-b border-white/5 pb-2">
-                                                        {["details", "config", "team", "reserve"].map(tab => (
+                                                        {["details", "config", "team", "reserve", "themes"].map(tab => (
                                                             <button
                                                                 key={tab}
                                                                 onClick={() => setActiveTabs(prev => ({ ...prev, [req.id]: tab }))}
@@ -743,7 +745,7 @@ export default function ClientRequestsPanel() {
                                                                     : "border-transparent text-muted-foreground hover:text-zinc-300"
                                                                     }`}
                                                             >
-                                                                {tab === "details" ? "Details" : tab === "config" ? "Shop Config" : tab === "team" ? "Team" : "Reserve"}
+                                                                {tab === "details" ? "Details" : tab === "config" ? "Shop Config" : tab === "team" ? "Team" : tab === "reserve" ? "Reserve" : "Themes"}
                                                             </button>
                                                         ))}
                                                     </div>
@@ -835,6 +837,12 @@ export default function ClientRequestsPanel() {
                                                                 />
                                                             </div>
                                                         </div>
+                                                    ) : (activeTabs[req.id] === "themes") ? (
+                                                        <TouchpointThemesTab
+                                                            merchantWallet={req.wallet}
+                                                            adminWallet={account?.address || ""}
+                                                            brandKey={brandKey}
+                                                        />
                                                     ) : (
                                                         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
                                                             <div className="w-full">
@@ -1321,6 +1329,122 @@ export default function ClientRequestsPanel() {
                     </div>
                 )
             }
+        </div>
+    );
+}
+
+// ──────────────────────────────────────────────────────
+// TOUCHPOINT THEMES TAB — Admin override for merchant themes
+// ──────────────────────────────────────────────────────
+function TouchpointThemesTab({
+    merchantWallet,
+    adminWallet,
+    brandKey,
+}: {
+    merchantWallet: string;
+    adminWallet: string;
+    brandKey: string;
+}) {
+    const [touchpointThemes, setTouchpointThemes] = useState<Record<string, string>>({});
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<string>("");
+    const [pickerOpen, setPickerOpen] = useState<{ type: TouchpointType; label: string } | null>(null);
+
+    // Load merchant's current touchpoint themes
+    useEffect(() => {
+        if (!merchantWallet) return;
+        setLoading(true);
+        (async () => {
+            try {
+                const r = await fetch(`/api/site/config?wallet=${merchantWallet}`);
+                const j = await r.json();
+                const cfg = j.config || {};
+                if (cfg.touchpointThemes && typeof cfg.touchpointThemes === "object") {
+                    setTouchpointThemes(cfg.touchpointThemes);
+                }
+            } catch (e) {
+                console.error("Failed to load merchant themes", e);
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, [merchantWallet]);
+
+    // Save theme selection (admin acting on behalf of merchant)
+    const saveThemeSelection = useCallback(async (touchpoint: string, themeId: string) => {
+        if (!merchantWallet || !adminWallet) return;
+        setSaving(true);
+        setSaveStatus("");
+        const updated = { ...touchpointThemes, [touchpoint]: themeId };
+        setTouchpointThemes(updated);
+
+        try {
+            const r = await fetch(`/api/site/config?wallet=${merchantWallet}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-wallet": adminWallet,
+                },
+                body: JSON.stringify({ touchpointThemes: updated }),
+            });
+            const j = await r.json();
+            if (r.ok && !j.error) {
+                setSaveStatus("Theme saved successfully.");
+            } else {
+                setSaveStatus(`Error: ${j.error || "Save failed"}`);
+            }
+        } catch (e: any) {
+            console.error("Failed to save touchpoint theme", e);
+            setSaveStatus(`Error: ${e?.message || "Save failed"}`);
+        } finally {
+            setSaving(false);
+            setTimeout(() => setSaveStatus(""), 3000);
+        }
+    }, [merchantWallet, adminWallet, touchpointThemes]);
+
+    if (loading) {
+        return (
+            <div className="animate-in fade-in slide-in-from-top-1 duration-200 p-4 text-sm text-muted-foreground">
+                Loading theme configuration…
+            </div>
+        );
+    }
+
+    return (
+        <div className="animate-in fade-in slide-in-from-top-1 duration-200 space-y-4">
+            <div>
+                <h4 className="text-sm font-medium mb-1">Touchpoint Themes (Admin Override)</h4>
+                <p className="text-xs text-muted-foreground mb-4">
+                    Configure the visual theme for each touchpoint. Changes are applied immediately to the merchant&apos;s devices.
+                </p>
+            </div>
+
+            <TouchpointThemeCards
+                touchpointThemes={touchpointThemes}
+                onOpenPicker={(type, label) => setPickerOpen({ type, label })}
+                saving={saving}
+            />
+
+            {saveStatus && (
+                <div className={`text-xs ${saveStatus.startsWith("Error") ? "text-red-400" : "text-emerald-400"}`}>
+                    {saveStatus}
+                </div>
+            )}
+
+            {/* Theme Picker Modal */}
+            {pickerOpen && (
+                <ThemePickerModal
+                    touchpointType={pickerOpen.type}
+                    touchpointLabel={pickerOpen.label}
+                    currentThemeId={touchpointThemes[pickerOpen.type] || "modern"}
+                    onSelect={async (themeId) => {
+                        await saveThemeSelection(pickerOpen.type, themeId);
+                        setPickerOpen(null);
+                    }}
+                    onClose={() => setPickerOpen(null)}
+                />
+            )}
         </div>
     );
 }
