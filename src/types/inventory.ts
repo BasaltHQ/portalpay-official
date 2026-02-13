@@ -30,6 +30,10 @@ export interface BaseInventoryItem {
   costUsd?: number;
   jurisdictionCode?: string;
   industryPack?: IndustryPackType;
+  /** If true, this item represents a recurring subscription */
+  isSubscription?: boolean;
+  /** Links to a subscription plan created in the Subscriptions panel */
+  subscriptionPlanId?: string;
   createdAt: number;
   updatedAt: number;
   attributes?: IndustryAttributes;

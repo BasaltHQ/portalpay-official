@@ -1,0 +1,38 @@
+name: Charge Subscriptions
+
+on:
+    schedule:
+        # Daily at 6:00 AM UTC (standard 5-part cron)
+        - cron: "0 6 * * *"
+    workflow_dispatch: {} # Allow manual trigger from GitHub UI
+
+jobs:
+    charge:
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        steps:
+            - name: Trigger subscription charges
+              env:
+                  CRON_SECRET: ${{ secrets.CRON_SECRET }}
+                  APP_URL: ${{ vars.APP_URL || 'https://surge.basalthq.com' }}
+              run: |
+                  echo "🔄 Triggering subscription charges at $(date -u)"
+
+                  RESPONSE=$(curl -sf -w "\n%{http_code}" -X POST \
+                    -H "Content-Type: application/json" \
+                    -H "x-cron-secret: ${CRON_SECRET}" \
+                    "${APP_URL}/api/cron/charge-subscriptions" \
+                    --max-time 120)
+
+                  HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+                  BODY=$(echo "$RESPONSE" | sed '$d')
+
+                  echo "Status: ${HTTP_CODE}"
+                  echo "Response: ${BODY}"
+
+                  if [ "$HTTP_CODE" -ge 400 ]; then
+                    echo "❌ Charge endpoint returned ${HTTP_CODE}"
+                    exit 1
+                  fi
+
+                  echo "✅ Charges processed successfully"

@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import { sendTransaction, prepareTransaction, getContract, prepareContractCall, readContract } from "thirdweb";
 import { client, chain } from "@/lib/thirdweb/client";
 import { fetchEthRates, fetchUsdRates } from "@/lib/eth";
-import { ImagePlus, Trash2, Star, StarOff, Link as LinkIcon, Plus, Wand2, Infinity as InfinityIcon, Copy, ExternalLink, Download, LayoutGrid, List } from "lucide-react";
+import { ImagePlus, Trash2, Star, StarOff, Link as LinkIcon, Plus, Wand2, Infinity as InfinityIcon, Copy, ExternalLink, Download, LayoutGrid, List, Repeat } from "lucide-react";
 import TruncatedAddress from "@/components/truncated-address";
 import { SUPPORTED_CURRENCIES, formatCurrency, convertFromUsd, convertToUsd, roundForCurrency } from "@/lib/fx";
 import { RestaurantFields, type ModifierGroup } from "@/components/inventory/RestaurantFields";
@@ -60,6 +60,7 @@ import PublicationsPanelExt from "@/app/admin/panels/PublicationsPanel";
 import ReportsPanel from "@/app/admin/panels/ReportsPanel";
 import ClientRequestsPanel from "@/app/admin/panels/ClientRequestsPanel";
 import TablesPanel from "@/app/admin/panels/TablesPanel";
+import SubscriptionsPanel from "@/app/admin/panels/SubscriptionsPanel";
 import { isPlatformCtx, isPartnerCtx, isPlatformSuperAdmin, canAccessPanel } from "@/lib/authz";
 
 
@@ -5825,6 +5826,24 @@ function InventoryPanel() {
   const [total, setTotal] = useState<number>(0);
   const fetchDebounceRef = useRef<number | null>(null);
 
+  // Subscription Plans
+  const [plans, setPlans] = useState<Array<{ planId: string; name: string; priceUsd: number; period: string }>>([]);
+  const [isSubscription, setIsSubscription] = useState(false);
+  const [subscriptionPlanId, setSubscriptionPlanId] = useState("");
+  const [editIsSubscription, setEditIsSubscription] = useState(false);
+  const [editSubscriptionPlanId, setEditSubscriptionPlanId] = useState("");
+
+  useEffect(() => {
+    if (account?.address) {
+      fetch(`/api/subscriptions/plans?wallet=${account.address}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.success && Array.isArray(d.plans)) setPlans(d.plans);
+        })
+        .catch(() => { });
+    }
+  }, [account?.address]);
+
   function randomSku9(): string {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let out = "";
@@ -5863,6 +5882,8 @@ function InventoryPanel() {
       setPubDate(""); setPubFormat(""); setPubPageCount(0); setPubLanguage("");
       setPubEdition(""); setPubGenres([]); setPubCondition("");
       setPubDownloadUrl(""); setPubPreviewUrl(""); setPubDrm(false);
+      setIsSubscription(false);
+      setSubscriptionPlanId("");
       setAddOpen(true);
     } catch {
       setAddOpen(true);
@@ -5954,6 +5975,8 @@ function InventoryPanel() {
     }
 
     setEditIsBook((item as any).isBook === true);
+    setEditIsSubscription(!!(item as any).isSubscription);
+    setEditSubscriptionPlanId((item as any).subscriptionPlanId || "");
     setEditOpenInv(true);
   }
 
@@ -6046,6 +6069,8 @@ function InventoryPanel() {
         costUsd: typeof editCostUsd === "number" ? Math.max(0, editCostUsd) : undefined,
         taxable: editTarget.taxable === true,
         industryPack: itemPack,
+        isSubscription: editIsSubscription,
+        subscriptionPlanId: editIsSubscription ? editSubscriptionPlanId : undefined,
       };
 
       const r = await fetch("/api/inventory", {
@@ -6487,6 +6512,8 @@ function InventoryPanel() {
         costUsd: typeof costUsd === "number" ? Math.max(0, costUsd) : undefined,
         taxable,
         industryPack: activeIndustryPack || 'general',
+        isSubscription,
+        subscriptionPlanId: isSubscription ? subscriptionPlanId : undefined,
       };
       const r = await fetch("/api/inventory", {
         method: "POST",
@@ -7000,6 +7027,7 @@ function InventoryPanel() {
                 <tr className="border-b bg-background/40 backdrop-blur-md transition-colors hover:bg-muted/60 data-[state=selected]:bg-muted">
                   <th className="text-left px-3 py-2 font-medium">SKU</th>
                   <th className="text-left px-3 py-2 font-medium">Name</th>
+                  <th className="text-left px-3 py-2 font-medium">Type</th>
                   <th className="text-left px-3 py-2 font-medium">Price ({storeCurrency})</th>
                   <th className="text-left px-3 py-2 font-medium">Stock</th>
                   <th className="text-left px-3 py-2 font-medium">Category</th>
@@ -7017,6 +7045,16 @@ function InventoryPanel() {
                         <Thumbnail src={(Array.isArray(it.images) && it.images.length ? it.images[0] : undefined)} alt="" size={40} />
                         <span>{it.name}</span>
                       </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      {it.isSubscription ? (
+                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border bg-purple-500/10 text-purple-600 border-purple-500/20 text-xs font-medium">
+                          <Repeat className="w-3 h-3" />
+                          <span>Subscription</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">Item</span>
+                      )}
                     </td>
                     <td className="px-3 py-2">{(() => {
                       const usdPrice = Number(it.priceUsd || 0);
@@ -7266,6 +7304,50 @@ function InventoryPanel() {
                       <span>{taxable ? "Taxable" : "Non-taxable"}</span>
                     </label>
                   </div>
+                </div>
+
+                <div className="border-t pt-4 my-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={isSubscription}
+                      onChange={(e) => {
+                        setIsSubscription(e.target.checked);
+                        if (!e.target.checked) setSubscriptionPlanId("");
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="font-medium text-sm">Subscription Item</span>
+                  </label>
+                  {isSubscription && (
+                    <div className="mt-2 ml-6">
+                      <label className="microtext text-muted-foreground">Select Plan</label>
+                      <select
+                        className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                        value={subscriptionPlanId}
+                        onChange={(e) => {
+                          const pid = e.target.value;
+                          setSubscriptionPlanId(pid);
+                          const p = plans.find(x => x.planId === pid);
+                          if (p) {
+                            setPriceUsd(p.priceUsd);
+                            setCurrency("USD");
+                          }
+                        }}
+                      >
+                        <option value="">-- Select a Plan --</option>
+                        {plans.map(p => (
+                          <option key={p.planId} value={p.planId}>
+                            {p.name} ({formatCurrency(p.priceUsd, "USD")} / {p.period})
+                          </option>
+                        ))}
+                      </select>
+                      <div className="microtext text-muted-foreground mt-1">
+                        Price will be auto-set from the plan.
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Industry-Specific Fields */}
@@ -7724,6 +7806,47 @@ function InventoryPanel() {
                       <span>{editTarget?.taxable ? "Taxable" : "Non-taxable"}</span>
                     </label>
                   </div>
+                </div>
+
+                <div className="border-t pt-4 my-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={editIsSubscription}
+                      onChange={(e) => {
+                        setEditIsSubscription(e.target.checked);
+                        if (!e.target.checked) setEditSubscriptionPlanId("");
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="font-medium text-sm">Subscription Item</span>
+                  </label>
+                  {editIsSubscription && (
+                    <div className="mt-2 ml-6">
+                      <label className="microtext text-muted-foreground">Select Plan</label>
+                      <select
+                        className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                        value={editSubscriptionPlanId}
+                        onChange={(e) => {
+                          const pid = e.target.value;
+                          setEditSubscriptionPlanId(pid);
+                          const p = plans.find(x => x.planId === pid);
+                          if (p) {
+                            setEditPriceUsd(p.priceUsd);
+                            setEditCurrency("USD");
+                          }
+                        }}
+                      >
+                        <option value="">-- Select a Plan --</option>
+                        {plans.map(p => (
+                          <option key={p.planId} value={p.planId}>
+                            {p.name} ({formatCurrency(p.priceUsd, "USD")} / {p.period})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 {/* Industry-Specific Fields */}
@@ -9054,6 +9177,7 @@ export default function AdminPage() {
     | "team"
     | "reports"
     | "clientRequests"
+    | "subscriptions"
   >("reserve");
   const [industryPack, setIndustryPack] = useState<string | null>(null);
   const containerType = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || "platform").toLowerCase();
@@ -9487,6 +9611,9 @@ export default function AdminPage() {
       )}
       {activeTab === "team" && (
         <TeamPanel />
+      )}
+      {activeTab === "subscriptions" && (
+        <SubscriptionsPanel />
       )}
       {activeTab === "reports" && (
         <ReportsPanel />

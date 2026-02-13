@@ -67,7 +67,8 @@ type AdminTabKey =
   | 'writersWorkshop'
   | 'publications'
   | 'reports'
-  | 'clientRequests';
+  | 'clientRequests'
+  | 'subscriptions';
 
 interface AdminSidebarProps {
   activeTab: AdminTabKey;
@@ -324,6 +325,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
         { title: 'Inventory', key: 'inventory' as AdminTabKey },
         { title: 'Orders', key: 'orders' as AdminTabKey },
         { title: 'Loyalty', key: 'loyalty' as AdminTabKey },
+        { title: 'Subscriptions', key: 'subscriptions' as AdminTabKey },
         { title: 'Messages', key: 'messages-merchant' as AdminTabKey },
         { title: 'Integrations', key: 'integrations' as AdminTabKey },
         { title: 'Touchpoints', key: 'endpoints' as AdminTabKey },

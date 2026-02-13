@@ -3,7 +3,9 @@
 import React, { useEffect, useMemo, useState, useLayoutEffect, useCallback } from "react";
 import Link from "next/link";
 import { useActiveAccount } from "thirdweb/react";
-import { X, Youtube, Twitch, MessageSquare, Github, Linkedin, Instagram, Send, Music, Mail, Globe, Cloud, Grid3x3, List, Tag, Search, SlidersHorizontal, ChevronUp, ChevronDown, User, Star, Settings, Percent, Ticket, Sparkles, BookOpen, Library } from "lucide-react";
+import { X, Youtube, Twitch, MessageSquare, Github, Linkedin, Instagram, Send, Music, Mail, Globe, Cloud, Grid3x3, List, Tag, Search, SlidersHorizontal, ChevronUp, ChevronDown, User, Star, Settings, Percent, Ticket, Sparkles, BookOpen, Library, RefreshCw } from "lucide-react";
+import SubscribeButton from "@/components/subscriptions/SubscribeButton";
+import type { BillingPeriod } from "@/lib/eip712-subscriptions";
 import { ShopThemeAuditor } from "@/components/providers/shop-theme-auditor";
 import ShopVoiceAgentButton from "@/components/voice/ShopVoiceAgentButton";
 import HeroVisualizer from "@/components/voice/HeroVisualizer";
@@ -445,6 +447,43 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
     const [couponCode, setCouponCode] = useState('');
     const [couponError, setCouponError] = useState('');
     const [discountsLoading, setDiscountsLoading] = useState(false);
+
+    // Subscription plan data for subscription-linked inventory items
+    type SubPlan = { planId: string; name: string; priceUsd: number; period: BillingPeriod; merchantWallet: string };
+    const [subPlans, setSubPlans] = useState<Record<string, SubPlan>>({});
+
+    // Fetch subscription plans if any items are subscription-linked
+    useEffect(() => {
+        const subItems = items.filter((i: any) => i.isSubscription && i.subscriptionPlanId);
+        if (!subItems.length || !merchantWallet) return;
+        fetch(`/api/subscriptions/plans?wallet=${encodeURIComponent(merchantWallet)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (Array.isArray(data.plans)) {
+                    const map: Record<string, SubPlan> = {};
+                    for (const p of data.plans) {
+                        map[p.planId || p.id] = {
+                            planId: p.planId || p.id,
+                            name: p.name,
+                            priceUsd: Number(p.priceUsd || 0),
+                            period: p.period || "MONTHLY",
+                            merchantWallet: p.merchantWallet || merchantWallet,
+                        };
+                    }
+                    setSubPlans(map);
+                }
+            })
+            .catch(() => { });
+    }, [items, merchantWallet]);
+
+    // Helper: get subscription label for an item
+    const getSubLabel = (it: any): string | null => {
+        if (!it.isSubscription || !it.subscriptionPlanId) return null;
+        const plan = subPlans[it.subscriptionPlanId];
+        const period = plan?.period || "MONTHLY";
+        const shortPeriod = period === "WEEKLY" ? "/wk" : period === "YEARLY" ? "/yr" : "/mo";
+        return shortPeriod;
+    };
 
     // Fetch discounts on mount
     useEffect(() => {
@@ -1460,22 +1499,36 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                         {itemDiscount && savings > 0 ? (
                             <div className="text-right">
                                 <div className="text-sm text-muted-foreground line-through">${basePrice.toFixed(2)}</div>
-                                <div className="text-lg md:text-xl font-bold text-green-600">${discountedPrice.toFixed(2)}</div>
+                                <div className="text-lg md:text-xl font-bold text-green-600">${discountedPrice.toFixed(2)}{getSubLabel(it)}</div>
                             </div>
                         ) : (
-                            <div className="text-lg md:text-xl font-bold">${basePrice.toFixed(2)}</div>
+                            <div className="text-lg md:text-xl font-bold">${basePrice.toFixed(2)}{getSubLabel(it) && <span className="text-sm font-normal text-muted-foreground">{getSubLabel(it)}</span>}</div>
                         )}
-                        <button
-                            className="px-4 py-2 rounded-md border text-sm font-medium disabled:opacity-50 whitespace-nowrap"
-                            style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                addToCart(it.id, 1);
-                            }}
-                            disabled={disabled}
-                        >
-                            {disabled ? "Out of Stock" : "Add to Cart"}
-                        </button>
+                        {(it as any).isSubscription && (it as any).subscriptionPlanId && subPlans[(it as any).subscriptionPlanId] ? (
+                            <div onClick={(e) => e.stopPropagation()}>
+                                <SubscribeButton
+                                    planId={(it as any).subscriptionPlanId}
+                                    planName={subPlans[(it as any).subscriptionPlanId].name}
+                                    priceUsd={subPlans[(it as any).subscriptionPlanId].priceUsd}
+                                    period={subPlans[(it as any).subscriptionPlanId].period}
+                                    merchantWallet={merchantWallet}
+                                    spenderWallet={subPlans[(it as any).subscriptionPlanId].merchantWallet}
+                                    className="!py-2 !px-4 !text-sm !rounded-md"
+                                />
+                            </div>
+                        ) : (
+                            <button
+                                className="px-4 py-2 rounded-md border text-sm font-medium disabled:opacity-50 whitespace-nowrap"
+                                style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    addToCart(it.id, 1);
+                                }}
+                                disabled={disabled}
+                            >
+                                {disabled ? "Out of Stock" : "Add to Cart"}
+                            </button>
+                        )}
                     </div>
                 </div>
             );
@@ -1547,23 +1600,40 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                     {itemDiscount && savings > 0 ? (
                         <div className="mt-2">
                             <span className="text-sm text-muted-foreground line-through mr-2">${basePrice.toFixed(2)}</span>
-                            <span className={`${sizeClasses.priceSize} font-bold text-green-600`}>${discountedPrice.toFixed(2)}</span>
+                            <span className={`${sizeClasses.priceSize} font-bold text-green-600`}>${discountedPrice.toFixed(2)}{getSubLabel(it)}</span>
                         </div>
                     ) : (
-                        <div className={`${sizeClasses.priceSize} font-bold mt-2`}>${basePrice.toFixed(2)}</div>
+                        <div className={`${sizeClasses.priceSize} font-bold mt-2`}>
+                            ${basePrice.toFixed(2)}{getSubLabel(it) && <span className="text-sm font-normal text-muted-foreground">{getSubLabel(it)}</span>}
+                        </div>
                     )}
+                    {(it as any).isSubscription && <div className="flex items-center gap-1 mt-1 text-xs text-primary"><RefreshCw className="w-3 h-3" /> Subscription</div>}
                 </div>
-                <button
-                    className={`mt-3 px-3 ${sizeClasses.buttonSize} rounded-md border font-medium disabled:opacity-50 w-full`}
-                    style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart(it.id, 1);
-                    }}
-                    disabled={disabled}
-                >
-                    {disabled ? "Out of Stock" : "Add to Cart"}
-                </button>
+                {(it as any).isSubscription && (it as any).subscriptionPlanId && subPlans[(it as any).subscriptionPlanId] ? (
+                    <div className="mt-3 w-full" onClick={(e) => e.stopPropagation()}>
+                        <SubscribeButton
+                            planId={(it as any).subscriptionPlanId}
+                            planName={subPlans[(it as any).subscriptionPlanId].name}
+                            priceUsd={subPlans[(it as any).subscriptionPlanId].priceUsd}
+                            period={subPlans[(it as any).subscriptionPlanId].period}
+                            merchantWallet={merchantWallet}
+                            spenderWallet={subPlans[(it as any).subscriptionPlanId].merchantWallet}
+                            className={`!${sizeClasses.buttonSize} !rounded-md w-full`}
+                        />
+                    </div>
+                ) : (
+                    <button
+                        className={`mt-3 px-3 ${sizeClasses.buttonSize} rounded-md border font-medium disabled:opacity-50 w-full`}
+                        style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(it.id, 1);
+                        }}
+                        disabled={disabled}
+                    >
+                        {disabled ? "Out of Stock" : "Add to Cart"}
+                    </button>
+                )}
             </div>
         );
     }
@@ -1640,23 +1710,39 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                     {itemDiscount && savings > 0 ? (
                         <div className="mt-2">
                             <span className="text-sm text-muted-foreground line-through mr-2">${basePrice.toFixed(2)}</span>
-                            <span className={`${sizeClasses.priceSize} font-bold text-green-600`}>${discountedPrice.toFixed(2)}</span>
+                            <span className={`${sizeClasses.priceSize} font-bold text-green-600`}>${discountedPrice.toFixed(2)}{getSubLabel(it)}</span>
                         </div>
                     ) : (
-                        <div className={`${sizeClasses.priceSize} font-bold mt-2`}>${basePrice.toFixed(2)}</div>
+                        <div className={`${sizeClasses.priceSize} font-bold mt-2`}>
+                            ${basePrice.toFixed(2)}{getSubLabel(it) && <span className="text-sm font-normal text-muted-foreground">{getSubLabel(it)}</span>}
+                        </div>
                     )}
                 </div>
-                <button
-                    className={`mt-3 px-3 ${sizeClasses.buttonSize} rounded-md border font-medium disabled:opacity-50 w-full`}
-                    style={{ background: categoryColor, color: "#fff", borderColor: categoryColor }}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart(it.id, 1);
-                    }}
-                    disabled={disabled}
-                >
-                    {disabled ? "Out of Stock" : "Add to Cart"}
-                </button>
+                {(it as any).isSubscription && (it as any).subscriptionPlanId && subPlans[(it as any).subscriptionPlanId] ? (
+                    <div className="mt-3 w-full" onClick={(e) => e.stopPropagation()}>
+                        <SubscribeButton
+                            planId={(it as any).subscriptionPlanId}
+                            planName={subPlans[(it as any).subscriptionPlanId].name}
+                            priceUsd={subPlans[(it as any).subscriptionPlanId].priceUsd}
+                            period={subPlans[(it as any).subscriptionPlanId].period}
+                            merchantWallet={merchantWallet}
+                            spenderWallet={subPlans[(it as any).subscriptionPlanId].merchantWallet}
+                            className={`!${sizeClasses.buttonSize} !rounded-md w-full`}
+                        />
+                    </div>
+                ) : (
+                    <button
+                        className={`mt-3 px-3 ${sizeClasses.buttonSize} rounded-md border font-medium disabled:opacity-50 w-full`}
+                        style={{ background: categoryColor, color: "#fff", borderColor: categoryColor }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(it.id, 1);
+                        }}
+                        disabled={disabled}
+                    >
+                        {disabled ? "Out of Stock" : "Add to Cart"}
+                    </button>
+                )}
             </div>
         );
     }
@@ -2733,18 +2819,30 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                     </div>
                                                 </div>
                                                 <div className="flex-shrink-0 p-6 border-t bg-background/50 backdrop-blur-sm">
-                                                    <button
-                                                        className="w-full px-4 py-3 rounded-lg text-base font-semibold flex items-center justify-center gap-2 shadow-lg transform transition-all active:scale-[0.98]"
-                                                        style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
-                                                        onClick={() => {
-                                                            addToCart(selectedItem.id, 1);
-                                                            setSelectedItem(null);
-                                                        }}
-                                                    >
-                                                        <span>Add to Cart</span>
-                                                        <span className="opacity-90">•</span>
-                                                        <span className="font-bold">${(Number(selectedItem.priceUsd || 0)).toFixed(2)}</span>
-                                                    </button>
+                                                    {(selectedItem as any).isSubscription && (selectedItem as any).subscriptionPlanId && subPlans[(selectedItem as any).subscriptionPlanId] ? (
+                                                        <SubscribeButton
+                                                            planId={(selectedItem as any).subscriptionPlanId}
+                                                            planName={subPlans[(selectedItem as any).subscriptionPlanId].name}
+                                                            priceUsd={subPlans[(selectedItem as any).subscriptionPlanId].priceUsd}
+                                                            period={subPlans[(selectedItem as any).subscriptionPlanId].period}
+                                                            merchantWallet={merchantWallet}
+                                                            spenderWallet={subPlans[(selectedItem as any).subscriptionPlanId].merchantWallet}
+                                                            className="w-full !py-3 !rounded-lg"
+                                                        />
+                                                    ) : (
+                                                        <button
+                                                            className="w-full px-4 py-3 rounded-lg text-base font-semibold flex items-center justify-center gap-2 shadow-lg transform transition-all active:scale-[0.98]"
+                                                            style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
+                                                            onClick={() => {
+                                                                addToCart(selectedItem.id, 1);
+                                                                setSelectedItem(null);
+                                                            }}
+                                                        >
+                                                            <span>Add to Cart</span>
+                                                            <span className="opacity-90">•</span>
+                                                            <span className="font-bold">${(Number(selectedItem.priceUsd || 0)).toFixed(2)}</span>
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -2807,22 +2905,34 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                 )}
                                             </div>
                                             <div className="flex-shrink-0 p-4 border-t bg-background">
-                                                <button
-                                                    className="w-full px-4 py-3 rounded-lg text-base font-semibold flex items-center justify-center gap-2"
-                                                    style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
-                                                    onClick={() => {
-                                                        if (!modifiersValid) return;
-                                                        addToCart(selectedItem.id, 1, selectedModifiers);
-                                                        setSelectedItem(null);
-                                                    }}
-                                                    disabled={!modifiersValid}
-                                                >
-                                                    <span>Add to Cart</span>
-                                                    <span className="opacity-90">•</span>
-                                                    <span className="font-bold">
-                                                        ${(Number(selectedItem.priceUsd || 0) + selectedModifiers.reduce((sum, m) => sum + (m.priceAdjustment || 0) * (m.quantity || 1), 0)).toFixed(2)}
-                                                    </span>
-                                                </button>
+                                                {(selectedItem as any).isSubscription && (selectedItem as any).subscriptionPlanId && subPlans[(selectedItem as any).subscriptionPlanId] ? (
+                                                    <SubscribeButton
+                                                        planId={(selectedItem as any).subscriptionPlanId}
+                                                        planName={subPlans[(selectedItem as any).subscriptionPlanId].name}
+                                                        priceUsd={subPlans[(selectedItem as any).subscriptionPlanId].priceUsd}
+                                                        period={subPlans[(selectedItem as any).subscriptionPlanId].period}
+                                                        merchantWallet={merchantWallet}
+                                                        spenderWallet={subPlans[(selectedItem as any).subscriptionPlanId].merchantWallet}
+                                                        className="w-full !py-3 !rounded-lg"
+                                                    />
+                                                ) : (
+                                                    <button
+                                                        className="w-full px-4 py-3 rounded-lg text-base font-semibold flex items-center justify-center gap-2"
+                                                        style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
+                                                        onClick={() => {
+                                                            if (!modifiersValid) return;
+                                                            addToCart(selectedItem.id, 1, selectedModifiers);
+                                                            setSelectedItem(null);
+                                                        }}
+                                                        disabled={!modifiersValid}
+                                                    >
+                                                        <span>Add to Cart</span>
+                                                        <span className="opacity-90">•</span>
+                                                        <span className="font-bold">
+                                                            ${(Number(selectedItem.priceUsd || 0) + selectedModifiers.reduce((sum, m) => sum + (m.priceAdjustment || 0) * (m.quantity || 1), 0)).toFixed(2)}
+                                                        </span>
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     );
