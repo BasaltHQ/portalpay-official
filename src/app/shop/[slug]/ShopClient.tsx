@@ -351,7 +351,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
         return account.address.toLowerCase() === merchantWallet.toLowerCase();
     }, [account?.address, merchantWallet]);
 
-    const layoutMode = cfg.theme.layoutMode || "balanced";
+    const layoutMode = cfg.theme?.layoutMode || "balanced";
 
     // State
     const [items, setItems] = useState<InventoryItem[]>(initialItems);
