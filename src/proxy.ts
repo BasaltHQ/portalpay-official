@@ -146,8 +146,8 @@ function applySecurityHeaders(req: NextRequest, res: NextResponse) {
     // There is little risk for a public shop/portal site.
     res.headers.set("Cross-Origin-Resource-Policy", "cross-origin");
     res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE, PATCH");
+    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, x-wallet, x-container-type, x-api-key");
 
     // HSTS (only meaningful over HTTPS; harmless otherwise)
     res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
