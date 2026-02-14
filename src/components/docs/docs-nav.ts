@@ -29,6 +29,7 @@ export const docsNavigation: DocNavSection[] = [
       { title: 'Inventory', href: '/developers/docs/api/inventory' },
       { title: 'Orders', href: '/developers/docs/api/orders' },
       { title: 'Receipts', href: '/developers/docs/api/receipts' },
+      { title: 'Subscriptions', href: '/developers/docs/api/subscriptions' },
       { title: 'Shop Config', href: '/developers/docs/api/shop' },
       { title: 'Billing', href: '/developers/docs/api/billing' },
       { title: 'Tax Catalog', href: '/developers/docs/api/tax' },
@@ -71,11 +72,11 @@ export function getAdjacentPages(currentPath: string): {
 } {
   const flatNav = getFlatNavigation();
   const currentIndex = flatNav.findIndex(item => item.href === currentPath);
-  
+
   if (currentIndex === -1) {
     return { prev: null, next: null };
   }
-  
+
   return {
     prev: currentIndex > 0 ? flatNav[currentIndex - 1] : null,
     next: currentIndex < flatNav.length - 1 ? flatNav[currentIndex + 1] : null,

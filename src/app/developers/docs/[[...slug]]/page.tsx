@@ -31,6 +31,7 @@ export async function generateStaticParams() {
     { slug: ['api', 'inventory'] },
     { slug: ['api', 'orders'] },
     { slug: ['api', 'receipts'] },
+    { slug: ['api', 'subscriptions'] },
     { slug: ['api', 'shop'] },
     { slug: ['examples'] },
     { slug: ['guides', 'ecommerce'] },

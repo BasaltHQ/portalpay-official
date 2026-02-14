@@ -76,6 +76,48 @@ Creates a new subscription plan. Requires authenticated merchant wallet.
 }
 ```
 
+### Update Plan
+
+```
+PUT /api/subscriptions/plans
+```
+
+Updates an existing subscription plan.
+
+**Body:**
+
+```json
+{
+  "planId": "abc123",
+  "name": "Gold Membership (Updated)",
+  "description": "New description",
+  "priceUsd": 39.99,
+  "period": "MONTHLY",
+  "active": true
+}
+```
+
+**Response:** `200 OK`
+
+### Deactivate Plan
+
+```
+DELETE /api/subscriptions/plans
+```
+
+Deactivates a plan, preventing new subscriptions. Existing subscriptions are unaffected.
+
+**Body:**
+
+```json
+{
+  "planId": "abc123",
+  "wallet": "0x..."
+}
+```
+
+**Response:** `200 OK`
+
 ---
 
 ## Subscriptions
