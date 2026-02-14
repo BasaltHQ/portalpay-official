@@ -2,8 +2,8 @@ name: Charge Subscriptions
 
 on:
     schedule:
-        # Daily at 6:00 AM UTC (standard 5-part cron)
-        - cron: "0 6 * * *"
+        # Daily at 8:30 AM UTC (standard 5-part cron)
+        - cron: "30 8 * * *"
     workflow_dispatch: {} # Allow manual trigger from GitHub UI
 
 jobs:
