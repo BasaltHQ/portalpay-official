@@ -2367,11 +2367,11 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
 
                         {activeTab === "shop" && (
                             <>
-                                {cfg.theme.layoutMode === "maximalist" && (
+                                {cfg.theme?.layoutMode === "maximalist" && (
                                     <div className="space-y-6 mb-6">
                                         {/* Maximalist Banner - Always show placeholder or image */}
                                         <div className="w-full aspect-[21/9] md:aspect-[32/9] rounded-xl overflow-hidden shadow-2xl relative group bg-zinc-900 border border-white/5">
-                                            {cfg.theme.maximalistBannerUrl ? (
+                                            {cfg.theme?.maximalistBannerUrl ? (
                                                 <>
                                                     <img
                                                         src={cfg.theme.maximalistBannerUrl}
@@ -2396,7 +2396,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                 {[...Array(2)].map((_, i) => (
                                                     <div key={i} className="flex gap-4 flex-nowrap">
                                                         {[0, 1, 2, 3, 4].map((idx) => {
-                                                            const img = cfg.theme.galleryImages?.[idx];
+                                                            const img = cfg.theme?.galleryImages?.[idx];
                                                             return (
                                                                 <div key={`${i}-${idx}`} className="flex-shrink-0 w-[280px] md:w-[360px] aspect-video rounded-lg overflow-hidden border border-white/10 shadow-lg relative group bg-zinc-900/50 backdrop-blur-sm">
                                                                     {img ? (
