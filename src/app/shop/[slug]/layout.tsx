@@ -134,7 +134,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       };
     }
   }
+}
 
 export default function ShopLayout({ children }: { children: React.ReactNode }) {
-    return <>{children}</>;
-  }
+  return <>{children}</>;
+}
