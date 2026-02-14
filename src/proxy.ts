@@ -159,6 +159,14 @@ export function proxy(req: NextRequest) {
     // Attach container type header for SSR/client awareness
     try {
         const env = getEnv();
+
+        // Handle preflight requests
+        if (req.method === "OPTIONS") {
+            const res = NextResponse.json({}, { status: 200 });
+            applySecurityHeaders(req, res);
+            return res;
+        }
+
         const res = NextResponse.next();
         res.headers.set("x-container-type", env.CONTAINER_TYPE);
         applySecurityHeaders(req, res);
