@@ -23,17 +23,20 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
     // Resolve slug to wallet using Cosmos query (matches /api/shop/slug pattern)
     let wallet: string | null = null;
+    let dbSlug: string | null = null;
     try {
       const { resources } = await container.items
         .query({
           // Fix: Check for both shop_config and site_config types to match data in DB
-          query: "SELECT TOP 1 c.wallet, c.slug FROM c WHERE (c.type='shop_config' OR c.type='site_config') AND c.slug=@slug",
+          // also allow lookup by customDomain (verified)
+          query: "SELECT TOP 1 c.wallet, c.slug FROM c WHERE (c.type='shop_config' OR c.type='site_config') AND (c.slug=@slug OR (c.customDomain=@slug AND c.customDomainVerified=true))",
           parameters: [{ name: '@slug', value: slug }]
         })
         .fetchAll();
 
       if (resources && resources.length > 0) {
         wallet = resources[0]?.wallet || null;
+        dbSlug = resources[0]?.slug || null;
       }
     } catch (err) {
       console.error('Failed to resolve shop slug:', err);
@@ -51,8 +54,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     let config: ShopConfig & { theme?: { brandLogoUrl?: string; brandFaviconUrl?: string; appleTouchIconUrl?: string } } = { name: 'Shop' };
     try {
       // Try reading as site:config first (newer format)
+      // Use dbSlug if available, otherwise fall back to param slug (though dbSlug should usually be present if wallet was found)
+      const targetSlug = dbSlug || slug;
       try {
-        const { resource } = await container.item(`site:config:${slug}`, wallet).read<any>();
+        const { resource } = await container.item(`site:config:${targetSlug}`, wallet).read<any>();
         if (!resource) throw new Error("Not found");
         config = mapResourceToConfig(resource);
       } catch {

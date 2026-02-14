@@ -385,6 +385,14 @@ export async function PATCH(req: NextRequest) {
 
         if (shopConfigUpdate) {
             console.log("[client-requests] Received shopConfigUpdate:", JSON.stringify(shopConfigUpdate));
+            // Fix: Sync shopName to the request document so the list view updates immediately
+            if (shopConfigUpdate.name) {
+                updatedDoc.shopName = shopConfigUpdate.name;
+            }
+            // Also sync other top-level fields if needed
+            if (shopConfigUpdate.slug) updatedDoc.slug = shopConfigUpdate.slug;
+            if (shopConfigUpdate.description) updatedDoc.description = shopConfigUpdate.description;
+            if (shopConfigUpdate.layoutMode) updatedDoc.layoutMode = shopConfigUpdate.layoutMode;
         }
 
         // Apply shop config updates to the request doc mostly for list view consistency
