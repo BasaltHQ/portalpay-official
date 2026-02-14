@@ -167,113 +167,117 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const cleanSlug = slug.toLowerCase();
 
-  // 1. Resolve Shop Config
-  const container = await getContainer();
+  try {
+    // 1. Resolve Shop Config
+    const container = await getContainer();
 
-  const { resources: configs } = await container.items
-    .query({
-      query: "SELECT * FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
-      parameters: [{ name: "@slug", value: cleanSlug }]
-    })
-    .fetchAll();
+    const { resources: configs } = await container.items
+      .query({
+        query: "SELECT * FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+        parameters: [{ name: "@slug", value: cleanSlug }]
+      })
+      .fetchAll();
 
-  // 2. Select Best Match (Prioritize active brand key to avoid slug collisions)
-  const envBrandKey = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge").toLowerCase();
+    // 2. Select Best Match (Prioritize active brand key to avoid slug collisions)
+    const envBrandKey = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge").toLowerCase();
 
-  const config = (
-    // 1. Exact match for current brand environment
-    configs.find((c: any) => (c.brandKey || "").toLowerCase() === envBrandKey) ||
-    // 2. Fallback for platform: baslatsurge, portalpay, or legacy (no brandKey)
-    ((envBrandKey === "basaltsurge" || envBrandKey === "portalpay")
-      ? configs.find((c: any) => !c.brandKey || c.brandKey === "portalpay" || c.brandKey === "basaltsurge")
-      : undefined) ||
-    // 3. Fallback to first result (should be avoided in strict environments but keeps legacy working)
-    configs[0]
-  ) as (ShopConfig & { wallet: string }) | undefined;
+    const config = (
+      // 1. Exact match for current brand environment
+      configs.find((c: any) => (c.brandKey || "").toLowerCase() === envBrandKey) ||
+      // 2. Fallback for platform: baslatsurge, portalpay, or legacy (no brandKey)
+      ((envBrandKey === "basaltsurge" || envBrandKey === "portalpay")
+        ? configs.find((c: any) => !c.brandKey || c.brandKey === "portalpay" || c.brandKey === "basaltsurge")
+        : undefined) ||
+      // 3. Fallback to first result (should be avoided in strict environments but keeps legacy working)
+      configs[0]
+    ) as (ShopConfig & { wallet: string }) | undefined;
 
-  // Merge site_config for payment preferences (defaultPaymentToken / accumulationMode)
-  if (config && config.wallet) {
-    const foundWallet = config.wallet.toLowerCase();
-    // 1. Determine Brand Key
-    const brandKey = (config as any).brandKey || envBrandKey;
+    // Merge site_config for payment preferences (defaultPaymentToken / accumulationMode)
+    if (config && config.wallet) {
+      const foundWallet = config.wallet.toLowerCase();
+      // 1. Determine Brand Key
+      const brandKey = (config as any).brandKey || envBrandKey;
 
-    // 2. Resolve Doc IDs
-    const docIdBase = "site:config";
-    const brandDocId = (brandKey && brandKey !== "portalpay") ? `${docIdBase}:${brandKey}` : `${docIdBase}:portalpay`;
+      // 2. Resolve Doc IDs
+      const docIdBase = "site:config";
+      const brandDocId = (brandKey && brandKey !== "portalpay") ? `${docIdBase}:${brandKey}` : `${docIdBase}:portalpay`;
 
-    let siteConf: any = null;
-    try {
-      // Try Brand-Specific
-      const { resource } = await container.item(brandDocId, foundWallet).read<any>();
-      siteConf = resource;
-    } catch { }
-
-    if (!siteConf && brandDocId !== "site:config:portalpay") {
+      let siteConf: any = null;
       try {
-        // Try Legacy Shared
-        const { resource } = await container.item("site:config:portalpay", foundWallet).read<any>();
+        // Try Brand-Specific
+        const { resource } = await container.item(brandDocId, foundWallet).read<any>();
         siteConf = resource;
       } catch { }
+
+      if (!siteConf && brandDocId !== "site:config:portalpay") {
+        try {
+          // Try Legacy Shared
+          const { resource } = await container.item("site:config:portalpay", foundWallet).read<any>();
+          siteConf = resource;
+        } catch { }
+      }
+
+      if (!siteConf) {
+        try {
+          // Try Global Legacy
+          const { resource } = await container.item("site:config", foundWallet).read<any>();
+          siteConf = resource;
+        } catch { }
+      }
+
+      if (siteConf) {
+        if (siteConf.defaultPaymentToken) (config as any).defaultPaymentToken = siteConf.defaultPaymentToken;
+        if (siteConf.accumulationMode) (config as any).accumulationMode = siteConf.accumulationMode;
+      }
     }
 
-    if (!siteConf) {
-      try {
-        // Try Global Legacy
-        const { resource } = await container.item("site:config", foundWallet).read<any>();
-        siteConf = resource;
-      } catch { }
+    if (config?.theme) {
+      config.theme = sanitizeShopTheme(config.theme);
     }
 
-    if (siteConf) {
-      if (siteConf.defaultPaymentToken) (config as any).defaultPaymentToken = siteConf.defaultPaymentToken;
-      if (siteConf.accumulationMode) (config as any).accumulationMode = siteConf.accumulationMode;
+    if (!config) {
+      return notFound();
     }
-  }
 
-  if (config?.theme) {
-    config.theme = sanitizeShopTheme(config.theme);
-  }
+    // 2. Fetch Inventory & Publishing Items
+    const resolvedWallet = config.wallet || configs.find((c: any) => c.wallet)?.wallet || "";
 
-  if (!config) {
-    return notFound();
-  }
-
-  // 2. Fetch Inventory & Publishing Items
-  const resolvedWallet = config.wallet || configs.find((c: any) => c.wallet)?.wallet || "";
-
-  const { resources: items } = await container.items
-    .query({
-      query: `
+    const { resources: items } = await container.items
+      .query({
+        query: `
         SELECT * FROM c 
         WHERE 
           (c.type = 'inventory_item' AND c.shopSlug = @slug)
           OR 
           (c.type = 'publishing_item' AND c.status = 'approved' AND (c.shopSlug = @slug OR c.authorWallet = @wallet))
       `,
-      parameters: [
-        { name: "@slug", value: config.slug || cleanSlug },
-        { name: "@wallet", value: resolvedWallet.toLowerCase() }
-      ]
-    })
-    .fetchAll();
+        parameters: [
+          { name: "@slug", value: config.slug || cleanSlug },
+          { name: "@wallet", value: resolvedWallet.toLowerCase() }
+        ]
+      })
+      .fetchAll();
 
-  // 3. Fetch Reviews
-  const { resources: reviews } = await container.items
-    .query({
-      query: "SELECT * FROM c WHERE c.subjectType = 'shop' AND c.subjectId = @slug",
-      parameters: [{ name: "@slug", value: config.slug || cleanSlug }]
-    })
-    .fetchAll();
+    // 3. Fetch Reviews
+    const { resources: reviews } = await container.items
+      .query({
+        query: "SELECT * FROM c WHERE c.subjectType = 'shop' AND c.subjectId = @slug",
+        parameters: [{ name: "@slug", value: config.slug || cleanSlug }]
+      })
+      .fetchAll();
 
+    return (
+      <ShopClient
+        config={config}
+        items={items}
+        reviews={reviews}
+        merchantWallet={resolvedWallet}
+        cleanSlug={config.slug || cleanSlug}
+      />
+    );
 
-
-  return (
-    <ShopClient
-      config={config}
-      items={items}
-      reviews={reviews}
-      merchantWallet={resolvedWallet}
-      cleanSlug={config.slug || cleanSlug}
-    />
-  );
+  } catch (error) {
+    console.error(`[ShopPage] Failed to load shop: ${cleanSlug}`, error);
+    return notFound();
+  }
 }

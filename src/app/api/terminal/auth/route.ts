@@ -154,7 +154,9 @@ export async function POST(req: NextRequest) {
             totalTips: 0,
             createdAt: now,
             // Brand isolation for partner containers
-            brandKey: branding.key || "portalpay"
+            brandKey: branding.key || "portalpay",
+            // Fix: Add wallet partition key (same as merchantWallet)
+            wallet: w
         };
 
         await container.items.create(sessionDoc);

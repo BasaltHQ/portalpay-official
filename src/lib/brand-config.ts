@@ -10,6 +10,7 @@ import { applyBrandDefaults, type BrandConfig, type ApimCatalogEntry, type Brand
 const KNOWN_PARTNER_PATTERNS: Record<string, string> = {
   paynex: "paynex",
   xoinpay: "xoinpay",
+  xpaypass: "xoinpay", // Added to support xpaypass.com
   icunow: "icunow-store",
   // Add more partner brands here as needed
 };
