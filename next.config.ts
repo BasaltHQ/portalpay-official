@@ -23,6 +23,7 @@ const nextConfig = {
   },
   // Emit a minimal standalone server for Docker runtime stage
   output: "standalone",
+  staticPageGenerationTimeout: 300,
   images: {
     // Allow loading product and profile images from Azure Blob or Front Door
     remotePatterns: (() => {
