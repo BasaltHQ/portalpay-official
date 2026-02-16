@@ -11,7 +11,11 @@ export const dynamic = 'force-dynamic';
  * Comparisons (browse) OG image
  * Distinct visual: bold left hero + right-side mosaic grid of competitor logos with a vertical split and light sweep.
  */
-export async function GET(_req: NextRequest) {
+/**
+ * Comparisons (browse) OG image
+ * Distinct visual: bold left hero + right-side mosaic grid of competitor logos with a vertical split and light sweep.
+ */
+export async function generateVsOgImage() {
   const brand = getBrandConfig();
   const poweredByText = `POWERED BY ${String(brand.name || '').toUpperCase()}`;
   try {
@@ -267,4 +271,8 @@ export async function GET(_req: NextRequest) {
       },
     });
   }
+}
+
+export async function GET(_req: NextRequest) {
+  return generateVsOgImage();
 }

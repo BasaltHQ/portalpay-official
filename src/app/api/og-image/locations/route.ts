@@ -16,7 +16,11 @@ export const dynamic = 'force-dynamic';
  * Locations (browse) OG image
  * Distinct visual: cooler world palette, geodesic arcs, center globe, and circular ring of region flags.
  */
-export async function GET(_req: NextRequest) {
+/**
+ * Locations (browse) OG image
+ * Distinct visual: cooler world palette, geodesic arcs, center globe, and circular ring of region flags.
+ */
+export async function generateLocationsOgImage() {
   try {
     // Cool "global" palette distinct from others
     const colors = ['#0ea5e9', '#22d3ee', '#1e40af']; // sky -> cyan -> deep indigo
@@ -211,4 +215,8 @@ export async function GET(_req: NextRequest) {
       },
     });
   }
+}
+
+export async function GET(_req: NextRequest) {
+  return generateLocationsOgImage();
 }
