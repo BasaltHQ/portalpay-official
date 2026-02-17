@@ -5,12 +5,7 @@ import sharp from "sharp";
 import { requireCsrf, rateLimitOrThrow, rateKey } from "@/lib/security";
 import { auditEvent } from "@/lib/audit";
 import crypto from "node:crypto";
-import {
-  BlobServiceClient,
-  StorageSharedKeyCredential,
-  ContainerClient,
-  BlockBlobUploadOptions,
-} from "@azure/storage-blob";
+import { storage } from "@/lib/azure-storage"; // Uses StorageFactory
 
 export const runtime = "nodejs";
 
@@ -31,31 +26,6 @@ function fromBase64(b64: string): Uint8Array {
   return out;
 }
 
-function getBlobServiceClient(): BlobServiceClient {
-  const conn = process.env.AZURE_BLOB_CONNECTION_STRING;
-  const account = process.env.AZURE_BLOB_ACCOUNT_NAME;
-  const key = process.env.AZURE_BLOB_ACCOUNT_KEY;
-
-  if (conn) {
-    return BlobServiceClient.fromConnectionString(conn);
-  }
-  if (account && key) {
-    const url = `https://${account}.blob.core.windows.net`;
-    const cred = new StorageSharedKeyCredential(account, key);
-    return new BlobServiceClient(url, cred);
-  }
-  throw new Error(
-    "Azure Blob credentials missing. Set AZURE_BLOB_CONNECTION_STRING or AZURE_BLOB_ACCOUNT_NAME and AZURE_BLOB_ACCOUNT_KEY."
-  );
-}
-
-async function getBlobContainerClient(containerName: string): Promise<ContainerClient> {
-  const svc = getBlobServiceClient();
-  const container = svc.getContainerClient(containerName);
-  await container.createIfNotExists();
-  return container;
-}
-
 export async function GET(req: NextRequest) {
   try {
     const wallet = String(req.nextUrl.searchParams.get("wallet") || "").toLowerCase();
@@ -72,7 +42,6 @@ export async function GET(req: NextRequest) {
       }
     } catch { }
 
-    // Fallback to legacy pfp doc: if blobUrl present, redirect; else serve base64
     // Fallback to legacy pfp doc: if blobUrl present, redirect; else serve base64
     const id = `${wallet}:pfp`;
     let pfpData: any = undefined;
@@ -230,22 +199,23 @@ export async function POST(req: NextRequest) {
       .webp({ quality: 80 })
       .toBuffer({ resolveWithObject: true });
 
-    // Upload to Azure Blob
+    // Upload using Storage Provider
     const containerName = process.env.AZURE_BLOB_CONTAINER || "uploads";
-    const blobContainer = await getBlobContainerClient(containerName);
     const blobName = `${wallet}/pfp_${Date.now()}.webp`;
-    const blockClient = blobContainer.getBlockBlobClient(blobName);
-    const uploadOpts: BlockBlobUploadOptions = {
-      blobHTTPHeaders: { blobContentType: "image/webp" },
-    };
-    await blockClient.uploadData(webpBuf, uploadOpts);
+    const fullPath = `${containerName}/${blobName}`;
 
-    // Public URL (optionally rewrite to Front Door)
-    const storageUrl = blockClient.url;
+    // Upload returns the storage URL
+    const storageUrl = await storage.upload(fullPath, webpBuf, "image/webp");
+
+    // Public URL (optionally rewrite to Front Door or CDN)
     const publicBase = process.env.AZURE_BLOB_PUBLIC_BASE_URL;
     const url = (() => {
       try {
         if (publicBase) {
+          // If we have a public base, we try to construct it.
+          // IMPORTANT: storageUrl might be S3 URL or Azure URL. 
+          // If migrating, user should ensure publicBase works for both or isn't used for S3 if S3 handles its own.
+          // For now, if publicBase is set, we try to swap hostname.
           const u = new URL(storageUrl);
           return `${publicBase}${u.pathname}`;
         }
