@@ -162,7 +162,14 @@ export async function GET(req: NextRequest) {
                     deployedSplitAddress: deployedAddress,
                     splitHistory: conf?.splitHistory || [],
                     splitConfig: conf?.splitConfig || req.splitConfig, // Prefer deployed config
-                    shopName: conf?.shopName || req.shopName, // Prefer deployed name
+                    shopName: conf?.shopName || req.shopName, // Prefer deployed name,
+                    // Merge Shop Config Theme Data (Live Source of Truth)
+                    shopLogoUrl: conf?.theme?.brandLogoUrl || req.shopLogoUrl || req.logoUrl,
+                    logoUrl: conf?.theme?.brandLogoUrl || req.logoUrl, // Ensure compatibility
+                    faviconUrl: conf?.theme?.brandFaviconUrl || req.faviconUrl,
+                    primaryColor: conf?.theme?.primaryColor || req.primaryColor,
+                    secondaryColor: conf?.theme?.secondaryColor || req.secondaryColor,
+                    slug: conf?.slug || req.slug,
                 };
                 if (req.ein) enriched.ein = maskEin(req.ein);
                 return enriched;
