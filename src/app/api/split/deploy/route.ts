@@ -6,6 +6,7 @@ import { requireThirdwebAuth } from "@/lib/auth";
 import { requireCsrf } from "@/lib/security";
 import { getBrandKey, applyBrandDefaults } from "@/config/brands";
 import { isPartnerContext, getSanitizedSplitBps } from "@/lib/env";
+import { getPlatformAdminWallets } from "@/lib/authz";
 
 /**
  * Per-merchant Split configuration API.
@@ -438,18 +439,16 @@ export async function POST(req: NextRequest) {
     const isPartnerAdmin = isHexAddress(brand?.partnerWallet) && callerWallet === String(brand.partnerWallet).toLowerCase();
     const isAdmin = caller.role === "admin" || (caller.permissions && caller.permissions.includes("split:write"));
 
-    // Platform admin check: allow if caller is the canonical platform wallet OR the authorized admin
+    // Platform admin check: allow if caller is in the DB-backed admin list (or env fallback)
     const platformWallet = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0x00fe4f0104a989ca65df6b825a6c1682413bca56").toLowerCase();
-    const authorizedAdmins = [
-      platformWallet,
-      "0x2da9327a02a187fef7c4a0a5b9402499fc80bb01" // GenRevo / Admin
-    ];
-    const isPlatformAdmin = authorizedAdmins.includes(callerWallet);
+    const platformAdminWallets = await getPlatformAdminWallets();
+    const isPlatformAdmin = platformAdminWallets.includes(callerWallet);
 
     console.log("[SPLIT_DEPLOY_AUTH_DEBUG]", {
       callerWallet,
       walletHeader,
       platformWallet,
+      platformAdminWallets,
       brandPartnerWallet: brand?.partnerWallet,
       isOwner,
       isPartnerAdmin,

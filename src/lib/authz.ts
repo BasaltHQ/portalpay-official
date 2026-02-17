@@ -207,3 +207,44 @@ export function walletsSplitLocked(): boolean {
   const env = getEnv();
   return env.CONTAINER_TYPE === 'partner';
 }
+
+// ------------------------------------------------------------------
+// Server-side: DB-backed Platform Admin Resolution
+// ------------------------------------------------------------------
+
+/**
+ * Server-side: Fetch all platform admin wallets from the admin_roles Cosmos doc.
+ * Returns an array of lowercased wallet addresses.
+ * Falls back to env vars (NEXT_PUBLIC_PLATFORM_WALLET, NEXT_PUBLIC_OWNER_WALLET, ADMIN_WALLETS)
+ * if the DB read fails.
+ *
+ * This merges DB-stored admins with env-based admins so hardcoded env vars are never lost.
+ */
+export async function getPlatformAdminWallets(): Promise<string[]> {
+  const env = getEnv();
+  const wallets = new Set<string>();
+
+  // Always include platform wallet, owner wallet, and env admins as baseline
+  const pw = (env.NEXT_PUBLIC_PLATFORM_WALLET || '').toLowerCase();
+  if (/^0x[a-f0-9]{40}$/.test(pw)) wallets.add(pw);
+  const ow = (env.NEXT_PUBLIC_OWNER_WALLET || '').toLowerCase();
+  if (/^0x[a-f0-9]{40}$/.test(ow)) wallets.add(ow);
+  (env.ADMIN_WALLETS || []).forEach(a => {
+    if (/^0x[a-f0-9]{40}$/.test(a)) wallets.add(a);
+  });
+
+  // Merge with DB-backed admin_roles document
+  try {
+    const { getContainer } = await import('@/lib/cosmos');
+    const c = await getContainer();
+    const { resource } = await c.item('admin_roles', 'global').read<any>();
+    if (resource && Array.isArray(resource.admins)) {
+      resource.admins.forEach((a: any) => {
+        const w = String(a.wallet || '').toLowerCase();
+        if (/^0x[a-f0-9]{40}$/.test(w)) wallets.add(w);
+      });
+    }
+  } catch { /* DB unavailable — env fallback only */ }
+
+  return Array.from(wallets);
+}

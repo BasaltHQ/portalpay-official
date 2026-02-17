@@ -45,8 +45,9 @@ export async function GET(req: NextRequest) {
     // Check for Shop Config status (for Partner Access Gating)
     let shopStatus = "none";
     let blocked = false;
-    const platformWallet = (process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
-    const isPlatformAdmin = !!platformWallet && wallet.toLowerCase() === platformWallet;
+    const { getPlatformAdminWallets } = await import("@/lib/authz");
+    const platformAdminWallets = await getPlatformAdminWallets();
+    const isPlatformAdmin = platformAdminWallets.includes(wallet.toLowerCase());
 
     if (isPlatformAdmin) {
       // Platform Admin Bypass: Always approved, always admin

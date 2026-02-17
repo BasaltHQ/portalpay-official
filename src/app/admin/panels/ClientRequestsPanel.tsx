@@ -589,8 +589,8 @@ export default function ClientRequestsPanel() {
                                         <td className="px-4 py-3 align-top">
                                             <div className="flex items-start gap-3">
                                                 <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
-                                                    {req.logoUrl ? (
-                                                        <img src={req.logoUrl} className="w-full h-full object-contain" />
+                                                    {(req.shopLogoUrl || req.logoUrl || req.faviconUrl) ? (
+                                                        <img src={req.shopLogoUrl || req.logoUrl || req.faviconUrl} className="w-full h-full object-contain" />
                                                     ) : (
                                                         <span className="text-lg">🏢</span>
                                                     )}

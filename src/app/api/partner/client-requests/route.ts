@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { getContainer } from "@/lib/cosmos";
 import { requireThirdwebAuth, getAuthenticatedWallet } from "@/lib/auth";
+import { getPlatformAdminWallets } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -68,10 +69,10 @@ export async function GET(req: NextRequest) {
         const caller = await requireThirdwebAuth(req).catch(() => null as any);
         const roles = Array.isArray(caller?.roles) ? caller.roles : [];
 
-        // Platform wallet always has superadmin access
-        const platformWallet = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
+        // Platform admin access: check DB-backed admin list + env fallback
         const callerWallet = String(caller?.wallet || "").toLowerCase();
-        const isPlatformAdmin = !!platformWallet && platformWallet === callerWallet;
+        const platformAdminWallets = await getPlatformAdminWallets();
+        const isPlatformAdmin = platformAdminWallets.includes(callerWallet);
 
         if (!isPlatformAdmin && !roles.includes("admin") && !roles.includes("superadmin")) {
             return json({ error: "forbidden" }, { status: 403 });
@@ -312,10 +313,10 @@ export async function PATCH(req: NextRequest) {
         const caller = await requireThirdwebAuth(req).catch(() => null as any);
         const roles = Array.isArray(caller?.roles) ? caller.roles : [];
 
-        // Platform wallet always has superadmin access
-        const platformWallet = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
+        // Platform admin access: check DB-backed admin list + env fallback
         const callerWallet = String(caller?.wallet || "").toLowerCase();
-        const isPlatformAdmin = !!platformWallet && platformWallet === callerWallet;
+        const platformAdminWallets = await getPlatformAdminWallets();
+        const isPlatformAdmin = platformAdminWallets.includes(callerWallet);
 
         if (!isPlatformAdmin && !roles.includes("admin") && !roles.includes("superadmin")) {
             return json({ error: "forbidden" }, { status: 403 });
@@ -602,10 +603,10 @@ export async function DELETE(req: NextRequest) {
         const caller = await requireThirdwebAuth(req).catch(() => null as any);
         const roles = Array.isArray(caller?.roles) ? caller.roles : [];
 
-        // Platform wallet always has superadmin access
-        const platformWallet = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
+        // Platform admin access: check DB-backed admin list + env fallback
         const callerWallet = String(caller?.wallet || "").toLowerCase();
-        const isPlatformAdmin = !!platformWallet && platformWallet === callerWallet;
+        const platformAdminWallets = await getPlatformAdminWallets();
+        const isPlatformAdmin = platformAdminWallets.includes(callerWallet);
 
         if (!isPlatformAdmin && !roles.includes("admin") && !roles.includes("superadmin")) {
             return json({ error: "forbidden" }, { status: 403 });
