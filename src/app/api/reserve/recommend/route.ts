@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getInternalBaseUrl } from "@/lib/base-url";
 
 /**
  * Recommends which token to use for settlement and how frequently,
@@ -27,7 +28,8 @@ export async function GET(req: NextRequest) {
     const headerWallet = String(req.headers.get("x-wallet") || "");
 
     // Fetch current balances
-    const balancesUrl = new URL("/api/reserve/balances", url.origin);
+    const internalBase = getInternalBaseUrl();
+    const balancesUrl = new URL("/api/reserve/balances", internalBase);
     const balRes = await fetch(balancesUrl.toString(), {
       headers: {
         "x-wallet": headerWallet,
@@ -44,7 +46,7 @@ export async function GET(req: NextRequest) {
     const totalUsd = Number(balData?.totalUsd || 0);
 
     // Fetch configured ratios
-    const configUrl = new URL("/api/site/config", url.origin);
+    const configUrl = new URL("/api/site/config", internalBase);
     const cfgRes = await fetch(configUrl.toString(), {
       headers: {
         "x-wallet": headerWallet,
