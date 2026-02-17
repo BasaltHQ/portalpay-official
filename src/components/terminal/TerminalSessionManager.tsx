@@ -366,7 +366,8 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                                         title: "Merchant Login",
                                         titleIcon: resolvedLogoUrl || "/favicon.ico",
                                         size: "compact",
-                                        showThirdwebBranding: false
+                                        showThirdwebBranding: false,
+                                        className: "admin-login-modal"
                                     }}
                                     theme={twTheme}
                                 />

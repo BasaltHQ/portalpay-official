@@ -1002,3 +1002,27 @@ div[data-overlay-container],
 .term-admin-tab-menu-padding-inline {
   padding-inline: calc(var(--spacing) * 4.5);
 }
+
+/* Mobile Modal Override for Admin Login */
+@media (max-width: 768px) {
+
+  /* Target any Thirdweb modal or dialog in the admin view */
+  div[class*="admin-login-modal"],
+  div[role="dialog"][class*="tw-"],
+  div[data-type="modal-overlay"]>div:first-child,
+  .tw-connect-wallet--modal-overlay>div:first-child {
+    align-items: center !important;
+    justify-content: center !important;
+    position: fixed !important;
+    bottom: auto !important;
+    top: 50% !important;
+    transform: translate(0, -50%) !important;
+    border-radius: 1rem !important;
+    max-height: 90vh !important;
+    margin: 0 1rem !important;
+    max-width: calc(100% - 2rem) !important;
+    /* Reset bottom-sheet specific styles that might conflict */
+    border-bottom-left-radius: 1rem !important;
+    border-bottom-right-radius: 1rem !important;
+  }
+}
