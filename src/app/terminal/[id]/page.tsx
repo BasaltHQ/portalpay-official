@@ -2,45 +2,62 @@ import { notFound } from "next/navigation";
 import { getContainer } from "@/lib/cosmos";
 import TerminalSessionManager from "@/components/terminal/TerminalSessionManager";
 import { ShopConfig } from "@/app/shop/[slug]/ShopClient";
-import { getSiteConfigForWallet } from "@/lib/site-config";
+
+// Helper to sanitize theme (duplicated from shop/page.tsx to ensure consistency)
+function sanitizeShopTheme(theme: any) {
+    if (!theme) return undefined;
+
+    // Create a new object to avoid mutation
+    const sanitized = { ...theme };
+
+    // 1. Ensure logoUrl is present (prefer brandLogoUrl)
+    if (sanitized.brandLogoUrl) {
+        sanitized.logoUrl = sanitized.brandLogoUrl;
+    } else if (sanitized.logoUrl) {
+        sanitized.brandLogoUrl = sanitized.logoUrl;
+    }
+
+    // 2. Ensure primary/secondary colors have defaults if missing
+    if (!sanitized.primaryColor) sanitized.primaryColor = "#0ea5e9";
+    if (!sanitized.secondaryColor) sanitized.secondaryColor = "#22c55e";
+
+    return sanitized;
+}
 
 export default async function TerminalModePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const cleanSlug = id.toLowerCase();
     const container = await getContainer();
 
-    // 1. Resolve Shop Config (to identify the wallet)
-    const { resources: configs } = await container.items
+    // 1. Resolve Shop Config & Site Config
+    // We fetch both to merge:
+    // - shop_config: Truth for shop identity (name, current theme)
+    // - site_config: Truth for touchpoint settings (touchpointThemes override)
+    const { resources: docs } = await container.items
         .query({
-            query: "SELECT * FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true) OR c.wallet = @slug",
+            query: "SELECT * FROM c WHERE (c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true) OR c.wallet = @slug) AND (c.type = 'shop_config' OR c.type = 'site_config')",
             parameters: [{ name: "@slug", value: cleanSlug }]
         })
         .fetchAll();
 
-    // Prioritize shop_config
-    const initialConfig = (configs.find((c: any) => c.type === 'shop_config') || configs[0]) as (ShopConfig & { wallet: string }) | undefined;
+    const shopConfig = docs.find((c: any) => c.type === 'shop_config');
+    const siteConfig = docs.find((c: any) => c.type === 'site_config');
 
-    if (!initialConfig || !initialConfig.wallet) {
+    if (!shopConfig && !siteConfig) {
         return notFound();
     }
 
-    // 2. Fetch Normalized Site Config (handles inheritance, branding, and splits)
-    // We use the wallet found in step 1 to perform the standard config lookup
-    const normalizedConfig = await getSiteConfigForWallet(initialConfig.wallet);
-
-    // 3. Merge configs
-    // We want the specific fields from initialConfig (arrangement, bio, etc.) to override defaults
-    // We use normalizedConfig as the base (defaults)
-    const mergedConfig = {
-        ...normalizedConfig,
-        ...initialConfig,
-        theme: {
-            ...normalizedConfig.theme,
-            ...initialConfig.theme
-        }
+    // Merge Configs: Prioritize shop_config, fallback to site_config
+    // For touchpointThemes, we prefer site_config as that's where Admin Panel saves them.
+    const mergedConfig: any = {
+        ...(siteConfig || {}),
+        ...(shopConfig || {}), // Shop config overrides general site settings
+        // Explicitly merge specific fields if needed
+        touchpointThemes: siteConfig?.touchpointThemes || shopConfig?.touchpointThemes,
+        wallet: shopConfig?.wallet || siteConfig?.wallet || docs[0]?.wallet,
     };
 
-    // 4. Security Check: Terminal Enabled?
+    // 2. Security Check: Terminal Enabled?
     const isTerminalEnabled = (mergedConfig as any).terminalEnabled === true;
 
     if (!isTerminalEnabled) {
@@ -54,10 +71,22 @@ export default async function TerminalModePage({ params }: { params: Promise<{ i
         );
     }
 
+    // 3. Sanitize Theme
+    if (mergedConfig.theme) {
+        mergedConfig.theme = sanitizeShopTheme(mergedConfig.theme);
+    } else {
+        // Fallback if no theme object exists but top-level fields do
+        mergedConfig.theme = sanitizeShopTheme({
+            brandLogoUrl: mergedConfig.shopLogoUrl || mergedConfig.logoUrl,
+            primaryColor: mergedConfig.primaryColor,
+            secondaryColor: mergedConfig.secondaryColor
+        });
+    }
+
     return (
         <TerminalSessionManager
             config={mergedConfig as any}
-            merchantWallet={mergedConfig.wallet || initialConfig.wallet}
+            merchantWallet={mergedConfig.wallet}
         />
     );
 }
