@@ -151,7 +151,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             isPartner = !!bk && bk !== 'portalpay' && bk !== 'basaltsurge';
           } catch { }
         }
-        const useWallet = wallet || (isPartner ? recipientEnv : '');
+        // Check URL for wallet/recipient param to override context
+        let urlWallet = "";
+        try {
+          const u = new URL(window.location.href);
+          urlWallet = (u.searchParams.get("wallet") || u.searchParams.get("recipient") || "").trim();
+        } catch { }
+
+        const useWallet = wallet || urlWallet || (isPartner ? recipientEnv : '');
         if (useWallet) headers['x-wallet'] = useWallet;
         headers['x-theme-caller'] = 'ThemeContext:fetchTheme';
 

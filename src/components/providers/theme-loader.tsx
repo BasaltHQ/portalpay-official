@@ -332,16 +332,20 @@ export function ThemeLoader() {
         console.log("[ThemeLoader] isPartnerContainer:", isPartnerContainer, "isSiteConfigDefaultPrimary:", isSiteConfigDefaultPrimary, "isSiteConfigDefaultSecondary:", isSiteConfigDefaultSecondary);
 
         if (isPartnerContainer) {
-          // Partner container: brand colors from Cosmos DB take precedence over site-config defaults
-          // Only use site-config if it's NOT a default value (user explicitly set it)
+          // Partner container: User theme (if explicitly set) takes precedence over Partner brand colors.
+          // We only fall back to Partner brand colors if the user has NOT set a custom theme (is using defaults).
+
+          const userHasCustomPrimary = !isSiteConfigDefaultPrimary && effectiveSiteConfigPrimary;
+          const userHasCustomSecondary = !isSiteConfigDefaultSecondary && effectiveSiteConfigSecondary;
+
           effectivePrimary = String(
+            (userHasCustomPrimary ? effectiveSiteConfigPrimary : "") ||
             platformPrimary ||
-            (!isSiteConfigDefaultPrimary && effectiveSiteConfigPrimary ? effectiveSiteConfigPrimary : "") ||
             defaultPrimary
           );
           effectiveSecondary = String(
+            (userHasCustomSecondary ? effectiveSiteConfigSecondary : "") ||
             platformAccent ||
-            (!isSiteConfigDefaultSecondary && effectiveSiteConfigSecondary ? effectiveSiteConfigSecondary : "") ||
             defaultSecondary
           );
           console.log("[ThemeLoader] Partner container - effectivePrimary:", effectivePrimary, "effectiveSecondary:", effectiveSecondary);
