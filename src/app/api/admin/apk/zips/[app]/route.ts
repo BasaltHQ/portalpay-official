@@ -21,31 +21,35 @@ function getBrandKey(): string {
  */
 async function getApkStream(appKey: string): Promise<{ stream: Readable; length?: number } | null> {
     // Prefer Azure Blob Storage if configured
-    const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
-    const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
-
-    if (conn && container) {
+    // Prefer Azure Blob Storage if configured
+    try {
+        const { storage } = await import("@/lib/azure-storage");
+        const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
         const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
-        const { BlobServiceClient } = await import("@azure/storage-blob");
-        const bsc = BlobServiceClient.fromConnectionString(conn);
-        const cont = bsc.getContainerClient(container);
+
+        // Helper to construct path: "container/prefix/blob" or "container/blob"
+        const makePath = (name: string) => prefix ? `${container}/${prefix}/${name}` : `${container}/${name}`;
 
         // Try brand-specific APK from blob
         const tryBlob = async (key: string): Promise<{ stream: Readable; length?: number } | null> => {
             try {
-                const blobName = prefix ? `${prefix}/${key}-signed.apk` : `${key}-signed.apk`;
-                console.log(`[APK ZIP] Checking blob: ${blobName}`);
-                const blob = cont.getBlockBlobClient(blobName);
-                if (await blob.exists()) {
-                    const props = await blob.getProperties();
-                    const downloadResponse = await blob.download();
-                    if (downloadResponse.readableStreamBody) {
-                        console.log(`[APK ZIP] Found ${blobName} (${props.contentLength} bytes)`);
-                        return {
-                            stream: downloadResponse.readableStreamBody as Readable,
-                            length: props.contentLength
-                        };
-                    }
+                const blobName = `${key}-signed.apk`;
+                const fullPath = makePath(blobName);
+
+                console.log(`[APK ZIP] Checking storage: ${fullPath}`);
+                if (await storage.exists(fullPath)) {
+                    const buf = await storage.download(fullPath);
+                    console.log(`[APK ZIP] Found ${fullPath} (${buf.length} bytes)`);
+
+                    // Create a readable stream from the buffer
+                    const stream = new Readable();
+                    stream.push(buf);
+                    stream.push(null); // End of stream
+
+                    return {
+                        stream,
+                        length: buf.length
+                    };
                 }
             } catch (e: any) {
                 console.warn(`[APK ZIP] Failed to check ${key}:`, e.message);
@@ -60,12 +64,12 @@ async function getApkStream(appKey: string): Promise<{ stream: Readable; length?
         if (!result) {
             if (appKey === "basaltsurge-touchpoint") {
                 result = await tryBlob("basaltsurge-touchpoint");
-            } else if (appKey === "basaltsurge-touchpoint") {
-                result = await tryBlob("basaltsurge-touchpoint");
             }
         }
 
         if (result) return result;
+    } catch (e) {
+        console.warn("Storage provider error in getApkStream:", e);
     }
 
     // Local filesystem fallback

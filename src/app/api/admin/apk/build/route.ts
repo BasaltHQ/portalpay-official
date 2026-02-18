@@ -21,19 +21,14 @@ function json(obj: any, init?: { status?: number; headers?: Record<string, strin
  */
 async function checkApkExists(brandKey: string): Promise<boolean> {
   try {
-    const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || "").trim();
-    const container = String(process.env.PP_APK_CONTAINER || "apks").trim();
+    const { storage } = await import("@/lib/azure-storage");
+    const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
     const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
 
-    if (!conn) return false;
-
-    const { BlobServiceClient } = await import("@azure/storage-blob");
-    const bsc = BlobServiceClient.fromConnectionString(conn);
-    const cont = bsc.getContainerClient(container);
     const blobName = prefix ? `${prefix}/${brandKey}-signed.apk` : `${brandKey}-signed.apk`;
-    const blob = cont.getBlockBlobClient(blobName);
+    const fullPath = `${container}/${blobName}`;
 
-    return await blob.exists();
+    return await storage.exists(fullPath);
   } catch {
     return false;
   }

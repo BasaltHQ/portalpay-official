@@ -26,49 +26,43 @@ function json(obj: any, init?: { status?: number; headers?: Record<string, strin
  * Priority: 1) Brand-specific APK 2) surge-touchpoint 3) portalpay
  */
 async function getBaseTouchpointApk(brandKey: string): Promise<Uint8Array | null> {
-    const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
+    const { storage } = await import("@/lib/azure-storage");
     const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
+    const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
 
-    if (conn && container) {
-        const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
-        const { BlobServiceClient } = await import("@azure/storage-blob");
-        const bsc = BlobServiceClient.fromConnectionString(conn);
-        const cont = bsc.getContainerClient(container);
+    // We construct the path as container/prefix/filename or container/filename
+    // to match StorageProvider.download expectations
+    const makePath = (name: string) => prefix ? `${container}/${prefix}/${name}` : `${container}/${name}`;
 
-        // 1. Try brand-specific APK first (e.g., xoinpay-signed.apk)
-        try {
-            const brandBlobName = prefix ? `${prefix}/${brandKey}-signed.apk` : `${brandKey}-signed.apk`;
-            const brandBlob = cont.getBlockBlobClient(brandBlobName);
-            if (await brandBlob.exists()) {
-                const buf = await brandBlob.downloadToBuffer();
-                console.log(`[Touchpoint Build] Using brand-specific APK: ${brandBlobName}`);
-                return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-            }
-            console.log(`[Touchpoint Build] Brand APK not found: ${brandBlobName}`);
-        } catch { }
+    // 1. Try brand-specific APK first
+    try {
+        const path = makePath(`${brandKey}-signed.apk`);
+        if (await storage.exists(path)) {
+            const buf = await storage.download(path);
+            console.log(`[Touchpoint Build] Using brand-specific APK: ${path}`);
+            return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+        }
+    } catch { }
 
-        // 2. Try surge-touchpoint
-        try {
-            const surgeBlobName = prefix ? `${prefix}/surge-touchpoint-signed.apk` : `surge-touchpoint-signed.apk`;
-            const surgeBlob = cont.getBlockBlobClient(surgeBlobName);
-            if (await surgeBlob.exists()) {
-                const buf = await surgeBlob.downloadToBuffer();
-                console.log(`[Touchpoint Build] Using surge-touchpoint: ${surgeBlobName}`);
-                return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-            }
-        } catch { }
+    // 2. Try surge-touchpoint
+    try {
+        const path = makePath(`surge-touchpoint-signed.apk`);
+        if (await storage.exists(path)) {
+            const buf = await storage.download(path);
+            console.log(`[Touchpoint Build] Using surge-touchpoint: ${path}`);
+            return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+        }
+    } catch { }
 
-        // 3. Fall back to portalpay APK
-        try {
-            const fallbackBlobName = prefix ? `${prefix}/portalpay-signed.apk` : `portalpay-signed.apk`;
-            const fallbackBlob = cont.getBlockBlobClient(fallbackBlobName);
-            if (await fallbackBlob.exists()) {
-                const buf = await fallbackBlob.downloadToBuffer();
-                console.log(`[Touchpoint Build] Using fallback portalpay: ${fallbackBlobName}`);
-                return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-            }
-        } catch { }
-    }
+    // 3. Fall back to portalpay APK
+    try {
+        const path = makePath(`portalpay-signed.apk`);
+        if (await storage.exists(path)) {
+            const buf = await storage.download(path);
+            console.log(`[Touchpoint Build] Using fallback portalpay: ${path}`);
+            return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+        }
+    } catch { }
 
     // Local filesystem fallback
     const portalPayPath = path.join(process.cwd(), "android", "launcher", "recovered", "portalpay-signed.apk");
@@ -441,50 +435,30 @@ async function getBrandIconUrl(brandKey: string): Promise<string | null> {
 /**
  * Upload touchpoint APK to blob storage
  */
+/**
+ * Upload touchpoint APK to blob storage
+ */
 async function uploadTouchpointApk(brandKey: string, apkBytes: Uint8Array): Promise<{
     success: boolean;
     blobUrl?: string;
     error?: string;
     size?: number;
 }> {
-    const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
-    const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
-
-    if (!conn) {
-        return { success: false, error: "AZURE_STORAGE_CONNECTION_STRING not configured" };
-    }
-
     try {
-        const { BlobServiceClient } = await import("@azure/storage-blob");
-        const bsc = BlobServiceClient.fromConnectionString(conn);
-        const cont = bsc.getContainerClient(container);
-
-        // Create container if it doesn't exist
-        await cont.createIfNotExists({ access: "blob" });
-
+        const { storage } = await import("@/lib/azure-storage");
+        const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
         const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
+
         const blobName = prefix ? `${prefix}/${brandKey}-touchpoint-signed.apk` : `${brandKey}-touchpoint-signed.apk`;
-        const blob = cont.getBlockBlobClient(blobName);
+        const fullPath = `${container}/${blobName}`;
 
-        // Upload
-        await blob.uploadData(apkBytes, {
-            blobHTTPHeaders: {
-                blobContentType: "application/vnd.android.package-archive",
-                blobContentDisposition: `attachment; filename="${brandKey}-touchpoint.apk"`,
-            },
-            metadata: {
-                brandKey,
-                appType: "touchpoint",
-                createdAt: new Date().toISOString(),
-                size: String(apkBytes.byteLength),
-            },
-        });
+        const url = await storage.upload(fullPath, apkBytes, "application/vnd.android.package-archive");
 
-        console.log(`[Touchpoint APK] Uploaded to blob: ${blobName} (${apkBytes.byteLength} bytes)`);
+        console.log(`[Touchpoint APK] Uploaded to storage: ${fullPath} (${apkBytes.byteLength} bytes)`);
 
         return {
             success: true,
-            blobUrl: blob.url,
+            blobUrl: url,
             size: apkBytes.byteLength,
         };
     } catch (e: any) {

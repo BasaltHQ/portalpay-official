@@ -81,7 +81,7 @@ async function listPartnerBrands(): Promise<PartnerBrand[]> {
       parameters: [{ name: "@type", value: "brand_config" }],
     };
     const { resources } = await c.items.query<{ wallet: string; name?: string; appUrl?: string }>(query, { maxItemCount: 1000 }).fetchAll();
-    
+
     for (const r of resources || []) {
       const brandKey = String(r.wallet || "").toLowerCase();
       if (brandKey) {
@@ -124,27 +124,27 @@ async function listAppServiceApps(
     const { WebSiteManagementClient } = await import("@azure/arm-appservice");
     console.log(`[listAppServiceApps] Listing webapps in subscription=${subscription}, resourceGroup=${resourceGroup}`);
     const client = new WebSiteManagementClient(credential, subscription);
-    
+
     let count = 0;
     for await (const app of client.webApps.listByResourceGroup(resourceGroup)) {
       count++;
       // Skip function apps
       if (app.kind?.toLowerCase().includes("functionapp")) continue;
-      
+
       // The webapp NAME is used as the base, but check for known mappings
       // e.g., webapp "payportal" = brandKey "portalpay" for APK purposes
       const webappName = app.name?.toLowerCase() || "";
       const brandKey = WEBAPP_TO_BRAND_MAP[webappName] || webappName;
-      
+
       // Determine if it's a container-based app
-      const isContainer = app.kind?.toLowerCase().includes("container") || 
-                          app.siteConfig?.linuxFxVersion?.toLowerCase().startsWith("docker|");
+      const isContainer = app.kind?.toLowerCase().includes("container") ||
+        app.siteConfig?.linuxFxVersion?.toLowerCase().startsWith("docker|");
       const image = isContainer ? (app.siteConfig?.linuxFxVersion?.replace(/^DOCKER\|/i, "") || "") : "";
       const tag = image ? (image.split(":")[1] || "latest") : "";
-      
+
       // Construct the endpoint URL
       const endpoint = app.defaultHostName ? `https://${app.defaultHostName}` : undefined;
-      
+
       results.push({
         id: app.id || app.name || "",
         name: app.name || "",
@@ -180,7 +180,7 @@ async function listContainerApps(
   try {
     const { ContainerAppsAPIClient } = await import("@azure/arm-appcontainers");
     const client = new ContainerAppsAPIClient(credential, subscription);
-    
+
     for await (const app of client.containerApps.listByResourceGroup(resourceGroup)) {
       // Extract brand key from env vars or name
       let brandKey = "";
@@ -193,15 +193,15 @@ async function listContainerApps(
           break;
         }
       }
-      
+
       if (!brandKey) {
         const match = app.name?.match(/^pp-(.+)$/i);
         brandKey = match?.[1]?.toLowerCase() || app.name?.toLowerCase() || "";
       }
-      
+
       const image = containers[0]?.image || "";
       const tag = image.split(":")[1] || "latest";
-      
+
       results.push({
         id: app.id || app.name || "",
         name: app.name || "",
@@ -229,26 +229,26 @@ async function listRegistryImages(
   registryName: string
 ): Promise<Array<{ repository: string; tags: string[]; latestTag?: string; latestDigest?: string; updatedAt?: string }>> {
   const results: Array<{ repository: string; tags: string[]; latestTag?: string; latestDigest?: string; updatedAt?: string }> = [];
-  
+
   try {
     const { ContainerRegistryClient } = await import("@azure/container-registry");
     const endpoint = `https://${registryName}`;
     const client = new ContainerRegistryClient(endpoint, credential);
-    
+
     // List repositories
     for await (const repoName of client.listRepositoryNames()) {
       const repo = client.getRepository(repoName);
       const props = await repo.getProperties();
-      
+
       // List tags for this repository
       const tags: string[] = [];
       let latestTag: string | undefined;
       let latestDigest: string | undefined;
       let latestDate: Date | undefined;
-      
+
       // Note: getArtifact is used differently in newer SDK versions
       // We'll skip the artifact lookup and just use manifest properties
-      
+
       for await (const manifest of repo.listManifestProperties()) {
         if (manifest.tags) {
           tags.push(...manifest.tags);
@@ -261,7 +261,7 @@ async function listRegistryImages(
           latestTag = manifest.tags?.[0];
         }
       }
-      
+
       results.push({
         repository: repoName,
         tags,
@@ -273,7 +273,7 @@ async function listRegistryImages(
   } catch (e: any) {
     console.error("[listRegistryImages] Error:", e?.message || e);
   }
-  
+
   return results;
 }
 
@@ -282,19 +282,14 @@ async function listRegistryImages(
  */
 async function checkApkExists(brandKey: string): Promise<boolean> {
   try {
-    const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
+    const { storage } = await import("@/lib/azure-storage");
     const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
     const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
-    
-    if (!conn) return false;
-    
-    const { BlobServiceClient } = await import("@azure/storage-blob");
-    const bsc = BlobServiceClient.fromConnectionString(conn);
-    const cont = bsc.getContainerClient(container);
+
     const blobName = prefix ? `${prefix}/${brandKey}-signed.apk` : `${brandKey}-signed.apk`;
-    const blob = cont.getBlockBlobClient(blobName);
-    
-    return await blob.exists();
+    const fullPath = `${container}/${blobName}`;
+
+    return await storage.exists(fullPath);
   } catch {
     return false;
   }
@@ -305,39 +300,29 @@ async function checkApkExists(brandKey: string): Promise<boolean> {
  */
 async function checkPackageExists(brandKey: string): Promise<{ exists: boolean; url?: string }> {
   try {
-    const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
+    const { storage } = await import("@/lib/azure-storage");
     const container = String(process.env.PP_PACKAGES_CONTAINER || "device-packages").trim();
-    
-    if (!conn) return { exists: false };
-    
-    const { BlobServiceClient, generateBlobSASQueryParameters, BlobSASPermissions, StorageSharedKeyCredential } = await import("@azure/storage-blob");
-    const bsc = BlobServiceClient.fromConnectionString(conn);
-    const cont = bsc.getContainerClient(container);
     const blobName = `${brandKey}/${brandKey}-installer.zip`;
-    const blob = cont.getBlockBlobClient(blobName);
-    
-    const exists = await blob.exists();
+    // We assume the storage provider allows checking paths with container prefix if needed, 
+    // or we construct the path relative to the container depending on how the provider is configured.
+    // Based on previous refactors, `storage` usually takes the full path including container if it's dynamic, 
+    // or relative if fixed. 
+    // However, our StorageProvider implementation for Azure takes "container/blob" and S3 takes "key".
+    // Let's assume consistent usage: "container/path/to/blob".
+
+    const fullPath = `${container}/${blobName}`;
+
+    const exists = await storage.exists(fullPath);
     if (!exists) return { exists: false };
-    
+
     // Generate SAS URL for download (valid for 1 hour)
     try {
-      // Extract account name and key from connection string for SAS generation
-      const accountMatch = conn.match(/AccountName=([^;]+)/i);
-      const keyMatch = conn.match(/AccountKey=([^;]+)/i);
-      if (accountMatch && keyMatch) {
-        const sharedKeyCredential = new StorageSharedKeyCredential(accountMatch[1], keyMatch[1]);
-        const sasToken = generateBlobSASQueryParameters({
-          containerName: container,
-          blobName,
-          permissions: BlobSASPermissions.parse("r"),
-          startsOn: new Date(),
-          expiresOn: new Date(Date.now() + 3600 * 1000),
-        }, sharedKeyCredential).toString();
-        
-        return { exists: true, url: `${blob.url}?${sasToken}` };
-      }
-    } catch {}
-    
+      const url = await storage.getSignedUrl(fullPath, 3600);
+      return { exists: true, url };
+    } catch {
+      // Fallback or ignore
+    }
+
     return { exists: true };
   } catch {
     return { exists: false };
@@ -369,32 +354,32 @@ export async function GET(req: NextRequest) {
   } catch {
     return json({ error: "unauthorized" }, { status: 401 });
   }
-  
+
   const url = new URL(req.url);
   // Use AZURE_APP_SERVICE_RESOURCE_GROUP first (where webapps are deployed),
   // then fall back to AZURE_RESOURCE_GROUP, then default to "PortalPay"
-  const resourceGroup = url.searchParams.get("resourceGroup") || 
-                        process.env.AZURE_APP_SERVICE_RESOURCE_GROUP ||
-                        process.env.AZURE_RESOURCE_GROUP || 
-                        "PortalPay";
-  const registryName = url.searchParams.get("registry") || 
-                       process.env.AZURE_CONTAINER_REGISTRY || 
-                       "thutilityco.azurecr.io";
+  const resourceGroup = url.searchParams.get("resourceGroup") ||
+    process.env.AZURE_APP_SERVICE_RESOURCE_GROUP ||
+    process.env.AZURE_RESOURCE_GROUP ||
+    "PortalPay";
+  const registryName = url.searchParams.get("registry") ||
+    process.env.AZURE_CONTAINER_REGISTRY ||
+    "thutilityco.azurecr.io";
   const subscription = process.env.AZURE_SUBSCRIPTION_ID || "";
-  
+
   if (!subscription) {
-    return json({ 
-      error: "missing_config", 
+    return json({
+      error: "missing_config",
       message: "AZURE_SUBSCRIPTION_ID is required",
       containers: [],
       registryImages: []
     }, { status: 400 });
   }
-  
+
   try {
     const { DefaultAzureCredential } = await import("@azure/identity");
     const credential = new DefaultAzureCredential();
-    
+
     // Fetch from all sources in parallel
     const [appServiceResult, containerApps, registryImages, partnerBrands] = await Promise.all([
       listAppServiceApps(credential, subscription, resourceGroup),
@@ -402,21 +387,21 @@ export async function GET(req: NextRequest) {
       listRegistryImages(credential, registryName.replace(/\.azurecr\.io$/, "")),
       listPartnerBrands(),
     ]);
-    
+
     // Log if there was an error fetching app service apps
     if (appServiceResult.error) {
       console.warn(`[GET /api/admin/devices/containers] App Service error: ${appServiceResult.error}`);
     }
-    
+
     // Combine and dedupe containers
     const allContainers = [...appServiceResult.results, ...containerApps];
-    
+
     // Create a map of partner brands by brandKey for quick lookup
     const partnerMap = new Map<string, PartnerBrand>();
     for (const p of partnerBrands) {
       partnerMap.set(p.brandKey.toLowerCase(), p);
     }
-    
+
     // Track which webapps exist (by brandKey)
     const webappBrandKeys = new Set<string>();
     for (const c of allContainers) {
@@ -424,7 +409,7 @@ export async function GET(req: NextRequest) {
         webappBrandKeys.add(c.brandKey.toLowerCase());
       }
     }
-    
+
     // Enrich with APK, package status, and partner matching
     const enrichedContainers = await Promise.all(
       allContainers.map(async (c) => {
@@ -432,10 +417,10 @@ export async function GET(req: NextRequest) {
           checkApkExists(c.brandKey),
           checkPackageExists(c.brandKey),
         ]);
-        
+
         // Check if this webapp has a matching partner in CosmosDB
         const partner = partnerMap.get(c.brandKey.toLowerCase());
-        
+
         return {
           ...c,
           hasSignedApk,
@@ -450,23 +435,23 @@ export async function GET(req: NextRequest) {
         };
       })
     );
-    
+
     // Sort by updatedAt descending (most recent first)
     enrichedContainers.sort((a, b) => {
       const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
       const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
       return dateB - dateA;
     });
-    
+
     // Enrich partners with hasWebapp flag
     const enrichedPartners: PartnerBrand[] = partnerBrands.map(p => ({
       ...p,
       hasWebapp: webappBrandKeys.has(p.brandKey.toLowerCase()),
     }));
-    
+
     // Find partners without matching webapps
     const unmatchedPartners = enrichedPartners.filter(p => !p.hasWebapp);
-    
+
     const response: ListContainersResponse & { _debug?: any } = {
       containers: enrichedContainers,
       registryImages,
@@ -481,12 +466,12 @@ export async function GET(req: NextRequest) {
         containerAppsCount: containerApps.length,
       } : undefined,
     };
-    
+
     return json(response);
   } catch (e: any) {
     console.error("[GET /api/admin/devices/containers] Error:", e?.message || e);
-    return json({ 
-      error: "fetch_failed", 
+    return json({
+      error: "fetch_failed",
       message: e?.message || "Failed to fetch containers",
       containers: [],
       registryImages: []

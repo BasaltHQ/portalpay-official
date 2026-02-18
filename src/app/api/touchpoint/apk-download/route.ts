@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { BlobServiceClient } from "@azure/storage-blob";
 
 export const runtime = "nodejs";
 
@@ -26,33 +25,24 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: "invalid_brandKey" }, { status: 400 });
         }
 
-        // Get APK from Azure Blob Storage
-        const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
+        // Get APK from Storage
+        const { storage } = await import("@/lib/azure-storage");
         const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
+        const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
 
-        if (!conn) {
-            return NextResponse.json({ error: "blob_storage_not_configured" }, { status: 503 });
-        }
+        const makePath = (name: string) => prefix ? `${container}/${prefix}/${name}` : `${container}/${name}`;
 
         try {
-            const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
-            const blobName = prefix
-                ? `${prefix}/${brandKey}-touchpoint-signed.apk`
-                : `${brandKey}-touchpoint-signed.apk`;
-
-            const bsc = BlobServiceClient.fromConnectionString(conn);
-            const cont = bsc.getContainerClient(container);
-            const blob = cont.getBlockBlobClient(blobName);
+            const blobName = `${brandKey}-touchpoint-signed.apk`;
+            const fullPath = makePath(blobName);
 
             // Check if blob exists
-            const exists = await blob.exists();
+            const exists = await storage.exists(fullPath);
             if (!exists) {
                 // Try alternative naming convention
-                const altBlobName = prefix
-                    ? `${prefix}/${brandKey}-signed.apk`
-                    : `${brandKey}-signed.apk`;
-                const altBlob = cont.getBlockBlobClient(altBlobName);
-                const altExists = await altBlob.exists();
+                const altBlobName = `${brandKey}-signed.apk`;
+                const altPath = makePath(altBlobName);
+                const altExists = await storage.exists(altPath);
 
                 if (!altExists) {
                     return NextResponse.json({
@@ -62,11 +52,11 @@ export async function GET(req: NextRequest) {
                 }
 
                 // Use alternative blob
-                const buf = await altBlob.downloadToBuffer();
+                const buf = await storage.download(altPath);
                 return createApkResponse(buf, brandKey);
             }
 
-            const buf = await blob.downloadToBuffer();
+            const buf = await storage.download(fullPath);
             return createApkResponse(buf, brandKey);
 
         } catch (e: any) {

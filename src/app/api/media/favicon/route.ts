@@ -1,41 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
-import {
-  BlobServiceClient,
-  StorageSharedKeyCredential,
-  ContainerClient,
-  BlockBlobUploadOptions,
-} from "@azure/storage-blob";
 import { getContainer } from "@/lib/cosmos";
 import { request as httpsRequest } from "node:https";
 import { request as httpRequest } from "node:http";
 
 export const runtime = "nodejs";
 
-function getBlobServiceClient(): BlobServiceClient {
-  const conn = process.env.AZURE_BLOB_CONNECTION_STRING;
-  const account = process.env.AZURE_BLOB_ACCOUNT_NAME;
-  const key = process.env.AZURE_BLOB_ACCOUNT_KEY;
-
-  if (conn) {
-    return BlobServiceClient.fromConnectionString(conn);
-  }
-  if (account && key) {
-    const url = `https://${account}.blob.core.windows.net`;
-    const cred = new StorageSharedKeyCredential(account, key);
-    return new BlobServiceClient(url, cred);
-  }
-  throw new Error(
-    "Azure Blob credentials missing. Set AZURE_BLOB_CONNECTION_STRING or AZURE_BLOB_ACCOUNT_NAME and AZURE_BLOB_ACCOUNT_KEY."
-  );
-}
-
-async function getContainerClient(containerName: string): Promise<ContainerClient> {
-  const svc = getBlobServiceClient();
-  const container = svc.getContainerClient(containerName);
-  // Container should already exist/configured; avoid createIfNotExists due to Azure AbortSignal env mismatch
-  return container;
-}
 
 function absolutize(publicBase: string | undefined, storageUrl: string): string {
   try {
@@ -43,7 +13,7 @@ function absolutize(publicBase: string | undefined, storageUrl: string): string 
       const u = new URL(storageUrl);
       return `${publicBase}${u.pathname}`;
     }
-  } catch {}
+  } catch { }
   return storageUrl;
 }
 
@@ -179,7 +149,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "logo_required" }, { status: 400 });
     }
 
-    const containerClient = await getContainerClient(containerName);
+    // Use Storage Provider
+    const { storage } = await import("@/lib/azure-storage");
+
+
+    // Helper to construct path: "uploads/favicons/..."
+    const makePath = (name: string) => `${containerName}/${name}`;
+
     const basePath = wallet ? `favicons/${wallet}` : `favicons/global`;
     const ts = Date.now();
 
@@ -188,15 +164,16 @@ export async function POST(req: NextRequest) {
     const fav32 = await makeIcon(logoBuf, 32, shape);
     const apple = await makeIcon(logoBuf, 180, shape); // Apple touch icon commonly 180x180
 
-    const upOptsPng: BlockBlobUploadOptions = { blobHTTPHeaders: { blobContentType: "image/png" } };
+    // Upload PNGs
+    const path16 = makePath(`${basePath}/favicon-16x16_${ts}.png`);
+    const path32 = makePath(`${basePath}/favicon-32x32_${ts}.png`);
+    const pathApple = makePath(`${basePath}/apple-touch-icon_${ts}.png`);
 
-    const b16 = containerClient.getBlockBlobClient(`${basePath}/favicon-16x16_${ts}.png`);
-    const b32 = containerClient.getBlockBlobClient(`${basePath}/favicon-32x32_${ts}.png`);
-    const bApple = containerClient.getBlockBlobClient(`${basePath}/apple-touch-icon_${ts}.png`);
-
-    await b16.uploadData(fav16, upOptsPng);
-    await b32.uploadData(fav32, upOptsPng);
-    await bApple.uploadData(apple, upOptsPng);
+    const [url16Raw, url32Raw, urlAppleRaw] = await Promise.all([
+      storage.upload(path16, fav16, "image/png"),
+      storage.upload(path32, fav32, "image/png"),
+      storage.upload(pathApple, apple, "image/png")
+    ]);
 
     // Build single-image ICO (32x32) embedding PNG data per ICO spec
     function buildIcoFromPng(png: Buffer): Buffer {
@@ -221,14 +198,13 @@ export async function POST(req: NextRequest) {
     }
 
     const icoBuf = buildIcoFromPng(fav32);
-    const bIco = containerClient.getBlockBlobClient(`${basePath}/favicon_${ts}.ico`);
-    const upOptsIco: BlockBlobUploadOptions = { blobHTTPHeaders: { blobContentType: "image/x-icon" } };
-    await bIco.uploadData(icoBuf, upOptsIco);
+    const pathIco = makePath(`${basePath}/favicon_${ts}.ico`);
+    const urlIcoRaw = await storage.upload(pathIco, icoBuf, "image/x-icon");
 
-    const url16 = absolutize(publicBase, b16.url);
-    const url32 = absolutize(publicBase, b32.url);
-    const urlApple = absolutize(publicBase, bApple.url);
-    const urlIco = absolutize(publicBase, bIco.url);
+    const url16 = absolutize(publicBase, url16Raw);
+    const url32 = absolutize(publicBase, url32Raw);
+    const urlApple = absolutize(publicBase, urlAppleRaw);
+    const urlIco = absolutize(publicBase, urlIcoRaw);
 
     // Optionally persist brandFaviconUrl in site config if wallet provided
     let saved = false;
@@ -276,7 +252,7 @@ export async function POST(req: NextRequest) {
         message: msg,
         stack: e?.stack,
       });
-    } catch {}
+    } catch { }
     const resp: any = { error: msg, correlationId };
     try {
       if (typeof msg === "string") {
@@ -288,7 +264,7 @@ export async function POST(req: NextRequest) {
         }
         resp.details = details;
       }
-    } catch {}
+    } catch { }
     return NextResponse.json(resp, { status: 500, headers: { "x-correlation-id": correlationId } });
   }
 }

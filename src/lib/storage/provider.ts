@@ -31,4 +31,17 @@ export interface StorageProvider {
      * @param path The remote path
      */
     download(path: string): Promise<Buffer>;
+
+    /**
+     * List files
+     * @param pathPrefix The prefix to search for
+     */
+    list(pathPrefix?: string): Promise<string[]>;
+
+    /**
+     * Get a temporary signed URL for read access (SAS / Presigned URL)
+     * @param path The remote path
+     * @param expiresInSeconds Duration in seconds (default 3600)
+     */
+    getSignedUrl(path: string, expiresInSeconds?: number): Promise<string>;
 }

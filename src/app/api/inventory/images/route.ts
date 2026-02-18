@@ -1,114 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import crypto from "node:crypto";
-import {
-  BlobServiceClient,
-  StorageSharedKeyCredential,
-  ContainerClient,
-  BlockBlobUploadOptions,
-} from "@azure/storage-blob";
 import { request as httpsRequest } from "node:https";
 import { request as httpRequest } from "node:http";
 import { requireThirdwebAuth, assertOwnershipOrAdmin } from "@/lib/auth";
 import { requireCsrf, rateLimitOrThrow, rateKey } from "@/lib/security";
 import { auditEvent } from "@/lib/audit";
 
-// Azure Shared Key (REST) helpers to avoid AbortSignal issues in Azure environment
-function parseAzureConnString(conn?: string): { accountName?: string; accountKey?: string } {
-  try {
-    const s = String(conn || "");
-    const parts = s.split(";").map((p) => p.trim());
-    const out: Record<string, string> = {};
-    for (const p of parts) {
-      const [k, v] = p.split("=");
-      if (k && v) out[k] = v;
-    }
-    return { accountName: out["AccountName"], accountKey: out["AccountKey"] };
-  } catch {
-    return {};
-  }
-}
+// Azure helpers removed in favor of StorageProvider
 
-function getAccountCreds(): { accountName: string; accountKey: string } {
-  const fromConn = parseAzureConnString(process.env.AZURE_BLOB_CONNECTION_STRING);
-  const accountName = process.env.AZURE_BLOB_ACCOUNT_NAME || fromConn.accountName || "";
-  const accountKey = process.env.AZURE_BLOB_ACCOUNT_KEY || fromConn.accountKey || "";
-  if (!accountName || !accountKey) {
-    throw new Error("azure_creds_missing");
-  }
-  return { accountName, accountKey };
-}
-
-function buildBlobUrl(accountName: string, container: string, blobName: string): string {
-  return `https://${accountName}.blob.core.windows.net/${container}/${blobName}`;
-}
-
-async function uploadBlobSharedKey(
-  accountName: string,
-  accountKey: string,
-  container: string,
-  blobName: string,
-  contentType: string,
-  body: Buffer
-): Promise<void> {
-  const xmsVersion = "2021-12-02";
-  const xmsDate = new Date().toUTCString();
-  const contentLength = body.length;
-
-  const canonHeaders =
-    `x-ms-blob-type:BlockBlob\n` +
-    `x-ms-date:${xmsDate}\n` +
-    `x-ms-version:${xmsVersion}\n`;
-
-  const canonResource = `/${accountName}/${container}/${blobName}`;
-
-  const stringToSign =
-    `PUT\n` +
-    `\n` +
-    `\n` +
-    `${contentLength}\n` +
-    `\n` +
-    `${contentType}\n` +
-    `\n` +
-    `\n` +
-    `\n` +
-    `\n` +
-    `\n` +
-    `\n` +
-    `${canonHeaders}` +
-    `${canonResource}`;
-
-  const key = Buffer.from(accountKey, "base64");
-  const sig = crypto.createHmac("sha256", key).update(stringToSign, "utf8").digest("base64");
-  const auth = `SharedKey ${accountName}:${sig}`;
-
-  await new Promise<void>((resolve, reject) => {
-    const options = {
-      hostname: `${accountName}.blob.core.windows.net`,
-      path: `/${container}/${blobName}`,
-      method: "PUT",
-      headers: {
-        "x-ms-blob-type": "BlockBlob",
-        "x-ms-date": xmsDate,
-        "x-ms-version": xmsVersion,
-        "Content-Type": contentType,
-        "Content-Length": contentLength,
-        Authorization: auth,
-      },
-    };
-    const req = httpsRequest(options, (res) => {
-      const status = res.statusCode || 0;
-      if (status >= 200 && status < 300) {
-        resolve();
-      } else {
-        reject(new Error(`azure_put_failed_${status}`));
-      }
-    });
-    req.on("error", (err) => reject(err));
-    req.write(body);
-    req.end();
-  });
-}
 
 export const runtime = "nodejs";
 
@@ -202,30 +102,7 @@ async function fileToBuffer(file: File): Promise<{ buffer: Buffer; contentType: 
   return { buffer: Buffer.from(ab), contentType: file.type || null };
 }
 
-function getBlobServiceClient(): BlobServiceClient {
-  const conn = process.env.AZURE_BLOB_CONNECTION_STRING;
-  const account = process.env.AZURE_BLOB_ACCOUNT_NAME;
-  const key = process.env.AZURE_BLOB_ACCOUNT_KEY;
 
-  if (conn) {
-    return BlobServiceClient.fromConnectionString(conn);
-  }
-  if (account && key) {
-    const url = `https://${account}.blob.core.windows.net`;
-    const cred = new StorageSharedKeyCredential(account, key);
-    return new BlobServiceClient(url, cred);
-  }
-  throw new Error(
-    "Azure Blob credentials missing. Set AZURE_BLOB_CONNECTION_STRING or AZURE_BLOB_ACCOUNT_NAME and AZURE_BLOB_ACCOUNT_KEY."
-  );
-}
-
-async function getContainerClient(containerName: string): Promise<ContainerClient> {
-  const svc = getBlobServiceClient();
-  const container = svc.getContainerClient(containerName);
-  // Expect container to exist/configured; create if not present.
-  return container;
-}
 
 export async function POST(req: NextRequest) {
   const correlationId = crypto.randomUUID();
@@ -246,7 +123,7 @@ export async function POST(req: NextRequest) {
           ok: false,
           metadata: { error: e?.message || "rate_limited", resetAt }
         });
-      } catch {}
+      } catch { }
       return NextResponse.json(
         { error: e?.message || "rate_limited", resetAt, correlationId },
         { status: e?.status || 429, headers: { "x-correlation-id": correlationId, "x-ratelimit-reset": resetAt ? String(resetAt) : "" } }
@@ -270,8 +147,8 @@ export async function POST(req: NextRequest) {
       const bodyUrls: string[] = Array.isArray(body?.urls)
         ? body.urls.map((u: any) => String(u)).filter(Boolean)
         : body?.url
-        ? [String(body.url)]
-        : [];
+          ? [String(body.url)]
+          : [];
       for (const u of bodyUrls) inputs.push({ kind: "url", url: u });
     } else {
       const form = await req.formData();
@@ -295,12 +172,9 @@ export async function POST(req: NextRequest) {
     const errors: Array<{ kind: "file" | "url"; source: string; error: string }> = [];
 
     const containerName = process.env.AZURE_BLOB_CONTAINER || "uploads";
-    let containerClient: ContainerClient;
-    try {
-      containerClient = await getContainerClient(containerName);
-    } catch (e: any) {
-      throw new Error(`stage:azure_container ${e?.message || String(e)}`);
-    }
+    // Check storage availability
+    const { storage } = await import("@/lib/azure-storage");
+
     try {
       console.info(`[inventory/images] ${correlationId} begin`, {
         wallet,
@@ -308,7 +182,7 @@ export async function POST(req: NextRequest) {
         toProcessCount: toProcess.length,
         containerName,
       });
-    } catch {}
+    } catch { }
 
     for (const item of toProcess) {
       try {
@@ -365,34 +239,33 @@ export async function POST(req: NextRequest) {
           throw new Error(`stage:sharp_thumb ${e?.message || String(e)}`);
         }
 
-        const hiBlobName = `${wallet}/${baseName}.webp`;
-        const thumbBlobName = `${wallet}/${baseName}_thumb.webp`;
-
-        const { accountName, accountKey } = getAccountCreds();
+        const hiBlobInfo = `${containerName}/${wallet}/${baseName}.webp`;
+        const thumbBlobInfo = `${containerName}/${wallet}/${baseName}_thumb.webp`;
 
         try {
           console.info(`[inventory/images] ${correlationId} uploading`, {
             wallet,
-            hiBlobName,
-            thumbBlobName,
+            hiBlobInfo,
+            thumbBlobInfo,
             hiSize: hiBuf.length,
             thumbSize: thumbBuf.length,
           });
-        } catch {}
+        } catch { }
+
+        let storageHi: string;
+        let storageThumb: string;
 
         try {
-          await uploadBlobSharedKey(accountName, accountKey, containerName, hiBlobName, "image/webp", hiBuf);
+          storageHi = await storage.upload(hiBlobInfo, hiBuf, "image/webp");
         } catch (e: any) {
-          throw new Error(`stage:azure_upload_hi ${e?.message || String(e)}`);
+          throw new Error(`stage:upload_hi ${e?.message || String(e)}`);
         }
         try {
-          await uploadBlobSharedKey(accountName, accountKey, containerName, thumbBlobName, "image/webp", thumbBuf);
+          storageThumb = await storage.upload(thumbBlobInfo, thumbBuf, "image/webp");
         } catch (e: any) {
-          throw new Error(`stage:azure_upload_thumb ${e?.message || String(e)}`);
+          throw new Error(`stage:upload_thumb ${e?.message || String(e)}`);
         }
 
-        const storageHi = buildBlobUrl(accountName, containerName, hiBlobName);
-        const storageThumb = buildBlobUrl(accountName, containerName, thumbBlobName);
         const publicBase = process.env.AZURE_BLOB_PUBLIC_BASE_URL;
         const relHi = (() => {
           try {
@@ -400,7 +273,7 @@ export async function POST(req: NextRequest) {
               const u = new URL(storageHi);
               return `${publicBase}${u.pathname}`;
             }
-          } catch {}
+          } catch { }
           return storageHi;
         })();
         const relThumb = (() => {
@@ -409,7 +282,7 @@ export async function POST(req: NextRequest) {
               const u = new URL(storageThumb);
               return `${publicBase}${u.pathname}`;
             }
-          } catch {}
+          } catch { }
           return storageThumb;
         })();
 
@@ -429,7 +302,7 @@ export async function POST(req: NextRequest) {
             publicHi: relHi,
             publicThumb: relThumb,
           });
-        } catch {}
+        } catch { }
       } catch (_e: any) {
         try {
           console.error(`[inventory/images] ${correlationId} item_error`, {
@@ -439,7 +312,7 @@ export async function POST(req: NextRequest) {
             message: _e?.message || String(_e),
             stack: _e?.stack,
           });
-        } catch {}
+        } catch { }
         errors.push({
           kind: item.kind,
           source: item.kind === "file" ? "file" : String(item.url || ""),
@@ -460,7 +333,7 @@ export async function POST(req: NextRequest) {
           ok: false,
           metadata: { errors }
         });
-      } catch {}
+      } catch { }
       return NextResponse.json(
         { error: "processing_failed", errors, correlationId },
         { status: 400, headers: { "x-correlation-id": correlationId } }
@@ -477,7 +350,7 @@ export async function POST(req: NextRequest) {
         ok: true,
         metadata: { count: out.length, errors }
       });
-    } catch {}
+    } catch { }
     return NextResponse.json({ ok: true, images: out, errors, correlationId }, { headers: { "x-correlation-id": correlationId } });
   } catch (e: any) {
     try {
@@ -486,10 +359,10 @@ export async function POST(req: NextRequest) {
         message: e?.message || String(e),
         stack: e?.stack,
       });
-    } catch {}
+    } catch { }
     const msg = e?.message || "failed";
     const resp: any = { error: msg, correlationId };
-    
+
     // Determine appropriate HTTP status code based on error type
     let status = 500;
     if (msg === "unauthorized") {
@@ -505,7 +378,7 @@ export async function POST(req: NextRequest) {
     } else if (msg.includes("no_inputs") || msg.includes("processing_failed")) {
       status = 400;
     }
-    
+
     // Include diagnostic details and stage if present
     try {
       if (typeof msg === "string") {
@@ -517,7 +390,7 @@ export async function POST(req: NextRequest) {
         }
         resp.details = details;
       }
-    } catch {}
+    } catch { }
     try {
       await auditEvent(req, {
         who: "",
@@ -528,7 +401,7 @@ export async function POST(req: NextRequest) {
         ok: false,
         metadata: resp.details
       });
-    } catch {}
+    } catch { }
     return NextResponse.json(resp, { status, headers: { "x-correlation-id": correlationId } });
   }
 }

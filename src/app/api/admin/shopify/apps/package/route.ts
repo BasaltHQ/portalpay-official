@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
     const r = await fetch(`${baseUrl}/api/admin/shopify/brands/${encodeURIComponent(brandKey)}/plugin-config`, { cache: "no-store" });
     const j = await r.json().catch(() => ({}));
     plugin = j?.plugin || null;
-  } catch {}
+  } catch { }
   if (!plugin) {
     return headerJson({ error: "plugin_config_not_found", correlationId }, { status: 404 });
   }
@@ -175,49 +175,28 @@ export async function POST(req: NextRequest) {
   const zipBuffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 9 } });
 
   // Upload to Azure Blob Storage
-  const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
+  // Upload to Storage
+  const { storage } = await import("@/lib/azure-storage");
   const container = String(process.env.PP_PACKAGES_CONTAINER || "shopify-packages").trim();
-  if (!conn) {
-    return headerJson({ error: "storage_not_configured", correlationId }, { status: 500 });
-  }
+
 
   try {
-    const { BlobServiceClient, generateBlobSASQueryParameters, BlobSASPermissions, StorageSharedKeyCredential } = await import("@azure/storage-blob");
-    const bsc = BlobServiceClient.fromConnectionString(conn);
-    const cont = bsc.getContainerClient(container);
-    await cont.createIfNotExists({ access: "blob" });
-
     const blobName = `${brandKey}/${brandKey}-shopify-app.zip`;
-    const blob = cont.getBlockBlobClient(blobName);
+    const fullPath = `${container}/${blobName}`;
 
-    await blob.uploadData(zipBuffer, {
-      blobHTTPHeaders: { blobContentType: "application/zip", blobContentDisposition: `attachment; filename=\"${brandKey}-shopify-app.zip\"` },
-      metadata: { brandKey, createdAt: new Date().toISOString() },
-    });
+    const url = await storage.upload(fullPath, zipBuffer, "application/zip");
 
-    // SAS URL (24h)
+    // SAS/Presigned URL (24h)
     let sasUrl: string | undefined;
     try {
-      const accountMatch = conn.match(/AccountName=([^;]+)/i);
-      const keyMatch = conn.match(/AccountKey=([^;]+)/i);
-      if (accountMatch && keyMatch) {
-        const sharedKeyCredential = new StorageSharedKeyCredential(accountMatch[1], keyMatch[1]);
-        const sasToken = generateBlobSASQueryParameters({
-          containerName: container,
-          blobName,
-          permissions: BlobSASPermissions.parse("r"),
-          startsOn: new Date(),
-          expiresOn: new Date(Date.now() + 24 * 3600 * 1000),
-        }, sharedKeyCredential).toString();
-        sasUrl = `${blob.url}?${sasToken}`;
-      }
-    } catch {}
+      sasUrl = await storage.getSignedUrl(fullPath, 24 * 3600);
+    } catch { }
 
-    try { await auditEvent(req, { who: caller.wallet, roles: caller.roles, what: "shopify_app_package", target: brandKey, correlationId, ok: true }); } catch {}
+    try { await auditEvent(req, { who: caller.wallet, roles: caller.roles, what: "shopify_app_package", target: brandKey, correlationId, ok: true }); } catch { }
 
-    return headerJson({ ok: true, brandKey, packageUrl: blob.url, sasUrl, size: zipBuffer.byteLength, correlationId });
+    return headerJson({ ok: true, brandKey, packageUrl: url, sasUrl, size: zipBuffer.byteLength, correlationId });
   } catch (e: any) {
-    try { await auditEvent(req, { who: caller.wallet, roles: caller.roles, what: "shopify_app_package", target: brandKey, correlationId, ok: false, metadata: { error: e?.message || "upload_failed" } }); } catch {}
+    try { await auditEvent(req, { who: caller.wallet, roles: caller.roles, what: "shopify_app_package", target: brandKey, correlationId, ok: false, metadata: { error: e?.message || "upload_failed" } }); } catch { }
     return headerJson({ error: e?.message || "upload_failed", correlationId }, { status: 500 });
   }
 }

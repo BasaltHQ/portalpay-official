@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { requireThirdwebAuth } from "@/lib/auth";
-import { BlobServiceClient } from "@azure/storage-blob";
 
 export const runtime = "nodejs";
 
@@ -73,18 +72,22 @@ export async function GET(
     // - PP_APK_CONTAINER (e.g., "apks")
     // - PP_APK_BLOB_PREFIX (optional, e.g., "brands")
     // Blob name defaults to: "<key>-signed.apk" or "<prefix>/<key>-signed.apk"
-    const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || "").trim();
-    const container = String(process.env.PP_APK_CONTAINER || "").trim();
-    if (conn && container) {
-      try {
-        const prefix = String(process.env.PP_APK_BLOB_PREFIX || "").trim().replace(/^\/+|\/+$/g, "");
-        const blobName = prefix ? `${prefix}/${effectiveKey}-signed.apk` : `${effectiveKey}-signed.apk`;
-        const bsc = BlobServiceClient.fromConnectionString(conn);
-        const cont = bsc.getContainerClient(container);
-        const blob = cont.getBlockBlobClient(blobName);
-        // Throws if missing
-        const buf = await blob.downloadToBuffer();
+    // Prefer Azure Blob Storage if configured
+    try {
+      const { storage } = await import("@/lib/azure-storage");
+      const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
+      const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
+
+      // Helper to construct path: "container/prefix/blob" or "container/blob"
+      const makePath = (name: string) => prefix ? `${container}/${prefix}/${name}` : `${container}/${name}`;
+
+      const blobName = `${effectiveKey}-signed.apk`;
+      const fullPath = makePath(blobName);
+
+      if (await storage.exists(fullPath)) {
+        const buf = await storage.download(fullPath);
         const body = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+
         const stream = new ReadableStream({
           start(controller) {
             controller.enqueue(body);
@@ -101,9 +104,9 @@ export async function GET(
             Expires: "0",
           },
         });
-      } catch {
-        // Fall back to local filesystem if blob not found
       }
+    } catch {
+      // Fall back to local filesystem if blob not found or error
     }
 
     const rel = APP_TO_PATH[effectiveKey];

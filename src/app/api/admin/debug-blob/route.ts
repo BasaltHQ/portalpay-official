@@ -21,25 +21,24 @@ export async function GET(req: NextRequest) {
             blobsFound: []
         };
 
-        if (conn && container) {
-            const { BlobServiceClient } = await import("@azure/storage-blob");
-            const bsc = BlobServiceClient.fromConnectionString(conn);
-            const cont = bsc.getContainerClient(container);
+        if (container) {
+            const { storage } = await import("@/lib/azure-storage");
 
-            debugInfo.containerExists = await cont.exists();
-
-            // List blobs to see what's actually there
-            const blobs = cont.listBlobsFlat({ prefix });
-            for await (const blob of blobs) {
-                debugInfo.blobsFound.push(blob.name);
+            // Check if we can list
+            // Note: storage.exists(path) checks file exists, not container.
+            // But we can try to list.
+            try {
+                const blobs = await storage.list(prefix ? `${container}/${prefix}/` : `${container}/`);
+                debugInfo.blobsFound = blobs;
+            } catch (e: any) {
+                debugInfo.listError = e.message;
             }
 
             if (appKey) {
-                const blobName = prefix ? `${prefix}/${appKey}-signed.apk` : `${appKey}-signed.apk`;
-                const blobClient = cont.getBlockBlobClient(blobName);
+                const blobName = prefix ? `${container}/${prefix}/${appKey}-signed.apk` : `${container}/${appKey}-signed.apk`;
                 debugInfo.targetBlobCheck = {
                     colculatedName: blobName,
-                    exists: await blobClient.exists()
+                    exists: await storage.exists(blobName)
                 };
             }
         }

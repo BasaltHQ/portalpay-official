@@ -54,46 +54,49 @@ function json(obj: any, init?: { status?: number; headers?: Record<string, strin
  */
 async function getApkBytes(brandKey: string): Promise<{ bytes: Uint8Array; source: string } | null> {
   // Prefer Azure Blob Storage if configured
-  const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
-  const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
-
-  if (conn && container) {
+  try {
+    const { storage } = await import("@/lib/azure-storage");
+    const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
     const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
-    const { BlobServiceClient } = await import("@azure/storage-blob");
-    const bsc = BlobServiceClient.fromConnectionString(conn);
-    const cont = bsc.getContainerClient(container);
+
+    // Helper to construct path: "container/prefix/blob" or "container/blob"
+    const makePath = (name: string) => prefix ? `${container}/${prefix}/${name}` : `${container}/${name}`;
 
     // Try brand-specific APK first
     try {
-      const blobName = prefix ? `${prefix}/${brandKey}-signed.apk` : `${brandKey}-signed.apk`;
-      const blob = cont.getBlockBlobClient(blobName);
-      if (await blob.exists()) {
-        console.log(`[APK Debug] Found brand-specific APK in blob: ${blobName}`);
-        const buf = await blob.downloadToBuffer();
+      const blobName = `${brandKey}-signed.apk`;
+      const fullPath = makePath(blobName);
+
+      if (await storage.exists(fullPath)) {
+        console.log(`[APK Debug] Found brand-specific APK in storage: ${fullPath}`);
+        const buf = await storage.download(fullPath);
         return {
           bytes: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength),
-          source: `blob:${blobName}`
+          source: `blob:${fullPath}`
         };
       }
-      console.log(`[APK Debug] Brand-specific APK not in blob: ${blobName}`);
+      console.log(`[APK Debug] Brand-specific APK not in storage: ${fullPath}`);
     } catch { }
 
     // Fall back to base PortalPay APK for white-label brands
     if (brandKey !== "portalpay" && brandKey !== "paynex") {
       try {
-        const fallbackBlobName = prefix ? `${prefix}/portalpay-signed.apk` : `portalpay-signed.apk`;
-        const fallbackBlob = cont.getBlockBlobClient(fallbackBlobName);
-        if (await fallbackBlob.exists()) {
-          console.log(`[APK Debug] Using fallback base APK from blob: ${fallbackBlobName}`);
-          const buf = await fallbackBlob.downloadToBuffer();
+        const fallbackBlobName = `portalpay-signed.apk`;
+        const fallbackPath = makePath(fallbackBlobName);
+
+        if (await storage.exists(fallbackPath)) {
+          console.log(`[APK Debug] Using fallback base APK from storage: ${fallbackPath}`);
+          const buf = await storage.download(fallbackPath);
           return {
             bytes: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength),
-            source: `blob:${fallbackBlobName} (base APK for white-label)`
+            source: `blob:${fallbackPath} (base APK for white-label)`
           };
         }
-        console.log(`[APK Debug] Fallback APK not in blob: ${fallbackBlobName}`);
+        console.log(`[APK Debug] Fallback APK not in storage: ${fallbackPath}`);
       } catch { }
     }
+  } catch (e) {
+    console.warn("Storage provider error in getApkBytes:", e);
   }
 
   // Local filesystem fallback (for portalpay/paynex)
@@ -722,68 +725,27 @@ async function generateAndUploadPackage(
   });
 
   // Upload to blob storage
-  const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
+  const { storage } = await import("@/lib/azure-storage");
   const container = String(process.env.PP_PACKAGES_CONTAINER || "device-packages").trim();
 
-  if (!conn) {
-    return { success: false, error: "AZURE_STORAGE_CONNECTION_STRING or AZURE_BLOB_CONNECTION_STRING not configured" };
-  }
-
   try {
-    const { BlobServiceClient, generateBlobSASQueryParameters, BlobSASPermissions, StorageSharedKeyCredential } = await import("@azure/storage-blob");
-    const bsc = BlobServiceClient.fromConnectionString(conn);
-    const cont = bsc.getContainerClient(container);
-
-    // Create container if it doesn't exist
-    await cont.createIfNotExists({ access: "blob" });
-
     const blobName = `${brandKey}/${brandKey}-installer.zip`;
-    const blob = cont.getBlockBlobClient(blobName);
+    const fullPath = `${container}/${blobName}`;
 
-    // Upload
-    await blob.uploadData(zipBuffer, {
-      blobHTTPHeaders: {
-        blobContentType: "application/zip",
-        blobContentDisposition: `attachment; filename="${brandKey}-installer.zip"`,
-      },
-      metadata: {
-        brandKey,
-        createdAt: new Date().toISOString(),
-        apkSize: String(finalApkBytes.byteLength),
-        zipSize: String(zipBuffer.byteLength),
-        ...(endpoint ? { endpoint } : {}),
-      },
-    });
+    const url = await storage.upload(fullPath, zipBuffer, "application/zip");
 
     // Generate SAS URL
     let sasUrl: string | undefined;
     try {
-      const accountMatch = conn.match(/AccountName\s*=\s*([^;]+)/i);
-      const keyMatch = conn.match(/AccountKey\s*=\s*([^;]+)/i);
-
-      if (accountMatch && keyMatch) {
-        console.log(`[APK] Generating SAS for ${blobName} using account ${accountMatch[1]}`);
-        const sharedKeyCredential = new StorageSharedKeyCredential(accountMatch[1], keyMatch[1]);
-        const sasToken = generateBlobSASQueryParameters({
-          containerName: container,
-          blobName,
-          permissions: BlobSASPermissions.parse("r"),
-          startsOn: new Date(),
-          expiresOn: new Date(Date.now() + 24 * 3600 * 1000),
-        }, sharedKeyCredential).toString();
-
-        sasUrl = `${blob.url}?${sasToken}`;
-        console.log(`[APK] SAS URL generated successfully`);
-      } else {
-        console.warn(`[APK] Could not parse AccountName/AccountKey from connection string. SAS generation skipped.`);
-      }
+      sasUrl = await storage.getSignedUrl(fullPath, 24 * 3600);
+      console.log(`[APK] Signed URL generated successfully`);
     } catch (e: any) {
-      console.error(`[APK] Failed to generate SAS: ${e?.message}`);
+      console.error(`[APK] Failed to generate Signed URL: ${e?.message}`);
     }
 
     return {
       success: true,
-      blobUrl: blob.url,
+      blobUrl: url,
       sasUrl,
       size: zipBuffer.byteLength,
       endpoint,
@@ -967,24 +929,14 @@ export async function GET(req: NextRequest) {
     return json({ error: "brandKey_or_jobId_required" }, { status: 400 });
   }
 
-  const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
+  const { storage } = await import("@/lib/azure-storage");
   const container = String(process.env.PP_PACKAGES_CONTAINER || "device-packages").trim();
 
-  if (!conn) {
-    return json({
-      exists: false,
-      error: "storage_not_configured"
-    });
-  }
-
   try {
-    const { BlobServiceClient, generateBlobSASQueryParameters, BlobSASPermissions, StorageSharedKeyCredential } = await import("@azure/storage-blob");
-    const bsc = BlobServiceClient.fromConnectionString(conn);
-    const cont = bsc.getContainerClient(container);
     const blobName = `${brandKey}/${brandKey}-installer.zip`;
-    const blob = cont.getBlockBlobClient(blobName);
+    const fullPath = `${container}/${blobName}`;
 
-    const exists = await blob.exists();
+    const exists = await storage.exists(fullPath);
     if (!exists) {
       return json({
         exists: false,
@@ -992,41 +944,28 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Get properties
-    const props = await blob.getProperties();
+    // Get metadata via list (since we don't have stat yet, and list returns metadata)
+    // Note: list might return multiple if prefix matches multiple, but we are querying specific file normally.
+    // However, list usually takes a prefix.
+    const items = await storage.list(fullPath);
+    const item = items.find(i => i.path === fullPath || i.path.endsWith(blobName));
 
-    // Generate SAS URL for download (valid for 24 hours)
+    // Generate signed URL
     let sasUrl: string | undefined;
     try {
-      const accountMatch = conn.match(/AccountName\s*=\s*([^;]+)/i);
-      const keyMatch = conn.match(/AccountKey\s*=\s*([^;]+)/i);
-
-      if (accountMatch && keyMatch) {
-        console.log(`[APK] Generating SAS for ${blobName} using account ${accountMatch[1]}`);
-        const sharedKeyCredential = new StorageSharedKeyCredential(accountMatch[1], keyMatch[1]);
-        const sasToken = generateBlobSASQueryParameters({
-          containerName: container,
-          blobName,
-          permissions: BlobSASPermissions.parse("r"),
-          startsOn: new Date(),
-          expiresOn: new Date(Date.now() + 24 * 3600 * 1000),
-        }, sharedKeyCredential).toString();
-
-        sasUrl = `${blob.url}?${sasToken}`;
-      }
-    } catch (e: any) {
-      console.error(`[APK] Failed to generate SAS: ${e?.message}`);
-    }
+      sasUrl = await storage.getSignedUrl(fullPath, 24 * 3600);
+    } catch { }
 
     return json({
       exists: true,
       brandKey,
-      packageUrl: blob.url,
+      packageUrl: await storage.getUrl(fullPath), // public or internal URL
       sasUrl,
-      size: props.contentLength,
-      createdAt: props.metadata?.createdAt,
-      lastModified: props.lastModified?.toISOString(),
-      endpoint: props.metadata?.endpoint,
+      size: item?.size,
+      lastModified: item?.lastModified?.toISOString(),
+      // endpoint metadata might be lost if not supported by list/provider yet, 
+      // but for now we prioritize core functionality.
+      // If we need custom metadata, we might need to extend StorageProvider.
     });
   } catch (e: any) {
     return json({
@@ -1061,26 +1000,19 @@ export async function DELETE(req: NextRequest) {
     return json({ error: "brandKey_required" }, { status: 400 });
   }
 
-  const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
+  const { storage } = await import("@/lib/azure-storage");
   const container = String(process.env.PP_PACKAGES_CONTAINER || "device-packages").trim();
 
-  if (!conn) {
-    return json({ error: "storage_not_configured" }, { status: 500 });
-  }
-
   try {
-    const { BlobServiceClient } = await import("@azure/storage-blob");
-    const bsc = BlobServiceClient.fromConnectionString(conn);
-    const cont = bsc.getContainerClient(container);
     const blobName = `${brandKey}/${brandKey}-installer.zip`;
-    const blob = cont.getBlockBlobClient(blobName);
+    const fullPath = `${container}/${blobName}`;
 
-    if (!(await blob.exists())) {
+    if (!(await storage.exists(fullPath))) {
       return json({ deleted: false, error: "Package not found", brandKey });
     }
 
-    await blob.delete();
-    console.log(`[APK] Deleted package: ${blobName}`);
+    await storage.delete(fullPath);
+    console.log(`[APK] Deleted package: ${fullPath}`);
 
     return json({ deleted: true, brandKey, blobName });
   } catch (e: any) {

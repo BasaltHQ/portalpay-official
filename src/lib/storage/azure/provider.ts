@@ -98,4 +98,57 @@ export class AzureStorageProvider implements StorageProvider {
         }
         return Buffer.concat(chunks);
     }
+
+    async list(pathPrefix: string = ""): Promise<string[]> {
+        const { container, blob } = this.parsePath(pathPrefix);
+        const containerClient = this.getClient(container);
+
+        if (!await containerClient.exists()) return [];
+
+        const iter = containerClient.listBlobsFlat({ prefix: blob });
+        const items: string[] = [];
+        for await (const b of iter) {
+            // Return "container/blobName" to allow cross-container transfers if needed
+            items.push(`${container}/${b.name}`);
+        }
+        return items;
+    }
+
+    async getSignedUrl(path: string, expiresInSeconds: number = 3600): Promise<string> {
+        const { container, blob } = this.parsePath(path);
+        const { generateBlobSASQueryParameters, BlobSASPermissions, StorageSharedKeyCredential } = await import("@azure/storage-blob");
+
+        // We need credential extraction similar to what was done in the routes
+        // Or we can rely on the fact that if we have a connection string, we can parse it.
+        // If using Managed Identity, SAS generation is different (delegation key), but let's assume Connection String for now as that's what env has.
+
+        const conn = this.connectionString;
+        const accountMatch = conn.match(/AccountName=([^;]+)/i);
+        const keyMatch = conn.match(/AccountKey=([^;]+)/i);
+
+        if (!accountMatch || !keyMatch) {
+            // If we can't parse keys, just return public URL (fallback)
+            return this.getUrl(path);
+        }
+
+        const sharedKeyCredential = new StorageSharedKeyCredential(accountMatch[1], keyMatch[1]);
+        const startsOn = new Date();
+        // Adjust startsOn to be slightly in the past to avoid clock skew issues
+        startsOn.setMinutes(startsOn.getMinutes() - 5);
+
+        const expiresOn = new Date(startsOn.valueOf() + expiresInSeconds * 1000 + 5 * 60 * 1000);
+
+        const sasToken = generateBlobSASQueryParameters({
+            containerName: container,
+            blobName: blob,
+            permissions: BlobSASPermissions.parse("r"),
+            startsOn,
+            expiresOn,
+        }, sharedKeyCredential).toString();
+
+        const containerClient = this.getClient(container);
+        const blockBlobClient = containerClient.getBlockBlobClient(blob);
+
+        return `${blockBlobClient.url}?${sasToken}`;
+    }
 }

@@ -131,4 +131,40 @@ export class S3StorageProvider implements StorageProvider {
         }
         return Buffer.concat(chunks);
     }
+
+    async list(pathPrefix: string = ""): Promise<string[]> {
+        const key = pathPrefix.startsWith("/") ? pathPrefix.substring(1) : pathPrefix;
+
+        // Dynamic import to keep init fast
+        const { ListObjectsV2Command } = await import("@aws-sdk/client-s3");
+
+        const command = new ListObjectsV2Command({
+            Bucket: this.bucket,
+            Prefix: key
+        });
+
+        const response = await this.client.send(command);
+        const items: string[] = [];
+
+        if (response.Contents) {
+            for (const obj of response.Contents) {
+                if (obj.Key) items.push(obj.Key);
+            }
+        }
+        return items;
+    }
+
+    async getSignedUrl(path: string, expiresInSeconds: number = 3600): Promise<string> {
+        const key = path.startsWith("/") ? path.substring(1) : path;
+        const { GetObjectCommand } = await import("@aws-sdk/client-s3");
+        const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
+
+        const command = new GetObjectCommand({
+            Bucket: this.bucket,
+            Key: key
+        });
+
+        // S3 Client must be initialized with region/cred for this to work
+        return await getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
+    }
 }
