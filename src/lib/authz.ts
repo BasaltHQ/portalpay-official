@@ -257,11 +257,16 @@ export async function getPlatformAdminWallets(): Promise<string[]> {
  * Server-side: Resolve platform role from DB (admin_roles) with Env fallback.
  * Checks for 'platform_super_admin' and 'platform_admin'.
  */
-export async function resolvePlatformRoleFromDb(wallet?: string): Promise<AdminRole | null> {
+/**
+ * Server-side: Resolve admin role from DB (admin_roles) with Env fallback.
+ * Checks Global partition and optional Partner partition (contextBrandKey).
+ * Returns the highest privilege role found.
+ */
+export async function resolveAdminRole(wallet?: string, contextBrandKey?: string): Promise<AdminRole | null> {
   if (!wallet) return null;
   const w = wallet.toLowerCase();
 
-  // 1. Env Check (Super Admin)
+  // 1. Env Check (Super Admin) - Always Global
   const env = getEnv();
   const owner = String(env.NEXT_PUBLIC_OWNER_WALLET || '').toLowerCase();
   const platform = String(env.NEXT_PUBLIC_PLATFORM_WALLET || '').toLowerCase();
@@ -271,23 +276,39 @@ export async function resolvePlatformRoleFromDb(wallet?: string): Promise<AdminR
     return 'platform_super_admin';
   }
 
-  // 2. DB Check
+  // 2. DB Checks (Global + Partner)
   try {
     const { getContainer } = await import('@/lib/cosmos');
     const c = await getContainer();
-    const { resource } = await c.item('admin_roles', 'global').read<any>();
 
-    if (resource && Array.isArray(resource.admins)) {
-      const admin = resource.admins.find((a: any) => String(a.wallet || '').toLowerCase() === w);
-      if (admin) {
-        // Map stored role to AdminRole type. stored: 'platform_super_admin' | 'platform_admin'
-        // Default to 'platform_admin' if role is missing/unknown but wallet acts as admin
-        const role = admin.role || 'platform_admin';
-        if (role === 'platform_super_admin') return 'platform_super_admin';
-        return 'platform_admin';
+    // Check Global Partition
+    try {
+      const { resource: globalRes } = await c.item('admin_roles', 'global').read<any>();
+      if (globalRes && Array.isArray(globalRes.admins)) {
+        const admin = globalRes.admins.find((a: any) => String(a.wallet || '').toLowerCase() === w);
+        if (admin) {
+          const r = admin.role || 'platform_admin';
+          if (r === 'platform_super_admin') return 'platform_super_admin';
+          // If found in global but not super, they are platform_admin.
+          return 'platform_admin';
+        }
       }
+    } catch { }
+
+    // Check Partner Partition (if context provided)
+    if (contextBrandKey && contextBrandKey !== 'global') {
+      try {
+        const { resource: partnerRes } = await c.item('admin_roles', contextBrandKey).read<any>();
+        if (partnerRes && Array.isArray(partnerRes.admins)) {
+          const admin = partnerRes.admins.find((a: any) => String(a.wallet || '').toLowerCase() === w);
+          if (admin) {
+            return (admin.role as AdminRole) || 'partner_admin';
+          }
+        }
+      } catch { }
     }
-  } catch { /* DB read failed */ }
+
+  } catch { /* DB connect failed */ }
 
   return null;
 }
