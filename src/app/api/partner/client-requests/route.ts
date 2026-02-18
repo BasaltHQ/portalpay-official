@@ -400,7 +400,11 @@ export async function PATCH(req: NextRequest) {
             // Also sync other top-level fields if needed
             if (shopConfigUpdate.slug) updatedDoc.slug = shopConfigUpdate.slug;
             if (shopConfigUpdate.description) updatedDoc.description = shopConfigUpdate.description;
+            if (shopConfigUpdate.slug) updatedDoc.slug = shopConfigUpdate.slug;
+            if (shopConfigUpdate.description) updatedDoc.description = shopConfigUpdate.description;
             if (shopConfigUpdate.layoutMode) updatedDoc.layoutMode = shopConfigUpdate.layoutMode;
+            // Also preserve touchpointThemes if passed (though client_request doc doesn't explicitly type it, it's flexible)
+            if (shopConfigUpdate.touchpointThemes) updatedDoc.touchpointThemes = shopConfigUpdate.touchpointThemes;
         }
 
         // Apply shop config updates to the request doc mostly for list view consistency
@@ -492,6 +496,10 @@ export async function PATCH(req: NextRequest) {
                         newConfig.theme = { ...(newConfig.theme || {}), ...shopConfigUpdate.theme };
 
                         if (shopConfigUpdate.slug) newConfig.slug = shopConfigUpdate.slug;
+
+                        if (shopConfigUpdate.touchpointThemes) {
+                            newConfig.touchpointThemes = { ...(newConfig.touchpointThemes || {}), ...shopConfigUpdate.touchpointThemes };
+                        }
                     }
 
                     newConfig.updatedAt = Date.now();
@@ -519,6 +527,7 @@ export async function PATCH(req: NextRequest) {
                         brandFaviconUrl: (shopConfigUpdate?.theme?.brandFaviconUrl) || request.faviconUrl,
                         ...(shopConfigUpdate?.theme || {})
                     },
+                    touchpointThemes: shopConfigUpdate?.touchpointThemes || undefined,
                     status: newStatus === "approved" ? "approved" : "pending",
                     approvedBy: caller.wallet,
                     approvedAt: Date.now(),
