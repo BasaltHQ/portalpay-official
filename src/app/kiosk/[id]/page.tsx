@@ -4,31 +4,65 @@ import { InventoryItem } from "@/types/inventory";
 import KioskClient from "./KioskClient";
 import { ShopConfig } from "@/app/shop/[slug]/ShopClient";
 
+// Helper to sanitize theme (duplicated from shop/page.tsx to ensure consistency)
+function sanitizeShopTheme(theme: any) {
+    if (!theme) return undefined;
+
+    // Create a new object to avoid mutation
+    const sanitized = { ...theme };
+
+    // 1. Ensure logoUrl is present (prefer brandLogoUrl)
+    if (sanitized.brandLogoUrl) {
+        sanitized.logoUrl = sanitized.brandLogoUrl;
+    } else if (sanitized.logoUrl) {
+        sanitized.brandLogoUrl = sanitized.logoUrl;
+    }
+
+    // 2. Ensure primary/secondary colors have defaults if missing
+    if (!sanitized.primaryColor) sanitized.primaryColor = "#0ea5e9";
+    if (!sanitized.secondaryColor) sanitized.secondaryColor = "#22c55e";
+
+    return sanitized;
+}
+
 export default async function KioskPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const cleanSlug = id.toLowerCase();
     const container = await getContainer();
 
-    // 1. Resolve Shop Config
-    const { resources: configs } = await container.items
+    // 1. Resolve Shop Config & Site Config
+    // We fetch both to merge:
+    // - shop_config: Truth for shop identity (name, current theme)
+    // - site_config: Truth for touchpoint settings (touchpointThemes override)
+    const { resources: docs } = await container.items
         .query({
-            query: "SELECT * FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true) OR c.wallet = @slug",
+            query: "SELECT * FROM c WHERE (c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true) OR c.wallet = @slug) AND (c.type = 'shop_config' OR c.type = 'site_config')",
             parameters: [{ name: "@slug", value: cleanSlug }]
         })
         .fetchAll();
 
-    console.log(`[KIOSK DEBUG] found ${configs.length} docs for ${cleanSlug}:`, configs.map((c: any) => ({ id: c.id, type: c.type, kiosk: c.kioskEnabled })));
+    console.log(`[KIOSK DEBUG] found ${docs.length} docs for ${cleanSlug}:`, docs.map((c: any) => ({ id: c.id, type: c.type, kiosk: c.kioskEnabled })));
 
-    // Prioritize shop_config if multiple docs found (e.g. user doc vs shop_config)
-    const config = (configs.find((c: any) => c.type === 'shop_config') || configs[0]) as (ShopConfig & { wallet: string }) | undefined;
+    // Categorize docs
+    const shopConfig = docs.find((c: any) => c.type === 'shop_config');
+    const siteConfig = docs.find((c: any) => c.type === 'site_config');
 
-    if (!config) {
+    if (!shopConfig && !siteConfig) {
         return notFound();
     }
 
+    // Merge Configs: Prioritize shop_config, fallback to site_config
+    // For touchpointThemes, we prefer site_config as that's where Admin Panel saves them.
+    const mergedConfig: any = {
+        ...(siteConfig || {}),
+        ...(shopConfig || {}), // Shop config overrides general site settings
+        // Explicitly merge specific fields if needed
+        touchpointThemes: siteConfig?.touchpointThemes || shopConfig?.touchpointThemes,
+        wallet: shopConfig?.wallet || siteConfig?.wallet || docs[0]?.wallet,
+    };
+
     // 2. Security Check: Kiosk Enabled?
-    // The flag is now on shop_config
-    const isKioskEnabled = (config as any).kioskEnabled === true;
+    const isKioskEnabled = mergedConfig.kioskEnabled === true;
 
     if (!isKioskEnabled) {
         return (
@@ -41,17 +75,27 @@ export default async function KioskPage({ params }: { params: Promise<{ id: stri
         );
     }
 
-    // 3. Prebuild items (optional, client can fetch too)
-    // 3. Prebuild items (optional, client can fetch too)
-    const items: InventoryItem[] = [];
+    // 3. Sanitize Theme
+    if (mergedConfig.theme) {
+        mergedConfig.theme = sanitizeShopTheme(mergedConfig.theme);
+    } else {
+        // Fallback if no theme object exists but top-level fields do
+        mergedConfig.theme = sanitizeShopTheme({
+            brandLogoUrl: mergedConfig.shopLogoUrl || mergedConfig.logoUrl,
+            primaryColor: mergedConfig.primaryColor,
+            secondaryColor: mergedConfig.secondaryColor
+        });
+    }
 
-    const resolvedWallet = config.wallet || configs.find((c: any) => c.wallet)?.wallet || "";
+    // 4. Prebuild items
+    const items: InventoryItem[] = [];
 
     return (
         <KioskClient
-            config={config}
+            config={mergedConfig as ShopConfig}
             items={items}
-            merchantWallet={resolvedWallet}
+            merchantWallet={mergedConfig.wallet}
         />
     );
 }
+

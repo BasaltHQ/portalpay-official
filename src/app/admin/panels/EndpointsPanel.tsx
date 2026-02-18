@@ -44,7 +44,11 @@ export default function EndpointsPanel() {
                 const r = await fetch(`/api/site/config?wallet=${account.address}`);
                 const j = await r.json();
                 const cfg = j.config || {};
-                const bestSlug = cfg.slug || cfg.customDomain || account.address.toLowerCase();
+
+                // For touchpoints, we prefer the wallet address to ensure unique resolution 
+                // regardless of domain/slug configuration on partner containers.
+                // Fallback to slug if strictly needed, but platform behavior defaults to wallet.
+                const bestSlug = account.address; // Force wallet address for touchpoint URLs
                 setSlug(bestSlug);
 
                 // Load existing touchpoint theme selections
