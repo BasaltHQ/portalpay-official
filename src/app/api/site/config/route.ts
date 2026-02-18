@@ -1282,18 +1282,33 @@ export async function POST(req: NextRequest) {
     );
     const wallet = rawWallet;
     let caller: any;
-    // Allow JWT ownership/admin, or APIM/JWT server-to-server
+    // Allow JWT ownership/admin, DB-backed platform admin, or APIM/JWT server-to-server
     try {
       caller = await requireThirdwebAuth(req);
       assertOwnershipOrAdmin(caller.wallet, wallet, caller.roles.includes("admin"));
     } catch {
+      // Fallback: DB-backed platform admin check
+      // Admins added via Admin panel may not have "admin" role in JWT
+      let dbAdminAuthed = false;
       try {
-        caller = await requireApimOrJwt(req, ["site_config_write"]);
-      } catch {
-        return NextResponse.json(
-          { error: "forbidden", correlationId },
-          { status: 403, headers: { "x-correlation-id": correlationId } }
-        );
+        if (caller?.wallet) {
+          const { getPlatformAdminWallets } = await import("@/lib/authz");
+          const platformAdmins = await getPlatformAdminWallets();
+          if (platformAdmins.includes(String(caller.wallet).toLowerCase())) {
+            dbAdminAuthed = true;
+          }
+        }
+      } catch { }
+
+      if (!dbAdminAuthed) {
+        try {
+          caller = await requireApimOrJwt(req, ["site_config_write"]);
+        } catch {
+          return NextResponse.json(
+            { error: "forbidden", correlationId },
+            { status: 403, headers: { "x-correlation-id": correlationId } }
+          );
+        }
       }
     }
     // CSRF and rate limiting for writes (CSRF only for JWT UI writes)

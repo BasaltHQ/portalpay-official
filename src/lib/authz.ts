@@ -107,17 +107,20 @@ export function resolveWalletRole(wallet?: string): AdminRole | null {
   const isOwner = !!owner && owner === w;
   const isAdmin = allAdmins.has(w);
 
+  // GLOBAL SUPER ADMINS: Owner and Env Admins are ALWAYS Super Admins
+  // regardless of context (platform vs partner). This prevents "Context Downgrade".
+  if (isOwner || isAdmin) {
+    return 'platform_super_admin';
+  }
+
   if (isPlatformContext() || !isPartnerContextClient()) {
     // Platform Context
-    if (isOwner) return 'platform_super_admin';
-    if (isAdmin) return 'platform_super_admin'; // BOOTSTRAP: Admin Wallets treated as Super Admin
-
     // Future: Check DB roles here if not found in Env
     return null;
   } else {
     // Partner Context
-    if (isOwner) return 'partner_owner';
-    if (isAdmin) return 'partner_admin';
+    // Standard partner roles would be resolved here (e.g. from partner config)
+    // For now, return null as we don't have local partner admin logic yet
     return null;
   }
 }
@@ -140,12 +143,13 @@ export function isPlatformSuperAdmin(wallet?: string): boolean {
 }
 
 export function isPartnerOwner(wallet?: string): boolean {
-  return resolveWalletRole(wallet) === 'partner_owner';
+  const role = resolveWalletRole(wallet);
+  return role === 'partner_owner' || role === 'platform_super_admin';
 }
 
 export function isPartnerAdmin(wallet?: string): boolean {
   const role = resolveWalletRole(wallet);
-  return role === 'partner_owner' || role === 'partner_admin';
+  return role === 'partner_owner' || role === 'partner_admin' || role === 'platform_super_admin';
 }
 
 /**
@@ -247,4 +251,43 @@ export async function getPlatformAdminWallets(): Promise<string[]> {
   } catch { /* DB unavailable — env fallback only */ }
 
   return Array.from(wallets);
+}
+
+/**
+ * Server-side: Resolve platform role from DB (admin_roles) with Env fallback.
+ * Checks for 'platform_super_admin' and 'platform_admin'.
+ */
+export async function resolvePlatformRoleFromDb(wallet?: string): Promise<AdminRole | null> {
+  if (!wallet) return null;
+  const w = wallet.toLowerCase();
+
+  // 1. Env Check (Super Admin)
+  const env = getEnv();
+  const owner = String(env.NEXT_PUBLIC_OWNER_WALLET || '').toLowerCase();
+  const platform = String(env.NEXT_PUBLIC_PLATFORM_WALLET || '').toLowerCase();
+  const envAdmins = (env.ADMIN_WALLETS || []).map(a => String(a || '').toLowerCase());
+
+  if (w === owner || w === platform || envAdmins.includes(w)) {
+    return 'platform_super_admin';
+  }
+
+  // 2. DB Check
+  try {
+    const { getContainer } = await import('@/lib/cosmos');
+    const c = await getContainer();
+    const { resource } = await c.item('admin_roles', 'global').read<any>();
+
+    if (resource && Array.isArray(resource.admins)) {
+      const admin = resource.admins.find((a: any) => String(a.wallet || '').toLowerCase() === w);
+      if (admin) {
+        // Map stored role to AdminRole type. stored: 'platform_super_admin' | 'platform_admin'
+        // Default to 'platform_admin' if role is missing/unknown but wallet acts as admin
+        const role = admin.role || 'platform_admin';
+        if (role === 'platform_super_admin') return 'platform_super_admin';
+        return 'platform_admin';
+      }
+    }
+  } catch { /* DB read failed */ }
+
+  return null;
 }

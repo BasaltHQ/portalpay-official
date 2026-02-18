@@ -1380,11 +1380,14 @@ function TouchpointThemesTab({
         setTouchpointThemes(updated);
 
         try {
+            // NOTE: Do NOT send x-wallet header here — the POST handler uses
+            // `rawWallet = headerWallet || queryWallet`, so sending the admin's
+            // wallet as x-wallet would save to the admin's partition instead of
+            // the merchant's. The admin is authenticated via JWT cookies.
             const r = await fetch(`/api/site/config?wallet=${merchantWallet}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "x-wallet": adminWallet,
                 },
                 body: JSON.stringify({ touchpointThemes: updated }),
             });

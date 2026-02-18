@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getContainer } from "@/lib/cosmos";
 import { getAuthenticatedWallet } from "@/lib/auth";
-import { isPlatformSuperAdmin } from "@/lib/authz";
+import { resolvePlatformRoleFromDb } from "@/lib/authz";
 import { getEnv } from "@/lib/env";
 import { logAdminAction } from "@/lib/audit";
 
@@ -11,7 +11,9 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
     try {
         const wallet = await getAuthenticatedWallet(req);
-        if (!wallet || !isPlatformSuperAdmin(wallet)) {
+        const role = await resolvePlatformRoleFromDb(wallet || undefined);
+
+        if (!wallet || !role || (role !== 'platform_super_admin' && role !== 'platform_admin')) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -42,7 +44,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const wallet = await getAuthenticatedWallet(req);
-        if (!wallet || !isPlatformSuperAdmin(wallet)) {
+        const role = await resolvePlatformRoleFromDb(wallet || undefined);
+
+        if (!wallet || !role || (role !== 'platform_super_admin' && role !== 'platform_admin')) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
