@@ -52,9 +52,12 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
         totalSales?: number;
     } | null>(null);
 
-    // Apply Theme
+    // Apply Theme and Lock it
     useEffect(() => {
         const root = document.documentElement;
+        // Hard-lock the theme to prevent ThemeLoader from overwriting with Partner defaults
+        root.setAttribute("data-pp-theme-hardlock", "merchant");
+
         const theme = config?.theme || {};
         const p = (theme.primaryColor || "#0ea5e9").trim();
         const s = (theme.secondaryColor || "#0ea5e9").trim();
@@ -65,6 +68,11 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
         if (theme.fontFamily) {
             root.style.setProperty("--font-sans", theme.fontFamily);
         }
+
+        // Cleanup unlock on unmount
+        return () => {
+            root.removeAttribute("data-pp-theme-hardlock");
+        };
     }, [config]);
 
     // Admin Access Check

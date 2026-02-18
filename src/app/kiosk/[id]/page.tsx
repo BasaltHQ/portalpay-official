@@ -52,10 +52,24 @@ export default async function KioskPage({ params }: { params: Promise<{ id: stri
     }
 
     // Merge Configs: Prioritize shop_config, fallback to site_config
-    // For touchpointThemes, we prefer site_config as that's where Admin Panel saves them.
+    // We perform a shallow merge of the theme object to ensure fields missing in shop_config (e.g. logo)
+    // are picked up from site_config if available.
+    const siteTheme = siteConfig?.theme || {};
+    const shopTheme = shopConfig?.theme || {};
+
+    // Merge themes: Start with site theme, override with shop theme
+    // We filter out empty strings from shopTheme to prevent wiping out valid siteTheme values
+    const mergedTheme = { ...siteTheme };
+    for (const [key, value] of Object.entries(shopTheme)) {
+        if (value !== "" && value !== undefined && value !== null) {
+            mergedTheme[key] = value;
+        }
+    }
+
     const mergedConfig: any = {
         ...(siteConfig || {}),
         ...(shopConfig || {}), // Shop config overrides general site settings
+        theme: mergedTheme,
         // Explicitly merge specific fields if needed
         touchpointThemes: siteConfig?.touchpointThemes || shopConfig?.touchpointThemes,
         wallet: shopConfig?.wallet || siteConfig?.wallet || docs[0]?.wallet,

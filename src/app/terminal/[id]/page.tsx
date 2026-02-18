@@ -48,10 +48,24 @@ export default async function TerminalModePage({ params }: { params: Promise<{ i
     }
 
     // Merge Configs: Prioritize shop_config, fallback to site_config
-    // For touchpointThemes, we prefer site_config as that's where Admin Panel saves them.
+    // We perform a shallow merge of the theme object to ensure fields missing in shop_config (e.g. logo)
+    // are picked up from site_config if available.
+    const siteTheme = siteConfig?.theme || {};
+    const shopTheme = shopConfig?.theme || {};
+
+    // Merge themes: Start with site theme, override with shop theme
+    // We filter out empty strings from shopTheme to prevent wiping out valid siteTheme values
+    const mergedTheme = { ...siteTheme };
+    for (const [key, value] of Object.entries(shopTheme)) {
+        if (value !== "" && value !== undefined && value !== null) {
+            mergedTheme[key] = value;
+        }
+    }
+
     const mergedConfig: any = {
         ...(siteConfig || {}),
         ...(shopConfig || {}), // Shop config overrides general site settings
+        theme: mergedTheme,
         // Explicitly merge specific fields if needed
         touchpointThemes: siteConfig?.touchpointThemes || shopConfig?.touchpointThemes,
         wallet: shopConfig?.wallet || siteConfig?.wallet || docs[0]?.wallet,
@@ -71,17 +85,22 @@ export default async function TerminalModePage({ params }: { params: Promise<{ i
         );
     }
 
-    // 3. Sanitize Theme
-    if (mergedConfig.theme) {
-        mergedConfig.theme = sanitizeShopTheme(mergedConfig.theme);
-    } else {
-        // Fallback if no theme object exists but top-level fields do
-        mergedConfig.theme = sanitizeShopTheme({
-            brandLogoUrl: mergedConfig.shopLogoUrl || mergedConfig.logoUrl,
-            primaryColor: mergedConfig.primaryColor,
-            secondaryColor: mergedConfig.secondaryColor
-        });
+    // 3. Sanitize Theme & Inject Identity
+    if (!mergedConfig.theme) {
+        mergedConfig.theme = {};
     }
+
+    // Ensure top-level shop identity (logo/name) is injected into the theme object
+    // This handles cases where shop_config has logoUrl/shopLogoUrl but no nested theme object,
+    // or when we want to ensure the shop's logo overrides any stale site_config theme logo.
+    if (mergedConfig.shopLogoUrl || mergedConfig.logoUrl) {
+        mergedConfig.theme.brandLogoUrl = mergedConfig.shopLogoUrl || mergedConfig.logoUrl;
+    }
+    if (mergedConfig.name) {
+        mergedConfig.theme.brandName = mergedConfig.name;
+    }
+
+    mergedConfig.theme = sanitizeShopTheme(mergedConfig.theme);
 
     return (
         <TerminalSessionManager

@@ -1,0 +1,412 @@
+{
+  "working": [
+    {
+      "id": "shop:config:xoinpay",
+      "wallet": "0x2f2ce02f7cdbb6922c6d276043f5b17427ec31e9",
+      "type": "shop_config",
+      "brandKey": "xoinpay",
+      "name": "Eric T",
+      "description": "",
+      "bio": "",
+      "theme": {
+        "primaryColor": "#004225",
+        "secondaryColor": "#73f866",
+        "brandLogoUrl": "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/public/a52f8078c43241739a05ba5abeaea2e9.webp",
+        "brandFaviconUrl": "",
+        "logos": {
+          "symbol": "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/public/a52f8078c43241739a05ba5abeaea2e9.webp"
+        },
+        "appleTouchIconUrl": "/apple-touch-icon.png",
+        "brandName": "BasaltSurge",
+        "brandLogoShape": "square",
+        "textColor": "#ffffff",
+        "headerTextColor": "#ffffff",
+        "bodyTextColor": "#e5e7eb",
+        "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+        "receiptBackgroundUrl": "/watermark.png",
+        "layoutMode": "balanced"
+      },
+      "arrangement": "grid",
+      "xpPerDollar": 1,
+      "slug": "bhqerict",
+      "links": [],
+      "customDomain": "",
+      "customDomainVerified": false,
+      "setupComplete": true,
+      "createdAt": 1770399951126,
+      "updatedAt": 1771355185863,
+      "_rid": "ejloAOMT0c9yQwAAAAAAAA==",
+      "_self": "dbs/ejloAA==/colls/ejloAOMT0c8=/docs/ejloAOMT0c9yQwAAAAAAAA==/",
+      "_etag": "\"5400e2ab-0000-3200-0000-6994bc310000\"",
+      "_attachments": "attachments/",
+      "terminalEnabled": true,
+      "_ts": 1771355185
+    },
+    {
+      "id": "site:config:xoinpay",
+      "wallet": "0x2f2ce02f7cdbb6922c6d276043f5b17427ec31e9",
+      "type": "site_config",
+      "story": "",
+      "storyHtml": "",
+      "defiEnabled": false,
+      "theme": {
+        "primaryColor": "#004225",
+        "secondaryColor": "#73f866",
+        "brandLogoUrl": "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/public/a52f8078c43241739a05ba5abeaea2e9.webp",
+        "brandFaviconUrl": "/favicon-32x32.png",
+        "logos": {
+          "symbol": "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/public/a52f8078c43241739a05ba5abeaea2e9.webp"
+        },
+        "appleTouchIconUrl": "/apple-touch-icon.png",
+        "brandName": "BasaltSurge",
+        "brandLogoShape": "square",
+        "textColor": "#ffffff",
+        "headerTextColor": "#ffffff",
+        "bodyTextColor": "#e5e7eb",
+        "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+        "receiptBackgroundUrl": "/watermark.png"
+      },
+      "storeCurrency": "USD",
+      "splitAddress": "0x05f74334c7fb2494525bd51453aeeecca6a7357c",
+      "split": {
+        "address": "0x05f74334c7fb2494525bd51453aeeecca6a7357c",
+        "recipients": [
+          {
+            "address": "0x2f2ce02f7cdbb6922c6d276043f5b17427ec31e9",
+            "sharesBps": 9925
+          },
+          {
+            "address": "0x6cfc72cff071dec221cc1dfb026b09c6daf9511e",
+            "sharesBps": 50
+          },
+          {
+            "address": "0x00fe4f0104a989ca65df6b825a6c1682413bca56",
+            "sharesBps": 25
+          }
+        ]
+      },
+      "accumulationMode": "fixed",
+      "taxConfig": {
+        "provider": {
+          "name": "",
+          "apiKeySet": false
+        },
+        "jurisdictions": []
+      },
+      "brandKey": "xoinpay",
+      "createdAt": 1770399987091,
+      "updatedAt": 1771440034045,
+      "partnerWallet": "0x6cfc72cff071dec221cc1dfb026b09c6daf9511e",
+      "splitConfig": {
+        "merchantBps": 9925,
+        "partnerBps": 50,
+        "platformBps": 25,
+        "agents": []
+      },
+      "config": {
+        "splitAddress": "0x05f74334c7fb2494525bd51453aeeecca6a7357c",
+        "split": {
+          "address": "0x05f74334c7fb2494525bd51453aeeecca6a7357c",
+          "recipients": [
+            {
+              "address": "0x2f2ce02f7cdbb6922c6d276043f5b17427ec31e9",
+              "sharesBps": 9925
+            },
+            {
+              "address": "0x6cfc72cff071dec221cc1dfb026b09c6daf9511e",
+              "sharesBps": 50
+            },
+            {
+              "address": "0x00fe4f0104a989ca65df6b825a6c1682413bca56",
+              "sharesBps": 25
+            }
+          ]
+        },
+        "recipients": [
+          {
+            "address": "0x2f2ce02f7cdbb6922c6d276043f5b17427ec31e9",
+            "sharesBps": 9925
+          },
+          {
+            "address": "0x6cfc72cff071dec221cc1dfb026b09c6daf9511e",
+            "sharesBps": 50
+          },
+          {
+            "address": "0x00fe4f0104a989ca65df6b825a6c1682413bca56",
+            "sharesBps": 25
+          }
+        ]
+      },
+      "_rid": "ejloAOMT0c9zQwAAAAAAAA==",
+      "_self": "dbs/ejloAA==/colls/ejloAOMT0c8=/docs/ejloAOMT0c9zQwAAAAAAAA==/",
+      "_etag": "\"57000b04-0000-3200-0000-699607a20000\"",
+      "_attachments": "attachments/",
+      "name": "Eric T",
+      "slug": "bhqerict",
+      "touchpointThemes": {
+        "terminal": "minimal"
+      },
+      "_ts": 1771440034
+    },
+    {
+      "id": "site:config",
+      "wallet": "0x2f2ce02f7cdbb6922c6d276043f5b17427ec31e9",
+      "type": "site_config",
+      "story": "",
+      "storyHtml": "",
+      "defiEnabled": false,
+      "theme": {
+        "primaryColor": "#004225",
+        "secondaryColor": "#73f866",
+        "brandLogoUrl": "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/public/a52f8078c43241739a05ba5abeaea2e9.webp",
+        "brandFaviconUrl": "/favicon-32x32.png",
+        "logos": {
+          "symbol": "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/public/a52f8078c43241739a05ba5abeaea2e9.webp"
+        },
+        "appleTouchIconUrl": "/apple-touch-icon.png",
+        "brandName": "BasaltSurge",
+        "brandLogoShape": "square",
+        "textColor": "#ffffff",
+        "headerTextColor": "#ffffff",
+        "bodyTextColor": "#e5e7eb",
+        "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+        "receiptBackgroundUrl": "/watermark.png"
+      },
+      "storeCurrency": "USD",
+      "splitAddress": "0x05f74334c7fb2494525bd51453aeeecca6a7357c",
+      "split": {
+        "address": "0x05f74334c7fb2494525bd51453aeeecca6a7357c",
+        "recipients": [
+          {
+            "address": "0x2f2ce02f7cdbb6922c6d276043f5b17427ec31e9",
+            "sharesBps": 9925
+          },
+          {
+            "address": "0x6cfc72cff071dec221cc1dfb026b09c6daf9511e",
+            "sharesBps": 50
+          },
+          {
+            "address": "0x00fe4f0104a989ca65df6b825a6c1682413bca56",
+            "sharesBps": 25
+          }
+        ]
+      },
+      "accumulationMode": "fixed",
+      "taxConfig": {
+        "provider": {
+          "name": "",
+          "apiKeySet": false
+        },
+        "jurisdictions": []
+      },
+      "brandKey": "xoinpay",
+      "createdAt": 1770399987091,
+      "updatedAt": 1771440034045,
+      "partnerWallet": "0x6cfc72cff071dec221cc1dfb026b09c6daf9511e",
+      "splitConfig": {
+        "merchantBps": 9925,
+        "partnerBps": 50,
+        "platformBps": 25,
+        "agents": []
+      },
+      "config": {
+        "splitAddress": "0x05f74334c7fb2494525bd51453aeeecca6a7357c",
+        "split": {
+          "address": "0x05f74334c7fb2494525bd51453aeeecca6a7357c",
+          "recipients": [
+            {
+              "address": "0x2f2ce02f7cdbb6922c6d276043f5b17427ec31e9",
+              "sharesBps": 9925
+            },
+            {
+              "address": "0x6cfc72cff071dec221cc1dfb026b09c6daf9511e",
+              "sharesBps": 50
+            },
+            {
+              "address": "0x00fe4f0104a989ca65df6b825a6c1682413bca56",
+              "sharesBps": 25
+            }
+          ]
+        },
+        "recipients": [
+          {
+            "address": "0x2f2ce02f7cdbb6922c6d276043f5b17427ec31e9",
+            "sharesBps": 9925
+          },
+          {
+            "address": "0x6cfc72cff071dec221cc1dfb026b09c6daf9511e",
+            "sharesBps": 50
+          },
+          {
+            "address": "0x00fe4f0104a989ca65df6b825a6c1682413bca56",
+            "sharesBps": 25
+          }
+        ]
+      },
+      "_rid": "ejloAOMT0c90QwAAAAAAAA==",
+      "_self": "dbs/ejloAA==/colls/ejloAOMT0c8=/docs/ejloAOMT0c90QwAAAAAAAA==/",
+      "_etag": "\"57000c04-0000-3200-0000-699607a20000\"",
+      "_attachments": "attachments/",
+      "name": "Eric T",
+      "slug": "bhqerict",
+      "touchpointThemes": {
+        "terminal": "minimal"
+      },
+      "_ts": 1771440034
+    }
+  ],
+  "broken": [
+    {
+      "id": "shop:config:jbxoinpay-mobile",
+      "wallet": "0x79caa84a0ab55db1e66fbc89d5c83e03eab6fb1a",
+      "type": "shop_config",
+      "brandKey": "xoinpay",
+      "name": "JB Demo",
+      "slug": "jbxoinpay-mobile",
+      "description": "",
+      "theme": {
+        "primaryColor": "#10b981",
+        "secondaryColor": "#06b6d4",
+        "layoutMode": "balanced",
+        "brandLogoUrl": ""
+      },
+      "status": "approved",
+      "approvedBy": "0x2f2ce02f7cdbb6922c6d276043f5b17427ec31e9",
+      "approvedAt": 1771293349335,
+      "createdAt": 1771292939614,
+      "splitConfig": {
+        "merchantBps": 9875,
+        "partnerBps": 100,
+        "platformBps": 25,
+        "agents": []
+      },
+      "_rid": "ejloAOMT0c-uRgAAAAAAAA==",
+      "_self": "dbs/ejloAA==/colls/ejloAOMT0c8=/docs/ejloAOMT0c-uRgAAAAAAAA==/",
+      "_etag": "\"4b003515-0000-3200-0000-6993e1ed0000\"",
+      "_attachments": "attachments/",
+      "split": {
+        "address": "",
+        "recipients": [
+          {
+            "address": "0x79caa84a0ab55db1e66fbc89d5c83e03eab6fb1a",
+            "sharesBps": 9875
+          },
+          {
+            "address": "0x00fe4f0104a989ca65df6b825a6c1682413bca56",
+            "sharesBps": 25
+          }
+        ],
+        "brandKey": "xoinpay"
+      },
+      "config": {
+        "splitAddress": "",
+        "split": {
+          "address": "",
+          "recipients": [
+            {
+              "address": "0x79caa84a0ab55db1e66fbc89d5c83e03eab6fb1a",
+              "sharesBps": 9875
+            },
+            {
+              "address": "0x00fe4f0104a989ca65df6b825a6c1682413bca56",
+              "sharesBps": 25
+            }
+          ]
+        },
+        "recipients": [
+          {
+            "address": "0x79caa84a0ab55db1e66fbc89d5c83e03eab6fb1a",
+            "sharesBps": 9875
+          },
+          {
+            "address": "0x00fe4f0104a989ca65df6b825a6c1682413bca56",
+            "sharesBps": 25
+          }
+        ]
+      },
+      "updatedAt": 1771298205,
+      "phone": "8187992169",
+      "splitAddress": "0x6ab6f89a0d8f19851b7d446af73ea34720ec39b2",
+      "terminalEnabled": true,
+      "legalName": "JB Demo",
+      "_ts": 1771299309
+    },
+    {
+      "id": "site:config:xoinpay:mobile",
+      "type": "site_config",
+      "wallet": "0x79caa84a0ab55db1e66fbc89d5c83e03eab6fb1a",
+      "brandKey": "xoinpay",
+      "slug": "jbxoinpay-mobile",
+      "name": "SW",
+      "createdAt": 1771298062981,
+      "splitAddress": "0x6ab6f89a0d8f19851b7d446af73ea34720ec39b2",
+      "_rid": "ejloAOMT0c-3RgAAAAAAAA==",
+      "_self": "dbs/ejloAA==/colls/ejloAOMT0c8=/docs/ejloAOMT0c-3RgAAAAAAAA==/",
+      "_etag": "\"5700c803-0000-3200-0000-6996078e0000\"",
+      "_attachments": "attachments/",
+      "status": "approved",
+      "approvedBy": "0x2f2ce02f7cdbb6922c6d276043f5b17427ec31e9",
+      "approvedAt": 1771440014609,
+      "theme": {
+        "primaryColor": "#10b981",
+        "secondaryColor": "#10b981",
+        "layoutMode": "balanced",
+        "brandLogoUrl": "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/public/e4f4a3d2c9b34c239dbb4a9dbb816f5b.webp",
+        "brandFaviconUrl": "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/public/e4f4a3d2c9b34c239dbb4a9dbb816f5b.webp"
+      },
+      "updatedAt": 1771440014609,
+      "splitConfig": {
+        "merchantBps": 0,
+        "partnerBps": 50,
+        "platformBps": 25,
+        "agents": [
+          {
+            "wallet": "0x7fbb1b657c3406ceab1a37c25400ede12f7a1a76",
+            "bps": 9925
+          }
+        ]
+      },
+      "split": {
+        "address": "0x6ab6f89a0d8f19851b7d446af73ea34720ec39b2",
+        "recipients": [
+          {
+            "address": "0x00fe4f0104a989ca65df6b825a6c1682413bca56",
+            "sharesBps": 25
+          },
+          {
+            "address": "0x7fbb1b657c3406ceab1a37c25400ede12f7a1a76",
+            "sharesBps": 9925
+          }
+        ],
+        "brandKey": "xoinpay"
+      },
+      "config": {
+        "splitAddress": "0x6ab6f89a0d8f19851b7d446af73ea34720ec39b2",
+        "split": {
+          "address": "0x6ab6f89a0d8f19851b7d446af73ea34720ec39b2",
+          "recipients": [
+            {
+              "address": "0x00fe4f0104a989ca65df6b825a6c1682413bca56",
+              "sharesBps": 25
+            },
+            {
+              "address": "0x7fbb1b657c3406ceab1a37c25400ede12f7a1a76",
+              "sharesBps": 9925
+            }
+          ]
+        },
+        "recipients": [
+          {
+            "address": "0x00fe4f0104a989ca65df6b825a6c1682413bca56",
+            "sharesBps": 25
+          },
+          {
+            "address": "0x7fbb1b657c3406ceab1a37c25400ede12f7a1a76",
+            "sharesBps": 9925
+          }
+        ]
+      },
+      "_ts": 1771440014
+    }
+  ]
+}
