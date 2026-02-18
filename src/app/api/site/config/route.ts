@@ -1036,6 +1036,54 @@ export async function GET(req: NextRequest) {
 
     // Preferred: per-wallet config if a wallet is provided or authenticated
     if (wallet) {
+      // 0. PRE-FETCH: Try to find a shop_config for this wallet to merge into site_config
+      // This ensures that ThemeLoader (which calls this API) receives the merchant's latest theme/branding
+      // even if site_config is stale or default.
+      let shopConfig: any = null;
+      try {
+        const { resources: shops } = await c.items.query({
+          query: "SELECT * FROM c WHERE c.wallet = @wallet AND c.type = 'shop_config'",
+          parameters: [{ name: "@wallet", value: wallet }]
+        }).fetchAll();
+        if (shops && shops.length > 0) {
+          shopConfig = shops[0];
+        }
+      } catch { }
+
+      // Helper to merge shop config into site config
+      const mergeConfigs = (siteConf: any, shopConf: any) => {
+        if (!shopConf) return siteConf;
+        const out = { ...(siteConf || {}) };
+
+        // Merge Theme: Shop theme overrides site theme (filtering out empty values)
+        const siteTheme = out.theme || {};
+        const shopTheme = shopConf.theme || {};
+        const mergedTheme = { ...siteTheme };
+
+        for (const [key, value] of Object.entries(shopTheme)) {
+          if (value !== "" && value !== undefined && value !== null) {
+            mergedTheme[key] = value;
+          }
+        }
+
+        // Explicitly inject top-level shop identity if present
+        if (shopConf.logoUrl) mergedTheme.brandLogoUrl = shopConf.logoUrl;
+        if (shopConf.shopLogoUrl) mergedTheme.brandLogoUrl = shopConf.shopLogoUrl;
+        if (shopConf.name && !mergedTheme.brandName) mergedTheme.brandName = shopConf.name;
+
+        out.theme = mergedTheme;
+
+        // Merge other useful props if missing in site
+        if (!out.description && shopConf.description) out.story = shopConf.description;
+
+        // Merge touchpointThemes: Shop overrides Site
+        const siteTP = out.touchpointThemes || {};
+        const shopTP = shopConf.touchpointThemes || {};
+        out.touchpointThemes = { ...siteTP, ...shopTP };
+
+        return out;
+      };
+
       // Try brand-scoped doc first when brand is configured; safely fallback to legacy.
       let brandKey: string | undefined = undefined;
       try {
@@ -1047,8 +1095,12 @@ export async function GET(req: NextRequest) {
       if (brandKey) {
         try {
           const { resource } = await c.item(getDocIdForBrand(brandKey), wallet).read<any>();
-          if (resource) {
-            const cfg = normalizeSiteConfig(resource);
+          // Use site_config if found, otherwise if we have shopConfig, use that as base
+          const base = resource || (shopConfig ? { ...shopConfig, type: 'site_config' } : null);
+
+          if (base) {
+            const merged = mergeConfigs(base, shopConfig);
+            const cfg = normalizeSiteConfig(merged);
             const payload = { config: await applyPartnerOverrides(req, cfg) };
             return jsonResponse(payload, {
               headers: {
@@ -1067,10 +1119,14 @@ export async function GET(req: NextRequest) {
       // which maintains tenant isolation regardless of document ID format.
       try {
         const { resource } = await c.item(DOC_ID, wallet).read<any>();
-        if (resource) {
-          const cfg = normalizeSiteConfig(resource);
+        // Use site_config if found, otherwise if we have shopConfig, use that as base
+        const base = resource || (shopConfig ? { ...shopConfig, type: 'site_config' } : null);
+
+        if (base) {
+          const merged = mergeConfigs(base, shopConfig);
+          const cfg = normalizeSiteConfig(merged);
           const payload = { config: await applyPartnerOverrides(req, cfg) };
-          console.log("[site/config][GET] returning legacy doc for wallet", { wallet, docId: DOC_ID, hasBrandKey: !!brandKey });
+          console.log("[site/config][GET] returning merged config for wallet", { wallet, docId: DOC_ID, hasBrandKey: !!brandKey, mergedShop: !!shopConfig });
           return jsonResponse(payload, {
             headers: {
               "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",

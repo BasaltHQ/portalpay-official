@@ -70,7 +70,7 @@ export default async function HandheldModePage({ params }: { params: Promise<{ i
         ...(shopConfig || {}), // Shop config overrides general site settings
         theme: mergedTheme,
         // Explicitly merge specific fields if needed
-        touchpointThemes: siteConfig?.touchpointThemes || shopConfig?.touchpointThemes,
+        touchpointThemes: { ...(siteConfig?.touchpointThemes || {}), ...(shopConfig?.touchpointThemes || {}) },
         wallet: shopConfig?.wallet || siteConfig?.wallet || docs[0]?.wallet,
     };
 

@@ -71,7 +71,7 @@ export default async function KioskPage({ params }: { params: Promise<{ id: stri
         ...(shopConfig || {}), // Shop config overrides general site settings
         theme: mergedTheme,
         // Explicitly merge specific fields if needed
-        touchpointThemes: siteConfig?.touchpointThemes || shopConfig?.touchpointThemes,
+        touchpointThemes: { ...(siteConfig?.touchpointThemes || {}), ...(shopConfig?.touchpointThemes || {}) },
         wallet: shopConfig?.wallet || siteConfig?.wallet || docs[0]?.wallet,
     };
 
