@@ -1081,24 +1081,36 @@ export async function GET(req: NextRequest) {
         const shopTP = shopConf.touchpointThemes || {};
         out.touchpointThemes = { ...siteTP, ...shopTP };
 
-        // Force-inject Shop Colors into Touchpoint Themes
-        // This ensures that even if a theme (e.g. "minimalist") has defaults,
-        // or if we fell back to the Partner's touchpointThemes,
-        // the SHOP'S brand colors are strictly enforced.
-        const shopPrimary = out.theme?.primaryColor;
-        const shopSecondary = out.theme?.secondaryColor;
+        return out;
+      };
 
-        if (shopPrimary && out.touchpointThemes) {
-          for (const key of Object.keys(out.touchpointThemes)) {
-            out.touchpointThemes[key] = {
-              ...out.touchpointThemes[key],
+      // Helper to enforce shop colors and normalize themes
+      const applyThemeOverrides = (conf: any) => {
+        if (!conf) return conf;
+        const shopPrimary = conf.theme?.primaryColor;
+        const shopSecondary = conf.theme?.secondaryColor;
+        const tpThemes = conf.touchpointThemes;
+
+        if (shopPrimary && tpThemes) {
+          const normalizedThemes: any = {};
+          for (const key of Object.keys(tpThemes)) {
+            let current = tpThemes[key];
+            // Handle String vs Object (legacy themes are strings)
+            if (typeof current === 'string') {
+              current = { themeId: current };
+            } else if (typeof current !== 'object' || current === null) {
+              current = {};
+            }
+
+            normalizedThemes[key] = {
+              ...current,
               primaryColor: shopPrimary,
-              secondaryColor: shopSecondary || out.touchpointThemes[key].secondaryColor
+              secondaryColor: shopSecondary || current.secondaryColor
             };
           }
+          conf.touchpointThemes = normalizedThemes;
         }
-
-        return out;
+        return conf;
       };
 
       // Try brand-scoped doc first when brand is configured; safely fallback to legacy.
@@ -1115,19 +1127,30 @@ export async function GET(req: NextRequest) {
           // Use site_config if found, otherwise if we have shopConfig, use that as base
           const base = resource || (shopConfig ? { ...shopConfig, type: 'site_config' } : null);
 
-          if (base) {
-            const merged = mergeConfigs(base, shopConfig);
-            const cfg = normalizeSiteConfig(merged);
-            const payload = { config: await applyPartnerOverrides(req, cfg) };
-            return jsonResponse(payload, {
+          if (!base) {
+            // Fallback to legacy
+          } else {
+            let finalConfig = { ...base };
+
+            // Merge if shop config found
+            if (shopConfig && base.type === 'site_config') {
+              finalConfig = mergeConfigs(base, shopConfig);
+            }
+
+            // Apply Theme Overrides (Normalization + Color Injection)
+            finalConfig = applyThemeOverrides(finalConfig);
+
+            return jsonResponse({ config: finalConfig }, {
               headers: {
-                "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
-                "Pragma": "no-cache",
+                "Cache-Control": "private, no-cache, no-store, must-revalidate",
                 "Expires": "0",
-              },
+                "Pragma": "no-cache"
+              }
             });
           }
-        } catch { }
+        } catch (e) {
+          console.error("Failed to load brand doc", e);
+        }
       }
 
       // Fallback: ALWAYS try legacy doc (id="site:config") for backwards compatibility
@@ -1142,7 +1165,10 @@ export async function GET(req: NextRequest) {
         if (base) {
           const merged = mergeConfigs(base, shopConfig);
           const cfg = normalizeSiteConfig(merged);
-          const payload = { config: await applyPartnerOverrides(req, cfg) };
+          // Apply Theme Overrides (Normalization + Color Injection)
+          const final = applyThemeOverrides(cfg);
+
+          const payload = { config: await applyPartnerOverrides(req, final) };
           console.log("[site/config][GET] returning merged config for wallet", { wallet, docId: DOC_ID, hasBrandKey: !!brandKey, mergedShop: !!shopConfig });
           return jsonResponse(payload, {
             headers: {

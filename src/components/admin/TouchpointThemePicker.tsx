@@ -162,7 +162,7 @@ export function TouchpointThemeCards({
     onOpenPicker,
     saving,
 }: {
-    touchpointThemes: Record<string, string>;
+    touchpointThemes: Record<string, any>;
     onOpenPicker: (type: TouchpointType, label: string) => void;
     saving?: boolean;
 }) {
@@ -176,7 +176,11 @@ export function TouchpointThemeCards({
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {touchpoints.map(tp => {
-                const currentThemeId = touchpointThemes[tp.key] || DEFAULT_THEME_ID;
+                const raw = touchpointThemes[tp.key];
+                const currentThemeId = (typeof raw === 'object' && raw !== null && 'themeId' in raw)
+                    ? (raw as any).themeId
+                    : (typeof raw === 'string' ? raw : DEFAULT_THEME_ID);
+
                 const theme = getTheme(currentThemeId);
                 return (
                     <div

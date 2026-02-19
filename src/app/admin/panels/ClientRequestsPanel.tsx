@@ -1345,7 +1345,7 @@ function TouchpointThemesTab({
     adminWallet: string;
     brandKey: string;
 }) {
-    const [touchpointThemes, setTouchpointThemes] = useState<Record<string, string>>({});
+    const [touchpointThemes, setTouchpointThemes] = useState<Record<string, any>>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<string>("");
@@ -1376,6 +1376,7 @@ function TouchpointThemesTab({
         if (!merchantWallet || !adminWallet) return;
         setSaving(true);
         setSaveStatus("");
+        // Optimistic update: set to string ID immediately
         const updated = { ...touchpointThemes, [touchpoint]: themeId };
         setTouchpointThemes(updated);
 
@@ -1394,6 +1395,7 @@ function TouchpointThemesTab({
             const j = await r.json();
             if (r.ok && !j.error) {
                 setSaveStatus("Theme saved successfully.");
+                // Update state with server response (which might be objectified again) but optimistic string is fine for now
             } else {
                 setSaveStatus(`Error: ${j.error || "Save failed"}`);
             }
@@ -1440,7 +1442,12 @@ function TouchpointThemesTab({
                 <ThemePickerModal
                     touchpointType={pickerOpen.type}
                     touchpointLabel={pickerOpen.label}
-                    currentThemeId={touchpointThemes[pickerOpen.type] || "modern"}
+                    currentThemeId={(() => {
+                        const raw = touchpointThemes[pickerOpen.type];
+                        return (typeof raw === 'object' && raw !== null && 'themeId' in raw)
+                            ? (raw as any).themeId
+                            : (typeof raw === 'string' ? raw : "modern");
+                    })()}
                     onSelect={async (themeId) => {
                         await saveThemeSelection(pickerOpen.type, themeId);
                         setPickerOpen(null);

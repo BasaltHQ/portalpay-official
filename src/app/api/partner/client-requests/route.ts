@@ -179,10 +179,18 @@ export async function GET(req: NextRequest) {
                     const shopS = enriched.secondaryColor;
                     const injectedThemes: any = {};
                     for (const key of Object.keys(tpThemes)) {
+                        let current = tpThemes[key];
+                        // Handle String vs Object
+                        if (typeof current === 'string') {
+                            current = { themeId: current };
+                        } else if (typeof current !== 'object' || current === null) {
+                            current = {};
+                        }
+
                         injectedThemes[key] = {
-                            ...tpThemes[key],
+                            ...current,
                             primaryColor: shopP,
-                            secondaryColor: shopS || tpThemes[key].secondaryColor
+                            secondaryColor: shopS || current.secondaryColor
                         };
                     }
                     (enriched as any).touchpointThemes = injectedThemes;
