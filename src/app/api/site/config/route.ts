@@ -1081,6 +1081,23 @@ export async function GET(req: NextRequest) {
         const shopTP = shopConf.touchpointThemes || {};
         out.touchpointThemes = { ...siteTP, ...shopTP };
 
+        // Force-inject Shop Colors into Touchpoint Themes
+        // This ensures that even if a theme (e.g. "minimalist") has defaults,
+        // or if we fell back to the Partner's touchpointThemes,
+        // the SHOP'S brand colors are strictly enforced.
+        const shopPrimary = out.theme?.primaryColor;
+        const shopSecondary = out.theme?.secondaryColor;
+
+        if (shopPrimary && out.touchpointThemes) {
+          for (const key of Object.keys(out.touchpointThemes)) {
+            out.touchpointThemes[key] = {
+              ...out.touchpointThemes[key],
+              primaryColor: shopPrimary,
+              secondaryColor: shopSecondary || out.touchpointThemes[key].secondaryColor
+            };
+          }
+        }
+
         return out;
       };
 

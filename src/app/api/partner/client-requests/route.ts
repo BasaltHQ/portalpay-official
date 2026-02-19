@@ -171,6 +171,23 @@ export async function GET(req: NextRequest) {
                     secondaryColor: conf?.theme?.secondaryColor || req.secondaryColor,
                     slug: conf?.slug || req.slug,
                 };
+
+                // Force-inject Shop Colors into Touchpoint Themes for Admin Panel consistency
+                const tpThemes = conf?.touchpointThemes || req.touchpointThemes;
+                if (tpThemes) {
+                    const shopP = enriched.primaryColor;
+                    const shopS = enriched.secondaryColor;
+                    const injectedThemes: any = {};
+                    for (const key of Object.keys(tpThemes)) {
+                        injectedThemes[key] = {
+                            ...tpThemes[key],
+                            primaryColor: shopP,
+                            secondaryColor: shopS || tpThemes[key].secondaryColor
+                        };
+                    }
+                    (enriched as any).touchpointThemes = injectedThemes;
+                }
+
                 if (req.ein) enriched.ein = maskEin(req.ein);
                 return enriched;
             }
