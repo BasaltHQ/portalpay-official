@@ -7,7 +7,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig = {
   // Externalize problematic deep deps so Turbopack doesn't crawl their tests
-  serverExternalPackages: ['pino', '@walletconnect/logger', 'thread-stream'],
+  serverExternalPackages: ['pino', '@walletconnect/logger', 'thread-stream', 'mongodb'],
 
   // Suppress source map warnings in development (Turbopack)
   experimental: {

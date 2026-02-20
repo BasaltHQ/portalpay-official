@@ -1,5 +1,7 @@
 import { CosmosClient, Database, Container } from "@azure/cosmos";
-import { getMongoContainer } from "./db/mongodb-adapter";
+// NOTE: mongodb-adapter is imported dynamically (not statically) to prevent
+// the `mongodb` Node.js package from being bundled into client-side code.
+// See: getContainer() → dynamic import() below.
 
 // Accept legacy "payportal" env vars for backward compat, but prefer new names
 const defaultDbId =
@@ -52,6 +54,8 @@ export async function getContainer(dbId = defaultDbId, containerId = defaultCont
 
   // ── MongoDB path ──────────────────────────────────────────────────
   if (/^mongodb(\+srv)?:\/\//i.test(conn)) {
+    // webpackIgnore prevents Turbopack/webpack from tracing into mongodb (Node.js-only)
+    const { getMongoContainer } = await import(/* webpackIgnore: true */ "./db/mongodb-adapter");
     const adapter = await getMongoContainer(conn, dbId, containerId);
     // Cast to any so existing code that expects Cosmos Container type still compiles.
     // The adapter implements the same runtime interface.
