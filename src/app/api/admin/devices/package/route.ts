@@ -948,7 +948,7 @@ export async function GET(req: NextRequest) {
     // Note: list might return multiple if prefix matches multiple, but we are querying specific file normally.
     // However, list usually takes a prefix.
     const items = await storage.list(fullPath);
-    const item = items.find(i => i.path === fullPath || i.path.endsWith(blobName));
+    const item = items.find((i: any) => i === fullPath || i.endsWith(blobName));
 
     // Generate signed URL
     let sasUrl: string | undefined;
@@ -959,13 +959,8 @@ export async function GET(req: NextRequest) {
     return json({
       exists: true,
       brandKey,
-      packageUrl: await storage.getUrl(fullPath), // public or internal URL
+      packageUrl: await storage.getUrl(fullPath),
       sasUrl,
-      size: item?.size,
-      lastModified: item?.lastModified?.toISOString(),
-      // endpoint metadata might be lost if not supported by list/provider yet, 
-      // but for now we prioritize core functionality.
-      // If we need custom metadata, we might need to extend StorageProvider.
     });
   } catch (e: any) {
     return json({

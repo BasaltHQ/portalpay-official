@@ -6,7 +6,13 @@ export class AzureStorageProvider implements StorageProvider {
     private defaultContainer: string;
 
     constructor() {
-        this.connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING as string;
+        // Fallback chain matches the old inline pattern used across routes:
+        // process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING
+        this.connectionString = (
+            process.env.AZURE_STORAGE_CONNECTION_STRING ||
+            process.env.AZURE_BLOB_CONNECTION_STRING ||
+            ""
+        ).trim();
         // Default fallback if path doesn't specify container (should match existing app default)
         this.defaultContainer = process.env.PP_APK_CONTAINER || "uploads";
     }
