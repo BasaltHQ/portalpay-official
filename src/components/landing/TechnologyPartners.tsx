@@ -12,6 +12,7 @@ export default function TechnologyPartners() {
     { alt: "Thirdweb", url: "/logos/thirdweb.svg" },
     { alt: "Base (Ethereum L2)", url: "/logos/base.png" },
     { alt: "Ethereum", url: "/logos/ethereum.svg" },
+    { alt: "ElevenLabs", url: "/logos/elevenlabs-symbol.svg", className: "scale-200" },
   ];
 
   return (
@@ -24,7 +25,7 @@ export default function TechnologyPartners() {
               {i.alt.includes("Base") ? (
                 <MaskBrandIcon url="/logos/base.png" alt={i.alt} size="xl" />
               ) : (
-                <WhiteBrandIcon url={i.url} alt={i.alt} size="xl" fallbackUrl={(i as any).fallbackUrl} />
+                <WhiteBrandIcon url={i.url} alt={i.alt} size="xl" fallbackUrl={(i as any).fallbackUrl} className={(i as any).className || ""} />
               )}
               <span className="microtext text-muted-foreground">{i.alt}</span>
             </div>
