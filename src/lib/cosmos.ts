@@ -1,42 +1,68 @@
 import { CosmosClient, Database, Container } from "@azure/cosmos";
+import { getMongoContainer } from "./db/mongodb-adapter";
 
+// Accept legacy "payportal" env vars for backward compat, but prefer new names
 const defaultDbId =
-  process.env.COSMOS_PAYPORTAL_DB_ID ||
+  process.env.DB_NAME ||
   process.env.COSMOS_DB_ID ||
-  "payportal";
+  process.env.COSMOS_PAYPORTAL_DB_ID ||
+  "basaltsurge";
 const defaultContainerId =
-  process.env.COSMOS_PAYPORTAL_CONTAINER_ID ||
+  process.env.DB_COLLECTION ||
   process.env.COSMOS_CONTAINER_ID ||
-  "payportal_events";
+  process.env.COSMOS_PAYPORTAL_CONTAINER_ID ||
+  "basaltsurge_events";
 
 type Cached = {
   client?: CosmosClient;
   db?: Database;
-  container?: Container;
+  container?: Container | any; // any to allow MongoDBContainerAdapter
   containerId?: string;
   dbId?: string;
+  isMongo?: boolean;
 };
 
 const cache: Cached = {};
 
+/**
+ * Get a database container. Automatically routes to MongoDB or Cosmos DB
+ * based on the connection string format.
+ *
+ * - mongodb:// or mongodb+srv:// → MongoDBContainerAdapter
+ * - Otherwise → Cosmos DB SDK Container
+ */
 export async function getContainer(dbId = defaultDbId, containerId = defaultContainerId): Promise<Container> {
   if (cache.container && cache.dbId === dbId && cache.containerId === containerId) return cache.container;
 
   // Accept multiple env var names to reduce deployment misconfig risk
   const conn = process.env.COSMOS_CONNECTION_STRING
+    || process.env.MONGODB_CONNECTION_STRING
+    || process.env.DB_CONNECTION_STRING
     || process.env.AZURE_COSMOS_CONNECTION_STRING
     || process.env.AZURE_COSMOSDB_CONNECTION_STRING
     || process.env.COSMOSDB_CONNECTION_STRING
     || "";
-  // Enforce live Cosmos DB; do not use in-memory mock
+
   if (!conn) {
-    throw new Error("COSMOS_CONNECTION_STRING (or alias) not set. Live Cosmos DB is required for all environments.");
-  }
-  // Guard: this app uses Cosmos DB for NoSQL (Core/SQL) SDK, not MongoDB API
-  if (/mongodb:\/\//i.test(conn) || /ApiKind=MongoDB/i.test(conn)) {
-    throw new Error("COSMOS_CONNECTION_STRING is for MongoDB API. Use a Cosmos DB for NoSQL (Core) connection string.");
+    throw new Error(
+      "Database connection string not set. " +
+      "Set COSMOS_CONNECTION_STRING (Cosmos DB) or MONGODB_CONNECTION_STRING (MongoDB)."
+    );
   }
 
+  // ── MongoDB path ──────────────────────────────────────────────────
+  if (/^mongodb(\+srv)?:\/\//i.test(conn)) {
+    const adapter = await getMongoContainer(conn, dbId, containerId);
+    // Cast to any so existing code that expects Cosmos Container type still compiles.
+    // The adapter implements the same runtime interface.
+    cache.container = adapter as any;
+    cache.dbId = dbId;
+    cache.containerId = containerId;
+    cache.isMongo = true;
+    return cache.container;
+  }
+
+  // ── Cosmos DB path (existing behavior) ────────────────────────────
   const client = cache.client || new CosmosClient(conn);
   cache.client = client;
 
@@ -44,14 +70,12 @@ export async function getContainer(dbId = defaultDbId, containerId = defaultCont
   cache.db = database;
 
   // OPTIMIZATION: Use optimistic container reference to avoid network RTT on every cold start
-  // We assume the container exists in production. "createIfNotExists" adds significant latency.
   const container = database.container(containerId);
-  // Only verify existence if explicitly needed (e.g. during specialized init routines), 
-  // but for high-traffic runtime, assume it's there.
 
   cache.container = container;
   cache.dbId = dbId;
   cache.containerId = containerId;
+  cache.isMongo = false;
   return container;
 }
 
