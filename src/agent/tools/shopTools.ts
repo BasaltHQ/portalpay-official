@@ -24,6 +24,8 @@ export type ShopTools = {
   clearCart: ToolHandler;
   getCartSummary: ToolHandler;
   getOwnerAnalytics: ToolHandler;
+  changeLanguage: ToolHandler;
+  getAllInventory: ToolHandler;
 };
 
 export type BuildShopToolsOptions = {
@@ -192,7 +194,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
    */
   const extractModifierInfo = (attrs: any): any => {
     if (!attrs || typeof attrs !== "object") return null;
-    
+
     // Handle restaurant attributes
     if (attrs.type === "restaurant" && attrs.data) {
       const data = attrs.data;
@@ -222,7 +224,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
         allergens: Array.isArray(data.allergens) ? data.allergens : [],
       };
     }
-    
+
     // Handle retail attributes
     if (attrs.type === "retail" && attrs.data) {
       const data = attrs.data;
@@ -250,7 +252,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
         materials: Array.isArray(data.materials) ? data.materials : [],
       };
     }
-    
+
     // Handle general/legacy attributes that might have modifierGroups directly
     if (attrs.type === "general" && attrs.data) {
       const data = attrs.data;
@@ -279,7 +281,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
         };
       }
     }
-    
+
     // Handle top-level modifierGroups (legacy format)
     if (Array.isArray(attrs.modifierGroups) && attrs.modifierGroups.length > 0) {
       return {
@@ -305,19 +307,55 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
         spiceLevel: typeof attrs.spiceLevel === "number" ? attrs.spiceLevel : undefined,
       };
     }
-    
+
     return null;
   };
 
+  /**
+   * Return the ENTIRE inventory in one call — no filters, no pagination.
+   * Useful when the agent needs full catalog awareness ("perfect knowledge").
+   */
+  const getAllInventory: ToolHandler = async () => {
+    const { ok, json, status } = await safeJsonFetch("/api/inventory", {
+      cache: "no-store",
+      headers: { "x-wallet": merchantWallet },
+    });
+    if (!ok) return { ok: false, error: json?.error || `inventory_failed_${status}` };
+    const items: any[] = Array.isArray(json?.items) ? json.items : [];
+
+    // Extract essential fields for each item
+    const catalog = items
+      .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || "")))
+      .map((it) => ({
+        id: it.id,
+        sku: it.sku || undefined,
+        name: it.name,
+        description: it.description || undefined,
+        category: it.category || undefined,
+        priceUsd: it.priceUsd,
+        inStock: it.stockQty === -1 || (it.stockQty ?? 0) > 0,
+        tags: Array.isArray(it.tags) && it.tags.length ? it.tags : undefined,
+        hasModifiers: !!(it.attributes?.modifierGroups?.length || it.attributes?.variants?.length),
+      }));
+
+    return {
+      ok: true,
+      data: {
+        totalItems: catalog.length,
+        items: catalog,
+      },
+    };
+  };
+
   const getInventory: ToolHandler = async (args) => {
-    const { 
-      query = "", 
-      category = "", 
-      inStockOnly = false, 
-      priceMin = 0, 
-      priceMax = Number.MAX_SAFE_INTEGER, 
+    const {
+      query = "",
+      category = "",
+      inStockOnly = false,
+      priceMin = 0,
+      priceMax = Number.MAX_SAFE_INTEGER,
       sort = "name-asc",
-      includeModifiers = true 
+      includeModifiers = true
     } = args || {};
     const { ok, json, status } = await safeJsonFetch("/api/inventory", {
       cache: "no-store",
@@ -333,6 +371,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
         String(it?.name || "").toLowerCase().includes(q) ||
         String(it?.sku || "").toLowerCase().includes(q) ||
         String(it?.description || "").toLowerCase().includes(q) ||
+        String(it?.category || "").toLowerCase().includes(q) ||
         (Array.isArray(it?.tags) ? it.tags : []).some((t: any) => String(t).toLowerCase().includes(q))
       );
     }
@@ -381,7 +420,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
           tags: Array.isArray(it?.tags) ? it?.tags : [],
           images: Array.isArray(it?.images) ? it?.images : [],
         };
-        
+
         // Include modifier information if requested
         if (includeModifiers && it?.attributes) {
           const modifierInfo = extractModifierInfo(it.attributes);
@@ -399,7 +438,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
             }
           }
         }
-        
+
         return base;
       })
     };
@@ -411,7 +450,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
   const getItemModifiers: ToolHandler = async (args) => {
     const idOrSku = String(args?.id || args?.sku || "").trim();
     const nameQuery = String(args?.name || "").trim().toLowerCase();
-    
+
     // Require at least one search parameter
     if (!idOrSku && !nameQuery) {
       return { ok: false, error: "missing_item_identifier: provide id, sku, or name" };
@@ -423,31 +462,31 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
       headers: { "x-wallet": merchantWallet },
     });
     if (!ok) return { ok: false, error: json?.error || `inventory_failed_${status}` };
-    
+
     const items: any[] = Array.isArray(json?.items) ? json.items : [];
-    
+
     let item: any = null;
-    
+
     // Priority 1: Find by exact ID
     if (idOrSku) {
       item = items.find((x) => String(x.id) === String(idOrSku));
     }
-    
+
     // Priority 2: Find by exact SKU
     if (!item && args?.sku) {
       item = items.find((x) => String(x.sku).toLowerCase() === String(args.sku).toLowerCase());
     }
-    
+
     // Priority 3: Try SKU match with idOrSku value
     if (!item && idOrSku) {
       item = items.find((x) => String(x.sku).toLowerCase() === String(idOrSku).toLowerCase());
     }
-    
+
     // Priority 4: Find by name (exact match first, then partial match)
     if (!item && nameQuery) {
       // Try exact name match first
       item = items.find((x) => String(x.name || "").toLowerCase() === nameQuery);
-      
+
       // If no exact match, try partial match (name contains query or query contains name)
       if (!item) {
         item = items.find((x) => {
@@ -455,7 +494,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
           return itemName.includes(nameQuery) || nameQuery.includes(itemName);
         });
       }
-      
+
       // If still no match, try fuzzy matching on words
       if (!item) {
         const queryWords = nameQuery.split(/\s+/).filter(w => w.length > 2);
@@ -468,13 +507,13 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
         }
       }
     }
-    
+
     if (!item) {
       return { ok: false, error: `item_not_found: no item matching ${idOrSku || nameQuery}` };
     }
-    
+
     const modifierInfo = extractModifierInfo(item.attributes);
-    
+
     return {
       ok: true,
       data: {
@@ -565,9 +604,9 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
   };
 
   const addToCart: ToolHandler = async (args) => {
-    // Accepts id or sku; default qty=1
-    const idOrSku = String(args?.id || args?.sku || "");
-    const qty = Math.max(1, Number(args?.qty || 1));
+    // Accepts id, itemId, or sku; default qty=1
+    const idOrSku = String(args?.id || args?.itemId || args?.sku || "");
+    const qty = Math.max(1, Number(args?.qty || args?.quantity || 1));
     if (!idOrSku) return { ok: false, error: "missing_item_id_or_sku" };
 
     // Resolve ID (and capture resolved item if we looked up by sku)
@@ -591,7 +630,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
     // Build the attributes object to pass to addToCartFn
     // This handles both the new structured format and legacy format
     const attributes: any = {};
-    
+
     // Handle selectedModifiers (restaurant-style modifiers)
     if (Array.isArray(args?.selectedModifiers) && args.selectedModifiers.length > 0) {
       attributes.selectedModifiers = args.selectedModifiers.map((m: any) => ({
@@ -602,7 +641,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
         quantity: Math.max(1, Number(m.quantity || m.qty || 1)),
       }));
     }
-    
+
     // Handle selectedVariant (retail-style variants)
     if (args?.selectedVariant && typeof args.selectedVariant === "object") {
       const v = args.selectedVariant;
@@ -613,40 +652,40 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
         priceAdjustment: Number(v.priceAdjustment || 0),
       };
     }
-    
+
     // Handle special instructions
     if (args?.specialInstructions) {
       attributes.specialInstructions = String(args.specialInstructions);
     }
-    
+
     // Calculate effective unit price including modifiers
     let basePrice = Number(resolvedItem?.priceUsd || 0);
     let modifierTotal = 0;
-    
+
     if (attributes.selectedModifiers) {
-      modifierTotal = attributes.selectedModifiers.reduce((sum: number, m: any) => 
+      modifierTotal = attributes.selectedModifiers.reduce((sum: number, m: any) =>
         sum + (Number(m.priceAdjustment || 0) * Number(m.quantity || 1)), 0);
     }
     if (attributes.selectedVariant?.priceAdjustment) {
       modifierTotal += Number(attributes.selectedVariant.priceAdjustment);
     }
-    
+
     const effectiveUnitPrice = basePrice + modifierTotal;
 
     // Build predicted next summary deterministically to avoid read-after-write races
     const prev = getCartSummaryFn();
     const prevItems = Array.isArray(prev.items) ? prev.items.slice() : [];
-    
+
     // For items with modifiers, we typically add a new line rather than updating existing
     // since different modifier combinations should be separate line items
     const hasModifiers = (attributes.selectedModifiers?.length > 0) || attributes.selectedVariant;
-    
+
     // Find existing item only if no modifiers, or find exact match with same modifiers
     let idx = -1;
     if (!hasModifiers) {
       idx = prevItems.findIndex((it: any) => String(it.id) === String(itemId));
     }
-    
+
     // Resolve details for pricing/naming
     const details = await resolveItemById(itemId, resolvedItem);
     if (idx >= 0 && !hasModifiers) {
@@ -672,10 +711,10 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
     const predicted = { items: prevItems, subtotal: nextSubtotal };
 
     // Apply actual state change
-    try { 
-      addToCartFn(itemId, qty, Object.keys(attributes).length > 0 ? attributes : undefined); 
-    } catch (e: any) { 
-      return { ok: false, error: e?.message || "add_failed" }; 
+    try {
+      addToCartFn(itemId, qty, Object.keys(attributes).length > 0 ? attributes : undefined);
+    } catch (e: any) {
+      return { ok: false, error: e?.message || "add_failed" };
     }
 
     const outSummary = await readStableSummaryAdd(itemId, effectiveUnitPrice || Number(details?.priceUsd ?? 0), qty, predicted);
@@ -690,10 +729,10 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
       basePrice: Number(details?.priceUsd ?? 0),
       priceUsd: effectiveUnitPrice || Number(details?.priceUsd ?? actualItem?.priceUsd ?? 0),
     };
-    
+
     if (attributes.selectedModifiers?.length > 0) {
       addedInfo.selectedModifiers = attributes.selectedModifiers;
-      addedInfo.modifierSummary = attributes.selectedModifiers.map((m: any) => 
+      addedInfo.modifierSummary = attributes.selectedModifiers.map((m: any) =>
         `${m.name}${m.priceAdjustment ? ` (+$${m.priceAdjustment.toFixed(2)})` : ''}`
       ).join(", ");
     }
@@ -778,22 +817,22 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
    */
   const editCartItem: ToolHandler = async (args) => {
     const lineIndex = Number(args?.lineIndex ?? args?.index ?? -1);
-    
+
     // Get current cart
     const cart = getCartSummaryFn();
     const items = Array.isArray(cart.items) ? cart.items : [];
-    
+
     if (lineIndex < 0 || lineIndex >= items.length) {
       return { ok: false, error: `invalid_line_index: ${lineIndex}. Cart has ${items.length} items (0-indexed).` };
     }
-    
+
     const existingItem = items[lineIndex] as any;
     const itemId = String(existingItem.id);
     const qty = Number(args?.qty ?? existingItem.qty ?? 1);
-    
+
     // Build new attributes
     const attributes: any = {};
-    
+
     // Handle selectedModifiers - replace existing
     if (Array.isArray(args?.selectedModifiers)) {
       attributes.selectedModifiers = args.selectedModifiers.map((m: any) => ({
@@ -804,7 +843,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
         quantity: Math.max(1, Number(m.quantity || m.qty || 1)),
       }));
     }
-    
+
     // Handle selectedVariant
     if (args?.selectedVariant && typeof args.selectedVariant === "object") {
       const v = args.selectedVariant;
@@ -815,42 +854,42 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
         priceAdjustment: Number(v.priceAdjustment || 0),
       };
     }
-    
+
     // Handle special instructions
     if (args?.specialInstructions !== undefined) {
       attributes.specialInstructions = String(args.specialInstructions || "");
     }
-    
+
     // Remove the old item first (by setting qty to 0)
     try {
       updateQtyFn(itemId, 0);
     } catch { }
-    
+
     await sleep(20);
-    
+
     // Add back with new modifiers
     try {
       addToCartFn(itemId, qty, Object.keys(attributes).length > 0 ? attributes : undefined);
     } catch (e: any) {
       return { ok: false, error: e?.message || "edit_failed" };
     }
-    
+
     await sleep(40);
-    
+
     const newCart = getCartSummaryFn();
     const details = await resolveItemById(itemId);
-    
+
     // Calculate new unit price
     let basePrice = Number(details?.priceUsd || existingItem.priceUsd || 0);
     let modifierTotal = 0;
     if (attributes.selectedModifiers) {
-      modifierTotal = attributes.selectedModifiers.reduce((sum: number, m: any) => 
+      modifierTotal = attributes.selectedModifiers.reduce((sum: number, m: any) =>
         sum + (Number(m.priceAdjustment || 0) * Number(m.quantity || 1)), 0);
     }
     if (attributes.selectedVariant?.priceAdjustment) {
       modifierTotal += Number(attributes.selectedVariant.priceAdjustment);
     }
-    
+
     return {
       ok: true,
       data: {
@@ -864,7 +903,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
           priceUsd: basePrice + modifierTotal,
           selectedModifiers: attributes.selectedModifiers,
           selectedVariant: attributes.selectedVariant,
-          modifierSummary: attributes.selectedModifiers?.map((m: any) => 
+          modifierSummary: attributes.selectedModifiers?.map((m: any) =>
             `${m.name}${m.priceAdjustment ? ` (+$${m.priceAdjustment.toFixed(2)})` : ''}`
           ).join(", "),
         },
@@ -877,30 +916,30 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
    */
   const removeFromCart: ToolHandler = async (args) => {
     const lineIndex = Number(args?.lineIndex ?? args?.index ?? -1);
-    
+
     // Get current cart
     const cart = getCartSummaryFn();
     const items = Array.isArray(cart.items) ? cart.items : [];
-    
+
     if (lineIndex < 0 || lineIndex >= items.length) {
       return { ok: false, error: `invalid_line_index: ${lineIndex}. Cart has ${items.length} items (0-indexed).` };
     }
-    
+
     const existingItem = items[lineIndex] as any;
     const itemId = String(existingItem.id);
     const itemName = String(existingItem.name || "");
-    
+
     // Remove by setting qty to 0
     try {
       updateQtyFn(itemId, 0);
     } catch (e: any) {
       return { ok: false, error: e?.message || "remove_failed" };
     }
-    
+
     await sleep(40);
-    
+
     const newCart = getCartSummaryFn();
-    
+
     return {
       ok: true,
       data: {
@@ -942,6 +981,31 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
     if (!ok) return { ok: false, error: json?.error || `owner_analytics_failed_${status}` };
     return { ok: true, data: json?.stats || {} };
   };
+  /**
+   * Change the agent's language at runtime.
+   * Calls our server API which PATCHes the ElevenLabs agent config.
+   * The conversation should be restarted after this for the change to take effect.
+   */
+  const changeLanguage: ToolHandler = async (args) => {
+    const language = String(args?.language || "").toLowerCase().trim();
+    if (!language) return { ok: false, error: "missing_language_code" };
+
+    const { ok, json, status } = await safeJsonFetch("/api/voice/elevenlabs/language", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language }),
+    });
+
+    if (!ok) return { ok: false, error: json?.error || `language_change_failed_${status}` };
+    return {
+      ok: true,
+      data: {
+        language: json?.language,
+        languageName: json?.languageName,
+        message: json?.message || `Language switched to ${json?.languageName}. Please restart the conversation.`,
+      },
+    };
+  };
 
   return {
     getShopDetails,
@@ -956,5 +1020,7 @@ export function buildShopTools(opts: BuildShopToolsOptions): ShopTools {
     clearCart,
     getCartSummary,
     getOwnerAnalytics,
+    changeLanguage,
+    getAllInventory,
   };
 }

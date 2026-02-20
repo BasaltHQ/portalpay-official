@@ -1145,6 +1145,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             getShopDetails: tools.getShopDetails,
             getShopRating: tools.getShopRating,
             getInventory: tools.getInventory,
+            searchInventory: tools.getInventory, // Alias for agent tool
             getInventoryPage: tools.getInventoryPage,
             getItemModifiers: tools.getItemModifiers,
             addToCart: tools.addToCart,
@@ -1154,7 +1155,10 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             updateCartItemQty: tools.updateCartItemQty,  // legacy name alias
             clearCart: tools.clearCart,
             getCartSummary: tools.getCartSummary,
+            viewCart: tools.getCartSummary, // Agent alias
             getOwnerAnalytics: tools.getOwnerAnalytics,
+            changeLanguage: tools.changeLanguage,
+            getAllInventory: tools.getAllInventory,
         } as any);
         return uninstall;
     }, [merchantWallet, cleanSlug, isOwner, cartList, subtotal, itemsById]);

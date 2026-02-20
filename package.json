@@ -29,6 +29,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@elevenlabs/react": "^0.14.0",
     "@farcaster/frame-sdk": "^0.1.12",
     "@farcaster/miniapp-sdk": "^0.2.1",
     "@radix-ui/react-dialog": "^1.1.15",

@@ -38,7 +38,7 @@ function normalizeToolName(name: string): string {
   // snake_case to camelCase fallback
   if (lower.includes("_")) {
     return lower.replace(/_([a-z])/g, (_, c) => c.toUpperCase()).replace(/^([a-z])/, (c) => c.toUpperCase()) // PascalCase
-                 .replace(/^([A-Z])/, (c) => c.toLowerCase()); // back to camelCase
+      .replace(/^([A-Z])/, (c) => c.toLowerCase()); // back to camelCase
   }
 
   return n;
@@ -71,14 +71,14 @@ export function installShopAgentDispatcher(tools: ToolsRegistry) {
               wallet,
               args
             })
-          }).catch(() => {});
-        } catch {}
-      } catch {}
+          }).catch(() => { });
+        } catch { }
+      } catch { }
 
       if (!fn || typeof fn !== "function") {
         try {
           console.warn("[Agent] Tool not found:", { name, resolvedName, available: Object.keys(tools) });
-        } catch {}
+        } catch { }
         const payload: ToolResultPayload = { requestId, sessionId, result: { ok: false, error: `tool_not_found:${name}` } };
         window.dispatchEvent(new CustomEvent("pp:agent:tool_result", { detail: payload }));
         return;
@@ -94,7 +94,7 @@ export function installShopAgentDispatcher(tools: ToolsRegistry) {
       try {
         const sc2 = (window as any).__pp_shopContext || {};
         const wallet2 = String(sc2?.merchantWallet || "");
-        console.info("[Agent] Tool call result:", { resolvedName, ok: res.ok, error: res.error, dataPreview: res.ok ? (Array.isArray((res as any).data) ? `array(${(res as any).data.length})` : typeof (res as any).data) : undefined, requestId, sessionId, wallet: wallet2 });
+        console.info("[Agent] Tool call result:", { resolvedName, ok: res.ok, error: res.error, dataPreview: res.ok ? (Array.isArray((res as any).data) ? (res as any).data : typeof (res as any).data) : undefined, requestId, sessionId, wallet: wallet2 });
         try {
           fetch("/api/agent/telemetry", {
             method: "POST",
@@ -107,12 +107,15 @@ export function installShopAgentDispatcher(tools: ToolsRegistry) {
               wallet: wallet2,
               result: { ok: res.ok, error: res.error }
             })
-          }).catch(() => {});
-        } catch {}
-      } catch {}
+          }).catch(() => { });
+        } catch { }
+      } catch { }
 
       const payload: ToolResultPayload = { requestId, sessionId, result: res };
       window.dispatchEvent(new CustomEvent("pp:agent:tool_result", { detail: payload }));
+      if (requestId) {
+        window.dispatchEvent(new CustomEvent(`pp:agent:tool_result:${requestId}`, { detail: payload }));
+      }
     } catch {
       // swallow
     }
@@ -122,7 +125,7 @@ export function installShopAgentDispatcher(tools: ToolsRegistry) {
   return () => {
     try {
       window.removeEventListener("pp:agent:tool_call", handler as EventListener);
-    } catch {}
+    } catch { }
   };
 }
 

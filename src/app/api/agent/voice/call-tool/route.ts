@@ -14,15 +14,16 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(req: NextRequest) {
   try {
-    const { toolName, args } = await req.json().catch(() => ({}) as any);
+    const body = await req.json().catch(() => ({}) as any);
+    const { toolName, args } = body;
     const name = String(toolName || "").trim();
     if (!name) {
       return NextResponse.json({ error: "missing_tool_name" }, { status: 400 });
     }
 
-    // Derive shop context
-    const wallet = String(req.headers.get("x-wallet") || (args?.wallet ?? "") || "").toLowerCase();
-    const slug = String(req.headers.get("x-slug") || (args?.slug ?? "") || "").toLowerCase();
+    // Derive shop context — support both header-based (browser calls) and body-based (ElevenLabs webhook calls)
+    const wallet = String(req.headers.get("x-wallet") || body?.wallet || (args?.wallet ?? "") || "").toLowerCase();
+    const slug = String(req.headers.get("x-slug") || body?.slug || (args?.slug ?? "") || "").toLowerCase();
 
     // Headers for internal calls
     const getInternalHeaders = () => {
