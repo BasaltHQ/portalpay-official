@@ -3,6 +3,11 @@ import { getContainer } from "@/lib/cosmos";
 import { InventoryItem } from "@/types/inventory";
 import KioskClient from "./KioskClient";
 import { ShopConfig } from "@/app/shop/[slug]/ShopClient";
+import { getBrandKey } from "@/config/brands";
+
+// Force fresh data on every request — admin theme changes must appear immediately
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Helper to sanitize theme (duplicated from shop/page.tsx to ensure consistency)
 function sanitizeShopTheme(theme: any) {
@@ -44,8 +49,43 @@ export default async function KioskPage({ params }: { params: Promise<{ id: stri
     console.log(`[KIOSK DEBUG] found ${docs.length} docs for ${cleanSlug}:`, docs.map((c: any) => ({ id: c.id, type: c.type, kiosk: c.kioskEnabled })));
 
     // Categorize docs
-    const shopConfig = docs.find((c: any) => c.type === 'shop_config');
-    const siteConfig = docs.find((c: any) => c.type === 'site_config');
+    let shopConfig = docs.find((c: any) => c.type === 'shop_config');
+
+    // Multiple site_config docs may exist (site:config:basaltsurge, site:config:portalpay, site:config).
+    // Prefer the brand-scoped doc that the admin actually writes to.
+    let brandKey = "basaltsurge";
+    try { brandKey = getBrandKey(); } catch { }
+    const siteConfigs = docs.filter((c: any) => c.type === 'site_config');
+    let siteConfig =
+        siteConfigs.find((c: any) => c.id === `site:config:${brandKey}`) ||  // brand-scoped (admin writes here)
+        siteConfigs.find((c: any) => c.id === 'site:config') ||              // legacy mirror
+        siteConfigs[0];                                                       // any fallback
+
+    console.log(`[KIOSK DEBUG] selected site_config id=${siteConfig?.id}, touchpointThemes=`, JSON.stringify(siteConfig?.touchpointThemes));
+
+    // If we found a shop_config by slug but missed the site_config entirely,
+    // do a targeted point-read using the merchant wallet
+    if (shopConfig && !siteConfig && shopConfig.wallet) {
+        const merchantWallet = String(shopConfig.wallet).toLowerCase();
+        const brandDocId = `site:config:${brandKey}`;
+        const legacyDocId = "site:config";
+
+        try {
+            const { resource } = await container.item(brandDocId, merchantWallet).read<any>();
+            if (resource) {
+                siteConfig = resource;
+                console.log(`[KIOSK DEBUG] fetched site_config via brand doc ${brandDocId} for wallet ${merchantWallet}`);
+            }
+        } catch {
+            try {
+                const { resource } = await container.item(legacyDocId, merchantWallet).read<any>();
+                if (resource) {
+                    siteConfig = resource;
+                    console.log(`[KIOSK DEBUG] fetched site_config via legacy doc ${legacyDocId} for wallet ${merchantWallet}`);
+                }
+            } catch { }
+        }
+    }
 
     if (!shopConfig && !siteConfig) {
         return notFound();
@@ -74,6 +114,8 @@ export default async function KioskPage({ params }: { params: Promise<{ id: stri
         touchpointThemes: { ...(siteConfig?.touchpointThemes || {}), ...(shopConfig?.touchpointThemes || {}) },
         wallet: shopConfig?.wallet || siteConfig?.wallet || docs[0]?.wallet,
     };
+
+    console.log(`[KIOSK DEBUG] touchpointThemes resolved:`, JSON.stringify(mergedConfig.touchpointThemes));
 
     // 2. Security Check: Kiosk Enabled?
     const isKioskEnabled = mergedConfig.kioskEnabled === true;

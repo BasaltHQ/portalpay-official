@@ -2680,7 +2680,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                         </div>
 
                         {selectedItem && (
-                            <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
+                            <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
                                 {(() => {
                                     if (!selectedItem) return null;
                                     return selectedItem.industryPack === 'publishing' ? (
@@ -2689,7 +2689,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                             {/* Left: Cover Image */}
                                             <div className="w-full md:w-5/12 bg-zinc-100 dark:bg-zinc-900/50 relative flex items-center justify-center p-8 border-b md:border-b-0 md:border-r">
                                                 <button
-                                                    className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-black/10 hover:bg-black/20 text-foreground md:hidden flex items-center justify-center transition-colors"
+                                                    className="absolute top-3 right-3 z-[110] h-8 w-8 rounded-full bg-black/10 hover:bg-black/20 text-foreground md:hidden flex items-center justify-center transition-colors"
                                                     onClick={() => setSelectedItem(null)}
                                                 >
                                                     ×
@@ -2866,7 +2866,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                     />
                                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                                                     <button
-                                                        className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm flex items-center justify-center transition-colors"
+                                                        className="absolute top-3 right-3 z-[110] h-8 w-8 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm flex items-center justify-center transition-colors"
                                                         onClick={() => setSelectedItem(null)}
                                                         aria-label="Close"
                                                     >

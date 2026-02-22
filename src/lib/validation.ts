@@ -139,13 +139,16 @@ export const SiteConfigUpdateSchema = z.object({
 
   industryParams: z.record(z.string(), z.any()).optional(),
 
-  touchpointThemes: z.object({
-    terminal: z.string().max(32).optional(),
-    handheld: z.string().max(32).optional(),
-    kiosk: z.string().max(32).optional(),
-    kds: z.string().max(32).optional(),
-    portal: z.string().max(32).optional(),
-  }).optional(),
+  // touchpointThemes: each key accepts a string (legacy theme ID) OR an object
+  // (because the GET handler's applyThemeOverrides normalizes strings into objects
+  // with injected primaryColor/secondaryColor — the admin panel echoes these back)
+  touchpointThemes: z.record(
+    z.string(),
+    z.union([
+      z.string().max(64),
+      z.object({}).passthrough(),
+    ])
+  ).optional(),
 });
 
 /**

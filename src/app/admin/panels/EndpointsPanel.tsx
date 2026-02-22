@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useActiveAccount } from "thirdweb/react";
-import { Copy, ExternalLink, Smartphone, Monitor, Settings } from "lucide-react";
+import { Copy, ExternalLink, Smartphone, Monitor, Settings, Sun, Moon, LayoutGrid, AlignJustify, Newspaper, UtensilsCrossed, Save, Check } from "lucide-react";
 import { useBrand } from "@/contexts/BrandContext";
-import { getAllThemes, getTheme } from "@/lib/themes";
-import type { TouchpointTheme, TouchpointType } from "@/lib/themes";
+import { parseKioskConfig } from "@/lib/themes";
+import type { TouchpointType, KioskTouchpointConfig, ColorMode, KioskLayout } from "@/lib/themes";
 import { ThemeSwatchPreview, ThemePickerModal } from "@/components/admin/TouchpointThemePicker";
 
 
@@ -17,8 +17,14 @@ export default function EndpointsPanel() {
     const brand = useBrand();
     const [slug, setSlug] = useState<string>("");
     const [loading, setLoading] = useState(false);
-    const [touchpointThemes, setTouchpointThemes] = useState<Record<string, string>>({});
+    const [touchpointThemes, setTouchpointThemes] = useState<Record<string, any>>({});
     const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+
+    // Buffered kiosk settings — edited locally, only committed on Save
+    const [pendingColorMode, setPendingColorMode] = useState<ColorMode>("dark");
+    const [pendingLayout, setPendingLayout] = useState<KioskLayout>("grid");
+    const [kioskDirty, setKioskDirty] = useState(false);
 
     // Modal state
     const [pickerOpen, setPickerOpen] = useState<{ type: TouchpointType; label: string } | null>(null);
@@ -29,12 +35,18 @@ export default function EndpointsPanel() {
     const terminalUrl = slug ? `${origin}/terminal/${slug}` : "";
     const handheldUrl = slug ? `${origin}/handheld/${slug}` : "";
 
-    // Helper to copy to clipboard
+    // Parsed kiosk config (server-confirmed state)
+    const kioskConfig: KioskTouchpointConfig = useMemo(
+        () => parseKioskConfig(touchpointThemes["kiosk"]),
+        [touchpointThemes]
+    );
+
     const copyToClipboard = (text: string) => {
         if (!text) return;
         navigator.clipboard.writeText(text);
     };
 
+    // Load config on mount
     useEffect(() => {
         if (!account?.address) return;
         setLoading(true);
@@ -45,15 +57,14 @@ export default function EndpointsPanel() {
                 const j = await r.json();
                 const cfg = j.config || {};
 
-                // For touchpoints, we prefer the wallet address to ensure unique resolution 
-                // regardless of domain/slug configuration on partner containers.
-                // Fallback to slug if strictly needed, but platform behavior defaults to wallet.
-                const bestSlug = account.address; // Force wallet address for touchpoint URLs
-                setSlug(bestSlug);
+                setSlug(account.address);
 
-                // Load existing touchpoint theme selections
                 if (cfg.touchpointThemes && typeof cfg.touchpointThemes === "object") {
                     setTouchpointThemes(cfg.touchpointThemes);
+                    // Seed pending state from saved config
+                    const kiosk = parseKioskConfig(cfg.touchpointThemes["kiosk"]);
+                    setPendingColorMode(kiosk.colorMode || "dark");
+                    setPendingLayout(kiosk.kioskLayout || "grid");
                 }
             } catch {
                 setSlug(account.address.toLowerCase());
@@ -63,27 +74,71 @@ export default function EndpointsPanel() {
         })();
     }, [account?.address]);
 
-    const saveThemeSelection = useCallback(async (touchpoint: string, themeId: string) => {
+    // Mark dirty when pending differs from saved
+    useEffect(() => {
+        const isDiff =
+            pendingColorMode !== (kioskConfig.colorMode || "dark") ||
+            pendingLayout !== (kioskConfig.kioskLayout || "grid");
+        setKioskDirty(isDiff);
+    }, [pendingColorMode, pendingLayout, kioskConfig]);
+
+    // ── Core save function ───────────────────────────────────────────────────
+    const saveTouchpointTheme = useCallback(async (updated: Record<string, any>) => {
         if (!account?.address) return;
         setSaving(true);
-        const updated = { ...touchpointThemes, [touchpoint]: themeId };
         setTouchpointThemes(updated);
-
         try {
-            await fetch(`/api/site/config?wallet=${account.address}`, {
+            const res = await fetch(`/api/site/config?wallet=${account.address}`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "x-wallet": account.address,
-                },
+                headers: { "Content-Type": "application/json", "x-wallet": account.address },
                 body: JSON.stringify({ touchpointThemes: updated }),
             });
+            if (res.ok) {
+                setSaved(true);
+                setKioskDirty(false);
+                setTimeout(() => setSaved(false), 2000);
+            }
         } catch (e) {
             console.error("Failed to save touchpoint theme", e);
         } finally {
             setSaving(false);
         }
-    }, [account?.address, touchpointThemes]);
+    }, [account?.address]);
+
+    // ── Save all pending kiosk settings at once ──────────────────────────────
+    const saveKioskSettings = useCallback(async () => {
+        const current = parseKioskConfig(touchpointThemes["kiosk"]);
+        const updated = {
+            ...touchpointThemes,
+            kiosk: {
+                ...current,
+                colorMode: pendingColorMode,
+                kioskLayout: pendingLayout,
+            },
+        };
+        await saveTouchpointTheme(updated);
+    }, [touchpointThemes, pendingColorMode, pendingLayout, saveTouchpointTheme]);
+
+    // ── Theme picker save (immediate — only called from modal after selection) ─
+    const saveThemeSelection = useCallback(async (touchpoint: string, themeId: string) => {
+        if (touchpoint === "kiosk") {
+            const current = parseKioskConfig(touchpointThemes["kiosk"]);
+            const updated = {
+                ...touchpointThemes,
+                kiosk: {
+                    ...current,
+                    themeId,
+                    // persist current pending settings too
+                    colorMode: pendingColorMode,
+                    kioskLayout: pendingLayout,
+                },
+            };
+            await saveTouchpointTheme(updated);
+        } else {
+            const updated = { ...touchpointThemes, [touchpoint]: themeId };
+            await saveTouchpointTheme(updated);
+        }
+    }, [touchpointThemes, pendingColorMode, pendingLayout, saveTouchpointTheme]);
 
     if (!account) return <div className="p-4 text-muted-foreground">Please connect your wallet.</div>;
 
@@ -137,7 +192,10 @@ export default function EndpointsPanel() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {cards.map(card => {
                     const Icon = card.icon;
-                    const currentTheme = touchpointThemes[card.key];
+                    const isKiosk = card.key === "kiosk";
+                    const currentThemeId = isKiosk
+                        ? kioskConfig.themeId
+                        : (typeof touchpointThemes[card.key] === 'string' ? touchpointThemes[card.key] : undefined);
 
                     return (
                         <div key={card.key} className="border rounded-xl p-5 bg-card relative overflow-hidden group">
@@ -149,11 +207,93 @@ export default function EndpointsPanel() {
                                     <div className="flex items-center gap-2 mb-2">
                                         <Icon className="text-primary" size={20} />
                                         <h3 className="font-semibold">{card.label}</h3>
-                                        <ThemeSwatchPreview themeId={currentTheme} />
+                                        <ThemeSwatchPreview themeId={currentThemeId} />
                                     </div>
                                     <p className="text-xs text-muted-foreground">
                                         {card.desc}
                                     </p>
+
+                                    {/* Kiosk-only: Dark/Light + Layout controls */}
+                                    {isKiosk && (
+                                        <div className="mt-3 space-y-2">
+                                            {/* Color mode toggle */}
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[11px] text-muted-foreground w-14 shrink-0">Mode</span>
+                                                <div className="flex rounded-lg border border-white/10 overflow-hidden">
+                                                    <button
+                                                        onClick={() => setPendingColorMode('dark')}
+                                                        title="Dark mode"
+                                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all ${pendingColorMode === 'dark'
+                                                            ? 'bg-primary/20 text-primary'
+                                                            : 'text-muted-foreground hover:bg-white/5'
+                                                            }`}
+                                                    >
+                                                        <Moon size={12} /> Dark
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setPendingColorMode('light')}
+                                                        title="Light mode"
+                                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border-l border-white/10 transition-all ${pendingColorMode === 'light'
+                                                            ? 'bg-amber-500/20 text-amber-400'
+                                                            : 'text-muted-foreground hover:bg-white/5'
+                                                            }`}
+                                                    >
+                                                        <Sun size={12} /> Light
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Layout type */}
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[11px] text-muted-foreground w-14 shrink-0">Layout</span>
+                                                <div className="flex rounded-lg border border-white/10 overflow-hidden">
+                                                    {([
+                                                        { value: 'grid' as KioskLayout, icon: LayoutGrid, label: 'Grid' },
+                                                        { value: 'list' as KioskLayout, icon: AlignJustify, label: 'List' },
+                                                        { value: 'magazine' as KioskLayout, icon: Newspaper, label: 'Magazine' },
+                                                        { value: 'restaurant' as KioskLayout, icon: UtensilsCrossed, label: 'Restaurant' },
+                                                    ] as const).map(({ value, icon: LIcon, label }, i) => (
+                                                        <button
+                                                            key={value}
+                                                            onClick={() => setPendingLayout(value)}
+                                                            title={`${label} layout`}
+                                                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all ${i > 0 ? 'border-l border-white/10' : ''} ${pendingLayout === value
+                                                                ? 'bg-primary/20 text-primary'
+                                                                : 'text-muted-foreground hover:bg-white/5'
+                                                                }`}
+                                                        >
+                                                            <LIcon size={12} /> {label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Save kiosk config button */}
+                                            <div className="pt-1">
+                                                <button
+                                                    onClick={saveKioskSettings}
+                                                    disabled={saving || (!kioskDirty && !saved)}
+                                                    className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${saved
+                                                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                        : kioskDirty
+                                                            ? 'bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20'
+                                                            : 'bg-muted/50 text-muted-foreground border border-white/10 cursor-default'
+                                                        }`}
+                                                >
+                                                    {saved ? (
+                                                        <><Check size={12} /> Saved!</>
+                                                    ) : saving ? (
+                                                        <><span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" /> Saving...</>
+                                                    ) : (
+                                                        <><Save size={12} /> Save Kiosk Settings</>
+                                                    )}
+                                                </button>
+                                                {kioskDirty && (
+                                                    <p className="text-[10px] text-amber-400/70 mt-1">Unsaved changes</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-2">
@@ -199,7 +339,11 @@ export default function EndpointsPanel() {
                 <ThemePickerModal
                     touchpointType={pickerOpen.type}
                     touchpointLabel={pickerOpen.label}
-                    currentThemeId={touchpointThemes[pickerOpen.type] || "modern"}
+                    currentThemeId={
+                        pickerOpen.type === 'kiosk'
+                            ? kioskConfig.themeId
+                            : (touchpointThemes[pickerOpen.type] || "modern")
+                    }
                     onSelect={async (themeId) => {
                         await saveThemeSelection(pickerOpen.type, themeId);
                         setPickerOpen(null);

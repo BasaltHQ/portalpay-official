@@ -10,7 +10,8 @@ import { useBrand } from "@/contexts/BrandContext";
 import ShopConfigEditor from "@/components/admin/ShopConfigEditor";
 import { ReserveSettings } from "@/components/admin/reserve/ReserveSettings";
 import { TouchpointThemeCards, ThemePickerModal } from "@/components/admin/TouchpointThemePicker";
-import type { TouchpointType } from "@/lib/themes";
+import { parseKioskConfig } from "@/lib/themes";
+import type { TouchpointType, ColorMode, KioskLayout } from "@/lib/themes";
 
 type ClientRequest = {
     id: string;
@@ -1351,6 +1352,13 @@ function TouchpointThemesTab({
     const [saveStatus, setSaveStatus] = useState<string>("");
     const [pickerOpen, setPickerOpen] = useState<{ type: TouchpointType; label: string } | null>(null);
 
+    // Kiosk-specific local state
+    const [pendingColorMode, setPendingColorMode] = useState<ColorMode>("dark");
+    const [pendingLayout, setPendingLayout] = useState<KioskLayout>("grid");
+    const [kioskDirty, setKioskDirty] = useState(false);
+    const [kioskSaving, setKioskSaving] = useState(false);
+    const [kioskSaved, setKioskSaved] = useState(false);
+
     // Load merchant's current touchpoint themes
     useEffect(() => {
         if (!merchantWallet) return;
@@ -1362,6 +1370,10 @@ function TouchpointThemesTab({
                 const cfg = j.config || {};
                 if (cfg.touchpointThemes && typeof cfg.touchpointThemes === "object") {
                     setTouchpointThemes(cfg.touchpointThemes);
+                    // Seed kiosk pending state from saved config
+                    const kiosk = parseKioskConfig(cfg.touchpointThemes["kiosk"]);
+                    setPendingColorMode(kiosk.colorMode || "dark");
+                    setPendingLayout(kiosk.kioskLayout || "grid");
                 }
             } catch (e) {
                 console.error("Failed to load merchant themes", e);
@@ -1371,31 +1383,31 @@ function TouchpointThemesTab({
         })();
     }, [merchantWallet]);
 
-    // Save theme selection (admin acting on behalf of merchant)
-    const saveThemeSelection = useCallback(async (touchpoint: string, themeId: string) => {
+    // Track dirty state for kiosk settings
+    useEffect(() => {
+        const saved = parseKioskConfig(touchpointThemes["kiosk"]);
+        const isDiff =
+            pendingColorMode !== (saved.colorMode || "dark") ||
+            pendingLayout !== (saved.kioskLayout || "grid");
+        setKioskDirty(isDiff);
+    }, [pendingColorMode, pendingLayout, touchpointThemes]);
+
+    // Core save function
+    const saveTouchpointThemes = useCallback(async (updated: Record<string, any>) => {
         if (!merchantWallet || !adminWallet) return;
         setSaving(true);
         setSaveStatus("");
-        // Optimistic update: set to string ID immediately
-        const updated = { ...touchpointThemes, [touchpoint]: themeId };
         setTouchpointThemes(updated);
 
         try {
-            // NOTE: Do NOT send x-wallet header here — the POST handler uses
-            // `rawWallet = headerWallet || queryWallet`, so sending the admin's
-            // wallet as x-wallet would save to the admin's partition instead of
-            // the merchant's. The admin is authenticated via JWT cookies.
             const r = await fetch(`/api/site/config?wallet=${merchantWallet}`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ touchpointThemes: updated }),
             });
             const j = await r.json();
             if (r.ok && !j.error) {
-                setSaveStatus("Theme saved successfully.");
-                // Update state with server response (which might be objectified again) but optimistic string is fine for now
+                setSaveStatus("Saved successfully.");
             } else {
                 setSaveStatus(`Error: ${j.error || "Save failed"}`);
             }
@@ -1406,7 +1418,36 @@ function TouchpointThemesTab({
             setSaving(false);
             setTimeout(() => setSaveStatus(""), 3000);
         }
-    }, [merchantWallet, adminWallet, touchpointThemes]);
+    }, [merchantWallet, adminWallet]);
+
+    // Save theme selection — deep-merges kiosk config for kiosk touchpoint
+    const saveThemeSelection = useCallback(async (touchpoint: string, themeId: string) => {
+        if (touchpoint === "kiosk") {
+            const current = parseKioskConfig(touchpointThemes["kiosk"]);
+            const updated = {
+                ...touchpointThemes,
+                kiosk: { ...current, themeId, colorMode: pendingColorMode, kioskLayout: pendingLayout },
+            };
+            await saveTouchpointThemes(updated);
+        } else {
+            await saveTouchpointThemes({ ...touchpointThemes, [touchpoint]: themeId });
+        }
+    }, [touchpointThemes, pendingColorMode, pendingLayout, saveTouchpointThemes]);
+
+    // Save kiosk settings (color mode + layout)
+    const saveKioskSettings = useCallback(async () => {
+        setKioskSaving(true);
+        const current = parseKioskConfig(touchpointThemes["kiosk"]);
+        const updated = {
+            ...touchpointThemes,
+            kiosk: { ...current, colorMode: pendingColorMode, kioskLayout: pendingLayout },
+        };
+        await saveTouchpointThemes(updated);
+        setKioskDirty(false);
+        setKioskSaved(true);
+        setKioskSaving(false);
+        setTimeout(() => setKioskSaved(false), 2000);
+    }, [touchpointThemes, pendingColorMode, pendingLayout, saveTouchpointThemes]);
 
     if (loading) {
         return (
@@ -1430,6 +1471,68 @@ function TouchpointThemesTab({
                 onOpenPicker={(type, label) => setPickerOpen({ type, label })}
                 saving={saving}
             />
+
+            {/* ── Kiosk Settings (Color Mode + Layout) ─────────────────── */}
+            <div className="mt-4 p-4 rounded-lg border border-white/5 bg-black/20 space-y-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h4 className="text-sm font-medium text-white">Kiosk Display Settings</h4>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Color mode and layout for the kiosk ordering screen.</p>
+                    </div>
+                    <button
+                        onClick={saveKioskSettings}
+                        disabled={!kioskDirty || kioskSaving}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${kioskSaved
+                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                            : kioskDirty
+                                ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/20 hover:bg-emerald-400"
+                                : "bg-white/5 text-muted-foreground border border-white/10 cursor-not-allowed"
+                            }`}
+                    >
+                        {kioskSaving ? "Saving…" : kioskSaved ? "✓ Saved" : kioskDirty ? "Save Kiosk Settings" : "No Changes"}
+                    </button>
+                </div>
+
+                {/* Color Mode */}
+                <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-wider font-mono text-zinc-500">Color Mode</label>
+                    <div className="flex gap-2">
+                        {(["dark", "light"] as const).map(mode => (
+                            <button
+                                key={mode}
+                                onClick={() => setPendingColorMode(mode)}
+                                className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all capitalize flex items-center justify-center gap-2 ${pendingColorMode === mode
+                                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-sm"
+                                    : "bg-black/20 text-zinc-400 border border-white/5 hover:bg-white/5"
+                                    }`}
+                            >
+                                <span>{mode === "dark" ? "🌙" : "☀️"}</span>
+                                {mode}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Layout */}
+                <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-wider font-mono text-zinc-500">Layout</label>
+                    <div className="flex gap-2">
+                        {(["grid", "list", "magazine", "restaurant"] as const).map(l => (
+                            <button
+                                key={l}
+                                onClick={() => setPendingLayout(l)}
+                                className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all capitalize flex items-center justify-center gap-2 ${pendingLayout === l
+                                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-sm"
+                                    : "bg-black/20 text-zinc-400 border border-white/5 hover:bg-white/5"
+                                    }`}
+                            >
+                                <span>{l === "grid" ? "⊞" : l === "list" ? "☰" : l === "magazine" ? "📰" : "🍽️"}</span>
+                                {l}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
 
             {saveStatus && (
                 <div className={`text-xs ${saveStatus.startsWith("Error") ? "text-red-400" : "text-emerald-400"}`}>

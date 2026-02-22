@@ -1496,16 +1496,38 @@ export async function POST(req: NextRequest) {
       candidate.industryParams = body.industryParams;
     }
 
-    // Optional touchpointThemes update (per-touchpoint theme IDs)
+    // Optional touchpointThemes update (per-touchpoint theme IDs or rich config objects)
+    // NOTE: The GET handler's applyThemeOverrides normalizes ALL entries to objects
+    // (injecting primaryColor/secondaryColor). The admin panel echoes those back.
+    // For non-kiosk touchpoints we extract just the themeId string for clean storage.
+    // For kiosk, we keep the rich config (themeId + colorMode + kioskLayout).
     if (body && typeof body.touchpointThemes === "object" && body.touchpointThemes) {
-      const valid: Record<string, string> = {};
       const allowed = ["terminal", "handheld", "kiosk", "kds", "portal"];
+      const existing = (prevConfig as any).touchpointThemes || {};
+      const merged: Record<string, any> = { ...existing };
       for (const key of allowed) {
-        if (typeof body.touchpointThemes[key] === "string") {
-          valid[key] = body.touchpointThemes[key];
+        const incoming = body.touchpointThemes[key];
+        if (incoming === undefined || incoming === null) continue;
+        if (typeof incoming === "string") {
+          merged[key] = incoming;
+        } else if (typeof incoming === "object") {
+          if (key === "kiosk") {
+            // Kiosk: deep-merge, but strip runtime-injected fields
+            const prev = typeof existing[key] === "object" && existing[key] !== null ? existing[key] : {};
+            const { primaryColor, secondaryColor, ...kioskFields } = incoming;
+            merged[key] = { ...prev, ...kioskFields };
+          } else {
+            // Non-kiosk: GET handler turned "modern" → { themeId: "modern", primaryColor: "..." }
+            // We only want to persist the themeId string
+            const tid = incoming.themeId;
+            if (typeof tid === "string" && tid) {
+              merged[key] = tid;
+            }
+            // If no themeId found, keep whatever was stored before (skip)
+          }
         }
       }
-      candidate.touchpointThemes = Object.keys(valid).length > 0 ? valid : undefined;
+      candidate.touchpointThemes = Object.keys(merged).length > 0 ? merged : undefined;
     }
 
     const normalized = normalizeSiteConfig(candidate);

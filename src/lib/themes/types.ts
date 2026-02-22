@@ -38,15 +38,32 @@ export interface TouchpointTheme {
     buttonStyle: "rounded" | "sharp" | "pill";
 }
 
+/** Color mode for touchpoints that support it (currently: kiosk) */
+export type ColorMode = 'dark' | 'light';
+
+/** Kiosk layout style */
+export type KioskLayout = 'grid' | 'list' | 'magazine' | 'restaurant';
+
+/**
+ * Rich config object stored for kiosk touchpoint.
+ * Replaces the plain string theme ID with a full config object.
+ */
+export interface KioskTouchpointConfig {
+    themeId: string;
+    colorMode?: ColorMode;
+    kioskLayout?: KioskLayout;
+}
+
 /**
  * Per-touchpoint theme override stored in ShopConfig.
  * Each value is a theme ID (e.g. "minimal", "elegant").
  * Omitted keys fall back to the merchant / partner / platform default.
+ * kiosk accepts either a legacy string or a KioskTouchpointConfig object.
  */
 export interface TouchpointThemeConfig {
     terminal?: string;
     handheld?: string;
-    kiosk?: string;
+    kiosk?: string | KioskTouchpointConfig;
     kds?: string;
     portal?: string;
 }
