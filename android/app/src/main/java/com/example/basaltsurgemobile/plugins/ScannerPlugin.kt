@@ -46,7 +46,7 @@ class ScannerPlugin : Plugin() {
         when (DeviceProfile.type) {
             DeviceType.TOPWISE_T6D -> {
                try {
-                   HardwareRegistry.topWiseManager?.camera?.stopScan()
+                   HardwareRegistry.topWiseManager?.cameraManager?.stopScan()
                    activeCall = null
                    call.resolve()
                } catch (e: Exception) {
@@ -58,7 +58,7 @@ class ScannerPlugin : Plugin() {
     }
 
     private fun startTopWiseScan() {
-        val camera = HardwareRegistry.topWiseManager?.camera
+        val camera = HardwareRegistry.topWiseManager?.cameraManager
         if (camera == null) {
             activeCall?.reject("TopWise camera scanner not available")
             return

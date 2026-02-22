@@ -47,9 +47,9 @@ class KioskPrinterPlugin : Plugin() {
         }
 
         try {
-            api?.printText(text)
+            api?.printString(text)
             // ESC/POS command to cut paper
-            api?.printEscCommand(byteArrayOf(0x1D, 0x56, 0x41, 0x10)) 
+            api?.cutPaper() 
             
             val res = JSObject()
             res.put("success", true)
@@ -77,8 +77,8 @@ class KioskPrinterPlugin : Plugin() {
             val decodedString = Base64.decode(base64Data.substringAfter(","), Base64.DEFAULT)
             val bmp = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
 
-            api?.printBitmap(bmp)
-            api?.printEscCommand(byteArrayOf(0x1D, 0x56, 0x41, 0x10))
+            api?.printTwoImage(bmp)
+            api?.cutPaper()
             
             val res = JSObject()
             res.put("success", true)

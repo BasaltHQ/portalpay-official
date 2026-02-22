@@ -94,7 +94,7 @@ class TopWisePrinterPlugin : Plugin() {
 
     private fun getPrinter(): AidlPrinter? {
         val manager = HardwareRegistry.topWiseManager
-        return manager?.printer
+        return manager?.printManager
     }
     
     private fun resizeBitmap(bitmap: Bitmap, targetWidth: Int): Bitmap {

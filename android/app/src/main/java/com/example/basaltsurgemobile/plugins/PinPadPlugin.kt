@@ -28,7 +28,7 @@ class PinPadPlugin : Plugin() {
             return
         }
 
-        val pinpad = HardwareRegistry.topWiseManager?.pinpad
+        val pinpad = HardwareRegistry.topWiseManager?.getPinpadManager(0)
         if (pinpad == null) {
             call.reject("TopWise PIN Pad not available")
             return
@@ -39,16 +39,10 @@ class PinPadPlugin : Plugin() {
         val pan = call.getString("pan") ?: ("0000000000000000")
         
         try {
-            // Set expected key parameters (typically 0 or 1 for Master/Session keys)
-            pinpad.setKeySystem(0)
-            
-            val pinLimit = byteArrayOf(4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
-            
-            // Format PAN block for PIN encryption
-            val panBlock = getPanBlock(pan)
+            val bundle = android.os.Bundle()
             
             // 0: Master Key Index, 1: PIN Key Index 
-            pinpad.getPin(0, 1, panBlock, pinLimit, 60000, object : GetPinListener.Stub() {
+            pinpad.getPin(bundle, object : GetPinListener.Stub() {
                 override fun onInputKey(len: Int, keyMsg: String?) {
                     // Update UI with asterisk count
                     Log.d(TAG, "PIN input length: $len")

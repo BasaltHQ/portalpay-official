@@ -30,13 +30,13 @@ class DeviceFeedbackPlugin : Plugin() {
                 
                 try {
                     // Turn on Green LED (1: Blue, 2: Yellow, 3: Green, 4: Red)
-                    led?.turnOn(3)
+                    led?.setLed(3, true)
                     buzzer?.beep(1, 200)
                     
                     // Turn off after 1 second natively, or just leave it on for 1 long beep.
                     Thread {
                         Thread.sleep(1000)
-                        led?.turnOff(3)
+                        led?.setLed(3, false)
                     }.start()
                     call.resolve()
                 } catch (e: Exception) {
@@ -46,13 +46,12 @@ class DeviceFeedbackPlugin : Plugin() {
             DeviceType.KDS_21_5 -> {
                 try {
                     // KDS uses BellPrinterAPI for buzzing order alerts
-                    val bell = BellPrinterAPI.getInstance()
+                    val bell = BellPrinterAPI.getInstance(context)
                     bell.init()
-                    bell.open()
                     Thread {
                         // Quick buzz
+                        bell.sendOrder(byteArrayOf(0x1B, 0x42, 0x02, 0x01))
                         Thread.sleep(500)
-                        bell.close()
                     }.start()
                     call.resolve()
                 } catch (e: Exception) {
@@ -83,12 +82,12 @@ class DeviceFeedbackPlugin : Plugin() {
                 
                 try {
                     // Turn on Red LED (4) and long beep 
-                    led?.turnOn(4)
+                    led?.setLed(4, true)
                     buzzer?.beep(3, 150) // 3 quick beeps
                     
                     Thread {
                         Thread.sleep(1000)
-                        led?.turnOff(4)
+                        led?.setLed(4, false)
                     }.start()
                     call.resolve()
                 } catch (e: Exception) {
@@ -97,13 +96,12 @@ class DeviceFeedbackPlugin : Plugin() {
             }
             DeviceType.KDS_21_5 -> {
                 try {
-                    val bell = BellPrinterAPI.getInstance()
+                    val bell = BellPrinterAPI.getInstance(context)
                     bell.init()
-                    bell.open()
                     Thread {
                         // Longer buzz
+                        bell.sendOrder(byteArrayOf(0x1B, 0x42, 0x04, 0x01))
                         Thread.sleep(1500)
-                        bell.close()
                     }.start()
                     call.resolve()
                 } catch (e: Exception) {

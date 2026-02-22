@@ -44,9 +44,9 @@ class CardReaderPlugin : Plugin() {
                 override fun onFindMagCard(trackData: TrackData?) {
                     val res = JSObject()
                     res.put("type", "MAGSTRIPE")
-                    res.put("track1", trackData?.track1)
-                    res.put("track2", trackData?.track2)
-                    res.put("track3", trackData?.track3)
+                    res.put("track1", trackData?.firstTrackData)
+                    res.put("track2", trackData?.secondTrackData)
+                    res.put("track3", trackData?.thirdTrackData)
                     activeCall?.resolve(res)
                     activeCall = null
                 }
@@ -108,5 +108,4 @@ class CardReaderPlugin : Plugin() {
             call.reject("Failed to stop check: ${e.message}")
         }
     }
-}
 }
