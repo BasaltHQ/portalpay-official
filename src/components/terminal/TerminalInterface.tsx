@@ -165,6 +165,15 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
         return () => clearInterval(timer);
     }, [qrOpen, selected, merchantWallet, totalConverted, terminalCurrency]);
 
+    // Portal URL for QR
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const portalUrl = useMemo(() => {
+        if (!selected) return "";
+        // tid=1 tells the portal this came from the terminal touchpoint (0=kiosk,1=terminal,2=handheld,3=kds)
+        // cur= passes the terminal's selected currency so the portal can display in the same currency
+        return `${origin}/portal/${encodeURIComponent(selected.receiptId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=1&cur=${encodeURIComponent(terminalCurrency)}`;
+    }, [selected, merchantWallet, origin, terminalCurrency]);
+
     // Push QR to Secondary Display
     useEffect(() => {
         if (qrOpen && portalUrl) {
@@ -243,15 +252,6 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
             setReportLoading(false);
         }
     }
-
-    // Portal URL for QR
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const portalUrl = useMemo(() => {
-        if (!selected) return "";
-        // tid=1 tells the portal this came from the terminal touchpoint (0=kiosk,1=terminal,2=handheld,3=kds)
-        // cur= passes the terminal's selected currency so the portal can display in the same currency
-        return `${origin}/portal/${encodeURIComponent(selected.receiptId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=1&cur=${encodeURIComponent(terminalCurrency)}`;
-    }, [selected, merchantWallet, origin, terminalCurrency]);
 
     const isManagerOrKeyholder = employeeRole === 'manager' || employeeRole === 'keyholder';
 
