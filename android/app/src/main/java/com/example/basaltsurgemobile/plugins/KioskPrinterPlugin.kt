@@ -49,7 +49,7 @@ class KioskPrinterPlugin : Plugin() {
         try {
             api?.printString(text)
             // ESC/POS command to cut paper
-            api?.cutPaper() 
+            api?.fullCut() 
             
             val res = JSObject()
             res.put("success", true)
@@ -78,7 +78,7 @@ class KioskPrinterPlugin : Plugin() {
             val bmp = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
 
             api?.printTwoImage(bmp)
-            api?.cutPaper()
+            api?.fullCut()
             
             val res = JSObject()
             res.put("success", true)

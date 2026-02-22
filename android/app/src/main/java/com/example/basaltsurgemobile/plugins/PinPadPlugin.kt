@@ -91,7 +91,7 @@ class PinPadPlugin : Plugin() {
     fun cancelPin(call: PluginCall) {
         if (DeviceProfile.type == DeviceType.TOPWISE_T6D) {
             try {
-                HardwareRegistry.topWiseManager?.pinpad?.stopGetPin()
+                HardwareRegistry.topWiseManager?.getPinpadManager(0)?.stopGetPin()
                 call.resolve()
             } catch (e: Exception) {
                 call.reject("Failed to stop PIN Pad")
