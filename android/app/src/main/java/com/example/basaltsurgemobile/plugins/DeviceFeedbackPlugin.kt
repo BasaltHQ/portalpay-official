@@ -12,7 +12,7 @@ import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
-import com.common.apiutil.printer.BellPrinterAPI
+import com.szsicod.print.escpos.BellPrinterAPI
 
 @CapacitorPlugin(name = "DeviceFeedback")
 class DeviceFeedbackPlugin : Plugin() {

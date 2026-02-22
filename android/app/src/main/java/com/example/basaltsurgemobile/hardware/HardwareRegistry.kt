@@ -4,14 +4,14 @@ import android.content.Context
 import android.util.Log
 
 // Type-safe null-aware wrappers for the external SDKs
-import com.topwise.cloudpos.aidl.AidlDeviceServiceManager
+import com.topwise.cloudpos.service.DeviceServiceManager
 
 object HardwareRegistry {
     private const val TAG = "HardwareRegistry"
     private var isInitialized = false
 
     // SDK Managers
-    var topWiseManager: AidlDeviceServiceManager? = null
+    var topWiseManager: DeviceServiceManager? = null
         private set
 
     fun initialize(context: Context) {
@@ -33,21 +33,11 @@ object HardwareRegistry {
     }
 
     private fun initTopWise(context: Context) {
-        Log.d(TAG, "Binding TopWise AidlDeviceServiceManager...")
-        val manager = AidlDeviceServiceManager.getInstance()
-        manager.bindDeviceService(context, object : AidlDeviceServiceManager.DeviceServiceManagerListener {
-            override fun onConnected() {
-                Log.i(TAG, "TopWise DeviceService bound successfully.")
-                topWiseManager = manager
-                isInitialized = true
-            }
-
-            override fun onDisconnected() {
-                Log.w(TAG, "TopWise DeviceService disconnected.")
-                topWiseManager = null
-                isInitialized = false
-            }
-        })
+        Log.d(TAG, "Initializing TopWise DeviceServiceManager...")
+        val manager = DeviceServiceManager.getInstance()
+        manager.init(context)
+        topWiseManager = manager
+        isInitialized = true
     }
 
     private fun initIcod(context: Context) {

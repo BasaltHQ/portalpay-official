@@ -11,7 +11,7 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 
 // ICOD SDK namespace
-import com.common.apiutil.printer.PrinterAPI
+import com.szsicod.print.escpos.PrinterAPI
 
 @CapacitorPlugin(name = "KioskPrinter")
 class KioskPrinterPlugin : Plugin() {

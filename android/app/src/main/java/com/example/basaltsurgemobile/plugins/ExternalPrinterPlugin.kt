@@ -18,7 +18,7 @@ class ExternalPrinterPlugin : Plugin() {
     @PluginMethod
     fun printReceipt(call: PluginCall) {
         val ipAddress = call.getString("ipAddress")
-        val port = call.getInt("port", 9100)
+        val port = call.getInt("port", 9100) ?: 9100
         val text = call.getString("text")
 
         if (ipAddress == null || text == null) {

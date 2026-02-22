@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.example.basaltsurgemobile"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.basaltsurgemobile"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         // Read version from project properties (passed from CI/CD)
         // Use toString() to ensure safe conversion regardless of type
         val vCode = project.findProperty("VERSION_CODE")?.toString()?.toIntOrNull() ?: 1
@@ -45,8 +45,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     buildFeatures {
         compose = true
@@ -65,7 +65,9 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     // Capacitor and local SDKs
     implementation(project(":capacitor-android"))
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar", "*.aar"))))
+    implementation(fileTree("libs") {
+        include("*.jar", "*.aar")
+    })
     
     // Capacitor requires AppCompat and CoordinatorLayout
     implementation("androidx.appcompat:appcompat:1.6.1")

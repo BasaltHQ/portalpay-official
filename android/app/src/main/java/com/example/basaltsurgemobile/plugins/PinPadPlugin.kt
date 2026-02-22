@@ -71,6 +71,11 @@ class PinPadPlugin : Plugin() {
                     activeCall = null
                 }
 
+                override fun onTimeout() {
+                    activeCall?.reject("PIN entry timed out")
+                    activeCall = null
+                }
+
                 override fun onStopGetPin() {
                     activeCall?.reject("PIN entry stopped")
                     activeCall = null

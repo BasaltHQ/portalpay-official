@@ -36,11 +36,9 @@ class TopWisePrinterPlugin : Plugin() {
         }
 
         try {
-            val template = PrintTemplate.getInstance()
-            template.init(context)
-            template.addText(PrintTemplate.TextUnit(text))
+            printer.addText(0, 0, 0, text)
             
-            printer.print(template, object : AidlPrinterListener.Stub() {
+            printer.start(object : AidlPrinterListener.Stub() {
                 override fun onError(error: Int) {
                     call.reject("Print error: $error")
                 }
@@ -73,15 +71,12 @@ class TopWisePrinterPlugin : Plugin() {
         try {
             val decodedString = Base64.decode(base64Data.substringAfter(","), Base64.DEFAULT)
             var bmp = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
-
-            val template = PrintTemplate.getInstance()
-            template.init(context)
             
             // T6D uses 384px width for 58mm paper
             bmp = resizeBitmap(bmp, 384)
-            template.addImage(PrintTemplate.ImageUnit(bmp, 384, bmp.height))
+            printer.addImage(0, bmp)
             
-            printer.print(template, object : AidlPrinterListener.Stub() {
+            printer.start(object : AidlPrinterListener.Stub() {
                 override fun onError(error: Int) {
                     call.reject("Image print error: $error")
                 }

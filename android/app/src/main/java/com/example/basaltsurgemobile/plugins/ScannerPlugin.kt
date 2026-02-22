@@ -10,7 +10,6 @@ import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import com.topwise.cloudpos.aidl.camera.AidlCameraScanCode
-import com.common.apiutil.scanner.ScannerAPI
 
 @CapacitorPlugin(name = "HardwareScanner")
 class ScannerPlugin : Plugin() {
@@ -20,19 +19,9 @@ class ScannerPlugin : Plugin() {
     }
 
     private var activeCall: PluginCall? = null
-    private var icodScanner: ScannerAPI? = null
 
     override fun load() {
         super.load()
-        if (DeviceProfile.type == DeviceType.KIOSK_H2150B) {
-            try {
-                icodScanner = ScannerAPI.getInstance()
-                icodScanner?.init()
-                Log.d(TAG, "ICOD Scanner API initialized")
-            } catch (e: Exception) {
-                Log.e(TAG, "ICOD Scanner init failed", e)
-            }
-        }
     }
 
     @PluginMethod
@@ -41,7 +30,11 @@ class ScannerPlugin : Plugin() {
 
         when (DeviceProfile.type) {
             DeviceType.TOPWISE_T6D -> startTopWiseScan()
-            DeviceType.KIOSK_H2150B -> startIcodScan()
+            DeviceType.KIOSK_H2150B -> {
+                // ICOD kiosk scanner usually functions via a USB wedge keyboard fallback,
+                // meaning the scanner simply acts as a keyboard and types out the scanned text.
+                call.reject("Use keyboard wedge listener for ICOD hardware scanner")
+            }
             else -> {
                 call.reject("Hardware scanner not supported on this device.")
             }
@@ -59,15 +52,6 @@ class ScannerPlugin : Plugin() {
                } catch (e: Exception) {
                    call.reject("Failed to stop TopWise scanner", e)
                }
-            }
-            DeviceType.KIOSK_H2150B -> {
-                try {
-                    icodScanner?.stopScan()
-                    activeCall = null
-                    call.resolve()
-                } catch (e: Exception) {
-                    call.reject("Failed to stop ICOD scanner", e)
-                }
             }
             else -> call.resolve()
         }
@@ -102,6 +86,15 @@ class ScannerPlugin : Plugin() {
                     activeCall?.reject("Scanner cancelled")
                     activeCall = null
                 }
+                
+                override fun onTimeout() {
+                    activeCall?.reject("Scanner timed out")
+                    activeCall = null
+                }
+                
+                override fun onPreview(p0: ByteArray?, p1: Int, p2: Int) {
+                    // Ignore preview payloads requested by SDK
+                }
             })
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start TopWise scanner", e)
@@ -109,22 +102,5 @@ class ScannerPlugin : Plugin() {
         }
     }
 
-    private fun startIcodScan() {
-        if (icodScanner == null) {
-            activeCall?.reject("ICOD Scanner API not initialized")
-            return
-        }
-        
-        try {
-            icodScanner?.startScan { result ->
-                val ret = JSObject()
-                ret.put("value", result)
-                activeCall?.resolve(ret)
-                activeCall = null
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start ICOD scanner", e)
-            activeCall?.reject("Exception starting ICOD scanner: ${e.message}")
-        }
-    }
+
 }

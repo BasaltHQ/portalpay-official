@@ -9,12 +9,8 @@ import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
-import com.topwise.cloudpos.aidl.emv.level2.AidlAmex
-import com.topwise.cloudpos.aidl.emv.level2.AidlPaypass
-import com.topwise.cloudpos.aidl.emv.level2.AidlPaywave
-import com.topwise.cloudpos.aidl.emv.level2.EmvTerminalInfo
-import com.topwise.cloudpos.aidl.emv.level2.AidlEmvL2
-import com.topwise.cloudpos.aidl.emv.level2.EmvL2Listener
+import com.topwise.cloudpos.aidl.card.AidlCheckCardListener
+import com.topwise.cloudpos.aidl.magcard.TrackData
 
 @CapacitorPlugin(name = "CardReader")
 class CardReaderPlugin : Plugin() {
@@ -32,12 +28,9 @@ class CardReaderPlugin : Plugin() {
             return
         }
 
-        val emv = HardwareRegistry.topWiseManager?.emvL2
-        val ic = HardwareRegistry.topWiseManager?.icCard
-        val rf = HardwareRegistry.topWiseManager?.rfCard
-        val mag = HardwareRegistry.topWiseManager?.magCard
+        val checkCard = HardwareRegistry.topWiseManager?.checkCard
 
-        if (emv == null || ic == null || rf == null || mag == null) {
+        if (checkCard == null) {
             call.reject("TopWise Card Readers not available")
             return
         }
@@ -45,28 +38,35 @@ class CardReaderPlugin : Plugin() {
         activeCall = call
         
         try {
-            // Enable all 3 readers simultaneously
-            // 1: MAG, 2: IC, 4: RF.  1 | 2 | 4 = 7
-            emv.checkCard(true, true, true, 30, object : EmvL2Listener.Stub() {
+            // Enable all 3 readers simultaneously: MAG, IC, RF
+            checkCard.checkCard(true, true, true, 30000, object : AidlCheckCardListener.Stub() {
                 
-                override fun onFindCard(cardType: Int, track2: String?, pan: String?, expireDate: String?) {
+                override fun onFindMagCard(trackData: TrackData?) {
                     val res = JSObject()
-                    res.put("type", when (cardType) {
-                        1 -> "MAGSTRIPE"
-                        2 -> "IC"
-                        4 -> "NFC"
-                        else -> "UNKNOWN"
-                    })
-                    res.put("pan", pan)
-                    res.put("expireDate", expireDate)
-                    res.put("track2", track2)
-                    
+                    res.put("type", "MAGSTRIPE")
+                    res.put("track1", trackData?.track1)
+                    res.put("track2", trackData?.track2)
+                    res.put("track3", trackData?.track3)
                     activeCall?.resolve(res)
                     activeCall = null
                 }
 
-                override fun onError(error: Int, message: String?) {
-                    activeCall?.reject("Card detect error $error: $message")
+                override fun onSwipeCardFail() {
+                    activeCall?.reject("Card swipe failed")
+                    activeCall = null
+                }
+
+                override fun onFindICCard() {
+                    val res = JSObject()
+                    res.put("type", "IC")
+                    activeCall?.resolve(res)
+                    activeCall = null
+                }
+
+                override fun onFindRFCard() {
+                    val res = JSObject()
+                    res.put("type", "NFC")
+                    activeCall?.resolve(res)
                     activeCall = null
                 }
 
@@ -74,16 +74,16 @@ class CardReaderPlugin : Plugin() {
                     activeCall?.reject("Card detect timeout")
                     activeCall = null
                 }
-                
-                // EmvL2 requires implementing many empty callbacks for standard EMV flow
-                // We just need basic card detection for this phase
-                override fun onRequestAmount() {}
-                override fun onRequestPin(isOnline: Boolean, retryCount: Int) {}
-                override fun onRequestSelectApplication(apps: List<String>?) {}
-                override fun onRequestFinalConfirm() {}
-                override fun onRequestOnlineProcess(tlv: String?) {}
-                override fun onVerifyOfflinePinResult(isVerifyPass: Boolean, retryCount: Int) {}
-                override fun onTransactionResult(result: Int, tlv: String?) {}
+
+                override fun onCanceled() {
+                    activeCall?.reject("Card detect cancelled")
+                    activeCall = null
+                }
+
+                override fun onError(error: Int) {
+                    activeCall?.reject("Card detect error: $error")
+                    activeCall = null
+                }
             })
         } catch (e: Exception) {
             Log.e(TAG, "Failed card detect", e)
@@ -100,7 +100,7 @@ class CardReaderPlugin : Plugin() {
         }
         
         try {
-            HardwareRegistry.topWiseManager?.emvL2?.stopCheckCard()
+            HardwareRegistry.topWiseManager?.checkCard?.cancelCheckCard()
             activeCall?.reject("Cancelled by user")
             activeCall = null
             call.resolve()
@@ -108,4 +108,5 @@ class CardReaderPlugin : Plugin() {
             call.reject("Failed to stop check: ${e.message}")
         }
     }
+}
 }
