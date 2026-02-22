@@ -7,6 +7,7 @@ import { fetchEthRates, fetchUsdRates } from "@/lib/eth";
 import { QRCode } from "react-qrcode-logo";
 import { createPortal } from "react-dom";
 import { getTheme } from "@/lib/themes";
+import { useQRCodeDisplay, useReceiptPrinter } from "@/lib/hardware/useHardwareHooks";
 
 // Shared Logic extracted from TerminalPage
 // Props allow overriding the "Operator" (Merchant) vs the Connected Wallet
@@ -40,6 +41,9 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
     // Rates
     const [rates, setRates] = useState<Record<string, number>>({});
     const [usdRates, setUsdRates] = useState<Record<string, number>>({});
+
+    const { pushQRToCustomerScreen, clearCustomerScreen } = useQRCodeDisplay();
+    const { printDocument, hasPrinter } = useReceiptPrinter();
 
     useEffect(() => {
         Promise.all([fetchEthRates(), fetchUsdRates()])
@@ -160,6 +164,36 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
         }
         return () => clearInterval(timer);
     }, [qrOpen, selected, merchantWallet, totalConverted, terminalCurrency]);
+
+    // Push QR to Secondary Display
+    useEffect(() => {
+        if (qrOpen && portalUrl) {
+            // Need a slight delay to allow the QR canvas to render
+            const timer = setTimeout(() => {
+                const canvasElements = document.getElementsByTagName('canvas');
+                let foundCanvas = false;
+                for (let i = 0; i < canvasElements.length; i++) {
+                    const canvas = canvasElements[i];
+                    if (canvas && canvas.width > 0) {
+                        try {
+                            const base64 = canvas.toDataURL("image/png");
+                            pushQRToCustomerScreen(portalUrl, base64.split(',')[1] || base64).catch(console.error);
+                            foundCanvas = true;
+                            break;
+                        } catch (e) {
+                            console.error("Canvas toDataURL failed", e);
+                        }
+                    }
+                }
+                if (!foundCanvas) {
+                    pushQRToCustomerScreen(portalUrl).catch(console.error);
+                }
+            }, 300);
+            return () => clearTimeout(timer);
+        } else {
+            clearCustomerScreen().catch(console.error);
+        }
+    }, [qrOpen, portalUrl, pushQRToCustomerScreen, clearCustomerScreen]);
 
     // End of Day / Summary Logic
     const [summaryOpen, setSummaryOpen] = useState(false);
@@ -403,7 +437,25 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
 
                             <div className="grid grid-cols-3 gap-3">
                                 <button
-                                    onClick={() => window.print()}
+                                    onClick={async () => {
+                                        if (hasPrinter && selected) {
+                                            const bodyText = `${brandName || "Terminal"}\n` +
+                                                (employeeName ? `Op: ${employeeName.split('•')[0].trim()}\n` : "") +
+                                                `--------------------------------\n` +
+                                                `Time: ${new Date().toLocaleString()}\n` +
+                                                `Rcpt: ${selected.receiptId.slice(0, 8)}\n` +
+                                                `--------------------------------\n` +
+                                                `${itemLabel || "Sale"}    ${formatCurrency(totalConverted, terminalCurrency)}\n` +
+                                                `--------------------------------\n` +
+                                                `Scan QR at:\n` +
+                                                `${window.location.host}/portal/${selected.receiptId.slice(0, 8)}\n\n`;
+
+                                            // You can pass externalIp: "192.168.x.x" in the second argument if stored in local settings
+                                            await printDocument({ text: bodyText });
+                                        } else {
+                                            window.print();
+                                        }
+                                    }}
                                     className="px-4 py-3 tp-btn font-semibold transition-colors"
                                     style={{ border: '1px solid var(--tp-border)', color: 'var(--tp-text-primary)' }}
                                 >
