@@ -12,15 +12,16 @@ pluginManagement {
     }
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()
-        maven {
-            url = uri("https://maven.mozilla.org/maven2/")
-        }
     }
 }
 
 rootProject.name = "BasaltSurge Mobile"
 include(":app")
+
+// Capacitor Android Module
+include(":capacitor-android")
+project(":capacitor-android").projectDir = File("../node_modules/@capacitor/android/capacitor")

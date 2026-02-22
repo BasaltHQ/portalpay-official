@@ -1,0 +1,9 @@
+{
+    "appId": "com.example.basaltsurgemobile",
+    "appName": "BasaltSurge",
+    "webDir": "public",
+    "bundledWebRuntime": false,
+    "server": {
+        "cleartext": true
+    }
+}

@@ -45,6 +45,35 @@ jobs:
       #   with:
       #     build-root-directory: android
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies and Sync Capacitor
+        env:
+          APP_NAME: ${{ github.event.inputs.appName }}
+          BASE_DOMAIN: ${{ github.event.inputs.baseDomain }}
+        working-directory: .
+        run: |
+          npm install
+          npx cap sync android
+
+      - name: Copy Hardware SDKs
+        working-directory: .
+        run: |
+          # Copy hardware SDKs to Android project before building
+          mkdir -p android/app/libs
+          mkdir -p android/app/src/main/jniLibs
+
+          # Find and copy JARs
+          find resources -name "icod*.jar" -exec cp {} android/app/libs/ \;
+          find resources -name "T1*.jar" -exec cp {} android/app/libs/ \;
+
+          # Extract jniLibs if unrar is available
+          sudo apt-get install -y unrar
+          find resources -name "jniLibs.rar" -exec unrar x -y -o+ {} android/app/src/main/ \;
+
       - name: Prepare Brand Icon
         working-directory: .
         run: |

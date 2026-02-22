@@ -5,15 +5,13 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
@@ -23,25 +21,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.lifecycleScope
 import com.example.basaltsurgemobile.ui.theme.BasaltSurgeMobileTheme
+import com.getcapacitor.BridgeActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import org.mozilla.geckoview.AllowOrDeny
-import org.mozilla.geckoview.GeckoResult
-import org.mozilla.geckoview.GeckoRuntime
-import org.mozilla.geckoview.GeckoSession
-import org.mozilla.geckoview.GeckoView
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
@@ -54,14 +48,13 @@ data class LockdownConfig(
     val unlockCodeHash: String? = null
 )
 
-class MainActivity : ComponentActivity() {
-    private var runtime: GeckoRuntime? = null
+class MainActivity : BridgeActivity() {
     private var lockdownConfig = mutableStateOf(LockdownConfig())
     private var showUnlockOverlay = mutableStateOf(false)
     private var showUpdateDialog = mutableStateOf(false)
     private var updateInfo = mutableStateOf<OtaUpdateManager.UpdateInfo?>(null)
     private lateinit var otaUpdateManager: OtaUpdateManager
-    
+
     companion object {
         private const val TAG = "MainActivity"
         private const val UNLOCK_SALT = "touchpoint_unlock_v1:"
@@ -73,86 +66,60 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        // Initialize Hardware Abstraction Layer
+        com.example.basaltsurgemobile.hardware.HardwareRegistry.initialize(this)
+        
         // Initialize OTA Update Manager
         otaUpdateManager = OtaUpdateManager(this)
         
+        // Register Custom Native Capacitor Plugins for Hardware Abstraction
+        registerPlugin(com.example.basaltsurgemobile.plugins.DeviceProfilePlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.ExternalPrinterPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.TopWisePrinterPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.KioskPrinterPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.ScannerPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.DeviceFeedbackPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.CardReaderPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.PinPadPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.SecondaryDisplayPlugin::class.java)
+        
         // Check for overlay permission (required for auto-boot on Android 10+)
         checkOverlayPermission()
-        
-        runtime = GeckoRuntime.create(this)
-        val session = GeckoSession()
-        session.open(runtime!!)
-        
-        // Enable popup/modal support for wallet connection dialogs (WalletConnect, etc.)
-        session.promptDelegate = object : GeckoSession.PromptDelegate {
-            override fun onAlertPrompt(
-                session: GeckoSession,
-                prompt: GeckoSession.PromptDelegate.AlertPrompt
-            ): GeckoResult<GeckoSession.PromptDelegate.PromptResponse> {
-                // Allow JavaScript alerts to display
-                Log.d(TAG, "Alert prompt: ${prompt.message}")
-                return GeckoResult.fromValue(prompt.dismiss())
-            }
-            
-            override fun onBeforeUnloadPrompt(
-                session: GeckoSession,
-                prompt: GeckoSession.PromptDelegate.BeforeUnloadPrompt
-            ): GeckoResult<GeckoSession.PromptDelegate.PromptResponse> {
-                // Allow page unload without confirmation
-                return GeckoResult.fromValue(prompt.confirm(AllowOrDeny.ALLOW))
-            }
-        }
-        
-        // Use BASE_DOMAIN from BuildConfig and append the setup path
-        val setupUrl = "${BuildConfig.BASE_DOMAIN}/touchpoint/setup?scale=0.75"
-        session.loadUri(setupUrl)
-        
-        // Check for install permission (required for standard updates)
         checkInstallPermission()
         
         // Setup back button handler for lockdown mode
         setupBackPressedHandler()
         
-        // Start periodic update checks
-        startUpdatePolling()
-
-        enableEdgeToEdge()
-        setContent {
-            BasaltSurgeMobileTheme {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                        GeckoViewContainer(
-                            session = session,
-                            modifier = Modifier.padding(innerPadding)
-                        )
-                    }
-                    
-                    // Unlock overlay shown when user tries to exit in lockdown mode
-                    if (showUnlockOverlay.value) {
-                        UnlockOverlay(
-                            onDismiss = { showUnlockOverlay.value = false },
-                            onUnlock = { code ->
-                                if (validateUnlockCode(code)) {
-                                    showUnlockOverlay.value = false
-                                    exitLockdownTemporarily()
-                                } else {
-                                    // DEBUGGING: Show why it failed
-                                    val config = lockdownConfig.value
-                                    val msg = when {
-                                        config.unlockCodeHash == null -> "Config not loaded (Hash is null)"
-                                        else -> "Invalid code (Hash mismatch)"
+        // Setup Compose Overlays on top of Capacitor's WebView
+        val composeView = ComposeView(this).apply {
+            setContent {
+                BasaltSurgeMobileTheme {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        // Unlock overlay shown when user tries to exit in lockdown mode
+                        if (showUnlockOverlay.value) {
+                            UnlockOverlay(
+                                onDismiss = { showUnlockOverlay.value = false },
+                                onUnlock = { code ->
+                                    if (validateUnlockCode(code)) {
+                                        showUnlockOverlay.value = false
+                                        exitLockdownTemporarily()
+                                    } else {
+                                        val config = lockdownConfig.value
+                                        val msg = when {
+                                            config.unlockCodeHash == null -> "Config not loaded (Hash is null)"
+                                            else -> "Invalid code (Hash mismatch)"
+                                        }
+                                        Toast.makeText(this@MainActivity, msg, Toast.LENGTH_LONG).show()
                                     }
-                                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_LONG).show()
                                 }
-                            }
-                        )
-                    }
-                    
-                    // Update available dialog
-                    if (showUpdateDialog.value && updateInfo.value != null) {
-                        UpdateAvailableDialog(
-                            info = updateInfo.value!!,
-                            onDismiss = { showUpdateDialog.value = false },
+                            )
+                        }
+                        
+                        // Update available dialog
+                        if (showUpdateDialog.value && updateInfo.value != null) {
+                            UpdateAvailableDialog(
+                                info = updateInfo.value!!,
+                                onDismiss = { showUpdateDialog.value = false },
                                 onUpdate = {
                                     updateInfo.value?.downloadUrl?.let { url ->
                                         otaUpdateManager.downloadAndInstall(
@@ -174,19 +141,116 @@ class MainActivity : ComponentActivity() {
                                     }
                                     showUpdateDialog.value = false
                                 }
-                        )
+                            )
+                        }
                     }
                 }
             }
         }
         
-        // Poll for lockdown config from JS bridge
-        pollLockdownConfig(session)
+        // Add ComposeView to the root layout so it overlays the WebView
+        addContentView(composeView, ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ))
         
-        // Start periodic config polling for remote commands (unlock code update, device owner removal)
+        startUpdatePolling()
         startConfigPolling()
     }
-    
+
+    override fun onStart() {
+        super.onStart()
+        // Load the live environment dynamically 
+        // We do this in onStart so the Bridge is fully initialized
+        val setupUrl = "${BuildConfig.BASE_DOMAIN}/touchpoint/setup?scale=0.75"
+        bridge.webView.loadUrl(setupUrl)
+        
+        // Capacitor doesn't provide a direct location change observer that matches GeckoView's NavigationDelegate
+        // easily from Kotlin, so we poll the URL. This is lightweight and catches programmatic #hash changes.
+        pollLockdownurl()
+    }
+
+    private fun pollLockdownurl() {
+        lifecycleScope.launch {
+            while (true) {
+                delay(1000) // check every 1 second
+                try {
+                    val currentUrl = bridge.webView.url
+                    if (currentUrl != null) {
+                        checkUrlForConfig(currentUrl)
+                    }
+                } catch (e: Exception) {
+                    // Ignore errors if webview isn't ready
+                }
+            }
+        }
+    }
+
+    private fun checkUrlForConfig(currentUrl: String) {
+        // Monitor URL changes to detect lockdown configuration
+        // format: #lockdown:mode:hash
+        if (currentUrl.contains("#lockdown:")) {
+            try {
+                val hash = currentUrl.substringAfter("#lockdown:")
+                val parts = hash.split(":")
+                if (parts.isNotEmpty()) {
+                    val mode = parts[0]
+                    val hashValue = if (parts.size > 1 && parts[1] != "null" && parts[1].isNotEmpty()) parts[1] else null
+                    
+                    val newConfig = LockdownConfig(mode, hashValue)
+                    if (newConfig != lockdownConfig.value) {
+                        Log.d(TAG, "Lockdown config updated: $newConfig")
+                        lockdownConfig.value = newConfig
+                        
+                        if (mode == "standard" || mode == "device_owner") {
+                            enableLockTaskMode()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error parsing lockdown config from URL: ${e.message}")
+            }
+        }
+        
+        // Also check for lockdown mode in query parameters (alternative method)
+        // Format: ?lockdownMode=standard&unlockHash=abc123
+        if (currentUrl.contains("lockdownMode=")) {
+            try {
+                val uri = Uri.parse(currentUrl)
+                val mode = uri.getQueryParameter("lockdownMode") ?: "none"
+                val hashValue = uri.getQueryParameter("unlockHash")
+                
+                val newConfig = LockdownConfig(mode, hashValue)
+                if (newConfig != lockdownConfig.value && mode != "none") {
+                    Log.d(TAG, "Lockdown config from query params: $newConfig")
+                    lockdownConfig.value = newConfig
+                    
+                    if (mode == "standard" || mode == "device_owner") {
+                        enableLockTaskMode()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error parsing lockdown config from query: ${e.message}")
+            }
+        }
+        
+        // Capture installation ID for config polling
+        try {
+            val uri = Uri.parse(currentUrl)
+            val installId = uri.getQueryParameter("installationId") 
+                ?: uri.getQueryParameter("installId")
+            if (!installId.isNullOrBlank()) {
+                val currentStored = getInstallationId()
+                if (currentStored != installId) {
+                    storeInstallationId(installId)
+                    Log.d(TAG, "Stored installation ID: $installId")
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore
+        }
+    }
+
     private fun checkForUpdates() {
         if (!otaUpdateManager.shouldCheckForUpdate()) return
         
@@ -212,16 +276,11 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    
-    /**
-     * Check if we have permission to request package installs.
-     * Required for non-Device Owner updates on Android 8+
-     */
+
     private fun checkInstallPermission() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             if (!packageManager.canRequestPackageInstalls()) {
                 val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-                // If we are device owner, we don't need to ask (we can silent install)
                 if (!dpm.isDeviceOwnerApp(packageName)) {
                     val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
                     intent.data = Uri.parse("package:$packageName")
@@ -231,14 +290,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    
-    /**
-     * Periodically poll the platform API for config updates and remote commands.
-     * This enables:
-     * - Dynamic unlock code updates without re-provisioning
-     * - Remote device owner removal
-     * - Remote factory reset
-     */
+
     private fun startConfigPolling() {
         lifecycleScope.launch {
             while (true) {
@@ -248,24 +300,21 @@ class MainActivity : ComponentActivity() {
                     val installationId = getInstallationId() ?: continue
                     val config = fetchRemoteConfig(installationId) ?: continue
                     
-                    // Handle remote commands
                     val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-                    val componentName = ComponentName(this@MainActivity, AppDeviceAdminReceiver::class.java)
                     
-                    // Command: wipeDevice (factory reset) - check first as it's most destructive
+                    // Command: wipeDevice (factory reset)
                     if (config.optBoolean("wipeDevice", false) && dpm.isDeviceOwnerApp(packageName)) {
                         Log.w(TAG, "Remote wipeDevice command received - initiating factory reset")
                         Toast.makeText(this@MainActivity, "Remote wipe initiated...", Toast.LENGTH_LONG).show()
                         dpm.wipeDevice(0)
-                        return@launch // Won't reach here after wipe
+                        return@launch 
                     }
                     
-                    // Command: clearDeviceOwner (remove device owner, keep data)
+                    // Command: clearDeviceOwner
                     if (config.optBoolean("clearDeviceOwner", false) && dpm.isDeviceOwnerApp(packageName)) {
                         Log.w(TAG, "Remote clearDeviceOwner command received - removing device owner")
                         Toast.makeText(this@MainActivity, "Removing device owner mode...", Toast.LENGTH_LONG).show()
                         dpm.clearDeviceOwnerApp(packageName)
-                        // Update local config to exit lockdown
                         lockdownConfig.value = LockdownConfig(lockdownMode = "none", unlockCodeHash = null)
                         try { stopLockTask() } catch (e: Exception) { Log.e(TAG, "Failed to stop lock task", e) }
                         continue
@@ -293,39 +342,27 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    
+
     private fun startUpdatePolling() {
         lifecycleScope.launch {
-            // Initial check
             checkForUpdates()
-            
             while (true) {
-                // Check every 60 minutes
                 delay(60 * 60 * 1000L) 
                 checkForUpdates()
             }
         }
     }
-    
-    /**
-     * Get stored installation ID from SharedPreferences
-     */
+
     private fun getInstallationId(): String? {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return prefs.getString(PREF_INSTALLATION_ID, null)
     }
-    
-    /**
-     * Store installation ID to SharedPreferences (called from web page)
-     */
+
     private fun storeInstallationId(id: String) {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(PREF_INSTALLATION_ID, id).apply()
     }
-    
-    /**
-     * Fetch remote config from API
-     */
+
     private suspend fun fetchRemoteConfig(installationId: String): JSONObject? = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BuildConfig.BASE_DOMAIN}/api/touchpoint/config?installationId=$installationId")
@@ -346,192 +383,52 @@ class MainActivity : ComponentActivity() {
             null
         }
     }
-    
+
     private fun setupBackPressedHandler() {
+        // BridgeActivity has a native hardware back button handler. We can intercept it via AndroidX OnBackPressedDispatcher
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 val mode = lockdownConfig.value.lockdownMode
                 if (mode == "standard" || mode == "device_owner") {
-                    // Block back button and show unlock overlay
                     Log.d(TAG, "Back pressed blocked - lockdown mode: $mode")
                     showUnlockOverlay.value = true
                 } else {
-                    // Allow normal back behavior
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
-                    isEnabled = true
+                    // Navigate webview back if possible, otherwise normal back behavior
+                    if (bridge.webView.canGoBack()) {
+                        bridge.webView.goBack()
+                    } else {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                        isEnabled = true
+                    }
                 }
             }
         })
     }
-    
+
     private fun checkOverlayPermission() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
             if (!android.provider.Settings.canDrawOverlays(this)) {
-                val intent = android.content.Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        android.net.Uri.parse("package:$packageName"))
+                val intent = Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:$packageName"))
                 startActivity(intent)
                 Toast.makeText(this, "Please grant 'Display over other apps' for auto-boot", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    private fun pollLockdownConfig(session: GeckoSession) {
-        // Monitor URL changes to detect lockdown configuration
-        // The web app passes config via URL hash: #lockdown:mode:hash
-        // This is non-intrusive and doesn't interfere with page navigation
-        
-        session.navigationDelegate = object : GeckoSession.NavigationDelegate {
-            override fun onLocationChange(session: GeckoSession, url: String?, perms: MutableList<GeckoSession.PermissionDelegate.ContentPermission>, hasUserGesture: Boolean) {
-                url?.let { currentUrl ->
-                    Log.d(TAG, "URL changed: $currentUrl")
-                    
-                    // Check for lockdown config in URL hash
-                    // Format: #lockdown:mode:unlockHash
-                    if (currentUrl.contains("#lockdown:")) {
-                        try {
-                            val hash = currentUrl.substringAfter("#lockdown:")
-                            val parts = hash.split(":")
-                            if (parts.isNotEmpty()) {
-                                val mode = parts[0]
-                                val hashValue = if (parts.size > 1 && parts[1] != "null" && parts[1].isNotEmpty()) parts[1] else null
-                                
-                                val newConfig = LockdownConfig(mode, hashValue)
-                                if (newConfig != lockdownConfig.value) {
-                                    Log.d(TAG, "Lockdown config updated: $newConfig")
-                                    lockdownConfig.value = newConfig
-                                    
-                                    if (mode == "standard" || mode == "device_owner") {
-                                        enableLockTaskMode()
-                                    }
-                                }
-                            }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error parsing lockdown config from URL: ${e.message}")
-                        }
-                    }
-                    
-                    // Also check for lockdown mode in query parameters (alternative method)
-                    // Format: ?lockdownMode=standard&unlockHash=abc123
-                    if (currentUrl.contains("lockdownMode=")) {
-                        try {
-                            val uri = android.net.Uri.parse(currentUrl)
-                            val mode = uri.getQueryParameter("lockdownMode") ?: "none"
-                            val hashValue = uri.getQueryParameter("unlockHash")
-                            
-                            val newConfig = LockdownConfig(mode, hashValue)
-                            if (newConfig != lockdownConfig.value && mode != "none") {
-                                Log.d(TAG, "Lockdown config from query params: $newConfig")
-                                lockdownConfig.value = newConfig
-                                
-                                if (mode == "standard" || mode == "device_owner") {
-                                    enableLockTaskMode()
-                                }
-                            }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error parsing lockdown config from query: ${e.message}")
-                        }
-                    }
-                    
-                    // Capture installation ID for config polling
-                    // The setup page passes it via query param or can be extracted from URL pattern
-                    try {
-                        val uri = android.net.Uri.parse(currentUrl)
-                        val installId = uri.getQueryParameter("installationId") 
-                            ?: uri.getQueryParameter("installId")
-                        if (!installId.isNullOrBlank()) {
-                            storeInstallationId(installId)
-                            Log.d(TAG, "Stored installation ID: $installId")
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error extracting installation ID: ${e.message}")
-                    }
-                }
-            }
-            
-            override fun onLoadRequest(session: GeckoSession, request: GeckoSession.NavigationDelegate.LoadRequest): GeckoResult<AllowOrDeny>? {
-                val url = request.uri
-                
-                // Wallet deep link schemes to intercept and launch external apps
-                val walletSchemes = listOf(
-                    "metamask://",
-                    "cbwallet://",
-                    "wc://",
-                    "trust://",
-                    "rainbow://",
-                    "uniswap://",
-                    "zerion://"
-                )
-                
-                // Check if this is a wallet deep link
-                if (walletSchemes.any { url.startsWith(it) }) {
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        if (intent.resolveActivity(packageManager) != null) {
-                            Log.d(TAG, "Launching wallet app for: $url")
-                            startActivity(intent)
-                            return GeckoResult.fromValue(AllowOrDeny.DENY)
-                        } else {
-                            // Wallet app not installed - allow page to handle fallback (e.g., show QR)
-                            Log.w(TAG, "Wallet app not installed for: $url")
-                            return GeckoResult.fromValue(AllowOrDeny.ALLOW)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to launch wallet deep link: ${e.message}")
-                    }
-                }
-                
-                // Handle intent:// URLs (Android App Links used by WalletConnect)
-                if (url.startsWith("intent://")) {
-                    try {
-                        val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        if (intent.resolveActivity(packageManager) != null) {
-                            Log.d(TAG, "Launching intent URL: $url")
-                            startActivity(intent)
-                            return GeckoResult.fromValue(AllowOrDeny.DENY)
-                        } else {
-                            // Check for browser fallback URL
-                            val fallback = intent.getStringExtra("browser_fallback_url")
-                            if (!fallback.isNullOrEmpty()) {
-                                Log.d(TAG, "Using fallback URL: $fallback")
-                                session.loadUri(fallback)
-                                return GeckoResult.fromValue(AllowOrDeny.DENY)
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to parse intent URL: ${e.message}")
-                    }
-                }
-                
-                // Allow all other requests
-                return GeckoResult.fromValue(AllowOrDeny.ALLOW)
-            }
-        }
-    }
-    
-    private fun extractJsonField(json: String, field: String): String? {
-        val regex = """"$field"\s*:\s*"?([^",}]+)"?""".toRegex()
-        return regex.find(json)?.groupValues?.getOrNull(1)?.takeIf { it != "null" }
-    }
-    
     private fun enableLockTaskMode() {
         try {
             val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
             if (!am.isInLockTaskMode) {
-                // Check if we're device owner for full lockdown
                 val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
                 val componentName = ComponentName(this, AppDeviceAdminReceiver::class.java)
                 
                 if (dpm.isDeviceOwnerApp(packageName)) {
-                    // Device Owner mode - full lockdown
                     dpm.setLockTaskPackages(componentName, arrayOf(packageName))
                     startLockTask()
                     Log.d(TAG, "Started Lock Task Mode (Device Owner)")
                 } else if (lockdownConfig.value.lockdownMode == "standard") {
-                    // Standard mode - just start lock task without device owner
-                    // This provides partial lockdown (user can still exit with difficulty)
                     startLockTask()
                     Log.d(TAG, "Started Lock Task Mode (Standard)")
                 }
@@ -540,23 +437,18 @@ class MainActivity : ComponentActivity() {
             Log.e(TAG, "Failed to start Lock Task Mode: ${e.message}")
         }
     }
-    
+
     private fun validateUnlockCode(enteredCode: String): Boolean {
         val storedHash = lockdownConfig.value.unlockCodeHash ?: return false
-        
-        // Hash the entered code using the same method as the backend
         val digest = MessageDigest.getInstance("SHA-256")
         val hashedBytes = digest.digest((UNLOCK_SALT + enteredCode).toByteArray())
         val enteredHash = hashedBytes.joinToString("") { "%02x".format(it) }
-        
         return enteredHash == storedHash
     }
-    
+
     private fun exitLockdownTemporarily() {
         try {
             stopLockTask()
-            // CRITICAL FIX: Disable local lockdown checks so onPause doesn't pull us back
-            // The next time the app loads the URL, it will re-read the config and re-lock if needed
             val current = lockdownConfig.value
             lockdownConfig.value = current.copy(lockdownMode = "none")
             
@@ -566,32 +458,19 @@ class MainActivity : ComponentActivity() {
             Log.e(TAG, "Failed to stop Lock Task Mode: ${e.message}")
         }
     }
-    
+
     override fun onPause() {
         super.onPause()
-        // If in lockdown mode, don't allow the activity to be paused
         val mode = lockdownConfig.value.lockdownMode
         if (mode == "standard" || mode == "device_owner") {
-            // Re-open the activity immediately if paused
             val intent = intent
-            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
             startActivity(intent)
         }
     }
 }
 
-@Composable
-fun GeckoViewContainer(session: GeckoSession, modifier: Modifier = Modifier) {
-    AndroidView(
-        factory = { context ->
-            GeckoView(context).apply {
-                setSession(session)
-            }
-        },
-        modifier = modifier.fillMaxSize()
-    )
-}
-
+// UI Composables
 @Composable
 fun UnlockOverlay(
     onDismiss: () -> Unit,
