@@ -15,6 +15,10 @@ import { createPortal } from "react-dom";
 import { getEffectiveBrandKey, getDefaultBrandName, getDefaultBrandSymbol, resolveBrandAppLogo, resolveBrandSymbol, isBasaltSurge } from "@/lib/branding";
 import { useTheme } from "@/contexts/ThemeContext";
 
+import TerminalAdminDashboard from "@/components/terminal/TerminalAdminDashboard";
+import PinEntryScreen from "@/components/terminal/PinEntryScreen";
+import TerminalInterface from "@/components/terminal/TerminalInterface";
+
 /**
  * Terminal page composed of:
  * - Top row: sleek view selection tabs (Terminal | Compact | Wide | Invoice) under Navbar + Language row
@@ -1315,14 +1319,6 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
   }
   return null;
 }
-
-// ... imports (will need to verify imports are correct)
-
-import TerminalAdminDashboard from "@/components/terminal/TerminalAdminDashboard";
-import PinEntryScreen from "@/components/terminal/PinEntryScreen";
-import TerminalInterface from "@/components/terminal/TerminalInterface"; // We'll use this now
-
-// ... existing types ...
 
 function TerminalPage() {
   const twTheme = usePortalThirdwebTheme();
