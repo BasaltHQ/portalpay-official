@@ -79,7 +79,7 @@ class KioskPrinterPlugin : Plugin() {
                 val bmp = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
                 
                 api?.setAlignMode(1) // Center
-                api?.printBitmap(bmp)
+                api?.printRasterBitmap(bmp)
                 api?.printString("\n\n\n") // Feed paper after image to clear cutter
             } else if (!text.isNullOrEmpty()) {
                 api?.printString("\n\n\n") // Feed paper if only text
