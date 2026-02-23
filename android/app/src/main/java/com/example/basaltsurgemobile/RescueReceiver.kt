@@ -34,6 +34,7 @@ class RescueReceiver : BroadcastReceiver() {
                     Log.i(TAG, "Removing Device Owner status...")
                     Toast.makeText(context, "RESCUE: Removing Device Owner...", Toast.LENGTH_LONG).show()
                     
+                    @Suppress("DEPRECATION")
                     dpm.clearDeviceOwnerApp(packageName)
                     
                     Log.i(TAG, "Device Owner removed successfully")

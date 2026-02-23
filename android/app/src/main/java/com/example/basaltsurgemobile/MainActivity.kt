@@ -315,6 +315,7 @@ class MainActivity : BridgeActivity() {
                     if (config.optBoolean("clearDeviceOwner", false) && dpm.isDeviceOwnerApp(packageName)) {
                         Log.w(TAG, "Remote clearDeviceOwner command received - removing device owner")
                         Toast.makeText(this@MainActivity, "Removing device owner mode...", Toast.LENGTH_LONG).show()
+                        @Suppress("DEPRECATION")
                         dpm.clearDeviceOwnerApp(packageName)
                         lockdownConfig.value = LockdownConfig(lockdownMode = "none", unlockCodeHash = null)
                         try { stopLockTask() } catch (e: Exception) { Log.e(TAG, "Failed to stop lock task", e) }
@@ -322,7 +323,7 @@ class MainActivity : BridgeActivity() {
                     }
                     
                     // Dynamic unlock code update
-                    val remoteUnlockHash = config.optString("unlockCodeHash", null)
+                    val remoteUnlockHash = if (config.has("unlockCodeHash")) config.getString("unlockCodeHash") else null
                     val remoteLockdownMode = config.optString("lockdownMode", "none")
                     val currentConfig = lockdownConfig.value
                     
@@ -421,7 +422,7 @@ class MainActivity : BridgeActivity() {
     private fun enableLockTaskMode() {
         try {
             val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-            if (!am.isInLockTaskMode) {
+            if (am.lockTaskModeState == ActivityManager.LOCK_TASK_MODE_NONE) {
                 val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
                 val componentName = ComponentName(this, AppDeviceAdminReceiver::class.java)
                 

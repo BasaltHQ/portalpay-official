@@ -76,7 +76,7 @@ class OtaUpdateManager(private val context: Context) {
                 hasUpdate = json.optBoolean("hasUpdate", false),
                 latestVersion = json.optString("latestVersion", ""),
                 latestVersionCode = json.optInt("latestVersionCode", 0),
-                downloadUrl = json.optString("downloadUrl", null),
+                downloadUrl = if (json.has("downloadUrl")) json.getString("downloadUrl") else null,
                 releaseNotes = json.optString("releaseNotes", ""),
                 mandatory = json.optBoolean("mandatory", false)
             )

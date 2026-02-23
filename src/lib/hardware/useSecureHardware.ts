@@ -23,6 +23,22 @@ export interface PinPadPlugin {
 const CardReader = registerPlugin<CardReaderPlugin>('CardReader');
 const PinPad = registerPlugin<PinPadPlugin>('PinPad');
 
+export interface ValorPaymentPlugin {
+    initializePayment(): Promise<{ success: boolean; message: string }>;
+    performTransaction(options: { amount: string }): Promise<{
+        success: boolean;
+        authCode?: string;
+        responseCode?: string;
+        rrn?: string;
+    }>;
+    addListener(
+        eventName: 'valorPaymentProgress',
+        listenerFunc: (info: { message: string }) => void
+    ): Promise<import('@capacitor/core').PluginListenerHandle> & import('@capacitor/core').PluginListenerHandle;
+}
+
+const ValorPayment = registerPlugin<ValorPaymentPlugin>('ValorPayment');
+
 export function useCardReader() {
     const profile = useHardwareProfile();
     const [isWaitingForCard, setIsWaitingForCard] = useState(false);
@@ -85,4 +101,54 @@ export function usePinPad() {
     }, [profile, isWaitingForPin]);
 
     return { requestPin, cancelPin, isWaitingForPin, hasHardware: profile?.hasPINPad || false };
+}
+
+export function useValorPayment() {
+    const profile = useHardwareProfile();
+    const isValorDevice = profile?.type === 'VALOR_VP550' || profile?.type === 'VALOR_VP800';
+
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [progressMessage, setProgressMessage] = useState<string>('');
+
+    const initializeSDK = useCallback(async () => {
+        if (!isValorDevice) return false;
+        try {
+            const res = await ValorPayment.initializePayment();
+            return res.success;
+        } catch (e) {
+            console.error("Valor SDK Initialization config exception", e);
+            return false;
+        }
+    }, [isValorDevice]);
+
+    const performTransaction = useCallback(async (amount: string) => {
+        if (!isValorDevice) return null;
+        try {
+            setIsProcessing(true);
+            setProgressMessage('Initializing Terminal...');
+
+            const listener = await ValorPayment.addListener('valorPaymentProgress', (info) => {
+                setProgressMessage(info.message);
+            });
+
+            const result = await ValorPayment.performTransaction({ amount });
+            listener.remove();
+
+            return result;
+        } catch (error) {
+            console.error('Valor transaction failed', error);
+            throw error;
+        } finally {
+            setIsProcessing(false);
+            setProgressMessage('');
+        }
+    }, [isValorDevice]);
+
+    return {
+        initializeSDK,
+        performTransaction,
+        isProcessing,
+        progressMessage,
+        hasHardware: isValorDevice
+    };
 }
