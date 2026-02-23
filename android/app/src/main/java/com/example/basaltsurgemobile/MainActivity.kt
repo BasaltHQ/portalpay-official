@@ -64,8 +64,6 @@ class MainActivity : BridgeActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        
         // Initialize Hardware Abstraction Layer
         com.example.basaltsurgemobile.hardware.HardwareRegistry.initialize(this)
         
@@ -82,6 +80,8 @@ class MainActivity : BridgeActivity() {
         registerPlugin(com.example.basaltsurgemobile.plugins.CardReaderPlugin::class.java)
         registerPlugin(com.example.basaltsurgemobile.plugins.PinPadPlugin::class.java)
         registerPlugin(com.example.basaltsurgemobile.plugins.SecondaryDisplayPlugin::class.java)
+
+        super.onCreate(savedInstanceState)
         
         // Check for overlay permission (required for auto-boot on Android 10+)
         checkOverlayPermission()

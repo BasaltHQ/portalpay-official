@@ -1,0 +1,102 @@
+Compiled from "AidlLed.java"
+public interface com.topwise.cloudpos.aidl.led.AidlLed extends android.os.IInterface {
+  public abstract boolean setLed(int, boolean) throws android.os.RemoteException;
+  public abstract boolean setAllLed(java.lang.String) throws android.os.RemoteException;
+  public abstract boolean setLongLed(int, boolean) throws android.os.RemoteException;
+}
+Compiled from "TrackData.java"
+public class com.topwise.cloudpos.aidl.magcard.TrackData implements android.os.Parcelable {
+  public static final android.os.Parcelable$Creator<com.topwise.cloudpos.aidl.magcard.TrackData> CREATOR;
+  public com.topwise.cloudpos.aidl.magcard.TrackData(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
+  public com.topwise.cloudpos.aidl.magcard.TrackData(android.os.Parcel);
+  public com.topwise.cloudpos.aidl.magcard.TrackData();
+  public int describeContents();
+  public void writeToParcel(android.os.Parcel, int);
+  public java.lang.String getCardno();
+  public void setCardno(java.lang.String);
+  public java.lang.String getFirstTrackData();
+  public void setFirstTrackData(java.lang.String);
+  public java.lang.String getSecondTrackData();
+  public void setSecondTrackData(java.lang.String);
+  public java.lang.String getThirdTrackData();
+  public void setThirdTrackData(java.lang.String);
+  public java.lang.String getExpiryDate();
+  public void setExpiryDate(java.lang.String);
+  public java.lang.String getServiceCode();
+  public void setServiceCode(java.lang.String);
+  public java.lang.String getFormatTrackData();
+  public void setFormatTrackData(java.lang.String);
+  static {};
+}
+Compiled from "AidlPinpad.java"
+public interface com.topwise.cloudpos.aidl.pinpad.AidlPinpad extends android.os.IInterface {
+  public abstract void getPin(android.os.Bundle, com.topwise.cloudpos.aidl.pinpad.GetPinListener) throws android.os.RemoteException;
+  public abstract void stopGetPin() throws android.os.RemoteException;
+  public abstract void confirmGetPin() throws android.os.RemoteException;
+  public abstract boolean loadMainkey(int, byte[], byte[]) throws android.os.RemoteException;
+  public abstract boolean loadWorkKey(int, int, int, byte[], byte[]) throws android.os.RemoteException;
+  public abstract int getMac(android.os.Bundle, byte[]) throws android.os.RemoteException;
+  public abstract int encryptByTdk(int, byte, byte[], byte[], byte[]) throws android.os.RemoteException;
+  public abstract byte[] getRandom() throws android.os.RemoteException;
+  public abstract boolean display(java.lang.String, java.lang.String) throws android.os.RemoteException;
+  public abstract boolean loadTEK(int, byte[], byte[]) throws android.os.RemoteException;
+  public abstract boolean loadTWK(int, int, int, byte[], byte[]) throws android.os.RemoteException;
+  public abstract boolean loadEncryptMainkey(int, int, byte[], byte[]) throws android.os.RemoteException;
+  public abstract boolean setPinKeyboardMode(int) throws android.os.RemoteException;
+  public abstract boolean getKeyState(int, int) throws android.os.RemoteException;
+  public abstract boolean encryptByRandomWk(int, boolean, byte[], byte[], byte[], byte[]) throws android.os.RemoteException;
+  public abstract boolean loadDuKPTkey(int, int, byte[], byte[]) throws android.os.RemoteException;
+  public abstract byte[] getDUKPTKsn(int, boolean) throws android.os.RemoteException;
+  public abstract byte[] algorithmCal(int, int, byte[], byte[]) throws android.os.RemoteException;
+  public abstract boolean algorithDecrypt(int, byte[]) throws android.os.RemoteException;
+  public abstract boolean loadKeyCommonMethod(int, int, int, int, int, byte[], byte[], byte[]) throws android.os.RemoteException;
+  public abstract byte[] getButtonNum() throws android.os.RemoteException;
+  public abstract boolean deletePedKey(int, int, int) throws android.os.RemoteException;
+  public abstract boolean loadDukptIPEK(int, byte[], byte[]) throws android.os.RemoteException;
+  public abstract boolean loadDukptBDK(int, byte[], byte[]) throws android.os.RemoteException;
+  public abstract int cryptByTdk(int, byte, byte[], byte[], byte[]) throws android.os.RemoteException;
+  public abstract int cryptByDukptDataKey(int, byte, byte[], byte[], byte[]) throws android.os.RemoteException;
+  public abstract byte[] getKeyCheckValue(int, int) throws android.os.RemoteException;
+  public abstract boolean loadTr31EncryptMainkey(int, int, byte[], byte[]) throws android.os.RemoteException;
+  public abstract int dukptKeyBdkToIpek(int) throws android.os.RemoteException;
+  public abstract int getKeyKin(int, int, int) throws android.os.RemoteException;
+  public abstract int cryptByFixedTdk(int, byte, byte[], byte[], byte[]) throws android.os.RemoteException;
+  public abstract byte[] genRandomTekEncryptByTek(int, int, int) throws android.os.RemoteException;
+  public abstract boolean loadKey(int, int, byte[], byte[]) throws android.os.RemoteException;
+  public abstract void setPinPadLayout(byte[]) throws android.os.RemoteException;
+  public abstract boolean loadMainkeyEx(int, byte[], byte, byte[]) throws android.os.RemoteException;
+  public abstract boolean loadWorkKeyEx(int, int, int, byte[], byte, byte[]) throws android.os.RemoteException;
+  public abstract int encryptByTdkEx(int, byte, byte[], byte[], byte, byte[]) throws android.os.RemoteException;
+  public abstract boolean loadTEKEx(int, byte[], byte, byte[]) throws android.os.RemoteException;
+  public abstract boolean loadEncryptMainkeyEx(int, int, byte[], byte, byte[]) throws android.os.RemoteException;
+  public abstract boolean loadTWKEx(int, int, int, byte[], byte, byte[]) throws android.os.RemoteException;
+  public abstract byte[] checkkey(int, int, boolean) throws android.os.RemoteException;
+  public abstract byte[] getDUKPTKsnExt(int, int, int) throws android.os.RemoteException;
+  public abstract byte[] storedRecord(int, int, byte[]) throws android.os.RemoteException;
+  public abstract byte[] algCalculate(byte[]) throws android.os.RemoteException;
+  public abstract byte[] getKeyCheckValueExt(int, int, int) throws android.os.RemoteException;
+  public abstract int getInstalledKey(com.topwise.cloudpos.aidl.keymanager.KeyType, int, com.topwise.cloudpos.aidl.keymanager.IntArrayTypeValue) throws android.os.RemoteException;
+  public abstract int loadKeyByTr31Mode(com.topwise.cloudpos.aidl.keymanager.KeyType, int, int, java.lang.String, byte[], byte[], com.topwise.cloudpos.aidl.keymanager.BytesTypeValue) throws android.os.RemoteException;
+  public abstract com.topwise.cloudpos.aidl.keymanager.KeyType getTr31SaveKeyType(java.lang.String) throws android.os.RemoteException;
+  public abstract int genKBPKKey(com.topwise.cloudpos.aidl.keymanager.Tr31Mode, com.topwise.cloudpos.aidl.keymanager.KeyType, int, com.topwise.cloudpos.aidl.keymanager.AsymmetricKey, byte[], com.topwise.cloudpos.aidl.keymanager.BytesTypeValue) throws android.os.RemoteException;
+}
+Compiled from "AidlCameraScanCode.java"
+public interface com.topwise.cloudpos.aidl.camera.AidlCameraScanCode extends android.os.IInterface {
+  public abstract void scanCode(android.os.Bundle, com.topwise.cloudpos.aidl.camera.AidlCameraScanCodeListener) throws android.os.RemoteException;
+  public abstract void stopScan() throws android.os.RemoteException;
+  public abstract int startDecode(com.topwise.cloudpos.aidl.camera.DecodeParameter, com.topwise.cloudpos.aidl.camera.AidlDecodeCallBack) throws android.os.RemoteException;
+  public abstract int stopDecode() throws android.os.RemoteException;
+  public abstract java.lang.String getDecodeLibVersion() throws android.os.RemoteException;
+}
+Compiled from "AidlSmallScreen.java"
+public interface com.topwise.cloudpos.aidl.smallscreen.AidlSmallScreen extends android.os.IInterface {
+  public abstract int wakeSmallScreen() throws android.os.RemoteException;
+  public abstract int sleepSmallScreen() throws android.os.RemoteException;
+  public abstract int setSmallScreenBrightness(int) throws android.os.RemoteException;
+  public abstract int getSmallScreenBrightness() throws android.os.RemoteException;
+  public abstract int[] getSmallScreenSize() throws android.os.RemoteException;
+  public abstract int stopAppControl() throws android.os.RemoteException;
+  public abstract int displayText(java.lang.String, com.topwise.cloudpos.aidl.smallscreen.SmallScreenTextSize, com.topwise.cloudpos.aidl.smallscreen.SmallScreenDisplayMode) throws android.os.RemoteException;
+  public abstract int displayBitmapData(byte[]) throws android.os.RemoteException;
+  public abstract int displayBitmap(android.graphics.Bitmap, com.topwise.cloudpos.aidl.smallscreen.BitmapAlign) throws android.os.RemoteException;
+}

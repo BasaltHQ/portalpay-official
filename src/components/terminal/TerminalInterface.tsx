@@ -401,6 +401,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                     logoPadding={5}
                                     ecLevel="H"
                                     quietZone={10}
+                                    logoCrossOrigin="anonymous"
                                 />
                                 {/* Success Overlay */}
                                 {selected?.status === "paid" && (
