@@ -130,7 +130,8 @@ class MainActivity : BridgeActivity() {
                                                 // Exit lockdown so the system installer can show
                                                 try {
                                                     val mode = lockdownConfig.value.lockdownMode
-                                                    if (mode == "standard") {
+                                                    if (mode == "standard" || mode == "device_owner") {
+                                                        isTemporarilyUnlocked = true
                                                         stopLockTask()
                                                         Log.d(TAG, "Exited lock task mode for update installation")
                                                     }
@@ -272,7 +273,21 @@ class MainActivity : BridgeActivity() {
                     val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
                     if (dpm.isDeviceOwnerApp(packageName) && info.mandatory && info.downloadUrl != null) {
                         Log.d(TAG, "Auto-installing mandatory update (Device Owner mode)")
-                        otaUpdateManager.downloadAndInstall(info.downloadUrl)
+                        otaUpdateManager.downloadAndInstall(
+                            downloadUrl = info.downloadUrl,
+                            onComplete = {
+                                try {
+                                    val mode = lockdownConfig.value.lockdownMode
+                                    if (mode == "standard" || mode == "device_owner") {
+                                        isTemporarilyUnlocked = true
+                                        stopLockTask()
+                                        Log.d(TAG, "Exited lock task mode for silent update installation")
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Failed to stop lock task", e)
+                                }
+                            }
+                        )
                     }
                 }
             }
