@@ -99,12 +99,11 @@ export function useReceiptPrinter() {
 
             const activePrinter = profile.type === 'KIOSK_H2150B' ? KioskPrinter : TopWisePrinter;
 
-            if (content.text) {
-                await activePrinter.printText({ text: content.text });
-            }
-            if (content.base64Image) {
-                await activePrinter.printImage({ base64: content.base64Image });
-            }
+            // Use the unified native document printing method to prevent overlapping hardware buffer jobs
+            await activePrinter.printDocument({
+                text: content.text,
+                base64: content.base64Image
+            });
             return true;
         } catch (err) {
             console.error('Print failed:', err);

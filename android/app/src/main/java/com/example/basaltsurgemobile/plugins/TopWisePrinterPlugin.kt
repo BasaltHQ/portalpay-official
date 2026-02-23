@@ -91,6 +91,43 @@ class TopWisePrinterPlugin : Plugin() {
             call.reject("Image print failed: ${e.message}")
         }
     }
+    @PluginMethod
+    fun printDocument(call: PluginCall) {
+        val text = call.getString("text")
+        val base64Data = call.getString("base64")
+
+        val printer = getPrinter()
+        if (printer == null) {
+            call.reject("TopWise Printer not available")
+            return
+        }
+
+        try {
+            if (!text.isNullOrEmpty()) {
+                printer.addText(0, 0, 0, text)
+            }
+            if (!base64Data.isNullOrEmpty()) {
+                val decodedString = Base64.decode(base64Data.substringAfter(","), Base64.DEFAULT)
+                var bmp = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
+                bmp = resizeBitmap(bmp, 384)
+                printer.addImage(0, bmp)
+            }
+
+            printer.start(object : AidlPrinterListener.Stub() {
+                override fun onError(error: Int) {
+                    call.reject("Print error: $error")
+                }
+                override fun onPrintFinish() {
+                    val res = JSObject()
+                    res.put("success", true)
+                    call.resolve(res)
+                }
+            })
+        } catch (e: Exception) {
+            Log.e(TAG, "Document print failed", e)
+            call.reject("Document print failed: ${e.message}")
+        }
+    }
 
     private fun getPrinter(): AidlPrinter? {
         val manager = HardwareRegistry.topWiseManager

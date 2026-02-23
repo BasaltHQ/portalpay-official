@@ -59,6 +59,43 @@ class KioskPrinterPlugin : Plugin() {
             call.reject("Print failed: ${e.message}")
         }
     }
+    @PluginMethod
+    fun printDocument(call: PluginCall) {
+        val text = call.getString("text")
+        val base64Data = call.getString("base64")
+
+        if (api == null) {
+            call.reject("ICOD PrinterAPI not initialized")
+            return
+        }
+
+        try {
+            if (!text.isNullOrEmpty()) {
+                api?.printString(text)
+            }
+            
+            if (!base64Data.isNullOrEmpty()) {
+                val decodedString = Base64.decode(base64Data.substringAfter(","), Base64.DEFAULT)
+                val bmp = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
+                
+                api?.setAlignMode(1) // Center
+                api?.printBitmap(bmp)
+                api?.printString("\n\n\n") // Feed paper after image to clear cutter
+            } else if (!text.isNullOrEmpty()) {
+                api?.printString("\n\n\n") // Feed paper if only text
+            }
+            
+            // ESC/POS command to cut paper
+            api?.fullCut() 
+            
+            val res = JSObject()
+            res.put("success", true)
+            call.resolve(res)
+        } catch (e: Exception) {
+            Log.e(TAG, "Document print failed", e)
+            call.reject("Document print failed: ${e.message}")
+        }
+    }
 
     @PluginMethod
     fun printImage(call: PluginCall) {
