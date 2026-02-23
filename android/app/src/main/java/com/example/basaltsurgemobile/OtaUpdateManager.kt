@@ -277,9 +277,10 @@ class OtaUpdateManager(private val context: Context) {
      * Check if enough time has passed since last check
      */
     fun shouldCheckForUpdate(): Boolean {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val lastCheck = prefs.getLong(KEY_LAST_CHECK, 0)
-        return System.currentTimeMillis() - lastCheck > CHECK_INTERVAL_MS
+        // ALWAYS check when the caller (MainActivity) explicitly requests it.
+        // We rely on MainActivity's coroutine `delay()` loop rather than 
+        // aggressively blocking it in SharedPreferences.
+        return true
     }
     
     /**
