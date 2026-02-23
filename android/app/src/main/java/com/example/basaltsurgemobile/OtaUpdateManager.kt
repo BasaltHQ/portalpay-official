@@ -135,7 +135,7 @@ class OtaUpdateManager(private val context: Context) {
                 context.registerReceiver(
                     receiver,
                     IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-                    Context.RECEIVER_NOT_EXPORTED
+                    Context.RECEIVER_EXPORTED
                 )
             } else {
                 context.registerReceiver(
@@ -177,16 +177,17 @@ class OtaUpdateManager(private val context: Context) {
 
     private fun installPackageInteractively(apkUri: Uri) {
         try {
-            val file = File(apkUri.path ?: return)
-            
-            val installUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val installUri = if (apkUri.scheme == "content") {
+                apkUri
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                val file = File(apkUri.path ?: return)
                 FileProvider.getUriForFile(
                     context,
                     "${context.packageName}.fileprovider",
                     file
                 )
             } else {
-                Uri.fromFile(file)
+                apkUri
             }
             
             val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -204,8 +205,7 @@ class OtaUpdateManager(private val context: Context) {
     
     private fun installPackageSilently(apkUri: Uri) {
         try {
-            val file = File(apkUri.path ?: return)
-            val inputStream = java.io.FileInputStream(file)
+            val inputStream = context.contentResolver.openInputStream(apkUri) ?: return
             val packageInstaller = context.packageManager.packageInstaller
             val params = android.content.pm.PackageInstaller.SessionParams(
                 android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL
