@@ -264,8 +264,8 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                     bgColor="#000000"
                     qrStyle="dots"
                     eyeRadius={4}
-                    removeQrCodeBehindLogo={true}
-                    logoImage={logoUrl || ""}
+                    removeQrCodeBehindLogo={false}
+                    logoImage=""
                     logoWidth={48}
                     logoCrossOrigin="anonymous"
                     ecLevel="Q"
@@ -280,8 +280,8 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                     bgColor="#FFFFFF"
                     qrStyle="dots"
                     eyeRadius={4}
-                    removeQrCodeBehindLogo={true}
-                    logoImage={logoUrl || ""}
+                    removeQrCodeBehindLogo={false}
+                    logoImage=""
                     logoWidth={48}
                     logoCrossOrigin="anonymous"
                     ecLevel="Q"
