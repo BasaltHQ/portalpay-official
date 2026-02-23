@@ -18,6 +18,10 @@
 # testing
 /coverage
 
+# Production Keystore Secrets for GitHub Actions
+release.jks
+release_keystore_base64.txt
+
 /.VSCodeCounter
 
 # next.js

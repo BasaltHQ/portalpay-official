@@ -83,14 +83,24 @@ jobs:
             echo "Continuing without custom icon..."
           fi
 
+      - name: Decode Keystore
+        run: |
+          mkdir -p android/keystore
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/keystore/release.keystore
+
       - name: Build APK with Gradle
         env:
           APP_NAME_INPUT: ${{ github.event.inputs.appName }}
           BASE_DOMAIN_INPUT: ${{ github.event.inputs.baseDomain }}
+          KEYSTORE_FILE_PATH: keystore/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           # Use environment variables to properly handle special characters like ?& in URLs
-          ./gradlew assembleDebug \
+          # Use assembleRelease to generate production-ready signed APKs for remote OTA updates
+          ./gradlew assembleRelease \
             -PAPP_NAME="$APP_NAME_INPUT" \
             -PBASE_DOMAIN="$BASE_DOMAIN_INPUT" \
             -PVERSION_CODE="${{ github.event.inputs.versionCode }}" \
@@ -107,7 +117,7 @@ jobs:
             # Blob name: brands/{brandKey}-touchpoint-signed.apk
 
             BRAND_KEY="${{ github.event.inputs.brandKey }}"
-            APK_FILE="android/app/build/outputs/apk/debug/app-debug.apk"
+            APK_FILE="android/app/build/outputs/apk/release/app-release.apk"
 
             # Storage configuration (must match existing infrastructure)
             CONTAINER="portalpay"
