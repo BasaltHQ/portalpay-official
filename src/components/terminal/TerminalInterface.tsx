@@ -428,6 +428,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                     logoWidth={40}
                                     logoHeight={40}
                                     removeQrCodeBehindLogo={true}
+                                    logoCrossOrigin="anonymous"
                                     logoPadding={5}
                                     ecLevel="H"
                                     quietZone={10}
