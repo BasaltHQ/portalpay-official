@@ -179,10 +179,10 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
         if (qrOpen && portalUrl) {
             // Need a slight delay to allow the QR canvas to render
             const timer = setTimeout(() => {
-                const canvas = document.getElementById('terminal-qr-canvas') as HTMLCanvasElement;
+                const canvas = document.getElementById('terminal-secondary-qr-canvas') as HTMLCanvasElement;
                 if (canvas && canvas.width > 0) {
                     try {
-                        const base64 = canvas.toDataURL("image/jpeg", 0.9);
+                        const base64 = canvas.toDataURL("image/jpeg", 1.0);
                         pushQRToCustomerScreen(portalUrl, base64.split(',')[1] || base64).catch(console.error);
                     } catch (e) {
                         console.error("Canvas toDataURL failed", e);
@@ -252,6 +252,42 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
     return (
         <div className="h-[100dvh] flex flex-col overflow-hidden p-2 gap-2 md:h-auto md:overflow-visible md:max-w-4xl md:mx-auto md:p-4 md:p-6 md:space-y-6 md:gap-0" style={{ backgroundColor: 'var(--tp-bg-primary)', color: 'var(--tp-text-primary)', fontFamily: tpTheme.fontFamily || undefined }}>
             <div className="tp-ambient" />
+
+            {/* Dedicated Invisible Canvases strictly formatted for Native Hardware Image Buffers */}
+            <div className="absolute opacity-0 pointer-events-none -z-10">
+                {/* Secondary Screen display (Dark Mode) */}
+                <QRCode
+                    id="terminal-secondary-qr-canvas"
+                    value={portalUrl || "https://basaltsurge.com"}
+                    size={200}
+                    fgColor="#FFFFFF"
+                    bgColor="#000000"
+                    qrStyle="dots"
+                    eyeRadius={4}
+                    removeQrCodeBehindLogo={true}
+                    logoImage={logoUrl || ""}
+                    logoWidth={48}
+                    logoCrossOrigin="anonymous"
+                    ecLevel="Q"
+                    quietZone={5}
+                />
+                {/* Thermal Receipt Printer (Light Mode / Black on White paper) */}
+                <QRCode
+                    id="terminal-printer-qr-canvas"
+                    value={portalUrl || "https://basaltsurge.com"}
+                    size={200}
+                    fgColor="#000000"
+                    bgColor="#FFFFFF"
+                    qrStyle="dots"
+                    eyeRadius={4}
+                    removeQrCodeBehindLogo={true}
+                    logoImage={logoUrl || ""}
+                    logoWidth={48}
+                    logoCrossOrigin="anonymous"
+                    ecLevel="Q"
+                    quietZone={5}
+                />
+            </div>
             <div className="flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">
                     {logoUrl && <img src={logoUrl} className="h-10 w-10 object-contain" />}
@@ -440,13 +476,16 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                                 `Time: ${new Date().toLocaleString()}\n` +
                                                 `Rcpt: ${selected.receiptId.slice(0, 8)}\n` +
                                                 `--------------------------------\n` +
-                                                `${itemLabel || "Sale"}    ${formatCurrency(totalConverted, terminalCurrency)}\n` +
-                                                `--------------------------------\n` +
-                                                `Scan QR at:\n` +
-                                                `${window.location.host}/portal/${selected.receiptId.slice(0, 8)}\n\n`;
+                                                `${itemLabel || "Sale"}    ${formatCurrency(totalConverted, terminalCurrency)}\n`;
+                                            // Find the Thermal Printer optimized canvas (Light Mode)
+                                            let qrBase64 = undefined;
+                                            const canvas = document.getElementById('terminal-printer-qr-canvas') as HTMLCanvasElement;
+                                            if (canvas && canvas.width > 0) {
+                                                qrBase64 = canvas.toDataURL("image/png").split(',')[1] || canvas.toDataURL("image/png");
+                                            }
 
                                             // You can pass externalIp: "192.168.x.x" in the second argument if stored in local settings
-                                            await printDocument({ text: bodyText });
+                                            await printDocument({ text: bodyText, base64Image: qrBase64 });
                                         } else {
                                             window.print();
                                         }
@@ -510,18 +549,15 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
 
                             <div className="flex justify-center my-2">
                                 <QRCode
-                                    id="terminal-qr-canvas"
                                     value={portalUrl}
                                     size={100}
-                                    fgColor="#FFFFFF"
-                                    bgColor="#000000"
+                                    fgColor="#000000"
+                                    bgColor="#FFFFFF"
                                     qrStyle="dots"
                                     eyeRadius={4}
-                                    removeQrCodeBehindLogo={true}
-                                    logoImage={logoUrl || ""}
-                                    logoWidth={24}
-                                    logoCrossOrigin="anonymous"
-                                    ecLevel="Q"
+                                    removeQrCodeBehindLogo={false}
+                                    logoImage=""
+                                    ecLevel="M"
                                     quietZone={0}
                                 />
                             </div>
