@@ -109,9 +109,16 @@ class TopWisePrinterPlugin : Plugin() {
             if (!base64Data.isNullOrEmpty()) {
                 val decodedString = Base64.decode(base64Data.substringAfter(","), Base64.DEFAULT)
                 var bmp = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
+                
+                // Scale the image for the thermal roll
                 bmp = resizeBitmap(bmp, 384)
+                
+                // TopWise SDK groups all addText commands before addImage commands internally.
+                // To force whitespace *after* the image, we natively pad the Bitmap with whitespace 
+                // so the printer gears push it past the tear bar.
+                bmp = padBitmapBottom(bmp, 150)
+                
                 printer.addImage(0, bmp)
-                printer.addText(0, 0, 0, "\n\n\n") // Feed paper after image to clear tear bar
             } else if (!text.isNullOrEmpty()) {
                 printer.addText(0, 0, 0, "\n\n\n") // Feed paper if only text
             }
@@ -141,5 +148,13 @@ class TopWisePrinterPlugin : Plugin() {
         val aspectRatio = bitmap.height.toDouble() / bitmap.width.toDouble()
         val targetHeight = (targetWidth * aspectRatio).toInt()
         return Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, false)
+    }
+
+    private fun padBitmapBottom(bitmap: Bitmap, paddingPx: Int): Bitmap {
+        val paddedBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height + paddingPx, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(paddedBitmap)
+        canvas.drawColor(android.graphics.Color.WHITE)
+        canvas.drawBitmap(bitmap, 0f, 0f, null)
+        return paddedBitmap
     }
 }
