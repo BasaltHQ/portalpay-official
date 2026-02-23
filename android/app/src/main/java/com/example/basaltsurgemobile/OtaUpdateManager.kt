@@ -175,19 +175,45 @@ class OtaUpdateManager(private val context: Context) {
         }
     }
 
+    private fun copyUriToCache(uri: Uri): java.io.File? {
+        try {
+            val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+            val cacheFile = java.io.File(context.cacheDir, "update_install.apk")
+            if (cacheFile.exists()) {
+                cacheFile.delete()
+            }
+            val outputStream = java.io.FileOutputStream(cacheFile)
+            val buffer = ByteArray(8192)
+            var bytesRead: Int
+            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                outputStream.write(buffer, 0, bytesRead)
+            }
+            outputStream.flush()
+            outputStream.close()
+            inputStream.close()
+            return cacheFile
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to copy APK to cache: ${e.message}", e)
+            return null
+        }
+    }
+
     private fun installPackageInteractively(apkUri: Uri) {
         try {
-            val installUri = if (apkUri.scheme == "content") {
-                apkUri
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                val file = File(apkUri.path ?: return)
-                FileProvider.getUriForFile(
+            val cachedApk = copyUriToCache(apkUri)
+            if (cachedApk == null) {
+                Log.e(TAG, "Failed to create cached APK file for interactive install")
+                return
+            }
+
+            val installUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                androidx.core.content.FileProvider.getUriForFile(
                     context,
                     "${context.packageName}.fileprovider",
-                    file
+                    cachedApk
                 )
             } else {
-                apkUri
+                Uri.fromFile(cachedApk)
             }
             
             val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -196,7 +222,7 @@ class OtaUpdateManager(private val context: Context) {
             }
             
             context.startActivity(intent)
-            Log.d(TAG, "Interactive install intent launched for: $apkUri")
+            Log.d(TAG, "Interactive install intent launched for: $installUri")
             
         } catch (e: Exception) {
             Log.e(TAG, "Error installing APK interactively: ${e.message}")

@@ -1,0 +1,14 @@
+{
+ "VERSION": "01",
+  "PRODUCTION_TYPE": "PRO",
+  "PROTOCAL_TYPE": "FUTUREX",
+  "ENCODE_FORMAT": "JSON",
+  "LOCATION_TYPE": "BASE",
+  "MAX_KEYNUM_PERTIME": 10,
+  "SESSION_KEY_ID": 240,
+  "KDH_AUTH_ID": 240,
+  "KDH_ENC_ID": 240,
+  "KRD_AUTH_ID":255,
+  "URL": "us.rs.rki.valorpaytech.com",
+  "PORT": "9080"
+}

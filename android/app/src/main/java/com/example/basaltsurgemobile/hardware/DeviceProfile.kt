@@ -8,6 +8,8 @@ enum class DeviceType {
     TOPWISE_T6D,
     KIOSK_H2150B,
     KDS_21_5,
+    VALOR_VP550,
+    VALOR_VP800,
     GENERIC_PHONE,
     GENERIC_TABLET
 }
@@ -41,6 +43,15 @@ object DeviceProfile {
                 Log.d(TAG, "Detected KDS Display")
                 DeviceType.KDS_21_5
             }
+            // Valor PayTech VP550 & VP800
+            model.contains("VP550") || product.contains("VP550") || manufacturer.contains("VALOR") -> {
+                Log.d(TAG, "Detected Valor VP550 Terminal")
+                DeviceType.VALOR_VP550
+            }
+            model.contains("VP800") || product.contains("VP800") -> {
+                Log.d(TAG, "Detected Valor VP800 Terminal")
+                DeviceType.VALOR_VP800
+            }
             // Generic 
             isTablet(model, device) -> {
                 Log.d(TAG, "Detected Generic Tablet")
@@ -58,14 +69,15 @@ object DeviceProfile {
     }
 
     // Hardware Capabilities
-    val hasSecondaryDisplay: Boolean get() = type == DeviceType.TOPWISE_T6D
-    val hasBuiltInPrinter: Boolean get() = type == DeviceType.TOPWISE_T6D || type == DeviceType.KIOSK_H2150B
+    val hasSecondaryDisplay: Boolean get() = type == DeviceType.TOPWISE_T6D || type == DeviceType.VALOR_VP800
+    val hasBuiltInPrinter: Boolean get() = type == DeviceType.TOPWISE_T6D || type == DeviceType.KIOSK_H2150B || type == DeviceType.VALOR_VP550 || type == DeviceType.VALOR_VP800
     val hasAutoCutter: Boolean get() = type == DeviceType.KIOSK_H2150B
-    val hasPINPad: Boolean get() = type == DeviceType.TOPWISE_T6D
-    val hasCardReader: Boolean get() = type == DeviceType.TOPWISE_T6D
+    val hasPINPad: Boolean get() = type == DeviceType.TOPWISE_T6D || type == DeviceType.VALOR_VP550 || type == DeviceType.VALOR_VP800
+    val hasCardReader: Boolean get() = type == DeviceType.TOPWISE_T6D || type == DeviceType.VALOR_VP550 || type == DeviceType.VALOR_VP800
     val hardwareScannerType: String get() = when (type) {
         DeviceType.TOPWISE_T6D -> "TOPWISE_CAMERA"
         DeviceType.KIOSK_H2150B -> "ICOD_2D_SCANNER"
+        DeviceType.VALOR_VP550, DeviceType.VALOR_VP800 -> "VALOR_CAMERA"
         else -> "SOFTWARE_ML_KIT"
     }
 }

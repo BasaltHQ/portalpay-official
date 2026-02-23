@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    >
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        >
+
+        <LinearLayout
+            android:id="@+id/root_view1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+           >
+
+            <include
+                android:id="@+id/header_top"
+                layout="@layout/dialog2_header"/>
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:weightSum="2">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+
+                    <include layout="@layout/dialog2_header_lyt" />
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginTop="15dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="visible"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:layout_marginBottom="30dp"
+                            tools:ignore="UselessParent">
+
+                            <LinearLayout
+                                android:id="@+id/pin_layout"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/textViewPinDigitEx"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="57dp"
+                                    android:layout_gravity="center_horizontal"
+                                    android:layout_marginTop="0dp"
+                                    android:gravity="center"
+                                    android:paddingBottom="10dp"
+                                    android:text="Enter PIN"
+                                    android:visibility="gone"
+                                    android:textStyle="bold"
+                                    android:textColor="@android:color/black"
+                                    android:textSize="34dp"
+                                    tools:ignore="RtlHardcoded" />
+                                <TextView
+                                    android:layout_below="@+id/textViewPinDigitEx"
+                                    android:id="@+id/pan_no"
+                                    android:layout_centerHorizontal="true"
+                                    android:background="@drawable/rect_border_pin"
+                                    android:textColor="@color/bt_black"
+                                    android:layout_width="280dp"
+                                    android:layout_height="80dp"
+                                    android:layout_marginBottom="10dp"
+                                    android:gravity="center"
+                                    android:hint="ENTER PIN"
+                                    android:textColorHint="@color/bt_black"
+                                    android:layout_gravity="center_horizontal"
+                                    android:textSize="34dp"
+                                    android:inputType="numberPassword"
+                                    android:focusable="false"
+                                    android:focusableInTouchMode="false"
+                                    android:maxLength="12"
+                                    tools:ignore="SpUsage,TextViewEdits" />
+                            </LinearLayout>
+
+
+                        </LinearLayout>
+
+                    </RelativeLayout>
+                </LinearLayout>
+
+                <RelativeLayout
+                    android:id="@+id/keyPad_lyt"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:weightSum="10"
+                        android:orientation="vertical"
+                        android:layout_weight="7">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_weight="10"
+                            android:orientation="vertical"
+                            android:weightSum="10"
+                            tools:ignore="DisableBaselineAlignment,NestedWeights,UselessParent">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_marginEnd="1dp"
+                                android:layout_marginStart="1dp"
+                                android:layout_weight="6">
+                                <TableLayout
+                                    android:id="@+id/keyboard"
+                                    android:layout_width="fill_parent"
+                                    android:layout_height="fill_parent"
+                                    android:orientation="vertical"
+                                    android:showDividers="middle"
+                                    android:weightSum="3">
+
+                                    <TableRow style="@style/keyboard_row">
+
+                                        <TextView
+                                            android:id="@+id/KBD1"
+                                            style="@style/keyboard_number_button"
+                                            android:text="1" />
+
+                                        <TextView
+                                            android:id="@+id/KBD2"
+                                            style="@style/keyboard_number_button"
+                                            android:text="2" />
+
+                                        <TextView
+                                            android:id="@+id/KBD3"
+                                            style="@style/keyboard_number_button"
+                                            android:text="3" />
+                                    </TableRow>
+
+                                    <TableRow
+                                        style="@style/keyboard_row">
+
+                                        <TextView
+                                            android:id="@+id/KBD4"
+                                            style="@style/keyboard_number_button"
+                                            android:text="4"/>
+
+                                        <TextView
+                                            android:id="@+id/KBD5"
+                                            style="@style/keyboard_number_button"
+                                            android:text="5" />
+
+                                        <TextView
+                                            android:id="@+id/KBD6"
+                                            style="@style/keyboard_number_button"
+                                            android:text="6" />
+                                    </TableRow>
+
+                                    <TableRow
+                                        style="@style/keyboard_row">
+                                        <TextView
+                                            android:id="@+id/KBD7"
+                                            style="@style/keyboard_number_button"
+                                            android:text="7" />
+
+                                        <TextView
+                                            android:id="@+id/KBD8"
+                                            style="@style/keyboard_number_button"
+                                            android:text="8" />
+
+                                        <TextView
+                                            android:id="@+id/KBD9"
+                                            style="@style/keyboard_number_button"
+                                            android:text="9" />
+                                    </TableRow>
+                                </TableLayout>
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_weight="4"
+                                android:baselineAligned="false"
+                                android:orientation="vertical"
+                                android:weightSum="2">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="0dp"
+                                    android:layout_weight="1"
+                                    android:weightSum="3"
+                                    android:orientation="horizontal">
+
+                                    <RelativeLayout
+                                        android:id="@+id/KBD_Clear"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:layout_weight="1"
+                                        android:gravity="center"
+                                        android:background="@drawable/key_yellow_shape">
+
+                                        <ImageView
+                                            android:layout_width="50dp"
+                                            android:layout_height="50dp"
+                                            android:layout_marginStart="10dp"
+                                            android:layout_marginTop="10dp"
+                                            android:layout_marginEnd="10dp"
+                                            android:layout_marginBottom="10dp"
+                                            android:background="@drawable/ic_black_24dp"
+                                            android:backgroundTint="@color/white"
+                                            android:gravity="center"
+                                            tools:ignore="ContentDescription" />
+                                    </RelativeLayout>
+
+                                    <RelativeLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:layout_weight="1"
+                                        tools:ignore="NestedWeights">
+
+                                        <TextView
+                                            android:id="@+id/KBD0"
+                                            style="@style/keyboard_number_button_new"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:layout_marginStart="0dp"
+                                            android:layout_marginTop="0dp"
+                                            android:layout_marginEnd="0dp"
+                                            android:layout_marginBottom="0dp"
+                                            android:text="0" />
+                                    </RelativeLayout>
+                                    <RelativeLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:layout_weight="1"
+                                        android:background="@drawable/key_red_shape">
+
+                                        <TextView
+                                            android:id="@+id/KBD_Cancel"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:gravity="center"
+                                            android:text="X"
+                                            android:textColor="@android:color/black"
+                                            android:textSize="34dp"
+                                            tools:ignore="HardcodedText" />
+                                    </RelativeLayout>
+
+                                </LinearLayout>
+
+                                <LinearLayout
+                                    android:id="@+id/confirm_lyt"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="0dp"
+                                    android:weightSum="2"
+                                    android:layout_weight="1">
+
+                                    <LinearLayout
+                                        android:id="@+id/KBD_Enter"
+                                        android:layout_width="0dp"
+                                        android:layout_height="match_parent"
+                                        android:layout_weight="2"
+                                        android:background="@drawable/key_green_shape">
+
+                                        <TextView
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:gravity="center"
+                                            android:text="Enter"
+                                            android:textAllCaps="true"
+                                            android:textColor="@android:color/white"
+                                            android:textSize="30dp"
+                                            android:textStyle="bold"
+                                            tools:ignore="HardcodedText" />
+                                    </LinearLayout>
+                                </LinearLayout>
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                </RelativeLayout>
+
+
+            </LinearLayout>
+
+
+        </LinearLayout>
+            <!--<include
+                android:id="@+id/layout_display_2"
+                layout="@layout/display2_confirmation"
+                android:visibility="gone"/>-->
+    </FrameLayout>
+</LinearLayout>
+
+

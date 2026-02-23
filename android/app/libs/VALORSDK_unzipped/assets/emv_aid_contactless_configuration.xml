@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root name="CONTACTLESS">
+    <!-- value format: HEX String -->
+    <entry name="Terminal Configuration">
+        <!-- AID -->
+        <item key="9F06" value="00000000000000000000000000000000" />
+        <!-- ICS -->
+        <item key="DF24" value="F4C0F0E8EF0E62" />
+        <!-- Transaction Currency Code -->
+        <item key="5F2A" value="0840" />
+        <!-- Transaction Currency Exponent -->
+        <item key="5F36" value="02" />
+        <!-- Terminal Country Code -->
+        <item key="9F1A" value="0840" />
+        <!-- Terminal Type -->
+        <item key="9F35" value="22" />
+        <!-- Terminal Floor Limit -->
+        <item key="9F1B" value="00000000" />
+        <!--        <item key="9F1C" value="3132333435363738" />-->
+        <!-- Interface Device (IFD) Serial Number 3835313049434300-->
+        <item key="9F1E" value="3030303030303031" />
+        <!-- Terminal Capabilities -->
+        <item key="9F33" value="E0F8C8" />
+        <!-- Additional Terminal Capabilities -->
+        <item key="9F40" value="FF80F0A001" />
+        <!-- Acquirer Identifier -->
+        <item key="9F01" value="000123456789" />
+        <!-- Merchant Category Code -->
+        <item key="9F15" value="5515" />
+        <!-- Transaction Reference Currency Code -->
+        <item key="9F3C" value="0840" />
+        <!-- DDOL -->
+        <item key="DF44" value="9F3704" />
+        <!-- TDOL -->
+        <item key="DF45" value="9F02065F2A029A039C0195059F3704" />
+        <!-- TDOL -->
+        <item key="DF15" value="00000000" />
+        <item key="DF16" value="00" />
+        <item key="DF17" value="00" />
+        <item key="DF24" value="F4C0F0F8EF8E62" />
+        <item key="DF22" value="00000000" />
+        <!-- Application Selection Indicator -->
+        <item key="DF01" value="01" />
+        <!-- Reader Contactless Transaction Limit(No On-device CVM)- 'DF8124' -->
+        <item key="DF20" value="009999999999" />
+        <!-- Reader Contactless Floor Limit -->
+        <item key="DF19" value="000000000000" />
+        <!-- Reader CVM Required Limit - 'DF8126’ -->
+        <item key="DF21" value="000000000000" />
+        <!-- Indicate whether using the Limit Amount -->
+        <item key="DF27" value="1F" />
+        <!-- Status check supported -->
+        <item key="DF39" value="00" />
+        <!-- Zero Amount Allowed -->
+        <item key="DF3A" value="00" />
+        <!-- Select by AID supported -->
+        <item key="1F8102" value="01" />
+        <!--        <item key="9F7A" value="01" />-->
+        <!-- Merchant Identifier -->
+        <item key="9F16" value="313233343536373839303132333435" />
+        <!-- Feference currency exponent -->
+        <item key="9F3D" value="02" />
+        <!-- Application Version Number -->
+        <item key="9F09" value="0002" />
+        <!--        <item key="1F8123" value="80" />-->
+    </entry>
+    <entry name="AID CLSS Unionpay">
+        <!-- AID -->
+        <item key="9F06" value="A0000003330101" />
+        <!-- Kernel ID -->
+        <item key="DF37" value="0300000000000000" />
+        <!-- AIDTerminal Transaction Qualifiers -->
+        <item key="9F66" value="36004000" />
+        <!-- Terminal Country Code  -->
+        <item key="9F1A" value="0840" />
+        <!-- Transaction Currency Code -->
+        <item key="5F2A" value="0840" />
+        <!-- Reader Contactless Floor Limit -->
+        <item key="DF19" value="000000000000" />
+        <!-- Reader Contactless Transaction Limit(No On-device CVM)- 'DF8124' -->
+        <item key="DF20" value="009999999999" />
+        <!-- Reader CVM Required Limit - 'DF8126’ -->
+        <item key="DF21" value="000000002500" />
+        <item key="DF3D" value="00"/>
+        <item key="9F09" value="00A0"/>
+    </entry>
+    <entry name="AID CLSS PAYWAVE1">
+        <!-- AID -->
+        <item key="9F06" value="A0000000031010" />
+        <!-- Kernel ID -->
+        <item key="DF37" value="0300000000000000" />
+        <!-- AIDTerminal Transaction Qualifiers 36804000-->
+        <item key="9F66" value="36804000" />
+        <!-- Reader Contactless Transaction Limit(No On-device CVM)- 'DF8124' -->
+        <item key="DF20" value="009999999999" />
+        <!-- Reader CVM Required Limit - 'DF8126’ -->
+        <item key="DF21" value="000000002500" />
+        <!-- Reader Contactless Floor Limit- ‘DF8123’ -->
+        <item key="DF19" value="000000000000" />
+        <item key="DF3D" value="00"/>
+        <item key="9F09" value="00A0"/>
+    </entry>
+    <entry name="AID CLSS PAYWAVE2">
+        <!-- AID -->
+        <item key="9F06" value="A0000000032010" />
+        <!-- Kernel ID -->
+        <item key="DF37" value="0300000000000000" />
+        <!-- AIDTerminal Transaction Qualifiers -->
+        <item key="9F66" value="36804000" />
+        <!-- Reader Contactless Transaction Limit(No On-device CVM)- 'DF8124' -->
+        <item key="DF20" value="009999999999" />
+        <!-- Reader CVM Required Limit - 'DF8126’ -->
+        <item key="DF21" value="000000002500" />
+        <!-- Reader Contactless Floor Limit- ‘DF8123’ -->
+        <item key="DF19" value="000000000000" />
+        <item key="DF3D" value="00"/>
+        <item key="9F09" value="00A0"/>
+    </entry>
+    <entry name="AID CLSS PAYWAVE3">
+        <!-- AID -->
+        <item key="9F06" value="A0000000033010" />
+        <!-- Kernel ID -->
+        <item key="DF37" value="0300000000000000" />
+        <!-- AIDTerminal Transaction Qualifiers -->
+        <item key="9F66" value="36804000" />
+        <!-- Reader Contactless Transaction Limit(No On-device CVM)- 'DF8124' -->
+        <item key="DF20" value="009999999999" />
+        <!-- Reader CVM Required Limit - 'DF8126’ -->
+        <item key="DF21" value="000000000000" />
+        <!-- Reader Contactless Floor Limit- ‘DF8123’ -->
+        <item key="DF19" value="000000000000" />
+        <item key="DF3D" value="00"/>
+        <item key="9F09" value="00A0"/>
+    </entry>
+    <entry name="AID CLSS PAYWAVE4">
+        <!-- AID -->
+        <item key="9F06" value="A0000000980840" />
+        <!-- Kernel ID -->
+        <item key="DF37" value="0300000000000000" />
+        <!-- AIDTerminal Transaction Qualifiers -->
+        <item key="9F66" value="36804000" />
+        <!-- Reader Contactless Transaction Limit(No On-device CVM)- 'DF8124' -->
+        <item key="DF20" value="009999999999" />
+        <!-- Reader CVM Required Limit - 'DF8126’ -->
+        <item key="DF21" value="000000002500" />
+        <!-- Reader Contactless Floor Limit- ‘DF8123’ -->
+        <item key="DF19" value="000000000000" />
+        <item key="DF3D" value="00"/>
+        <item key="9F09" value="00A0"/>
+    </entry>
+    <entry name="AID CLSS DPASS">
+        <!-- AID -->
+        <item key="9F06" value="A0000001524010" />
+        <item key="DF37" value="0600000000000000" />
+        <!-- Terminal Transaction Qualifiers -->
+        <item key="9F66" value="36804000" />
+        <item key="DF11" value="0000000000" />
+        <item key="DF12" value="0000000000" />
+        <item key="DF13" value="0000000000" />
+        <item key="DF19" value="000000000000" />
+        <item key="DF20" value="000099999999" />
+        <item key="DF21" value="000000002500" />
+        <item key="9F1B" value="00000000" />
+        <item key="9F09" value="0001" />
+    </entry>
+    <entry name="AID CLSS AMEX">
+        <item key="9F06" value="A00000002501" />
+        <item key="DF37" value="0400000000000000" />
+        <item key="9F66" value="DCE00003" />
+        <item key="DF49" value="C0" />
+        <item key="DF4A" value="3C" />
+        <item key="9F33" value="E0F8C8" />
+        <item key="9F09" value="0001" />
+        <item key="DF13" value="0010000000" />
+        <item key="DF12" value="DE00FC9800" />
+        <item key="DF11" value="DC50FC9800" />
+        <item key="DF20" value="000099999999" />
+        <item key="DF19" value="000000000000" />
+        <item key="DF21" value="000000005000" />
+        <item key="1F8102" value="01" />
+    </entry>
+
+
+    <entry name="AID CLSS PAYPASS1">
+        <!-- AID -->
+        <item key="9F06" value="A0000000041010" />
+        <!-- Kernel ID -->
+        <item key="DF37" value="0200000000000000" />
+        <!-- Terminal Capabilities -->
+        <item key="9F33" value="E06008" />
+        <item key="1F8101" value="01" />
+        <item key="DF8119" value="60" />
+        <item key="DF7D" value="00" />
+
+        <!-- CVM Capability -->
+        <item key="DF48" value="08" />
+        <!-- Mag-stripe CVM Capability – CVM Required-'DF811E' -->
+        <item key="DF42" value="10" />
+        <!-- Mag-stripe CVM Capability – No CVM Required-'DF812C' -->
+        <item key="DF47" value="00" />
+        <!-- Kernel Configuration- ‘DF811B’ -->
+        <item key="DF2F" value="B0" />
+        <!-- Default UDOL- 'DF811A' -->
+        <item key="DF2B" value="9F6A04" />
+        <!-- Mobile Support Indicator-'9F7E’ -->
+        <item key="DF46" value="00" />
+        <!-- used for READER_CLSS_TRANS_LIMIT_ON_DEVICE_CVM(DF8125) -->
+        <item key="9F7B" value="009999999999" />
+        <!-- Reader Contactless Transaction Limit(No On-device CVM)- 'DF8124' -->
+        <item key="DF20" value="009999999999" />
+        <!-- Reader Contactless Floor Limit- ‘DF8123’ -->
+        <item key="DF19" value="000000000000" />
+        <!-- Reader CVM Required Limit - 'DF8126’ -->
+        <item key="DF21" value="000000010000" />
+        <!-- Terminal Risk Management Data -->
+        <item key="9F1D" value="0040800000000000" />
+        <!-- TAC-Denial -->
+        <item key="DF13" value="0000000000" />
+        <!-- TAC-Online -->
+        <item key="DF12" value="FC509C8800" />
+        <!-- TAC-Default -->
+        <item key="DF11" value="FC509C8800" />
+        <!-- TLV Buffer -->
+        <item key="DF52"
+            value="DF8133020032DF8132020014DF813602012CDF81370132DF813402000BDF813502000D" />
+        <!-- Maximum Relay Resistance Grace Period- ‘DF8133’ -->
+        <item key="DF54" value="0000" />
+        <!-- Minimum Relay Resistance Grace Period- ‘DF8132’ -->
+        <item key="DF55" value="0000" />
+        <!-- Relay Resistance Accuracy Threshold- ‘DF8136’ -->
+        <item key="DF56" value="0000" />
+        <!-- Relay Resistance Transmission Time Mismatch Threshold- ‘DF8137’ -->
+        <item key="DF57" value="00" />
+        <!-- Terminal Expected Transmission Time For Relay Resistance C-APDU- ‘DF8134’ -->
+        <item key="DF58" value="0000" />
+        <!-- Terminal Expected Transmission Time For Relay Resistance R-APDU- ‘DF8135’ -->
+        <item key="DF59" value="0000" />
+        <item key="9F09" value="0002"/>
+    </entry>
+
+    <entry name="AID CLSS PAYPASS3">
+        <!-- AID -->
+        <item key="9F06" value="A0000000042203" />
+        <!-- Kernel ID -->
+        <item key="DF37" value="0200000000000000" />
+        <!-- Terminal Capabilities -->
+        <item key="9F33" value="E04008" />
+        <!-- CVM Capability -->
+        <item key="DF48" value="08" />
+        <!-- Mag-stripe CVM Capability – CVM Required-'DF811E' -->
+        <item key="DF42" value="10" />
+        <!-- Mag-stripe CVM Capability – No CVM Required-'DF812C' -->
+        <item key="DF47" value="00" />
+        <!-- Kernel Configuration- ‘DF811B’ -->
+        <item key="DF2F" value="90" />
+        <!-- Default UDOL- 'DF811A' -->
+        <item key="DF2B" value="9F6A04" />
+        <!-- Mobile Support Indicator-'9F7E’ -->
+        <item key="DF46" value="00" />
+        <!-- used for READER_CLSS_TRANS_LIMIT_ON_DEVICE_CVM(DF8125) -->
+        <item key="9F7B" value="009999999999" />
+        <!-- Reader Contactless Transaction Limit(No On-device CVM)- 'DF8124' -->
+        <item key="DF20" value="009999999999" />
+        <!-- Reader Contactless Floor Limit- ‘DF8123’ -->
+        <item key="DF19" value="000000000000" />
+        <!-- Reader CVM Required Limit - 'DF8126’ -->
+        <item key="DF21" value="000000000000" />
+        <!-- Terminal Risk Management Data -->
+        <item key="9F1D" value="407A800000000000" />
+        <!-- TAC-Denial -->
+        <item key="DF13" value="0000000000" />
+        <!-- TAC-Online -->
+        <item key="DF12" value="FC501C8800" />
+        <!-- TAC-Default -->
+        <item key="DF11" value="FC501C8800" />
+        <!-- Maximum Relay Resistance Grace Period- ‘DF8133’ -->
+        <item key="DF54" value="0032" />
+        <!-- Minimum Relay Resistance Grace Period- ‘DF8132’ -->
+        <item key="DF55" value="0014" />
+        <!-- Relay Resistance Accuracy Threshold- ‘DF8136’ -->
+        <item key="DF56" value="012C" />
+        <!-- Relay Resistance Transmission Time Mismatch Threshold- ‘DF8137’ -->
+        <item key="DF57" value="32" />
+        <!-- Terminal Expected Transmission Time For Relay Resistance C-APDU- ‘DF8134’ -->
+        <item key="DF58" value="000B" />
+        <!-- Terminal Expected Transmission Time For Relay Resistance R-APDU- ‘DF8135’ -->
+        <item key="DF59" value="000D" />
+        <item key="9F09" value="0002"/>
+    </entry>
+
+
+    <entry name="AID CLSS DPASS2">
+        <!-- AID -->
+        <item key="9F06" value="A0000001523010" />
+        <!-- Kernel ID -->
+        <item key="DF37" value="0600000000000000" />
+        <!-- Terminal Transaction Qualifiers 36804000-->
+        <item key="9F66" value="36804000" />
+        <item key="DF11" value="0000000000" />
+        <item key="DF12" value="0000000000" />
+        <item key="DF13" value="0000000000" />
+        <item key="DF19" value="000000000000" />
+        <item key="DF20" value="000099999999" />
+        <item key="DF21" value="000000002500" />
+        <item key="9F1B" value="00000000" />
+        <item key="9F09" value="0001" />
+    </entry>
+
+<!--    <entry name="AID CLSS DPASS">-->
+<!--        &lt;!&ndash; AID &ndash;&gt;-->
+<!--        <item key="9F06" value="A0000003241010" />-->
+<!--        &lt;!&ndash; Kernel ID &ndash;&gt;-->
+<!--        <item key="DF37" value="0600000000000000" />-->
+<!--        &lt;!&ndash; Terminal Transaction Qualifiers &ndash;&gt;-->
+<!--        <item key="9F66" value="36204000" />-->
+<!--        <item key="DF11" value="0000000000" />-->
+<!--        <item key="DF12" value="0000000000" />-->
+<!--        <item key="DF13" value="0000000000" />-->
+<!--        <item key="DF19" value="000000000000" />-->
+<!--        <item key="DF20" value="000099999999" />-->
+<!--        <item key="DF21" value="000000002500" />-->
+<!--        <item key="9F1B" value="00000000" />-->
+<!--        <item key="9F09" value="0001" />-->
+<!--    </entry>-->
+
+    <entry name="AID CLSS DPASS3">
+        <!-- AID -->
+        <item key="9F06" value="A0000000043060" />
+        <!-- Kernel ID -->
+        <item key="DF37" value="0200000000000000" />
+      <!--  <item key="9F33" value="36804000" />-->
+        <item key="9F33" value="E04008" />
+        <item key="DF48" value="08" />
+        <item key="DF42" value="10" />
+        <item key="DF47" value="00" />
+        <item key="DF2F" value="B0" />
+        <item key="DF2B" value="9F6A04" />
+        <item key="DF46" value="00" />
+        <item key="9F7B" value="000099999999" />
+        <item key="DF19" value="000000000000" />
+        <item key="DF20" value="000099999999" />
+        <item key="DF21" value="000000010000" />
+        <item key="9F1D" value="4C7A800000000000" />
+        <item key="DF11" value="FC501C8800" />
+        <item key="DF12" value="FC501C8800" />
+        <item key="DF13" value="0000800000" />
+        <item key="DF54" value="0000" />
+        <item key="DF55" value="0000" />
+        <item key="DF56" value="0000" />
+        <item key="DF57" value="00" />
+        <item key="DF58" value="0000" />
+        <item key="DF59" value="0000" />
+        <item key="9F09" value="0002" />
+    </entry>
+    <entry name="AID CLSS JCB">
+        <!-- AID -->
+        <item key="9F06" value="A0000000651010" />
+        <!-- Kernel ID -->
+        <item key="DF37" value="0500000000000000" />
+        <!-- Terminal Interchange Profile (static/dynamic) -->
+        <item key="9F53" value="720000" />
+        <!-- Combination Options -->
+        <item key="DF60" value="7F00" />
+        <!-- Reader Contactless Transaction Limit(No On-device CVM)- 'DF8124' -->
+        <item key="DF20" value="009999999999" />
+        <!-- Reader Contactless Floor Limit- ‘DF8123’ -->
+        <item key="DF19" value="000000000000" />
+        <!-- Reader CVM Required Limit - 'DF8126’ -->
+        <item key="DF21" value="000000002500" />
+        <item key="DF11" value="9040008000" />
+        <item key="DF12" value="9060009000" />
+        <item key="DF13" value="0410000000" />
+        <item key="9F09" value="0200" />
+    </entry>
+    <entry name="AID CLSS MCCS">
+        <!-- AID -->
+        <item key="9F06" value="A0000006150001" />
+        <!-- Kernel ID -->
+        <item key="DF37" value="2000000000000000" />
+        <!-- Contactless Application Capabilities -->
+        <item key="DF62" value="3400000288" />
+        <!-- Contactless POS Implementation Options -->
+        <item key="DF63" value="08" />
+        <!-- TLV Buffer -->
+        <item key="DF52" value="DF62053400000288DF630108" />
+        <!-- Application Version Number -->
+        <item key="9F09" value="0001" />
+        <!-- TAC-Denial -->
+        <item key="DF13" value="0000800000" />
+        <!-- TAC-Online -->
+        <item key="DF12" value="B050048000" />
+        <!-- TAC-Default -->
+        <item key="DF11" value="B050048000" />
+        <!-- Additional Terminal Capabilities  -->
+        <item key="9F40" value="7000F0A200" />
+        <!-- Reader Contactless Transaction Limit(No On-device CVM)- 'DF8124' -->
+        <item key="DF20" value="009999999999" />
+        <!-- Reader Contactless Floor Limit -->
+        <item key="DF19" value="000000000000" />
+        <!-- Reader CVM Required Limit - 'DF8126’ -->
+        <item key="DF21" value="000000025001" />
+        <!-- ICS -->
+        <item key="DF24" value="F0C0C0F0EF0E62" />
+    </entry>
+    <entry name="AID CLSS RUPAY">
+        <!-- AID -->
+        <item key="9F06" value="A0000005241010" />
+        <!-- Kernel ID -->
+        <item key="DF37" value="0D00000000000000" />
+        <!-- Application Version Number -->
+        <item key="9F09" value="0002" />
+        <!-- Reader Contactless Transaction Limit(No On-device CVM)- 'DF8124' -->
+        <item key="DF20" value="009999999999" />
+    </entry>
+    <entry name="AID CLSS INTERAC">
+        <!-- AID -->
+        <item key="9F06" value="A0000002771010" />
+        <!-- Kernel ID -->
+        <item key="DF37" value="2100000000000000" />
+        <!-- interac Terminal Transaction Information -->
+        <item key="9F59" value="BC0700" />
+        <!-- interac Terminal Option Status -->
+        <item key="9F5E" value="0000" />
+        <!-- interac Merchant Type Indicator -->
+        <item key="9F58" value="00" />
+        <!-- TAC-Denial -->
+        <item key="DF13" value="0010000000" />
+        <!-- TAC-Online -->
+        <item key="DF12" value="DC4004F800" />
+        <!-- TAC-Default -->
+        <item key="DF11" value="DC4000A800" />
+        <!-- Reader Contactless Transaction Limit(No On-device CVM)- 'DF8124' -->
+        <item key="DF20" value="009999999999" />
+    </entry>
+</root>

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/dialog_lyt"
+    android:layout_gravity="center"
+    android:orientation="vertical"
+
+    >
+   <!-- android:background="@drawable/boxbg"-->
+  <!--  <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/dialogdark"
+        android:padding="10dp"
+        android:orientation="horizontal">
+        <pl.droidsonroids.gif.GifImageView
+            android:id="@+id/custom_image"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/app_name"
+            android:visibility="visible"
+            android:src="@drawable/valorloader"
+            android:scaleType="fitCenter" />
+        <TextView
+            android:id="@+id/title_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="23sp"
+            android:paddingEnd="20dp"
+            android:singleLine="true"
+            android:visibility="visible"
+            android:textColor="@color/white"
+            android:gravity="center"
+            android:textStyle="bold"
+            android:text="@string/dialog_default_title" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/colorPrimary"/>
+
+    <RelativeLayout
+        android:id="@+id/load_image"
+        android:layout_width="match_parent"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_height="match_parent">
+
+        <pl.droidsonroids.gif.GifImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="19dp"
+            android:src="@drawable/valorloader"
+            android:scaleType="fitCenter" />
+    </RelativeLayout>
+
+
+    <TextView
+        android:id="@+id/content_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp"
+        android:paddingStart="30dp"
+        android:paddingEnd="30dp"
+        android:textSize="16sp"
+        android:textAlignment="center"
+        android:text="Message"
+        android:textColor="@color/bt_black"
+        android:layout_gravity="center"
+        android:visibility="visible" />
+
+    <LinearLayout
+        android:id="@+id/lay_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        android:weightSum="4"
+        android:gravity="center">
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/cancel_button"
+            android:layout_width="wrap_content"
+            android:layout_height="52dp"
+            android:background="@drawable/red_button_background"
+            android:layout_weight="1"
+            android:layout_marginRight="15dp"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:visibility="gone"
+            android:text="@string/dialog_cancel" >
+        </androidx.appcompat.widget.AppCompatButton>
+
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/confirm_button"
+            android:layout_width="wrap_content"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:layout_marginLeft="15dp"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/button_background"
+            android:text="@string/dialog_ok" >
+        </androidx.appcompat.widget.AppCompatButton>
+
+    </LinearLayout>-->
+
+
+   <!-- <LinearLayout
+        android:layout_marginBottom="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:weightSum="2"
+        android:gravity="center">
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/cancel_button"
+            style="@style/dialog_blue_button"
+            android:text="@string/dialog_cancel"
+            android:background="@drawable/red_button_background"
+            android:visibility="visible"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_marginEnd="40dp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/confirm_button"
+            style="@style/dialog_blue_button"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:text="@string/dialog_ok" />
+    </LinearLayout>-->
+
+</LinearLayout>

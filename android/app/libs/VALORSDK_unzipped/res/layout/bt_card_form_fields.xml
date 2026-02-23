@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        style="@style/bt_field_container"
+        android:weightSum="2">
+
+        <ImageView
+            style="@style/bt_card_form_icon"
+            tools:ignore="ContentDescription"
+            android:id="@+id/bt_card_form_card_number_icon"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_card_no"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:hintTextAppearance="@style/TextLabel"
+            tools:ignore="RtlCompat"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="5dp"
+            android:paddingLeft="@dimen/bt_edit_text_icon_padding"
+            android:paddingStart="@dimen/bt_edit_text_icon_padding"
+            android:paddingEnd="0dp"
+            android:labelFor="@+id/bt_card_form_card_number">
+
+            <com.valor.valorsdk.cardForm.view.CardEditText
+                style="@style/bt_card_form_field"
+                android:id="@+id/bt_card_form_card_number"
+                android:hint="@string/bt_form_hint_card_number"
+                android:importantForAutofill="no"
+                android:textStyle="bold"
+                android:paddingTop="15dp"
+                android:inputType="number"
+                tools:ignore="SpUsage,UnusedAttribute" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        style="@style/bt_field_container"
+        android:weightSum="2">
+
+        <ImageView
+            style="@style/bt_card_form_icon"
+            tools:ignore="ContentDescription"
+            android:id="@+id/bt_card_form_ebt_card_number_icon"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_ebt_card_no"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:hintTextAppearance="@style/TextLabel"
+            tools:ignore="RtlCompat"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="5dp"
+            android:paddingLeft="@dimen/bt_edit_text_icon_padding"
+            android:paddingStart="@dimen/bt_edit_text_icon_padding"
+            android:paddingEnd="0dp"
+            android:labelFor="@+id/bt_card_form_card_number">
+
+            <com.valor.valorsdk.cardForm.view.EBTCardEditText
+                style="@style/bt_card_form_field"
+                android:id="@+id/bt_card_form_ebt_card_number"
+                android:hint="@string/bt_form_hint_card_number"
+                android:importantForAutofill="no"
+                android:textStyle="bold"
+                android:paddingTop="15dp"
+                android:inputType="number"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:paddingTop="12dp"
+        style="@style/bt_field_container"
+        android:weightSum="2.1">
+
+        <ImageView
+            style="@style/bt_card_form_icon"
+            tools:ignore="ContentDescription"
+            android:id="@+id/bt_card_form_expiry_icon"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_exp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:hintTextAppearance="@style/TextLabel"
+            tools:ignore="RtlCompat"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_weight="1"
+            android:paddingEnd="10dp"
+            android:paddingStart="22dp"
+            android:labelFor="@+id/bt_card_form_expiration">
+
+            <com.valor.valorsdk.cardForm.view.ExpirationDateEditText
+                style="@style/bt_card_form_field"
+                android:importantForAutofill="no"
+                android:textStyle="bold"
+                android:paddingTop="15dp"
+                android:id="@+id/bt_card_form_expiration"
+                android:hint="@string/bt_form_hint_expiration"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_cvv"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:hintTextAppearance="@style/TextLabel"
+            tools:ignore="RtlCompat"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_weight="1.1"
+            android:paddingStart="10dp"
+            android:labelFor="@+id/bt_card_form_cvv">
+
+            <com.valor.valorsdk.cardForm.view.CvvEditText
+                style="@style/bt_card_form_field"
+                android:importantForAutofill="no"
+                android:textStyle="bold"
+                android:paddingTop="15dp"
+                android:id="@+id/bt_card_form_cvv"
+                android:hint="@string/bt_form_hint_cvv"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        style="@style/bt_field_container"
+        android:paddingStart="0dp"
+        android:paddingTop="12dp"
+        android:weightSum="2">
+
+        <ImageView
+            style="@style/bt_card_form_icon"
+            tools:ignore="ContentDescription"
+            android:id="@+id/bt_card_form_postal_code_icon"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_postal_code"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:hintTextAppearance="@style/TextLabel"
+            tools:ignore="RtlCompat"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="5dp"
+            android:paddingLeft="@dimen/bt_edit_text_icon_padding"
+            android:paddingStart="@dimen/bt_edit_text_icon_padding"
+            android:paddingEnd="0dp"
+            android:labelFor="@+id/bt_card_form_postal_code">
+
+            <com.valor.valorsdk.cardForm.view.PostalCodeEditText
+                style="@style/bt_card_form_field"
+                android:importantForAutofill="no"
+                android:textSize="@dimen/large"
+                android:textStyle="bold"
+                android:paddingTop="15dp"
+                android:id="@+id/bt_card_form_postal_code"
+                android:hint="@string/bt_form_hint_postal_code"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+    </LinearLayout>
+
+
+    <LinearLayout android:weightSum="2"
+        style="@style/bt_field_container">
+
+        <ImageView style="@style/bt_card_form_icon"
+            android:id="@+id/bt_card_form_card_address_icon"
+            tools:ignore="ContentDescription"/>
+
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_address"
+            android:layout_height="60dp"
+            app:hintTextAppearance="@style/TextLabel"
+            android:layout_width="match_parent"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            tools:ignore="RtlCompat"
+            android:labelFor="@+id/bt_card_form_address"
+            android:paddingEnd="0dp"
+            android:paddingStart="@dimen/bt_edit_text_icon_padding"
+            android:paddingLeft="@dimen/bt_edit_text_icon_padding"
+            android:layout_marginTop="5dp">
+
+            <com.valor.valorsdk.cardForm.view.AddressEditText
+                style="@style/bt_card_form_field"
+                android:id="@+id/bt_card_form_address"
+                android:inputType="textEmailAddress"
+                android:paddingTop="15dp"
+                android:textStyle="bold"
+                android:importantForAutofill="no"
+                android:hint="@string/bt_form_hint_address"/>
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
+
+</merge>

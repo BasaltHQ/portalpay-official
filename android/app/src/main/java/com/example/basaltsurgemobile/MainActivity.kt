@@ -80,6 +80,7 @@ class MainActivity : BridgeActivity() {
         registerPlugin(com.example.basaltsurgemobile.plugins.CardReaderPlugin::class.java)
         registerPlugin(com.example.basaltsurgemobile.plugins.PinPadPlugin::class.java)
         registerPlugin(com.example.basaltsurgemobile.plugins.SecondaryDisplayPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.ValorPaymentPlugin::class.java)
 
         super.onCreate(savedInstanceState)
         

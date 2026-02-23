@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+ >
+
+    <include
+        android:id="@+id/header_top"
+        layout="@layout/dialog2_header" />
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/header_top"
+        android:layout_above="@+id/ll_submit"
+        android:weightSum="2">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <include
+                android:id="@+id/header"
+                layout="@layout/dialog2_header_lyt" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:id="@+id/card_form_fields"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:visibility="visible"
+                    tools:ignore="UselessParent">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:orientation="vertical">
+
+                        <com.valor.valorsdk.cardForm.view.SupportedCardTypesView
+                            android:id="@+id/supported_card_types"
+                            android:layout_width="match_parent"
+                            android:layout_height="80dp"
+                            android:gravity="center"
+                            android:paddingTop="20dp"
+                            android:visibility="gone" />
+
+                        <com.valor.valorsdk.cardForm.view.CardForm
+                            android:id="@+id/card_form"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_margin="5dp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </RelativeLayout>
+        </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/keyPad_lyt"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                tools:ignore="UselessParent">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="6">
+
+                    <TableLayout
+                        android:id="@+id/keyboard"
+                        android:layout_width="fill_parent"
+                        android:layout_height="fill_parent"
+                        android:orientation="vertical"
+                        android:showDividers="middle"
+                        android:weightSum="3">
+
+                        <TableRow style="@style/keyboard_row">
+
+                            <TextView
+                                android:id="@+id/t9_key_1"
+                                style="@style/keyboard_number_button"
+                                android:text="@string/number_one" />
+
+                            <TextView
+                                android:id="@+id/t9_key_2"
+                                style="@style/keyboard_number_button"
+                                android:text="@string/number_two" />
+
+                            <TextView
+                                android:id="@+id/t9_key_3"
+                                style="@style/keyboard_number_button"
+                                android:text="@string/number_three" />
+                        </TableRow>
+
+                        <TableRow style="@style/keyboard_row">
+
+                            <TextView
+                                android:id="@+id/t9_key_4"
+                                style="@style/keyboard_number_button"
+                                android:text="@string/number_four" />
+
+                            <TextView
+                                android:id="@+id/t9_key_5"
+                                style="@style/keyboard_number_button"
+                                android:text="@string/number_five" />
+
+                            <TextView
+                                android:id="@+id/t9_key_6"
+                                style="@style/keyboard_number_button"
+                                android:text="@string/number_six" />
+                        </TableRow>
+
+                        <TableRow style="@style/keyboard_row">
+
+                            <TextView
+                                android:id="@+id/t9_key_7"
+                                style="@style/keyboard_number_button"
+                                android:text="@string/number_seven" />
+
+                            <TextView
+                                android:id="@+id/t9_key_8"
+                                style="@style/keyboard_number_button"
+                                android:text="@string/number_eight" />
+
+                            <TextView
+                                android:id="@+id/t9_key_9"
+                                style="@style/keyboard_number_button"
+                                android:text="@string/number_nine" />
+                        </TableRow>
+                    </TableLayout>
+                </LinearLayout>
+
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="4"
+                    android:baselineAligned="false"
+                    android:orientation="vertical"
+                    android:weightSum="2">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:weightSum="3"
+                        android:orientation="horizontal">
+
+                        <RelativeLayout
+                            android:id="@+id/t9_key_backspace"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:background="@drawable/key_yellow_shape">
+
+                            <ImageView
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:layout_marginStart="10dp"
+                                android:layout_marginTop="10dp"
+                                android:layout_marginEnd="10dp"
+                                android:layout_marginBottom="10dp"
+                                android:gravity="center"
+                                android:backgroundTint="@color/white"
+                                android:background="@drawable/ic_black_24dp"
+                                tools:ignore="ContentDescription" />
+                        </RelativeLayout>
+
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            tools:ignore="NestedWeights">
+
+                            <TextView
+                                android:id="@+id/t9_key_0"
+                                style="@style/keyboard_number_button_new"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_marginStart="0dp"
+                                android:layout_marginTop="0dp"
+                                android:layout_marginEnd="0dp"
+                                android:layout_marginBottom="0dp"
+                                android:text="@string/number_zero" />
+                        </RelativeLayout>
+                        <RelativeLayout
+                            android:id="@+id/t9_key_clear"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:background="@drawable/key_red_shape">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="C"
+                                android:textColor="@android:color/black"
+                                android:textSize="@dimen/xx_large"
+                                tools:ignore="HardcodedText" />
+                        </RelativeLayout>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1">
+
+                        <RelativeLayout
+                            android:id="@+id/proceed_btn"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/key_green_shape">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="Enter"
+                                android:textAllCaps="true"
+                                android:textStyle="bold"
+                                android:textColor="@android:color/white"
+                                android:textSize="@dimen/xx_large"
+                                tools:ignore="HardcodedText" />
+                        </RelativeLayout>
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!--
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="0dp"
+                                    android:layout_weight="4"
+                                    android:baselineAligned="false"
+                                    android:orientation="horizontal"
+                                    android:weightSum="3">
+
+                                    <LinearLayout
+                                        android:layout_width="0dp"
+                                        android:layout_height="match_parent"
+                                        android:layout_weight="1"
+                                        tools:ignore="NestedWeights">
+
+                                        <RelativeLayout
+                                            android:id="@+id/t9_key_clear"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:background="@drawable/key_red_shape">
+
+                                            <TextView
+                                                android:layout_width="match_parent"
+                                                android:layout_height="match_parent"
+                                                android:gravity="center"
+                                                android:text="C"
+                                                android:textColor="@android:color/black"
+                                                android:textSize="@dimen/xx_large"
+                                                tools:ignore="HardcodedText" />
+                                        </RelativeLayout>
+                                    </LinearLayout>
+
+                                    <LinearLayout
+                                        android:layout_width="0dp"
+                                        android:layout_height="match_parent"
+                                        android:layout_weight="1"
+                                        android:orientation="vertical"
+                                        android:weightSum="2">
+
+                                        <RelativeLayout
+                                            android:layout_width="match_parent"
+                                            android:layout_height="0dp"
+                                            android:layout_weight="1"
+                                            tools:ignore="NestedWeights">
+
+                                            <TextView
+                                                android:id="@+id/t9_key_0"
+                                                style="@style/keyboard_number_button_new"
+                                                android:layout_width="match_parent"
+                                                android:layout_height="match_parent"
+                                                android:layout_marginStart="0dp"
+                                                android:layout_marginTop="0dp"
+                                                android:layout_marginEnd="0dp"
+                                                android:layout_marginBottom="0dp"
+                                                android:text="@string/number_zero" />
+                                        </RelativeLayout>
+
+                                        <RelativeLayout
+                                            android:id="@+id/t9_key_backspace"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="0dp"
+                                            android:layout_weight="1"
+                                            android:background="@drawable/key_yellow_shape">
+
+                                            <ImageView
+                                                android:layout_width="match_parent"
+                                                android:layout_height="match_parent"
+                                                android:layout_marginStart="10dp"
+                                                android:layout_marginTop="10dp"
+                                                android:layout_marginEnd="10dp"
+                                                android:layout_marginBottom="10dp"
+                                                android:gravity="center"
+                                                android:src="@drawable/ic_black_24dp"
+                                                tools:ignore="ContentDescription" />
+                                        </RelativeLayout>
+                                    </LinearLayout>
+
+                                    <LinearLayout
+                                        android:layout_width="0dp"
+                                        android:layout_height="match_parent"
+                                        android:layout_weight="1">
+
+                                        <RelativeLayout
+                                            android:id="@+id/proceed_btn"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:background="@drawable/key_green_shape">
+
+                                            <TextView
+                                                android:layout_width="match_parent"
+                                                android:layout_height="match_parent"
+                                                android:gravity="center"
+                                                android:text="Enter"
+                                                android:textColor="@android:color/black"
+                                                android:textSize="@dimen/xx_large"
+                                                tools:ignore="HardcodedText" />
+                                        </RelativeLayout>
+                                    </LinearLayout>
+                                </LinearLayout>
+                -->
+            </LinearLayout>
+        </RelativeLayout>
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ll_submit"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_alignParentBottom="true"
+        android:layout_gravity="bottom"
+        tools:ignore="DisableBaselineAlignment,UselessParent">
+        <RelativeLayout
+            android:id="@+id/success_btn"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:backgroundTint="@color/light_green"
+            android:background="@drawable/button_background"
+            android:layout_weight="1">
+            <ImageView
+                android:id="@+id/success_icon"
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_check_circle_black_24dp"
+                android:tint="@color/white"
+                tools:ignore="ContentDescription,UseAppTint" />
+            <TextView
+                android:id="@+id/action_txt_yes"
+                android:layout_toRightOf="@+id/success_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Submit"
+                android:layout_centerVertical="true"
+                android:paddingStart="5dp"
+                android:textSize="@dimen/xx_large"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                tools:ignore="HardcodedText,ObsoleteLayoutParam,RtlHardcoded,RtlSymmetry,SpUsage" />
+        </RelativeLayout>
+    </LinearLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <RelativeLayout
+            android:id="@+id/rl_keyboard_header"
+            android:layout_width="wrap_content"
+            android:layout_height="120dp"
+            android:background="@drawable/rect_border"
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="0dp"
+            android:animateLayoutChanges="true"
+            android:backgroundTint="@color/colorPrimary"
+            android:visibility="gone"
+            android:gravity="end|center"
+            android:layout_gravity="end">
+
+            <TextView
+                android:id="@+id/tv_keyboard"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:text="Phone no:"
+                android:visibility="visible"
+                android:textStyle="bold"
+                android:layout_marginStart="25dp"
+                android:layout_marginEnd="25dp"
+                android:textColor="@color/white"
+                android:textSize="@dimen/xxxx_large"
+                tools:ignore="HardcodedText" />
+
+            <ImageView
+                android:id="@+id/iv_icon"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/ic_address"
+                android:padding="10dp"
+                android:visibility="gone"
+                android:layout_alignParentStart="true"
+                android:layout_marginStart="20dp"
+                android:layout_centerVertical="true"
+                tools:ignore="ContentDescription,UseAppTint" />
+
+            <EditText
+                android:id="@+id/et_keyboard"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:focusableInTouchMode="true"
+                android:hint=""
+                android:text=""
+                android:gravity="start|center"
+                android:textAlignment="textStart"
+                android:layout_marginStart="10dp"
+                android:inputType="textNoSuggestions"
+                android:background="@null"
+                android:maxLines="1"
+                android:imeOptions="actionDone"
+                android:textCursorDrawable="@color/white"
+                android:textStyle="bold"
+                android:cursorVisible="true"
+                android:singleLine="true"
+                android:layout_toEndOf="@+id/tv_keyboard"
+                android:layout_toStartOf="@+id/iv_cancel"
+                android:textColor="@color/white"
+                android:textColorHint="@color/white"
+                android:textSize="@dimen/xxxx_large"
+                tools:ignore="Autofill,HardcodedText,SpUsage,TextFields"
+                tools:targetApi="o" />
+            <ImageView
+                android:id="@+id/iv_cancel"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/ic_cancel_black_24dp"
+                android:tint="@color/white"
+                android:padding="10dp"
+                android:layout_alignParentEnd="true"
+                android:layout_marginEnd="15dp"
+                android:layout_centerVertical="true"
+                tools:ignore="ContentDescription,UseAppTint" />
+
+        </RelativeLayout>
+
+        <com.valor.valorsdk.Util.custom_keyboard.keyboard.CustomKeyboardView
+            android:id="@+id/customKeyboardView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@+id/rl_keyboard_header"
+            android:layout_alignParentBottom="true" />
+    </RelativeLayout>
+    <include
+        android:id="@+id/layout_display_2"
+        layout="@layout/display2_confirmation"
+        android:visibility="gone"/>
+</RelativeLayout>

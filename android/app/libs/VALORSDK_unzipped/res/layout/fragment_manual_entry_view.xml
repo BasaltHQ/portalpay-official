@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:id="@+id/root_view"
+    android:layout_height="match_parent"
+    android:weightSum="10"
+    >
+
+    <!--<include layout="@layout/header_lyt"/>-->
+
+    <include
+        android:id="@+id/layout_display_2"
+        layout="@layout/display2_background"
+        android:visibility="gone"/>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="5">
+
+        <LinearLayout
+            android:id="@+id/card_form_fields"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="visible"
+            tools:ignore="UselessParent">
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true">
+
+                <LinearLayout
+                    android:id="@+id/lyt_card_form"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_vertical"
+                    android:padding="16dp">
+
+                    <com.valor.valorsdk.cardForm.view.SupportedCardTypesView
+                        android:id="@+id/supported_card_types"
+                        android:layout_width="match_parent"
+                        android:layout_height="80dp"
+                        android:gravity="center"
+                        android:paddingTop="20dp"
+                        android:visibility="gone" />
+
+                    <com.valor.valorsdk.cardForm.view.CardForm
+                        android:id="@+id/card_form"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:layout_gravity="center_vertical"
+                        android:layout_margin="@dimen/bt_margin" />
+
+                </LinearLayout>
+            </ScrollView>
+        </LinearLayout>
+        <!--<LinearLayout
+            android:id="@+id/additional_fields_lyt"
+            android:layout_width="match_parent"
+            android:visibility="gone"
+            android:layout_height="match_parent"
+            android:weightSum="2">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                tools:ignore="UselessParent">
+                <com.valor.valorsdk.cardForm.view.CardForm
+                    android:id="@+id/additional_card_form"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_margin="@dimen/bt_margin"/>
+            </LinearLayout>
+        </LinearLayout>-->
+    </RelativeLayout>
+    <RelativeLayout
+        android:id="@+id/keyPad_lyt"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="visible"
+        android:layout_weight="5">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            tools:ignore="UselessParent">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="6">
+                <TableLayout
+                    android:id="@+id/keyboard"
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:orientation="vertical"
+                    android:showDividers="middle"
+                    android:weightSum="3">
+
+                    <TableRow style="@style/keyboard_row">
+
+                        <TextView
+                            android:id="@+id/t9_key_1"
+                            style="@style/keyboard_number_button_left"
+                            android:text="@string/number_one" />
+
+                        <TextView
+                            android:id="@+id/t9_key_2"
+                            style="@style/keyboard_number_button"
+                            android:text="@string/number_two" />
+
+                        <TextView
+                            android:id="@+id/t9_key_3"
+                            style="@style/keyboard_number_button_right"
+                            android:text="@string/number_three" />
+                    </TableRow>
+
+                    <TableRow
+                        style="@style/keyboard_row">
+
+                        <TextView
+                            android:id="@+id/t9_key_4"
+                            style="@style/keyboard_number_button_left"
+                            android:text="@string/number_four"/>
+
+                        <TextView
+                            android:id="@+id/t9_key_5"
+                            style="@style/keyboard_number_button"
+                            android:text="@string/number_five" />
+
+                        <TextView
+                            android:id="@+id/t9_key_6"
+                            style="@style/keyboard_number_button_right"
+                            android:text="@string/number_six" />
+                    </TableRow>
+
+                    <TableRow
+                        style="@style/keyboard_row">
+                        <TextView
+                            android:id="@+id/t9_key_7"
+                            style="@style/keyboard_number_button_left"
+                            android:text="@string/number_seven" />
+
+                        <TextView
+                            android:id="@+id/t9_key_8"
+                            style="@style/keyboard_number_button"
+                            android:text="@string/number_eight" />
+
+                        <TextView
+                            android:id="@+id/t9_key_9"
+                            style="@style/keyboard_number_button_right"
+                            android:text="@string/number_nine" />
+                    </TableRow>
+                </TableLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="4"
+                android:orientation="horizontal"
+                android:weightSum="3"
+                android:baselineAligned="false">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    tools:ignore="NestedWeights">
+                    <RelativeLayout
+                        android:id="@+id/t9_key_clear"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/key_red_shape">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:text="C"
+                            android:textColor="@android:color/black"
+                            android:textSize="@dimen/xx_large"
+                            tools:ignore="HardcodedText" />
+                    </RelativeLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:weightSum="2"
+                    android:layout_weight="1">
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        tools:ignore="NestedWeights">
+
+                        <TextView
+                            android:id="@+id/t9_key_0"
+                            style="@style/keyboard_number_button_new"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="0dp"
+                            android:layout_marginTop="0dp"
+                            android:layout_marginEnd="0dp"
+                            android:layout_marginBottom="0dp"
+                            android:text="@string/number_zero" />
+                    </RelativeLayout>
+                    <RelativeLayout
+                        android:id="@+id/t9_key_backspace"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/key_yellow_shape">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="10dp"
+                            android:layout_marginTop="10dp"
+                            android:layout_marginEnd="10dp"
+                            android:layout_marginBottom="10dp"
+                            android:gravity="center"
+                            android:src="@drawable/ic_black_24dp"
+                            tools:ignore="ContentDescription" />
+                    </RelativeLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1">
+                    <RelativeLayout
+                        android:id="@+id/proceed_btn"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/key_green_shape">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:text="Enter"
+                            android:textColor="@android:color/black"
+                            android:textSize="@dimen/xx_large"
+                            tools:ignore="HardcodedText" />
+                    </RelativeLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </RelativeLayout>
+
+    <include
+        android:id="@+id/layout_disp_2"
+        layout="@layout/display2_background"
+        android:visibility="gone"/>
+
+</LinearLayout>
