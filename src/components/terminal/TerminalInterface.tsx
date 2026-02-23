@@ -179,25 +179,19 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
         if (qrOpen && portalUrl) {
             // Need a slight delay to allow the QR canvas to render
             const timer = setTimeout(() => {
-                const canvasElements = document.getElementsByTagName('canvas');
-                let foundCanvas = false;
-                for (let i = 0; i < canvasElements.length; i++) {
-                    const canvas = canvasElements[i];
-                    if (canvas && canvas.width > 0) {
-                        try {
-                            const base64 = canvas.toDataURL("image/png");
-                            pushQRToCustomerScreen(portalUrl, base64.split(',')[1] || base64).catch(console.error);
-                            foundCanvas = true;
-                            break;
-                        } catch (e) {
-                            console.error("Canvas toDataURL failed", e);
-                        }
+                const canvas = document.getElementById('terminal-qr-canvas') as HTMLCanvasElement;
+                if (canvas && canvas.width > 0) {
+                    try {
+                        const base64 = canvas.toDataURL("image/jpeg", 0.9);
+                        pushQRToCustomerScreen(portalUrl, base64.split(',')[1] || base64).catch(console.error);
+                    } catch (e) {
+                        console.error("Canvas toDataURL failed", e);
+                        pushQRToCustomerScreen(portalUrl).catch(console.error);
                     }
-                }
-                if (!foundCanvas) {
+                } else {
                     pushQRToCustomerScreen(portalUrl).catch(console.error);
                 }
-            }, 300);
+            }, 600);
             return () => clearTimeout(timer);
         } else {
             clearCustomerScreen().catch(console.error);
@@ -516,15 +510,18 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
 
                             <div className="flex justify-center my-2">
                                 <QRCode
+                                    id="terminal-qr-canvas"
                                     value={portalUrl}
                                     size={100}
-                                    fgColor="#000000"
-                                    bgColor="transparent"
+                                    fgColor="#FFFFFF"
+                                    bgColor="#000000"
                                     qrStyle="dots"
                                     eyeRadius={4}
-                                    removeQrCodeBehindLogo={false}
-                                    logoImage=""
-                                    ecLevel="M"
+                                    removeQrCodeBehindLogo={true}
+                                    logoImage={logoUrl || ""}
+                                    logoWidth={24}
+                                    logoCrossOrigin="anonymous"
+                                    ecLevel="Q"
                                     quietZone={0}
                                 />
                             </div>
