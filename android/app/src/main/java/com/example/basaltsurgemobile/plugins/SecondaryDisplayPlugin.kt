@@ -37,6 +37,9 @@ class SecondaryDisplayPlugin : Plugin() {
         }
 
         try {
+            // Wake up screen and take control from the OS clock
+            screen.wakeSmallScreen()
+            
             // T6D Small Screen is 282x240 dots
             // Display base64 image if provided, otherwise standard text
             if (base64Img != null) {
@@ -66,7 +69,8 @@ class SecondaryDisplayPlugin : Plugin() {
     fun clearDisplay(call: PluginCall) {
         if (DeviceProfile.type == DeviceType.TOPWISE_T6D) {
             try {
-                HardwareRegistry.topWiseManager?.smallScreenManager?.sleepSmallScreen()
+                // Return control to the OS to show the default clock
+                HardwareRegistry.topWiseManager?.smallScreenManager?.stopAppControl()
                 call.resolve()
             } catch (e: Exception) {
                 call.reject("Failed clearing secondary display", e)
