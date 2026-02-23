@@ -51,6 +51,7 @@ data class LockdownConfig(
 class MainActivity : BridgeActivity() {
     private var lockdownConfig = mutableStateOf(LockdownConfig())
     private var showUnlockOverlay = mutableStateOf(false)
+    private var isTemporarilyUnlocked = false
     private var showUpdateDialog = mutableStateOf(false)
     private var updateInfo = mutableStateOf<OtaUpdateManager.UpdateInfo?>(null)
     private lateinit var otaUpdateManager: OtaUpdateManager
@@ -451,11 +452,13 @@ class MainActivity : BridgeActivity() {
     private fun exitLockdownTemporarily() {
         try {
             stopLockTask()
-            val current = lockdownConfig.value
-            lockdownConfig.value = current.copy(lockdownMode = "none")
             
-            Toast.makeText(this, "Lockdown disabled temporarily", Toast.LENGTH_SHORT).show()
-            Log.d(TAG, "Lock Task Mode stopped temporarily")
+            // We do NOT change the global lockdown Config string here so that the app remembers its state upon reboot.
+            // Instead, we flag a temporary session bypass.
+            isTemporarilyUnlocked = true
+            
+            Toast.makeText(this, "Lockdown disabled until next reboot.", Toast.LENGTH_SHORT).show()
+            Log.d(TAG, "Lock Task Mode stopped temporarily. User can now navigate away.")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to stop Lock Task Mode: ${e.message}")
         }
@@ -463,6 +466,10 @@ class MainActivity : BridgeActivity() {
 
     override fun onPause() {
         super.onPause()
+        
+        // If the user manually unlocked the device using the PIN, allow them to leave the app
+        if (isTemporarilyUnlocked) return
+        
         val mode = lockdownConfig.value.lockdownMode
         if (mode == "standard" || mode == "device_owner") {
             val intent = intent

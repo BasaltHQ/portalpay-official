@@ -111,6 +111,9 @@ class TopWisePrinterPlugin : Plugin() {
                 var bmp = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
                 bmp = resizeBitmap(bmp, 384)
                 printer.addImage(0, bmp)
+                printer.addText(0, 0, 0, "\n\n\n") // Feed paper after image to clear tear bar
+            } else if (!text.isNullOrEmpty()) {
+                printer.addText(0, 0, 0, "\n\n\n") // Feed paper if only text
             }
 
             printer.start(object : AidlPrinterListener.Stub() {
