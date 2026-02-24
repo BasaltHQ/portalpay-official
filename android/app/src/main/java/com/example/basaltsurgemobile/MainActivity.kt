@@ -86,6 +86,16 @@ class MainActivity : BridgeActivity() {
 
         super.onCreate(savedInstanceState)
         
+        // Force relaxed WebView settings for Custom ROMs (NDroid / TopWise) that aggressively strip CSS
+        bridge.webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            databaseEnabled = true
+            mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            allowFileAccess = true
+            allowContentAccess = true
+        }
+        
         // Check for overlay permission (required for auto-boot on Android 10+)
         checkOverlayPermission()
         checkInstallPermission()
