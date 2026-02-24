@@ -100,11 +100,27 @@ export async function GET(req: NextRequest) {
 
         const hasUpdate = currentVersionCode < (latestVersion.versionCode || 0);
 
+        let finalDownloadUrl = latestVersion.downloadUrl || null;
+        if (finalDownloadUrl) {
+            // Append cache buster using the version code and published at timestamp
+            // This ensures Azure Front Door/CDN bypasses cache for new versions
+            try {
+                const u = new URL(finalDownloadUrl);
+                u.searchParams.set("v", String(latestVersion.versionCode || Date.now()));
+                if (latestVersion.publishedAt) {
+                    u.searchParams.set("t", new Date(latestVersion.publishedAt).getTime().toString());
+                }
+                finalDownloadUrl = u.toString();
+            } catch (e) {
+                // Ignore invalid URLs
+            }
+        }
+
         return json({
             hasUpdate,
             latestVersion: latestVersion.versionName || "1.0.0",
             latestVersionCode: latestVersion.versionCode || 1,
-            downloadUrl: latestVersion.downloadUrl || null,
+            downloadUrl: finalDownloadUrl,
             releaseNotes: latestVersion.releaseNotes || "",
             mandatory: latestVersion.mandatory || false,
             publishedAt: latestVersion.publishedAt || null,
