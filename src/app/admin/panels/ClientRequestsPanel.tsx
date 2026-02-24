@@ -1359,6 +1359,12 @@ function TouchpointThemesTab({
     const [kioskSaving, setKioskSaving] = useState(false);
     const [kioskSaved, setKioskSaved] = useState(false);
 
+    // Handheld-specific local state
+    const [pendingHandheldMode, setPendingHandheldMode] = useState<"general" | "restaurant">("restaurant");
+    const [handheldDirty, setHandheldDirty] = useState(false);
+    const [handheldSaving, setHandheldSaving] = useState(false);
+    const [handheldSaved, setHandheldSaved] = useState(false);
+
     // Load merchant's current touchpoint themes
     useEffect(() => {
         if (!merchantWallet) return;
@@ -1374,6 +1380,11 @@ function TouchpointThemesTab({
                     const kiosk = parseKioskConfig(cfg.touchpointThemes["kiosk"]);
                     setPendingColorMode(kiosk.colorMode || "dark");
                     setPendingLayout(kiosk.kioskLayout || "grid");
+                    // Seed handheld mode from config
+                    const hh = cfg.touchpointThemes["handheld"];
+                    if (hh && typeof hh === "object" && (hh.handheldMode === "general" || hh.handheldMode === "restaurant")) {
+                        setPendingHandheldMode(hh.handheldMode);
+                    }
                 }
             } catch (e) {
                 console.error("Failed to load merchant themes", e);
@@ -1391,6 +1402,13 @@ function TouchpointThemesTab({
             pendingLayout !== (saved.kioskLayout || "grid");
         setKioskDirty(isDiff);
     }, [pendingColorMode, pendingLayout, touchpointThemes]);
+
+    // Track dirty state for handheld settings
+    useEffect(() => {
+        const hh = touchpointThemes["handheld"];
+        const savedMode = (hh && typeof hh === "object" && hh.handheldMode) || "restaurant";
+        setHandheldDirty(pendingHandheldMode !== savedMode);
+    }, [pendingHandheldMode, touchpointThemes]);
 
     // Core save function
     const saveTouchpointThemes = useCallback(async (updated: Record<string, any>) => {
@@ -1448,6 +1466,21 @@ function TouchpointThemesTab({
         setKioskSaving(false);
         setTimeout(() => setKioskSaved(false), 2000);
     }, [touchpointThemes, pendingColorMode, pendingLayout, saveTouchpointThemes]);
+
+    // Save handheld settings
+    const saveHandheldSettings = useCallback(async () => {
+        setHandheldSaving(true);
+        const current = touchpointThemes["handheld"] && typeof touchpointThemes["handheld"] === "object" ? touchpointThemes["handheld"] : {};
+        const updated = {
+            ...touchpointThemes,
+            handheld: { ...current, handheldMode: pendingHandheldMode },
+        };
+        await saveTouchpointThemes(updated);
+        setHandheldDirty(false);
+        setHandheldSaved(true);
+        setHandheldSaving(false);
+        setTimeout(() => setHandheldSaved(false), 2000);
+    }, [touchpointThemes, pendingHandheldMode, saveTouchpointThemes]);
 
     if (loading) {
         return (
@@ -1531,6 +1564,53 @@ function TouchpointThemesTab({
                             </button>
                         ))}
                     </div>
+                </div>
+            </div>
+
+            {/* ── Handheld Settings (Mode) ─────────────────── */}
+            <div className="mt-4 p-4 rounded-lg border border-white/5 bg-black/20 space-y-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h4 className="text-sm font-medium text-white">Handheld Display Settings</h4>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Operating mode for the handheld ordering interface.</p>
+                    </div>
+                    <button
+                        onClick={saveHandheldSettings}
+                        disabled={!handheldDirty || handheldSaving}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${handheldSaved
+                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                            : handheldDirty
+                                ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/20 hover:bg-emerald-400"
+                                : "bg-white/5 text-muted-foreground border border-white/10 cursor-not-allowed"
+                            }`}
+                    >
+                        {handheldSaving ? "Saving…" : handheldSaved ? "✓ Saved" : handheldDirty ? "Save Handheld Settings" : "No Changes"}
+                    </button>
+                </div>
+
+                {/* Mode Toggle */}
+                <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-wider font-mono text-zinc-500">Operating Mode</label>
+                    <div className="flex gap-2">
+                        {(["restaurant", "general"] as const).map(mode => (
+                            <button
+                                key={mode}
+                                onClick={() => setPendingHandheldMode(mode)}
+                                className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all capitalize flex items-center justify-center gap-2 ${pendingHandheldMode === mode
+                                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-sm"
+                                    : "bg-black/20 text-zinc-400 border border-white/5 hover:bg-white/5"
+                                    }`}
+                            >
+                                <span>{mode === "restaurant" ? "🍽️" : "🏪"}</span>
+                                {mode}
+                            </button>
+                        ))}
+                    </div>
+                    <p className="text-[10px] text-zinc-500 mt-1">
+                        {pendingHandheldMode === "general"
+                            ? "General mode: all items shown with images, no table selection, orders go directly to payment."
+                            : "Restaurant mode: table-based ordering with kitchen routing and KDS integration."}
+                    </p>
                 </div>
             </div>
 
