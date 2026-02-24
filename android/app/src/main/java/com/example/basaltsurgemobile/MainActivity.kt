@@ -458,8 +458,16 @@ class MainActivity : BridgeActivity() {
                     startLockTask()
                     Log.d(TAG, "Started Lock Task Mode (Device Owner)")
                 } else if (lockdownConfig.value.lockdownMode == "standard") {
-                    startLockTask()
-                    Log.d(TAG, "Started Lock Task Mode (Standard)")
+                    // CRITICAL FIX: The NDroid OS on the VP550 completely hides the ScreenPinningConfirmation 
+                    // modal behind the app window, but the invisible modal continues to consume all user touches, 
+                    // rendering the actual app completely unclickable (e.g. employee PIN pad frozen). 
+                    // Therefore, we must NEVER call startLockTask() for standard mode on the VP550.
+                    if (android.os.Build.MODEL != "VP550") {
+                        startLockTask()
+                        Log.d(TAG, "Started Lock Task Mode (Standard)")
+                    } else {
+                        Log.w(TAG, "Bypassing Standard Lock Task Mode on VP550 to prevent invisible confirmation dialog from consuming touches")
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -478,16 +486,16 @@ class MainActivity : BridgeActivity() {
     private fun exitLockdownTemporarily() {
         try {
             stopLockTask()
-            
-            // We do NOT change the global lockdown Config string here so that the app remembers its state upon reboot.
-            // Instead, we flag a temporary session bypass.
-            isTemporarilyUnlocked = true
-            
-            Toast.makeText(this, "Lockdown disabled until next reboot.", Toast.LENGTH_SHORT).show()
-            Log.d(TAG, "Lock Task Mode stopped temporarily. User can now navigate away.")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to stop Lock Task Mode: ${e.message}")
         }
+        
+        // We do NOT change the global lockdown Config string here so that the app remembers its state upon reboot.
+        // Instead, we flag a temporary session bypass.
+        isTemporarilyUnlocked = true
+        
+        Toast.makeText(this, "Lockdown disabled until next reboot.", Toast.LENGTH_SHORT).show()
+        Log.d(TAG, "Lock Task Mode stopped temporarily. User can now navigate away.")
     }
 
     override fun onPause() {
