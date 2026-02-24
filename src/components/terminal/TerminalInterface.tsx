@@ -548,18 +548,19 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
 
                             <div className="border-b border-black border-dashed opacity-50 my-2" />
 
-                            <div className="flex justify-center my-2">
+                            <div className="flex justify-center my-2" id="terminal-secondary-qr-canvas">
                                 <QRCode
                                     value={portalUrl}
-                                    size={100}
-                                    fgColor="#000000"
-                                    bgColor="#FFFFFF"
+                                    size={170}
+                                    fgColor="#ffffff"
+                                    bgColor="#000000"
                                     qrStyle="dots"
                                     eyeRadius={4}
+                                    eyeColor={(theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#ffffff"}
                                     removeQrCodeBehindLogo={false}
                                     logoImage=""
                                     ecLevel="M"
-                                    quietZone={0}
+                                    quietZone={15}
                                 />
                             </div>
 

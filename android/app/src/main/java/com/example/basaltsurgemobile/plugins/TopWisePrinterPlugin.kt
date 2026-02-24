@@ -114,9 +114,9 @@ class TopWisePrinterPlugin : Plugin() {
                 bmp = resizeBitmap(bmp, 384)
                 
                 // TopWise SDK groups all addText commands before addImage commands internally.
-                // To force whitespace *after* the image, we natively pad the Bitmap with whitespace 
-                // so the printer gears push it past the tear bar.
-                bmp = padBitmapBottom(bmp, 150)
+                // To force whitespace around the image, we natively pad the Bitmap with whitespace 
+                // so the printer gears push it past the tear bar, and give it some top padding to separate it from text.
+                bmp = padBitmapVertical(bmp, 100, 250)
                 
                 printer.addImage(0, bmp)
             } else if (!text.isNullOrEmpty()) {
@@ -150,11 +150,11 @@ class TopWisePrinterPlugin : Plugin() {
         return Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, false)
     }
 
-    private fun padBitmapBottom(bitmap: Bitmap, paddingPx: Int): Bitmap {
-        val paddedBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height + paddingPx, Bitmap.Config.ARGB_8888)
+    private fun padBitmapVertical(bitmap: Bitmap, paddingTopPx: Int, paddingBottomPx: Int): Bitmap {
+        val paddedBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height + paddingTopPx + paddingBottomPx, Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(paddedBitmap)
         canvas.drawColor(android.graphics.Color.WHITE)
-        canvas.drawBitmap(bitmap, 0f, 0f, null)
+        canvas.drawBitmap(bitmap, 0f, paddingTopPx.toFloat(), null)
         return paddedBitmap
     }
 }
