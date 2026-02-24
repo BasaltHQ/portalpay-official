@@ -1511,11 +1511,11 @@ export async function POST(req: NextRequest) {
         if (typeof incoming === "string") {
           merged[key] = incoming;
         } else if (typeof incoming === "object") {
-          if (key === "kiosk") {
-            // Kiosk: deep-merge, but strip runtime-injected fields
+          if (key === "kiosk" || key === "handheld") {
+            // Kiosk & Handheld: deep-merge, but strip runtime-injected fields
             const prev = typeof existing[key] === "object" && existing[key] !== null ? existing[key] : {};
-            const { primaryColor, secondaryColor, ...kioskFields } = incoming;
-            merged[key] = { ...prev, ...kioskFields };
+            const { primaryColor, secondaryColor, ...richFields } = incoming;
+            merged[key] = { ...prev, ...richFields };
           } else {
             // Non-kiosk: GET handler turned "modern" → { themeId: "modern", primaryColor: "..." }
             // We only want to persist the themeId string

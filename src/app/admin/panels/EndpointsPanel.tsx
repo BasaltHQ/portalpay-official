@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useActiveAccount } from "thirdweb/react";
-import { Copy, ExternalLink, Smartphone, Monitor, Settings, Sun, Moon, LayoutGrid, AlignJustify, Newspaper, UtensilsCrossed, Save, Check } from "lucide-react";
+import { Copy, ExternalLink, Smartphone, Monitor, Settings, Sun, Moon, LayoutGrid, AlignJustify, Newspaper, UtensilsCrossed, Save, Check, Store } from "lucide-react";
 import { useBrand } from "@/contexts/BrandContext";
 import { parseKioskConfig } from "@/lib/themes";
 import type { TouchpointType, KioskTouchpointConfig, ColorMode, KioskLayout } from "@/lib/themes";
@@ -25,6 +25,17 @@ export default function EndpointsPanel() {
     const [pendingColorMode, setPendingColorMode] = useState<ColorMode>("dark");
     const [pendingLayout, setPendingLayout] = useState<KioskLayout>("grid");
     const [kioskDirty, setKioskDirty] = useState(false);
+
+    // Buffered handheld settings
+    const [pendingHandheldMode, setPendingHandheldMode] = useState<"general" | "restaurant">("restaurant");
+    const [handheldDirty, setHandheldDirty] = useState(false);
+
+    // Saved handheld mode (server-confirmed)
+    const savedHandheldMode: "general" | "restaurant" = useMemo(() => {
+        const hh = touchpointThemes["handheld"];
+        if (hh && typeof hh === "object" && hh.handheldMode) return hh.handheldMode;
+        return "restaurant";
+    }, [touchpointThemes]);
 
     // Modal state
     const [pickerOpen, setPickerOpen] = useState<{ type: TouchpointType; label: string } | null>(null);
@@ -64,6 +75,11 @@ export default function EndpointsPanel() {
                     // Seed pending state from saved config
                     const kiosk = parseKioskConfig(cfg.touchpointThemes["kiosk"]);
                     setPendingColorMode(kiosk.colorMode || "dark");
+                    // Seed handheld mode
+                    const hh = cfg.touchpointThemes["handheld"];
+                    if (hh && typeof hh === "object" && hh.handheldMode) {
+                        setPendingHandheldMode(hh.handheldMode);
+                    }
                     setPendingLayout(kiosk.kioskLayout || "grid");
                 }
             } catch {
@@ -81,6 +97,11 @@ export default function EndpointsPanel() {
             pendingLayout !== (kioskConfig.kioskLayout || "grid");
         setKioskDirty(isDiff);
     }, [pendingColorMode, pendingLayout, kioskConfig]);
+
+    // Mark handheld dirty when pending differs from saved
+    useEffect(() => {
+        setHandheldDirty(pendingHandheldMode !== savedHandheldMode);
+    }, [pendingHandheldMode, savedHandheldMode]);
 
     // ── Core save function ───────────────────────────────────────────────────
     const saveTouchpointTheme = useCallback(async (updated: Record<string, any>) => {
@@ -118,6 +139,21 @@ export default function EndpointsPanel() {
         };
         await saveTouchpointTheme(updated);
     }, [touchpointThemes, pendingColorMode, pendingLayout, saveTouchpointTheme]);
+
+    // ── Save all pending handheld settings at once ────────────────────────────
+    const saveHandheldSettings = useCallback(async () => {
+        const current = (touchpointThemes["handheld"] && typeof touchpointThemes["handheld"] === "object")
+            ? touchpointThemes["handheld"]
+            : {};
+        const updated = {
+            ...touchpointThemes,
+            handheld: {
+                ...current,
+                handheldMode: pendingHandheldMode,
+            },
+        };
+        await saveTouchpointTheme(updated);
+    }, [touchpointThemes, pendingHandheldMode, saveTouchpointTheme]);
 
     // ── Theme picker save (immediate — only called from modal after selection) ─
     const saveThemeSelection = useCallback(async (touchpoint: string, themeId: string) => {
@@ -167,7 +203,9 @@ export default function EndpointsPanel() {
             {
                 key: "handheld",
                 label: "Handheld Mode",
-                desc: "Mobile-optimized interface for servers to take orders at the table. Supports voice assistant.",
+                desc: pendingHandheldMode === "general"
+                    ? "Mobile POS interface for general retail. Shows all inventory with images. No table or kitchen routing."
+                    : "Mobile-optimized interface for servers to take orders at the table. Supports voice assistant.",
                 icon: Smartphone,
                 url: handheldUrl,
             },
@@ -289,6 +327,63 @@ export default function EndpointsPanel() {
                                                     )}
                                                 </button>
                                                 {kioskDirty && (
+                                                    <p className="text-[10px] text-amber-400/70 mt-1">Unsaved changes</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Handheld-only: General / Restaurant mode */}
+                                    {card.key === "handheld" && (
+                                        <div className="mt-3 space-y-2">
+                                            {/* Mode toggle */}
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[11px] text-muted-foreground w-14 shrink-0">Mode</span>
+                                                <div className="flex rounded-lg border border-white/10 overflow-hidden">
+                                                    <button
+                                                        onClick={() => setPendingHandheldMode('general')}
+                                                        title="General retail mode — all inventory, images, no tables"
+                                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all ${pendingHandheldMode === 'general'
+                                                            ? 'bg-blue-500/20 text-blue-400'
+                                                            : 'text-muted-foreground hover:bg-white/5'
+                                                            }`}
+                                                    >
+                                                        <Store size={12} /> General
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setPendingHandheldMode('restaurant')}
+                                                        title="Restaurant mode — table service, kitchen routing, food items only"
+                                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border-l border-white/10 transition-all ${pendingHandheldMode === 'restaurant'
+                                                            ? 'bg-amber-500/20 text-amber-400'
+                                                            : 'text-muted-foreground hover:bg-white/5'
+                                                            }`}
+                                                    >
+                                                        <UtensilsCrossed size={12} /> Restaurant
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Save handheld config button */}
+                                            <div className="pt-1">
+                                                <button
+                                                    onClick={saveHandheldSettings}
+                                                    disabled={saving || (!handheldDirty && !saved)}
+                                                    className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${saved
+                                                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                        : handheldDirty
+                                                            ? 'bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20'
+                                                            : 'bg-muted/50 text-muted-foreground border border-white/10 cursor-default'
+                                                        }`}
+                                                >
+                                                    {saved ? (
+                                                        <><Check size={12} /> Saved!</>
+                                                    ) : saving ? (
+                                                        <><span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" /> Saving...</>
+                                                    ) : (
+                                                        <><Save size={12} /> Save Handheld Settings</>
+                                                    )}
+                                                </button>
+                                                {handheldDirty && (
                                                     <p className="text-[10px] text-amber-400/70 mt-1">Unsaved changes</p>
                                                 )}
                                             </div>

@@ -54,9 +54,9 @@ jobs:
           # Include startup script for font installation on Azure
           cp startup.sh .next/standalone/startup.sh
           chmod +x .next/standalone/startup.sh
-          # Ensure start command is correct for Azure Service Plan
+          # Ensure start command uses startup script for font support
           cd .next/standalone
-          npm pkg set scripts.start="node server.js"
+          npm pkg set scripts.start="bash startup.sh"
           cd ../..
 
           # Debug: Verify .next/standalone/.next exists and has content
@@ -96,7 +96,4 @@ jobs:
           slot-name: "Production"
           package: release.zip
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_SURGE_XOINPAY }}
-
-      - name: "Set startup command for font support"
-        run: az webapp config set --resource-group basaltsurge --name xoinpay --startup-file "bash startup.sh"
 

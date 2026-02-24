@@ -241,6 +241,13 @@ export default function HandheldSessionManager({ config, merchantWallet, items }
         const sessTotal = typeof activeSession.totalSales === 'number' ? activeSession.totalSales : 0;
         const statsStr = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(sessTotal);
 
+        // Resolve handheld mode from touchpointThemes config (default: restaurant)
+        const hhConfig = (config as any).touchpointThemes?.handheld;
+        const handheldMode: "general" | "restaurant" =
+            (hhConfig && typeof hhConfig === "object" && (hhConfig.handheldMode === "general" || hhConfig.handheldMode === "restaurant"))
+                ? hhConfig.handheldMode
+                : "restaurant";
+
         return (
             <HandheldInterface
                 merchantWallet={merchantWallet}
@@ -254,6 +261,7 @@ export default function HandheldSessionManager({ config, merchantWallet, items }
                 theme={config.theme}
                 items={items}
                 tables={(config as any).industryParams?.restaurant?.tables || []}
+                handheldMode={handheldMode}
             />
         );
     }

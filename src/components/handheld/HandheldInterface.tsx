@@ -72,6 +72,7 @@ interface HandheldInterfaceProps {
     theme?: any;
     items?: any[];
     tables?: string[];
+    handheldMode?: "general" | "restaurant";
 }
 
 interface CartItem {
@@ -91,8 +92,10 @@ export default function HandheldInterface({
     logoUrl,
     theme,
     items = [],
-    tables = []
+    tables = [],
+    handheldMode = "restaurant"
 }: HandheldInterfaceProps) {
+    const isGeneralMode = handheldMode === "general";
     // -- THEME & STYLES (Dark Mode Default) --
     // Read the active touchpoint theme (CSS vars applied by parent TerminalSessionManager)
     const tpTheme = useMemo(() => {
@@ -105,7 +108,7 @@ export default function HandheldInterface({
 
     const [activeCategory, setActiveCategory] = useState<string>("All");
     const [cart, setCart] = useState<CartItem[]>([]);
-    const [view, setView] = useState<"menu" | "modifiers" | "tables" | "report" | "payment">("menu");
+    const [view, setView] = useState<"menu" | "modifiers" | "tables" | "report" | "payment">(isGeneralMode ? "menu" : "menu");
 
     // -- HARDWARE INTEGRATION --
     const { pushQRToCustomerScreen, clearCustomerScreen } = useQRCodeDisplay();
@@ -322,39 +325,48 @@ export default function HandheldInterface({
         });
     }, [items]);
 
+    // In general mode, show ALL inventory; in restaurant mode, only restaurant items
+    const activeItems = useMemo(() => {
+        return isGeneralMode ? items : restaurantItems;
+    }, [isGeneralMode, items, restaurantItems]);
+
     const categories = useMemo(() => {
         const cats = new Set<string>();
         cats.add("All");
-        restaurantItems.forEach(i => {
+        activeItems.forEach(i => {
             if (i.category) cats.add(i.category);
-            const attrs = i.attributes;
-            if (attrs) {
-                if (isRestaurantAttributes(attrs) && attrs.data?.menuSection) {
-                    cats.add(attrs.data.menuSection);
-                } else if ((attrs as any).menuSection) {
-                    cats.add((attrs as any).menuSection);
+            if (!isGeneralMode) {
+                const attrs = i.attributes;
+                if (attrs) {
+                    if (isRestaurantAttributes(attrs) && attrs.data?.menuSection) {
+                        cats.add(attrs.data.menuSection);
+                    } else if ((attrs as any).menuSection) {
+                        cats.add((attrs as any).menuSection);
+                    }
                 }
             }
         });
         return Array.from(cats).sort();
-    }, [restaurantItems]);
+    }, [activeItems, isGeneralMode]);
 
     const displayedItems = useMemo(() => {
-        if (activeCategory === "All") return restaurantItems;
-        return restaurantItems.filter(i => {
+        if (activeCategory === "All") return activeItems;
+        return activeItems.filter(i => {
             const matchesCategory = i.category === activeCategory;
             let matchesSection = false;
-            const attrs = i.attributes;
-            if (attrs) {
-                if (isRestaurantAttributes(attrs) && attrs.data?.menuSection === activeCategory) {
-                    matchesSection = true;
-                } else if ((attrs as any).menuSection === activeCategory) {
-                    matchesSection = true;
+            if (!isGeneralMode) {
+                const attrs = i.attributes;
+                if (attrs) {
+                    if (isRestaurantAttributes(attrs) && attrs.data?.menuSection === activeCategory) {
+                        matchesSection = true;
+                    } else if ((attrs as any).menuSection === activeCategory) {
+                        matchesSection = true;
+                    }
                 }
             }
             return matchesCategory || matchesSection;
         });
-    }, [restaurantItems, activeCategory]);
+    }, [activeItems, activeCategory, isGeneralMode]);
 
     // -- HANDLERS --
 
@@ -426,12 +438,12 @@ export default function HandheldInterface({
         } else {
             const instruction = buildServerAssistantPrompt({
                 name: brandName,
-                description: "Restaurant",
-                shortDescription: "Restaurant",
+                description: isGeneralMode ? "Retail" : "Restaurant",
+                shortDescription: isGeneralMode ? "Retail" : "Restaurant",
                 bio: "",
                 merchantWallet: merchantWallet,
                 slug: "handheld",
-                inventory: restaurantItems.map(i => ({
+                inventory: activeItems.map(i => ({
                     name: i.name,
                     price: i.priceUsd,
                     category: i.category,
@@ -461,16 +473,23 @@ export default function HandheldInterface({
                 }))
             }));
 
-            const payload = {
+            const payload: any = {
                 items: lineItems,
-                tableNumber: tableNum,
-                kitchenStatus: "new",
                 source: "handheld",
                 staffId: employeeId,
                 servedBy: employeeName,
                 note: `Server: ${employeeName}`,
                 sessionId
             };
+
+            // General mode: skip kitchen routing and table assignment
+            if (isGeneralMode) {
+                payload.tableNumber = "counter";
+                // No kitchenStatus — order goes straight to receipt, no KDS routing
+            } else {
+                payload.tableNumber = tableNum;
+                payload.kitchenStatus = "new";
+            }
 
             const res = await fetch("/api/orders", {
                 method: "POST",
@@ -485,11 +504,12 @@ export default function HandheldInterface({
 
             setCart([]);
             setIsCartOpen(false);
-            setView("tables");
+            if (isGeneralMode) {
+                setView("menu");
+            } else {
+                setView("tables");
+            }
             setActiveCategory("All");
-            // Optionally auto-select table to show updated status?
-            // setSelectedTable(tableNum);
-            // setShowTableDetails(true);
         } catch (e) {
             console.error("Order submit failed", e);
             alert("Failed to submit order. Please try again.");
@@ -509,9 +529,15 @@ export default function HandheldInterface({
     };
 
     const handleCheckoutClick = () => {
-        setView("tables");
-        setIsCartOpen(false);
-        setSelectedTable(null);
+        if (isGeneralMode) {
+            // General mode: submit immediately without table selection
+            submitOrder("counter");
+            setIsCartOpen(false);
+        } else {
+            setView("tables");
+            setIsCartOpen(false);
+            setSelectedTable(null);
+        }
     };
 
     // -- SWIPE HANDLING --
@@ -1842,16 +1868,19 @@ export default function HandheldInterface({
                     </div>
                 </div>
                 <div className="flex space-x-2">
-                    <button
-                        onClick={() => setView(view === "tables" ? "menu" : "tables")}
-                        className={`text-[10px] font-bold px-3 py-1.5 rounded-full border transition-all flex items-center gap-1.5 ${view === "tables"
-                            ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                            : "bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10"
-                            }`}
-                    >
-                        <LayoutGrid className="w-3 h-3" />
-                        {view === "tables" ? "MENU" : "TABLES"}
-                    </button>
+                    {/* Tables toggle — only in restaurant mode */}
+                    {!isGeneralMode && (
+                        <button
+                            onClick={() => setView(view === "tables" ? "menu" : "tables")}
+                            className={`text-[10px] font-bold px-3 py-1.5 rounded-full border transition-all flex items-center gap-1.5 ${view === "tables"
+                                ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                : "bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10"
+                                }`}
+                        >
+                            <LayoutGrid className="w-3 h-3" />
+                            {view === "tables" ? "MENU" : "TABLES"}
+                        </button>
+                    )}
                     <button
                         onClick={() => {
                             if (view === "report") {
@@ -1909,7 +1938,7 @@ export default function HandheldInterface({
 
                 {/* ITEM GRID */}
                 <div className="flex-1 p-3 overflow-y-auto pb-32">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 space-x-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                         {displayedItems.map(item => {
                             // Determine item color from category
                             const catColor = getCategoryColor(item.category || "All").split(" ")[1]; // extract text-color class approximated
@@ -1918,25 +1947,65 @@ export default function HandheldInterface({
                                 <button
                                     key={item.id}
                                     onClick={() => initiateAddToCart(item)}
-                                    className="bg-neutral-800/50 border border-white/5 rounded-2xl p-4 flex flex-col items-start text-left h-40 active:scale-95 transition-all relative overflow-hidden group hover:border-white/20 hover:bg-neutral-800"
+                                    className={`bg-neutral-800/50 border border-white/5 rounded-2xl flex flex-col items-start text-left active:scale-95 transition-all relative overflow-hidden group hover:border-white/20 hover:bg-neutral-800 ${isGeneralMode ? 'h-52 p-0' : 'h-40 p-4'}`}
                                 >
-                                    <div className="font-bold text-sm leading-snug mb-1 line-clamp-2 w-full text-neutral-200 group-hover:text-white transition-colors">
-                                        {item.name}
-                                    </div>
-                                    {item.description && (
-                                        <div className="text-[10px] text-neutral-500 line-clamp-2 mb-auto leading-relaxed">
-                                            {item.description}
-                                        </div>
-                                    )}
+                                    {/* General mode: uniform image card layout */}
+                                    {isGeneralMode ? (
+                                        <>
+                                            {item.images?.[0] ? (
+                                                /* eslint-disable-next-line @next/next/no-img-element */
+                                                <img
+                                                    src={item.images[0]}
+                                                    alt={item.name}
+                                                    className="w-full h-24 object-cover rounded-t-2xl"
+                                                />
+                                            ) : (
+                                                <div
+                                                    className="w-full h-24 rounded-t-2xl flex items-center justify-center"
+                                                    style={{
+                                                        background: `linear-gradient(135deg, ${tpTheme.primaryColor}30 0%, ${tpTheme.secondaryColor || tpTheme.primaryColor}20 100%)`
+                                                    }}
+                                                >
+                                                    <span className="text-2xl font-bold text-white/20 uppercase tracking-widest select-none">
+                                                        {(item.name || "").substring(0, 2)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div className="p-3 flex flex-col flex-1 w-full">
+                                                <div className="font-bold text-xs leading-snug mb-0.5 line-clamp-2 w-full text-neutral-200 group-hover:text-white transition-colors">
+                                                    {item.name}
+                                                </div>
+                                                <div className="mt-auto w-full flex justify-between items-end">
+                                                    <div className="font-mono text-sm font-bold text-neutral-300">
+                                                        {formatCurrency(item.priceUsd)}
+                                                    </div>
+                                                    <div className="w-7 h-7 rounded-full bg-white/5 text-neutral-400 flex items-center justify-center text-lg leading-none pb-0.5 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
+                                                        +
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="font-bold text-sm leading-snug mb-1 line-clamp-2 w-full text-neutral-200 group-hover:text-white transition-colors">
+                                                {item.name}
+                                            </div>
+                                            {item.description && (
+                                                <div className="text-[10px] text-neutral-500 line-clamp-2 mb-auto leading-relaxed">
+                                                    {item.description}
+                                                </div>
+                                            )}
 
-                                    <div className="mt-auto w-full flex justify-between items-end">
-                                        <div className="font-mono text-sm font-bold text-neutral-300">
-                                            {formatCurrency(item.priceUsd)}
-                                        </div>
-                                        <div className="w-8 h-8 rounded-full bg-white/5 text-neutral-400 flex items-center justify-center text-xl leading-none pb-1 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
-                                            +
-                                        </div>
-                                    </div>
+                                            <div className="mt-auto w-full flex justify-between items-end">
+                                                <div className="font-mono text-sm font-bold text-neutral-300">
+                                                    {formatCurrency(item.priceUsd)}
+                                                </div>
+                                                <div className="w-8 h-8 rounded-full bg-white/5 text-neutral-400 flex items-center justify-center text-xl leading-none pb-1 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
+                                                    +
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
 
                                     {/* Configurable Indicator */}
                                     {(() => {
@@ -1975,12 +2044,15 @@ export default function HandheldInterface({
                     <span className="font-mono text-xl tracking-tight">{formatCurrency(cartTotal)}</span>
                 </button>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex space-x-2 z-40">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); setView("tables"); }}
-                        className="h-10 w-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all border border-white/5"
-                    >
-                        <LayoutGrid className="w-5 h-5" />
-                    </button>
+                    {/* Tables shortcut — only in restaurant mode */}
+                    {!isGeneralMode && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setView("tables"); }}
+                            className="h-10 w-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all border border-white/5"
+                        >
+                            <LayoutGrid className="w-5 h-5" />
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -2036,7 +2108,7 @@ export default function HandheldInterface({
                             onClick={handleCheckoutClick}
                             className="w-full h-16 bg-emerald-500 text-black rounded-2xl font-bold text-xl shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)] active:scale-95 transition-all flex items-center justify-center space-x-3"
                         >
-                            <span>Select Table</span>
+                            <span>{isGeneralMode ? "Submit Order" : "Select Table"}</span>
                             <ChevronLeft className="w-5 h-5 rotate-180" />
                         </button>
                     </div>
