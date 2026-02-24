@@ -417,8 +417,8 @@ export async function GET(req: NextRequest) {
 
         // Use indexed split data as the ONLY source of truth when available
         if (indexedMetrics) {
-          // Use pre-calculated indexed metrics directly - ignore receipt data entirely
-          totalEarnedUsd = round2(indexedMetrics.merchantEarnedUsd);
+          // Use total volume (all payments into the split) as "Total Earned" — not just released amounts
+          totalEarnedUsd = round2(indexedMetrics.totalVolumeUsd);
           customers = indexedMetrics.customers;
           totalCustomerXp = indexedMetrics.totalCustomerXp;
           platformFeeUsd = round2(indexedMetrics.platformFeeUsd);

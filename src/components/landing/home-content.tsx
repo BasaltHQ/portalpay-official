@@ -50,6 +50,7 @@ type Metrics = {
   averageReceiptUsd?: number;
   merchantsCount?: number;
   topCurrency?: string;
+  merchantEarnedUsdTotal?: number;
 };
 
 type SiteTheme = {
@@ -488,15 +489,16 @@ export default function HomeContent() {
         {/* Social Proof: Stats */}
         <section className="mt-6">
           <div className="glass-pane rounded-xl border p-4 md:p-5">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
               <div className="rounded-md border p-3 bg-background/60">
                 <div className="microtext text-muted-foreground">Transactions (all‑time)</div>
                 <div className="text-lg font-semibold">{metrics?.receiptsCount ?? "—"}</div>
               </div>
+
               <div className="rounded-md border p-3 bg-background/60">
-                <div className="microtext text-muted-foreground">Total volume (USD)</div>
-                <div className="text-lg font-semibold">
-                  {metrics ? fmtUSD(metrics.receiptsTotalUsd) : "—"}
+                <div className="microtext text-muted-foreground">Vendor earnings</div>
+                <div className="text-lg font-semibold text-pp-secondary">
+                  {metrics ? fmtUSD(metrics.merchantEarnedUsdTotal) : "—"}
                 </div>
               </div>
               <div className="rounded-md border p-3 bg-background/60">
@@ -516,8 +518,8 @@ export default function HomeContent() {
                 </div>
               </div>
               <div className="rounded-md border p-3 bg-background/60">
-                <div className="microtext text-muted-foreground">Merchants onboarded</div>
-                <div className="text-lg font-semibold">{metrics?.merchantsCount ?? "—"}</div>
+                <div className="microtext text-muted-foreground">Wallets connected</div>
+                <div className="text-lg font-semibold">{metrics?.totalUsers ?? "—"}</div>
               </div>
             </div>
           </div>

@@ -36,7 +36,7 @@ export async function GET(_req: NextRequest) {
       const qU = { query: "SELECT VALUE COUNT(1) FROM c WHERE c.type='user'", parameters: [] } as any;
       const { resources } = await c.items.query(qU).fetchAll();
       totalUsers = Number((resources && resources[0]) || 0);
-    } catch {}
+    } catch { }
 
     // Session summaries → count and sum (all-time)
     let sessionsCount = 0;
@@ -50,7 +50,7 @@ export async function GET(_req: NextRequest) {
       ]);
       sessionsCount = Number((rc && rc[0]) || 0);
       sessionsTotalSeconds = Number((rs && rs[0]) || 0);
-    } catch {}
+    } catch { }
 
     // Total session time from usage events (all-time) — simple aggregation of all usage seconds
     let totalSecondsAllTimeUsageEvents = 0;
@@ -58,7 +58,7 @@ export async function GET(_req: NextRequest) {
       const qUsage = { query: "SELECT VALUE SUM(c.seconds) FROM c WHERE c.type='usage'", parameters: [] } as any;
       const { resources } = await c.items.query(qUsage).fetchAll();
       totalSecondsAllTimeUsageEvents = Number((resources && resources[0]) || 0);
-    } catch {}
+    } catch { }
 
     // Historical total session time from user aggregates (all-time)
     let totalSecondsAllTime = 0;
@@ -66,7 +66,7 @@ export async function GET(_req: NextRequest) {
       const qUserUsed = { query: "SELECT VALUE SUM(c.usedSeconds) FROM c WHERE c.type='user' AND IS_DEFINED(c.usedSeconds)", parameters: [] } as any;
       const { resources } = await c.items.query(qUserUsed).fetchAll();
       totalSecondsAllTime = Number((resources && resources[0]) || 0);
-    } catch {}
+    } catch { }
 
     // Live now: active users and total live seconds across currently live sessions
     let activeNowCount = 0;
@@ -80,7 +80,7 @@ export async function GET(_req: NextRequest) {
         const ls = Number(u?.liveSince || 0);
         if (Number.isFinite(ls) && ls > 0 && ls <= now) totalLiveSecondsNow += Math.max(0, Math.floor((now - ls) / 1000));
       }
-    } catch {}
+    } catch { }
 
     // Top domain / language / platform / topic: prefer session summaries; fallback to user.metrics
     let topDomain = '';
@@ -110,10 +110,10 @@ export async function GET(_req: NextRequest) {
           if (tv && tv.length >= 2) topicCounts[tv] = (topicCounts[tv] || 0) + 1;
         }
       }
-      topDomain = Object.entries(domainCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || '';
-      topLanguage = Object.entries(langCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || '';
-      topPlatform = Object.entries(platformCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || '';
-      topTopic = Object.entries(topicCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || '';
+      topDomain = Object.entries(domainCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+      topLanguage = Object.entries(langCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+      topPlatform = Object.entries(platformCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+      topTopic = Object.entries(topicCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
       // Fallback if no session summaries yet
       if (!topDomain || !topLanguage) {
         try {
@@ -121,16 +121,16 @@ export async function GET(_req: NextRequest) {
           const { resources: res2 } = await c.items.query(qM).fetchAll();
           const domainCounts2: Record<string, number> = {};
           const langCounts2: Record<string, number> = {};
-          for (const r2 of (res2||[])) {
-            const m = (r2?.metrics||{}) as any;
-            for (const [k,v] of Object.entries(m.domains||{})) domainCounts2[k] = (domainCounts2[k]||0) + Number(v||0);
-            for (const [k,v] of Object.entries(m.languages||{})) langCounts2[k] = (langCounts2[k]||0) + Number(v||0);
+          for (const r2 of (res2 || [])) {
+            const m = (r2?.metrics || {}) as any;
+            for (const [k, v] of Object.entries(m.domains || {})) domainCounts2[k] = (domainCounts2[k] || 0) + Number(v || 0);
+            for (const [k, v] of Object.entries(m.languages || {})) langCounts2[k] = (langCounts2[k] || 0) + Number(v || 0);
           }
-          if (!topDomain) topDomain = Object.entries(domainCounts2).sort((a,b)=>b[1]-a[1])[0]?.[0] || '';
-          if (!topLanguage) topLanguage = Object.entries(langCounts2).sort((a,b)=>b[1]-a[1])[0]?.[0] || '';
-        } catch {}
+          if (!topDomain) topDomain = Object.entries(domainCounts2).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+          if (!topLanguage) topLanguage = Object.entries(langCounts2).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+        } catch { }
       }
-    } catch {}
+    } catch { }
 
     // 24h sessions
     let sessionsCount24h = 0;
@@ -144,7 +144,7 @@ export async function GET(_req: NextRequest) {
       ]);
       sessionsCount24h = Number((rc24 && rc24[0]) || 0);
       sessionsSeconds24h = Number((rs24 && rs24[0]) || 0);
-    } catch {}
+    } catch { }
 
     // Range-filtered sessions (if requested)
     let sessionsCountRange = 0;
@@ -167,7 +167,7 @@ export async function GET(_req: NextRequest) {
         // Avoid referencing averageSeconds before it's declared; compute inline
         averageSecondsRange = sessionsCountRange > 0 ? Math.floor(sessionsSecondsRange / sessionsCountRange) : 0;
       }
-    } catch {}
+    } catch { }
     // XP and Purchased totals (all-time)
     let xpTotal = 0;
     let purchasedSecondsTotal = 0;
@@ -180,7 +180,7 @@ export async function GET(_req: NextRequest) {
       ]);
       xpTotal = Number((rx && rx[0]) || 0);
       purchasedSecondsTotal = Number((rp && rp[0]) || 0);
-    } catch {}
+    } catch { }
 
     // Percentiles (last 7 days)
     let p50Seconds7d = 0;
@@ -190,7 +190,7 @@ export async function GET(_req: NextRequest) {
       const { resources: ds } = await c.items.query(qDur7).fetchAll();
       const arr = Array.isArray(ds) ? (ds as number[]).map(n => Number(n || 0)).filter(n => Number.isFinite(n) && n > 0) : [];
       if (arr.length > 0) {
-        arr.sort((a,b)=>a-b);
+        arr.sort((a, b) => a - b);
         const q50 = 0.5 * (arr.length - 1);
         const q95 = 0.95 * (arr.length - 1);
         const interp = (q: number) => {
@@ -201,7 +201,7 @@ export async function GET(_req: NextRequest) {
         p50Seconds7d = Math.round(interp(q50));
         p95Seconds7d = Math.round(interp(q95));
       }
-    } catch {}
+    } catch { }
 
     // Receipts stats (PortalPay)
     let receiptsCount = 0;
@@ -211,10 +211,73 @@ export async function GET(_req: NextRequest) {
     let averageReceiptUsd = 0;
     let merchantsCount = 0;
     let topCurrency = '';
+    let merchantEarnedUsdTotal = 0;
+
+    // Resolve Brand/Container Identity logic to isolate stats
+    let validWallets: Set<string> | null = null;
+    let walletFilterClause = "";
+
     try {
+      const { getContainerIdentity } = await import("@/lib/brand-config");
+      const { getBrandKey } = await import("@/config/brands");
+
+      const host = _req.headers.get("host") || url.hostname || "";
+      const identity = getContainerIdentity(host);
+      let identityBrandKey = (identity.brandKey || "").toLowerCase();
+      if (!identityBrandKey) {
+        try { identityBrandKey = (getBrandKey() || "").toLowerCase(); } catch { identityBrandKey = ""; }
+      }
+
+      if (identityBrandKey) {
+        const qWallets = { query: "SELECT c.wallet, c.brandKey, c.theme FROM c WHERE c.type='site_config'", parameters: [] } as any;
+        const { resources: configs } = await c.items.query(qWallets).fetchAll();
+
+        const isPlatform = identityBrandKey === "basaltsurge" || identityBrandKey === "portalpay";
+        const matchedWallets = new Set<string>();
+
+        for (const cfg of (configs || [])) {
+          const w = String(cfg?.wallet || "").toLowerCase();
+          if (!w) continue;
+
+          const bk = String(cfg?.brandKey || cfg?.theme?.brandKey || "").toLowerCase();
+
+          if (isPlatform) {
+            if (!bk || bk === "basaltsurge" || bk === "portalpay") {
+              matchedWallets.add(w);
+            }
+          } else {
+            if (bk === identityBrandKey) {
+              matchedWallets.add(w);
+            }
+          }
+        }
+        validWallets = matchedWallets;
+
+        if (validWallets.size === 0) {
+          walletFilterClause = " AND false"; // Force 0 results if container has no merchants
+        } else {
+          const wArray = Array.from(validWallets).map(w => `"${w}"`);
+          walletFilterClause = ` AND ARRAY_CONTAINS([${wArray.join(",")}], c.wallet)`;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to map brand wallets for metrics", e);
+    }
+
+    try {
+      // 1. Merchant Earnings from split_index (using merchantWallet instead of wallet)
+      const earnedFilterClause = validWallets !== null
+        ? (validWallets.size === 0
+          ? " AND false"
+          : ` AND ARRAY_CONTAINS([${Array.from(validWallets).map(w => `"${w}"`).join(",")}], c.merchantWallet)`)
+        : "";
+      const qEarned = { query: `SELECT VALUE SUM(c.totalVolumeUsd) FROM c WHERE c.type='split_index'${earnedFilterClause}`, parameters: [] } as any;
+      const { resources: rEarned } = await c.items.query(qEarned).fetchAll();
+      merchantEarnedUsdTotal = Number((rEarned && rEarned[0]) || 0);
+
       // All-time receipts count and total USD
-      const qRecCnt = { query: "SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt'", parameters: [] } as any;
-      const qRecSum = { query: "SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt'", parameters: [] } as any;
+      const qRecCnt = { query: `SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid'${walletFilterClause}`, parameters: [] } as any;
+      const qRecSum = { query: `SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid'${walletFilterClause}`, parameters: [] } as any;
       const [{ resources: rCnt }, { resources: rSum }] = await Promise.all([
         c.items.query(qRecCnt).fetchAll(),
         c.items.query(qRecSum).fetchAll(),
@@ -223,8 +286,8 @@ export async function GET(_req: NextRequest) {
       receiptsTotalUsd = Number((rSum && rSum[0]) || 0);
 
       // 24h receipts count and total USD
-      const qRecCnt24 = { query: "SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.createdAt > @since", parameters: [{ name: "@since", value: since24h }] } as any;
-      const qRecSum24 = { query: "SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.createdAt > @since", parameters: [{ name: "@since", value: since24h }] } as any;
+      const qRecCnt24 = { query: `SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since${walletFilterClause}`, parameters: [{ name: "@since", value: since24h }] } as any;
+      const qRecSum24 = { query: `SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since${walletFilterClause}`, parameters: [{ name: "@since", value: since24h }] } as any;
       const [{ resources: rCnt24 }, { resources: rSum24 }] = await Promise.all([
         c.items.query(qRecCnt24).fetchAll(),
         c.items.query(qRecSum24).fetchAll(),
@@ -235,33 +298,28 @@ export async function GET(_req: NextRequest) {
       // Average receipt USD
       averageReceiptUsd = receiptsCount > 0 ? Math.floor((receiptsTotalUsd * 100) / receiptsCount) / 100 : 0;
 
-      // Merchants count (distinct brandName)
-      const qBrands = { query: "SELECT c.brandName FROM c WHERE c.type='receipt' AND IS_DEFINED(c.brandName)", parameters: [] } as any;
-      const { resources: brandRows } = await c.items.query(qBrands).fetchAll();
-      const brandSet = new Set<string>();
-      for (const row of (brandRows || [])) {
-        const bn = String((row as any)?.brandName || "").trim();
-        if (bn) brandSet.add(bn);
-      }
-      merchantsCount = brandSet.size;
+      // Merchants count by distinct wallet
+      const qWalletsQuery = { query: `SELECT DISTINCT VALUE c.wallet FROM c WHERE c.type='receipt' AND c.status='paid'${walletFilterClause}`, parameters: [] } as any;
+      const { resources: wRows } = await c.items.query(qWalletsQuery).fetchAll();
+      merchantsCount = (wRows || []).length;
 
       // Top currency
-      const qCurr = { query: "SELECT c.currency FROM c WHERE c.type='receipt' AND IS_DEFINED(c.currency)", parameters: [] } as any;
+      const qCurr = { query: `SELECT VALUE c.currency FROM c WHERE c.type='receipt' AND c.status='paid' AND IS_DEFINED(c.currency)${walletFilterClause}`, parameters: [] } as any;
       const { resources: currRows } = await c.items.query(qCurr).fetchAll();
       const currCounts: Record<string, number> = {};
       for (const row of (currRows || [])) {
-        const cur = String((row as any)?.currency || "").trim().toUpperCase();
+        const cur = String(row || "").trim().toUpperCase();
         if (cur) currCounts[cur] = (currCounts[cur] || 0) + 1;
       }
-      topCurrency = Object.entries(currCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || '';
-    } catch {}
+      topCurrency = Object.entries(currCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+    } catch { }
 
     const averageSeconds = sessionsCount > 0 ? Math.floor(sessionsTotalSeconds / sessionsCount) : 0;
     const averageSeconds24h = sessionsCount24h > 0 ? Math.floor(sessionsSeconds24h / sessionsCount24h) : 0;
     // Canonical total session time: sum of usage events representing actual session increments
     const totalSeconds = totalSecondsAllTimeUsageEvents;
-    return NextResponse.json({ metrics: { totalUsers, totalSeconds, totalSecondsAllTime, totalSummarizedSecondsAllTime: sessionsTotalSeconds, activeNowCount, totalLiveSecondsNow, topDomain, topLanguage, topPlatform, topTopic, sessionsCount, averageSeconds, sessionsCount24h, averageSeconds24h, sessionsCountRange, sessionsSecondsRange, averageSecondsRange, xpTotal, purchasedSecondsTotal, p50Seconds7d, p95Seconds7d, receiptsCount, receiptsTotalUsd, receiptsCount24h, receiptsTotalUsd24h, averageReceiptUsd, merchantsCount, topCurrency } });
+    return NextResponse.json({ metrics: { totalUsers, totalSeconds, totalSecondsAllTime, totalSummarizedSecondsAllTime: sessionsTotalSeconds, activeNowCount, totalLiveSecondsNow, topDomain, topLanguage, topPlatform, topTopic, sessionsCount, averageSeconds, sessionsCount24h, averageSeconds24h, sessionsCountRange, sessionsSecondsRange, averageSecondsRange, xpTotal, purchasedSecondsTotal, p50Seconds7d, p95Seconds7d, receiptsCount, receiptsTotalUsd, receiptsCount24h, receiptsTotalUsd24h, averageReceiptUsd, merchantsCount, topCurrency, merchantEarnedUsdTotal } });
   } catch (e: any) {
-    return NextResponse.json({ metrics: { totalUsers: 0, totalSeconds: 0, topDomain: '', topLanguage: '', sessionsCount: 0, averageSeconds: 0 }, degraded: true, reason: e?.message || 'cosmos_unavailable' });
+    return NextResponse.json({ metrics: { totalUsers: 0, totalSeconds: 0, topDomain: '', topLanguage: '', sessionsCount: 0, averageSeconds: 0, merchantEarnedUsdTotal: 0 }, degraded: true, reason: e?.message || 'cosmos_unavailable' });
   }
 }

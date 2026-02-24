@@ -4659,9 +4659,13 @@ function UsersPanel() {
         // Always fetch balances first
         await fetchMerchantBalances(w);
 
-        // Then fetch releasable and transactions
+        // Read the split address from the ITEMS data (synced from API) as fallback,
+        // since React state (balancesCache) may not have flushed yet
         const balanceData = balancesCache.get(w);
-        if (balanceData && balanceData.splitAddressUsed) {
+        const splitFromItems = items.find(it => it.merchant === w)?.splitAddress;
+        const splitAddr = balanceData?.splitAddressUsed || splitFromItems;
+
+        if (splitAddr && /^0x[a-f0-9]{40}$/i.test(splitAddr)) {
           // Run these in parallel
           await Promise.all([
             fetchReleasable(w),

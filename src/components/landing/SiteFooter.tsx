@@ -38,11 +38,15 @@ export default function SiteFooter() {
   // Get navbarMode from brand context or theme
   const navbarMode = (brand as any)?.logos?.navbarMode || theme.navbarMode;
 
-  // Determine if this is a partner container based on the effective brand key
+  // Determine if this is a partner container based on the effective brand key and DOM
   const isPartner = React.useMemo(() => {
     const key = String(theme.brandKey || (brand as any)?.key || "").toLowerCase();
-    return key && key !== "basaltsurge" && key !== "portalpay";
+    const domContainerType = typeof document !== 'undefined' ? document.documentElement.getAttribute('data-pp-container-type') : '';
+    return (key && key !== "basaltsurge" && key !== "portalpay") || domContainerType === "partner";
   }, [theme.brandKey, (brand as any)?.key]);
+
+  const displayBrandName = isPartner ? (theme.brandName || "Brand") : "BasaltSurge";
+  const displaySymbolUrl = isPartner ? (theme.symbolLogoUrl || theme.brandLogoUrl) : "/Surge.png";
 
   return (
     <footer className="relative py-16 px-6 border-t border-white/10 mt-24">
@@ -74,10 +78,10 @@ export default function SiteFooter() {
                 return (
                   <div className="flex items-center gap-3 mb-6">
                     <div className="relative w-12 h-12">
-                      {theme.brandLogoUrl ? (
+                      {displaySymbolUrl ? (
                         <Image
-                          src={theme.symbolLogoUrl || theme.brandLogoUrl}
-                          alt={theme.brandName || "Brand Logo"}
+                          src={displaySymbolUrl}
+                          alt={displayBrandName}
                           fill
                           className="object-contain"
                         />
@@ -89,13 +93,13 @@ export default function SiteFooter() {
                       {!isPartner && <div className="shield-gleam-container" />}
                     </div>
                     <div>
-                      {theme.brandName === "BasaltSurge" ? (
+                      {displayBrandName === "BasaltSurge" ? (
                         <span className="text-white text-xl tracking-widest uppercase font-vox whitespace-nowrap" style={{ fontFamily: 'vox, sans-serif' }}>
                           <span style={{ fontWeight: 300 }}>BASALT</span><span style={{ fontWeight: 700 }}>SURGE</span>
                         </span>
                       ) : (
                         <span className="text-white text-xl tracking-widest font-bold uppercase" style={{ fontFamily: theme.fontFamily }}>
-                          {theme.brandName || "Brand"}
+                          {displayBrandName}
                         </span>
                       )}
                       {!isPartner && (
@@ -198,7 +202,7 @@ export default function SiteFooter() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-gray-500 text-xs">
-            © {new Date().getFullYear()} {theme.brandName || "BasaltSurge"}. All rights reserved.
+            © {new Date().getFullYear()} {displayBrandName}. All rights reserved.
           </p>
 
           {/* ElevenLabs Grant Badge */}

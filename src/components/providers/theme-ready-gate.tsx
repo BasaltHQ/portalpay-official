@@ -484,7 +484,8 @@ export function ThemeReadyGate() {
   // For non-portal routes, fall back to base gating.
   const themeReadyOk = ready && (!requireMerchantStage || stage === "merchant");
   const shouldShow = navBlock || (isPortalRoute ? (!portalReady) : baseBlock);
-  if (!shouldShow) return null;
+  const isLandingPage = pathname === "/";
+  if (!shouldShow || isLandingPage) return null;
 
   return (
     <div

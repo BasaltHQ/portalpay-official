@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
     let successCount = 0;
     let errorCount = 0;
 
+    // Track seen splits to avoid redundant processing for merchants with multiple brands/configs
+    const seenSplits = new Set<string>();
+
     for (const config of configs) {
       const merchantWallet = String(config?.wallet || "").toLowerCase();
       // Check both possible locations for split address
@@ -51,6 +54,10 @@ export async function POST(req: NextRequest) {
 
       if (!merchantWallet || !splitAddress) continue;
       if (!/^0x[a-f0-9]{40}$/i.test(merchantWallet) || !/^0x[a-f0-9]{40}$/i.test(splitAddress)) continue;
+
+      const uniqueKey = `${merchantWallet}-${splitAddress}`;
+      if (seenSplits.has(uniqueKey)) continue;
+      seenSplits.add(uniqueKey);
 
       try {
         console.log(`[BATCH REINDEX] Indexing merchant ${merchantWallet.slice(0, 10)}... split ${splitAddress.slice(0, 10)}...`);
@@ -230,7 +237,7 @@ async function indexSplitTransactionsDirect(
                   method: "function releasable(address token, address account) view returns (uint256)",
                   params: [tAddr as `0x${string}`, platformAddr as `0x${string}`],
                 });
-                if (raw > 0n) {
+                if (raw > BigInt(0)) {
                   releasableUnits = Number(raw) / Math.pow(10, decimal);
                 }
               }
@@ -355,10 +362,12 @@ async function fetchSplitTransactionsDirect(
   try {
     const transactionsUrl = `https://base.blockscout.com/api/v2/addresses/${splitAddress}/transactions`;
     const tokenTransfersUrl = `https://base.blockscout.com/api/v2/addresses/${splitAddress}/token-transfers`;
+    const logsUrl = `https://base.blockscout.com/api/v2/addresses/${splitAddress}/logs`;
 
-    const [txResponse, tokenResponse] = await Promise.all([
+    const [txResponse, tokenResponse, logsResponse] = await Promise.all([
       fetch(transactionsUrl, { headers: { "Accept": "application/json" } }),
-      fetch(tokenTransfersUrl, { headers: { "Accept": "application/json" } })
+      fetch(tokenTransfersUrl, { headers: { "Accept": "application/json" } }),
+      fetch(logsUrl, { headers: { "Accept": "application/json" } }).catch(() => null)
     ]);
 
     if (!txResponse.ok) {
@@ -373,8 +382,14 @@ async function fetchSplitTransactionsDirect(
       tokenResponse.json()
     ]);
 
+    let logsData: any = null;
+    if (logsResponse && logsResponse.ok) {
+      try { logsData = await logsResponse.json(); } catch { }
+    }
+
     const ethItems = Array.isArray(txData?.items) ? txData.items : [];
     const tokenItems = Array.isArray(tokenData?.items) ? tokenData.items : [];
+    const logItems = Array.isArray(logsData?.items) ? logsData.items : [];
 
     const splitAddrLower = splitAddress.toLowerCase();
     const merchantAddrLower = merchantWallet?.toLowerCase();
@@ -400,103 +415,49 @@ async function fetchSplitTransactionsDirect(
     const cumulativeMerchantReleases: Record<string, number> = {};
     const cumulativePlatformReleases: Record<string, number> = {};
 
-    // Process ETH transactions
-    const ethTransactions = await Promise.all(ethItems.map(async (tx: any) => {
-      const txValue = tx?.value ? String(tx.value) : "0";
-      const timestamp = tx?.timestamp ? new Date(tx.timestamp).getTime() : Date.now();
-      const hash = tx?.hash || "";
-      const from = tx?.from?.hash || "";
-      const to = tx?.to?.hash || "";
+    // ─── ETH FLOW DETECTION VIA CONTRACT EVENT LOGS ───
+    // Standard transactions and internal transactions are UNRELIABLE for ERC-4337 proxy calls.
+    // Parse PaymentReceived and PaymentReleased events from the contract's logs.
+    const PAYMENT_RECEIVED_TOPIC = "0x6ef95f06320e7a25a04a175ca677b7052bdd97131872c2192525a629f51be770";
+    const PAYMENT_RELEASED_TOPIC = "0xdf20fd1e76bc69d672e4814fafb2c449bba3a5369d8359adf9e05e6fde87b056";
 
-      let valueInEth = Number(txValue) / 1e18;
+    const ethTransactions: any[] = [];
+    for (const log of logItems) {
+      try {
+        const topics = Array.isArray(log?.topics) ? log.topics : [];
+        const topic0 = String(topics[0] || "").toLowerCase();
+        const dataHex = String(log?.data || "0x");
+        const txHash = String(log?.tx_hash || log?.transaction_hash || "").toLowerCase();
+        const timestamp = log?.timestamp ? new Date(log.timestamp).getTime() : Date.now();
 
-      const fromLower = from.toLowerCase();
-      const toLower = to.toLowerCase();
+        if (!dataHex.startsWith("0x") || dataHex.length < 130) continue;
 
-      const isPayment = toLower === splitAddrLower && fromLower !== merchantAddrLower && fromLower !== platformAddrLower;
-      const isRelease = toLower === splitAddrLower && (fromLower === merchantAddrLower || fromLower === platformAddrLower);
+        const dataWithoutPrefix = dataHex.slice(2);
+        const addressSegment = dataWithoutPrefix.slice(0, 64);
+        const addr = `0x${addressSegment.slice(-40)}`.toLowerCase();
+        const amountHex = `0x${dataWithoutPrefix.slice(64, 128)}`;
+        const amountWei = BigInt(amountHex);
+        const amountEth = Number(amountWei) / 1e18;
 
-      let txType: 'payment' | 'release' | 'unknown' = 'unknown';
-      let releaseType: 'merchant' | 'platform' | undefined;
-      let releaseTo: string | undefined;
+        if (amountEth <= 0) continue;
 
-      if (isPayment) {
-        txType = 'payment';
-      } else if (isRelease) {
-        txType = 'release';
-
-        // Initial guess based on caller
-        releaseType = fromLower === merchantAddrLower ? 'merchant' : 'platform';
-
-        // Try to refine using logs to find actual recipient
-        try {
-          const logsUrl = `https://base.blockscout.com/api/v2/transactions/${hash}/logs`;
-          const logsRes = await fetch(logsUrl, { headers: { "Accept": "application/json" } });
-
-          if (logsRes.ok) {
-            const logsData = await logsRes.json();
-            const logs = Array.isArray(logsData?.items) ? logsData.items : [];
-            const paymentReleasedTopic = "0xdf20fd1e76bc69d672e4814fafb2c449bba3a5369d8359adf9e05e6fde87b056";
-
-            for (const log of logs) {
-              const topics = Array.isArray(log?.topics) ? log.topics : [];
-              const logAddress = String(log?.address?.hash || "").toLowerCase();
-
-              if (logAddress === splitAddrLower && topics[0]?.toLowerCase() === paymentReleasedTopic.toLowerCase()) {
-                const dataHex = String(log?.data || "0x");
-
-                if (dataHex.startsWith("0x") && dataHex.length >= 130) {
-                  try {
-                    const dataWithoutPrefix = dataHex.slice(2);
-                    const addressSegment = dataWithoutPrefix.slice(0, 64);
-                    const toAddr = `0x${addressSegment.slice(-40)}`.toLowerCase();
-                    const amountSegment = dataWithoutPrefix.slice(64, 128);
-                    const amountHex = `0x${amountSegment}`;
-                    const amountWei = BigInt(amountHex);
-                    valueInEth = Number(amountWei) / 1e18;
-                    releaseTo = toAddr;
-
-                    // Update releaseType based on Verified Recipient
-                    if (releaseTo === merchantAddrLower) releaseType = 'merchant';
-                    else if (releaseTo === platformAddrLower) releaseType = 'platform';
-
-                    break;
-                  } catch (e) {
-                    // Keep original value if parsing fails
-                  }
-                }
-              }
-            }
+        if (topic0 === PAYMENT_RECEIVED_TOPIC.toLowerCase()) {
+          cumulativePayments['ETH'] = (cumulativePayments['ETH'] || 0) + amountEth;
+          ethTransactions.push({
+            hash: txHash, from: addr, to: splitAddrLower,
+            value: amountEth, timestamp,
+            blockNumber: 0, status: "success",
+            type: 'payment', token: 'ETH',
+          });
+        } else if (topic0 === PAYMENT_RELEASED_TOPIC.toLowerCase()) {
+          if (addr === merchantAddrLower) {
+            cumulativeMerchantReleases['ETH'] = (cumulativeMerchantReleases['ETH'] || 0) + amountEth;
+          } else if (addr === platformAddrLower) {
+            cumulativePlatformReleases['ETH'] = (cumulativePlatformReleases['ETH'] || 0) + amountEth;
           }
-        } catch (e) {
-          // Continue with transaction value if log fetch fails
         }
-      }
-
-      if (txType === 'payment') {
-        cumulativePayments['ETH'] = (cumulativePayments['ETH'] || 0) + valueInEth;
-      } else if (txType === 'release' && releaseType) {
-        if (releaseType === 'merchant') {
-          cumulativeMerchantReleases['ETH'] = (cumulativeMerchantReleases['ETH'] || 0) + valueInEth;
-        } else if (releaseType === 'platform') {
-          cumulativePlatformReleases['ETH'] = (cumulativePlatformReleases['ETH'] || 0) + valueInEth;
-        }
-      }
-
-      return {
-        hash,
-        from,
-        to,
-        value: valueInEth,
-        timestamp,
-        blockNumber: tx?.block || 0,
-        status: tx?.status || "success",
-        type: txType,
-        releaseType,
-        releaseTo,
-        token: 'ETH',
-      };
-    }));
+      } catch { /* skip malformed log */ }
+    }
 
     // Process token transfers
     const supportedTokens = ["USDC", "USDT", "cbBTC", "cbXRP", "SOL"];

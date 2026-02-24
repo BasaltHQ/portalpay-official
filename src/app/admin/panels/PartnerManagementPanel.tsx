@@ -1112,8 +1112,10 @@ export default function PartnerManagementPanel() {
       try {
         // Pass the known split address from the row to bypass brand-agnostic lookup
         await fetchMerchantBalances(w, knownSplitAddress);
+        // Use knownSplitAddress as fallback since React state (balancesCache) may not have flushed yet
         const b = balancesCache.get(w);
-        if (b && b.splitAddressUsed) {
+        const splitAddr = b?.splitAddressUsed || knownSplitAddress;
+        if (splitAddr && /^0x[a-f0-9]{40}$/i.test(splitAddr)) {
           await Promise.all([fetchReleasables(w), fetchMerchantTransactions(w)]);
         }
       } catch { }
