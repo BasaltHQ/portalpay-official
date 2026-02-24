@@ -95,6 +95,8 @@ jobs:
           app-name: "basalt-surge"
           slot-name: "Production"
           package: release.zip
-          startup-command: "bash startup.sh"
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_SURGE_MAIN }}
+
+      - name: "Set startup command for font support"
+        run: az webapp config set --resource-group basaltsurge --name basalt-surge --startup-file "bash startup.sh"
 

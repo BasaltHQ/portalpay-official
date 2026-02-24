@@ -95,6 +95,8 @@ jobs:
           app-name: "icunow-store"
           slot-name: "Production"
           package: release.zip
-          startup-command: "bash startup.sh"
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_SURGE_ICUNOWSTORE }}
+
+      - name: "Set startup command for font support"
+        run: az webapp config set --resource-group basaltsurge --name icunow-store --startup-file "bash startup.sh"
 
