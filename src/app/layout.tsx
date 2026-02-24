@@ -708,7 +708,7 @@ export default async function RootLayout({
           d.setAttribute("data-pp-route", path.startsWith("/portal") ? "portal" : (path.startsWith("/shop") ? "shop" : ((path.startsWith("/terminal") || path.startsWith("/pricing")) ? "terminal" : "other")));
           // hide global background gradient on portal pages to avoid duplicate decorative layers
           try { if (path.startsWith("/portal")) { var gg = document.querySelector(".global-gradient-layer"); if (gg) gg.setAttribute("hidden", ""); } } catch(e) {}
-          if (lock==="portalpay-default") {
+          if (lock==="portalpay-default" || path === "/") {
             d.setAttribute("data-pp-theme-stage","init");
             d.setAttribute("data-pp-theme-ready","1");
           }
