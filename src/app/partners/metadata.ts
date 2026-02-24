@@ -1,9 +1,15 @@
 import type { Metadata } from 'next';
 import { buildOgTwitterForRoute } from '@/lib/brand-meta';
 
+/**
+ * Partners page metadata.
+ * - Intentionally omits images so existing opengraph-image.tsx/twitter-image.tsx continue to drive previews
+ */
 export async function generateMetadata(): Promise<Metadata> {
   const meta = await buildOgTwitterForRoute({
     path: '/partners',
+    title: 'Partner Program — BasaltSurge',
+    description: 'Launch your brand on BasaltSurge with a dedicated whitelabel container. Full-stack crypto commerce: shops, receipts, QR terminals, on-chain settlement, and complete branding control.',
   });
   return {
     openGraph: {
@@ -13,7 +19,6 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: meta.openGraph?.siteName,
       description: meta.openGraph?.description,
       locale: meta.openGraph?.locale,
-      images: meta.openGraph?.images,
     },
     twitter: {
       card: 'summary_large_image',
@@ -21,7 +26,6 @@ export async function generateMetadata(): Promise<Metadata> {
       description: meta.twitter?.description,
       site: meta.twitter?.site,
       creator: meta.twitter?.creator,
-      images: meta.twitter?.images,
     },
   };
 }

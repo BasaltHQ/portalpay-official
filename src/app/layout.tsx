@@ -332,7 +332,7 @@ export async function generateMetadata(): Promise<Metadata> {
     }
     return sanitizedName;
   })();
-  const fallbackDescription = `${runtimeBrand.name} is a full‑stack crypto commerce platform: multi‑currency payments on Base, instant receipts & QR terminals, inventory & orders, tax jurisdictions & components, reserve analytics & strategy, on‑chain split releases, branding/partner tools, loyalty, and shops.`;
+  const fallbackDescription = `${runtimeBrand.name} is a full‑stack crypto commerce platform: multi‑currency payments (USDC, ETH, cbBTC) on Base, the x402 agentic payment standard, Google's Universal Commerce Protocol (UCP), instant receipts & QR terminals, on‑chain split releases, shops, loyalty, and whitelabel partner containers.`;
   const candidateDescription =
     siteMetaDescription ||
     platformMetaDescription ||
@@ -343,7 +343,7 @@ export async function generateMetadata(): Promise<Metadata> {
     const norm = cd.toLowerCase();
     // If no description, or a generic/too-short placeholder, use the solid fallback
     if (!cd) return fb;
-    if (norm === "payments & portals" || cd.length < 24) return fb;
+    if (norm === "payments & portals" || norm === "web3-native payments & ecommerce" || cd.length < 24) return fb;
     return cd;
   })();
 
@@ -465,9 +465,12 @@ export async function generateMetadata(): Promise<Metadata> {
       runtimeBrand.name,
       "payments",
       "crypto",
-      "billing",
+      "x402",
+      "UCP",
+      "agentic payments",
+      "USDC",
+      "Base",
       "receipts",
-      "analytics",
       "commerce",
     ],
     alternates: {
@@ -480,15 +483,7 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: brandNameForTitle,
       description,
       locale: "en_US",
-      images: [
-        {
-          url: (ogImagePath && ogImagePath !== '/' ? (/^https?:\/\//i.test(ogImagePath) ? ogImagePath : `${safeMetadataBase}${ogImagePath}`) : `${safeMetadataBase}/api/og-image/fallback?title=${encodeURIComponent(ogTitle)}&brand=${encodeURIComponent(brandNameForTitle)}&desc=${encodeURIComponent(description)}`),
-          width: 1200,
-          height: 630,
-          alt: runtimeBrand.name,
-          type: "image/png",
-        },
-      ],
+      // images intentionally omitted so co-located opengraph-image.tsx drives previews
     },
     twitter: {
       card: "summary_large_image",
@@ -496,7 +491,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
       site: twitterSite || undefined,
       creator: twitterCreator || undefined,
-      images: [(twitterImagePath && twitterImagePath !== '/' ? (/^https?:\/\//i.test(twitterImagePath) ? twitterImagePath : `${safeMetadataBase}${twitterImagePath}`) : `${safeMetadataBase}/api/og-image/fallback?title=${encodeURIComponent(ogTitle)}&brand=${encodeURIComponent(brandNameForTitle)}&desc=${encodeURIComponent(description)}`)],
+      // images intentionally omitted so co-located twitter-image.tsx drives previews
     },
     appLinks: {
       web: { url: safeMetadataBase },

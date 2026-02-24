@@ -51,6 +51,9 @@ jobs:
           # Include tools directory for portable JRE and signer
           cp -r tools .next/standalone/tools
           cp -r .next/static .next/standalone/.next/static
+          # Include startup script for font installation on Azure
+          cp startup.sh .next/standalone/startup.sh
+          chmod +x .next/standalone/startup.sh
           # Ensure start command is correct for Azure Service Plan
           cd .next/standalone
           npm pkg set scripts.start="node server.js"
@@ -92,5 +95,6 @@ jobs:
           app-name: "basalt-surge"
           slot-name: "Production"
           package: release.zip
+          startup-command: "bash startup.sh"
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_SURGE_MAIN }}
 
