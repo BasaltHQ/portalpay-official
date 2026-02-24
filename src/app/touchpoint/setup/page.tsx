@@ -179,8 +179,8 @@ export default function TouchpointSetupPage() {
     }
 
     return (
-        <div className="min-h-screen bg-neutral-900 text-neutral-100 font-sans flex flex-col items-center justify-center p-6">
-            <div className="w-full max-w-md bg-neutral-800 rounded-2xl shadow-2xl overflow-hidden border border-neutral-700">
+        <div className="min-h-[100dvh] bg-neutral-900 text-neutral-100 font-sans flex flex-col p-4 sm:p-6 overflow-y-auto">
+            <div className="w-full max-w-md mx-auto my-auto shrink-0 bg-neutral-800 rounded-2xl shadow-2xl overflow-hidden border border-neutral-700">
 
                 {/* Header */}
                 <div className="bg-neutral-950 p-6 flex flex-col items-center border-b border-neutral-800">
@@ -222,7 +222,7 @@ export default function TouchpointSetupPage() {
                     </div>
 
                     {/* Status */}
-                    <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-start gap-3">
+                    <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-start space-x-3">
                         <Lock className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
                         <div className="text-sm text-amber-200">
                             <p className="font-semibold mb-1">Device Not Configured</p>
@@ -236,7 +236,7 @@ export default function TouchpointSetupPage() {
                     <button
                         onClick={checkConfiguration}
                         disabled={checking}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-neutral-700 disabled:text-neutral-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2"
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-neutral-700 disabled:text-neutral-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center space-x-2"
                     >
                         {checking ? (
                             <>
@@ -264,3 +264,4 @@ export default function TouchpointSetupPage() {
         </div>
     );
 }
+

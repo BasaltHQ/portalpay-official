@@ -77,7 +77,6 @@ object DeviceProfile {
     val hardwareScannerType: String get() = when (type) {
         DeviceType.TOPWISE_T6D -> "TOPWISE_CAMERA"
         DeviceType.KIOSK_H2150B -> "ICOD_2D_SCANNER"
-        DeviceType.VALOR_VP550, DeviceType.VALOR_VP800 -> "VALOR_CAMERA"
         else -> "SOFTWARE_ML_KIT"
     }
 }

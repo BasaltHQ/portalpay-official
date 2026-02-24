@@ -1,0 +1,907 @@
+<LinearLayout  xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="10dp"
+    android:paddingRight="16dp"
+    android:orientation="horizontal"
+    >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingLeft="1dp"
+        android:paddingRight="6dp"
+        android:orientation="vertical"
+        android:layout_weight="5.5">
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/print_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:layout_marginTop="25dp"
+            android:background="#FF6200EE"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:text="Print" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/card_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:layout_marginTop="25dp"
+            android:background="#FF6200EE"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:text="Card" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:layout_weight="8">
+        <View
+            android:layout_width="3dp"
+            android:layout_height="match_parent"
+            android:background="#000000" />
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/scrollView_default"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:visibility="visible"
+        android:layout_gravity="center_vertical"
+        android:layout_weight="3">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            >
+
+            <TextView
+                android:id="@+id/txtdefault"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sample  App"
+                android:layout_gravity="center"
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtmsg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sample App"
+                android:layout_gravity="center"
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <ScrollView
+        android:id="@+id/scrollView_card"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:visibility="gone"
+        android:layout_weight="3">
+
+        <LinearLayout
+            android:id="@+id/card_lay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            >
+
+            <TextView
+                android:id="@+id/textView2"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center_horizontal"
+                android:textSize="14dp"
+                android:textColor="#FF6200EE"
+                android:textStyle="bold"
+                android:text="Trans Maode" />
+
+
+            <RadioGroup
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="0dp"
+                android:orientation="horizontal"
+                android:id="@+id/transmodegrp">
+
+            <RadioButton
+                android:id="@+id/radioDebit"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="Debit"
+                android:checked="true"
+                android:textSize="14dp"
+                android:layout_marginLeft="10dp"
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textStyle="bold" />
+
+            <RadioButton
+                android:id="@+id/radioCredit"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="Credit"
+                android:checked="false"
+                android:textSize="14dp"
+                android:layout_marginRight="10dp"
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textStyle="bold" />
+            </RadioGroup>
+
+            <TextView
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:gravity="center_horizontal"
+                android:textSize="14dp"
+                android:textColor="#FF6200EE"
+                android:textStyle="bold"
+                android:text="Trans code" />
+
+            <RadioGroup
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="0dp"
+                android:orientation="horizontal"
+                android:id="@+id/transcodegrp">
+
+                <RadioButton
+                    android:id="@+id/radiosale"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Sale"
+                    android:checked="true"
+                    android:textSize="14dp"
+                    android:layout_marginLeft="10dp"
+                    android:textColor="@color/material_on_surface_emphasis_high_type"
+                    android:textStyle="bold" />
+
+                <RadioButton
+                    android:id="@+id/radiovoid"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Void"
+                    android:checked="false"
+                    android:textSize="14dp"
+                    android:layout_marginRight="10dp"
+                    android:textColor="@color/material_on_surface_emphasis_high_type"
+                    android:textStyle="bold" />
+
+                <RadioButton
+                    android:id="@+id/radiorefunf"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Refund"
+                    android:checked="false"
+                    android:textSize="14dp"
+                    android:layout_marginRight="10dp"
+                    android:textColor="@color/material_on_surface_emphasis_high_type"
+                    android:textStyle="bold" />
+            </RadioGroup>
+
+            <TextView
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:gravity="center_horizontal"
+                android:textSize="14dp"
+                android:textColor="#FF6200EE"
+                android:textStyle="bold"
+                android:text="Process Type" />
+
+
+            <RadioGroup
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="0dp"
+                android:orientation="horizontal"
+                android:id="@+id/flaggrp">
+
+                <RadioButton
+                    android:id="@+id/radiofull"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Full Txn"
+                    android:checked="true"
+                    android:textSize="14dp"
+                    android:layout_marginLeft="10dp"
+                    android:textColor="@color/material_on_surface_emphasis_high_type"
+                    android:textStyle="bold" />
+
+                <RadioButton
+                    android:id="@+id/radioparcial"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Read Card"
+                    android:checked="false"
+                    android:textSize="14dp"
+                    android:layout_marginRight="10dp"
+                    android:textColor="@color/material_on_surface_emphasis_high_type"
+                    android:textStyle="bold" />
+            </RadioGroup>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Txn Amount: "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:layout_marginTop="5dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/txnamt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="1000"
+                android:textSize="14dp"
+                android:inputType="number"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TIP Amount: "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:layout_marginTop="5dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/tipamt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="100"
+                android:textSize="14dp"
+                android:inputType="number"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tipmsg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tip Not Validate "
+                android:textColor="@color/green_active"
+                android:textSize="14sp"
+                android:layout_marginTop="5dp"
+                android:textStyle="italic" />
+
+            <TextView
+                android:id="@+id/text52"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Card Msg: "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:layout_marginTop="5dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/cardmsg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text=""
+                android:textSize="14dp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/lay_cardbutton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingLeft="3dp"
+                android:paddingRight="3dp"
+                android:layout_marginTop="20dp"
+                android:weightSum="2"
+                android:gravity="center">
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/read_card"
+                    android:layout_width="wrap_content"
+                    android:layout_height="55dp"
+                    android:textSize="15sp"
+                    android:background="#FF6200EE"
+                    android:textColor="#FFFFFF"
+                    android:layout_gravity="center"
+                    android:textStyle="bold"
+                    android:layout_weight="1"
+                    android:paddingRight="10dp"
+                    android:paddingLeft="10dp"
+                    android:text="Read Data" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/tip_validate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="55dp"
+                    android:textSize="15sp"
+                    android:background="#FF6200EE"
+                    android:textColor="#FFFFFF"
+                    android:layout_gravity="center"
+                    android:textStyle="bold"
+                    android:layout_marginLeft="10dp"
+                    android:layout_weight="1"
+                    android:paddingRight="10dp"
+                    android:paddingLeft="10dp"
+                    android:text="Tip Chk" />
+
+            </LinearLayout>
+
+           <!-- <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/read_card"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:layout_marginTop="20dp"
+                android:background="#FF6200EE"
+                android:textColor="#FFFFFF"
+                android:layout_gravity="center"
+                android:textStyle="bold"
+                android:paddingRight="10dp"
+                android:paddingLeft="10dp"
+                android:text="Read Data" />-->
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/read_host"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:layout_marginTop="20dp"
+                android:background="#FF6200EE"
+                android:textColor="#FFFFFF"
+                android:layout_gravity="center"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:paddingRight="10dp"
+                android:paddingLeft="10dp"
+                android:text="Send Data" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/read_print"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:layout_marginTop="20dp"
+                android:background="#FF6200EE"
+                android:textColor="#FFFFFF"
+                android:layout_gravity="center"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:paddingRight="10dp"
+                android:paddingLeft="10dp"
+                android:text="PrintRcpt" />
+
+
+        </LinearLayout>
+    </ScrollView>
+
+    <ScrollView
+        android:id="@+id/scrollView_param"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:visibility="gone"
+        android:layout_weight="3">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="EPI ID: "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/epi"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="2024038678"
+                android:textSize="14dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Txn Msg: "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/parammsg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text=""
+                android:textSize="14dp"
+                android:textStyle="bold" />
+
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/down_param"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:layout_marginTop="25dp"
+                android:background="#FF6200EE"
+                android:textColor="#FFFFFF"
+                android:layout_gravity="center"
+                android:textStyle="bold"
+                android:paddingRight="10dp"
+                android:paddingLeft="10dp"
+                android:text="Download" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <ScrollView
+        android:id="@+id/scrollView_rki"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:visibility="gone"
+        android:layout_weight="3">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Txn Msg: "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/rkimsg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text=""
+                android:textSize="14dp"
+                android:textStyle="bold" />
+
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/down_rki"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:layout_marginTop="25dp"
+                android:background="#FF6200EE"
+                android:textColor="#FFFFFF"
+                android:layout_gravity="center"
+                android:textStyle="bold"
+                android:paddingRight="10dp"
+                android:paddingLeft="10dp"
+                android:text="Download" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <ScrollView
+        android:id="@+id/scrollView_Print"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:visibility="gone"
+        android:layout_weight="3">
+
+        <LinearLayout
+            android:id="@+id/print_lay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="visible"
+            >
+
+            <TextView
+                android:id="@+id/text1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Headrer 1 : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/header1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="Valor PayTech"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Headrer 2 : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/header2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="Guindy"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Headrer 3 : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/header3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="Chennai"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TransMode: \n (1-->Creit,2-->Debit,3-->EB_Food)"
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/transmode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="3"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TransCode : \n(1-->Sale,5-->Refund,12-->V Sale) "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/transcode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="1"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Trans No : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/transno"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="11"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text7"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Batch No : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/batchno"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="4"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text19"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Amount : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/amount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="1000"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text17"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Balance Amount : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/balamount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="1011"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text18"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Payment Method :\n (3 -->Swipe, 4 -->EMV, 5 -->CLSS) "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/paymentmode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="2"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text16"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PAN # : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/pan"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="4561237890741896"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text8"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Resp : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/resp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="APPROVALTAS246"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text9"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Code : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/code"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="TAS246"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text10"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ref# : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/ref"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="258369147456"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text11"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Disclaimer1 : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/disc1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="Cardholder acknowledegs receipt of"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text12"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Disclaimer2 : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/disc2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="goods and obligations set forth"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text13"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Disclaimer3 : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/disc3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="by the cardholder's agreement"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text14"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Footer Msg : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/footer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="Thank You"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text15"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Version # : "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/version"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text="v2.3.0"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text99"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Error Msg: "
+                android:textColor="@color/material_on_surface_emphasis_high_type"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/errorMsg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0dp"
+                android:text=""
+                android:textSize="18dp"
+                android:textStyle="bold" />
+
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/print_data"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:layout_marginTop="25dp"
+                android:background="#FF6200EE"
+                android:textColor="#FFFFFF"
+                android:layout_gravity="center"
+                android:textStyle="bold"
+                android:paddingRight="10dp"
+                android:paddingLeft="10dp"
+                android:text="Print Data" />
+
+
+        </LinearLayout>
+
+
+    </ScrollView>
+
+
+</LinearLayout>

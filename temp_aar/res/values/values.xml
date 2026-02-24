@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="http://schemas.android.com/tools">
+    <array name="array_dot_active">
+        <item>@color/dot_light_screen1</item>
+        <item>@color/dot_light_screen2</item>
+        <item>@color/dot_light_screen3</item>
+        <item>@color/dot_light_screen4</item>
+    </array>
+    <array name="array_dot_inactive">
+        <item>@color/dot_dark_screen1</item>
+        <item>@color/dot_dark_screen2</item>
+        <item>@color/dot_dark_screen3</item>
+        <item>@color/dot_dark_screen4</item>
+    </array>
+    <attr format="color" name="bt_expiration_date_dialog_divider"/>
+    <attr format="color" name="bt_expiration_date_dialog_label"/>
+    <attr format="color" name="bt_expiration_date_scrollbar_thumb_vertical"/>
+    <attr format="color" name="bt_expiration_date_scrollbar_track_vertical"/>
+    <attr format="color" name="bt_expiration_date_sheet_background"/>
+    <color name="appBarLbl">#FFFFFF</color>
+    <color name="app_bar_bg">#005db9</color>
+    <color name="app_bar_bg_1">#005db9</color>
+    <color name="app_bar_bg_2">#005db9</color>
+    <color name="app_bar_bg_3">#005db9</color>
+    <color name="app_bar_bg_4">#005db9</color>
+    <color name="app_bar_bg_5">#005db9</color>
+    <color name="app_bar_bg_6">#005db9</color>
+    <color name="app_bar_bg_7">#B1B1B1</color>
+    <color name="app_bar_bg_8">#C3C3C3</color>
+    <color name="app_bar_bg_9">#D3D3D3</color>
+    <color name="blue_active">#03a9f4</color>
+    <color name="blue_bg_light">#e3f2fd</color>
+    <color name="blue_btn_bg_color">#AEDEF4</color>
+    <color name="blue_btn_bg_pressed_color">#96BFD2</color>
+    <color name="blue_grey_active">#607d8b</color>
+    <color name="blue_grey_bg_light">#eceff1</color>
+    <color name="blue_grey_inactive">#90a4ae</color>
+    <color name="blue_inactive">#64b5f6</color>
+    <color name="bt_black">#001129</color>
+    <color name="bt_black_12">#1e000000</color>
+    <color name="bt_black_38">#61000000</color>
+    <color name="bt_black_54">#8a000000</color>
+    <color name="bt_black_87">#de000000</color>
+    <color name="bt_blue">#009bde</color>
+    <color name="bt_blue_dark">#215fab</color>
+    <color name="bt_expiration_date_sheet_background_dark">#20272b</color>
+    <color name="bt_expiration_date_sheet_background_light">#eceff0</color>
+    <color name="bt_light_gray">#6d6d6d</color>
+    <color name="bt_white">#ffffff</color>
+    <color name="bt_white_12">#1effffff</color>
+    <color name="bt_white_38">#61ffffff</color>
+    <color name="bt_white_54">#8affffff</color>
+    <color name="bt_white_87">#deffffff</color>
+    <color name="button_text_color">#FFFFFF</color>
+    <color name="card_batch_line_Gr">#607d8b</color>
+    <color name="card_divider_clr">#EAECEE</color>
+    <color name="card_header_bg">#EAECEE</color>
+    <color name="card_header_label">#696969</color>
+    <color name="card_header_value">#1F1A1A</color>
+    <color name="card_ticket_line_Gr">#607d8b</color>
+    <color name="card_transact_line_Gr">#607d8b</color>
+    <color name="change_tip_btn_pressed">#606E77</color>
+    <color name="change_tip_main_linear_bg">#F2F3F5</color>
+    <color name="change_tip_text_color">#E0E7ED</color>
+    <color name="colorAccent">#005db9</color>
+    <color name="colorAccent_Gr">#37474f</color>
+    <color name="colorPrimary">#024E9A</color>
+    <color name="colorPrimaryDark">#005db9</color>
+    <color name="colorPrimaryDark_Gr">#263238</color>
+    <color name="colorPrimary_Gr">#024E9A</color>
+    <color name="darker_gray">#aaa</color>
+    <color name="default_badge_background_color">#f44336</color>
+    <color name="default_badge_text_color">#ffffff</color>
+    <color name="default_inactive">#78909c</color>
+    <color name="default_inactive_color">#212121</color>
+    <color name="default_inactive_shape_color">#e5e5e5</color>
+    <color name="default_shape_inactive_color">#888888</color>
+    <color name="dot_dark_screen1">#d1395c</color>
+    <color name="dot_dark_screen2">#14a895</color>
+    <color name="dot_dark_screen3">#2278d4</color>
+    <color name="dot_dark_screen4">#a854d4</color>
+    <color name="dot_light_screen1">#f98da5</color>
+    <color name="dot_light_screen2">#8cf9eb</color>
+    <color name="dot_light_screen3">#93c6fd</color>
+    <color name="dot_light_screen4">#e4b5fc</color>
+    <color name="edt_txt_clr">#80000000</color>
+    <color name="edt_txt_cursor_clr">#80000000</color>
+    <color name="edt_txt_hint_clr">#80000000</color>
+    <color name="edt_txt_line_clr">#80000000</color>
+    <color name="error_stroke_color">#F27474</color>
+    <color name="float_transparent">#00000000</color>
+    <color name="gery_inactive">#e0e0e0</color>
+    <color name="gray_btn_bg_color">#D0D0D0</color>
+    <color name="gray_btn_bg_pressed_color">#B6B6B6</color>
+    <color name="green_active">#4caf50</color>
+    <color name="green_bg_light">#e8f5e9</color>
+    <color name="green_inactive">#81c784</color>
+    <color name="grey_active">#9e9e9e</color>
+    <color name="grey_bg_light">#fafafa</color>
+    <color name="kalert_dialog_bg_color">#FFFFFF</color>
+    <color name="label">#696969</color>
+    <color name="light_green">#4caf50</color>
+    <color name="link_color">#0066FF</color>
+    <color name="material_blue_grey_80">#ff37474f</color>
+    <color name="material_blue_grey_90">#ff263238</color>
+    <color name="material_blue_grey_95">#ff21272b</color>
+    <color name="material_deep_teal_20">#ff80cbc4</color>
+    <color name="material_deep_teal_50">#ff009688</color>
+    <color name="menu_divider_clr">#FFFFFF</color>
+    <color name="menu_panel">#37474f</color>
+    <color name="menu_txt_clr">#FFFFFF</color>
+    <color name="orange_active">#ff9800</color>
+    <color name="orange_bg_light">#fff3e0</color>
+    <color name="orange_inactive">#ffb74d</color>
+    <color name="priority_high_clr">#fb323c</color>
+    <color name="priority_high_clr_1">#F5555D</color>
+    <color name="priority_high_clr_2">#F1797F</color>
+    <color name="priority_high_clr_3">#ED9DA1</color>
+    <color name="priority_high_clr_4">#EBAEB1</color>
+    <color name="priority_low_clr">#2ad268</color>
+    <color name="priority_low_clr_1">#4ED580</color>
+    <color name="priority_low_clr_2">#74D999</color>
+    <color name="priority_low_clr_3">#99DDB2</color>
+    <color name="priority_low_clr_4">#ABDEBE</color>
+    <color name="priority_normal_clr">#eac53c</color>
+    <color name="priority_normal_clr_1">#E8CA5D</color>
+    <color name="priority_normal_clr_2">#E7D17F</color>
+    <color name="priority_normal_clr_3">#E7D8A1</color>
+    <color name="priority_normal_clr_4">#E6DBB1</color>
+    <color name="purple_active">#9c27b0</color>
+    <color name="purple_bg_light">#f3e5f5</color>
+    <color name="purple_inactive">#ba68c8</color>
+    <color name="red_active">#f44336</color>
+    <color name="red_bg_light">#ffebee</color>
+    <color name="red_btn_bg_color">#DD6B55</color>
+    <color name="red_btn_bg_pressed_color">#CD5B55</color>
+    <color name="red_inactive">#e57373</color>
+    <color name="success_stroke_color">#A5DC86</color>
+    <color name="text_color">#575757</color>
+    <color name="trans_success_stroke_color">#33A5DC86</color>
+    <color name="value">#1F1A1A</color>
+    <color name="warning_stroke_color">#F8BB86</color>
+    <color name="white">#FFFFFF</color>
+    <color name="yellow_active">#ffeb3b</color>
+    <color name="yellow_bg_light">#fffde7</color>
+    <color name="yellow_inactive">#fff176</color>
+    <dimen name="Simulator_Font">18dp</dimen>
+    <dimen name="alert_width">290dp</dimen>
+    <dimen name="bt_edit_text_icon_padding">24dp</dimen>
+    <dimen name="bt_expiration_date_item_selected_background_radius">2dp</dimen>
+    <dimen name="bt_expiration_date_item_text_size">16sp</dimen>
+    <dimen name="bt_expiration_date_sheet_height">260dp</dimen>
+    <dimen name="bt_expiration_date_sheet_label_padding_bottom">8dp</dimen>
+    <dimen name="bt_expiration_date_sheet_label_padding_top">8dp</dimen>
+    <dimen name="bt_expiration_date_sheet_left_right_margin">8dp</dimen>
+    <dimen name="bt_expiration_date_sheet_top_bottom_margin">8dp</dimen>
+    <dimen name="bt_input_text_size">16sp</dimen>
+    <dimen name="bt_margin">8dp</dimen>
+    <dimen name="bt_mobile_number_explanation_padding">53dp</dimen>
+    <dimen name="bt_no_edit_text_icon_padding">49dp</dimen>
+    <dimen name="bt_save_card_checkbox_left_margin">-7dp</dimen>
+    <dimen name="btn_ht">55dp</dimen>
+    <dimen name="button_normal">16dp</dimen>
+    <dimen name="common_circle_width">3dp</dimen>
+    <dimen name="currency_normal">40dp</dimen>
+    <dimen name="default_badge_corner_radii">16dp</dimen>
+    <dimen name="default_corner_radii">56dp</dimen>
+    <dimen name="default_icon_size">24dp</dimen>
+    <dimen name="default_nav_item_badge_padding">2dp</dimen>
+    <dimen name="default_nav_item_badge_text_size">7sp</dimen>
+    <dimen name="default_nav_item_padding">12dp</dimen>
+    <dimen name="default_nav_item_text_padding">8dp</dimen>
+    <dimen name="default_nav_item_text_size">14sp</dimen>
+    <dimen name="default_nav_item_title_max_width">80dp</dimen>
+    <dimen name="eight_dp">8dp</dimen>
+    <dimen name="eight_sp">8sp</dimen>
+    <dimen name="eighteen_sp">18sp</dimen>
+    <dimen name="eighty_dp">80dp</dimen>
+    <dimen name="eighty_sp">80sp</dimen>
+    <dimen name="eleven_dp">11dp</dimen>
+    <dimen name="eleven_sp">11sp</dimen>
+    <dimen name="fifteen_dp">15dp</dimen>
+    <dimen name="fifty_dp">50dp</dimen>
+    <dimen name="fifty_four_dp">54dp</dimen>
+    <dimen name="fifty_two_dp">52dp</dimen>
+    <dimen name="five_dp">5dp</dimen>
+    <dimen name="four_hundred_twenty_dp">420dp</dimen>
+    <dimen name="fourteen_sp">14sp</dimen>
+    <dimen name="fourty_dp">40dp</dimen>
+    <dimen name="fourty_eight_dp">48dp</dimen>
+    <dimen name="fourty_five_dp">45dp</dimen>
+    <dimen name="fourty_sp">40sp</dimen>
+    <dimen name="header_size">22sp</dimen>
+    <dimen name="large">16dp</dimen>
+    <dimen name="menu_panel_ht">60dp</dimen>
+    <dimen name="menu_txt_size">20sp</dimen>
+    <dimen name="nineteen_dp">19dp</dimen>
+    <dimen name="normal">14dp</dimen>
+    <dimen name="one_dp">1dp</dimen>
+    <dimen name="one_hundred_dp">100dp</dimen>
+    <dimen name="one_hundred_eighty_dp">180dp</dimen>
+    <dimen name="one_hundred_fifty_five_dp">155dp</dimen>
+    <dimen name="one_hundred_fourty_dp">140dp</dimen>
+    <dimen name="one_hundred_fourty_five_dp">145dp</dimen>
+    <dimen name="one_hundred_twenty_sp">120sp</dimen>
+    <dimen name="progress_circle_radius">34dp</dimen>
+    <dimen name="seventeen_dp">17dp</dimen>
+    <dimen name="seventeen_sp">17sp</dimen>
+    <dimen name="seventy_dp">70dp</dimen>
+    <dimen name="seventy_five_dp">75dp</dimen>
+    <dimen name="six_dp">6dp</dimen>
+    <dimen name="sixteen_sp">16sp</dimen>
+    <dimen name="sixty_dp">60dp</dimen>
+    <dimen name="small">12dp</dimen>
+    <dimen name="ten_dp">10dp</dimen>
+    <dimen name="ten_sp">10sp</dimen>
+    <dimen name="thirteen_dp">13dp</dimen>
+    <dimen name="thirteen_sp">13sp</dimen>
+    <dimen name="thirty_dp">30dp</dimen>
+    <dimen name="thirty_six_dp">36dp</dimen>
+    <dimen name="thirty_sp">30sp</dimen>
+    <dimen name="thirty_two_dp">32dp</dimen>
+    <dimen name="thirty_two_sp">32sp</dimen>
+    <dimen name="three_dp">3dp</dimen>
+    <dimen name="three_hundred_sixty_dp">360dp</dimen>
+    <dimen name="twelve_dp">12dp</dimen>
+    <dimen name="twelve_sp">12sp</dimen>
+    <dimen name="twenty_dp">20dp</dimen>
+    <dimen name="twenty_eight_dp">28dp</dimen>
+    <dimen name="twenty_five_dp">25dp</dimen>
+    <dimen name="twenty_four_dp">24dp</dimen>
+    <dimen name="twenty_four_sp">24sp</dimen>
+    <dimen name="twenty_six_sp">26sp</dimen>
+    <dimen name="twenty_sp">20sp</dimen>
+    <dimen name="twenty_two_dp">22dp</dimen>
+    <dimen name="twenty_two_sp">22sp</dimen>
+    <dimen name="two_dp">2dp</dimen>
+    <dimen name="two_hundred_dp">200dp</dimen>
+    <dimen name="two_hundred_eighty_dp">280dp</dimen>
+    <dimen name="two_hundred_fifty_dp">250dp</dimen>
+    <dimen name="x_large">18dp</dimen>
+    <dimen name="xx_large">30dp</dimen>
+    <dimen name="xxx_large">34dp</dimen>
+    <dimen name="xxxx_large">36dp</dimen>
+    <string name="app_name">ValorPay</string>
+    <string name="bt_card_number_invalid">Card number is invalid</string>
+    <string name="bt_card_number_required">Card number is required</string>
+    <string name="bt_cardholder_address_required">Street No is required</string>
+    <string name="bt_cardholder_name_required">Cardholder name is required</string>
+    <string name="bt_cid">CID</string>
+    <string name="bt_cvc">CVC</string>
+    <string name="bt_cvn">CVN</string>
+    <string name="bt_cvv">CVV</string>
+    <string name="bt_cvv_invalid">%s is invalid</string>
+    <string name="bt_cvv_required">%s is required</string>
+    <string name="bt_expiration_invalid">Expiration date is invalid</string>
+    <string name="bt_expiration_required">Expiration date is required</string>
+    <string name="bt_form_hint_address">Address</string>
+    <string name="bt_form_hint_card_number">Card Number</string>
+    <string name="bt_form_hint_cvv">@string/bt_cvv</string>
+    <string name="bt_form_hint_expiration">EXP (MM/YY)</string>
+    <string name="bt_form_hint_postal_code">Zip Code</string>
+    <string name="bt_month">Month</string>
+    <string name="bt_postal_code_required">Invalid Zipcode</string>
+    <string name="bt_year">Year</string>
+    <string name="btn_backspace">DEL</string>
+    <string name="btn_clear">C</string>
+    <string name="number_doubleZero">00</string>
+    <string name="number_eight">8</string>
+    <string name="number_five">5</string>
+    <string name="number_four">4</string>
+    <string name="number_nine">9</string>
+    <string name="number_one">1</string>
+    <string name="number_seven">7</string>
+    <string name="number_six">6</string>
+    <string name="number_three">3</string>
+    <string name="number_two">2</string>
+    <string name="number_zero">0</string>
+    <string name="zipcode">Zip Code</string>
+    <style name="Presentation" parent="Theme.MyApplication">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+    </style>
+    <style name="TextLabel" parent="TextAppearance.Design.Hint">
+        <item name="android:textSize">@dimen/fifteen_dp</item>
+    </style>
+    <style name="Theme.MyApplication" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryVariant">@color/colorPrimaryDark</item>
+        <item name="colorOnPrimary">@color/colorAccent</item>
+        
+      
+        
+     
+        <item name="windowActionBar">false</item>
+        
+    </style>
+    <style name="bt_base_textview">
+        <item name="android:textSize">@dimen/bt_input_text_size</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+    <style name="bt_card_form_field" parent="bt_base_textview">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingTop">@dimen/bt_margin</item>
+        <item name="android:textColorHint">@color/bt_light_gray</item>
+        <item name="android:textSize">@dimen/large</item>
+        <item name="android:textCursorDrawable" ns1:ignore="NewApi">@null</item>
+    </style>
+    <style name="bt_card_form_icon">
+        <item name="android:layout_width">25dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_gravity">top|center_horizontal</item>
+        <item name="android:paddingTop">28dp</item>
+        <item name="android:paddingBottom">@dimen/bt_margin</item>
+    </style>
+    <style name="bt_expiration_date_dialog_dark" parent="bt_expiration_date_dialog_sheet">
+        <item name="bt_expiration_date_sheet_background">@color/bt_expiration_date_sheet_background_dark</item>
+        <item name="bt_expiration_date_dialog_label">@color/white</item>
+        <item name="bt_expiration_date_dialog_divider">@color/bt_white_12</item>
+        <item name="bt_expiration_date_scrollbar_thumb_vertical">@color/bt_white_54</item>
+        <item name="bt_expiration_date_scrollbar_track_vertical">@color/bt_white_12</item>
+    </style>
+    <style name="bt_expiration_date_dialog_grid_view">
+        <item name="android:layout_marginLeft">@dimen/bt_expiration_date_sheet_left_right_margin</item>
+        <item name="android:layout_marginStart" ns1:targetApi="jelly_bean_mr1">@dimen/bt_expiration_date_sheet_left_right_margin</item>
+        <item name="android:layout_marginRight">@dimen/bt_expiration_date_sheet_left_right_margin</item>
+        <item name="android:layout_marginEnd" ns1:targetApi="jelly_bean_mr1">@dimen/bt_expiration_date_sheet_left_right_margin</item>
+        <item name="android:layout_marginBottom">@dimen/bt_expiration_date_sheet_top_bottom_margin</item>
+        <item name="android:listSelector">@color/float_transparent</item>
+        <item name="android:choiceMode">singleChoice</item>
+        <item name="android:numColumns">auto_fit</item>
+        <item name="android:columnWidth">72dp</item>
+    </style>
+    <style name="bt_expiration_date_dialog_label">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center_horizontal</item>
+        <item name="android:paddingTop">@dimen/bt_expiration_date_sheet_label_padding_top</item>
+        <item name="android:paddingBottom">@dimen/bt_expiration_date_sheet_label_padding_bottom</item>
+        <item name="android:textSize">@dimen/normal</item>
+        <item name="android:textColor">?attr/bt_expiration_date_dialog_label</item>
+    </style>
+    <style name="bt_expiration_date_dialog_light" parent="bt_expiration_date_dialog_sheet">
+        <item name="bt_expiration_date_sheet_background">@color/bt_expiration_date_sheet_background_light</item>
+        <item name="bt_expiration_date_dialog_label">@color/bt_black_54</item>
+        <item name="bt_expiration_date_dialog_divider">@color/bt_black_12</item>
+        <item name="bt_expiration_date_scrollbar_thumb_vertical">@color/bt_black_54</item>
+        <item name="bt_expiration_date_scrollbar_track_vertical">@color/bt_black_12</item>
+    </style>
+    <style name="bt_expiration_date_dialog_sheet" parent="@android:style/Theme.Dialog">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowAnimationStyle">@style/bt_expiration_date_dialog_sheet_animation</item>
+    </style>
+    <style name="bt_expiration_date_dialog_sheet_animation">
+        <item name="android:windowEnterAnimation">@anim/bt_expiration_date_dialog_open</item>
+        <item name="android:windowExitAnimation">@anim/bt_expiration_date_dialog_close</item>
+    </style>
+    <style name="bt_expiration_date_dialog_year_grid_view" parent="bt_expiration_date_dialog_grid_view">
+        <item name="android:paddingRight">8dp</item>
+        <item name="android:paddingEnd" ns1:targetApi="jelly_bean_mr1">8dp</item>
+        <item name="android:paddingStart" ns1:targetApi="jelly_bean_mr1">0dp</item>
+        <item name="android:scrollbarSize">3dp</item>
+        <item name="android:scrollbarStyle">outsideOverlay</item>
+        <item name="android:fadeScrollbars">false</item>
+        <item name="android:scrollbarAlwaysDrawVerticalTrack">true</item>
+    </style>
+    <style name="bt_field_container">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:baselineAligned">false</item>
+    </style>
+    <style name="keyboard_button">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:clickable">true</item>
+        <item name="android:gravity">center</item>
+        <item name="android:scaleType">centerInside</item>
+        <item name="android:textAppearance">?android:attr/textAppearanceLarge</item>
+    </style>
+    <style name="keyboard_number_button" parent="keyboard_button">
+        <item name="android:tag">number_button</item>
+        <item name="android:layout_margin">0dp</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:background">@drawable/rounded_rectangle</item>
+        <item name="android:textSize">30dp</item>
+    </style>
+    <style name="keyboard_number_button_left" parent="keyboard_button">
+        <item name="android:tag">number_button</item>
+        <item name="android:layout_margin">0dp</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:background">@drawable/key_left_shape</item>
+        <item name="android:textSize">@dimen/thirty_dp</item>
+    </style>
+    <style name="keyboard_number_button_new" parent="keyboard_button">
+        <item name="android:tag">number_button</item>
+        <item name="android:layout_margin">0dp</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:background">@drawable/rounded_rectangle</item>
+        <item name="android:textSize">30dp</item>
+    </style>
+    <style name="keyboard_number_button_right" parent="keyboard_button">
+        <item name="android:tag">number_button</item>
+        <item name="android:layout_margin">0dp</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:background">@drawable/key_right_shape</item>
+        <item name="android:textSize">@dimen/thirty_dp</item>
+    </style>
+    <style name="keyboard_row">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@android:color/white</item>
+        <item name="android:gravity">center</item>
+    </style>
+</resources>

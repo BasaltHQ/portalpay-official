@@ -250,7 +250,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
     const isManagerOrKeyholder = employeeRole === 'manager' || employeeRole === 'keyholder';
 
     return (
-        <div className="h-[100dvh] flex flex-col overflow-hidden p-2 gap-2 md:h-auto md:overflow-visible md:max-w-4xl md:mx-auto md:p-4 md:p-6 md:space-y-6 md:gap-0" style={{ backgroundColor: 'var(--tp-bg-primary)', color: 'var(--tp-text-primary)', fontFamily: tpTheme.fontFamily || undefined }}>
+        <div className="h-[100dvh] flex flex-col overflow-hidden p-2 space-x-2 md:h-auto md:overflow-visible md:max-w-4xl md:mx-auto md:p-4 md:p-6 md:space-y-6 md:gap-0" style={{ backgroundColor: 'var(--tp-bg-primary)', color: 'var(--tp-text-primary)', fontFamily: tpTheme.fontFamily || undefined }}>
             <div className="tp-ambient" />
 
             {/* Dedicated Invisible Canvases strictly formatted for Native Hardware Image Buffers */}
@@ -289,14 +289,14 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                 />
             </div>
             <div className="flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center space-x-4">
                     {logoUrl && <img src={logoUrl} className="h-10 w-10 object-contain" />}
                     <div>
                         <h1 className="text-md font-bold">{brandName || "Terminal"}</h1>
                         {employeeName && <div className="text-sm text-muted-foreground">Operator: {employeeName}</div>}
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex space-x-2">
                     {isManagerOrKeyholder && (
                         <button
                             onClick={openSummary}
@@ -314,7 +314,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                 </div>
             </div>
 
-            <div className="flex-1 min-h-0 flex flex-col gap-1 md:grid md:grid-cols-2 md:gap-6 md:mt-0">
+            <div className="flex-1 min-h-0 flex flex-col space-x-1 md:grid md:grid-cols-2 md:space-x-6 md:mt-0">
                 {/* Keypad */}
                 <div className="space-y-1 md:space-y-4">
                     <div className="tp-glass p-3 md:p-6 text-center space-y-2">
@@ -322,7 +322,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                         <div className="text-2xl md:text-4xl font-mono font-bold" style={{ color: 'var(--tp-text-primary)' }}>{formatCurrency(baseUsd, storeCurrency || "USD")}</div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 mt-2 md:mt-0">
+                    <div className="grid grid-cols-3 space-x-2 mt-2 md:mt-0">
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, ".", 0, "⌫"].map((btn) => (
                             <button
                                 key={btn}
@@ -333,7 +333,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                 {btn}
                             </button>
                         ))}
-                        <div className="col-span-3 flex gap-2">
+                        <div className="col-span-3 flex space-x-2">
                             <select
                                 className="h-10 md:h-12 px-2 text-xs md:text-sm font-semibold tp-btn min-w-0 flex-shrink-0"
                                 style={{ background: 'var(--tp-bg-surface)', border: '1px solid var(--tp-border)', color: 'var(--tp-text-primary)', maxWidth: '45%' }}
@@ -457,7 +457,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                             {/* Polling / Fallback Status */}
                             {selected?.status !== "paid" && (
                                 <div className="mb-6 space-y-2">
-                                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                                    <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground">
                                         <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                                         <span>Waiting for payment...</span>
                                     </div>
@@ -467,7 +467,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-3 space-x-3">
                                 <button
                                     onClick={async () => {
                                         if (hasPrinter && selected) {
@@ -555,7 +555,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                     fgColor="#ffffff"
                                     bgColor="#000000"
                                     qrStyle="dots"
-                                    eyeRadius={4}
+                                    eyeRadius={10}
                                     eyeColor={(theme as any)?.secondaryColor || (theme as any)?.primaryColor || "#ffffff"}
                                     removeQrCodeBehindLogo={false}
                                     logoImage=""
@@ -613,7 +613,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                         <div className="p-6 overflow-y-auto flex-1 text-left">
                             {activeReportTab === "summary" && (
                                 <div className="space-y-6">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 space-x-4">
                                         <div className="p-4 rounded-xl" style={{ background: 'var(--tp-bg-surface)', border: '1px solid var(--tp-border)' }}>
                                             <p className="text-xs uppercase font-semibold" style={{ color: 'var(--tp-text-secondary)' }}>Total Sales</p>
                                             <p className="text-3xl font-bold">{formatCurrency((reportData.summary?.totalSales || 0), "USD")}</p>
@@ -791,3 +791,4 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
 function XIcon() {
     return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="M6 6 18 18" /></svg>
 }
+

@@ -14,6 +14,7 @@ import { useServerAssistant } from "@/hooks/useServerAssistant";
 import { buildServerAssistantPrompt } from "@/agent/prompts/serverAssistantPrompt";
 import { QRCode } from "react-qrcode-logo";
 import { getTheme } from "@/lib/themes";
+import { useQRCodeDisplay, useReceiptPrinter } from "@/lib/hardware/useHardwareHooks";
 import {
     Activity, ArrowLeft, ChevronLeft, ChevronRight, CreditCard,
     DollarSign, Grid, History, LogOut, Menu, Mic,
@@ -106,6 +107,10 @@ export default function HandheldInterface({
     const [cart, setCart] = useState<CartItem[]>([]);
     const [view, setView] = useState<"menu" | "modifiers" | "tables" | "report" | "payment">("menu");
 
+    // -- HARDWARE INTEGRATION --
+    const { pushQRToCustomerScreen, clearCustomerScreen } = useQRCodeDisplay();
+    const { printDocument, hasPrinter } = useReceiptPrinter();
+
     // Modifier State
     const [selectedItemForModifiers, setSelectedItemForModifiers] = useState<InventoryItem | null>(null);
     const [pendingModifiers, setPendingModifiers] = useState<RestaurantModifier[]>([]);
@@ -146,6 +151,21 @@ export default function HandheldInterface({
         setSplitRatios(newRatios);
     }, [splitParties]);
 
+    // Push QR to Secondary Display when in Payment View
+    useEffect(() => {
+        if (view === "payment" && selectedOrderForPayment) {
+            const origin = typeof window !== "undefined" ? window.location.origin : "";
+            const portalUrl = `${origin}/portal/${encodeURIComponent(selectedOrderForPayment.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
+
+            const timer = setTimeout(() => {
+                pushQRToCustomerScreen(portalUrl).catch(console.error);
+            }, 600);
+            return () => clearTimeout(timer);
+        } else {
+            clearCustomerScreen().catch(console.error);
+        }
+    }, [view, selectedOrderForPayment, merchantWallet, pushQRToCustomerScreen, clearCustomerScreen]);
+
     // -- REPORT STATE --
     const [reportData, setReportData] = useState<{ totalTips: number; totalSales: number; orders: any[] } | null>(null);
     const [loadingReport, setLoadingReport] = useState(false);
@@ -183,7 +203,7 @@ export default function HandheldInterface({
             <div className="absolute inset-0 z-30 flex flex-col bg-neutral-900 overflow-hidden text-white font-sans animate-in fade-in">
                 <div className="h-14 border-b border-white/10 flex items-center justify-between px-4 shrink-0 bg-neutral-900/50 backdrop-blur-md">
                     <span className="font-bold text-lg">Server Report</span>
-                    <div className="flex gap-2">
+                    <div className="flex space-x-2">
                         <button
                             onClick={fetchReport}
                             className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 active:bg-white/30 text-white transition-all"
@@ -198,7 +218,7 @@ export default function HandheldInterface({
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {/* Summary Cards */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 space-x-4">
                         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
                             <div className="text-xs text-emerald-400 font-bold uppercase tracking-wider mb-1">Total Tips</div>
                             <div className="text-2xl font-mono font-bold text-emerald-300">
@@ -601,7 +621,7 @@ export default function HandheldInterface({
                                     {group.required ? "Required" : "Optional"}
                                 </span>
                             </div>
-                            <div className="grid grid-cols-1 gap-1">
+                            <div className="grid grid-cols-1 space-x-1">
                                 {group.modifiers.map(mod => {
                                     const isSelected = pendingModifiers.some(m => m.id === mod.id);
                                     return (
@@ -713,19 +733,20 @@ export default function HandheldInterface({
 
                                 <button
                                     onClick={() => {
-                                        // Print Logic for this specific receipt
-                                        // Update the portal content to this receipt temporarily?
-                                        // Or just use the global print mechanism but we need to supply the data.
-                                        // For simplicity, we can't easily print NON-selected orders with the current portal pattern 
-                                        // unless we temporarily select it.
-                                        const prev = selectedOrderForPayment;
-                                        setSelectedOrderForPayment(currentReceipt);
-                                        setTimeout(() => {
-                                            window.print();
-                                            // setSelectedOrderForPayment(prev); // Keep it or not?
-                                        }, 100);
+                                        if (hasPrinter && currentReceipt) {
+                                            const origin = typeof window !== "undefined" ? window.location.origin : "";
+                                            const pUrl = `${origin}/portal/${encodeURIComponent(currentReceipt.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
+                                            const receiptText = `\nRECEIPT\nID: ${currentReceipt.id}\nTOTAL: ${formatCurrency(currentReceipt.total)}\nSTATUS: ${currentReceipt.status.toUpperCase()}\n\nPay online at:\n${pUrl}\n\n`;
+                                            printDocument({ text: receiptText }).catch(console.error);
+                                        } else {
+                                            const prev = selectedOrderForPayment;
+                                            setSelectedOrderForPayment(currentReceipt);
+                                            setTimeout(() => {
+                                                window.print();
+                                            }, 100);
+                                        }
                                     }}
-                                    className="w-full h-12 bg-black text-white rounded-xl font-bold active:scale-95 transition-all text-sm flex items-center justify-center gap-2"
+                                    className="w-full h-12 bg-black text-white rounded-xl font-bold active:scale-95 transition-all text-sm flex items-center justify-center space-x-2 shadow-lg"
                                 >
                                     Print Receipt #{resultIndex + 1}
                                 </button>
@@ -740,7 +761,7 @@ export default function HandheldInterface({
                                         setShowCashModal(true);
                                     }}
                                     disabled={currentReceipt.status === 'paid' || currentReceipt.status === 'checkout_success'}
-                                    className={`w-full h-12 rounded-xl font-bold active:scale-95 transition-all text-sm flex items-center justify-center gap-2 shadow-lg ${currentReceipt.status === 'paid' || currentReceipt.status === 'checkout_success'
+                                    className={`w-full h-12 rounded-xl font-bold active:scale-95 transition-all text-sm flex items-center justify-center space-x-2 shadow-lg ${currentReceipt.status === 'paid' || currentReceipt.status === 'checkout_success'
                                         ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none"
                                         : "bg-emerald-500 text-black shadow-emerald-500/20"
                                         }`}
@@ -753,7 +774,7 @@ export default function HandheldInterface({
                     </div>
 
                     {/* Notches */}
-                    <div className="h-20 flex items-center justify-center gap-3">
+                    <div className="h-20 flex items-center justify-center space-x-3">
                         {allReceipts.map((_, i) => (
                             <button
                                 key={i}
@@ -859,14 +880,14 @@ export default function HandheldInterface({
                                 <QRCode
                                     value={portalUrl}
                                     size={200}
-                                    fgColor="#000000"
-                                    bgColor="transparent"
+                                    fgColor="#ffffff"
+                                    bgColor="#000000"
                                     qrStyle="dots"
                                     eyeRadius={10}
                                     logoImage={logoUrl}
                                     logoWidth={40}
                                     logoHeight={40}
-                                    removeQrCodeBehindLogo={true}
+                                    removeQrCodeBehindLogo={false}
                                     logoPadding={5}
                                     ecLevel="H"
                                     quietZone={10}
@@ -879,16 +900,16 @@ export default function HandheldInterface({
                                 <div className="text-[10px] text-neutral-500 mt-2 font-mono">{selectedOrderForPayment.id}</div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 w-full">
+                            <div className="grid grid-cols-2 space-x-4 w-full">
                                 <button
                                     onClick={() => window.print()}
-                                    className="h-16 bg-white/10 text-white rounded-2xl font-bold text-lg active:scale-95 transition-all flex items-center justify-center gap-2 border border-white/5"
+                                    className="h-16 bg-white/10 text-white rounded-2xl font-bold text-lg active:scale-95 transition-all flex items-center justify-center space-x-2 border border-white/5"
                                 >
                                     Print Receipt
                                 </button>
                                 <button
                                     onClick={() => setIsSplitting(true)}
-                                    className="h-16 bg-blue-500/10 text-blue-400 border border-blue-500/50 rounded-2xl font-bold text-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    className="h-16 bg-blue-500/10 text-blue-400 border border-blue-500/50 rounded-2xl font-bold text-lg active:scale-95 transition-all flex items-center justify-center space-x-2"
                                 >
                                     Split Bill
                                 </button>
@@ -943,7 +964,7 @@ export default function HandheldInterface({
                                                         <div className="font-bold text-white">{item.label || item.name}</div>
                                                         <div className="text-xs text-neutral-400">{formatCurrency(item.priceUsd)}</div>
                                                     </div>
-                                                    <div className="flex items-center gap-3">
+                                                    <div className="flex items-center space-x-3">
                                                         {selectedQty > 0 && <span className="font-mono text-emerald-400 font-bold">{selectedQty}x</span>}
                                                         <div className="flex bg-black/40 rounded-lg p-1">
                                                             <button
@@ -975,7 +996,7 @@ export default function HandheldInterface({
                                     <div className="w-full space-y-2">
                                         <div className="flex justify-between items-center text-sm font-bold text-neutral-400 uppercase tracking-wider">
                                             <span>Number of Parties</span>
-                                            <div className="flex items-center gap-4">
+                                            <div className="flex items-center space-x-4">
                                                 {/* Reset Button */}
                                                 <button
                                                     onClick={async () => {
@@ -1020,7 +1041,7 @@ export default function HandheldInterface({
                                                     <RotateCcw className="w-4 h-4" />
                                                 </button>
 
-                                                <div className="flex bg-white/10 rounded-lg p-1 gap-1">
+                                                <div className="flex bg-white/10 rounded-lg p-1 space-x-1">
                                                     <button onClick={() => setSplitParties(Math.max(2, splitParties - 1))} className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded active:bg-white/20 text-white font-bold transition-colors">-</button>
                                                     <span className="w-10 flex items-center justify-center text-white font-mono text-lg">{splitParties}</span>
                                                     <button onClick={() => setSplitParties(Math.min(6, splitParties + 1))} className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded active:bg-white/20 text-white font-bold transition-colors">+</button>
@@ -1141,11 +1162,11 @@ export default function HandheldInterface({
                                         <div className="w-full space-y-2">
                                             {splitRatios.map((r, i) => (
                                                 <div key={i} className="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center space-x-2">
                                                         <div className={`w-2 h-2 rounded-full ${i % 2 === 0 ? "bg-blue-500" : "bg-purple-500"}`} />
                                                         <span className="text-sm font-medium text-neutral-300">Party {i + 1}</span>
                                                     </div>
-                                                    <div className="text-right flex items-baseline gap-2">
+                                                    <div className="text-right flex items-baseline space-x-2">
                                                         <div className="text-xs text-neutral-500">{Math.round(r * 100)}%</div>
                                                         <div className="font-bold text-white font-mono">{formatCurrency(selectedOrderForPayment.total * r)}</div>
                                                     </div>
@@ -1252,10 +1273,10 @@ export default function HandheldInterface({
                                         <QRCode
                                             value={portalUrl}
                                             size={120}
-                                            fgColor="#000000"
-                                            bgColor="transparent"
+                                            fgColor="#ffffff"
+                                            bgColor="#000000"
                                             qrStyle="dots"
-                                            eyeRadius={4}
+                                            eyeRadius={10}
                                             removeQrCodeBehindLogo={false}
                                             ecLevel="M"
                                             quietZone={0}
@@ -1346,7 +1367,7 @@ export default function HandheldInterface({
                         return (
                             <div key={order.id} className={`rounded-xl border p-4 ${statusColor}`}>
                                 <div className="flex justify-between items-start mb-2">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center space-x-2">
                                         <span className="font-mono font-bold text-lg">#{order.id.slice(-6)}</span>
                                         <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-black/20">
                                             {order.status}
@@ -1411,7 +1432,7 @@ export default function HandheldInterface({
                                 </div>
 
                                 {order.status === 'completed' && (
-                                    <div className="mt-4 flex gap-2">
+                                    <div className="mt-4 flex space-x-2">
                                         <button
                                             onClick={async (e) => {
                                                 e.stopPropagation();
@@ -1437,7 +1458,7 @@ export default function HandheldInterface({
                                             <RotateCcw className="w-4 h-4" />
                                         </button>
                                         {(order.paymentStatus === 'paid' || order.paymentStatus === 'checkout_success') ? (
-                                            <div className="flex-1 h-10 bg-neutral-800 text-neutral-400 border border-neutral-700 rounded-lg font-bold text-sm flex items-center justify-center gap-2">
+                                            <div className="flex-1 h-10 bg-neutral-800 text-neutral-400 border border-neutral-700 rounded-lg font-bold text-sm flex items-center justify-center space-x-2">
                                                 <span>Paid</span>
                                                 {aggregatedTip > 0 && (
                                                     <span className="text-emerald-500">+ {formatCurrency(aggregatedTip)} Tip</span>
@@ -1446,7 +1467,7 @@ export default function HandheldInterface({
                                         ) : (
                                             <button
                                                 onClick={() => handlePaymentClick(order)}
-                                                className="flex-1 h-10 bg-emerald-600 text-white rounded-lg font-bold text-sm shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
+                                                className="flex-1 h-10 bg-emerald-600 text-white rounded-lg font-bold text-sm shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2"
                                             >
                                                 <span>Collect Payment</span>
                                                 <span className="bg-black/20 px-1.5 rounded text-xs font-mono">{formatCurrency(order.total)}</span>
@@ -1475,7 +1496,7 @@ export default function HandheldInterface({
                                                     console.error("Failed to mark served", err);
                                                 }
                                             }}
-                                            className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white font-bold shadow-lg shadow-emerald-900/40 active:scale-95 transition-all text-sm uppercase tracking-wide flex items-center justify-center gap-2"
+                                            className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white font-bold shadow-lg shadow-emerald-900/40 active:scale-95 transition-all text-sm uppercase tracking-wide flex items-center justify-center space-x-2"
                                         >
                                             <CheckCircle2 className="w-5 h-5" />
                                             Mark as Served
@@ -1627,7 +1648,7 @@ export default function HandheldInterface({
                                     />
                                 </div>
                                 {/* Shortcuts */}
-                                <div className="grid grid-cols-4 gap-2">
+                                <div className="grid grid-cols-4 space-x-2">
                                     <button
                                         onClick={() => setCashTendered(total.toFixed(2))}
                                         className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-2 text-sm font-mono font-bold text-emerald-400 transition-colors"
@@ -1665,7 +1686,7 @@ export default function HandheldInterface({
                         <button
                             disabled={!canPay}
                             onClick={handleConfirmPay}
-                            className="w-full h-16 bg-emerald-500 text-black rounded-2xl font-bold text-xl active:scale-95 transition-all shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)] disabled:opacity-50 disabled:scale-100 disabled:shadow-none mt-8 flex items-center justify-center gap-2"
+                            className="w-full h-16 bg-emerald-500 text-black rounded-2xl font-bold text-xl active:scale-95 transition-all shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)] disabled:opacity-50 disabled:scale-100 disabled:shadow-none mt-8 flex items-center justify-center space-x-2"
                         >
                             <span className="text-2xl">💵</span>
                             Complete Payment
@@ -1684,7 +1705,7 @@ export default function HandheldInterface({
                 {renderTableDetails()}
 
                 <div className="h-14 border-b border-white/10 flex items-center justify-between px-4 shrink-0 bg-neutral-900/50 backdrop-blur-md">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center space-x-2">
                         <LayoutGrid className="w-5 h-5 text-emerald-500" />
                         <span className="font-bold text-lg">
                             {cart.length > 0 ? "Select Table for Order" : "Tables"}
@@ -1705,7 +1726,7 @@ export default function HandheldInterface({
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-24">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 space-x-4 pb-24">
                         {tables.map(table => {
                             const ongoingOrders = activeOrders[table] || [];
                             const isActive = ongoingOrders.length > 0;
@@ -1723,7 +1744,7 @@ export default function HandheldInterface({
                                     key={table}
                                     onClick={() => handleTableSelection(table)}
                                     disabled={isSubmitting}
-                                    className={`relative p-4 rounded-2xl border flex flex-col items-start justify-between gap-2 transition-all active:scale-95 min-h-[140px] ${containerClass} hover:border-white/20`}
+                                    className={`relative p-4 rounded-2xl border flex flex-col items-start justify-between space-x-2 transition-all active:scale-95 min-h-[140px] ${containerClass} hover:border-white/20`}
                                 >
                                     <div className="w-full flex justify-between items-start">
                                         <span className="text-4xl font-bold font-mono text-neutral-200">{table}</span>
@@ -1736,7 +1757,7 @@ export default function HandheldInterface({
 
                                     <div className="mt-auto w-full">
                                         {isActive ? (
-                                            <div className="flex gap-1 flex-wrap mt-2">
+                                            <div className="flex space-x-1 flex-wrap mt-2">
                                                 {/* Filter out splits ("Transfer In") and completed orders from dots to avoid clutter */}
                                                 {(activeOrders[table] || []).filter(o =>
                                                     !(o.items?.some((i: any) => i.label?.includes("Transfer In"))) &&
@@ -1782,7 +1803,7 @@ export default function HandheldInterface({
                             <button
                                 onClick={() => submitOrder(selectedTable)}
                                 disabled={isSubmitting}
-                                className="w-full h-14 rounded-xl font-bold text-white shadow-lg text-lg flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 shadow-emerald-900/50 transition-all"
+                                className="w-full h-14 rounded-xl font-bold text-white shadow-lg text-lg flex items-center justify-center space-x-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 shadow-emerald-900/50 transition-all"
                             >
                                 {isSubmitting ? "Sending..." : `Send Order to Table ${selectedTable}`}
                             </button>
@@ -1806,7 +1827,7 @@ export default function HandheldInterface({
 
             {/* TOP BAR */}
             <div className="h-14 border-b border-white/10 flex items-center justify-between px-4 shrink-0 z-20 bg-black/50 backdrop-blur-md">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center space-x-3">
                     {logoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={logoUrl} className="h-8 w-8 rounded-full object-cover border border-white/10" alt="Logo" />
@@ -1820,7 +1841,7 @@ export default function HandheldInterface({
                         <p className="text-[10px] text-neutral-500 font-medium uppercase tracking-wide">{employeeName}</p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex space-x-2">
                     <button
                         onClick={() => setView(view === "tables" ? "menu" : "tables")}
                         className={`text-[10px] font-bold px-3 py-1.5 rounded-full border transition-all flex items-center gap-1.5 ${view === "tables"
@@ -1888,7 +1909,7 @@ export default function HandheldInterface({
 
                 {/* ITEM GRID */}
                 <div className="flex-1 p-3 overflow-y-auto pb-32">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 space-x-3">
                         {displayedItems.map(item => {
                             // Determine item color from category
                             const catColor = getCategoryColor(item.category || "All").split(" ")[1]; // extract text-color class approximated
@@ -1945,7 +1966,7 @@ export default function HandheldInterface({
                     onClick={() => setIsCartOpen(true)}
                     className="w-full bg-white text-black h-14 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform flex items-center justify-between px-6"
                 >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center space-x-3">
                         <div className="bg-black/10 rounded-full w-8 h-8 flex items-center justify-center text-xs font-mono font-bold">
                             {cartCount}
                         </div>
@@ -1953,7 +1974,7 @@ export default function HandheldInterface({
                     </div>
                     <span className="font-mono text-xl tracking-tight">{formatCurrency(cartTotal)}</span>
                 </button>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2 z-40">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex space-x-2 z-40">
                     <button
                         onClick={(e) => { e.stopPropagation(); setView("tables"); }}
                         className="h-10 w-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all border border-white/5"
@@ -1974,14 +1995,14 @@ export default function HandheldInterface({
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-1">
                         {cart.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-neutral-500 gap-4">
+                            <div className="flex flex-col items-center justify-center h-full text-neutral-500 space-x-4">
                                 <ShoppingBag className="w-12 h-12 opacity-20" />
                                 <p>Cart is empty</p>
                             </div>
                         ) : (
                             cart.map(line => (
                                 <div key={line.instanceId} className="flex justify-between items-start p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors rounded-xl">
-                                    <div className="flex items-start gap-4">
+                                    <div className="flex items-start space-x-4">
                                         <div className="w-8 h-8 rounded bg-white/10 flex items-center justify-center font-bold text-xs text-neutral-300 mt-1">
                                             {line.quantity}
                                         </div>
@@ -1989,14 +2010,14 @@ export default function HandheldInterface({
                                             <div className="font-bold text-neutral-200">{line.item.name}</div>
                                             <div className="text-xs font-mono text-neutral-500">{formatCurrency(line.item.priceUsd)}</div>
                                             {line.modifiers.map(m => (
-                                                <div key={m.id} className="text-xs text-neutral-300 mt-1 flex items-center gap-2 font-medium">
+                                                <div key={m.id} className="text-xs text-neutral-300 mt-1 flex items-center space-x-2 font-medium">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
                                                     {m.name}
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-2">
+                                    <div className="flex flex-col items-end space-x-2">
                                         <div className="font-mono font-bold text-neutral-200">{formatCurrency(getLineTotal(line))}</div>
                                         <button onClick={() => handleRemoveFromCart(line.instanceId)} className="text-red-400 p-2 hover:bg-red-500/10 rounded-lg">
                                             <Trash2 className="w-4 h-4" />
@@ -2013,7 +2034,7 @@ export default function HandheldInterface({
                         </div>
                         <button
                             onClick={handleCheckoutClick}
-                            className="w-full h-16 bg-emerald-500 text-black rounded-2xl font-bold text-xl shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)] active:scale-95 transition-all flex items-center justify-center gap-3"
+                            className="w-full h-16 bg-emerald-500 text-black rounded-2xl font-bold text-xl shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)] active:scale-95 transition-all flex items-center justify-center space-x-3"
                         >
                             <span>Select Table</span>
                             <ChevronLeft className="w-5 h-5 rotate-180" />
@@ -2083,7 +2104,7 @@ export default function HandheldInterface({
                         Ask for recommendations, translations, or stock checks.
                     </p>
 
-                    <div className="flex gap-4">
+                    <div className="flex space-x-4">
                         <button onClick={toggleMute} className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 active:scale-95 transition-all">
                             {voiceState.isMuted ? <MicOff /> : <Mic />}
                         </button>
@@ -2096,3 +2117,4 @@ export default function HandheldInterface({
         </div>
     );
 }
+

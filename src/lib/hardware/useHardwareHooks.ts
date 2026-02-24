@@ -27,6 +27,7 @@ const KioskPrinter = registerPlugin<PrinterPlugin>('KioskPrinter');
 const ExternalPrinter = registerPlugin<PrinterPlugin>('ExternalPrinter');
 const DeviceFeedback = registerPlugin<FeedbackPlugin>('DeviceFeedback');
 const SecondaryDisplay = registerPlugin<SecondaryDisplayPlugin>('SecondaryDisplay');
+const ValorDisplay = registerPlugin<SecondaryDisplayPlugin>('ValorDisplay');
 
 // ---- React Hooks ----
 
@@ -97,6 +98,37 @@ export function useReceiptPrinter() {
                 return false;
             }
 
+            // Direct route for Valor devices using the injected Javascript bridge
+            if (profile.type === 'VALOR_VP550' || profile.type === 'VALOR_VP800') {
+                if (typeof window !== "undefined" && (window as any).ValorPrint) {
+                    const P = (window as any).ValorPrint;
+                    try {
+                        P.initPrinter();
+                        if (content.text) {
+                            const lines = content.text.split('\n');
+                            for (const line of lines) {
+                                if (line.trim() === '') {
+                                    P.feedPaper(20);
+                                } else if (line.includes('RECEIPT') || line.includes('TOTAL') || line.includes('STATUS')) {
+                                    P.drawtext(line, 24, true, "CENTER");
+                                } else {
+                                    P.drawtext(line, 20, false, "LEFT");
+                                }
+                            }
+                            P.feedPaper(50);
+                            P.print();
+                        }
+                        return true;
+                    } catch (e) {
+                        console.error("Valor sdk print exception", e);
+                        return false;
+                    }
+                } else {
+                    console.warn("ValorPrint interface not found on Valor device");
+                    return false;
+                }
+            }
+
             const activePrinter = profile.type === 'KIOSK_H2150B' ? KioskPrinter : TopWisePrinter;
 
             // Use the unified native document printing method to prevent overlapping hardware buffer jobs
@@ -133,7 +165,11 @@ export function useQRCodeDisplay() {
         if (!profile?.hasSecondaryDisplay) return false;
 
         try {
-            await SecondaryDisplay.displayQR({ data: qrData, base64: base64Image });
+            if (profile.type === 'VALOR_VP800') {
+                await ValorDisplay.displayQR({ data: qrData, base64: base64Image });
+            } else {
+                await SecondaryDisplay.displayQR({ data: qrData, base64: base64Image });
+            }
             return true;
         } catch (err) {
             console.error('Secondary display failed', err);
@@ -144,7 +180,11 @@ export function useQRCodeDisplay() {
     const clearCustomerScreen = useCallback(async () => {
         if (!profile?.hasSecondaryDisplay) return;
         try {
-            await SecondaryDisplay.clearDisplay();
+            if (profile.type === 'VALOR_VP800') {
+                await ValorDisplay.clearDisplay();
+            } else {
+                await SecondaryDisplay.clearDisplay();
+            }
         } catch (e) { }
     }, [profile]);
 

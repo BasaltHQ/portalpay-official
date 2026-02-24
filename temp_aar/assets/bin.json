@@ -1,0 +1,33 @@
+{
+  "bin_table":
+  [
+    {
+	  "start":"0",
+	  "end":"9",
+	  "brand" : "All",
+	  "type"  : "Credit", 
+	  "cfg" : {
+		  "length": "15:19",           
+		  "format": "clear",
+		  "mask"  : "6:4:7",
+		  "manual": {
+				"expdate" : {
+						"prompt":true,
+						"format":"MMYY"
+					},
+				"cvv" : {
+						"prompt":true,
+						"length":"3:3",
+						"label":"CVV"
+					},
+				"post-code" : {
+						"prompt":true,
+						"length":"5:5",
+						"format":"n",
+						"label":"ZIP"
+					}
+			  }
+		  }
+	} 
+  ]
+}
