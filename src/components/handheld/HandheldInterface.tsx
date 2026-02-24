@@ -502,10 +502,19 @@ export default function HandheldInterface({
 
             if (!res.ok) throw new Error("Failed to submit order");
 
+            const orderData = await res.json();
+
             setCart([]);
             setIsCartOpen(false);
             if (isGeneralMode) {
-                setView("menu");
+                // Go directly to payment — skip KDS
+                const receiptId = orderData?.receipt?.receiptId || orderData?.receiptId;
+                if (receiptId) {
+                    setSelectedOrderForPayment({ id: `receipt:${receiptId}`, total: cartTotal, items: cart });
+                    setView("payment");
+                } else {
+                    setView("menu");
+                }
             } else {
                 setView("tables");
             }
@@ -718,7 +727,7 @@ export default function HandheldInterface({
                         <button onClick={() => {
                             setSplitResult(null);
                             setIsSplitting(false);
-                            setView("tables");
+                            setView(isGeneralMode ? "menu" : "tables");
                             setSelectedOrderForPayment(null);
                         }} className="bg-white/10 p-2 rounded-full">
                             <ChevronLeft className="w-6 h-6 text-white" />
@@ -727,7 +736,7 @@ export default function HandheldInterface({
                         <button onClick={() => {
                             setSplitResult(null);
                             setIsSplitting(false);
-                            setView("tables");
+                            setView(isGeneralMode ? "menu" : "tables");
                             setSelectedOrderForPayment(null);
                         }} className="text-blue-400 font-bold text-sm">Done</button>
                     </div>
@@ -872,7 +881,7 @@ export default function HandheldInterface({
                     setIsSplitting(false);
                     setSplitSelection({});
                     // Refresh
-                    setView("tables");
+                    setView(isGeneralMode ? "menu" : "tables");
                     setSelectedOrderForPayment(null);
                     setShowTableDetails(false);
                 } else {
@@ -890,7 +899,7 @@ export default function HandheldInterface({
                 <div className="h-16 border-b border-white/10 flex items-center justify-between px-4">
                     <button onClick={() => {
                         if (isSplitting) { setIsSplitting(false); setSplitSelection({}); }
-                        else setView("tables");
+                        else setView(isGeneralMode ? "menu" : "tables");
                     }} className="bg-white/10 p-2 rounded-full">
                         <ChevronLeft className="w-6 h-6 text-white" />
                     </button>
@@ -1056,7 +1065,7 @@ export default function HandheldInterface({
 
                                                                 // Refresh view
                                                                 setSelectedTable(selectedOrderForPayment.tableNumber);
-                                                                setView("tables");
+                                                                setView(isGeneralMode ? "menu" : "tables");
                                                             }
                                                         } catch (e) {
                                                             console.error(e);
@@ -1610,7 +1619,7 @@ export default function HandheldInterface({
                         alert("Payment Recorded");
                     } else {
                         alert("Payment Recorded");
-                        setView("tables");
+                        setView(isGeneralMode ? "menu" : "tables");
                         setSelectedOrderForPayment(null);
                         setShowTableDetails(false);
                     }

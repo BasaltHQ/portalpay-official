@@ -15,7 +15,7 @@ import TechnologyPartners from "@/components/landing/TechnologyPartners";
 import SiteFooter from "@/components/landing/SiteFooter";
 import { useBrand } from "@/contexts/BrandContext";
 import { resolveBrandSymbol, resolveBrandAppLogo, getEffectiveBrandKey } from "@/lib/branding";
-import PortalPayVideo from "@/components/landing/PortalPayVideo";
+
 import { cachedFetch } from "@/lib/client-api-cache";
 import RebrandingHero from "@/components/landing/RebrandingHero";
 import PublisherOsirisSection from "@/components/landing/PublisherOsirisSection";
@@ -619,15 +619,7 @@ export default function HomeContent() {
           </div>
         </section>
 
-        {/* Demo Video - Only show for platform container, not for partner containers */}
-        {!isPartnerContainer && (
-          <section className="mt-6">
-            <div className="glass-pane rounded-xl border p-6">
-              <h2 className="text-xl font-semibold mb-4">See {displayBrandName} in Action</h2>
-              <PortalPayVideo />
-            </div>
-          </section>
-        )}
+
 
         <TechnologyPartners />
         {/* Get Started: Interactive Checklist */}

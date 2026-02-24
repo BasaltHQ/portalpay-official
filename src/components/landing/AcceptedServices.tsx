@@ -3,6 +3,13 @@
 import React from "react";
 import WhiteBrandIcon from "./WhiteBrandIcon";
 
+const cashSizeMap: Record<string, { box: string; text: string }> = {
+  sm: { box: "h-8 w-8", text: "text-3xl" },
+  md: { box: "h-10 w-10", text: "text-4xl" },
+  lg: { box: "h-12 w-12", text: "text-5xl" },
+  xl: { box: "h-16 w-16", text: "text-6xl" },
+};
+
 export default function AcceptedServices({ size = "xl" }: { size?: "sm" | "md" | "lg" | "xl" }) {
   // Curated monochrome SVGs; rendered as pure white with no background
   const icons = [
@@ -15,6 +22,8 @@ export default function AcceptedServices({ size = "xl" }: { size?: "sm" | "md" |
     // Represent Crypto with Ethereum mark (pure white, backgroundless)
     { alt: "Crypto", url: "/logos/ethereum.svg" },
   ];
+
+  const cash = cashSizeMap[size] ?? cashSizeMap.xl;
 
   return (
     <section className="mt-6">
@@ -31,7 +40,7 @@ export default function AcceptedServices({ size = "xl" }: { size?: "sm" | "md" |
             <span
               aria-label="Cash"
               title="Cash"
-              className={`text-white ${size === "xl" ? "text-3xl md:text-4xl" : size === "lg" ? "text-3xl" : size === "md" ? "text-2xl" : "text-xl"} font-bold leading-none`}
+              className={`flex items-center justify-center ${cash.box} ${cash.text} text-white font-bold leading-none`}
             >
               $
             </span>

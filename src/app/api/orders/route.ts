@@ -220,6 +220,7 @@ export async function POST(req: NextRequest) {
     const kitchenStatus = typeof body?.kitchenStatus === "string" ? body.kitchenStatus : undefined;
     const servedBy = typeof body?.servedBy === "string" ? body.servedBy : undefined;
     const sessionId = typeof body?.sessionId === "string" ? body.sessionId : undefined;
+    const paymentMethod = typeof body?.paymentMethod === "string" ? body.paymentMethod : undefined;
 
     // Fetch site config for brand, processing fee, tax presets, and fallback default token (prefer per-wallet, fallback global)
     const cfg = await getSiteConfigForWallet(wallet).catch(() => null as any);
@@ -752,7 +753,8 @@ export async function POST(req: NextRequest) {
     }
     const totalFeePct = Math.max(0, basePlatformFeePct + Number(processingFeePct || 0));
     const feePctFraction = totalFeePct / 100;
-    const processingFeeCents = Math.round(baseWithoutFeeCents * feePctFraction);
+    // Skip processing fee for cash payments — no payment processor involved
+    const processingFeeCents = paymentMethod === "cash" ? 0 : Math.round(baseWithoutFeeCents * feePctFraction);
 
     const finalLineItems: ReceiptLineItem[] = [
       ...lineItems,
