@@ -276,9 +276,9 @@ export async function loadBrandOGAssets(explicitBrandConfig?: any): Promise<{
 
     const bgResized = await resize(bg, 1200);
     const blurredResized = await resize(blurred, 1200);
-    const medallionResized = await resize(medallion, 600, 600, 'contain');
-    const logoResized = await resize(logo, 600, 150, 'contain');
-    const shieldResized = await resize(shield, 200);
+    const medallionResized = await resize(medallion, 300, 300, 'contain');
+    const logoResized = await resize(logo, 300, 75, 'contain');
+    const shieldResized = await resize(shield, 100);
 
     return {
         bgBase64: toBase64(bgResized),

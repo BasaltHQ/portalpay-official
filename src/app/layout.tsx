@@ -77,7 +77,8 @@ function deriveBrandKeyFromHostname(host: string): { brandKey: string; container
   // Check if this is a main platform hostname (exact match or subdomain)
   for (const platformHost of PLATFORM_HOSTNAMES) {
     if (hostLower === platformHost || hostLower.endsWith(`.${platformHost}`)) {
-      const bk = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "portalpay").toLowerCase();
+      const defaultBrand = platformHost === "surge.basalthq.com" ? "basaltsurge" : "portalpay";
+      const bk = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || defaultBrand).toLowerCase();
       return { brandKey: bk, containerType: "platform" };
     }
   }

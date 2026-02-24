@@ -34,23 +34,23 @@ export default async function Image() {
 
         leftWing: (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0 }}>
-                <div style={{ fontSize: 32, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 4 }}>{titleLine1}</div>
-                <div style={{ fontSize: 60, color: primaryColor, fontWeight: 800, letterSpacing: '0.05em', lineHeight: 1.1, textTransform: 'uppercase' }}>{titleLine2}</div>
-                {titleLine3 && <div style={{ fontSize: 32, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginTop: 4 }}>{titleLine3}</div>}
+                <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 2 }}>{titleLine1}</div>
+                <div style={{ fontSize: 30, color: primaryColor, fontWeight: 800, letterSpacing: '0.05em', lineHeight: 1.1, textTransform: 'uppercase' }}>{titleLine2}</div>
+                {titleLine3 && <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginTop: 2 }}>{titleLine3}</div>}
             </div>
         ),
         rightWing: (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
-                <div style={{ fontSize: 42, color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+                <div style={{ fontSize: 21, color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
                     {isBasalt ? 'Forging the future' : 'The future of'}
                 </div>
-                <div style={{ fontSize: 42, color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 21, color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
                     {isBasalt ? 'of payments.' : 'digital commerce.'}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 20 }}>
-                    <div style={{ width: 4, height: 40, background: primaryColor }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
+                    <div style={{ width: 2, height: 20, background: primaryColor }} />
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ fontSize: 20, color: primaryColor, fontWeight: 700, letterSpacing: '0.15em' }}>{isBasalt ? 'BASALTSURGE' : 'POWERED BY'}</div>
+                        <div style={{ fontSize: 10, color: primaryColor, fontWeight: 700, letterSpacing: '0.15em' }}>{isBasalt ? 'BASALTSURGE' : 'POWERED BY'}</div>
                     </div>
                 </div>
             </div>

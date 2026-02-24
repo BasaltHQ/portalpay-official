@@ -5,7 +5,7 @@ import { loadBasaltDefaults } from '@/lib/og-asset-loader';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic'; // Allow headers() access for multi-tenant branding
 export const alt = 'Web3 Native Commerce & Payments';
-export const size = { width: 2400, height: 1260 };
+export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 export default async function Image() {
@@ -80,24 +80,24 @@ export default async function Image() {
 
         leftWing: (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', gap: 0 }}>
-                <div style={{ display: 'flex', fontSize: 32, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 4 }}>{titleLine1}</div>
-                <div style={{ display: 'flex', fontSize: 60, color: primaryColor, fontWeight: 800, letterSpacing: '0.05em', lineHeight: 1.1, textTransform: 'uppercase' }}>{titleLine2}</div>
-                <div style={{ display: 'flex', fontSize: 32, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginTop: 4 }}>{titleLine3}</div>
+                <div style={{ display: 'flex', fontSize: 16, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 2 }}>{titleLine1}</div>
+                <div style={{ display: 'flex', fontSize: 30, color: primaryColor, fontWeight: 800, letterSpacing: '0.05em', lineHeight: 1.1, textTransform: 'uppercase' }}>{titleLine2}</div>
+                <div style={{ display: 'flex', fontSize: 16, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.1em', marginTop: 2 }}>{titleLine3}</div>
             </div>
         ),
         rightWing: (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', gap: 12 }}>
-                <div style={{ display: 'flex', fontSize: 42, color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', gap: 6 }}>
+                <div style={{ display: 'flex', fontSize: 21, color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
                     {tagline1}
                 </div>
-                <div style={{ display: 'flex', fontSize: 42, color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
+                <div style={{ display: 'flex', fontSize: 21, color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
                     {tagline2}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 20 }}>
-                    <div style={{ display: 'flex', width: 4, height: 40, background: primaryColor }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
+                    <div style={{ display: 'flex', width: 2, height: 20, background: primaryColor }} />
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', fontSize: 20, color: primaryColor, fontWeight: 700, letterSpacing: '0.15em' }}>{isBasalt ? 'AGENTIC COMMERCE' : 'POWERED BY WEB3'}</div>
-                        <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{isBasalt ? 'surge.basalthq.com' : (brand.appUrl?.replace(/^https?:\/\//, '') || 'WEB3 PAYMENTS')}</div>
+                        <div style={{ display: 'flex', fontSize: 10, color: primaryColor, fontWeight: 700, letterSpacing: '0.15em' }}>{isBasalt ? 'AGENTIC COMMERCE' : 'POWERED BY WEB3'}</div>
+                        <div style={{ display: 'flex', fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{isBasalt ? 'surge.basalthq.com' : (brand.appUrl?.replace(/^https?:\/\//, '') || 'WEB3 PAYMENTS')}</div>
                     </div>
                 </div>
             </div>
