@@ -15,6 +15,22 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.USB_HOST" />
 
+    <!-- Target package visibility for Hardware SDKs on Android 11+ -->
+    <queries>
+        <!-- TopWise T6D Service -->
+        <package android:name="com.android.topwise.topusdkservice" />
+        <intent>
+            <action android:name="topwise_cloudpos_device_service" />
+        </intent>
+        <intent>
+            <action android:name="topwise.intent.action.DEVICE_SERVICE" />
+        </intent>
+        
+        <!-- Valor VP550/VP800 SDK / Apps -->
+        <package android:name="com.pos.valorpay" />
+        <package android:name="com.valor.valorsdk" />
+    </queries>
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
