@@ -28,9 +28,9 @@ object DeviceProfile {
         Log.d(TAG, "Detecting device profile. Model: $model, Mfr: $manufacturer, Prod: $product")
 
         return when {
-            // TopWise T6D Terminal
-            model.contains("T6D") || product.contains("T6D") || manufacturer.contains("TOPWISE") -> {
-                Log.d(TAG, "Detected TopWise T6D Terminal")
+            // TopWise T6D / T6 Terminal
+            model.contains("T6") || product.contains("T6") || manufacturer.contains("TOPWISE") -> {
+                Log.d(TAG, "Detected TopWise T6/T6D Terminal")
                 DeviceType.TOPWISE_T6D
             }
             // Kiosk H2150B (ICOD)
