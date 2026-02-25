@@ -10,6 +10,7 @@ export interface ScannerPlugin {
 export interface PrinterPlugin {
     printText(options: { text: string }): Promise<{ success: boolean }>;
     printImage(options: { base64: string }): Promise<{ success: boolean }>;
+    printDocument(options: { text?: string; base64?: string }): Promise<{ success: boolean }>;
 }
 export interface FeedbackPlugin {
     successFeedback(): Promise<void>;
