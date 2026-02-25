@@ -834,6 +834,19 @@ export default function HandheldInterface({
                             />
                         ))}
                     </div>
+
+                    {/* Hidden canvas for History/Split View QR Thermal Print */}
+                    <div className="hidden absolute opacity-0 pointer-events-none -z-50 shrink-0 select-none m-0 p-0 overflow-hidden" aria-hidden="true" style={{ width: 0, height: 0 }}>
+                        <QRCode
+                            value={`${typeof window !== "undefined" ? window.location.origin : ""}/portal/${encodeURIComponent(currentReceipt.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`}
+                            size={384}
+                            id="handheld-qr-canvas-hist"
+                            bgColor="#FFFFFF"
+                            fgColor="#000000"
+                            quietZone={10}
+                            qrStyle="squares"
+                        />
+                    </div>
                 </div>
             );
         }
@@ -2234,21 +2247,6 @@ export default function HandheldInterface({
                         value={`${typeof window !== "undefined" ? window.location.origin : ""}/portal/${encodeURIComponent(selectedOrderForPayment.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`}
                         size={384}
                         id="handheld-qr-canvas-pay"
-                        bgColor="#FFFFFF"
-                        fgColor="#000000"
-                        quietZone={10}
-                        qrStyle="squares"
-                    />
-                </div>
-            )}
-
-            {/* Hidden canvas for History View QR */}
-            {allReceipts[resultIndex] && (
-                <div className="hidden absolute opacity-0 pointer-events-none -z-50 shrink-0 select-none m-0 p-0 overflow-hidden" aria-hidden="true" style={{ width: 0, height: 0 }}>
-                    <QRCode
-                        value={`${typeof window !== "undefined" ? window.location.origin : ""}/portal/${encodeURIComponent(allReceipts[resultIndex].id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`}
-                        size={384}
-                        id="handheld-qr-canvas-hist"
                         bgColor="#FFFFFF"
                         fgColor="#000000"
                         quietZone={10}
