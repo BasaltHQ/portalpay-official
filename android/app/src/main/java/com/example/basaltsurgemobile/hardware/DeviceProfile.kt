@@ -28,9 +28,9 @@ object DeviceProfile {
         Log.d(TAG, "Detecting device profile. Model: $model, Mfr: $manufacturer, Prod: $product")
 
         return when {
-            // TopWise T6D Terminal & N950 Handheld (both run TopWise OS/SDK)
-            model.contains("T6D") || product.contains("T6D") || model.contains("N950") || product.contains("N950") || manufacturer.contains("TOPWISE") -> {
-                Log.d(TAG, "Detected TopWise OS Device")
+            // TopWise T6D Terminal
+            model.contains("T6D") || product.contains("T6D") || manufacturer.contains("TOPWISE") -> {
+                Log.d(TAG, "Detected TopWise T6D Terminal")
                 DeviceType.TOPWISE_T6D
             }
             // Kiosk H2150B (ICOD)
@@ -43,13 +43,14 @@ object DeviceProfile {
                 Log.d(TAG, "Detected KDS Display")
                 DeviceType.KDS_21_5
             }
-            // Valor PayTech VP550 & VP800
-            model.contains("VP550") || product.contains("VP550") || manufacturer.contains("VALOR") -> {
-                Log.d(TAG, "Detected Valor VP550 Terminal")
+            // Valor PayTech VP550 / N950
+            model.contains("VP550") || product.contains("VP550") || model.contains("N950") || product.contains("N950") || manufacturer.contains("VALOR") -> {
+                Log.d(TAG, "Detected Valor VP550/N950 Terminal")
                 DeviceType.VALOR_VP550
             }
-            model.contains("VP800") || product.contains("VP800") -> {
-                Log.d(TAG, "Detected Valor VP800 Terminal")
+            // Valor PayTech VP800 / S90
+            model.contains("VP800") || product.contains("VP800") || model.contains("S90") || product.contains("S90") -> {
+                Log.d(TAG, "Detected Valor VP800/S90 Terminal")
                 DeviceType.VALOR_VP800
             }
             // Generic 
