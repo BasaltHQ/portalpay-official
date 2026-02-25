@@ -856,10 +856,71 @@ html[data-pp-theme-ready="0"] body::after {
 }
 
 /* Thirdweb Connect modal overrides: use primary brand color for rings, borders, and animated outlines */
+/* Enforce robust high-contrast text rendering on all devices, especially iOS Safari where inputs get dim */
+.tw-modal,
+.tw-connect,
+div[role="dialog"][class*="tw-"],
+.tw-connect-wallet--modal-overlay {
+  --tw-color-text: #ffffff !important;
+  --tw-color-primary-text: #ffffff !important;
+  --tw-color-secondary-text: #e5e7eb !important;
+  --tw-color-placeholder: rgba(255, 255, 255, 0.6) !important;
+}
+
 .tw-modal *,
-.tw-connect * {
+.tw-connect *,
+div[role="dialog"][class*="tw-"] * {
   /* Ensure white text for readability in dark modal */
-  color: var(--pp-text, #ffffff);
+  color: var(--pp-text, #ffffff) !important;
+}
+
+/* Fix for unreadable/dim text on mobile touchpoints (Android Chrome / iOS Safari auto-dims inputs/buttons) */
+.tw-modal p,
+.tw-modal span,
+.tw-modal h1,
+.tw-modal h2,
+.tw-modal h3,
+.tw-modal label,
+.tw-modal input,
+.tw-modal button,
+.tw-modal div,
+.tw-connect p,
+.tw-connect span,
+.tw-connect label,
+.tw-connect input,
+.tw-connect button,
+.tw-connect div,
+div[role="dialog"][class*="tw-"] p,
+div[role="dialog"][class*="tw-"] span,
+div[role="dialog"][class*="tw-"] input,
+div[role="dialog"][class*="tw-"] button,
+div[role="dialog"][class*="tw-"] div {
+  -webkit-text-fill-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Re-allow transparent border/backgrounds that use div but explicitly force text nodes */
+/* Thirdweb uses divs for layout padding, so if we force opacity we override their loading screens */
+div[role="dialog"][class*="tw-"] [data-tw-animated-border="true"] {
+  opacity: 1 !important;
+}
+
+/* Ensure disabled buttons keep some readability but are explicitly readable */
+.tw-modal button:disabled,
+.tw-connect button:disabled,
+div[role="dialog"][class*="tw-"] button:disabled {
+  opacity: 0.7 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Placeholder and instructional text clarity */
+.tw-modal input::placeholder,
+.tw-connect input::placeholder,
+div[role="dialog"][class*="tw-"] input::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.6) !important;
+  opacity: 1 !important;
 }
 
 /* Animated outline around wallet icons and spinners */
