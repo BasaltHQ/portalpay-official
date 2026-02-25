@@ -46,13 +46,10 @@ class TopWiseDisplayPlugin : Plugin() {
         }
 
         try {
-            // Step 1: Take control from the OS clock so it doesn't reclaim the screen
-            screen.startAppControl()
-            
-            // Step 2: Wake the screen hardware (powers on the LCD backlight)
+            // Wake the screen hardware (powers on the LCD backlight and takes control from OS clock)
             screen.wakeSmallScreen()
             
-            // Step 3: Wait for the screen hardware to fully power on.
+            // Wait for the screen hardware to fully power on.
             // Logs showed bitmap sent before screen was awake at 13:04:50:
             // "serviceShowBitmapData, device is sleep, can't display anything!"
             Thread.sleep(300)
