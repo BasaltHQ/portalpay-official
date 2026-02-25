@@ -103,6 +103,10 @@ class TopWisePrinterPlugin : Plugin() {
         }
 
         try {
+            Log.d(TAG, "printDocument: Preparing print job. Text length=${text?.length}, Base64 length=${base64Data?.length}")
+            val state = printer.printerState
+            Log.d(TAG, "printDocument: Current printer hardware state code: $state")
+
             if (!text.isNullOrEmpty()) {
                 printer.addText(0, 0, 0, text)
             }
@@ -120,21 +124,24 @@ class TopWisePrinterPlugin : Plugin() {
                 
                 printer.addImage(0, bmp)
             } else if (!text.isNullOrEmpty()) {
-                printer.addText(0, 0, 0, "\n\n\n") // Feed paper if only text
+                printer.addText(0, 0, 0, "\n\n\n\n") // Feed paper if only text
             }
 
+            Log.d(TAG, "printDocument: Sending start command to printer mechanism...")
             printer.start(object : AidlPrinterListener.Stub() {
                 override fun onError(error: Int) {
+                    Log.e(TAG, "printDocument: AidlPrinterListener.onError reported code $error")
                     call.reject("Print error: $error")
                 }
                 override fun onPrintFinish() {
+                    Log.i(TAG, "printDocument: AidlPrinterListener.onPrintFinish reported success")
                     val res = JSObject()
                     res.put("success", true)
                     call.resolve(res)
                 }
             })
         } catch (e: Exception) {
-            Log.e(TAG, "Document print failed", e)
+            Log.e(TAG, "Document print failed with Exception", e)
             call.reject("Document print failed: ${e.message}")
         }
     }

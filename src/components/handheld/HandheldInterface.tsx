@@ -156,11 +156,12 @@ export default function HandheldInterface({
 
     // Push QR to Secondary Display when an order is selected for payment
     useEffect(() => {
+        let timer: NodeJS.Timeout;
         if (selectedOrderForPayment) {
             const origin = typeof window !== "undefined" ? window.location.origin : "";
             const portalUrl = `${origin}/portal/${encodeURIComponent(selectedOrderForPayment.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
 
-            const timer = setTimeout(() => {
+            timer = setTimeout(() => {
                 const canvas = document.getElementById('handheld-qr-canvas-pay') as HTMLCanvasElement;
                 if (canvas && canvas.width > 0) {
                     try {
@@ -173,7 +174,10 @@ export default function HandheldInterface({
                     pushQRToCustomerScreen(portalUrl).catch(console.error);
                 }
             }, 600);
-            return () => clearTimeout(timer);
+            return () => {
+                clearTimeout(timer);
+                clearCustomerScreen().catch(console.error);
+            };
         } else {
             clearCustomerScreen().catch(console.error);
         }

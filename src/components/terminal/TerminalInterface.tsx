@@ -176,9 +176,10 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
 
     // Push QR to Secondary Display
     useEffect(() => {
+        let timer: NodeJS.Timeout;
         if (qrOpen && portalUrl) {
             // Need a slight delay to allow the QR canvas to render
-            const timer = setTimeout(() => {
+            timer = setTimeout(() => {
                 const canvas = document.getElementById('terminal-secondary-qr-canvas') as HTMLCanvasElement;
                 if (canvas && canvas.width > 0) {
                     try {
@@ -192,7 +193,10 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                     pushQRToCustomerScreen(portalUrl).catch(console.error);
                 }
             }, 600);
-            return () => clearTimeout(timer);
+            return () => {
+                clearTimeout(timer);
+                clearCustomerScreen().catch(console.error);
+            };
         } else {
             clearCustomerScreen().catch(console.error);
         }
