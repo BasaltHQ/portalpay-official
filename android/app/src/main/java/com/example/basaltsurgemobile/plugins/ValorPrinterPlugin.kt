@@ -2,6 +2,7 @@ package com.example.basaltsurgemobile.plugins
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Paint
 import android.util.Base64
 import android.util.Log
 import com.getcapacitor.JSObject
@@ -49,15 +50,15 @@ class ValorPrinterPlugin : Plugin() {
             val lines = text.split("\n")
             for (line in lines) {
                 if (line.trim() == "") {
-                    printer?.feedPaper(20)
+                    printer?.feedPaper(20f)
                 } else if (line.contains("RECEIPT") || line.contains("TOTAL") || line.contains("STATUS")) {
-                    printer?.drawtext(line, 24, true, "CENTER")
+                    printer?.drawtext(line, 24f, true, Paint.Align.CENTER)
                 } else {
-                    printer?.drawtext(line, 20, false, "LEFT")
+                    printer?.drawtext(line, 20f, false, Paint.Align.LEFT)
                 }
             }
             
-            printer?.feedPaper(50)
+            printer?.feedPaper(50f)
             printer?.print()
             
             val res = JSObject()
@@ -87,12 +88,12 @@ class ValorPrinterPlugin : Plugin() {
                 val lines = text.split("\n")
                 for (line in lines) {
                     if (line.trim() == "") {
-                        printer?.feedPaper(20)
+                        printer?.feedPaper(20f)
                     } else if (line.contains("RECEIPT") || line.contains("TOTAL") || line.contains("STATUS") || line.contains("Tip:") || line.contains("Tax:") || line.contains("Total:")) {
                         // Small formatting heuristic
-                        printer?.drawtext(line, 24, true, "CENTER")
+                        printer?.drawtext(line, 24f, true, Paint.Align.CENTER)
                     } else {
-                        printer?.drawtext(line, 20, false, "LEFT")
+                        printer?.drawtext(line, 20f, false, Paint.Align.LEFT)
                     }
                 }
             }
@@ -100,7 +101,7 @@ class ValorPrinterPlugin : Plugin() {
             // If the SDK supports setBitmap or something we could add it here, 
             // but the legacy bridge didn't support QR codes natively for Valor printing anyway.
             
-            printer?.feedPaper(50)
+            printer?.feedPaper(50f)
             printer?.print()
             
             val res = JSObject()
