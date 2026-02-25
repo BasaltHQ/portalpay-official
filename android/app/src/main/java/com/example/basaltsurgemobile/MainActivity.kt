@@ -83,6 +83,7 @@ class MainActivity : BridgeActivity() {
         registerPlugin(com.example.basaltsurgemobile.plugins.SecondaryDisplayPlugin::class.java)
         registerPlugin(com.example.basaltsurgemobile.plugins.ValorDisplayPlugin::class.java)
         registerPlugin(com.example.basaltsurgemobile.plugins.ValorPaymentPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.ValorPrinterPlugin::class.java)
 
         super.onCreate(savedInstanceState)
         

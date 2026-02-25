@@ -25,6 +25,7 @@ const HardwareScanner = registerPlugin<ScannerPlugin>('HardwareScanner');
 const TopWisePrinter = registerPlugin<PrinterPlugin>('TopWisePrinter');
 const KioskPrinter = registerPlugin<PrinterPlugin>('KioskPrinter');
 const ExternalPrinter = registerPlugin<PrinterPlugin>('ExternalPrinter');
+const ValorPrinter = registerPlugin<PrinterPlugin>('ValorPrinter');
 const DeviceFeedback = registerPlugin<FeedbackPlugin>('DeviceFeedback');
 const SecondaryDisplay = registerPlugin<SecondaryDisplayPlugin>('SecondaryDisplay');
 const ValorDisplay = registerPlugin<SecondaryDisplayPlugin>('ValorDisplay');
@@ -98,38 +99,15 @@ export function useReceiptPrinter() {
                 return false;
             }
 
-            // Direct route for Valor devices using the injected Javascript bridge
-            if (profile.type === 'VALOR_VP550' || profile.type === 'VALOR_VP800') {
-                if (typeof window !== "undefined" && (window as any).ValorPrint) {
-                    const P = (window as any).ValorPrint;
-                    try {
-                        P.initPrinter();
-                        if (content.text) {
-                            const lines = content.text.split('\n');
-                            for (const line of lines) {
-                                if (line.trim() === '') {
-                                    P.feedPaper(20);
-                                } else if (line.includes('RECEIPT') || line.includes('TOTAL') || line.includes('STATUS')) {
-                                    P.drawtext(line, 24, true, "CENTER");
-                                } else {
-                                    P.drawtext(line, 20, false, "LEFT");
-                                }
-                            }
-                            P.feedPaper(50);
-                            P.print();
-                        }
-                        return true;
-                    } catch (e) {
-                        console.error("Valor sdk print exception", e);
-                        return false;
-                    }
-                } else {
-                    console.warn("ValorPrint interface not found on Valor device");
-                    return false;
-                }
-            }
+            let activePrinter: PrinterPlugin;
 
-            const activePrinter = profile.type === 'KIOSK_H2150B' ? KioskPrinter : TopWisePrinter;
+            if (profile.type === 'VALOR_VP550' || profile.type === 'VALOR_VP800') {
+                activePrinter = ValorPrinter;
+            } else if (profile.type === 'KIOSK_H2150B') {
+                activePrinter = KioskPrinter;
+            } else {
+                activePrinter = TopWisePrinter;
+            }
 
             // Use the unified native document printing method to prevent overlapping hardware buffer jobs
             await activePrinter.printDocument({
