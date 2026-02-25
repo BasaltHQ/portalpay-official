@@ -774,6 +774,7 @@ export default function HandheldInterface({
                                             const receiptText = `\nRECEIPT\nID: ${currentReceipt.id}\nTOTAL: ${formatCurrency(currentReceipt.total)}\nSTATUS: ${currentReceipt.status.toUpperCase()}\n\nPay online at:\n${pUrl}\n\n`;
                                             printDocument({ text: receiptText }).catch(console.error);
                                         } else {
+                                            alert("Fallback to window.print() triggered. hasPrinter=" + hasPrinter);
                                             const prev = selectedOrderForPayment;
                                             setSelectedOrderForPayment(currentReceipt);
                                             setTimeout(() => {
@@ -944,6 +945,7 @@ export default function HandheldInterface({
                                             const receiptText = `\nRECEIPT\nID: ${selectedOrderForPayment.id}\nTOTAL: ${formatCurrency(selectedOrderForPayment.total)}\nSTATUS: ${selectedOrderForPayment.status.toUpperCase()}\n\nPay online at:\n${pUrl}\n\n`;
                                             printDocument({ text: receiptText }).catch(console.error);
                                         } else {
+                                            alert("Fallback to window.print() triggered. hasPrinter=" + hasPrinter);
                                             window.print();
                                         }
                                     }}

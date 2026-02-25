@@ -124,8 +124,11 @@ export function useReceiptPrinter() {
                 base64: content.base64Image
             });
             return true;
-        } catch (err) {
+        } catch (err: any) {
             console.error('Print failed:', err);
+            if (typeof window !== "undefined") {
+                alert("Native Print Error: " + err);
+            }
             return false;
         }
     }, [profile]);
@@ -166,8 +169,11 @@ export function useQRCodeDisplay() {
                 await TopWiseDisplay.displayQR({ data: qrData, base64: base64Image });
             }
             return true;
-        } catch (err) {
+        } catch (err: any) {
             console.error('Secondary display failed', err);
+            if (typeof window !== "undefined") {
+                alert("Native QR Display Error: " + err);
+            }
             return false;
         }
     }, [profile]);
