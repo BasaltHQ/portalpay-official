@@ -777,7 +777,7 @@ export default function HandheldInterface({
                                 />
 
                                 <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                         if (hasPrinter && currentReceipt) {
                                             const origin = typeof window !== "undefined" ? window.location.origin : "";
                                             const pUrl = `${origin}/portal/${encodeURIComponent(currentReceipt.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
@@ -787,7 +787,7 @@ export default function HandheldInterface({
                                             if (canvas && canvas.width > 0) {
                                                 qrBase64 = canvas.toDataURL("image/png").split(',')[1] || canvas.toDataURL("image/png");
                                             }
-                                            printDocument({ text: receiptText, base64Image: qrBase64 }).catch(console.error);
+                                            await printDocument({ text: receiptText, base64Image: qrBase64 }).catch(console.error);
                                         } else {
                                             alert("Fallback to window.print() triggered. hasPrinter=" + hasPrinter);
                                             const prev = selectedOrderForPayment;
@@ -836,15 +836,20 @@ export default function HandheldInterface({
                     </div>
 
                     {/* Hidden canvas for History/Split View QR Thermal Print */}
-                    <div className="hidden absolute opacity-0 pointer-events-none -z-50 shrink-0 select-none m-0 p-0 overflow-hidden" aria-hidden="true" style={{ width: 0, height: 0 }}>
+                    <div className="absolute opacity-0 pointer-events-none -z-10">
                         <QRCode
                             value={`${typeof window !== "undefined" ? window.location.origin : ""}/portal/${encodeURIComponent(currentReceipt.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`}
                             size={384}
                             id="handheld-qr-canvas-hist"
                             bgColor="#FFFFFF"
                             fgColor="#000000"
-                            quietZone={10}
+                            quietZone={5}
                             qrStyle="squares"
+                            removeQrCodeBehindLogo={false}
+                            logoImage=""
+                            logoWidth={48}
+                            logoCrossOrigin="anonymous"
+                            ecLevel="Q"
                         />
                     </div>
                 </div>
@@ -966,7 +971,7 @@ export default function HandheldInterface({
 
                             <div className="grid grid-cols-2 space-x-4 w-full">
                                 <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                         if (hasPrinter && selectedOrderForPayment) {
                                             const origin = typeof window !== "undefined" ? window.location.origin : "";
                                             const pUrl = `${origin}/portal/${encodeURIComponent(selectedOrderForPayment.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
@@ -976,7 +981,7 @@ export default function HandheldInterface({
                                             if (canvas && canvas.width > 0) {
                                                 qrBase64 = canvas.toDataURL("image/png").split(',')[1] || canvas.toDataURL("image/png");
                                             }
-                                            printDocument({ text: receiptText, base64Image: qrBase64 }).catch(console.error);
+                                            await printDocument({ text: receiptText, base64Image: qrBase64 }).catch(console.error);
                                         } else {
                                             alert("Fallback to window.print() triggered. hasPrinter=" + hasPrinter);
                                             window.print();
@@ -2242,15 +2247,20 @@ export default function HandheldInterface({
 
             {/* Hidden canvas for Payment View QR */}
             {selectedOrderForPayment && (
-                <div className="hidden absolute opacity-0 pointer-events-none -z-50 shrink-0 select-none m-0 p-0 overflow-hidden" aria-hidden="true" style={{ width: 0, height: 0 }}>
+                <div className="absolute opacity-0 pointer-events-none -z-10">
                     <QRCode
                         value={`${typeof window !== "undefined" ? window.location.origin : ""}/portal/${encodeURIComponent(selectedOrderForPayment.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`}
                         size={384}
                         id="handheld-qr-canvas-pay"
                         bgColor="#FFFFFF"
                         fgColor="#000000"
-                        quietZone={10}
+                        quietZone={5}
                         qrStyle="squares"
+                        removeQrCodeBehindLogo={false}
+                        logoImage=""
+                        logoWidth={48}
+                        logoCrossOrigin="anonymous"
+                        ecLevel="Q"
                     />
                 </div>
             )}
