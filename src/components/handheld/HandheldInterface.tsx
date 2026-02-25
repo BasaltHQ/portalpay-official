@@ -785,14 +785,20 @@ export default function HandheldInterface({
                                     onClick={async () => {
                                         if (hasPrinter && currentReceipt) {
                                             const origin = typeof window !== "undefined" ? window.location.origin : "";
-                                            const pUrl = `${origin}/portal/${encodeURIComponent(currentReceipt.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
-                                            const receiptText = `\nRECEIPT\nID: ${currentReceipt.id}\nTOTAL: ${formatCurrency(currentReceipt.total || currentReceipt.totalUsd)}\nSTATUS: ${currentReceipt.status.toUpperCase()}\n\nPay online at:\n${pUrl}\n\n`;
+                                            const rawId = String(currentReceipt.receiptId || currentReceipt.id || "").replace("receipt:", "");
+                                            const pUrl = `${origin}/portal/${encodeURIComponent(rawId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
+                                            const receiptText = `\nRECEIPT\nID: ${rawId}\nTOTAL: ${formatCurrency(currentReceipt.total || currentReceipt.totalUsd)}\nSTATUS: ${currentReceipt.status.toUpperCase()}\n\nPay online at:\n${pUrl}\n\n`;
                                             let qrBase64 = undefined;
                                             const canvas = document.getElementById('handheld-qr-canvas-hist') as HTMLCanvasElement;
                                             if (canvas && canvas.width > 0) {
                                                 qrBase64 = canvas.toDataURL("image/png").split(',')[1] || canvas.toDataURL("image/png");
                                             }
-                                            await printDocument({ text: receiptText, base64Image: qrBase64 }).catch(console.error);
+                                            try {
+                                                const result = await printDocument({ text: receiptText, base64Image: qrBase64 });
+                                                alert("[DEBUG] Print result: " + result);
+                                            } catch (e: any) {
+                                                alert("[DEBUG] Print threw: " + (e?.message || e));
+                                            }
                                         } else {
                                             alert("Fallback to window.print() triggered. hasPrinter=" + hasPrinter);
                                             const prev = selectedOrderForPayment;
@@ -980,14 +986,20 @@ export default function HandheldInterface({
                                     onClick={async () => {
                                         if (hasPrinter && selectedOrderForPayment) {
                                             const origin = typeof window !== "undefined" ? window.location.origin : "";
-                                            const pUrl = `${origin}/portal/${encodeURIComponent(selectedOrderForPayment.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
-                                            const receiptText = `\nRECEIPT\nID: ${selectedOrderForPayment.id}\nTOTAL: ${formatCurrency(selectedOrderForPayment.total)}\nSTATUS: ${selectedOrderForPayment.status.toUpperCase()}\n\nPay online at:\n${pUrl}\n\n`;
+                                            const rawId = String(selectedOrderForPayment.receiptId || selectedOrderForPayment.id || "").replace("receipt:", "");
+                                            const pUrl = `${origin}/portal/${encodeURIComponent(rawId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
+                                            const receiptText = `\nRECEIPT\nID: ${rawId}\nTOTAL: ${formatCurrency(selectedOrderForPayment.total)}\nSTATUS: ${selectedOrderForPayment.status.toUpperCase()}\n\nPay online at:\n${pUrl}\n\n`;
                                             let qrBase64 = undefined;
                                             const canvas = document.getElementById('handheld-qr-canvas-pay') as HTMLCanvasElement;
                                             if (canvas && canvas.width > 0) {
                                                 qrBase64 = canvas.toDataURL("image/png").split(',')[1] || canvas.toDataURL("image/png");
                                             }
-                                            await printDocument({ text: receiptText, base64Image: qrBase64 }).catch(console.error);
+                                            try {
+                                                const result = await printDocument({ text: receiptText, base64Image: qrBase64 });
+                                                alert("[DEBUG] Print result: " + result);
+                                            } catch (e: any) {
+                                                alert("[DEBUG] Print threw: " + (e?.message || e));
+                                            }
                                         } else {
                                             alert("Fallback to window.print() triggered. hasPrinter=" + hasPrinter);
                                             window.print();

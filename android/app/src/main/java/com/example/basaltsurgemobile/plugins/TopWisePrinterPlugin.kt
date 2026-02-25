@@ -21,6 +21,20 @@ class TopWisePrinterPlugin : Plugin() {
         const val TAG = "TopWisePrinterPlugin"
     }
 
+    override fun load() {
+        val manager = HardwareRegistry.topWiseManager
+        val printer = manager?.printManager
+        Log.d(TAG, "load() called. TopWise manager=${manager != null}, printer=${printer != null}")
+        if (printer != null) {
+            try {
+                val state = printer.printerState
+                Log.d(TAG, "load() printer state code: $state")
+            } catch (e: Exception) {
+                Log.e(TAG, "load() failed to get printer state", e)
+            }
+        }
+    }
+
     @PluginMethod
     fun printText(call: PluginCall) {
         val text = call.getString("text")
@@ -146,9 +160,39 @@ class TopWisePrinterPlugin : Plugin() {
         }
     }
 
+    /**
+     * The TopWise SDK uses AIDL (inter-process) service binding which is asynchronous.
+     * HardwareRegistry.initTopWise() calls manager.init(context) which begins the binding,
+     * but manager.printManager may return null until the binding completes.
+     * 
+     * This method polls up to 3 seconds for the AIDL service to bind before giving up.
+     * This is the key difference vs ValorPrinterPlugin which creates a local ValorPrint() object synchronously.
+     */
+    private fun getPrinterWithRetry(): AidlPrinter? {
+        val manager = HardwareRegistry.topWiseManager ?: return null
+        
+        // Fast path: already bound
+        var printer = manager.printManager
+        if (printer != null) return printer
+        
+        // Slow path: AIDL service hasn't bound yet — poll with backoff
+        Log.w(TAG, "printManager is null, waiting for AIDL service binding...")
+        for (attempt in 1..6) {
+            Thread.sleep(500)
+            printer = manager.printManager
+            if (printer != null) {
+                Log.d(TAG, "AIDL printer service bound after ${attempt * 500}ms")
+                return printer
+            }
+        }
+        
+        Log.e(TAG, "AIDL printer service did NOT bind within 3000ms")
+        return null
+    }
+
+    @Suppress("unused")
     private fun getPrinter(): AidlPrinter? {
-        val manager = HardwareRegistry.topWiseManager
-        return manager?.printManager
+        return getPrinterWithRetry()
     }
     
     private fun resizeBitmap(bitmap: Bitmap, targetWidth: Int): Bitmap {

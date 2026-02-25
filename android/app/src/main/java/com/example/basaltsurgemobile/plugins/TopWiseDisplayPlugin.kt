@@ -26,9 +26,22 @@ class TopWiseDisplayPlugin : Plugin() {
         val qrData = call.getString("data")
         val base64Img = call.getString("base64")
 
-        val screen = HardwareRegistry.topWiseManager?.smallScreenManager
+        // TopWise AIDL service binding is asynchronous — poll for it
+        var screen = HardwareRegistry.topWiseManager?.smallScreenManager
         if (screen == null) {
-            call.reject("TopWise Small Screen not available")
+            Log.w(TAG, "smallScreenManager is null, waiting for AIDL service binding...")
+            for (attempt in 1..6) {
+                Thread.sleep(500)
+                screen = HardwareRegistry.topWiseManager?.smallScreenManager
+                if (screen != null) {
+                    Log.d(TAG, "AIDL small screen service bound after ${attempt * 500}ms")
+                    break
+                }
+            }
+        }
+        if (screen == null) {
+            Log.e(TAG, "AIDL small screen service did NOT bind within 3000ms")
+            call.reject("TopWise Small Screen not available (AIDL binding timeout)")
             return
         }
 
