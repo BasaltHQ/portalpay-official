@@ -42,8 +42,9 @@ class TopWiseDisplayPlugin : Plugin() {
                 val decodedString = Base64.decode(base64Img.substringAfter(","), Base64.DEFAULT)
                 var bmp = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
                 
-                // Scale down to fit the customer screen
-                bmp = Bitmap.createScaledBitmap(bmp, 200, 200, false)
+                // Scale down to fit the customer screen with margins for scanners
+                // T6D Small Screen is 282x240; using 160px leaves ~60px margins on sides
+                bmp = Bitmap.createScaledBitmap(bmp, 160, 160, false)
                 screen.displayBitmap(bmp, com.topwise.cloudpos.aidl.smallscreen.BitmapAlign.BITMAP_ALIGN_CENTER)
             } else if (qrData != null) {
                 // If the AIDL does not natively render QRs, we usually just clear the screen 

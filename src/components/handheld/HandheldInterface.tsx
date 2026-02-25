@@ -159,7 +159,8 @@ export default function HandheldInterface({
         let timer: NodeJS.Timeout;
         if (selectedOrderForPayment) {
             const origin = typeof window !== "undefined" ? window.location.origin : "";
-            const portalUrl = `${origin}/portal/${encodeURIComponent(selectedOrderForPayment.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
+            const rawReceiptId = String(selectedOrderForPayment.receiptId || selectedOrderForPayment.id || "").replace("receipt:", "");
+            const portalUrl = `${origin}/portal/${encodeURIComponent(rawReceiptId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
 
             timer = setTimeout(() => {
                 const canvas = document.getElementById('handheld-qr-canvas-pay') as HTMLCanvasElement;
@@ -863,7 +864,8 @@ export default function HandheldInterface({
         if (!selectedOrderForPayment) return null;
 
         const origin = typeof window !== "undefined" ? window.location.origin : "";
-        const portalUrl = `${origin}/portal/${encodeURIComponent(selectedOrderForPayment.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
+        const rawReceiptId = String(selectedOrderForPayment.receiptId || selectedOrderForPayment.id || "").replace("receipt:", "");
+        const portalUrl = `${origin}/portal/${encodeURIComponent(rawReceiptId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
 
         const confirmSplit = async () => {
             // Ratio Mode Payload

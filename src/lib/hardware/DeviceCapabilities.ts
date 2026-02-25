@@ -20,9 +20,10 @@ const DeviceProfile = registerPlugin<DeviceProfilePlugin>('DeviceProfile');
 export async function getHardwareProfile(): Promise<HardwareProfile> {
     try {
         const profile = await DeviceProfile.getProfile();
+        console.log('[DEVICE_PROFILE] Native profile resolved:', JSON.stringify(profile));
         return profile;
     } catch (err) {
-        console.warn('Capacitor DeviceProfile plugin not available, falling back to GENERIC_PHONE', err);
+        console.warn('[DEVICE_PROFILE] Capacitor DeviceProfile plugin not available, falling back to GENERIC_PHONE', err);
         return {
             type: 'GENERIC_PHONE',
             hasSecondaryDisplay: false,

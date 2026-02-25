@@ -90,8 +90,11 @@ export function useReceiptPrinter() {
 
     const printDocument = useCallback(async (content: { text?: string; base64Image?: string }, printOptions?: { externalIp?: string }) => {
         try {
+            console.log('[PRINTER] printDocument called. Profile:', JSON.stringify(profile), 'Content text length:', content.text?.length, 'Content base64 length:', content.base64Image?.length);
+
             // Prioritize external network printer if IP is provided
             if (printOptions?.externalIp) {
+                console.log('[PRINTER] Using external printer at:', printOptions.externalIp);
                 if (content.text) {
                     await ExternalPrinter.printText({
                         ipAddress: printOptions.externalIp,
@@ -104,30 +107,35 @@ export function useReceiptPrinter() {
 
             // Fallback to built-in hardware
             if (!profile?.hasBuiltInPrinter) {
-                console.warn('No built-in printer detected');
+                console.warn('[PRINTER] No built-in printer detected. Profile type:', profile?.type, 'hasBuiltInPrinter:', profile?.hasBuiltInPrinter);
                 return false;
             }
 
             let activePrinter: PrinterPlugin;
 
             if (profile.type === 'VALOR_VP550' || profile.type === 'VALOR_VP800') {
+                console.log('[PRINTER] Selected ValorPrinter for device type:', profile.type);
                 activePrinter = ValorPrinter;
             } else if (profile.type === 'KIOSK_H2150B') {
+                console.log('[PRINTER] Selected KioskPrinter');
                 activePrinter = KioskPrinter;
             } else {
+                console.log('[PRINTER] Selected TopWisePrinter for device type:', profile.type);
                 activePrinter = TopWisePrinter;
             }
 
             // Use the unified native document printing method to prevent overlapping hardware buffer jobs
+            console.log('[PRINTER] Calling activePrinter.printDocument...');
             await activePrinter.printDocument({
                 text: content.text,
                 base64: content.base64Image
             });
+            console.log('[PRINTER] printDocument resolved successfully');
             return true;
         } catch (err: any) {
-            console.error('Print failed:', err);
+            console.error('[PRINTER] Print failed:', err?.message || err, err);
             if (typeof window !== "undefined") {
-                alert("Native Print Error: " + err);
+                alert("Native Print Error: " + (err?.message || err));
             }
             return false;
         }
