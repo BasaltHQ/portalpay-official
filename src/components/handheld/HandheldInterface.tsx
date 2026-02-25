@@ -154,9 +154,9 @@ export default function HandheldInterface({
         setSplitRatios(newRatios);
     }, [splitParties]);
 
-    // Push QR to Secondary Display when in Payment View
+    // Push QR to Secondary Display when an order is selected for payment
     useEffect(() => {
-        if (view === "payment" && selectedOrderForPayment) {
+        if (selectedOrderForPayment) {
             const origin = typeof window !== "undefined" ? window.location.origin : "";
             const portalUrl = `${origin}/portal/${encodeURIComponent(selectedOrderForPayment.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
 
@@ -167,7 +167,7 @@ export default function HandheldInterface({
         } else {
             clearCustomerScreen().catch(console.error);
         }
-    }, [view, selectedOrderForPayment, merchantWallet, pushQRToCustomerScreen, clearCustomerScreen]);
+    }, [selectedOrderForPayment, merchantWallet, pushQRToCustomerScreen, clearCustomerScreen]);
 
     // -- REPORT STATE --
     const [reportData, setReportData] = useState<{ totalTips: number; totalSales: number; orders: any[] } | null>(null);
@@ -937,7 +937,16 @@ export default function HandheldInterface({
 
                             <div className="grid grid-cols-2 space-x-4 w-full">
                                 <button
-                                    onClick={() => window.print()}
+                                    onClick={() => {
+                                        if (hasPrinter && selectedOrderForPayment) {
+                                            const origin = typeof window !== "undefined" ? window.location.origin : "";
+                                            const pUrl = `${origin}/portal/${encodeURIComponent(selectedOrderForPayment.id)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
+                                            const receiptText = `\nRECEIPT\nID: ${selectedOrderForPayment.id}\nTOTAL: ${formatCurrency(selectedOrderForPayment.total)}\nSTATUS: ${selectedOrderForPayment.status.toUpperCase()}\n\nPay online at:\n${pUrl}\n\n`;
+                                            printDocument({ text: receiptText }).catch(console.error);
+                                        } else {
+                                            window.print();
+                                        }
+                                    }}
                                     className="h-16 bg-white/10 text-white rounded-2xl font-bold text-lg active:scale-95 transition-all flex items-center justify-center space-x-2 border border-white/5"
                                 >
                                     Print Receipt
