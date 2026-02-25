@@ -21,13 +21,19 @@ export interface SecondaryDisplayPlugin {
 }
 
 // ---- Register Plugins ----
-const HardwareScanner = registerPlugin<ScannerPlugin>('HardwareScanner');
+const TopWiseScanner = registerPlugin<ScannerPlugin>('TopWiseScanner');
+const IcodScanner = registerPlugin<ScannerPlugin>('IcodScanner');
+
 const TopWisePrinter = registerPlugin<PrinterPlugin>('TopWisePrinter');
 const KioskPrinter = registerPlugin<PrinterPlugin>('KioskPrinter');
 const ExternalPrinter = registerPlugin<PrinterPlugin>('ExternalPrinter');
 const ValorPrinter = registerPlugin<PrinterPlugin>('ValorPrinter');
-const DeviceFeedback = registerPlugin<FeedbackPlugin>('DeviceFeedback');
-const SecondaryDisplay = registerPlugin<SecondaryDisplayPlugin>('SecondaryDisplay');
+
+const TopWiseFeedback = registerPlugin<FeedbackPlugin>('TopWiseFeedback');
+const IcodFeedback = registerPlugin<FeedbackPlugin>('IcodFeedback');
+const GenericFeedback = registerPlugin<FeedbackPlugin>('GenericFeedback');
+
+const TopWiseDisplay = registerPlugin<SecondaryDisplayPlugin>('TopWiseDisplay');
 const ValorDisplay = registerPlugin<SecondaryDisplayPlugin>('ValorDisplay');
 
 // ---- React Hooks ----
@@ -54,7 +60,8 @@ export function useHardwareScanner() {
 
         try {
             setIsScanning(true);
-            const result = await HardwareScanner.startScan();
+            const activeScanner = profile?.type === 'KIOSK_H2150B' ? IcodScanner : TopWiseScanner;
+            const result = await activeScanner.startScan();
             return result.value;
         } catch (err) {
             console.error('Scan failed', err);
@@ -67,11 +74,12 @@ export function useHardwareScanner() {
     const stopScan = useCallback(async () => {
         try {
             if (isScanning) {
-                await HardwareScanner.stopScan();
+                const activeScanner = profile?.type === 'KIOSK_H2150B' ? IcodScanner : TopWiseScanner;
+                await activeScanner.stopScan();
                 setIsScanning(false);
             }
         } catch (e) { }
-    }, [isScanning]);
+    }, [isScanning, profile]);
 
     return { startScan, stopScan, isScanning };
 }
@@ -125,13 +133,21 @@ export function useReceiptPrinter() {
 }
 
 export function useDeviceFeedback() {
+    const profile = useHardwareProfile();
+
+    const getFeedbackPlugin = useCallback(() => {
+        if (profile?.type === 'TOPWISE_T6D') return TopWiseFeedback;
+        if (profile?.type === 'KDS_21_5') return IcodFeedback;
+        return GenericFeedback;
+    }, [profile]);
+
     const playSuccess = useCallback(() => {
-        DeviceFeedback.successFeedback().catch(console.error);
-    }, []);
+        getFeedbackPlugin().successFeedback().catch(console.error);
+    }, [getFeedbackPlugin]);
 
     const playError = useCallback(() => {
-        DeviceFeedback.errorFeedback().catch(console.error);
-    }, []);
+        getFeedbackPlugin().errorFeedback().catch(console.error);
+    }, [getFeedbackPlugin]);
 
     return { playSuccess, playError };
 }
@@ -146,7 +162,7 @@ export function useQRCodeDisplay() {
             if (profile.type === 'VALOR_VP800') {
                 await ValorDisplay.displayQR({ data: qrData, base64: base64Image });
             } else {
-                await SecondaryDisplay.displayQR({ data: qrData, base64: base64Image });
+                await TopWiseDisplay.displayQR({ data: qrData, base64: base64Image });
             }
             return true;
         } catch (err) {
@@ -161,7 +177,7 @@ export function useQRCodeDisplay() {
             if (profile.type === 'VALOR_VP800') {
                 await ValorDisplay.clearDisplay();
             } else {
-                await SecondaryDisplay.clearDisplay();
+                await TopWiseDisplay.clearDisplay();
             }
         } catch (e) { }
     }, [profile]);

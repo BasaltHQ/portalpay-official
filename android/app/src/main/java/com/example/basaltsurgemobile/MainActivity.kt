@@ -73,17 +73,30 @@ class MainActivity : BridgeActivity() {
         
         // Register Custom Native Capacitor Plugins for Hardware Abstraction
         registerPlugin(com.example.basaltsurgemobile.plugins.DeviceProfilePlugin::class.java)
-        registerPlugin(com.example.basaltsurgemobile.plugins.ExternalPrinterPlugin::class.java)
+
+        // Printers
         registerPlugin(com.example.basaltsurgemobile.plugins.TopWisePrinterPlugin::class.java)
         registerPlugin(com.example.basaltsurgemobile.plugins.KioskPrinterPlugin::class.java)
-        registerPlugin(com.example.basaltsurgemobile.plugins.ScannerPlugin::class.java)
-        registerPlugin(com.example.basaltsurgemobile.plugins.DeviceFeedbackPlugin::class.java)
-        registerPlugin(com.example.basaltsurgemobile.plugins.CardReaderPlugin::class.java)
-        registerPlugin(com.example.basaltsurgemobile.plugins.PinPadPlugin::class.java)
-        registerPlugin(com.example.basaltsurgemobile.plugins.SecondaryDisplayPlugin::class.java)
-        registerPlugin(com.example.basaltsurgemobile.plugins.ValorDisplayPlugin::class.java)
-        registerPlugin(com.example.basaltsurgemobile.plugins.ValorPaymentPlugin::class.java)
         registerPlugin(com.example.basaltsurgemobile.plugins.ValorPrinterPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.ExternalPrinterPlugin::class.java)
+        
+        // Scanners
+        registerPlugin(com.example.basaltsurgemobile.plugins.TopWiseScannerPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.IcodScannerPlugin::class.java)
+        
+        // Audio/Haptic Feedback
+        registerPlugin(com.example.basaltsurgemobile.plugins.TopWiseFeedbackPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.IcodFeedbackPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.GenericFeedbackPlugin::class.java)
+        
+        // Secondary Displays
+        registerPlugin(com.example.basaltsurgemobile.plugins.TopWiseDisplayPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.ValorDisplayPlugin::class.java)
+        
+        // Payment Processing (Card Readers & PIN Pads)
+        registerPlugin(com.example.basaltsurgemobile.plugins.TopWiseCardReaderPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.TopWisePinPadPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.ValorPaymentPlugin::class.java)
 
         super.onCreate(savedInstanceState)
         
