@@ -103,28 +103,21 @@ export async function POST(req: NextRequest) {
     // Fetch site config (processingFeePct, taxConfig, brandName, storeCurrency), and ensure split configured
     let cfg = await getSiteConfigForWallet(wallet, effectiveBrandKey).catch(() => null as any);
 
-    // Direct fetch of brand-scoped site config to ensure we get splitConfig
-    // Use cross-partition query because brand-scoped docs may be partitioned by admin wallet, not merchant wallet
     let directSplitConfig: any = null;
     if (effectiveBrandKey) {
       try {
         const container = await getContainer();
         const docId = `site:config:${effectiveBrandKey}`;
-        // Cross-partition query to find the document regardless of which wallet partitioned it
-        const spec = {
-          query: "SELECT * FROM c WHERE c.id = @docId",
-          parameters: [{ name: "@docId", value: docId }]
-        };
-        const { resources } = await container.items.query(spec).fetchAll();
-        const resource = Array.isArray(resources) && resources[0] ? resources[0] : null;
-        if (resource?.splitConfig) {
+        // Query scoped to the specific merchant's wallet (partition key)
+        const { resource } = await container.item(docId, wallet).read<any>();
+        if (resource && resource.splitConfig) {
           directSplitConfig = resource.splitConfig;
-          console.log("[Terminal Receipt] Direct splitConfig fetch success:", { docId, splitConfig: directSplitConfig });
+          console.log("[Terminal Receipt] Direct splitConfig fetch success:", { docId, wallet, splitConfig: directSplitConfig });
         } else {
-          console.log("[Terminal Receipt] Direct splitConfig fetch - doc found but no splitConfig:", { docId, hasResource: !!resource });
+          console.log("[Terminal Receipt] Direct splitConfig fetch - doc found but no splitConfig:", { docId, wallet, hasResource: !!resource });
         }
       } catch (e: any) {
-        console.log("[Terminal Receipt] Direct splitConfig fetch failed:", { docId: `site:config:${effectiveBrandKey}`, error: e.message });
+        console.log("[Terminal Receipt] Direct splitConfig fetch failed:", { docId: `site:config:${effectiveBrandKey}`, wallet, error: e.message });
       }
     }
 

@@ -1461,8 +1461,16 @@ export default function PortalReceiptPage() {
           setProcessingFeePct(cfg.processingFeePct);
         }
 
-        // basePlatformFeePct (platform + partner fees for partner containers)
-        if (typeof (cfg as any).basePlatformFeePct === "number") {
+        // basePlatformFeePct (platform + partner + agent fees)
+        const splitCfg = (cfg as any)?.splitConfig;
+        if (splitCfg && typeof splitCfg === "object") {
+          const partnerBps = typeof splitCfg.partnerBps === "number" ? splitCfg.partnerBps : 0;
+          const platformBps = typeof splitCfg.platformBps === "number" ? splitCfg.platformBps : 0;
+          const agentBps = Array.isArray(splitCfg.agents)
+            ? splitCfg.agents.reduce((s: number, a: any) => s + (Number(a.bps) || 0), 0)
+            : 0;
+          setBasePlatformFeePct((partnerBps + platformBps + agentBps) / 100);
+        } else if (typeof (cfg as any).basePlatformFeePct === "number") {
           setBasePlatformFeePct((cfg as any).basePlatformFeePct);
         }
 
