@@ -6,7 +6,7 @@ import { requireThirdwebAuth } from "@/lib/auth";
 import { requireCsrf } from "@/lib/security";
 import { getBrandKey, applyBrandDefaults } from "@/config/brands";
 import { isPartnerContext, getSanitizedSplitBps } from "@/lib/env";
-import { getPlatformAdminWallets } from "@/lib/authz";
+import { getPlatformAdminWallets } from "@/lib/authz-server";
 
 /**
  * Per-merchant Split configuration API.

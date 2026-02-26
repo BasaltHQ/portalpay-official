@@ -60,13 +60,7 @@ export async function getContainer(dbId = defaultDbId, containerId = defaultCont
 
   // ── MongoDB path ──────────────────────────────────────────────────
   if (/^mongodb(\+srv)?:\/\//i.test(conn)) {
-    // webpackIgnore + turbopackIgnore prevent the bundler from tracing
-    // mongodb into client-side bundles. The file resolves at runtime on the server.
-    const { getMongoContainer } = await import(
-      /* webpackIgnore: true */
-      /* turbopackIgnore: true */
-      "./db/mongodb-adapter"
-    );
+    const { getMongoContainer } = await import("./db/mongodb-adapter");
     const adapter = await getMongoContainer(conn, dbId, containerId);
     // Cast to any so existing code that expects Cosmos Container type still compiles.
     // The adapter implements the same runtime interface.

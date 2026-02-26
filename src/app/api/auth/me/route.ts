@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     // Check for Shop Config status (for Partner Access Gating)
     let shopStatus = "none";
     let blocked = false;
-    const { getPlatformAdminWallets } = await import("@/lib/authz");
+    const { getPlatformAdminWallets } = await import("@/lib/authz-server");
     const platformAdminWallets = await getPlatformAdminWallets();
     const isPlatformAdmin = platformAdminWallets.includes(wallet.toLowerCase());
 

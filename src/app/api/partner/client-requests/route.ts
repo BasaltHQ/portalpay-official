@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { getContainer } from "@/lib/cosmos";
 import { requireThirdwebAuth, getAuthenticatedWallet } from "@/lib/auth";
-import { getPlatformAdminWallets } from "@/lib/authz";
+import { getPlatformAdminWallets } from "@/lib/authz-server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

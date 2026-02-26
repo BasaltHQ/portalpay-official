@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getContainer } from "@/lib/cosmos";
 import { getAuthenticatedWallet } from "@/lib/auth";
-import { resolveAdminRole } from "@/lib/authz";
+import { resolveAdminRole } from "@/lib/authz-server";
 import { getEnv } from "@/lib/env";
 import { logAdminAction } from "@/lib/audit";
 
