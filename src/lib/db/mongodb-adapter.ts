@@ -13,7 +13,16 @@ import { parseCosmosSql } from "./sql-parser";
 let _client: MongoClient | null = null;
 
 async function getMongoClient(uri: string): Promise<MongoClient> {
-    if (!_client) {
+    // Check if client exists AND topology is connected. 
+    // This prevents `MongoTopologyClosedError` when connections drop or serverless resets state.
+    const isConnected = !!(_client && _client.topology && _client.topology.isConnected());
+
+    if (!_client || !isConnected) {
+        if (_client) {
+            // Attempt to cleanly close the broken client before replacing
+            _client.close().catch(() => { });
+        }
+
         _client = new MongoClient(uri, {
             maxPoolSize: 20,
             minPoolSize: 2,
@@ -29,8 +38,12 @@ async function getMongoClient(uri: string): Promise<MongoClient> {
                 _client = null;
             }
         };
-        process.on("SIGINT", cleanup);
-        process.on("SIGTERM", cleanup);
+        // Remove existing listeners to prevent leaks when replacing clients
+        const events = ["SIGINT", "SIGTERM"];
+        events.forEach(eventName => {
+            process.removeAllListeners(eventName);
+            process.on(eventName, cleanup);
+        });
     }
     return _client;
 }
