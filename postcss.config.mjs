@@ -2,10 +2,10 @@ const config = {
   plugins: {
     "@tailwindcss/postcss": {},
     "postcss-preset-env": {
-      stage: 3,
+      stage: 1,
       features: {
         "nesting-rules": false,
-        "cascade-layers": false,
+        "cascade-layers": true,
         "media-query-ranges": false,
         "custom-properties": false,
         "color-mix": true,
