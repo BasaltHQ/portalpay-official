@@ -39,6 +39,10 @@ const nextConfig = {
       // Add wildcard pattern for all Azure Front Door endpoints
       arr.push({ protocol: "https", hostname: "*.azurefd.net", pathname: "/**" });
       arr.push({ protocol: "https", hostname: "*.blob.core.windows.net", pathname: "/**" });
+
+      // Allow OVHCloud Object Storage
+      arr.push({ protocol: "https", hostname: "*.cloud.ovh.us", pathname: "/**" });
+
       return arr;
     })(),
     dangerouslyAllowSVG: true,

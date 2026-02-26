@@ -34,6 +34,8 @@ function deriveBrandKeyFromHost(host: string): string | undefined {
 export async function GET(req: NextRequest) {
   // Blocked favicon URLs that should be replaced with fallback
   const BLOCKED_FAVICON_URLS = [
+    "https://basaltsurge.s3.us-west-or.io.cloud.ovh.us/uploads/a311dcf8-e6de-4eca-a39c-907b347dff11.png",
+    // Legacy AFD URL (keep for safety in case old data references it)
     "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/uploads/a311dcf8-e6de-4eca-a39c-907b347dff11.png",
   ];
   const BLOCKED_FAVICON_REPLACEMENT = "/Surge.png";

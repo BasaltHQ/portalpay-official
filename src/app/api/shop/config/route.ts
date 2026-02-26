@@ -466,10 +466,10 @@ export async function GET(req: NextRequest) {
                     siteConf = sc;
                   } catch { }
 
-                  // 2. Fallback: If no result, try legacy "site:config:portalpay" (old shared ID) and "site:config" (global)
-                  if (!siteConf && siteDocId !== "site:config:portalpay") {
+                  // 2. Fallback: If no result, try legacy "site:config:basaltsurge" (old shared ID) and "site:config" (global)
+                  if (!siteConf && siteDocId !== "site:config:basaltsurge") {
                     try {
-                      const { resource: sc } = await c.item("site:config:portalpay", foundWallet).read<any>();
+                      const { resource: sc } = await c.item("site:config:basaltsurge", foundWallet).read<any>();
                       siteConf = sc;
                     } catch { }
                   }

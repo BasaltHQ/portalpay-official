@@ -83,7 +83,7 @@ class MongoItemReference {
     ) { }
 
     async read<T = any>(): Promise<ItemResponse<T>> {
-        const filter: Document = { _id: this.id as any };
+        const filter: Document = { id: this.id };
         const doc = await this.collection.findOne(filter);
         if (!doc) {
             return { resource: undefined, statusCode: 404, requestCharge: 0 };
@@ -97,13 +97,13 @@ class MongoItemReference {
 
     async replace<T = any>(body: T): Promise<ItemResponse<T>> {
         const doc = cosmosDocToMongo(body as any);
-        const filter: Document = { _id: this.id as any };
+        const filter: Document = { id: this.id };
         await this.collection.replaceOne(filter, doc, { upsert: false });
         return { resource: body, statusCode: 200, requestCharge: 0 };
     }
 
     async delete(): Promise<ItemResponse<any>> {
-        const filter: Document = { _id: this.id as any };
+        const filter: Document = { id: this.id };
         await this.collection.deleteOne(filter);
         return { resource: undefined, statusCode: 204, requestCharge: 0 };
     }
@@ -136,7 +136,7 @@ class MongoItemReference {
         if (Object.keys(unsetOps).length) update.$unset = unsetOps;
         if (Object.keys(incOps).length) update.$inc = incOps;
 
-        const filter: Document = { _id: this.id as any };
+        const filter: Document = { id: this.id };
         const result = await this.collection.findOneAndUpdate(filter, update, {
             returnDocument: "after",
         });
@@ -153,9 +153,9 @@ class MongoItemReference {
 class MongoItemsReference {
     constructor(private collection: Collection<Document>) { }
 
-    async query<T = any>(
+    query<T = any>(
         querySpec: CosmosQuerySpec | string
-    ): Promise<{ fetchAll: () => Promise<FeedResponse<T>> }> {
+    ): { fetchAll: () => Promise<FeedResponse<T>> } {
         const spec =
             typeof querySpec === "string"
                 ? { query: querySpec, parameters: [] }
@@ -214,26 +214,29 @@ class MongoItemsReference {
                 };
             },
 
-            // Add fetchAll to mock Cosmos SDK
-            async fetchAll(): Promise<FeedResponse<T>> {
-                // Just reuse fetchNext since it natively does toArray() with the provided limits/skips
-                return this.fetchNext();
+            // Add fetchNext for compatibility
+            async fetchNext(): Promise<FeedResponse<T>> {
+                return (this as any).fetchAll();
             }
         };
     }
 
     async upsert<T = any>(body: T & { id?: string }): Promise<ItemResponse<T>> {
         const doc = cosmosDocToMongo(body as any);
-        const id = doc._id || new ObjectId().toHexString();
-        doc._id = id;
+        const id = body.id || (doc as any).id || (doc as any)._id;
 
+        if (!id) {
+            throw new Error("Upserted document must have an id");
+        }
+
+        // Use the business ID for upserting, keeping MongoDB's _id as internal
         await this.collection.updateOne(
-            { _id: id as any },
+            { id: id },
             { $set: doc },
             { upsert: true }
         );
         return {
-            resource: { ...body, id: id } as T,
+            resource: { ...body } as T,
             statusCode: 200,
             requestCharge: 0,
         };
@@ -241,13 +244,9 @@ class MongoItemsReference {
 
     async create<T = any>(body: T & { id?: string }): Promise<ItemResponse<T>> {
         const doc = cosmosDocToMongo(body as any);
-        if (!doc._id) {
-            doc._id = new ObjectId().toHexString();
-        }
-
         await this.collection.insertOne(doc as any);
         return {
-            resource: { ...body, id: doc._id } as T,
+            resource: { ...body } as T,
             statusCode: 201,
             requestCharge: 0,
         };
@@ -318,18 +317,18 @@ export async function getMongoContainer(
 // ── Document mapping helpers ────────────────────────────────────────────
 
 /**
- * Convert a Cosmos-style document (with `id`) to MongoDB (with `_id`).
+ * Convert a Cosmos-style document (with `id`) to MongoDB.
+ * Leaves `id` intact and allows MongoDB to use its own `_id`.
  */
 function cosmosDocToMongo(doc: Record<string, any>): Document {
-    const { id, ...rest } = doc;
-    return { _id: id ?? new ObjectId().toHexString(), ...rest };
+    return { ...doc };
 }
 
 /**
- * Convert a MongoDB document (with `_id`) back to Cosmos-style (with `id`).
- * Also strips MongoDB-internal fields.
+ * Convert a MongoDB document back to Cosmos-style.
+ * Strips the MongoDB-internal `_id` field.
  */
 function mongoDocToCosmos(doc: Document): Record<string, any> {
     const { _id, ...rest } = doc;
-    return { id: _id, ...rest };
+    return rest;
 }

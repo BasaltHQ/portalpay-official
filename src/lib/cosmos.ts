@@ -41,13 +41,28 @@ export async function getContainer(dbId = defaultDbId, containerId = defaultCont
   if (cache.container && cache.dbId === dbId && cache.containerId === containerId) return cache.container;
 
   // Accept multiple env var names to reduce deployment misconfig risk
-  const conn = process.env.COSMOS_CONNECTION_STRING
-    || process.env.MONGODB_CONNECTION_STRING
-    || process.env.DB_CONNECTION_STRING
-    || process.env.AZURE_COSMOS_CONNECTION_STRING
-    || process.env.AZURE_COSMOSDB_CONNECTION_STRING
-    || process.env.COSMOSDB_CONNECTION_STRING
-    || "";
+  let source = "none";
+  let conn = "";
+
+  if (process.env.COSMOS_CONNECTION_STRING) {
+    conn = process.env.COSMOS_CONNECTION_STRING;
+    source = "COSMOS_CONNECTION_STRING";
+  } else if (process.env.MONGODB_CONNECTION_STRING) {
+    conn = process.env.MONGODB_CONNECTION_STRING;
+    source = "MONGODB_CONNECTION_STRING";
+  } else if (process.env.DB_CONNECTION_STRING) {
+    conn = process.env.DB_CONNECTION_STRING;
+    source = "DB_CONNECTION_STRING";
+  } else if (process.env.AZURE_COSMOS_CONNECTION_STRING) {
+    conn = process.env.AZURE_COSMOS_CONNECTION_STRING;
+    source = "AZURE_COSMOS_CONNECTION_STRING";
+  } else if (process.env.AZURE_COSMOSDB_CONNECTION_STRING) {
+    conn = process.env.AZURE_COSMOSDB_CONNECTION_STRING;
+    source = "AZURE_COSMOSDB_CONNECTION_STRING";
+  } else if (process.env.COSMOSDB_CONNECTION_STRING) {
+    conn = process.env.COSMOSDB_CONNECTION_STRING;
+    source = "COSMOSDB_CONNECTION_STRING";
+  }
 
   if (!conn) {
     throw new Error(
@@ -58,7 +73,15 @@ export async function getContainer(dbId = defaultDbId, containerId = defaultCont
 
   // ── MongoDB path ──────────────────────────────────────────────────
   if (/^mongodb(\+srv)?:\/\//i.test(conn)) {
-    const adapter = await getMongoContainer(conn, dbId, containerId);
+    // If the caller asked for "payportal_events", but we configured "surge_events" via env, use the env var
+    let resolvedDbId = dbId;
+    let resolvedContainerId = containerId;
+
+    // Map hardcoded old defaults to the new env variables
+    if (dbId === "payportal") resolvedDbId = defaultDbId;
+    if (containerId === "payportal_events") resolvedContainerId = defaultContainerId;
+
+    const adapter = await getMongoContainer(conn, resolvedDbId, resolvedContainerId);
     // Cast to any so existing code that expects Cosmos Container type still compiles.
     // The adapter implements the same runtime interface.
     cache.container = adapter as any;
@@ -67,6 +90,8 @@ export async function getContainer(dbId = defaultDbId, containerId = defaultCont
     cache.isMongo = true;
     return cache.container;
   }
+
+  console.log(`[cosmos] Cosmos DB Path: connPrefix=${conn.substring(0, 20)}..., dbId=${dbId}, containerId=${containerId}`);
 
   // ── Cosmos DB path (existing behavior) ────────────────────────────
   // IMPORTANT: Always use the ORIGINAL Cosmos DB names, not the env-configured

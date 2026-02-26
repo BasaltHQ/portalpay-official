@@ -1549,7 +1549,7 @@ export async function POST(req: NextRequest) {
     try { brandKey = getBrandKey(); } catch { brandKey = undefined; }
     const normalizedBrand = String(brandKey || "portalpay").toLowerCase();
     // Use getDocIdForBrand() for consistent doc ID between save and load
-    // This ensures basaltsurge/portalpay uses "site:config:portalpay" and partners use "site:config:<brandKey>"
+    // This ensures basaltsurge/portalpay uses "site:config:basaltsurge" and partners use "site:config:<brandKey>"
     const docId = getDocIdForBrand(normalizedBrand);
 
     const doc = {

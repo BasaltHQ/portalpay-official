@@ -282,9 +282,9 @@ async function main() {
 function transformDocument(doc: Record<string, any>): Record<string, any> {
     let transformed = { ...doc };
 
-    // Map Cosmos `id` to MongoDB `_id`
-    transformed._id = transformed.id;
-    delete transformed.id;
+    // Keep Cosmos `id` as `id` instead of mapping to _id.
+    // MongoDB driver will assign a unique ObjectId `_id` to each document automatically.
+    // This allows duplicates on `id` if they have different partition keys.
 
     // Remove Cosmos-specific metadata
     delete transformed._rid;
