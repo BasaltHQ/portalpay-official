@@ -26,7 +26,8 @@ const DOC_ID = "shop:config";
 function getDocIdForBrand(brandKey?: string): string {
   try {
     const key = String(brandKey || "").toLowerCase();
-    if (!key || key === "portalpay") return DOC_ID;
+    if (!key || key === "basaltsurge") return "site:config:basaltsurge";
+    if (key === "portalpay") return DOC_ID;
     return `${DOC_ID}:${key}`;
   } catch {
     return DOC_ID;
@@ -770,7 +771,7 @@ export async function POST(req: NextRequest) {
       : DOC_ID;
 
     // Compute normalized brand key for the document
-    const normalizedBrand = String(brandKey || "portalpay").toLowerCase();
+    const normalizedBrand = String(brandKey || "basaltsurge").toLowerCase();
 
     const doc: ShopConfig = {
       id: docId,

@@ -147,7 +147,7 @@ export async function getEffectiveBrandKey(): Promise<string> {
     }
   }
 
-  return 'portalpay'; // Ultimate fallback
+  return 'basaltsurge'; // Ultimate fallback
 }
 
 /**

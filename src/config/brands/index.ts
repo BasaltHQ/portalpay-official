@@ -1,3 +1,5 @@
+import { NextRequest } from "next/server";
+
 export type BrandColors = {
   primary: string;
   accent?: string;
@@ -92,34 +94,52 @@ export const BRANDS: Record<string, BrandConfig> = {
   },
 };
 
-import { isPartnerContext, getSanitizedSplitBps } from "@/lib/env";
+import { isPlatformContext, isPartnerContext, getSanitizedSplitBps } from "@/lib/env";
 
 /**
  * Resolve the active brand key from environment or fallback.
  * BRAND_KEY is server-only; do not expose client-side env unless necessary.
+ * 
+ * In PLATFORM context, we ignore the global BRAND_KEY env var override if it matches
+ * the default (basaltsurge) to allow dynamic hostname-based resolution.
  */
-export function getBrandKey(): string {
-  // Respect public environment variable first (client-safe)
+export function getBrandKey(req?: NextRequest): string {
+  // 1. Explicit header (passed from API routes)
+  if (req) {
+    const header = req.headers.get("x-brand-key");
+    if (header) return header.toLowerCase().trim();
+
+    // 2. Hostname-based resolution on server
+    const host = (req.headers.get("x-forwarded-host") || req.headers.get("host") || "").toLowerCase();
+    if (host.includes("paynex")) return "paynex";
+    if (host.includes("basaltsurge") || host.includes("basalthq")) return "basaltsurge";
+  }
+
+  // 3. Respect public environment variable (client-safe)
   const pub = (process.env.NEXT_PUBLIC_BRAND_KEY || "").toLowerCase().trim();
-  if (pub) return pub;
 
+  // 4. Server-side environment variable
   const raw = (process.env.BRAND_KEY || "").toLowerCase().trim();
-  // Always honor the configured brand key; do not require a hardcoded entry
-  if (raw) return raw;
 
-  // Fallback for browser if envs are missing
+  // In platform context, if the BRAND_KEY is set to 'basaltsurge' (the default),
+  // we treat it as a weak fallback and prefer hostname resolution if available.
+  const isPlatform = isPlatformContext();
+  const envKey = pub || raw;
+
+  if (isPlatform && envKey === "basaltsurge") {
+    // Continue through fallbacks below
+  } else if (envKey) {
+    return envKey;
+  }
+
+  // 5. Fallback for browser
   if (typeof window !== "undefined") {
     const host = window.location.host || "";
-    if (host.includes("basaltsurge")) return "basaltsurge";
+    if (host.includes("paynex")) return "paynex";
+    if (host.includes("basaltsurge") || host.includes("basalthq")) return "basaltsurge";
   }
 
-  // In partner context, no implicit fallback — brand must be provided via env/config
-  // However, we do not throw here to allow RootLayout to render a fallback (so middleware can redirect to /brand-not-configured)
-  if (isPartnerContext()) {
-    return "basaltsurge";
-  }
-
-  // Platform or local dev may fallback to basaltsurge
+  // 6. Final fallback
   return "basaltsurge";
 }
 

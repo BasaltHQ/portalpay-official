@@ -39,7 +39,7 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
     const containerIdentity = getContainerIdentity(host);
     let brandKeyForFees = containerIdentity.brandKey;
     if (!brandKeyForFees) {
-      try { brandKeyForFees = getBrandKey(); } catch { brandKeyForFees = ""; }
+      try { brandKeyForFees = getBrandKey(req); } catch { brandKeyForFees = ""; }
     }
     // NOTE: basaltsurge is now its own platform brand, no longer aliased to portalpay
 
@@ -459,7 +459,7 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
   }
 }
 
-function normalizeSiteConfig(raw?: any) {
+function normalizeSiteConfig(raw?: any, targetWallet?: string) {
   const defaults = {
     story: "",
     storyHtml: "",
@@ -496,8 +496,8 @@ function normalizeSiteConfig(raw?: any) {
   };
 
   const config: any = {
-    id: DOC_ID,
-    wallet: DOC_ID,
+    id: (raw?.id && raw.id !== DOC_ID) ? raw.id : (targetWallet ? `site:config:${targetWallet}` : DOC_ID),
+    wallet: (raw?.wallet && raw.wallet !== DOC_ID) ? raw.wallet : (targetWallet || DOC_ID),
     type: "site_config",
     ...defaults,
   };
@@ -526,7 +526,7 @@ function normalizeSiteConfig(raw?: any) {
     // Generate splitConfig if missing - compute from recipients
     const recipientsForConfig = nestedSplit.recipients || nestedRecipients || [];
     if (!config.splitConfig && Array.isArray(recipientsForConfig) && recipientsForConfig.length > 0) {
-      const PLATFORM_WALLET = "0x00fe4f0104a989ca65df6b825a6c1682413bca56".toLowerCase();
+      const PLATFORM_WALLET = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.PLATFORM_WALLET || "0x00fe4f0104a989ca65df6b825a6c1682413bca56").toLowerCase();
       let merchantBps = 0;
       let platformBps = 0;
       let partnerBps = 0;
@@ -973,7 +973,7 @@ export async function GET(req: NextRequest) {
     try {
       const candidate = /^0x[a-f0-9]{40}$/.test(xRecipientHeader) ? xRecipientHeader : (refRecipient || "");
       if (portalRef && candidate) {
-        if (!wallet || wallet !== candidate) {
+        if (!wallet) {
           console.warn("[site/config][GET] overriding wallet due to portal ref context", {
             correlationId,
             queryWallet,
@@ -1116,7 +1116,7 @@ export async function GET(req: NextRequest) {
       // Try brand-scoped doc first when brand is configured; safely fallback to legacy.
       let brandKey: string | undefined = undefined;
       try {
-        brandKey = getBrandKey();
+        brandKey = getBrandKey(req);
       } catch {
         brandKey = undefined;
       }
@@ -1164,7 +1164,7 @@ export async function GET(req: NextRequest) {
 
         if (base) {
           const merged = mergeConfigs(base, shopConfig);
-          const cfg = normalizeSiteConfig(merged);
+          const cfg = normalizeSiteConfig(merged, wallet);
           // Apply Theme Overrides (Normalization + Color Injection)
           const final = applyThemeOverrides(cfg);
 
@@ -1193,7 +1193,7 @@ export async function GET(req: NextRequest) {
           const { resource: mapped } = await c.item(DOC_ID, ownerWallet).read<any>();
           if (mapped) {
             {
-              const cfg = normalizeSiteConfig(mapped);
+              const cfg = normalizeSiteConfig(mapped, ownerWallet);
               const payload = { config: await applyPartnerOverrides(req, cfg) };
               return jsonResponse(payload, {
                 headers: {
@@ -1220,7 +1220,7 @@ export async function GET(req: NextRequest) {
           const brand = getBrandConfig(brandKeyFromHost);
           const partnerWallet = String(brand.partnerWallet || "").toLowerCase();
           if (partnerWallet && wallet === partnerWallet) {
-            const cfg = normalizeSiteConfig();
+            const cfg = normalizeSiteConfig(undefined, partnerWallet);
             // Ensure the partner wallet is reflected in the response
             (cfg as any).partnerWallet = partnerWallet;
             const payload = { config: await applyPartnerOverrides(req, cfg) };
@@ -1243,12 +1243,12 @@ export async function GET(req: NextRequest) {
       // Get brand key directly (no HTTP call)
       const containerIdentity = getContainerIdentity(host);
       let brandKey = containerIdentity.brandKey;
-      if (!brandKey) { try { brandKey = getBrandKey(); } catch { brandKey = ""; } }
+      if (!brandKey) { try { brandKey = getBrandKey(req); } catch { brandKey = ""; } }
       // getDocIdForBrand handles basaltsurge as platform brand - no need to normalize here
       if (brandKey) {
         const { resource } = await c.item(getDocIdForBrand(brandKey), DOC_ID).read<any>();
         if (resource) {
-          const cfg = normalizeSiteConfig(resource);
+          const cfg = normalizeSiteConfig(resource, wallet);
           const payload = { config: await applyPartnerOverrides(req, cfg) };
           return jsonResponse(payload, {
             headers: {
@@ -1264,7 +1264,7 @@ export async function GET(req: NextRequest) {
     try {
       const { resource } = await c.item(DOC_ID, DOC_ID).read<any>();
       {
-        const cfg = normalizeSiteConfig(resource);
+        const cfg = normalizeSiteConfig(resource, wallet);
         const payload = { config: await applyPartnerOverrides(req, cfg) };
         return jsonResponse(payload, {
           headers: {
@@ -1276,7 +1276,7 @@ export async function GET(req: NextRequest) {
       }
     } catch {
       {
-        const cfg = normalizeSiteConfig();
+        const cfg = normalizeSiteConfig(undefined, wallet);
         const payload = { config: await applyPartnerOverrides(req, cfg) };
         return jsonResponse(payload, {
           headers: {
@@ -1289,7 +1289,7 @@ export async function GET(req: NextRequest) {
     }
   } catch (e: any) {
     {
-      const cfg = normalizeSiteConfig();
+      const cfg = normalizeSiteConfig(undefined, wallet);
       const payload = { config: await applyPartnerOverrides(req, cfg), degraded: true, reason: e?.message || "cosmos_unavailable" };
       return jsonResponse(payload, {
         headers: {
@@ -1386,7 +1386,7 @@ export async function POST(req: NextRequest) {
       const c = await getContainer();
       // Prefer brand-scoped doc when brand configured; fallback to legacy
       let brandKey: string | undefined = undefined;
-      try { brandKey = getBrandKey(); } catch { brandKey = undefined; }
+      try { brandKey = getBrandKey(req); } catch { brandKey = undefined; }
       if (brandKey) {
         try {
           const { resource } = await c.item(getDocIdForBrand(brandKey), wallet).read<any>();
@@ -1546,8 +1546,8 @@ export async function POST(req: NextRequest) {
 
     // Write brand-scoped doc in partner containers; use getDocIdForBrand() for consistency with GET.
     let brandKey: string | undefined = undefined;
-    try { brandKey = getBrandKey(); } catch { brandKey = undefined; }
-    const normalizedBrand = String(brandKey || "portalpay").toLowerCase();
+    try { brandKey = getBrandKey(req); } catch { brandKey = undefined; }
+    const normalizedBrand = String(brandKey || "basaltsurge").toLowerCase();
     // Use getDocIdForBrand() for consistent doc ID between save and load
     // This ensures basaltsurge/portalpay uses "site:config:basaltsurge" and partners use "site:config:<brandKey>"
     const docId = getDocIdForBrand(normalizedBrand);

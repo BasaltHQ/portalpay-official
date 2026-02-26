@@ -35,8 +35,16 @@ export default function SiteFooter() {
   const { theme } = useTheme();
   const brand = useBrand();
 
-  // Get navbarMode from brand context or theme
-  const navbarMode = (brand as any)?.logos?.navbarMode || theme.navbarMode;
+  // Get navbarMode from brand context or theme, respecting merchant overrides
+  const brandNavbarMode = (brand as any)?.logos?.navbarMode;
+  const navbarMode = (() => {
+    // Explicit theme mode takes highest precedence
+    if (theme.navbarMode === "logo" || theme.navbarMode === "symbol") return theme.navbarMode;
+    // Explicit brand mode takes second precedence
+    if (brandNavbarMode === "logo" || brandNavbarMode === "symbol") return brandNavbarMode;
+    // Fallback
+    return "symbol";
+  })();
 
   // Determine if this is a partner container based on the effective brand key and DOM
   const isPartner = React.useMemo(() => {

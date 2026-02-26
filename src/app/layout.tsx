@@ -60,6 +60,11 @@ const KNOWN_PARTNER_DOMAINS: Record<string, string> = {
 
 // Main platform hostnames that should NOT be treated as partner containers (without subdomains)
 const PLATFORM_HOSTNAMES = [
+  "basaltsurge.app",
+  "www.basaltsurge.app",
+  "basaltsurge.azurewebsites.net",
+  "portalpay.app",
+  "www.portalpay.app",
   "surge.basalthq.com",
 ];
 
@@ -77,7 +82,7 @@ function deriveBrandKeyFromHostname(host: string): { brandKey: string; container
   // Check if this is a main platform hostname (exact match or subdomain)
   for (const platformHost of PLATFORM_HOSTNAMES) {
     if (hostLower === platformHost || hostLower.endsWith(`.${platformHost}`)) {
-      const defaultBrand = platformHost === "surge.basalthq.com" ? "basaltsurge" : "portalpay";
+      const defaultBrand = "basaltsurge";
       const bk = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || defaultBrand).toLowerCase();
       return { brandKey: bk, containerType: "platform" };
     }
@@ -730,6 +735,45 @@ export default async function RootLayout({
                   e.stopImmediatePropagation && e.stopImmediatePropagation();
                   e.preventDefault && e.preventDefault();
                   return false;
+                }
+              } catch {}
+            }, true);
+          } catch {}
+        `}</Script>
+        <Script id="pp-suppress-extension-errors" strategy="beforeInteractive">{`
+          try {
+            window.addEventListener('error', function (e) {
+              try {
+                var msg = (e && e.message) ? String(e.message) : '';
+                var low = String(msg || '').toLowerCase();
+                var pats = [
+                  'a listener indicated an asynchronous response',
+                  'message channel closed before a response was received'
+                ];
+                for (var i=0;i<pats.length;i++){
+                  if (low.indexOf(pats[i]) !== -1) {
+                    e.stopImmediatePropagation && e.stopImmediatePropagation();
+                    e.preventDefault && e.preventDefault();
+                    return false;
+                  }
+                }
+              } catch {}
+            }, true);
+            window.addEventListener('unhandledrejection', function (e) {
+              try {
+                var reason = e && (e.reason || e.detail);
+                var msg = reason && (reason.message || (reason.toString && reason.toString())) || '';
+                var low = String(msg || '').toLowerCase();
+                var pats = [
+                  'a listener indicated an asynchronous response',
+                  'message channel closed before a response was received'
+                ];
+                for (var i=0;i<pats.length;i++){
+                  if (low.indexOf(pats[i]) !== -1) {
+                    e.stopImmediatePropagation && e.stopImmediatePropagation();
+                    e.preventDefault && e.preventDefault();
+                    return false;
+                  }
                 }
               } catch {}
             }, true);

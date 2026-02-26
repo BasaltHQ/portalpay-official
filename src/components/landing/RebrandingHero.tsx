@@ -273,7 +273,7 @@ export default function RebrandingHero({ brandName = "BasaltSurge", logoUrl = "/
                                 className="relative flex flex-col items-center"
                             >
                                 <div className="relative w-48 h-48 md:w-64 md:h-64">
-                                    <Image src="/ppsymbol.png" alt="PortalPay" fill className="object-contain" priority />
+                                    <Image src="/ppsymbol.png" alt="PortalPay" fill sizes="(max-width: 768px) 192px, 256px" className="object-contain" priority />
                                     <motion.div
                                         className="absolute inset-0 border-4 border-blue-500/50 rounded-full"
                                         animate={{ scale: [1, 1.3], opacity: [0.8, 0], borderWidth: ["4px", "1px"] }}
@@ -313,6 +313,7 @@ export default function RebrandingHero({ brandName = "BasaltSurge", logoUrl = "/
                                         src={logoUrl}
                                         alt={brandName}
                                         fill
+                                        sizes="(max-width: 768px) 256px, 320px"
                                         className="object-contain drop-shadow-[0_0_60px_rgba(34,197,94,0.8)]"
                                         priority
                                     />

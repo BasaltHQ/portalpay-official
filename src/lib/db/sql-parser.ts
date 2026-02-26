@@ -263,11 +263,35 @@ function parsePredicate(expr: string, params: Record<string, any>): Filter<Docum
         return { [cosmosFieldToMongo(notIsDef[1])]: { $exists: false } };
     }
 
-    // ARRAY_CONTAINS(@param, c.field)
-    const arrContains = /^ARRAY_CONTAINS\s*\(\s*@(\w+)\s*,\s*c\.(\w+)\s*\)/i.exec(e);
+    // ARRAY_CONTAINS(@param, c.field) OR ARRAY_CONTAINS(["a","b"], c.field) OR ARRAY_CONTAINS(c.field, @param)
+    const arrContains = /ARRAY_CONTAINS\s*\(\s*(.*?)\s*,\s*(.*?)\s*\)/i.exec(e);
     if (arrContains) {
-        const arr = resolveParam(arrContains[1], params);
-        return { [arrContains[2]]: { $in: Array.isArray(arr) ? arr : [arr] } };
+        let first = arrContains[1].trim();
+        let second = arrContains[2].trim();
+        let arr: any[] = [];
+        let field = "";
+
+        // Resolve which one is the array and which one is the field
+        if (first.startsWith("c.")) {
+            field = cosmosFieldToMongo(first.slice(2));
+            arr = resolveRhs(second, params);
+        } else if (second.startsWith("c.")) {
+            field = cosmosFieldToMongo(second.slice(2));
+            arr = resolveRhs(first, params);
+        }
+
+        if (field) {
+            // Handle literal array strings like ["a", "b"]
+            if (typeof arr === "string" && arr.startsWith("[") && arr.endsWith("]")) {
+                try {
+                    // Primitive JSON parse for simple string/number arrays
+                    arr = JSON.parse(arr.replace(/'/g, '"'));
+                } catch {
+                    arr = [arr];
+                }
+            }
+            return { [field]: { $in: Array.isArray(arr) ? arr : [arr] } };
+        }
     }
 
     // StringEquals(c.field, @param, true)  → case-insensitive
@@ -300,8 +324,9 @@ function parsePredicate(expr: string, params: Record<string, any>): Filter<Docum
         const vals = inMatch[2].split(",").map((v) => {
             const trimmed = v.trim();
             if (trimmed.startsWith("'") && trimmed.endsWith("'")) return trimmed.slice(1, -1);
+            if (trimmed.startsWith('"') && trimmed.endsWith('"')) return trimmed.slice(1, -1);
             if (trimmed.startsWith("@")) return resolveParam(trimmed, params);
-            return isNaN(Number(trimmed)) ? trimmed : Number(trimmed);
+            return isNaN(Number(trimmed)) || trimmed === "" ? trimmed : Number(trimmed);
         });
         return { [field]: { $in: vals } };
     }

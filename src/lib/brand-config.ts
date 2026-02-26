@@ -17,9 +17,12 @@ const KNOWN_PARTNER_PATTERNS: Record<string, string> = {
 
 // Main platform hostnames that should NOT be treated as partner containers (without subdomains)
 const PLATFORM_HOSTNAMES = [
+  "basaltsurge.app",
+  "www.basaltsurge.app",
+  "basaltsurge.azurewebsites.net",
   "portalpay.app",
   "www.portalpay.app",
-  "portalpay.azurewebsites.net",
+  "surge.basalthq.com",
 ];
 
 export type ContainerIdentity = {
@@ -72,7 +75,8 @@ export function deriveContainerIdentityFromHostname(host: string): ContainerIden
   // Check if this is a main platform hostname (exact match or subdomain)
   for (const platformHost of PLATFORM_HOSTNAMES) {
     if (hostLower === platformHost || hostLower.endsWith(`.${platformHost}`)) {
-      return { brandKey: "portalpay", containerType: "platform" };
+      // Default to basaltsurge for platform hostnames
+      return { brandKey: "basaltsurge", containerType: "platform" };
     }
   }
 
@@ -150,9 +154,9 @@ export function getContainerIdentity(host?: string): ContainerIdentity {
     containerType = "platform";
   }
 
-  // Default brandKey to environment variable or portalpay if still empty
+  // Default brandKey to environment variable or basaltsurge if still empty
   if (!brandKey) {
-    brandKey = String(process.env.NEXT_PUBLIC_BRAND_KEY || process.env.BRAND_KEY || "portalpay").toLowerCase();
+    brandKey = String(process.env.NEXT_PUBLIC_BRAND_KEY || process.env.BRAND_KEY || "basaltsurge").toLowerCase();
   }
 
   return {
@@ -277,6 +281,7 @@ export function toEffectiveBrand(brandKey: string, overrides?: Partial<BrandConf
     merged.logos.og = "/BasaltSurgeD.png";
     merged.logos.twitter = "/BasaltSurgeD.png";
     (merged.logos as any).navbarMode = "logo";
+    merged.name = "BasaltSurge";
   }
 
   return merged;

@@ -29,7 +29,8 @@ function getDocId(brandKey?: string): string {
   // Legacy splits (no brand) use base doc ID
   // Platform brands (portalpay, basaltsurge) also use base doc ID for backwards compatibility
   const key = String(brandKey || "").toLowerCase();
-  if (!key || key === "portalpay" || key === "basaltsurge") return "site:config";
+  if (!key || key === "basaltsurge") return "site:config:basaltsurge";
+  if (key === "portalpay") return "site:config";
   // Brand-scoped splits use prefixed doc ID
   return `site:config:${brandKey}`;
 }
@@ -152,7 +153,7 @@ export async function GET(req: NextRequest) {
             try { bKey = getBrandKey(); } catch { bKey = undefined; }
           }
           // Default unauthenticated basaltsurge requests to portalpay synthesis if applicable
-          if (bKey === "basaltsurge") bKey = "portalpay";
+          // if (bKey === "basaltsurge") bKey = "portalpay";
 
           const origin = resolveOrigin(req);
           let brand: any = {};
@@ -230,8 +231,8 @@ export async function GET(req: NextRequest) {
     // Preserve original brandKey for response (basaltsurge should stay as basaltsurge in UI)
     const originalBrandKey = brandKey;
     // For document lookups, normalize basaltsurge to portalpay (they share the same Cosmos DB documents)
-    const docBrandKey = (brandKey && String(brandKey).toLowerCase() === "basaltsurge") ? "portalpay" : brandKey;
-    const resolvedBrand = docBrandKey || "portalpay";
+    const docBrandKey = brandKey;
+    const resolvedBrand = docBrandKey || "basaltsurge";
 
     const c = await getContainer();
 
@@ -244,7 +245,7 @@ export async function GET(req: NextRequest) {
       // If no valid split address found via standard lookup, and the brand is platform (portalpay/basaltsurge),
       // attempt to fetch the global platform default configuration explicitly.
       // This is necessary because getSiteConfigForWallet's merge logic might be bypassed or fail in some contexts.
-      const targetBrand = String(originalBrandKey || (cfg as any)?.brandKey || "portalpay").toLowerCase();
+      const targetBrand = String(originalBrandKey || (cfg as any)?.brandKey || "basaltsurge").toLowerCase();
       if ((!splitAddr || !/^0x[a-f0-9]{40}$/i.test(splitAddr)) && (targetBrand === "portalpay" || targetBrand === "basaltsurge")) {
         try {
           const { resource: globalRes } = await c.item("site:config", "site:config").read<any>();

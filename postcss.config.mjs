@@ -4,8 +4,8 @@ const config = {
     "postcss-preset-env": {
       stage: 1,
       features: {
-        "nesting-rules": false,
-        "cascade-layers": false,
+        "nesting-rules": true,
+        "cascade-layers": true,
         "media-query-ranges": false,
         "custom-properties": false,
         "color-mix": true,

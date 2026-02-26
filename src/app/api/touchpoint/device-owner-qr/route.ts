@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
         if (!apkUrl) {
             // Construct URL from Azure Blob Storage
             const conn = String(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_BLOB_CONNECTION_STRING || "").trim();
-            const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
+            const container = String(process.env.PP_APK_CONTAINER || "basaltsurge").trim();
             const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
 
             if (conn && container) {

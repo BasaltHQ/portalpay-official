@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
         // Get APK from Storage
         const { storage } = await import("@/lib/azure-storage");
-        const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
+        const container = String(process.env.PP_APK_CONTAINER || "basaltsurge").trim();
         const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
 
         const makePath = (name: string) => prefix ? `${container}/${prefix}/${name}` : `${container}/${name}`;

@@ -1,6 +1,7 @@
 import { getContainer } from "@/lib/cosmos";
 import { getBrandKey } from "@/config/brands";
 import { isPartnerContext } from "@/lib/env";
+import { NextRequest } from "next/server";
 
 const DOC_ID = "site:config";
 
@@ -61,8 +62,12 @@ function defaultTheme(): SiteTheme {
   };
 }
 
-function normalize(raw?: any): SiteConfig {
+function normalize(raw?: any, targetWallet?: string): SiteConfig {
+  console.log("[site-config] normalize", { rawWallet: raw?.wallet, targetWallet });
   const base: any = {
+    id: (raw?.id && raw.id !== DOC_ID) ? raw.id : (targetWallet ? `site:config:${targetWallet}` : DOC_ID),
+    wallet: (raw?.wallet && raw.wallet !== DOC_ID) ? raw.wallet : (targetWallet || DOC_ID),
+    type: "site_config",
     story: "",
     storyHtml: "",
     // PortalPay: DeFi removed; default to disabled
@@ -158,7 +163,7 @@ export async function getSiteConfig(): Promise<SiteConfig> {
   }
 }
 
-export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?: string): Promise<SiteConfig> {
+export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?: string, req?: NextRequest): Promise<SiteConfig> {
   try {
     const c = await getContainer();
 
@@ -166,7 +171,7 @@ export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?:
     // Use override if provided, otherwise env
     let brandKey: string | undefined = undefined;
     try {
-      const bRaw = brandKeyOverride || getBrandKey();
+      const bRaw = brandKeyOverride || getBrandKey(req);
       brandKey = bRaw;
       // Explicitly alias basaltsurge: NO MORE -> BasaltSurge is now its own brand document
       // if (brandKey && String(brandKey).toLowerCase() === "basaltsurge") {
@@ -186,7 +191,7 @@ export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?:
           console.log("[site-config] step1 try", { docId, wallet, brandKey });
           const { resource } = await c.item(docId, wallet).read<any>();
           if (resource) {
-            const n = normalize(resource);
+            const n = normalize(resource, wallet);
             const hasSplit = n.splitAddress || n.split?.address;
             console.log("[site-config] step1 found", {
               id: resource.id,
@@ -196,7 +201,7 @@ export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?:
               hasSplitConfig: !!resource.splitConfig
             });
             const normalizedBrand = (brandKey || "").toLowerCase();
-            const isPlatform = normalizedBrand === "portalpay" || normalizedBrand === "basaltsurge";
+            const isPlatform = normalizedBrand === "basaltsurge" || normalizedBrand === "portalpay";
             // Allow returning brand-scoped doc even for platform brands as we migrate to per-brand docs
             if (hasSplit || n.industryParams || !isPlatform) return n;
             // platform brand without split in brand-scoped doc: continue to legacy/global search
@@ -208,11 +213,11 @@ export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?:
       // 2) Fallback to legacy per-wallet doc ("site:config" partitioned by wallet)
       // IMPORTANT: Partner containers should NOT fall back to legacy docs to prevent cross-tenant data leakage
       const partnerCtx = isPartnerContext();
-      if (!partnerCtx || !brandKey || String(brandKey).toLowerCase() === "portalpay" || String(brandKey).toLowerCase() === "basaltsurge") {
+      if (!partnerCtx || !brandKey || String(brandKey).toLowerCase() === "basaltsurge" || String(brandKey).toLowerCase() === "portalpay") {
         try {
           const { resource } = await c.item(DOC_ID, wallet).read<any>();
           if (resource) {
-            const normalizedLegacy = normalize(resource);
+            const normalizedLegacy = normalize(resource, wallet);
             const hasSplitLegacy =
               /^0x[a-fA-F0-9]{40}$/.test(String((normalizedLegacy as any)?.splitAddress || "")) ||
               /^0x[a-fA-F0-9]{40}$/.test(String((normalizedLegacy as any)?.split?.address || ""));
@@ -222,11 +227,11 @@ export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?:
             }
             // Legacy doc exists but no split bound — inherit from global if platform brand
             const normalizedBrand = (brandKey || "").toLowerCase();
-            if (normalizedBrand === "portalpay" || normalizedBrand === "basaltsurge") {
+            if (normalizedBrand === "basaltsurge" || normalizedBrand === "portalpay") {
               try {
                 const { resource: globalRes } = await c.item(DOC_ID, DOC_ID).read<any>();
                 if (globalRes) {
-                  const g = normalize(globalRes);
+                  const g = normalize(globalRes, wallet);
                   if (g.splitAddress || g.split?.address) {
                     normalizedLegacy.splitAddress = g.splitAddress || g.split?.address;
                     normalizedLegacy.split = g.split;
@@ -248,7 +253,7 @@ export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?:
               const row2 = Array.isArray(rows2) && rows2[0] ? rows2[0] : null;
               if (row2) {
                 // console.log("[site-config] step2 query found", { id: row2.id, splitAddr: row2.splitAddress });
-                return normalize(row2);
+                return normalize(row2, wallet);
               }
             } catch { }
             // No alternative with split found; return the legacy-normalized config.
@@ -282,19 +287,19 @@ export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?:
           const bTime = b.updatedAt || (b._ts ? b._ts * 1000 : 0);
           return bTime - aTime;
         });
-        return normalize(resources[0]);
+        return normalize(resources[0], wallet);
       }
     } catch { }
 
     // 3) Global singleton fallback ("site:config" partitioned by "site:config")
     try {
       const { resource } = await c.item(DOC_ID, DOC_ID).read<any>();
-      return normalize(resource);
+      return normalize(resource, wallet);
     } catch {
-      return normalize();
+      return normalize(undefined, wallet);
     }
   } catch {
-    return normalize();
+    return normalize(undefined, wallet);
   }
 }
 

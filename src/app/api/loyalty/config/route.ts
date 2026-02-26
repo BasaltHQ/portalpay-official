@@ -6,14 +6,14 @@ import { isPlatformContext } from "@/lib/env";
 /**
  * Resolve the brand key for loyalty config.
  */
-function resolveBrandKey(): string {
+function resolveBrandKey(req?: NextRequest): string {
     if (isPlatformContext()) {
-        return "portalpay";
+        return "basaltsurge";
     }
     try {
-        return getBrandKey() || "portalpay";
+        return getBrandKey(req) || "basaltsurge";
     } catch {
-        return "portalpay";
+        return "basaltsurge";
     }
 }
 
@@ -24,7 +24,7 @@ const PLATFORM_DEFAULTS_WALLET = "platform_loyalty_defaults";
 // Reuse logic from shop/config
 const getShopDocId = (brandKey: string) => {
     const key = String(brandKey || "").toLowerCase();
-    if (!key || key === "portalpay") return "shop:config";
+    if (!key || key === "basaltsurge" || key === "portalpay") return "shop:config";
     return `shop:config:${key}`;
 };
 
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const type = searchParams.get("type"); // 'platform' or 'merchant'
         const wallet = searchParams.get("wallet");
-        const brandKey = resolveBrandKey();
+        const brandKey = resolveBrandKey(req);
 
         const container = await getContainer();
 

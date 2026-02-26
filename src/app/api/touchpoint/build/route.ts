@@ -446,7 +446,7 @@ async function uploadTouchpointApk(brandKey: string, apkBytes: Uint8Array): Prom
 }> {
     try {
         const { storage } = await import("@/lib/azure-storage");
-        const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
+        const container = String(process.env.PP_APK_CONTAINER || "basaltsurge").trim();
         const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
 
         const blobName = prefix ? `${prefix}/${brandKey}-touchpoint-signed.apk` : `${brandKey}-touchpoint-signed.apk`;

@@ -188,7 +188,7 @@ export default function ProductsPage() {
       }
       const data = await res.json();
       const all = Array.isArray(data?.products) ? data.products : [];
-      const key = String(brand?.key || "portalpay").toLowerCase();
+      const key = String(brand?.key || "basaltsurge").toLowerCase();
 
       // Filter:
       // - In partner context: prefer brand-suffixed PortalPay product IDs (portalpay-<tier>-<brandKey>)
@@ -202,7 +202,7 @@ export default function ProductsPage() {
         const isPortalTierSuffixed = /^portalpay\-(starter|pro|enterprise)\-[a-z0-9\-]+$/.test(pid);
         const isBrandSuffixed = pid.endsWith(suffix);
 
-        if (key === "portalpay") {
+        if (key === "basaltsurge" || key === "portalpay") {
           // Show only base platform products (no brand suffix)
           return isPortalTierBase;
         }
@@ -211,7 +211,7 @@ export default function ProductsPage() {
       });
 
       // Fallback for partner: if nothing matched, show base platform tiers to avoid empty UI
-      if (filtered.length === 0 && key !== "portalpay") {
+      if (filtered.length === 0 && key !== "basaltsurge" && key !== "portalpay") {
         filtered = all.filter((p: any) =>
           /^portalpay\-(starter|pro|enterprise)$/.test(String(p?.id || "").toLowerCase())
         );
@@ -601,7 +601,7 @@ export default function ProductsPage() {
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center">
               <Image
-                src={resolveBrandAppLogo(brand?.logos?.app, brand?.key || "portalpay")}
+                src={resolveBrandAppLogo(brand?.logos?.app, brand?.key || "basaltsurge")}
                 alt={brand?.name || "Brand"}
                 width={160}
                 height={40}

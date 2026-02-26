@@ -228,12 +228,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           // to avoid leaking platform (PortalPay) branding into merchant context.
           // EXCEPTION: In BasaltSurge context, skip default platform logos (cblogod.png, ppsymbol.png etc.)
           // to preserve the correct BasaltSurge branding.
-          const shopLogoToUse = resolveBrandAppLogo(shopTheme.brandLogoUrl || mergedTheme.brandLogoUrl, brandKey);
+          const hasShopLogo = Boolean((shopTheme.brandLogoUrl || '').trim() || (shopTheme.symbolLogoUrl || '').trim());
+          const shopLogoToUse = resolveBrandAppLogo(shopTheme.brandLogoUrl || (hasShopLogo ? '' : mergedTheme.brandLogoUrl), brandKey);
+          const shopSymbolToUse = sanitizeFaviconUrl(shopTheme.symbolLogoUrl || shopTheme.brandFaviconUrl || shopLogoToUse || (hasShopLogo ? '' : mergedTheme.symbolLogoUrl));
 
           console.log('[ThemeContext DEBUG] shopTheme colors:', {
             primary: shopTheme.primaryColor,
             secondary: shopTheme.secondaryColor,
             name: shopTheme.brandName || shopTheme.name,
+            hasShopLogo
           });
 
           mergedTheme = {
@@ -242,7 +245,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             secondaryColor: shopTheme.secondaryColor || mergedTheme.secondaryColor || defaultTheme.secondaryColor,
             brandLogoUrl: shopLogoToUse,
             brandFaviconUrl: sanitizeFaviconUrl(shopTheme.brandFaviconUrl || shopTheme.symbolLogoUrl || shopTheme.brandLogoUrl || mergedTheme.brandFaviconUrl || ''),
-            symbolLogoUrl: sanitizeFaviconUrl(shopTheme.symbolLogoUrl || shopTheme.brandFaviconUrl || shopLogoToUse),
+            symbolLogoUrl: shopSymbolToUse,
             navbarMode: (/(basalt|portal\s*pay)/i.test(String(shopTheme.brandName || shopTheme.name || shopTheme.partName || ''))) ? 'logo' : (shopTheme.navbarMode || 'symbol'),
             brandName: shopTheme.brandName || shopTheme.name || shopTheme.partName || mergedTheme.brandName || brand.name || '',
             textColor: shopTheme.textColor || mergedTheme.textColor || defaultTheme.textColor,

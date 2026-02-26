@@ -7,7 +7,7 @@ import crypto from "node:crypto";
 
 // Document ID pattern: seo:pages:<brandKey>
 function getDocId(brandKey: string): string {
-  const key = String(brandKey || "portalpay").toLowerCase();
+  const key = String(brandKey || "basaltsurge").toLowerCase();
   return `seo:pages:${key}`;
 }
 
@@ -72,23 +72,23 @@ function normalizeSEOPagesSettings(raw?: any): SEOPagesSettings {
 
 export async function GET(req: NextRequest) {
   const correlationId = crypto.randomUUID();
-  
+
   try {
     // Determine brand key from container or env
     const host = req.headers.get("host") || "";
     const containerIdentity = getContainerIdentity(host);
     let brandKey = containerIdentity.brandKey;
     if (!brandKey) {
-      try { brandKey = getBrandKey(); } catch { brandKey = "portalpay"; }
+      try { brandKey = getBrandKey(req); } catch { brandKey = "basaltsurge"; }
     }
-    brandKey = String(brandKey || "portalpay").toLowerCase();
+    brandKey = String(brandKey || "basaltsurge").toLowerCase();
 
     const docId = getDocId(brandKey);
-    
+
     try {
       const c = await getContainer();
       const { resource } = await c.item(docId, docId).read<any>();
-      
+
       if (resource) {
         const settings = normalizeSEOPagesSettings(resource);
         return NextResponse.json({
@@ -148,7 +148,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const correlationId = crypto.randomUUID();
-  
+
   try {
     // Require authentication
     let caller: any;
@@ -196,9 +196,9 @@ export async function POST(req: NextRequest) {
     const containerIdentity = getContainerIdentity(host);
     let brandKey = containerIdentity.brandKey;
     if (!brandKey) {
-      try { brandKey = getBrandKey(); } catch { brandKey = "portalpay"; }
+      try { brandKey = getBrandKey(req); } catch { brandKey = "basaltsurge"; }
     }
-    brandKey = String(brandKey || "portalpay").toLowerCase();
+    brandKey = String(brandKey || "basaltsurge").toLowerCase();
 
     const docId = getDocId(brandKey);
     const settings = normalizeSEOPagesSettings(body);

@@ -129,7 +129,7 @@ export default function GlobalSplitGuard() {
   const platformRecipient = (process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
   const platformValid = isValidHex(platformRecipient);
 
-  let brandKey = String((brand as any)?.key || "portalpay").toLowerCase();
+  let brandKey = String((brand as any)?.key || "basaltsurge").toLowerCase();
   const partnerContext = brandKey !== "portalpay" && brandKey !== "basaltsurge";
 
   // NEW: Check if Private Partner functionality dictates suppression

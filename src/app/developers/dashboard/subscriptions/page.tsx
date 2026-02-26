@@ -77,7 +77,7 @@ export default function SubscriptionsPage() {
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center">
               <Image
-                src={resolveBrandAppLogo(brand?.logos?.app, brand?.key || "portalpay")}
+                src={resolveBrandAppLogo(brand?.logos?.app, brand?.key || "basaltsurge")}
                 alt={brand?.name || "PortalPay"}
                 width={160}
                 height={40}

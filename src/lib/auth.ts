@@ -7,62 +7,55 @@ import { serverClient as client, chain } from "@/lib/thirdweb/server";
 const AUTH_COOKIE = "cb_auth_token";
 
 function getDomainFromRequest(req?: NextRequest): string {
-  try {
-    // First, get the actual request host (important for partner containers)
-    const forwarded = req?.headers?.get("x-forwarded-host");
-    let requestHost = forwarded || req?.headers?.get("host") || "";
-    
-    // Normalize localhost variations
-    if (requestHost) {
-      requestHost = requestHost.replace(/^127\.0\.0\.1/, "localhost");
-    }
+	try {
+		// First, get the actual request host (important for partner containers)
+		const forwarded = req?.headers?.get("x-forwarded-host");
+		let requestHost = forwarded || req?.headers?.get("host") || "";
 
-    // For partner containers (Azure Web Apps, Azure Front Door), ALWAYS use the request host
-    // This ensures JWTs are issued and verified with the correct domain for each container
-    // Without this, partner containers would issue JWTs with NEXT_PUBLIC_APP_URL domain
-    // but verify requests coming from their actual domain, causing auth failures
-    if (requestHost && (
-      requestHost.endsWith('.azurewebsites.net') || 
-      requestHost.endsWith('.azurefd.net') ||
-      requestHost.endsWith('.azure.com')
-    )) {
-      return requestHost;
-    }
+		// Normalize localhost variations
+		if (requestHost) {
+			requestHost = requestHost.replace(/^127\.0\.0\.1/, "localhost");
+		}
 
-    // For the main platform and custom domains, prefer configured NEXT_PUBLIC_APP_URL
-    // to ensure consistent JWT issuance/verification across subdomains
-    const envUrl = process.env.NEXT_PUBLIC_APP_URL || "";
-    if (envUrl) {
-      try {
-        const u = new URL(envUrl);
-        let envHost = (u.host || "").replace(/^127\.0\.0\.1/, "localhost");
-        if (envHost) return envHost;
-      } catch {}
-    }
+		// For custom domains and partner containers, ALWAYS use the request host if available.
+		// This ensure JWTs are issued/verified with the correct domain for EACH brand site.
+		// Previously restricted to .azurewebsites.net or .azurefd.net, now widened for Plesk/VPS migration.
+		if (requestHost && !/^localhost(:\d+)?$/.test(requestHost) && !/^[\d.]+(:?\d+)?$/.test(requestHost)) {
+			return requestHost;
+		}
 
-    // Fallback: use the request host
-    if (requestHost) {
-      if (/^localhost(:\d+)?$/.test(requestHost)) return requestHost;
-      if (!/localhost|127\.0\.0\.1/.test(requestHost)) return requestHost;
-    }
+		// Fallback: for the main platform's canonical URL or local development
+		const envUrl = process.env.NEXT_PUBLIC_APP_URL || "";
+		if (envUrl) {
+			try {
+				const u = new URL(envUrl);
+				let envHost = (u.host || "").replace(/^127\.0\.0\.1/, "localhost");
+				if (envHost) return envHost;
+			} catch { }
+		}
 
-    return requestHost || "localhost:3000";
-  } catch {
-    return "localhost:3000";
-  }
+		// Extreme fallback: use the request host as is
+		if (requestHost) {
+			return requestHost;
+		}
+
+		return requestHost || "localhost:3000";
+	} catch {
+		return "localhost:3000";
+	}
 }
 
 function getAdminAccount() {
 	const pk = process.env.THIRDWEB_ADMIN_PRIVATE_KEY || process.env.ADMIN_PRIVATE_KEY || "";
 	if (!pk) throw new Error("THIRDWEB_ADMIN_PRIVATE_KEY not set");
 	const normalized = pk.startsWith("0x") ? pk : ("0x" + pk);
-    return privateKeyToAccount({ client, privateKey: normalized as `0x${string}` });
+	return privateKeyToAccount({ client, privateKey: normalized as `0x${string}` });
 }
 
 export function getAuth(req?: NextRequest) {
 	const auth = createAuth({
 		domain: getDomainFromRequest(req),
-        client,
+		client,
 		adminAccount: getAdminAccount(),
 		login: {
 			statement: "By signing, you agree to use this Web3-native, permissionless payment service. You acknowledge: (1) All transactions are trustless and executed via smart contracts without intermediaries; (2) You maintain full custody and responsibility for your wallet and private keys; (3) Cryptocurrency transactions are irreversible and final; (4) You are at least 18 years old and comply with all applicable laws; (5) This signature authenticates your wallet, costs no gas, and initiates no blockchain transaction; (6) You accept all risks associated with cryptocurrency transactions including price volatility and network fees.",
@@ -80,56 +73,56 @@ export async function getAuthenticatedWallet(req?: NextRequest): Promise<string 
 		const cookieStore = await cookies();
 		const token = cookieStore.get(AUTH_COOKIE)?.value;
 		if (!token) return null;
-        
-        // Try Thirdweb JWT verification first
-        try {
-            const auth = getAuth(req);
-            const res = await auth.verifyJWT({ jwt: token });
-            if (res.valid) {
-                // Expect address in payload.address per our login route. Fall back to sub/address.
-                let candidate: string | undefined = undefined;
-                const p: any = (res as any).parsedJWT || {};
-                candidate = p?.payload?.address || p?.sub || p?.address || p?.payload?.sub;
-                if (candidate && /^0x[a-fA-F0-9]{40}$/.test(candidate)) {
-                    return candidate.toLowerCase();
-                }
-            }
-        } catch {
-            // Thirdweb verification failed, try custom auto-login JWT
-        }
 
-        // Fallback: Verify custom auto-login JWT for embedded wallets
-        if (typeof token === "string" && token.split(".").length === 3) {
-            try {
-                const parts = token.split(".");
-                const payload = JSON.parse(Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
-                
-                // Check if it's our auto-login token
-                if (payload?.iss === "portalpay") {
-                    // Verify signature
-                    const { createHash, createHmac } = await import("crypto");
-                    const secret = process.env.THIRDWEB_ADMIN_PRIVATE_KEY || process.env.JWT_SECRET || "";
-                    const secretHash = createHash('sha256').update(secret).digest();
-                    
-                    const expectedSignature = createHmac('sha256', secretHash)
-                        .update(`${parts[0]}.${parts[1]}`)
-                        .digest('base64url');
-                    
-                    if (expectedSignature === parts[2]) {
-                        // Check expiration
-                        const now = Math.floor(Date.now() / 1000);
-                        if (payload.exp && payload.exp > now) {
-                            const address = payload?.address || payload?.sub || payload?.payload?.address;
-                            if (address && /^0x[a-fA-F0-9]{40}$/.test(address)) {
-                                return address.toLowerCase();
-                            }
-                        }
-                    }
-                }
-            } catch {}
-        }
+		// Try Thirdweb JWT verification first
+		try {
+			const auth = getAuth(req);
+			const res = await auth.verifyJWT({ jwt: token });
+			if (res.valid) {
+				// Expect address in payload.address per our login route. Fall back to sub/address.
+				let candidate: string | undefined = undefined;
+				const p: any = (res as any).parsedJWT || {};
+				candidate = p?.payload?.address || p?.sub || p?.address || p?.payload?.sub;
+				if (candidate && /^0x[a-fA-F0-9]{40}$/.test(candidate)) {
+					return candidate.toLowerCase();
+				}
+			}
+		} catch {
+			// Thirdweb verification failed, try custom auto-login JWT
+		}
 
-        return null;
+		// Fallback: Verify custom auto-login JWT for embedded wallets
+		if (typeof token === "string" && token.split(".").length === 3) {
+			try {
+				const parts = token.split(".");
+				const payload = JSON.parse(Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+
+				// Check if it's our auto-login token
+				if (payload?.iss === "portalpay") {
+					// Verify signature
+					const { createHash, createHmac } = await import("crypto");
+					const secret = process.env.THIRDWEB_ADMIN_PRIVATE_KEY || process.env.JWT_SECRET || "";
+					const secretHash = createHash('sha256').update(secret).digest();
+
+					const expectedSignature = createHmac('sha256', secretHash)
+						.update(`${parts[0]}.${parts[1]}`)
+						.digest('base64url');
+
+					if (expectedSignature === parts[2]) {
+						// Check expiration
+						const now = Math.floor(Date.now() / 1000);
+						if (payload.exp && payload.exp > now) {
+							const address = payload?.address || payload?.sub || payload?.payload?.address;
+							if (address && /^0x[a-fA-F0-9]{40}$/.test(address)) {
+								return address.toLowerCase();
+							}
+						}
+					}
+				}
+			} catch { }
+		}
+
+		return null;
 	} catch {
 		return null;
 	}
@@ -152,7 +145,7 @@ export function setAuthCookie(resp: Response, jwt: string) {
 		// Prefer NextResponse cookies in route handlers, but fall back if not available
 		// This helper is kept minimal: callers should use NextResponse.cookies.set where possible
 		// Left as placeholder for future shared logic.
-	} catch {}
+	} catch { }
 }
 
 function getAdminWallets(): string[] {
@@ -180,7 +173,7 @@ export async function requireThirdwebAuth(req?: NextRequest): Promise<{ wallet: 
 			const p: any = (res as any).parsedJWT || {};
 			const address = (p?.payload?.address || p?.sub || p?.address || p?.payload?.sub) as string | undefined;
 			const wallet = String(address || "").toLowerCase();
-			
+
 			if (/^0x[a-f0-9]{40}$/.test(wallet)) {
 				const roles = Array.isArray(p?.payload?.roles)
 					? p.payload.roles.map((r: any) => String(r)).filter(Boolean)
@@ -201,18 +194,18 @@ export async function requireThirdwebAuth(req?: NextRequest): Promise<{ wallet: 
 		try {
 			const parts = token.split(".");
 			const payload = JSON.parse(Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
-			
+
 			// Check if it's our auto-login token
 			if (payload?.iss === "portalpay") {
 				// Verify signature
 				const { createHash, createHmac } = await import("crypto");
 				const secret = process.env.THIRDWEB_ADMIN_PRIVATE_KEY || process.env.JWT_SECRET || "";
 				const secretHash = createHash('sha256').update(secret).digest();
-				
+
 				const expectedSignature = createHmac('sha256', secretHash)
 					.update(`${parts[0]}.${parts[1]}`)
 					.digest('base64url');
-				
+
 				if (expectedSignature === parts[2]) {
 					// Check expiration
 					const now = Math.floor(Date.now() / 1000);
@@ -230,7 +223,7 @@ export async function requireThirdwebAuth(req?: NextRequest): Promise<{ wallet: 
 					}
 				}
 			}
-		} catch {}
+		} catch { }
 	}
 
 	throw new Error("unauthorized");

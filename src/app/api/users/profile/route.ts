@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
       }
       let brandKey: string | undefined = undefined;
       try {
-        brandKey = getBrandKey();
+        brandKey = getBrandKey(req);
       } catch {
         brandKey = undefined;
       }
@@ -166,7 +166,7 @@ export async function PUT(req: NextRequest) {
     // Determine brandScoped id for partner containers; fallback to legacy id.
     let brandKey: string | undefined = undefined;
     try {
-      brandKey = getBrandKey();
+      brandKey = getBrandKey(req);
     } catch {
       brandKey = undefined;
     }

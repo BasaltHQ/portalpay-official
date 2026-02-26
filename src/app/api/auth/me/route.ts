@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedWallet, requireThirdwebAuth } from "@/lib/auth";
 import { getContainer } from "@/lib/cosmos";
+import { getBrandKey } from "@/config/brands";
 
 export const dynamic = "force-dynamic";
 
@@ -57,8 +58,7 @@ export async function GET(req: NextRequest) {
       }
     } else {
       try {
-        const headerBrandKey = req.headers.get("x-brand-key");
-        const brandKey = (headerBrandKey || process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge").toLowerCase();
+        const brandKey = getBrandKey(req);
         const container = await getContainer();
 
         // AUTHORITATIVE: Check client_request status FIRST

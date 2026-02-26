@@ -9,16 +9,10 @@ const nextConfig = {
   // Externalize problematic deep deps so Turbopack doesn't crawl their tests
   serverExternalPackages: ['pino', '@walletconnect/logger', 'thread-stream', 'mongodb'],
 
-  experimental: {
-    /* 
-       turbo key removed as it is invalid in this next version.
-       See: https://nextjs.org/docs/messages/invalid-next-config
-    */
-    // Force-include mongodb adapter files in standalone output since they're
-    // dynamically imported with webpackIgnore/turbopackIgnore and not traced.
-    outputFileTracingIncludes: {
-      '/**': ['./src/lib/db/**/*'],
-    },
+  // Force-include mongodb adapter files in standalone output since they're
+  // dynamically imported with webpackIgnore/turbopackIgnore and not traced.
+  outputFileTracingIncludes: {
+    '/**': ['./src/lib/db/**/*'],
   },
 
   // Ignore TypeScript errors during production builds (e.g., in Docker)

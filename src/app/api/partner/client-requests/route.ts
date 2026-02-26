@@ -484,7 +484,7 @@ export async function PATCH(req: NextRequest) {
                         // Recalculate recipients
                         const merchantWallet = newConfig.wallet;
                         const partnerWallet = newConfig.partnerWallet || existingDoc.partnerWallet || "";
-                        const platformWallet = process.env.PLATFORM_WALLET || "0x00fe4f0104a989ca65df6b825a6c1682413bca56";
+                        const platformWallet = process.env.PLATFORM_WALLET || process.env.NEXT_PUBLIC_PLATFORM_WALLET || "0x00fe4f0104a989ca65df6b825a6c1682413bca56";
 
                         const newRecipients = [
                             { address: merchantWallet.toLowerCase(), sharesBps: merchantBps },

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getContainer } from "@/lib/cosmos";
 
+function isValidHexAddress(addr?: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/.test(String(addr || "").trim());
+}
+
 export async function GET(_req: NextRequest) {
   try {
     const c = await getContainer();
@@ -225,7 +229,7 @@ export async function GET(_req: NextRequest) {
       const identity = getContainerIdentity(host);
       let identityBrandKey = (identity.brandKey || "").toLowerCase();
       if (!identityBrandKey) {
-        try { identityBrandKey = (getBrandKey() || "").toLowerCase(); } catch { identityBrandKey = ""; }
+        try { identityBrandKey = (getBrandKey(_req) || "").toLowerCase(); } catch { identityBrandKey = ""; }
       }
 
       if (identityBrandKey) {
@@ -243,11 +247,11 @@ export async function GET(_req: NextRequest) {
 
           if (isPlatform) {
             if (!bk || bk === "basaltsurge" || bk === "portalpay") {
-              matchedWallets.add(w);
+              if (isValidHexAddress(w)) matchedWallets.add(w);
             }
           } else {
             if (bk === identityBrandKey) {
-              matchedWallets.add(w);
+              if (isValidHexAddress(w)) matchedWallets.add(w);
             }
           }
         }
@@ -256,8 +260,8 @@ export async function GET(_req: NextRequest) {
         if (validWallets.size === 0) {
           walletFilterClause = " AND false"; // Force 0 results if container has no merchants
         } else {
-          const wArray = Array.from(validWallets).map(w => `"${w}"`);
-          walletFilterClause = ` AND ARRAY_CONTAINS([${wArray.join(",")}], c.wallet)`;
+          const wArray = Array.from(validWallets).map(w => `'${w}'`);
+          walletFilterClause = ` AND c.wallet IN (${wArray.join(",")})`;
         }
       }
     } catch (e) {
@@ -269,7 +273,7 @@ export async function GET(_req: NextRequest) {
       const earnedFilterClause = validWallets !== null
         ? (validWallets.size === 0
           ? " AND false"
-          : ` AND ARRAY_CONTAINS([${Array.from(validWallets).map(w => `"${w}"`).join(",")}], c.merchantWallet)`)
+          : ` AND c.merchantWallet IN (${Array.from(validWallets).map(w => `'${w}'`).join(",")})`)
         : "";
       const qEarned = { query: `SELECT VALUE SUM(c.totalVolumeUsd) FROM c WHERE c.type='split_index'${earnedFilterClause}`, parameters: [] } as any;
       const { resources: rEarned } = await c.items.query(qEarned).fetchAll();

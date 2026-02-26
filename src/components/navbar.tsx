@@ -677,8 +677,14 @@ export function Navbar() {
     // Trust explicit navbarMode from theme or brand config
     const brandNavbarMode = (brand as any)?.logos?.navbarMode;
     const navbarMode: "symbol" | "logo" = (() => {
-        if (theme.navbarMode === "logo" || brandNavbarMode === "logo") return "logo";
-        if (theme.navbarMode === "symbol" || brandNavbarMode === "symbol") return "symbol";
+        // Explicit theme mode takes highest precedence
+        if (theme.navbarMode === "logo" || theme.navbarMode === "symbol") {
+            return theme.navbarMode;
+        }
+        // Explicit brand mode takes second precedence
+        if (brandNavbarMode === "logo" || brandNavbarMode === "symbol") {
+            return brandNavbarMode;
+        }
         // Fallback: use "logo" for partners with a full logo, otherwise "symbol"
         if (effectiveBrandKey && effectiveBrandKey !== "portalpay" && effectiveBrandKey !== "basaltsurge") return "logo";
         return "symbol";

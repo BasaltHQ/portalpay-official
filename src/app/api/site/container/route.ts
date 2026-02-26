@@ -22,31 +22,33 @@ const KNOWN_PARTNER_PATTERNS: Record<string, string> = {
 
 // Main platform hostnames that should NOT be treated as partner containers (without subdomains)
 const PLATFORM_HOSTNAMES = [
+  "basaltsurge.app",
+  "www.basaltsurge.app",
+  "basaltsurge.azurewebsites.net",
   "portalpay.app",
   "www.portalpay.app",
-  "portalpay.azurewebsites.net",
 ];
 
 function deriveBrandKeyFromHostname(host: string): { brandKey: string; containerType: string } | null {
   if (!host) return null;
-  
+
   // Remove port number if present (e.g., localhost:3001 -> localhost)
   const hostLower = host.toLowerCase().split(":")[0];
-  
+
   // Check if this is a main platform hostname (exact match or subdomain)
   for (const platformHost of PLATFORM_HOSTNAMES) {
     if (hostLower === platformHost || hostLower.endsWith(`.${platformHost}`)) {
-      return { brandKey: "portalpay", containerType: "platform" };
+      return { brandKey: "basaltsurge", containerType: "platform" };
     }
   }
-  
+
   // Handle localhost with subdomains for development testing
   // e.g., paynex.localhost:3001 -> brandKey: paynex, containerType: partner
   if (hostLower === "localhost" || hostLower === "127.0.0.1") {
     // Plain localhost without subdomain - use env vars (handled by caller)
     return null;
   }
-  
+
   if (hostLower.endsWith(".localhost") || hostLower.endsWith(".127.0.0.1")) {
     const parts = hostLower.split(".");
     const candidate = parts[0];
@@ -59,31 +61,31 @@ function deriveBrandKeyFromHostname(host: string): { brandKey: string; container
       return { brandKey: candidate, containerType: "partner" };
     }
   }
-  
+
   // Extract potential brand key from hostname
   // Patterns: <brandKey>.azurewebsites.net, <brandKey>.payportal.co, <brandKey>.<domain>
   const parts = hostLower.split(".");
   if (parts.length >= 2) {
     const candidate = parts[0];
-    
+
     // Check known partner patterns
     if (KNOWN_PARTNER_PATTERNS[candidate]) {
       return { brandKey: KNOWN_PARTNER_PATTERNS[candidate], containerType: "partner" };
     }
-    
+
     // For Azure Container Apps and custom domains, derive from subdomain
     // e.g., paynex.azurewebsites.net -> paynex
     // e.g., xoinpay.payportal.co -> xoinpay
     if (candidate && candidate.length > 2 && !["www", "api", "admin"].includes(candidate)) {
       const isAzure = hostLower.endsWith(".azurewebsites.net") || hostLower.endsWith(".azurecontainerapps.io");
       const isPayportal = hostLower.endsWith(".payportal.co") || hostLower.endsWith(".portalpay.app");
-      
+
       if (isAzure || isPayportal) {
         return { brandKey: candidate, containerType: "partner" };
       }
     }
   }
-  
+
   return null;
 }
 
@@ -97,7 +99,7 @@ export async function GET(req: NextRequest) {
     if (!brandKey) {
       const host = req.headers.get("host") || req.headers.get("x-forwarded-host") || "";
       const derived = deriveBrandKeyFromHostname(host);
-      
+
       if (derived) {
         brandKey = derived.brandKey;
         // Only override containerType if it wasn't explicitly set in env
@@ -112,11 +114,11 @@ export async function GET(req: NextRequest) {
     if (!containerType) {
       containerType = "platform";
     }
-    
-    // Default brandKey to "portalpay" if still empty (e.g., plain localhost)
+
+    // Default brandKey to "basaltsurge" if still empty (e.g., plain localhost)
     if (!brandKey) {
-      brandKey = "portalpay";
-      console.log(`[container] Defaulting brandKey to "portalpay" (no env var or hostname match)`);
+      brandKey = "basaltsurge";
+      console.log(`[container] Defaulting brandKey to "basaltsurge" (no env var or hostname match)`);
     }
 
     return NextResponse.json(
