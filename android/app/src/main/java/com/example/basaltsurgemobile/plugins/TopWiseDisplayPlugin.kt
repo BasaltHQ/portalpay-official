@@ -2,22 +2,50 @@ package com.example.basaltsurgemobile.plugins
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.util.Base64
 import android.util.Log
-import com.example.basaltsurgemobile.hardware.DeviceProfile
-import com.example.basaltsurgemobile.hardware.DeviceType
 import com.example.basaltsurgemobile.hardware.HardwareRegistry
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.qrcode.QRCodeWriter
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 
 @CapacitorPlugin(name = "TopWiseDisplay")
 class TopWiseDisplayPlugin : Plugin() {
 
     companion object {
         const val TAG = "TopWiseDisplayPlugin"
+        // T6D secondary screen dimensions
+        const val SCREEN_WIDTH = 282
+        const val SCREEN_HEIGHT = 240
+    }
+
+    /**
+     * Generate a QR code bitmap at exact pixel dimensions using ZXing.
+     * This produces a sharp QR with modules aligned to pixel boundaries —
+     * no interpolation or stretching artifacts.
+     */
+    private fun generateQRBitmap(data: String, size: Int): Bitmap {
+        val writer = QRCodeWriter()
+        val hints = mapOf(
+            EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.M,
+            EncodeHintType.MARGIN to 2  // Quiet zone in modules
+        )
+        val bitMatrix = writer.encode(data, BarcodeFormat.QR_CODE, size, size, hints)
+        
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        for (x in 0 until size) {
+            for (y in 0 until size) {
+                bmp.setPixel(x, y, if (bitMatrix.get(x, y)) Color.BLACK else Color.WHITE)
+            }
+        }
+        return bmp
     }
 
     @PluginMethod
@@ -50,24 +78,33 @@ class TopWiseDisplayPlugin : Plugin() {
             screen.wakeSmallScreen()
             
             // Wait for the screen hardware to fully power on.
-            // Logs showed bitmap sent before screen was awake at 13:04:50:
+            // Logs proved bitmap was sent before screen was awake:
             // "serviceShowBitmapData, device is sleep, can't display anything!"
-            Thread.sleep(300)
+            // Brightness activation takes ~400ms per log timestamps, use 500ms for safety.
+            Thread.sleep(500)
             
             // T6D Small Screen is 282x240 dots
-            if (base64Img != null) {
+            val bmp: Bitmap?
+            
+            if (qrData != null && base64Img == null) {
+                // Native QR generation: Generate at exact screen height (240px) using ZXing.
+                // This creates a sharp, pixel-perfect QR with modules aligned to pixel boundaries.
+                // SCREEN_HEIGHT (240) is used for the QR size, leaving 21px margins on each side
+                // when centered on the 282-wide screen.
+                bmp = generateQRBitmap(qrData, SCREEN_HEIGHT)
+                Log.d(TAG, "displayQR: Generated native ZXing QR ${bmp.width}x${bmp.height} for data length ${qrData.length}")
+            } else if (base64Img != null) {
+                // Legacy path: pre-rendered bitmap from JS canvas
                 val decodedString = Base64.decode(base64Img.substringAfter(","), Base64.DEFAULT)
-                var bmp = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
-                
-                // Scale QR to fit within the 240px height with 20px margin on each side = 200px
-                // 200px on a 282-wide display leaves 41px margin on each side, plenty for scanning
-                bmp = Bitmap.createScaledBitmap(bmp, 200, 200, false)
-                
-                Log.d(TAG, "displayQR: Sending bitmap ${bmp.width}x${bmp.height} to secondary screen")
-                screen.displayBitmap(bmp, com.topwise.cloudpos.aidl.smallscreen.BitmapAlign.BITMAP_ALIGN_CENTER)
-            } else if (qrData != null) {
-                screen.displayText("", com.topwise.cloudpos.aidl.smallscreen.SmallScreenTextSize.TEXT_SIZE_NORMAL, com.topwise.cloudpos.aidl.smallscreen.SmallScreenDisplayMode.TEXT_DISPLAY_MODE_UP_NORMAL)
+                var decoded = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
+                bmp = Bitmap.createScaledBitmap(decoded, SCREEN_HEIGHT, SCREEN_HEIGHT, false)
+                Log.d(TAG, "displayQR: Using pre-rendered bitmap ${bmp.width}x${bmp.height}")
+            } else {
+                call.reject("No QR data or bitmap provided")
+                return
             }
+            
+            screen.displayBitmap(bmp, com.topwise.cloudpos.aidl.smallscreen.BitmapAlign.BITMAP_ALIGN_CENTER)
             
             val res = JSObject()
             res.put("success", true)

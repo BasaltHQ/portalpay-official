@@ -88,6 +88,8 @@ dependencies {
     
     // Required for third-party native AARs using Material Components UI (Valor SDK)
     implementation("com.google.android.material:material:1.11.0")
+    // ZXing core for native QR code generation on secondary display
+    implementation("com.google.zxing:core:3.5.3")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

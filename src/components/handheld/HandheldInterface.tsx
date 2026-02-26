@@ -163,17 +163,11 @@ export default function HandheldInterface({
             const portalUrl = `${origin}/portal/${encodeURIComponent(rawReceiptId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
 
             timer = setTimeout(() => {
-                const canvas = document.getElementById('handheld-qr-canvas-pay') as HTMLCanvasElement;
-                if (canvas && canvas.width > 0) {
-                    try {
-                        const base64 = canvas.toDataURL("image/jpeg", 1.0);
-                        pushQRToCustomerScreen(portalUrl, base64.split(',')[1] || base64).catch(console.error);
-                    } catch (e) {
-                        pushQRToCustomerScreen(portalUrl).catch(console.error);
-                    }
-                } else {
-                    pushQRToCustomerScreen(portalUrl).catch(console.error);
-                }
+                // Send the URL data string to the native plugin — it will generate
+                // the QR bitmap natively at the exact screen resolution (282x240).
+                // Sending a pre-rendered JS canvas bitmap was causing density issues:
+                // the 200px QR was being stretched to fill the 282x240 screen, blurring modules.
+                pushQRToCustomerScreen(portalUrl).catch(console.error);
             }, 600);
             return () => {
                 clearTimeout(timer);
