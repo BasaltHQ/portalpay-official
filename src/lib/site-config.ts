@@ -198,7 +198,7 @@ export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?:
             const normalizedBrand = (brandKey || "").toLowerCase();
             const isPlatform = normalizedBrand === "portalpay" || normalizedBrand === "basaltsurge";
             // Allow returning brand-scoped doc even for platform brands as we migrate to per-brand docs
-            if (hasSplit || n.industryParams || !isPlatform || resource.id === "site:config:basaltsurge") return n;
+            if (hasSplit || n.industryParams || !isPlatform) return n;
             // platform brand without split in brand-scoped doc: continue to legacy/global search
           }
         } catch (e: any) {
@@ -263,17 +263,26 @@ export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?:
     // and platform containers are resolving only legacy doc ids.
     try {
       const spec = {
-        query: "SELECT TOP 1 c FROM c WHERE c.type=@type AND c.wallet=@wallet ORDER BY c.updatedAt DESC",
+        query: "SELECT c FROM c WHERE c.type=@type AND c.wallet=@wallet",
         parameters: [
           { name: "@type", value: "site_config" },
           { name: "@wallet", value: wallet }
         ],
       } as { query: string; parameters: { name: string; value: any }[] };
       const { resources } = await c.items.query(spec).fetchAll();
-      const row = Array.isArray(resources) && resources[0] ? resources[0] : null;
-      if (row) {
-        // console.log("[site-config] step2.5 query found", { id: row.id });
-        return normalize(row);
+
+      if (Array.isArray(resources) && resources.length > 0) {
+        // Prefer documents that actually have a split configured, tie-break by updatedAt
+        resources.sort((a, b) => {
+          const aHasSplit = !!(a.splitAddress || a.split?.address);
+          const bHasSplit = !!(b.splitAddress || b.split?.address);
+          if (aHasSplit && !bHasSplit) return -1;
+          if (!aHasSplit && bHasSplit) return 1;
+          const aTime = a.updatedAt || (a._ts ? a._ts * 1000 : 0);
+          const bTime = b.updatedAt || (b._ts ? b._ts * 1000 : 0);
+          return bTime - aTime;
+        });
+        return normalize(resources[0]);
       }
     } catch { }
 

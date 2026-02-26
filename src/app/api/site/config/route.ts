@@ -1396,6 +1396,18 @@ export async function POST(req: NextRequest) {
       if (!prev) {
         const { resource } = await c.item(DOC_ID, wallet).read<any>();
         prev = resource;
+      } else if (!prev.splitAddress && !prev.split?.address) {
+        // Auto-repair: If brand-scoped doc exists but lacks a split, inherit it from legacy to prevent losing it on save
+        try {
+          const { resource } = await c.item(DOC_ID, wallet).read<any>();
+          if (resource && (resource.splitAddress || resource.split?.address)) {
+            prev.splitAddress = resource.splitAddress || resource.split?.address;
+            prev.split = resource.split;
+            prev.splitConfig = resource.splitConfig || prev.splitConfig;
+            prev.splitHistory = resource.splitHistory || prev.splitHistory;
+            prev.partnerWallet = resource.partnerWallet || prev.partnerWallet;
+          }
+        } catch { }
       }
     } catch {
       prev = undefined;
