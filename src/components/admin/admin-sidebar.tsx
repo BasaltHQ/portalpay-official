@@ -67,6 +67,8 @@ type AdminTabKey =
   | 'writersWorkshop'
   | 'publications'
   | 'reports'
+  | 'reportsPartner'
+  | 'reportsPlatform'
   | 'clientRequests'
   | 'subscriptions';
 
@@ -330,6 +332,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
         { title: 'Integrations', key: 'integrations' as AdminTabKey },
         { title: 'Touchpoints', key: 'endpoints' as AdminTabKey },
         { title: 'Team', key: 'team' as AdminTabKey },
+        { title: 'Reports', key: 'reports' as AdminTabKey },
       ],
     },
     {
@@ -364,6 +367,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
             ...(canAdmins ? [
               { title: 'Admin Users', key: 'admins' as AdminTabKey },
             ] : []),
+            { title: 'Reports', key: 'reportsPartner' as AdminTabKey },
           ],
         } as NavItem,
       ]
@@ -383,6 +387,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
                 { title: 'Contracts', key: 'contracts' as AdminTabKey },
                 { title: 'Plugin Studio', key: 'pluginStudio' as AdminTabKey },
                 { title: 'Support Admin', key: 'supportAdmin' as AdminTabKey },
+                { title: 'Reports', key: 'reportsPlatform' as AdminTabKey },
               ]
               : []),
           ],

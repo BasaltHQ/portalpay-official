@@ -1,0 +1,281 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getContainer } from "@/lib/cosmos";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * Platform Reports API — Aggregates stats across partners for platform superadmins.
+ * Uses the same merchant-resolution logic as /api/admin/merchants (shop_config + theme.brandKey)
+ * and split_index for stats (same as the Merchants panel / Users panel).
+ *
+ * Query params:
+ *   partners — comma-separated brand keys to filter (empty = all)
+ *
+ * Auth: x-wallet header must match a platform superadmin wallet.
+ */
+
+function isPlatformSuperAdminServer(wallet: string): boolean {
+    const w = wallet.toLowerCase();
+    const owner = String(process.env.NEXT_PUBLIC_OWNER_WALLET || "").toLowerCase();
+    const platform = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
+    const admins = String(process.env.ADMIN_WALLETS || "")
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+    return w === owner || w === platform || admins.includes(w);
+}
+
+export async function GET(req: NextRequest) {
+    try {
+        const wallet = (req.headers.get("x-wallet") || "").toLowerCase();
+        if (!wallet || !isPlatformSuperAdminServer(wallet)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const partnersParam = searchParams.get("partners") || "";
+
+        const container = await getContainer();
+
+        // 1. Discover available brands from /api/platform/brands logic:
+        //    Query all brand_config documents, plus extract unique theme.brandKey from shop_config
+        const [brandConfigRes, shopConfigRes, splitIndexRes] = await Promise.all([
+            container.items.query({
+                query: "SELECT c.id, c.brandKey, c.name FROM c WHERE c.type = 'brand_config'",
+                parameters: [],
+            }).fetchAll(),
+            container.items.query({
+                query: "SELECT c.wallet, c.name, c.theme, c.slug FROM c WHERE c.type = 'shop_config'",
+                parameters: [],
+            }).fetchAll(),
+            container.items.query({
+                query: `SELECT c.merchantWallet, c.brandKey,
+                               c.totalVolumeUsd, c.merchantEarnedUsd, c.platformFeeUsd,
+                               c.customers, c.totalCustomerXp, c.transactionCount
+                        FROM c WHERE c.type = 'split_index'`,
+                parameters: [],
+            }).fetchAll(),
+        ]);
+
+        const shops = shopConfigRes.resources || [];
+        const splitRows = splitIndexRes.resources || [];
+        const brandConfigs = brandConfigRes.resources || [];
+
+        // 2. Build brand set from brand_config + shop_config theme.brandKey
+        //    This mirrors how /api/platform/brands discovers brands
+        const brandSet = new Set<string>();
+        for (const bc of brandConfigs) {
+            const bk = String(bc.brandKey || bc.id || "").toLowerCase().replace(/^brand:config:/, "");
+            if (bk && bk !== "portalpay" && bk !== "basaltsurge") brandSet.add(bk);
+        }
+        for (const shop of shops) {
+            const bk = String(shop.theme?.brandKey || "").toLowerCase();
+            if (bk && bk !== "portalpay" && bk !== "basaltsurge") brandSet.add(bk);
+        }
+        // Always include the "platform" aggregate (portalpay + basaltsurge merchants)
+        brandSet.add("basaltsurge");
+
+        // 3. Map merchants to brands using multiple sources (matching /api/admin/users logic):
+        //    Priority: site_config.brandKey > split_index.brandKey > shop_config.theme.brandKey
+        const shopMap = new Map<string, { name: string; logo?: string; brandKey: string; slug?: string }>();
+        const brandMerchants = new Map<string, Set<string>>(); // brandKey -> Set of merchant wallets
+        const walletBrand = new Map<string, string>(); // wallet -> resolved brandKey
+
+        // Initialize all brands from brand_config
+        for (const bk of brandSet) {
+            brandMerchants.set(bk, new Set());
+        }
+
+        // First pass: shop_config (baseline brand mapping via theme.brandKey)
+        for (const shop of shops) {
+            const w = String(shop.wallet || "").toLowerCase();
+            if (!w) continue;
+            const rawBk = String(shop.theme?.brandKey || "").toLowerCase();
+            const bk = (!rawBk || rawBk === "portalpay" || rawBk === "basaltsurge") ? "basaltsurge" : rawBk;
+
+            shopMap.set(w, {
+                name: shop.name || "Unknown Merchant",
+                logo: shop.theme?.brandLogoUrl || shop.theme?.brandFaviconUrl,
+                brandKey: bk,
+                slug: shop.slug,
+            });
+            walletBrand.set(w, bk);
+        }
+
+        // Second pass: site_config (overrides shop_config brand for partner-scoped merchants)
+        const siteConfigRes = await container.items.query({
+            query: "SELECT c.wallet, c.brandKey FROM c WHERE c.type = 'site_config'",
+            parameters: [],
+        }).fetchAll();
+        for (const sc of siteConfigRes.resources || []) {
+            const w = String(sc.wallet || "").toLowerCase();
+            if (!w) continue;
+            const rawBk = String(sc.brandKey || "").toLowerCase();
+            if (!rawBk) continue;
+            const bk = (rawBk === "portalpay" || rawBk === "basaltsurge") ? "basaltsurge" : rawBk;
+            walletBrand.set(w, bk); // site_config overrides shop_config
+            if (shopMap.has(w)) {
+                shopMap.get(w)!.brandKey = bk;
+            }
+        }
+
+        // Third pass: split_index.brandKey (fills in merchants not covered by shop/site config)
+        for (const si of splitRows) {
+            const w = String(si.merchantWallet || "").toLowerCase();
+            if (!w || walletBrand.has(w)) continue; // Don't override if already mapped
+            const rawBk = String(si.brandKey || "").toLowerCase();
+            const bk = (!rawBk || rawBk === "portalpay" || rawBk === "basaltsurge") ? "basaltsurge" : rawBk;
+            walletBrand.set(w, bk);
+        }
+
+        // Assign all merchants to their brand groups
+        for (const [w, bk] of walletBrand.entries()) {
+            if (!brandMerchants.has(bk)) brandMerchants.set(bk, new Set());
+            brandMerchants.get(bk)!.add(w);
+            // Ensure brand is in brandSet too (in case discovered only via site_config/split_index)
+            brandSet.add(bk);
+        }
+
+        // 4. Build split_index stats per merchant
+        const merchantStatsMap = new Map<
+            string,
+            { totalVolumeUsd: number; merchantEarnedUsd: number; platformFeeUsd: number; transactionCount: number; customers: number }
+        >();
+
+        for (const row of splitRows) {
+            const w = String(row.merchantWallet || "").toLowerCase();
+            if (!w) continue;
+            const existing = merchantStatsMap.get(w);
+            const vol = Number(row.totalVolumeUsd || 0);
+            const earned = Number(row.merchantEarnedUsd || 0);
+            const fee = Number(row.platformFeeUsd || 0);
+            const txns = Number(row.transactionCount || 0);
+            const cust = Number(row.customers || 0);
+
+            if (existing) {
+                existing.totalVolumeUsd += vol;
+                existing.merchantEarnedUsd += earned;
+                existing.platformFeeUsd += fee;
+                existing.transactionCount += txns;
+                existing.customers += cust;
+            } else {
+                merchantStatsMap.set(w, {
+                    totalVolumeUsd: vol,
+                    merchantEarnedUsd: earned,
+                    platformFeeUsd: fee,
+                    transactionCount: txns,
+                    customers: cust,
+                });
+            }
+        }
+
+        // 5. Build availablePartners with merchant counts from shop_config
+        const availablePartners = Array.from(brandSet).map((bk) => {
+            const brandConfig = brandConfigs.find((bc: any) => {
+                const id = String(bc.brandKey || bc.id || "").toLowerCase().replace(/^brand:config:/, "");
+                return id === bk;
+            });
+            return {
+                brandKey: bk,
+                name: brandConfig?.name || bk.charAt(0).toUpperCase() + bk.slice(1),
+                merchantCount: brandMerchants.get(bk)?.size || 0,
+            };
+        });
+
+        // 6. Filter by selected partners
+        const selectedPartnerKeys = partnersParam
+            ? partnersParam.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)
+            : Array.from(brandSet);
+
+        // Collect all selected wallets
+        const selectedWallets = new Set<string>();
+        for (const pk of selectedPartnerKeys) {
+            const wallets = brandMerchants.get(pk);
+            if (wallets) wallets.forEach((w) => selectedWallets.add(w));
+        }
+
+        // Build merchant list with stats
+        const merchants = Array.from(selectedWallets).map((w) => {
+            const shopInfo = shopMap.get(w);
+            const stats = merchantStatsMap.get(w);
+            return {
+                wallet: w,
+                name: shopInfo?.name || "Unknown Merchant",
+                brandKey: walletBrand.get(w) || shopInfo?.brandKey || "basaltsurge",
+                logo: shopInfo?.logo,
+                totalSales: stats?.totalVolumeUsd || 0,
+                merchantEarned: stats?.merchantEarnedUsd || 0,
+                platformFee: stats?.platformFeeUsd || 0,
+                totalTips: 0,
+                transactionCount: stats?.transactionCount || 0,
+                customers: stats?.customers || 0,
+                averageOrderValue: (stats?.transactionCount || 0) > 0
+                    ? (stats?.totalVolumeUsd || 0) / stats!.transactionCount
+                    : 0,
+            };
+        });
+
+        // 7. Get tips from receipts
+        if (selectedWallets.size > 0) {
+            try {
+                const tipQuery = {
+                    query: `SELECT c.wallet, c.tipAmount FROM c
+                            WHERE c.type = 'receipt' AND c.status = 'paid'
+                            AND ARRAY_CONTAINS(@wallets, c.wallet)`,
+                    parameters: [{ name: "@wallets", value: Array.from(selectedWallets) }],
+                };
+                const { resources: tipReceipts } = await container.items.query(tipQuery).fetchAll();
+                const tipMap = new Map<string, number>();
+                for (const r of tipReceipts || []) {
+                    const w = String(r.wallet || "").toLowerCase();
+                    tipMap.set(w, (tipMap.get(w) || 0) + Number(r.tipAmount || 0));
+                }
+                for (const m of merchants) {
+                    m.totalTips = tipMap.get(m.wallet) || 0;
+                }
+            } catch { /* tips are optional */ }
+        }
+
+        // 8. Partner stats
+        const partnerStats = selectedPartnerKeys.map((pk) => {
+            const partnerMerchants = merchants.filter((m) => m.brandKey === pk);
+            return {
+                brandKey: pk,
+                name: availablePartners.find((ap) => ap.brandKey === pk)?.name || pk,
+                merchantCount: brandMerchants.get(pk)?.size || 0,
+                totalSales: partnerMerchants.reduce((s, m) => s + m.totalSales, 0),
+                merchantEarned: partnerMerchants.reduce((s, m) => s + m.merchantEarned, 0),
+                platformFee: partnerMerchants.reduce((s, m) => s + m.platformFee, 0),
+                totalTips: partnerMerchants.reduce((s, m) => s + m.totalTips, 0),
+                transactionCount: partnerMerchants.reduce((s, m) => s + m.transactionCount, 0),
+                customers: partnerMerchants.reduce((s, m) => s + m.customers, 0),
+            };
+        });
+
+        // 9. Overall aggregate
+        const aggregate = {
+            totalSales: merchants.reduce((s, m) => s + m.totalSales, 0),
+            merchantEarned: merchants.reduce((s, m) => s + m.merchantEarned, 0),
+            platformFee: merchants.reduce((s, m) => s + m.platformFee, 0),
+            totalTips: merchants.reduce((s, m) => s + m.totalTips, 0),
+            transactionCount: merchants.reduce((s, m) => s + m.transactionCount, 0),
+            averageOrderValue: 0 as number,
+            merchantCount: merchants.length,
+            partnerCount: selectedPartnerKeys.length,
+            customers: merchants.reduce((s, m) => s + m.customers, 0),
+        };
+        aggregate.averageOrderValue = aggregate.transactionCount > 0
+            ? aggregate.totalSales / aggregate.transactionCount
+            : 0;
+
+        return NextResponse.json({
+            availablePartners,
+            partners: partnerStats,
+            merchants,
+            aggregate,
+        });
+    } catch (e: any) {
+        console.error("[PlatformReports] Error:", e);
+        return NextResponse.json({ error: e.message || "Failed" }, { status: 500 });
+    }
+}

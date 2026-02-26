@@ -58,6 +58,9 @@ import WritersWorkshopPanelExt from "@/app/admin/panels/WritersWorkshopPanel";
 import PublicationsPanelExt from "@/app/admin/panels/PublicationsPanel";
 // Placeholder to avoid errors - I will read file first
 import ReportsPanel from "@/app/admin/panels/ReportsPanel";
+import ReportsPanelMerchant from "@/app/admin/panels/ReportsPanelMerchant";
+import ReportsPanelPartner from "@/app/admin/panels/ReportsPanelPartner";
+import ReportsPanelPlatform from "@/app/admin/panels/ReportsPanelPlatform";
 import ClientRequestsPanel from "@/app/admin/panels/ClientRequestsPanel";
 import TablesPanel from "@/app/admin/panels/TablesPanel";
 import SubscriptionsPanel from "@/app/admin/panels/SubscriptionsPanel";
@@ -9180,6 +9183,8 @@ export default function AdminPage() {
     | "endpoints"
     | "team"
     | "reports"
+    | "reportsPartner"
+    | "reportsPlatform"
     | "clientRequests"
     | "subscriptions"
   >("reserve");
@@ -9620,7 +9625,13 @@ export default function AdminPage() {
         <SubscriptionsPanel />
       )}
       {activeTab === "reports" && (
-        <ReportsPanel />
+        <ReportsPanelMerchant />
+      )}
+      {activeTab === "reportsPartner" && (canBranding || isSuperadmin) && (
+        <ReportsPanelPartner />
+      )}
+      {activeTab === "reportsPlatform" && isPlatform && isSuperadmin && (
+        <ReportsPanelPlatform />
       )}
     </div>
   );
