@@ -1238,15 +1238,12 @@ export default function PortalReceiptPage() {
   );
 
   const processingFeeUsd = useMemo(() => {
-    const feeItem = items.find(it => /processing fee/i.test(it.label || "") || /portal fee/i.test(it.label || ""));
-    if (feeItem) return Number(feeItem.priceUsd || 0);
-
-    if (receipt?.totalUsd) {
-      // Fee is the remainder
-      return Math.max(0, +(receipt.totalUsd - itemsSubtotalUsd - taxUsd - tipUsd).toFixed(2));
-    }
-    return 0;
-  }, [items, receipt?.totalUsd, itemsSubtotalUsd, taxUsd, tipUsd]);
+    // If the backend firmly baked a processing fee/portal fee label and we strongly want to rely on it, we could.
+    // However, since the config might have updated after generation (or fixed recently), 
+    // it's safer and clearer to calculate exact math so the % matches the dollar amount cleanly.
+    const feePctFraction = Math.max(0, (basePlatformFeePct + Number(processingFeePct || 0)) / 100);
+    return +((itemsSubtotalUsd + taxUsd + tipUsd) * feePctFraction).toFixed(2);
+  }, [itemsSubtotalUsd, taxUsd, tipUsd, basePlatformFeePct, processingFeePct]);
 
   // We rely on the server's totalUsd which includes everything.
   const totalUsd = Number(receipt?.totalUsd || 0);

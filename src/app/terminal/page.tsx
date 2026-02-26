@@ -189,24 +189,39 @@ function TerminalPanel() {
   const pathname = usePathname();
   const isPricing = pathname?.startsWith("/pricing");
 
+  const [processingFeePct, setProcessingFeePct] = useState<number>(0);
+  const [basePlatformFeePct, setBasePlatformFeePct] = useState<number>(0.5);
+
+  useEffect(() => {
+    fetch("/api/site/config", { cache: "no-store", credentials: "omit", headers: { "x-theme-caller": "terminal_panel" } })
+      .then((r) => r.json())
+      .then((j: any) => {
+        const cfg = j?.config || {};
+        if (typeof cfg.processingFeePct === "number") setProcessingFeePct(cfg.processingFeePct);
+
+        // basePlatformFeePct (platform + partner + agent fees)
+        const splitCfg = (cfg as any)?.splitConfig;
+        if (splitCfg && typeof splitCfg === "object") {
+          const partnerBps = typeof splitCfg.partnerBps === "number" ? splitCfg.partnerBps : 0;
+          const platformBps = typeof splitCfg.platformBps === "number" ? splitCfg.platformBps : 0;
+          const agentBps = Array.isArray(splitCfg.agents)
+            ? splitCfg.agents.reduce((s: number, a: any) => s + (Number(a.bps) || 0), 0)
+            : 0;
+          setBasePlatformFeePct((partnerBps + platformBps + agentBps) / 100);
+        } else if (typeof (cfg as any).basePlatformFeePct === "number") {
+          setBasePlatformFeePct((cfg as any).basePlatformFeePct);
+        }
+
+        const sc = String(cfg?.storeCurrency || "");
+        if (sc) setTerminalCurrency(sc);
+      })
+      .catch(() => { });
+  }, []);
+
   const siteMeta = {
-    processingFeePct: 0, // In terminals/standalone views, we typically use platform defaults unless specified
-    basePlatformFeePct: 0.5,
     taxRate: 0,
     hasDefault: false,
   };
-
-  // Sync terminal currency if applicable (can be enhanced if storeCurrency is in ThemeContext)
-  useEffect(() => {
-    // Optional: add storeCurrency to ThemeContext if needed for deeper Terminal integration
-  }, []);
-
-  useEffect(() => {
-    try {
-      const sc = String((siteMeta as any)?.storeCurrency || "");
-      if (sc) setTerminalCurrency(sc);
-    } catch { }
-  }, [(siteMeta as any)?.storeCurrency]);
 
   useEffect(() => {
     (async () => {
@@ -240,7 +255,7 @@ function TerminalPanel() {
   const baseUsd = parseAmount();
   const taxRate = siteMeta.hasDefault ? Math.max(0, Math.min(1, siteMeta.taxRate || 0)) : 0;
   const taxUsd = +(baseUsd * taxRate).toFixed(2);
-  const feePctFraction = Math.max(0, (siteMeta.basePlatformFeePct + Number(siteMeta.processingFeePct || 0)) / 100);
+  const feePctFraction = Math.max(0, (basePlatformFeePct + processingFeePct) / 100);
   const processingFeeUsd = +((baseUsd + taxUsd) * feePctFraction).toFixed(2);
   const totalUsd = +((baseUsd + taxUsd + processingFeeUsd)).toFixed(2);
 
