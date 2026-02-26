@@ -62,3 +62,6 @@ android/launcher/recovered
 
 # resources
 /resources
+
+# secrets
+env_dump.json

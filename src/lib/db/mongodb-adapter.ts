@@ -13,9 +13,8 @@ import { parseCosmosSql } from "./sql-parser";
 let _client: MongoClient | null = null;
 
 async function getMongoClient(uri: string): Promise<MongoClient> {
-    // Check if client exists AND topology is connected. 
-    // This prevents `MongoTopologyClosedError` when connections drop or serverless resets state.
-    const isConnected = !!(_client && _client.topology && _client.topology.isConnected());
+    // Simplified check: since the driver handles reconnection, we just check if the client is initialized.
+    const isConnected = !!_client;
 
     if (!_client || !isConnected) {
         if (_client) {
@@ -155,7 +154,10 @@ class MongoItemsReference {
 
     query<T = any>(
         querySpec: CosmosQuerySpec | string
-    ): { fetchAll: () => Promise<FeedResponse<T>> } {
+    ): {
+        fetchAll: () => Promise<FeedResponse<T>>;
+        fetchNext: () => Promise<FeedResponse<T>>;
+    } {
         const spec =
             typeof querySpec === "string"
                 ? { query: querySpec, parameters: [] }
