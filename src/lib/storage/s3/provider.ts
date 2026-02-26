@@ -90,13 +90,14 @@ export class S3StorageProvider implements StorageProvider {
 
         if (process.env.S3_PUBLIC_URL_BASE) {
             // e.g. https://cdn.mydomain.com
-            return `${process.env.S3_PUBLIC_URL_BASE}/${key}`;
+            const cleanBase = process.env.S3_PUBLIC_URL_BASE.replace(/\/$/, "");
+            return `${cleanBase}/${key}`;
         }
 
-        // Default to Path Style generic URL construction
-        // ensure endpoint doesn't end with slash
-        const base = this.endpoint.replace(/\/$/, "");
-        return `${base}/${this.bucket}/${key}`;
+        // Default to Virtual-Hosted Style URL construction
+        // format: https://[bucket].[domain]/[key]
+        const endpointUrl = new URL(this.endpoint);
+        return `${endpointUrl.protocol}//${this.bucket}.${endpointUrl.hostname}/${key}`;
     }
 
     async delete(path: string): Promise<void> {
