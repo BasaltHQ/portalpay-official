@@ -13,7 +13,7 @@ export class S3StorageProvider implements StorageProvider {
     constructor() {
         this.region = process.env.S3_REGION || "us-east-1";
         this.endpoint = process.env.S3_ENDPOINT || "";
-        this.bucket = process.env.S3_BUCKET_NAME || "portalpay-storage";
+        this.bucket = process.env.S3_BUCKET_NAME || "basaltsurge";
 
         // For OVH/MinIO, the public URL might be different from the endpoint or constructed differently.
         // If S3_PUBLIC_URL is set, use it. Otherwise, try to construct it.
@@ -34,8 +34,23 @@ export class S3StorageProvider implements StorageProvider {
         });
     }
 
+    /**
+     * Strip the Azure container prefix from a path.
+     * The app passes paths like "portalpay/brands/logo.png" where "portalpay" was
+     * the Azure Blob container. In S3, the bucket replaces the container, so we
+     * only need "brands/logo.png" as the S3 key.
+     */
+    private toKey(path: string): string {
+        const clean = path.startsWith("/") ? path.substring(1) : path;
+        const parts = clean.split("/");
+        // If only one segment, it's just a filename — no prefix to strip
+        if (parts.length <= 1) return clean;
+        // Strip the first segment (Azure container name)
+        return parts.slice(1).join("/");
+    }
+
     async upload(path: string, data: Buffer | string | Blob | ArrayBuffer, contentType: string): Promise<string> {
-        const key = path.startsWith("/") ? path.substring(1) : path;
+        const key = this.toKey(path);
 
         let body: Buffer;
         if (Buffer.isBuffer(data)) {
@@ -62,7 +77,7 @@ export class S3StorageProvider implements StorageProvider {
     }
 
     async getUrl(path: string): Promise<string> {
-        const key = path.startsWith("/") ? path.substring(1) : path;
+        const key = this.toKey(path);
         // Construct public URL
         // If endpoint is https://s3.us-east-1.perf.cloud.ovh.us
         // And bucket is 'mybucket'
@@ -85,7 +100,7 @@ export class S3StorageProvider implements StorageProvider {
     }
 
     async delete(path: string): Promise<void> {
-        const key = path.startsWith("/") ? path.substring(1) : path;
+        const key = this.toKey(path);
         const command = new DeleteObjectCommand({
             Bucket: this.bucket,
             Key: key
@@ -94,7 +109,7 @@ export class S3StorageProvider implements StorageProvider {
     }
 
     async exists(path: string): Promise<boolean> {
-        const key = path.startsWith("/") ? path.substring(1) : path;
+        const key = this.toKey(path);
         try {
             const command = new HeadObjectCommand({
                 Bucket: this.bucket,
@@ -111,7 +126,7 @@ export class S3StorageProvider implements StorageProvider {
     }
 
     async download(path: string): Promise<Buffer> {
-        const key = path.startsWith("/") ? path.substring(1) : path;
+        const key = this.toKey(path);
         const command = new GetObjectCommand({
             Bucket: this.bucket,
             Key: key
@@ -133,7 +148,7 @@ export class S3StorageProvider implements StorageProvider {
     }
 
     async list(pathPrefix: string = ""): Promise<string[]> {
-        const key = pathPrefix.startsWith("/") ? pathPrefix.substring(1) : pathPrefix;
+        const key = this.toKey(pathPrefix);
 
         // Dynamic import to keep init fast
         const { ListObjectsV2Command } = await import("@aws-sdk/client-s3");
@@ -155,7 +170,7 @@ export class S3StorageProvider implements StorageProvider {
     }
 
     async getSignedUrl(path: string, expiresInSeconds: number = 3600): Promise<string> {
-        const key = path.startsWith("/") ? path.substring(1) : path;
+        const key = this.toKey(path);
         const { GetObjectCommand } = await import("@aws-sdk/client-s3");
         const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
 

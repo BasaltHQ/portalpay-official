@@ -5,16 +5,16 @@ import { useActiveAccount } from 'thirdweb/react';
 import { useBrand } from "@/contexts/BrandContext";
 import { getDefaultBrandSymbol, isBasaltSurge, resolveBrandAppLogo, resolveBrandSymbol } from "@/lib/branding";
 
-// Blocked favicon URLs that should be replaced with fallback
-const BLOCKED_FAVICON_URLS = [
-  "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/uploads/a311dcf8-e6de-4eca-a39c-907b347dff11.png",
+// Blocked favicon URLs — match by path/UUID regardless of hostname (Azure, AFD, or S3)
+const BLOCKED_FAVICON_PATHS = [
+  "a311dcf8-e6de-4eca-a39c-907b347dff11",
 ];
 const BLOCKED_FAVICON_REPLACEMENT = "/Surge.png";
 
 export function sanitizeFaviconUrl(url: string | undefined): string {
   if (!url) return '';
   const normalized = url.trim().toLowerCase();
-  const isBlocked = BLOCKED_FAVICON_URLS.some(blocked => normalized === blocked.toLowerCase());
+  const isBlocked = BLOCKED_FAVICON_PATHS.some(path => normalized.includes(path.toLowerCase()));
   return isBlocked ? BLOCKED_FAVICON_REPLACEMENT : url;
 }
 

@@ -14,10 +14,16 @@ export async function GET(req: NextRequest) {
 
     // Validate URL is from allowed domains
     const allowedDomains = [
-        "portalpay-b6hqctdfergaadct.z02.azurefd.net",
-        "ledger1blob.blob.core.windows.net",
-        "portalpayblob.blob.core.windows.net",
+        "blob.core.windows.net",
     ];
+    // Dynamically allow S3 endpoint
+    try {
+        const s3 = process.env.S3_ENDPOINT || "";
+        if (s3) {
+            const u = new URL(s3);
+            allowedDomains.push(u.hostname);
+        }
+    } catch { }
 
     try {
         const parsedUrl = new URL(url);

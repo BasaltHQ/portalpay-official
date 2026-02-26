@@ -5,7 +5,7 @@ const config = {
       stage: 1,
       features: {
         "nesting-rules": false,
-        "cascade-layers": true,
+        "cascade-layers": false,
         "media-query-ranges": false,
         "custom-properties": false,
         "color-mix": true,

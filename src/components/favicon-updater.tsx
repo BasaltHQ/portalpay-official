@@ -6,15 +6,15 @@ import { useTheme } from "@/contexts/ThemeContext";
 export function FaviconUpdater() {
     const { theme } = useTheme();
 
-    // Blocked favicon URLs that should be replaced with fallback
-    const BLOCKED_FAVICON_URLS = [
-        "https://portalpay-b6hqctdfergaadct.z02.azurefd.net/portalpay/uploads/a311dcf8-e6de-4eca-a39c-907b347dff11.png",
+    // Blocked favicon URLs — match by UUID regardless of hostname (Azure, AFD, or S3)
+    const BLOCKED_FAVICON_PATHS = [
+        "a311dcf8-e6de-4eca-a39c-907b347dff11",
     ];
     const BLOCKED_FAVICON_REPLACEMENT = "/Surge.png";
 
     function isBlockedFavicon(url: string): boolean {
         const normalized = url.trim().toLowerCase();
-        return BLOCKED_FAVICON_URLS.some(blocked => normalized === blocked.toLowerCase());
+        return BLOCKED_FAVICON_PATHS.some(path => normalized.includes(path.toLowerCase()));
     }
 
     useEffect(() => {

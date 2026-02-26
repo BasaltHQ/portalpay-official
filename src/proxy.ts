@@ -54,6 +54,15 @@ function buildCsp(req: NextRequest): string {
     const isDev = process.env.NODE_ENV !== "production";
     // Attempt to include blob/frontend domain paths
     const extras: string[] = [];
+    // Allow S3 storage endpoint for images/media
+    try {
+        const s3 = process.env.S3_ENDPOINT || "";
+        if (s3) {
+            const u = new URL(s3);
+            extras.push(`${u.protocol}//${u.host}`);
+        }
+    } catch { }
+    // Legacy: Allow Azure Blob public base URL if still configured
     try {
         const base = process.env.AZURE_BLOB_PUBLIC_BASE_URL || "";
         if (base) {
@@ -77,7 +86,7 @@ function buildCsp(req: NextRequest): string {
         : `${self} 'unsafe-inline' https://static.cloudflareinsights.com`;
     const policy = [
         `default-src ${self}`,
-        `img-src ${imgSrc} https://portalpay-b6hqctdfergaadct.z02.azurefd.net`,
+        `img-src ${imgSrc}`,
         `script-src ${scriptSrc}`,
         `style-src ${self} 'unsafe-inline' https://use.typekit.net https://p.typekit.net`,
         `connect-src ${connectSrc}`,
@@ -85,7 +94,7 @@ function buildCsp(req: NextRequest): string {
         `frame-ancestors ${self} https://warpcast.com https://*.warpcast.com https://*.farcaster.xyz`,
         `base-uri ${self}`,
         `form-action ${self}`,
-        `media-src ${https} ${self} https://portalpay-b6hqctdfergaadct.z02.azurefd.net`,
+        `media-src ${https} ${self}`,
         // Allow Thirdweb wallet iframes and Adobe Sign
         `frame-src ${self} https://embedded-wallet.thirdweb.com https://*.thirdweb.com https://na2.documents.adobe.com https://*.documents.adobe.com https://*.adobesign.com`,
         // Disallow object/embed entirely

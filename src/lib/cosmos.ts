@@ -4,16 +4,22 @@ import { CosmosClient, Database, Container } from "@azure/cosmos";
 // See: getContainer() → dynamic import() below.
 
 // Accept legacy "payportal" env vars for backward compat, but prefer new names
+// NOTE: These defaults are for MongoDB. Cosmos DB always uses the original
+// payportal/payportal_events names (see getContainer).
 const defaultDbId =
   process.env.DB_NAME ||
   process.env.COSMOS_DB_ID ||
   process.env.COSMOS_PAYPORTAL_DB_ID ||
-  "basaltsurge";
+  "payportal";
 const defaultContainerId =
   process.env.DB_COLLECTION ||
   process.env.COSMOS_CONTAINER_ID ||
   process.env.COSMOS_PAYPORTAL_CONTAINER_ID ||
-  "basaltsurge_events";
+  "payportal_events";
+
+// Original Cosmos DB names — these never change regardless of env vars
+const COSMOS_ORIGINAL_DB = process.env.COSMOS_PAYPORTAL_DB_ID || "payportal";
+const COSMOS_ORIGINAL_CONTAINER = process.env.COSMOS_PAYPORTAL_CONTAINER_ID || "payportal_events";
 
 type Cached = {
   client?: CosmosClient;
@@ -67,14 +73,19 @@ export async function getContainer(dbId = defaultDbId, containerId = defaultCont
   }
 
   // ── Cosmos DB path (existing behavior) ────────────────────────────
+  // IMPORTANT: Always use the ORIGINAL Cosmos DB names, not the env-configured
+  // names which may have been changed to new values (e.g. "surge") for MongoDB.
+  const cosmosDbId = COSMOS_ORIGINAL_DB;
+  const cosmosContainerId = COSMOS_ORIGINAL_CONTAINER;
+
   const client = cache.client || new CosmosClient(conn);
   cache.client = client;
 
-  const { database } = await client.databases.createIfNotExists({ id: dbId });
+  const { database } = await client.databases.createIfNotExists({ id: cosmosDbId });
   cache.db = database;
 
   // OPTIMIZATION: Use optimistic container reference to avoid network RTT on every cold start
-  const container = database.container(containerId);
+  const container = database.container(cosmosContainerId);
 
   cache.container = container;
   cache.dbId = dbId;
