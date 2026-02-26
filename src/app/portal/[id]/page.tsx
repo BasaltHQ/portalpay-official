@@ -1245,8 +1245,13 @@ export default function PortalReceiptPage() {
     return +((itemsSubtotalUsd + taxUsd + tipUsd) * feePctFraction).toFixed(2);
   }, [itemsSubtotalUsd, taxUsd, tipUsd, basePlatformFeePct, processingFeePct]);
 
-  // We rely on the server's totalUsd which includes everything.
-  const totalUsd = Number(receipt?.totalUsd || 0);
+  // We calculate totalUsd dynamically to ensure the displayed total perfectly matches 
+  // the sum of the components (Subtotal + Tax + Tip + Processing Fee) especially 
+  // when the processing fee is actively recalculated on the frontend for older receipts.
+  const totalUsd = useMemo(() => {
+    if (!receipt) return 0;
+    return +(itemsSubtotalUsd + taxUsd + tipUsd + processingFeeUsd).toFixed(2);
+  }, [receipt, itemsSubtotalUsd, taxUsd, tipUsd, processingFeeUsd]);
 
   // Compute receipt readiness (loaded and has a positive total)
   useEffect(() => {
