@@ -81,9 +81,24 @@ class MongoItemReference {
         private _partitionKey?: string
     ) { }
 
-    async read<T = any>(): Promise<ItemResponse<T>> {
+    /** Build the filter that mirrors Cosmos item(id, partitionKey) semantics */
+    private buildFilter(): Document {
         const filter: Document = { id: this.id };
-        const doc = await this.collection.findOne(filter);
+        // In Cosmos DB, the partition key maps to the `wallet` field.
+        // Include it in the filter so we match the exact document, not just any
+        // document that happens to share the same `id` across partitions.
+        if (this._partitionKey) {
+            filter.wallet = this._partitionKey;
+        }
+        return filter;
+    }
+
+    async read<T = any>(): Promise<ItemResponse<T>> {
+        const filter = this.buildFilter();
+        // Sort by updatedAt descending to prefer the most recently updated document.
+        // After Cosmos→MongoDB migration, duplicate documents with the same {id, wallet}
+        // can exist; this ensures we always get the freshest one.
+        const doc = await this.collection.find(filter).sort({ updatedAt: -1 }).limit(1).next();
         if (!doc) {
             return { resource: undefined, statusCode: 404, requestCharge: 0 };
         }
@@ -96,13 +111,13 @@ class MongoItemReference {
 
     async replace<T = any>(body: T): Promise<ItemResponse<T>> {
         const doc = cosmosDocToMongo(body as any);
-        const filter: Document = { id: this.id };
+        const filter = this.buildFilter();
         await this.collection.replaceOne(filter, doc, { upsert: false });
         return { resource: body, statusCode: 200, requestCharge: 0 };
     }
 
     async delete(): Promise<ItemResponse<any>> {
-        const filter: Document = { id: this.id };
+        const filter = this.buildFilter();
         await this.collection.deleteOne(filter);
         return { resource: undefined, statusCode: 204, requestCharge: 0 };
     }
@@ -135,7 +150,7 @@ class MongoItemReference {
         if (Object.keys(unsetOps).length) update.$unset = unsetOps;
         if (Object.keys(incOps).length) update.$inc = incOps;
 
-        const filter: Document = { id: this.id };
+        const filter = this.buildFilter();
         const result = await this.collection.findOneAndUpdate(filter, update, {
             returnDocument: "after",
         });

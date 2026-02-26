@@ -199,6 +199,15 @@ export async function GET(req: NextRequest) {
             ];
             return jsonResponse({ split, brandKey: bKey, requiresDeploy: true, reason: "unauthenticated_preview" });
           }
+          // Platform brand preview (basaltsurge/portalpay)
+          if (!isPartnerBrand && /^0x[a-f0-9]{40}$/i.test(platformRecipient) && /^0x[a-f0-9]{40}$/i.test(mWallet)) {
+            const merchantShares = Math.max(0, 10000 - platformSharesBps);
+            split.recipients = [
+              { address: mWallet as `0x${string}`, sharesBps: merchantShares },
+              { address: platformRecipient as `0x${string}`, sharesBps: platformSharesBps },
+            ];
+            return jsonResponse({ split, brandKey: bKey, requiresDeploy: true, reason: "unauthenticated_preview" });
+          }
           return jsonResponse({ split, brandKey: bKey, requiresDeploy: true, reason: "partner_config_missing" });
         } catch (e: any) {
           return jsonResponse({ error: e?.message || "unauthorized" }, { status: e?.status || 401 });

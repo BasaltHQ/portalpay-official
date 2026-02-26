@@ -1,0 +1,26 @@
+1. [src/app/api/app/installs/route.ts:169]
+   SELECT TOP @top * FROM c WHERE c.type = 'app_install' AND c.app = @app AND ${brandCondition} ORDER BY c.ts DESC
+
+2. [src/app/api/app/installs/route.ts:179]
+   SELECT VALUE COUNT(1) FROM c WHERE c.type = 'app_install' AND c.app = @app AND ${brandCondition}
+
+3. [src/app/api/site/metrics/route.ts:281]
+   SELECT VALUE SUM(c.totalVolumeUsd) FROM c WHERE c.type='split_index'${earnedFilterClause}
+
+4. [src/app/api/site/metrics/route.ts:286]
+   SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid'${walletFilterClause}
+
+5. [src/app/api/site/metrics/route.ts:287]
+   SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid'${walletFilterClause}
+
+6. [src/app/api/site/metrics/route.ts:296]
+   SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since${walletFilterClause}
+
+7. [src/app/api/site/metrics/route.ts:297]
+   SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since${walletFilterClause}
+
+8. [src/app/api/site/metrics/route.ts:309]
+   SELECT DISTINCT VALUE c.wallet FROM c WHERE c.type='receipt' AND c.status='paid'${walletFilterClause}
+
+9. [src/app/api/site/metrics/route.ts:314]
+   SELECT VALUE c.currency FROM c WHERE c.type='receipt' AND c.status='paid' AND IS_DEFINED(c.currency)${walletFilterClause}

@@ -1,0 +1,1833 @@
+{
+  "totalFiles": 996,
+  "totalQueries": 304,
+  "ok": [
+    {
+      "file": "src/app/api/admin/apk/installs/route.ts",
+      "line": 132,
+      "sql": "SELECT TOP @top * FROM c WHERE c.type = 'apk_install' AND c.app = @app AND c.brandKey = @brandKey ORDER BY c.ts DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/admin/apk/installs/route.ts",
+      "line": 142,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'apk_install' AND c.app = @app AND c.brandKey = @brandKey",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/admin/devices/containers/route.ts",
+      "line": 80,
+      "sql": "SELECT c.wallet, c.name, c.appUrl FROM c WHERE c.type = @type",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/admin/devices/package/route.ts",
+      "line": 638,
+      "sql": "SELECT TOP 1 * FROM c WHERE c.brandKey = @brandKey AND c.type = 'partner_application' ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/admin/merchants/route.ts",
+      "line": 25,
+      "sql": "SELECT c.id, c.wallet, c.name, c.industryPack, c.loyalty, c.industryPackActivatedAt, c.slug, c.theme, c.kioskEnabled, c.terminalEnabled FROM c WHERE c.type='shop_config'",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/admin/migrate-apim/route.ts",
+      "line": 15,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'api_key' AND c.keyHash = @hash",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/admin/migrate-apim/route.ts",
+      "line": 47,
+      "sql": "SELECT * FROM c WHERE c.type = 'apim_subscription' AND c.subscriptionId = @sid",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/admin/migrate-apim/route.ts",
+      "line": 73,
+      "sql": "SELECT * FROM c WHERE c.type = 'api_key' AND c.keyHash = @hash",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/admin/plugins/ubereats/config/keys/route.ts",
+      "line": 46,
+      "sql": "SELECT * FROM c WHERE c.id = @id AND c.wallet = @wallet",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/admin/plugins/ubereats/config/route.ts",
+      "line": 94,
+      "sql": "SELECT * FROM c WHERE c.id = @id AND c.wallet = @wallet",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/admin/plugins/ubereats/test-connection/route.ts",
+      "line": 22,
+      "sql": "SELECT * FROM c WHERE c.id = @id AND c.wallet = @wallet",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/admin/reports/access/route.ts",
+      "line": 20,
+      "sql": "SELECT c.id, c.merchantWallet, c.role, c.name FROM c WHERE c.type = 'merchant_team_member' AND c.linkedWallet = @w",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/admin/reports/access/route.ts",
+      "line": 35,
+      "sql": "SELECT c.wallet, c.name, c.theme FROM c WHERE c.type = 'shop_config' AND ARRAY_CONTAINS(@wallets, c.wallet)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/admin/site-config/normalize/route.ts",
+      "line": 67,
+      "sql": "SELECT TOP 1 VALUE c FROM c WHERE c.type=@type AND c.wallet=@wallet AND (IS_DEFINED(c.splitAddress) OR (IS_DEFINED(c.split.address) AND LENGTH(c.split.address) > 0) OR IS_DEFINED(c.config.splitAddress) OR (IS_DEFINED(c.config.split.address) AND LENGTH(c.config.split.address) > 0)) ORDER BY c.updatedAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/admin/support/tickets/backfill/route.ts",
+      "line": 25,
+      "sql": "SELECT * FROM c WHERE NOT IS_DEFINED(c.jiraIssueKey) OR c.jiraIssueKey = null",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/admin/support/tickets/route.ts",
+      "line": 16,
+      "sql": "SELECT * FROM c ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/admin/support/tickets/[id]/route.ts",
+      "line": 21,
+      "sql": "SELECT * FROM c WHERE c.id = @id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/app/installs/route.ts",
+      "line": 170,
+      "sql": "SELECT TOP @top * FROM c WHERE c.type = 'app_install' AND c.app = @app AND (c.brandKey = @brandKey OR NOT IS_DEFINED(c.brandKey) OR c.brandKey = null OR c.brandKey = '') ORDER BY c.ts DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/app/installs/route.ts",
+      "line": 178,
+      "sql": "SELECT TOP @top * FROM c WHERE c.type = 'app_install' AND c.app = @app AND c.brandKey = @brandKey ORDER BY c.ts DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/app/installs/route.ts",
+      "line": 189,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'app_install' AND c.app = @app AND (c.brandKey = @brandKey OR NOT IS_DEFINED(c.brandKey) OR c.brandKey = null OR c.brandKey = '')",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/app/installs/route.ts",
+      "line": 196,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'app_install' AND c.app = @app AND c.brandKey = @brandKey",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/auth/me/route.ts",
+      "line": 66,
+      "sql": "SELECT top 1 c.status FROM c WHERE c.type = 'client_request' AND c.wallet = @w AND c.brandKey = @b",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/auth/me/route.ts",
+      "line": 90,
+      "sql": "SELECT top 1 c.setupComplete FROM c WHERE (c.type = 'shop_config' OR c.type = 'site_config') AND c.wallet = @w AND c.brandKey = @b AND c.setupComplete = true",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/billing/balance/route.ts",
+      "line": 19,
+      "sql": "SELECT c.type, c.seconds FROM c WHERE c.wallet = @w",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/debug/access-check/route.ts",
+      "line": 19,
+      "sql": "SELECT * FROM c WHERE c.type = 'shop_config' AND c.wallet = @w AND c.brandKey = @b",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/debug/access-check/route.ts",
+      "line": 26,
+      "sql": "SELECT * FROM c WHERE c.type = 'client_request' AND c.wallet = @w AND c.brandKey = @b",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/debug/access-check/route.ts",
+      "line": 34,
+      "sql": "SELECT c.id, c.type, c.wallet, c.brandKey, c.status FROM c WHERE (c.type = 'shop_config' OR c.type = 'client_request') AND StringEquals(c.wallet, @w, true) AND StringEquals(c.brandKey, @b, true)",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/debug/diagnose/route.ts",
+      "line": 60,
+      "sql": "SELECT TOP @limit c FROM c WHERE c.type=@type AND c.wallet=@wallet ORDER BY c.updatedAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/debug/site-config/route.ts",
+      "line": 53,
+      "sql": "SELECT TOP @limit VALUE c FROM c WHERE c.type=@type AND c.wallet=@wallet ORDER BY c.updatedAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/debug/site-config/route.ts",
+      "line": 65,
+      "sql": "SELECT TOP @limit VALUE c FROM c WHERE c.type=@type AND (LOWER(c.wallet)=@addr OR LOWER(c.splitAddress)=@addr OR LOWER(c.split.address)=@addr OR LOWER(c.config.splitAddress)=@addr OR LOWER(c.config.split.address)=@addr) ORDER BY c.updatedAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/developers/api-keys/[id]/reveal/route.ts",
+      "line": 31,
+      "sql": "SELECT * FROM c WHERE c.type = 'api_key' AND c.id = @id AND c.ownerWallet = @wallet",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/favicon/route.ts",
+      "line": 78,
+      "sql": "SELECT c.theme, c.wallet, c.slug, c.customDomain FROM c WHERE c.type='shop_config' AND (LOWER(c.slug) = @slug OR LOWER(c.customDomain) = @slug)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/graphql/route.ts",
+      "line": 69,
+      "sql": "SELECT c.wallet, c.displayName, c.pfpUrl, c.spaceUrl, c.liveSince, c.lastHeartbeat FROM c WHERE c.type='user' AND c.live=true AND c.spacePublic=true AND c.lastHeartbeat > @cut ORDER BY c.lastHeartbeat DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/graphql/route.ts",
+      "line": 75,
+      "sql": "SELECT c.wallet, c.displayName, c.pfpUrl, c.xp FROM c WHERE c.type='user' AND IS_DEFINED(c.xp) ORDER BY c.xp DESC OFFSET 0 LIMIT @lim",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/hotel/reservations/route.ts",
+      "line": 23,
+      "sql": "SELECT * FROM c WHERE c.wallet = @wallet",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/integrations/delivery/auth/token/route.ts",
+      "line": 120,
+      "sql": "SELECT * FROM c WHERE c.id = @id AND c.wallet = @wallet",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/integrations/delivery/menu/route.ts",
+      "line": 42,
+      "sql": "SELECT * FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet AND c.industryPack='restaurant'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/integrations/delivery/orders/route.ts",
+      "line": 29,
+      "sql": "SELECT * FROM c WHERE c.type='uber_eats_order'",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/integrations/xshopping/[shopSlug]/product-images/default/route.ts",
+      "line": 20,
+      "sql": "SELECT * FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/integrations/xshopping/[shopSlug]/products/route.ts",
+      "line": 28,
+      "sql": "SELECT c.wallet, c.name FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/integrations/xshopping/[shopSlug]/products/route.ts",
+      "line": 44,
+      "sql": "SELECT * FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/integrations/xshopping/[shopSlug]/products.csv/route.ts",
+      "line": 43,
+      "sql": "SELECT * FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/integrations/xshopping/[shopSlug]/products.csv/route.ts",
+      "line": 61,
+      "sql": "SELECT * FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet AND ((NOT IS_DEFINED(c.attributes) OR NOT IS_DEFINED(c.attributes.type) OR c.attributes.type != 'publishing') OR (c.attributes.type = 'publishing' AND (c.approvalStatus != 'ARCHIVED' OR NOT IS_DEFINED(c.approvalStatus))))",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/inventory/route.ts",
+      "line": 268,
+      "sql": "SELECT * FROM c WHERE c.type='inventory_item' AND (c.isBook=true OR c.industryPack='publishing') ORDER BY c.updatedAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/inventory/route.ts",
+      "line": 295,
+      "sql": "SELECT c.id, c.wallet, c.sku, c.name, c.priceUsd, c.currency, c.stockQty, c.category, c.description, c.tags, c.images, c.attributes, c.costUsd, c.taxable, c.jurisdictionCode, c.industryPack, c.metrics, c.createdAt, c.updatedAt, c.isBook, c.bookFileUrl, c.bookCoverUrl, c.approvalStatus, c.contentDetails, c.releaseDate, c.previewUrl, c.allowDownload, c.drmEnabled, c.isSubscription, c.subscriptionPlanId FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/kitchen/orders/route.ts",
+      "line": 172,
+      "sql": "SELECT * FROM c WHERE c.type='uber_eats_order' AND c.status NOT IN ('CANCELLED', 'DELIVERED')",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/kitchen/orders/route.ts",
+      "line": 302,
+      "sql": "SELECT * FROM c WHERE c.type='uber_eats_order' AND (c.orderId=@orderId OR ENDSWITH(c.orderId, @shortId))",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/kitchen/orders/route.ts",
+      "line": 345,
+      "sql": "SELECT * FROM c WHERE c.receiptId = @id AND c.wallet = @wallet",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/merchant/team/auth/route.ts",
+      "line": 22,
+      "sql": "SELECT * FROM c WHERE c.type = 'merchant_team_member' AND c.merchantWallet = @wallet AND c.pinHash = @hash AND c.active = true",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/merchant/team/payout/route.ts",
+      "line": 29,
+      "sql": "SELECT c.id FROM c WHERE c.type='terminal_session' AND c.merchantWallet=@w AND c.staffId=@sid AND (NOT IS_DEFINED(c.tipsPaid) OR c.tipsPaid=false) AND IS_DEFINED(c.endTime)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/merchant/team/route.ts",
+      "line": 99,
+      "sql": "SELECT * FROM c WHERE c.id = @id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/merchant/team/route.ts",
+      "line": 21,
+      "sql": "SELECT * FROM c WHERE c.type = 'merchant_team_member' AND c.merchantWallet = @wallet",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/merchant/team/sessions/route.ts",
+      "line": 21,
+      "sql": "SELECT c.id, c.startTime, c.endTime, c.totalSales, c.totalTips, c.tipsPaid, c.tipsPaidAt FROM c WHERE c.type='terminal_session' AND c.merchantWallet=@w AND c.staffId=@memberId ORDER BY c.startTime DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/merchant/team/stats/route.ts",
+      "line": 20,
+      "sql": "SELECT c.employeeId, SUM(c.totalUsd) as total, SUM(c.tipAmount) as tips FROM c WHERE c.type='receipt' AND c.wallet=@w AND IS_DEFINED(c.employeeId) GROUP BY c.employeeId",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/merchant/team/stats/route.ts",
+      "line": 40,
+      "sql": "SELECT c.staffId, MAX(c.startTime) as lastActive, SUM(c.totalTips) as unpaidTips FROM c WHERE c.type='terminal_session' AND c.merchantWallet=@w AND (NOT IS_DEFINED(c.tipsPaid) OR c.tipsPaid=false) GROUP BY c.staffId",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/merchant/team/stats/route.ts",
+      "line": 46,
+      "sql": "SELECT c.staffId, MAX(c.startTime) as lastActive FROM c WHERE c.type='terminal_session' AND c.merchantWallet=@w GROUP BY c.staffId",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/merchants/[id]/features/route.ts",
+      "line": 21,
+      "sql": "SELECT * FROM c WHERE c.type='shop_config' AND c.wallet=@wallet",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/messages/conversations/route.ts",
+      "line": 101,
+      "sql": "SELECT c.id, c.wallet, c.brandKey, c.participants, c.subject, c.lastMessageAt, c.createdAt",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/messages/conversations/route.ts",
+      "line": 111,
+      "sql": "SELECT c.id, c.wallet, c.brandKey, c.participants, c.subject, c.lastMessageAt, c.createdAt",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/messages/conversations/route.ts",
+      "line": 135,
+      "sql": "SELECT DISTINCT VALUE m.conversationId FROM m WHERE m.type='message' AND (m.senderWallet=@me OR ARRAY_CONTAINS(m.readBy, @me))",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/messages/conversations/route.ts",
+      "line": 156,
+      "sql": "SELECT c.id, c.wallet, c.brandKey, c.participants, c.subject, c.lastMessageAt, c.createdAt",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/messages/conversations/[id]/messages/route.ts",
+      "line": 106,
+      "sql": "SELECT c.id, c.wallet, c.participants, c.brandKey FROM c WHERE c.type='conversation' AND c.id=@id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/messages/conversations/[id]/messages/route.ts",
+      "line": 157,
+      "sql": "SELECT m.id, m.wallet, m.conversationId, m.senderWallet, m.body, m.attachments, m.createdAt, m.readBy",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/messages/conversations/[id]/messages/route.ts",
+      "line": 228,
+      "sql": "SELECT c.id, c.wallet, c.participants, c.brandKey FROM c WHERE c.type='conversation' AND c.id=@id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/metadata/book/[id]/route.ts",
+      "line": 19,
+      "sql": "SELECT * FROM c WHERE c.id = @id AND c.isBook = true",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/metadata/usbn/[usbn]/route.ts",
+      "line": 20,
+      "sql": "SELECT * FROM c WHERE c.contentDetails.usbn = @usbn AND c.isBook = true",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/me/route.ts",
+      "line": 42,
+      "sql": "SELECT c.id, c.wallet, c.receiptId, c.totalUsd, c.currency, c.lineItems, c.createdAt, c.brandName, c.jurisdictionCode, c.taxRate, c.taxComponents, c.status, c.buyerWallet, c.shopSlug, c.metadata, c.transactionHash FROM c WHERE c.type = 'receipt' AND c.buyerWallet = @buyer",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 53,
+      "sql": "SELECT c.merchant FROM c WHERE c.type='user_merchant' AND c.wallet=@buyer",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 69,
+      "sql": "SELECT c.merchantWallet FROM c WHERE c.type='split_index' AND c.brandKey=@brand",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 449,
+      "sql": "SELECT c.id, c.wallet, c.receiptId, c.totalUsd, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant ORDER BY c.createdAt DESC OFFSET 0 LIMIT 200",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 519,
+      "sql": "SELECT c.id, c.receiptId, c.buyerWallet, c.transactionHash FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.transactionHash=@txHash",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 559,
+      "sql": "SELECT TOP 1 c.purchaseData, c.transactions FROM c WHERE c.type='payment_event_thirdweb' AND c.brandKey=@brand",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 604,
+      "sql": "SELECT c.lineItems, c.totalUsd, c.receiptId, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='checkout_initialized' OR LOWER(c.status)='buyer_logged_in' OR LOWER(c.status)='link_opened') ORDER BY c.createdAt DESC OFFSET 0 LIMIT 50",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 677,
+      "sql": "SELECT c.id, c.wallet, c.receiptId, c.createdAt, c.expectedToken, c.expectedAmountToken, c.metadata FROM c WHERE c.type='receipt' AND c.wallet=@merchant ORDER BY c.createdAt DESC OFFSET 0 LIMIT 200",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 709,
+      "sql": "SELECT TOP 1 c.purchaseData, c.transactions FROM c WHERE c.type='payment_event_thirdweb' AND c.brandKey=@brand",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 801,
+      "sql": "SELECT c.receiptId FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.transactionHash=@tx AND STARTSWITH(c.receiptId, @prefix)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 820,
+      "sql": "SELECT c.receiptId, c.createdAt, c.totalUsd FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND STARTSWITH(c.receiptId, @prefix)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 854,
+      "sql": "SELECT c.id, c.wallet, c.receiptId, c.createdAt, c.metadata FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.createdAt BETWEEN @start AND @end",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 908,
+      "sql": "SELECT c.lineItems, c.totalUsd, c.receiptId, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='checkout_initialized' OR LOWER(c.status)='buyer_logged_in' OR LOWER(c.status)='link_opened') ORDER BY c.createdAt DESC OFFSET 0 LIMIT 50",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 964,
+      "sql": "SELECT c.id, c.wallet, c.receiptId, c.totalUsd, c.createdAt, c.status FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.createdAt BETWEEN @start AND @end AND c.totalUsd >= @minUsd AND c.totalUsd <= @maxUsd",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1017,
+      "sql": "SELECT c.lineItems, c.totalUsd, c.receiptId, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='checkout_initialized' OR LOWER(c.status)='buyer_logged_in' OR LOWER(c.status)='link_opened') ORDER BY c.createdAt DESC OFFSET 0 LIMIT 50",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1101,
+      "sql": "SELECT c.id, c.wallet, c.receiptId FROM c WHERE c.type='receipt' AND c.transactionHash=@tx",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1151,
+      "sql": "SELECT TOP 1 c.purchaseData, c.destinationToken, c.originToken, c.transactions FROM c WHERE c.type='payment_event_thirdweb' AND c.brandKey=@brand",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1238,
+      "sql": "SELECT c.receiptId FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.transactionHash=@tx AND STARTSWITH(c.receiptId, @prefix)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1308,
+      "sql": "SELECT c.id, c.wallet, c.receiptId, c.totalUsd, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant ORDER BY c.createdAt DESC OFFSET 0 LIMIT 200",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1340,
+      "sql": "SELECT TOP 1 c.purchaseData, c.transactions FROM c WHERE c.type='payment_event_thirdweb' AND c.brandKey=@brand",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1430,
+      "sql": "SELECT c.receiptId FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.transactionHash=@tx AND STARTSWITH(c.receiptId, @prefix)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1448,
+      "sql": "SELECT c.receiptId, c.createdAt, c.totalUsd FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND STARTSWITH(c.receiptId, @prefix)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1550,
+      "sql": "SELECT c.receiptId, c.totalUsd, c.createdAt, c.lineItems, c.status, c.transactionHash FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='paid' OR LOWER(c.status)='reconciled' OR IS_DEFINED(c.transactionHash)) ORDER BY c.createdAt DESC OFFSET 0 LIMIT 200",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1562,
+      "sql": "SELECT c.lineItems, c.totalUsd, c.receiptId, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='checkout_initialized' OR LOWER(c.status)='buyer_logged_in' OR LOWER(c.status)='link_opened') ORDER BY c.createdAt DESC OFFSET 0 LIMIT 200",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1709,
+      "sql": "SELECT c.receiptId FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.totalUsd <= @zero AND STARTSWITH(c.receiptId, @prefix)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1736,
+      "sql": "SELECT c.receiptId, c.totalUsd, c.createdAt, c.status, c.transactionHash FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='checkout_initialized' OR LOWER(c.status)='buyer_logged_in' OR LOWER(c.status)='link_opened')",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1785,
+      "sql": "SELECT c.receiptId, c.totalUsd, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND STARTSWITH(c.receiptId, @prefix)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 1800,
+      "sql": "SELECT TOP 1 c.receiptId FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND NOT STARTSWITH(c.receiptId, @prefix) AND ABS(c.totalUsd - @total) <= @tol ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/reindex/route.ts",
+      "line": 107,
+      "sql": "SELECT c.id, c.wallet, c.sku, c.name, c.priceUsd, c.updatedAt FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/orders/route.ts",
+      "line": 254,
+      "sql": "SELECT TOP 1 c FROM c WHERE c.type=@type AND c.wallet=@wallet AND (IS_DEFINED(c.splitAddress) OR (IS_DEFINED(c.split.address) AND LENGTH(c.split.address) > 0)) ORDER BY c.updatedAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/route.ts",
+      "line": 452,
+      "sql": "SELECT * FROM c WHERE c.docType='discount' AND c.status='active' AND (c.shopId=@wallet OR LOWER(c.shopId)=@walletLower OR c.shopSlug=@shopSlug OR LOWER(c.shopSlug)=@shopSlug OR c.shopId=@platformWallet OR LOWER(c.shopId)=@platformWallet)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/route.ts",
+      "line": 457,
+      "sql": "SELECT * FROM c WHERE c.docType='discount' AND c.status='active' AND (c.shopId=@wallet OR LOWER(c.shopId)=@walletLower OR c.shopSlug=@shopSlug OR LOWER(c.shopSlug)=@shopSlug)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/route.ts",
+      "line": 462,
+      "sql": "SELECT * FROM c WHERE c.docType='discount' AND c.status='active' AND (c.shopId=@wallet OR LOWER(c.shopId)=@walletLower OR c.shopId=@platformWallet OR LOWER(c.shopId)=@platformWallet)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/route.ts",
+      "line": 467,
+      "sql": "SELECT * FROM c WHERE c.docType='discount' AND c.status='active' AND (c.shopId=@wallet OR LOWER(c.shopId)=@walletLower)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/orders/route.ts",
+      "line": 359,
+      "sql": "SELECT c.id, c.wallet, c.sku, c.name, c.priceUsd, c.currency, c.stockQty, c.category, c.description, c.tags, c.images, c.attributes, c.costUsd, c.taxable, c.jurisdictionCode, c.metrics, c.createdAt, c.updatedAt FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/orders/route.ts",
+      "line": 432,
+      "sql": "SELECT * FROM c WHERE c.type='shop_config' AND c.wallet=@wallet",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/orders/[id]/route.ts",
+      "line": 23,
+      "sql": "SELECT * FROM c WHERE c.type = 'receipt' AND LOWER(c.receiptId) = @id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/partner/client-requests/route.ts",
+      "line": 280,
+      "sql": "SELECT c.id, c.status FROM c WHERE c.type = 'client_request' AND c.wallet = @w AND c.brandKey = @brand",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/partner/client-requests/route.ts",
+      "line": 394,
+      "sql": "SELECT * FROM c WHERE c.type = 'client_request' AND c.id = @id AND c.brandKey = @brand",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/partner/client-requests/route.ts",
+      "line": 444,
+      "sql": "SELECT * FROM c WHERE (c.type = 'site_config' OR c.type = 'shop_config') AND StringEquals(c.wallet, @w, true) AND StringEquals(c.brandKey, @brand, true) ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/partner/client-requests/route.ts",
+      "line": 579,
+      "sql": "SELECT TOP 1 c.id, c.brandKey FROM c WHERE (c.type = 'shop_config' OR c.type = 'site_config') AND c.slug = @slug AND c.wallet != @wallet",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/partner/client-requests/route.ts",
+      "line": 649,
+      "sql": "SELECT * FROM c WHERE c.type = 'client_request' AND c.id = @id AND c.brandKey = @brand",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/partner/client-requests/route.ts",
+      "line": 686,
+      "sql": "SELECT * FROM c WHERE c.wallet = @w",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/partner/client-requests/route.ts",
+      "line": 98,
+      "sql": "SELECT * FROM c WHERE (c.type = 'client_request' OR c.type = 'site_config' OR c.type = 'shop_config') AND StringEquals(c.brandKey, @brand, true) ORDER BY c.createdAt DESC",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/partners/applications/[id]/route.ts",
+      "line": 80,
+      "sql": "SELECT * FROM c WHERE c.type = @type AND c.id = @id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/platform/brands/route.ts",
+      "line": 40,
+      "sql": "SELECT c.wallet FROM c WHERE c.type = @type",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/platform/partners/applications/route.ts",
+      "line": 83,
+      "sql": "SELECT c.id, c.wallet, c.brandKey, c.companyName, c.contactName, c.contactEmail, c.appUrl, c.partnerFeeBps, c.defaultMerchantFeeBps, c.partnerWallet, c.colors, c.logos, c.meta, c.notes, c.status, c.createdAt, c.updatedAt, c.approvedAt, c.approvedBy FROM c WHERE c.type = @type",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/platform/partners/applications/[id]/route.ts",
+      "line": 104,
+      "sql": "SELECT * FROM c WHERE c.type = @type AND c.id = @id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/platform/partners/applications/[id]/route.ts",
+      "line": 176,
+      "sql": "SELECT * FROM c WHERE c.type = @type AND c.id = @id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/cleaning-tasks/route.ts",
+      "line": 109,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/cleaning-tasks/route.ts",
+      "line": 126,
+      "sql": "SELECT * FROM c WHERE c.id = @id AND c.type = 'pms_staff'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/cleaning-tasks/route.ts",
+      "line": 191,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/cleaning-tasks/route.ts",
+      "line": 33,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_cleaning_task' AND c.pmsSlug = @slug",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/complete-setup/route.ts",
+      "line": 35,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/groups/route.ts",
+      "line": 92,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/groups/route.ts",
+      "line": 168,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/groups/route.ts",
+      "line": 252,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/groups/route.ts",
+      "line": 31,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_group_booking' AND c.pmsSlug = @slug",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/messages/route.ts",
+      "line": 85,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/messages/route.ts",
+      "line": 97,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_folio' AND c.id = @folioId AND c.pmsSlug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/messages/route.ts",
+      "line": 166,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/messages/route.ts",
+      "line": 32,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_message' AND c.pmsSlug = @slug",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/night-audit/route.ts",
+      "line": 84,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/night-audit/route.ts",
+      "line": 96,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_night_audit' AND c.pmsSlug = @slug AND c.auditDate = @date",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/night-audit/route.ts",
+      "line": 31,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_night_audit' AND c.pmsSlug = @slug",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/rates/route.ts",
+      "line": 29,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_rate_plan' AND c.pmsSlug = @slug ORDER BY c.roomTypeName ASC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/rates/route.ts",
+      "line": 75,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/rates/route.ts",
+      "line": 150,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/rates/route.ts",
+      "line": 215,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/reservations/route.ts",
+      "line": 110,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/reservations/route.ts",
+      "line": 216,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/reservations/route.ts",
+      "line": 312,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/reservations/route.ts",
+      "line": 34,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_reservation' AND c.pmsSlug = @slug",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/setup-status/route.ts",
+      "line": 25,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/work-orders/route.ts",
+      "line": 105,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/work-orders/route.ts",
+      "line": 178,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/work-orders/route.ts",
+      "line": 258,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/pms/[slug]/work-orders/route.ts",
+      "line": 33,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_work_order' AND c.pmsSlug = @slug",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/receipts/purge/route.ts",
+      "line": 99,
+      "sql": "SELECT c.id FROM c WHERE c.type='receipt' AND c.wallet=@wallet",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/receipts/route.ts",
+      "line": 74,
+      "sql": "SELECT TOP @limit c.receiptId, c.totalUsd, c.currency, c.lineItems, c.createdAt, c.brandName, c.status FROM c WHERE c.type='receipt' AND c.wallet=@wallet",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/receipts/seed/route.ts",
+      "line": 152,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.wallet=@w",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/receipts/[id]/claim/route.ts",
+      "line": 44,
+      "sql": "SELECT TOP 1 * FROM c WHERE c.type='receipt' AND c.receiptId=@id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/receipts/[id]/claim/route.ts",
+      "line": 74,
+      "sql": "SELECT TOP 1 c.config.slug, c.config.name FROM c WHERE c.type='shop' AND c.wallet=@wallet",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/receipts/[id]/route.ts",
+      "line": 95,
+      "sql": "SELECT TOP 1 c.wallet FROM c WHERE c.type='site_config' AND (LOWER(c.splitAddress)=@addr OR LOWER(c.split.address)=@addr)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/receipts/[id]/route.ts",
+      "line": 112,
+      "sql": "SELECT TOP 1 c.receiptId, c.totalUsd, c.currency, c.lineItems, c.createdAt, c.wallet, c.brandName, c.status, c.refunds, c.jurisdictionCode, c.taxRate, c.taxComponents, c.transactionHash, c.transactionTimestamp, c.employeeId, c.tipAmount, c.buyerWallet FROM c WHERE c.type='receipt' AND c.receiptId=@id ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/receipts/[id]/route.ts",
+      "line": 148,
+      "sql": "SELECT TOP 1 c.productId, c.amountUsd, c.wallet, c.payTo, c.status, c.correlationId, c.attemptedAt, c.settledAt FROM c WHERE (c.type='apim_subscription_payment' OR c.type='apim_subscription_tip') AND c.correlationId=@id ORDER BY c.attemptedAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/receipts/[id]/route.ts",
+      "line": 187,
+      "sql": "SELECT TOP 1 c.productId, c.amountUsd, c.wallet, c.payTo, c.status, c.correlationId, c.attemptedAt, c.settledAt FROM c WHERE (c.type='apim_subscription_payment' OR c.type='apim_subscription_tip') AND c.correlationId=@id ORDER BY c.attemptedAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/receipts/[id]/tip/route.ts",
+      "line": 73,
+      "sql": "SELECT * FROM c WHERE c.id = @docId",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/receipts/[id]/tip/route.ts",
+      "line": 20,
+      "sql": "SELECT * FROM c WHERE c.receiptId = @id",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/reviews/route.ts",
+      "line": 95,
+      "sql": "SELECT c.id, c.wallet, c.authorWallet, c.subject, c.orderRef, c.rating, c.title, c.body, c.createdAt, c.updatedAt",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/reviews/route.ts",
+      "line": 172,
+      "sql": "SELECT c.id, c.wallet, c.receiptId, c.lineItems, c.status, c.buyerWallet, c.shopSlug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/reviews/route.ts",
+      "line": 216,
+      "sql": "SELECT TOP 1 c.wallet FROM c WHERE c.type='shop_config' AND c.slug=@slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/reviews/route.ts",
+      "line": 249,
+      "sql": "SELECT c.id FROM c WHERE c.type='review' AND (c.brandKey=@brand OR NOT IS_DEFINED(c.brandKey) OR c.brandKey = null OR c.brandKey = '') AND c.authorWallet=@author",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/shop/config/route.ts",
+      "line": 448,
+      "sql": "SELECT TOP 1 c.id, c.wallet, c.slug FROM c WHERE c.type='shop_config' AND LOWER(c.slug)=@s",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/shop/discounts/route.ts",
+      "line": 176,
+      "sql": "SELECT * FROM c WHERE c.id = @id AND c.docType = 'discount'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/shop/discounts/route.ts",
+      "line": 51,
+      "sql": "SELECT * FROM c WHERE c.type='shop_config' AND c.wallet=@wallet",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/shop/domain/verify/route.ts",
+      "line": 100,
+      "sql": "SELECT TOP 1 c.wallet FROM c WHERE c.type='shop_config' AND c.customDomain=@domain AND c.customDomainVerified=true",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/shop/domain/verify/route.ts",
+      "line": 117,
+      "sql": "SELECT * FROM c WHERE c.type='shop_config' AND c.wallet=@w",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/shop/lookup/route.ts",
+      "line": 31,
+      "sql": "SELECT c.slug, c.name, c.brandKey FROM c WHERE c.type = 'shop_config' AND c.wallet = @wallet AND c.slug != null",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/shop/me/route.ts",
+      "line": 16,
+      "sql": "SELECT c.slug FROM c WHERE c.wallet = @wallet AND c.slug != null",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/shop/slug/route.ts",
+      "line": 113,
+      "sql": "SELECT TOP 1 c.wallet, c.slug, c.brandKey, c.customDomain, c.customDomainVerified FROM c WHERE c.type='shop_config' AND (c.slug=@slug OR (c.customDomain=@slug AND c.customDomainVerified=true))",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/shop/slug/route.ts",
+      "line": 202,
+      "sql": "SELECT TOP 1 c.wallet, c.slug, c.brandKey FROM c WHERE c.type='shop_config' AND c.slug=@slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/config/route.ts",
+      "line": 1045,
+      "sql": "SELECT * FROM c WHERE c.wallet = @wallet AND c.type = 'shop_config'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/config/route.ts",
+      "line": 1185,
+      "sql": "SELECT TOP 1 c.id, c.wallet FROM c WHERE c.type='site_config' AND (LOWER(c.splitAddress)=@addr OR LOWER(c.split.address)=@addr)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 40,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type='user'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 49,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type='session_summary'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 50,
+      "sql": "SELECT VALUE SUM(c.durationSeconds) FROM c WHERE c.type='session_summary'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 62,
+      "sql": "SELECT VALUE SUM(c.seconds) FROM c WHERE c.type='usage'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 70,
+      "sql": "SELECT VALUE SUM(c.usedSeconds) FROM c WHERE c.type='user' AND IS_DEFINED(c.usedSeconds)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 80,
+      "sql": "SELECT c.liveSince, c.lastHeartbeat FROM c WHERE c.type='user' AND c.live = true AND c.spacePublic = true AND c.lastHeartbeat > @cutoff",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 95,
+      "sql": "SELECT c.domain, c.languages, c.platform, c.topics FROM c WHERE c.type='session_summary'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 124,
+      "sql": "SELECT c.metrics FROM c WHERE c.type='user' AND IS_DEFINED(c.metrics)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 143,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type='session_summary' AND c.ts > @since",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 144,
+      "sql": "SELECT VALUE SUM(c.durationSeconds) FROM c WHERE c.type='session_summary' AND c.ts > @since",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 159,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type='session_summary' AND c.ts > @since",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 160,
+      "sql": "SELECT VALUE SUM(c.durationSeconds) FROM c WHERE c.type='session_summary' AND c.ts > @since",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 179,
+      "sql": "SELECT VALUE SUM(c.xp) FROM c WHERE c.type='user' AND IS_DEFINED(c.xp)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 180,
+      "sql": "SELECT VALUE SUM(c.purchasedSeconds) FROM c WHERE c.type='user' AND IS_DEFINED(c.purchasedSeconds)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 193,
+      "sql": "SELECT VALUE c.durationSeconds FROM c WHERE c.type='session_summary' AND c.ts > @since",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 236,
+      "sql": "SELECT c.wallet, c.brandKey, c.theme FROM c WHERE c.type='site_config'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 281,
+      "sql": "SELECT VALUE SUM(c.totalVolumeUsd) FROM c WHERE c.type='split_index' AND ARRAY_CONTAINS(@wallets, c.merchantWallet)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 285,
+      "sql": "SELECT VALUE SUM(c.totalVolumeUsd) FROM c WHERE c.type='split_index'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 295,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid' AND ARRAY_CONTAINS(@wallets, c.wallet)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 296,
+      "sql": "SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid' AND ARRAY_CONTAINS(@wallets, c.wallet)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 304,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 305,
+      "sql": "SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 319,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since AND ARRAY_CONTAINS(@wallets, c.wallet)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 320,
+      "sql": "SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since AND ARRAY_CONTAINS(@wallets, c.wallet)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 328,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 329,
+      "sql": "SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 345,
+      "sql": "SELECT DISTINCT VALUE c.wallet FROM c WHERE c.type='receipt' AND c.status='paid' AND ARRAY_CONTAINS(@wallets, c.wallet)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 349,
+      "sql": "SELECT DISTINCT VALUE c.wallet FROM c WHERE c.type='receipt' AND c.status='paid'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 359,
+      "sql": "SELECT VALUE c.currency FROM c WHERE c.type='receipt' AND c.status='paid' AND IS_DEFINED(c.currency) AND ARRAY_CONTAINS(@wallets, c.wallet)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/site/metrics/route.ts",
+      "line": 360,
+      "sql": "SELECT VALUE c.currency FROM c WHERE c.type='receipt' AND c.status='paid' AND IS_DEFINED(c.currency)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/split/reconcile/route.ts",
+      "line": 109,
+      "sql": "SELECT c.id, c.receiptId, c.status, c.createdAt, c.expectedToken, c.expectedAmountToken, c.expectedUsd, c.buyerWallet, c.transactionHash FROM c WHERE c.type='receipt' AND c.wallet=@w AND c.createdAt>=@start",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/support/tickets/route.ts",
+      "line": 86,
+      "sql": "SELECT * FROM c WHERE c.brandKey = @brandKey ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/support/tickets/route.ts",
+      "line": 91,
+      "sql": "SELECT * FROM c WHERE c.user = @user ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/support/tickets/[id]/route.ts",
+      "line": 25,
+      "sql": "SELECT * FROM c WHERE c.id = @id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/auth/route.ts",
+      "line": 33,
+      "sql": "SELECT * FROM c WHERE (c.type = 'shop_config' OR c.type = 'site_config') AND c.wallet = @w",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/auth/route.ts",
+      "line": 104,
+      "sql": "SELECT c.id, c.name, c.role FROM c WHERE c.type = 'merchant_team_member' AND c.merchantWallet = @w AND c.pinHash = @ph",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/terminal/reports/email/route.tsx",
+      "line": 79,
+      "sql": "SELECT * FROM c WHERE LOWER(c.wallet) = @w AND c.type = 'shop_config'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/reports/route.tsx",
+      "line": 73,
+      "sql": "SELECT c.brandKey FROM c WHERE c.type = 'shop_config' AND c.wallet = @w",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/reports/route.tsx",
+      "line": 92,
+      "sql": "SELECT * FROM c WHERE c.id = @id AND c.type = 'terminal_session'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/reports/route.tsx",
+      "line": 121,
+      "sql": "SELECT * FROM c WHERE c.merchantWallet = @mw AND c.type = 'merchant_team_member' AND c.linkedWallet = @lw AND (c.role = 'manager' OR c.role = 'owner')",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/reports/route.tsx",
+      "line": 376,
+      "sql": "SELECT c.id, c.name FROM c WHERE c.type = 'merchant_team_member' AND c.merchantWallet = @w AND ARRAY_CONTAINS(@ids, c.id)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/reports/route.tsx",
+      "line": 427,
+      "sql": "SELECT * FROM c WHERE LOWER(c.wallet) = @w AND c.type = 'shop_config'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/reports/route.tsx",
+      "line": 266,
+      "sql": "SELECT * FROM c WHERE c.type = 'terminal_session' AND c.merchantWallet = @w AND c.startTime >= @start AND c.startTime <= @end",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/terminal/session/route.ts",
+      "line": 23,
+      "sql": "SELECT * FROM c WHERE c.id = @id AND c.type = 'terminal_session'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/session/route.ts",
+      "line": 54,
+      "sql": "SELECT c.id, c.startTime, c.endTime, c.totalSales, c.totalTips FROM c WHERE c.type = 'terminal_session' AND c.staffId = @staffId AND c.createdAt >= @startOfDay AND c.brandKey = @brandKey",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/session/route.ts",
+      "line": 64,
+      "sql": "SELECT c.id, c.startTime, c.endTime, c.totalSales, c.totalTips FROM c WHERE c.type = 'terminal_session' AND c.staffId = @staffId AND c.createdAt >= @startOfDay",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/session/route.ts",
+      "line": 76,
+      "sql": "SELECT TOP 5 c.id, c.staffId, c.createdAt, c.wallet FROM c WHERE c.type='terminal_session' AND c.staffId = @staffId ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/session/route.ts",
+      "line": 91,
+      "sql": "SELECT TOP 5 c.id, c.sessionId, c.status, c.totalUsd FROM c WHERE c.type='receipt' AND c.wallet=@wallet ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/session/route.ts",
+      "line": 103,
+      "sql": "SELECT VALUE { totalSales: SUM(c.totalUsd), totalTips: SUM(c.tipAmount), count: COUNT(1) } FROM c WHERE c.type = 'receipt' AND c.wallet = @wallet AND (c.staffId = @staffId OR ARRAY_CONTAINS(@sessionIds, c.sessionId)) AND c.createdAt >= @startOfDay AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed')",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/session/route.ts",
+      "line": 121,
+      "sql": "SELECT c.id, c.receiptId, c.createdAt, c.totalUsd, c.tipAmount, c.status, c.tableNumber FROM c WHERE c.type = 'receipt' AND c.wallet = @wallet AND (c.staffId = @staffId OR ARRAY_CONTAINS(@sessionIds, c.sessionId)) AND c.createdAt >= @startOfDay AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed') ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/session/route.ts",
+      "line": 177,
+      "sql": "SELECT VALUE { totalSales: SUM(c.totalUsd), totalTips: SUM(c.tipAmount) } FROM c WHERE c.type = 'receipt' AND c.sessionId = @sid AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed')",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/team/route.ts",
+      "line": 10,
+      "sql": "SELECT * FROM c WHERE c.id = @id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/terminal/team/route.ts",
+      "line": 56,
+      "sql": "SELECT * FROM c WHERE c.type = 'merchant_team_member' AND c.merchantWallet = @w",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/touchpoint/build/route.ts",
+      "line": 422,
+      "sql": "SELECT TOP 1 * FROM c WHERE c.brandKey = @brandKey AND c.type = 'partner_application' ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/touchpoint/devices/route.ts",
+      "line": 78,
+      "sql": "SELECT TOP @top * FROM c WHERE c.type = 'touchpoint_device'",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/touchpoint/devices/route.ts",
+      "line": 95,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'touchpoint_device'",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/ucp/checkout-sessions/[id]/complete/route.ts",
+      "line": 16,
+      "sql": "SELECT * FROM c WHERE c.id = @id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/ucp/checkout-sessions/[id]/route.ts",
+      "line": 24,
+      "sql": "SELECT * FROM c WHERE c.id = @id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/ucp/checkout-sessions/[id]/route.ts",
+      "line": 63,
+      "sql": "SELECT * FROM c WHERE c.id = @id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/users/live/route.ts",
+      "line": 10,
+      "sql": "SELECT c.wallet, c.displayName, c.pfpUrl, c.spaceUrl, c.spacePublic, c.live, c.liveSince, c.lastHeartbeat, c.metrics, c.currentLanguage, c.currentDomain, c.currentPlatform FROM c WHERE c.type = 'user' AND c.live = true AND c.spacePublic = true AND c.lastHeartbeat > @cutoff ORDER BY c.lastHeartbeat DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/users/search/route.ts",
+      "line": 49,
+      "sql": "SELECT c.wallet, c.displayName, c.pfpUrl, c.xp, c.lastSeen, c.lastHeartbeat, c.live, c.spacePublic, c.metrics FROM c WHERE c.type = 'user'",
+      "source": "const_query"
+    },
+    {
+      "file": "src/app/api/voice/elevenlabs/signed-url/route.ts",
+      "line": 67,
+      "sql": "SELECT c.seconds, c.kind FROM c WHERE c.wallet = @w AND c.type = @t AND c.day = @d AND c.finalized = true",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/voice/session/route.ts",
+      "line": 53,
+      "sql": "SELECT c.seconds, c.kind FROM c WHERE c.wallet = @w AND c.type = @t AND c.day = @d AND c.finalized = true",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/voice/usage/commit/route.ts",
+      "line": 47,
+      "sql": "SELECT TOP 1 c.id, c.wallet, c.type, c.seconds, c.kind, c.day, c.finalized FROM c WHERE c.type=@t AND c.id=@id AND c.wallet=@w",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/api/webhooks/thirdweb/route.ts",
+      "line": 59,
+      "sql": "SELECT c.wallet, c.splitAddress, c.split, c.config FROM c WHERE c.type='site_config' AND (LOWER(c.wallet)=@addr OR LOWER(c.splitAddress)=@addr OR LOWER(c.split.address)=@addr OR LOWER(c.config.splitAddress)=@addr OR LOWER(c.config.split.address)=@addr)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/handheld/[id]/page.tsx",
+      "line": 41,
+      "sql": "SELECT * FROM c WHERE (c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true) OR c.wallet = @slug) AND (c.type = 'shop_config' OR c.type = 'site_config')",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/handheld/[id]/page.tsx",
+      "line": 99,
+      "sql": "SELECT * FROM c WHERE c.type = 'inventory_item' AND c.wallet = @wallet",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/kiosk/[id]/page.tsx",
+      "line": 44,
+      "sql": "SELECT * FROM c WHERE (c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true) OR c.wallet = @slug) AND (c.type = 'shop_config' OR c.type = 'site_config')",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/portfolio/page.tsx",
+      "line": 29,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/portfolio/page.tsx",
+      "line": 43,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.wallet = @wallet",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/portfolio/page.tsx",
+      "line": 54,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'pms_folio' AND c.pmsSlug = @slug AND c.status = 'open'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/portfolio/page.tsx",
+      "line": 62,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'inventory_item' AND c.wallet = @wallet AND c.attributes.industry = 'hotel'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/frontdesk/page.tsx",
+      "line": 49,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/frontdesk/page.tsx",
+      "line": 91,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/groups/page.tsx",
+      "line": 37,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/groups/page.tsx",
+      "line": 51,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_group' AND c.pmsSlug = @slug ORDER BY c.checkInDate ASC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/groups/page.tsx",
+      "line": 59,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_corporate' AND c.pmsSlug = @slug ORDER BY c.companyName ASC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/housekeeping/page.tsx",
+      "line": 30,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/housekeeping/page.tsx",
+      "line": 70,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/maintenance/page.tsx",
+      "line": 54,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/night-audit/page.tsx",
+      "line": 37,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/night-audit/page.tsx",
+      "line": 54,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_night_audit' AND c.pmsSlug = @slug AND c.auditDate = @date",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/night-audit/page.tsx",
+      "line": 65,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_folio' AND c.pmsSlug = @slug AND c.status = 'open'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/night-audit/page.tsx",
+      "line": 73,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'inventory_item' AND c.wallet = @wallet AND c.attributes.industry = 'hotel'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/page.tsx",
+      "line": 49,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/page.tsx",
+      "line": 234,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/rates/page.tsx",
+      "line": 37,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/rates/page.tsx",
+      "line": 51,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_rate_plan' AND c.pmsSlug = @slug ORDER BY c.roomTypeName ASC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/reports/page.tsx",
+      "line": 37,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/reports/page.tsx",
+      "line": 51,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type = 'inventory_item' AND c.wallet = @wallet AND c.attributes.industry = 'hotel'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/reports/page.tsx",
+      "line": 59,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_night_audit' AND c.pmsSlug = @slug ORDER BY c.auditDate DESC OFFSET 0 LIMIT 90",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/reservations/page.tsx",
+      "line": 32,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/settings/page.tsx",
+      "line": 30,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/settings/page.tsx",
+      "line": 72,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/setup/page.tsx",
+      "line": 23,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/pms/[slug]/setup/page.tsx",
+      "line": 71,
+      "sql": "SELECT * FROM c WHERE c.type = 'pms_instance' AND c.slug = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/shop/[slug]/layout.tsx",
+      "line": 32,
+      "sql": "SELECT TOP 1 c.wallet, c.slug FROM c WHERE (c.type='shop_config' OR c.type='site_config') AND (c.slug=@slug OR (c.customDomain=@slug AND c.customDomainVerified=true))",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/shop/[slug]/llms.txt/route.ts",
+      "line": 20,
+      "sql": "SELECT * FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/shop/[slug]/llms.txt/route.ts",
+      "line": 35,
+      "sql": "SELECT c.id, c.sku, c.name, c.priceUsd, c.description, c.category, c.stockQty FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet ORDER BY c.metrics.revenueUsd DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/shop/[slug]/opengraph-image.tsx",
+      "line": 37,
+      "sql": "SELECT c.name, c.description, c.bio, c.theme FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/shop/[slug]/opengraph-image.tsx",
+      "line": 45,
+      "sql": "SELECT c.rating FROM c WHERE c.subjectType = 'shop' AND c.subjectId = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/shop/[slug]/page.tsx",
+      "line": 44,
+      "sql": "SELECT c.name, c.description, c.bio, c.theme FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/shop/[slug]/page.tsx",
+      "line": 176,
+      "sql": "SELECT * FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/shop/[slug]/page.tsx",
+      "line": 264,
+      "sql": "SELECT * FROM c WHERE c.subjectType = 'shop' AND c.subjectId = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/shop/[slug]/product/[itemId]/page.tsx",
+      "line": 45,
+      "sql": "SELECT c.name, c.description, c.bio, c.theme FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/shop/[slug]/product/[itemId]/page.tsx",
+      "line": 127,
+      "sql": "SELECT * FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/shop/[slug]/product/[itemId]/page.tsx",
+      "line": 148,
+      "sql": "SELECT * FROM c WHERE c.subjectType = 'shop' AND c.subjectId = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/shop/[slug]/twitter-image.tsx",
+      "line": 141,
+      "sql": "SELECT c.name, c.description, c.bio, c.theme FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/shop/[slug]/twitter-image.tsx",
+      "line": 149,
+      "sql": "SELECT c.rating FROM c WHERE c.subjectType = 'shop' AND c.subjectId = @slug",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/terminal/[id]/page.tsx",
+      "line": 38,
+      "sql": "SELECT * FROM c WHERE (c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true) OR c.wallet = @slug) AND (c.type = 'shop_config' OR c.type = 'site_config')",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/u/[wallet]/llms.txt/route.ts",
+      "line": 32,
+      "sql": "SELECT TOP 1 * FROM c WHERE c.type = 'site_config' AND c.wallet = @wallet ORDER BY c.updatedAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/app/u/[wallet]/llms.txt/route.ts",
+      "line": 48,
+      "sql": "SELECT c.id, c.sku, c.name, c.priceUsd, c.description, c.category, c.stockQty FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet ORDER BY c.metrics.revenueUsd DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/apim/keys.ts",
+      "line": 116,
+      "sql": "SELECT * FROM c WHERE c.type = 'api_key' AND c.keyHash = @hash",
+      "source": "const_query"
+    },
+    {
+      "file": "src/lib/apim/keys.ts",
+      "line": 137,
+      "sql": "SELECT * FROM c WHERE c.type = 'api_key' AND c.ownerWallet = @wallet AND c.isActive = true",
+      "source": "const_query"
+    },
+    {
+      "file": "src/lib/apim/keys.ts",
+      "line": 152,
+      "sql": "SELECT * FROM c WHERE c.type = 'api_key' AND c.id = @id",
+      "source": "const_query"
+    },
+    {
+      "file": "src/lib/apim/keys.ts",
+      "line": 188,
+      "sql": "SELECT * FROM c WHERE c.type = 'api_key' AND c.id = @id",
+      "source": "const_query"
+    },
+    {
+      "file": "src/lib/embeddings.ts",
+      "line": 83,
+      "sql": "SELECT c.text, c.embedding FROM c WHERE c.type = 'conversation' AND c.wallet = @w ORDER BY c.ts DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/gateway-auth.ts",
+      "line": 41,
+      "sql": "SELECT TOP 1 c.id, c.type, c.subscriptionId, c.wallet, c.scopes, c.ipAllowlist, c.status, c.createdAt, c.updatedAt FROM c WHERE c.type='apim_subscription' AND c.subscriptionId=@s AND IS_DEFINED(c.wallet)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/jira.ts",
+      "line": 389,
+      "sql": "SELECT * FROM c WHERE c.jiraIssueKey = @key",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/jira.ts",
+      "line": 408,
+      "sql": "SELECT * FROM c WHERE c.id = @id",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/site-config.ts",
+      "line": 246,
+      "sql": "SELECT TOP 1 c FROM c WHERE c.type=@type AND c.wallet=@wallet AND (IS_DEFINED(c.splitAddress) OR (IS_DEFINED(c.split.address) AND LENGTH(c.split.address) > 0)) ORDER BY c.updatedAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/site-config.ts",
+      "line": 271,
+      "sql": "SELECT c FROM c WHERE c.type=@type AND c.wallet=@wallet",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/subscription-mapping.ts",
+      "line": 29,
+      "sql": "SELECT c.id, c.type, c.subscriptionId, c.wallet, c.scopes, c.ipAllowlist, c.status, c.createdAt, c.updatedAt FROM c WHERE c.type='apim_subscription' AND c.wallet=@w AND IS_DEFINED(c.subscriptionId)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/subscription-mapping.ts",
+      "line": 52,
+      "sql": "SELECT TOP 1 c.id, c.type, c.subscriptionId, c.wallet, c.scopes, c.ipAllowlist, c.status, c.createdAt, c.updatedAt FROM c WHERE c.type='apim_subscription' AND c.subscriptionId=@s AND IS_DEFINED(c.wallet)",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/subscriptions.ts",
+      "line": 122,
+      "sql": "SELECT * FROM c WHERE c.type='subscription_plan' AND c.merchantWallet=@w AND c.active=true ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/subscriptions.ts",
+      "line": 137,
+      "sql": "SELECT TOP 1 * FROM c WHERE c.type='subscription_plan' AND c.planId=@p",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/subscriptions.ts",
+      "line": 238,
+      "sql": "SELECT TOP 1 * FROM c WHERE c.type='subscription' AND c.subscriptionId=@s",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/subscriptions.ts",
+      "line": 254,
+      "sql": "SELECT * FROM c WHERE c.type='subscription' AND c.customerWallet=@w ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/subscriptions.ts",
+      "line": 271,
+      "sql": "SELECT * FROM c WHERE c.type='subscription' AND c.merchantWallet=@w ORDER BY c.createdAt DESC",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/subscriptions.ts",
+      "line": 304,
+      "sql": "SELECT * FROM c WHERE c.type='subscription' AND c.status='active' AND c.nextChargeAt <= @now",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/lib/subscriptions.ts",
+      "line": 356,
+      "sql": "SELECT VALUE COUNT(1) FROM c WHERE c.type='subscription' AND c.planId=@p AND c.status='active'",
+      "source": "query_prop"
+    },
+    {
+      "file": "src/scripts/migrate-apim.ts",
+      "line": 33,
+      "sql": "SELECT * FROM c WHERE c.type = 'apim_subscription' AND c.subscriptionId = @sid",
+      "source": "const_query"
+    },
+    {
+      "file": "src/scripts/migrate-apim.ts",
+      "line": 63,
+      "sql": "SELECT * FROM c WHERE c.type = 'api_key' AND c.keyHash = @hash",
+      "source": "const_query"
+    },
+    {
+      "file": "src/scripts/test-sql-parser.ts",
+      "line": 31,
+      "sql": "SELECT ...",
+      "source": "query_call"
+    }
+  ],
+  "fallback": [],
+  "error": [],
+  "dynamic": []
+}

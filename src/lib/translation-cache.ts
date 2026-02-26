@@ -1,40 +1,32 @@
 /**
- * Translation cache manager using Cosmos DB
- * Caches translations to minimize API calls and reduce costs
+ * Translation cache manager using the shared database adapter.
+ * Caches translations to minimize API calls and reduce costs.
+ * Routes through getContainer() which handles both Cosmos DB and MongoDB.
  */
 
-import { Container, CosmosClient } from '@azure/cosmos';
+import { getContainer as getSharedContainer } from '@/lib/cosmos';
+import type { Container } from '@azure/cosmos';
 import type { Locale } from './i18n/config';
 import crypto from 'crypto';
 
-// Cosmos DB configuration
-const connectionString = process.env.COSMOS_CONNECTION_STRING || '';
-const databaseId = process.env.COSMOS_PAYPORTAL_DB_ID || 'payportal';
-const containerId = 'translations_cache';
+// Use a dedicated collection for translations
+const TRANSLATIONS_DB = process.env.DB_NAME || process.env.COSMOS_PAYPORTAL_DB_ID || 'payportal';
+const TRANSLATIONS_COLLECTION = 'translations_cache';
 
-let cosmosClient: CosmosClient | null = null;
 let translationsContainer: Container | null = null;
 
 /**
- * Initialize Cosmos DB client and container
+ * Initialize container via the shared adapter (MongoDB or Cosmos DB)
  */
-function getContainer(): Container | null {
-  if (!connectionString) {
-    console.warn('Cosmos DB connection string not configured, translation cache disabled');
+async function getContainer(): Promise<Container | null> {
+  if (translationsContainer) return translationsContainer;
+  try {
+    translationsContainer = await getSharedContainer(TRANSLATIONS_DB, TRANSLATIONS_COLLECTION);
+    return translationsContainer;
+  } catch (err) {
+    console.warn('Translation cache container unavailable:', (err as Error)?.message || err);
     return null;
   }
-
-  if (!cosmosClient) {
-    cosmosClient = new CosmosClient(connectionString);
-  }
-
-  if (!translationsContainer) {
-    translationsContainer = cosmosClient
-      .database(databaseId)
-      .container(containerId);
-  }
-
-  return translationsContainer;
 }
 
 /**
@@ -63,7 +55,7 @@ export async function getCachedTranslations(
   sourceLang: Locale,
   targetLang: Locale
 ): Promise<Map<string, string>> {
-  const container = getContainer();
+  const container = await getContainer();
   if (!container) {
     return new Map();
   }
@@ -101,7 +93,7 @@ export async function cacheTranslations(
   sourceLang: Locale,
   targetLang: Locale
 ): Promise<void> {
-  const container = getContainer();
+  const container = await getContainer();
   if (!container || translations.size === 0) {
     return;
   }

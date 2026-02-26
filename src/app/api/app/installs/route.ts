@@ -165,23 +165,40 @@ export async function GET(req: NextRequest) {
             ? "(c.brandKey = @brandKey OR NOT IS_DEFINED(c.brandKey) OR c.brandKey = null OR c.brandKey = '')"
             : "c.brandKey = @brandKey";
 
-        const querySpec = {
-            query: `SELECT TOP @top * FROM c WHERE c.type = 'app_install' AND c.app = @app AND ${brandCondition} ORDER BY c.ts DESC`,
-            parameters: [
-                { name: "@top", value: limit },
-                { name: "@app", value: app },
-                { name: "@brandKey", value: targetBrand },
-            ],
-        };
+        const querySpec = isPlatformQuery
+            ? {
+                query: `SELECT TOP @top * FROM c WHERE c.type = 'app_install' AND c.app = @app AND (c.brandKey = @brandKey OR NOT IS_DEFINED(c.brandKey) OR c.brandKey = null OR c.brandKey = '') ORDER BY c.ts DESC`,
+                parameters: [
+                    { name: "@top", value: limit },
+                    { name: "@app", value: app },
+                    { name: "@brandKey", value: targetBrand },
+                ],
+            }
+            : {
+                query: `SELECT TOP @top * FROM c WHERE c.type = 'app_install' AND c.app = @app AND c.brandKey = @brandKey ORDER BY c.ts DESC`,
+                parameters: [
+                    { name: "@top", value: limit },
+                    { name: "@app", value: app },
+                    { name: "@brandKey", value: targetBrand },
+                ],
+            };
 
         const { resources } = await container.items.query(querySpec as any).fetchAll();
-        const totalCount = (await container.items.query({
-            query: `SELECT VALUE COUNT(1) FROM c WHERE c.type = 'app_install' AND c.app = @app AND ${brandCondition}`,
-            parameters: [
-                { name: "@app", value: app },
-                { name: "@brandKey", value: targetBrand },
-            ],
-        } as any).fetchAll()).resources?.[0] || 0;
+        const totalCount = (await container.items.query(isPlatformQuery
+            ? {
+                query: `SELECT VALUE COUNT(1) FROM c WHERE c.type = 'app_install' AND c.app = @app AND (c.brandKey = @brandKey OR NOT IS_DEFINED(c.brandKey) OR c.brandKey = null OR c.brandKey = '')`,
+                parameters: [
+                    { name: "@app", value: app },
+                    { name: "@brandKey", value: targetBrand },
+                ],
+            }
+            : {
+                query: `SELECT VALUE COUNT(1) FROM c WHERE c.type = 'app_install' AND c.app = @app AND c.brandKey = @brandKey`,
+                parameters: [
+                    { name: "@app", value: app },
+                    { name: "@brandKey", value: targetBrand },
+                ],
+            } as any).fetchAll()).resources?.[0] || 0;
 
         if (isPlatform && isSuperadmin) {
             return NextResponse.json({

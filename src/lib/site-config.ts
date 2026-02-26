@@ -191,6 +191,21 @@ export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?:
           console.log("[site-config] step1 try", { docId, wallet, brandKey });
           const { resource } = await c.item(docId, wallet).read<any>();
           if (resource) {
+            // Also check legacy doc for fields that may be more up-to-date
+            // (e.g., accumulationMode, reserveRatios set via admin panel on legacy doc)
+            try {
+              const { resource: legacyDoc } = await c.item(DOC_ID, wallet).read<any>();
+              if (legacyDoc) {
+                // Prefer legacy doc values for config fields if they exist there
+                if (legacyDoc.accumulationMode && !resource.accumulationMode) resource.accumulationMode = legacyDoc.accumulationMode;
+                if (legacyDoc.accumulationMode === "fixed" && resource.accumulationMode === "dynamic") resource.accumulationMode = "fixed";
+                if (legacyDoc.reserveRatios && typeof legacyDoc.reserveRatios === "object") resource.reserveRatios = legacyDoc.reserveRatios;
+                if (legacyDoc.defaultPaymentToken) resource.defaultPaymentToken = legacyDoc.defaultPaymentToken;
+                if (legacyDoc.storeCurrency) resource.storeCurrency = legacyDoc.storeCurrency;
+                if (typeof legacyDoc.processingFeePct === "number") resource.processingFeePct = legacyDoc.processingFeePct;
+              }
+            } catch { }
+
             const n = normalize(resource, wallet);
             const hasSplit = n.splitAddress || n.split?.address;
             console.log("[site-config] step1 found", {
@@ -198,7 +213,8 @@ export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?:
               brandKey: resource.brandKey,
               hasSplit,
               splitAddr: n.splitAddress,
-              hasSplitConfig: !!resource.splitConfig
+              hasSplitConfig: !!resource.splitConfig,
+              accumulationMode: n.accumulationMode
             });
             const normalizedBrand = (brandKey || "").toLowerCase();
             const isPlatform = normalizedBrand === "basaltsurge" || normalizedBrand === "portalpay";

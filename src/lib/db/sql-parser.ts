@@ -105,13 +105,57 @@ export function parseCosmosSql(
         };
     }
 
+    // SELECT DISTINCT VALUE c.field FROM c WHERE ...
+    const distinctMatch = /SELECT\s+DISTINCT\s+VALUE\s+(?:c\.|m\.)(\w+)/i.exec(norm);
+    if (distinctMatch) {
+        const field = distinctMatch[1];
+        const whereClause = extractWhere(norm);
+        const filter = whereClause ? parseWhere(whereClause, params) : {};
+        return {
+            filter,
+            sort: {},
+            projection: null,
+            skip: 0,
+            limit: 0,
+            isAggregate: true,
+            pipeline: [
+                { $match: filter },
+                { $group: { _id: `$${field}` } },
+                { $project: { _id: 0, value: "$_id" } },
+            ],
+        };
+    }
+
+    // SELECT c.field, AGG(c.col) as alias ... GROUP BY c.field
+    const groupByMatch = /GROUP\s+BY\s+(?:c\.|m\.)(\w+)/i.exec(norm);
+    if (groupByMatch) {
+        const groupByField = groupByMatch[1];
+        const whereClause = extractWhere(norm);
+        const filter = whereClause ? parseWhere(whereClause, params) : {};
+        // Parse aggregation columns from the SELECT clause
+        const groupFields = parseSelectGroupByColumns(norm, groupByField);
+        return {
+            filter,
+            sort: {},
+            projection: null,
+            skip: 0,
+            limit: 0,
+            isAggregate: true,
+            pipeline: [
+                { $match: filter },
+                { $group: { _id: `$${groupByField}`, ...groupFields } },
+                { $project: { _id: 0, [groupByField]: "$_id", ...Object.fromEntries(Object.keys(groupFields).map(k => [k, 1])) } },
+            ],
+        };
+    }
+
     // ── Regular SELECT ────────────────────────────────────────────────
     let limit = 0;
 
-    // SELECT TOP N ...
-    const topMatch = /SELECT\s+TOP\s+(\d+)/i.exec(norm);
+    // SELECT TOP N ... (N can be a number or @param)
+    const topMatch = /SELECT\s+TOP\s+(?:@(\w+)|(\d+))/i.exec(norm);
     if (topMatch) {
-        limit = Number(topMatch[1]);
+        limit = topMatch[1] ? resolveParam(topMatch[1], params) : Number(topMatch[2]);
     }
 
     // Projection
@@ -157,6 +201,7 @@ function extractWhere(sql: string): string | null {
     // Remove everything after ORDER BY / OFFSET / LIMIT for safety
     const cleaned = sql
         .replace(/\s+ORDER\s+BY\s+.*/i, "")
+        .replace(/\s+GROUP\s+BY\s+.*/i, "")
         .replace(/\s+OFFSET\s+.*/i, "");
     const m = /\bWHERE\s+(.*)/i.exec(cleaned);
     return m ? m[1].trim() : null;
@@ -203,6 +248,7 @@ function splitTopLevel(clause: string): Token[] {
     let depth = 0;
     let current = "";
     let connector: "AND" | "OR" | "START" = "START";
+    let inBetween = false; // Track BETWEEN ... AND ... context
 
     const words = clause.split(/\s+/);
     for (let i = 0; i < words.length; i++) {
@@ -213,7 +259,20 @@ function splitTopLevel(clause: string): Token[] {
             if (ch === ")") depth--;
         }
 
+        // Detect BETWEEN keyword to skip its AND
+        if (/BETWEEN$/i.test(w)) {
+            inBetween = true;
+            current += (current ? " " : "") + w;
+            continue;
+        }
+
         if (depth === 0 && (w.toUpperCase() === "AND" || w.toUpperCase() === "OR")) {
+            // If we're inside a BETWEEN, this AND is part of the expression, not a boolean connector
+            if (inBetween && w.toUpperCase() === "AND") {
+                inBetween = false;
+                current += " " + w;
+                continue;
+            }
             if (current.trim()) {
                 tokens.push({ connector, expr: current.trim() });
             }
@@ -263,12 +322,47 @@ function parsePredicate(expr: string, params: Record<string, any>): Filter<Docum
         return { [cosmosFieldToMongo(notIsDef[1])]: { $exists: false } };
     }
 
+    // STARTSWITH(c.field, @param)
+    const startsWith = /^STARTSWITH\s*\(\s*c\.([.\w]+)\s*,\s*(.+?)\s*\)/i.exec(e);
+    if (startsWith) {
+        const field = cosmosFieldToMongo(startsWith[1]);
+        const val = resolveRhs(startsWith[2].trim(), params);
+        return { [field]: { $regex: `^${escapeRegex(String(val))}` } };
+    }
+
+    // NOT STARTSWITH(c.field, @param)
+    const notStartsWith = /^NOT\s+STARTSWITH\s*\(\s*c\.([.\w]+)\s*,\s*(.+?)\s*\)/i.exec(e);
+    if (notStartsWith) {
+        const field = cosmosFieldToMongo(notStartsWith[1]);
+        const val = resolveRhs(notStartsWith[2].trim(), params);
+        return { [field]: { $not: { $regex: `^${escapeRegex(String(val))}` } } };
+    }
+
+    // ENDSWITH(c.field, @param)
+    const endsWith = /^ENDSWITH\s*\(\s*c\.([.\w]+)\s*,\s*(.+?)\s*\)/i.exec(e);
+    if (endsWith) {
+        const field = cosmosFieldToMongo(endsWith[1]);
+        const val = resolveRhs(endsWith[2].trim(), params);
+        return { [field]: { $regex: `${escapeRegex(String(val))}$` } };
+    }
+
+    // ABS(c.field - @param) <= @param2
+    const absExpr = /^ABS\s*\(\s*c\.([.\w]+)\s*-\s*(.+?)\s*\)\s*(<=|<|>=|>|=)\s*(.+)$/i.exec(e);
+    if (absExpr) {
+        const field = cosmosFieldToMongo(absExpr[1]);
+        const subtractVal = resolveRhs(absExpr[2].trim(), params);
+        const op = absExpr[3];
+        const threshold = resolveRhs(absExpr[4].trim(), params);
+        const mongoOp = op === "<=" ? "$lte" : op === "<" ? "$lt" : op === ">=" ? "$gte" : op === ">" ? "$gt" : "$eq";
+        return { $expr: { [mongoOp]: [{ $abs: { $subtract: [`$${field}`, subtractVal] } }, threshold] } };
+    }
+
     // ARRAY_CONTAINS(@param, c.field) OR ARRAY_CONTAINS(["a","b"], c.field) OR ARRAY_CONTAINS(c.field, @param)
     const arrContains = /ARRAY_CONTAINS\s*\(\s*(.*?)\s*,\s*(.*?)\s*\)/i.exec(e);
     if (arrContains) {
         let first = arrContains[1].trim();
         let second = arrContains[2].trim();
-        let arr: any[] = [];
+        let arr: any = [];
         let field = "";
 
         // Resolve which one is the array and which one is the field
@@ -301,10 +395,10 @@ function parsePredicate(expr: string, params: Record<string, any>): Filter<Docum
         return { [cosmosFieldToMongo(strEq[1])]: { $regex: `^${escapeRegex(String(val))}$`, $options: "i" } };
     }
 
-    // LOWER(c.field) = @param
-    const lowerEq = /^LOWER\s*\(\s*c\.([.\w]+)\s*\)\s*=\s*@(\w+)/i.exec(e);
+    // LOWER(c.field) = @param or LOWER(c.field) = 'literal'
+    const lowerEq = /^LOWER\s*\(\s*c\.([.\w]+)\s*\)\s*=\s*(.+)$/i.exec(e);
     if (lowerEq) {
-        const val = resolveParam(lowerEq[2], params);
+        const val = resolveRhs(lowerEq[2].trim(), params);
         return { [cosmosFieldToMongo(lowerEq[1])]: { $regex: `^${escapeRegex(String(val))}$`, $options: "i" } };
     }
 
@@ -315,6 +409,20 @@ function parsePredicate(expr: string, params: Record<string, any>): Filter<Docum
         const vals = lowerIn[2].split(",").map((v) => v.trim().replace(/^'|'$/g, ""));
         // Case-insensitive $in using regex
         return { [field]: { $in: vals.map((v) => new RegExp(`^${escapeRegex(v)}$`, "i")) } };
+    }
+
+    // c.field NOT IN ('a', 'b', ...)
+    const notInMatch = /^c\.([.\w]+)\s+NOT\s+IN\s*\(([^)]+)\)/i.exec(e);
+    if (notInMatch) {
+        const field = cosmosFieldToMongo(notInMatch[1]);
+        const vals = notInMatch[2].split(",").map((v) => {
+            const trimmed = v.trim();
+            if (trimmed.startsWith("'") && trimmed.endsWith("'")) return trimmed.slice(1, -1);
+            if (trimmed.startsWith('"') && trimmed.endsWith('"')) return trimmed.slice(1, -1);
+            if (trimmed.startsWith("@")) return resolveParam(trimmed, params);
+            return isNaN(Number(trimmed)) || trimmed === "" ? trimmed : Number(trimmed);
+        });
+        return { [field]: { $nin: vals } };
     }
 
     // c.field IN ('a', 'b', ...)
@@ -373,6 +481,15 @@ function parsePredicate(expr: string, params: Record<string, any>): Filter<Docum
     if (lt) {
         const field = cosmosFieldToMongo(lt[1]);
         return { [field]: { $lt: resolveRhs(lt[2].trim(), params) } };
+    }
+
+    // c.field BETWEEN @a AND @b
+    const between = /^c\.([.\w]+)\s+BETWEEN\s+(.+?)\s+AND\s+(.+)$/i.exec(e);
+    if (between) {
+        const field = cosmosFieldToMongo(between[1]);
+        const low = resolveRhs(between[2].trim(), params);
+        const high = resolveRhs(between[3].trim(), params);
+        return { [field]: { $gte: low, $lte: high } };
     }
 
     // LENGTH(c.field) > 0
@@ -460,6 +577,34 @@ function parseGroupObject(inner: string): Document {
             const alias = m[1];
             const op = m[2].toLowerCase();
             const field = m[3] === "1" ? 1 : `$${m[3]}`;
+            if (op === "count") {
+                group[alias] = { $sum: 1 };
+            } else {
+                group[alias] = { [`$${op}`]: field };
+            }
+        }
+    }
+    return group;
+}
+
+/**
+ * Parse SELECT columns with AGG(c.col) as alias ... GROUP BY c.field syntax.
+ * e.g. SELECT c.staffId, MAX(c.startTime) as lastActive, SUM(c.totalTips) as unpaidTips
+ */
+function parseSelectGroupByColumns(sql: string, groupByField: string): Document {
+    const group: Document = {};
+    // Extract the SELECT columns portion (between SELECT and FROM)
+    const selMatch = /^SELECT\s+(?:TOP\s+\d+\s+)?(.+?)\s+FROM\s/i.exec(sql.trim());
+    if (!selMatch) return group;
+    const cols = selMatch[1];
+    // Split by comma and look for AGG(c.field) as alias patterns
+    const parts = cols.split(",");
+    for (const part of parts) {
+        const aggMatch = /(SUM|COUNT|AVG|MIN|MAX)\s*\(\s*(?:c\.)?(\w+|1)\s*\)\s+(?:as|AS)\s+(\w+)/i.exec(part.trim());
+        if (aggMatch) {
+            const op = aggMatch[1].toLowerCase();
+            const field = aggMatch[2] === "1" ? 1 : `$${aggMatch[2]}`;
+            const alias = aggMatch[3];
             if (op === "count") {
                 group[alias] = { $sum: 1 };
             } else {

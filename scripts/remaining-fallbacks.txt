@@ -1,0 +1,32 @@
+1. [src/app/api/merchant/team/stats/route.ts:40]
+   SELECT c.staffId, MAX(c.startTime) as lastActive, SUM(c.totalTips) as unpaidTips FROM c WHERE c.type='terminal_session' AND c.merchantWallet=@w AND (NOT IS_DEFINED(c.tipsPaid) OR c.tipsPaid=false) GROUP BY c.staffId
+
+2. [src/app/api/messages/conversations/route.ts:135]
+   SELECT DISTINCT VALUE m.conversationId FROM m WHERE m.type='message' AND (m.senderWallet=@me OR ARRAY_CONTAINS(m.readBy, @me))
+
+3. [src/app/api/orders/reindex/route.ts:604]
+   SELECT c.lineItems, c.totalUsd, c.receiptId, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='checkout_initialized' OR LOWER(c.status)='buyer_logged_in' OR LOWER(c.status)='link_opened') ORDER BY c.createdAt DESC OFFSET 0 LIMIT 50
+
+4. [src/app/api/orders/reindex/route.ts:854]
+   SELECT c.id, c.wallet, c.receiptId, c.createdAt, c.metadata FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.createdAt BETWEEN @start AND @end
+
+5. [src/app/api/orders/reindex/route.ts:908]
+   SELECT c.lineItems, c.totalUsd, c.receiptId, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='checkout_initialized' OR LOWER(c.status)='buyer_logged_in' OR LOWER(c.status)='link_opened') ORDER BY c.createdAt DESC OFFSET 0 LIMIT 50
+
+6. [src/app/api/orders/reindex/route.ts:964]
+   SELECT c.id, c.wallet, c.receiptId, c.totalUsd, c.createdAt, c.status FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.createdAt BETWEEN @start AND @end AND c.totalUsd >= @minUsd AND c.totalUsd <= @maxUsd
+
+7. [src/app/api/orders/reindex/route.ts:1017]
+   SELECT c.lineItems, c.totalUsd, c.receiptId, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='checkout_initialized' OR LOWER(c.status)='buyer_logged_in' OR LOWER(c.status)='link_opened') ORDER BY c.createdAt DESC OFFSET 0 LIMIT 50
+
+8. [src/app/api/orders/reindex/route.ts:1550]
+   SELECT c.receiptId, c.totalUsd, c.createdAt, c.lineItems, c.status, c.transactionHash FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='paid' OR LOWER(c.status)='reconciled' OR IS_DEFINED(c.transactionHash)) ORDER BY c.createdAt DESC OFFSET 0 LIMIT 200
+
+9. [src/app/api/orders/reindex/route.ts:1562]
+   SELECT c.lineItems, c.totalUsd, c.receiptId, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='checkout_initialized' OR LOWER(c.status)='buyer_logged_in' OR LOWER(c.status)='link_opened') ORDER BY c.createdAt DESC OFFSET 0 LIMIT 200
+
+10. [src/app/api/orders/reindex/route.ts:1736]
+   SELECT c.receiptId, c.totalUsd, c.createdAt, c.status, c.transactionHash FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='checkout_initialized' OR LOWER(c.status)='buyer_logged_in' OR LOWER(c.status)='link_opened')
+
+11. [src/app/api/orders/route.ts:442]
+   SELECT * FROM c WHERE c.docType='discount' AND c.status='active' AND (c.shopId=@wallet OR LOWER(c.shopId)=@walletLower

@@ -1036,17 +1036,32 @@ export async function GET(req: NextRequest) {
 
     // Preferred: per-wallet config if a wallet is provided or authenticated
     if (wallet) {
+      // Resolve brandKey early so it's available for shop_config query filtering
+      let brandKey: string | undefined = undefined;
+      try {
+        brandKey = getBrandKey(req);
+      } catch {
+        brandKey = undefined;
+      }
+
       // 0. PRE-FETCH: Try to find a shop_config for this wallet to merge into site_config
       // This ensures that ThemeLoader (which calls this API) receives the merchant's latest theme/branding
       // even if site_config is stale or default.
       let shopConfig: any = null;
       try {
+        // Filter by brandKey to pick the correct brand's shop config when multiple exist for same wallet
+        const shopQuery = brandKey
+          ? "SELECT * FROM c WHERE c.wallet = @wallet AND c.type = 'shop_config' AND (c.brandKey = @brandKey OR NOT IS_DEFINED(c.brandKey))"
+          : "SELECT * FROM c WHERE c.wallet = @wallet AND c.type = 'shop_config'";
+        const shopParams: { name: string; value: any }[] = [{ name: "@wallet", value: wallet }];
+        if (brandKey) shopParams.push({ name: "@brandKey", value: brandKey });
         const { resources: shops } = await c.items.query({
-          query: "SELECT * FROM c WHERE c.wallet = @wallet AND c.type = 'shop_config'",
-          parameters: [{ name: "@wallet", value: wallet }]
+          query: shopQuery,
+          parameters: shopParams
         }).fetchAll();
         if (shops && shops.length > 0) {
-          shopConfig = shops[0];
+          // Prefer the doc that matches the current brand, fallback to first
+          shopConfig = shops.find((s: any) => String(s.brandKey || "").toLowerCase() === (brandKey || "").toLowerCase()) || shops[0];
         }
       } catch { }
 
@@ -1113,17 +1128,24 @@ export async function GET(req: NextRequest) {
         return conf;
       };
 
-      // Try brand-scoped doc first when brand is configured; safely fallback to legacy.
-      let brandKey: string | undefined = undefined;
-      try {
-        brandKey = getBrandKey(req);
-      } catch {
-        brandKey = undefined;
-      }
+
 
       if (brandKey) {
         try {
-          const { resource } = await c.item(getDocIdForBrand(brandKey), wallet).read<any>();
+          const docId = getDocIdForBrand(brandKey);
+          // Try per-merchant doc first (docId, wallet as partition key)
+          let resource: any = null;
+          try {
+            const { resource: perMerchant } = await c.item(docId, wallet).read<any>();
+            resource = perMerchant || null;
+          } catch { }
+          // Fallback: try global doc (docId as both id AND partition key — used by brand-level configs)
+          if (!resource) {
+            try {
+              const { resource: globalDoc } = await c.item(docId, docId).read<any>();
+              resource = globalDoc || null;
+            } catch { }
+          }
           // Use site_config if found, otherwise if we have shopConfig, use that as base
           const base = resource || (shopConfig ? { ...shopConfig, type: 'site_config' } : null);
 
@@ -1132,15 +1154,32 @@ export async function GET(req: NextRequest) {
           } else {
             let finalConfig = { ...base };
 
+            // Merge legacy doc fields that may be more up-to-date (admin panel writes to legacy doc)
+            try {
+              const { resource: legacyDoc } = await c.item(DOC_ID, wallet).read<any>();
+              if (legacyDoc) {
+                if (legacyDoc.accumulationMode && !finalConfig.accumulationMode) finalConfig.accumulationMode = legacyDoc.accumulationMode;
+                if (legacyDoc.accumulationMode === "fixed" && finalConfig.accumulationMode === "dynamic") finalConfig.accumulationMode = "fixed";
+                if (legacyDoc.reserveRatios && typeof legacyDoc.reserveRatios === "object") finalConfig.reserveRatios = legacyDoc.reserveRatios;
+                if (legacyDoc.defaultPaymentToken) finalConfig.defaultPaymentToken = legacyDoc.defaultPaymentToken;
+                if (legacyDoc.storeCurrency) finalConfig.storeCurrency = legacyDoc.storeCurrency;
+                if (typeof legacyDoc.processingFeePct === "number") finalConfig.processingFeePct = legacyDoc.processingFeePct;
+              }
+            } catch { }
+
             // Merge if shop config found
             if (shopConfig && base.type === 'site_config') {
-              finalConfig = mergeConfigs(base, shopConfig);
+              finalConfig = mergeConfigs(finalConfig, shopConfig);
             }
+
+            // Normalize to ensure accumulationMode, reserveRatios, etc. have correct defaults
+            finalConfig = normalizeSiteConfig(finalConfig, wallet);
 
             // Apply Theme Overrides (Normalization + Color Injection)
             finalConfig = applyThemeOverrides(finalConfig);
 
-            return jsonResponse({ config: finalConfig }, {
+            const payload = { config: await applyPartnerOverrides(req, finalConfig) };
+            return jsonResponse(payload, {
               headers: {
                 "Cache-Control": "private, no-cache, no-store, must-revalidate",
                 "Expires": "0",
@@ -1289,7 +1328,7 @@ export async function GET(req: NextRequest) {
     }
   } catch (e: any) {
     {
-      const cfg = normalizeSiteConfig(undefined, wallet);
+      const cfg = normalizeSiteConfig(undefined, undefined);
       const payload = { config: await applyPartnerOverrides(req, cfg), degraded: true, reason: e?.message || "cosmos_unavailable" };
       return jsonResponse(payload, {
         headers: {
@@ -1335,7 +1374,7 @@ export async function POST(req: NextRequest) {
       let dbAdminAuthed = false;
       try {
         if (caller?.wallet) {
-          const { getPlatformAdminWallets } = await import("@/lib/authz");
+          const { getPlatformAdminWallets } = await import("@/lib/authz-server");
           const platformAdmins = await getPlatformAdminWallets();
           if (platformAdmins.includes(String(caller.wallet).toLowerCase())) {
             dbAdminAuthed = true;

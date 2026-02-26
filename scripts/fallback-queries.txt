@@ -1,0 +1,31 @@
+1. SELECT * FROM c WHERE c.type='uber_eats_order' AND c.status NOT IN ('CANCELLED', 'DELIVERED')
+
+2. SELECT * FROM c WHERE c.type='uber_eats_order' AND (c.orderId=@orderId OR ENDSWITH(c.orderId, @shortId))
+
+3. SELECT c.staffId, MAX(c.startTime) as lastActive, SUM(c.totalTips) as unpaidTips FROM c WHERE c.type='terminal_session' AND c.merchantWallet=@w AND (NOT IS_DEFINED(c.tipsPaid) OR c.tipsPaid=false) GROUP BY c.staffId
+
+4. SELECT DISTINCT VALUE m.conversationId FROM m WHERE m.type='message' AND (m.senderWallet=@me OR ARRAY_CONTAINS(m.readBy, @me))
+
+5. SELECT c.lineItems, c.totalUsd, c.receiptId, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='checkout_initialized' OR LOWER(c.status)='buyer_logged_in' OR LOWER(c.status)='link_opened') ORDER BY c.createdAt DESC OFFSET 0 LIMIT 50
+
+6. SELECT c.receiptId FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.transactionHash=@tx AND STARTSWITH(c.receiptId, @prefix)
+
+7. SELECT c.receiptId, c.createdAt, c.totalUsd FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND STARTSWITH(c.receiptId, @prefix)
+
+8. SELECT c.id, c.wallet, c.receiptId, c.createdAt, c.metadata FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.createdAt BETWEEN @start AND @end
+
+9. SELECT c.id, c.wallet, c.receiptId, c.totalUsd, c.createdAt, c.status FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.createdAt BETWEEN @start AND @end AND c.totalUsd >= @minUsd AND c.totalUsd <= @maxUsd
+
+10. SELECT c.receiptId, c.totalUsd, c.createdAt, c.lineItems, c.status, c.transactionHash FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='paid' OR LOWER(c.status)='reconciled' OR IS_DEFINED(c.transactionHash)) ORDER BY c.createdAt DESC OFFSET 0 LIMIT 200
+
+11. SELECT c.lineItems, c.totalUsd, c.receiptId, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='checkout_initialized' OR LOWER(c.status)='buyer_logged_in' OR LOWER(c.status)='link_opened') ORDER BY c.createdAt DESC OFFSET 0 LIMIT 200
+
+12. SELECT c.receiptId FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.totalUsd <= @zero AND STARTSWITH(c.receiptId, @prefix)
+
+13. SELECT c.receiptId, c.totalUsd, c.createdAt, c.status, c.transactionHash FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND (LOWER(c.status)='checkout_initialized' OR LOWER(c.status)='buyer_logged_in' OR LOWER(c.status)='link_opened')
+
+14. SELECT c.receiptId, c.totalUsd, c.createdAt FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND STARTSWITH(c.receiptId, @prefix)
+
+15. SELECT TOP 1 c.receiptId FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.buyerWallet=@buyer AND NOT STARTSWITH(c.receiptId, @prefix) AND ABS(c.totalUsd - @total) <= @tol ORDER BY c.createdAt DESC
+
+16. SELECT * FROM c WHERE c.docType='discount' AND c.status='active' AND (c.shopId=@wallet OR LOWER(c.shopId)=@walletLower

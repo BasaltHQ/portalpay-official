@@ -238,7 +238,17 @@ async function readBrandOverrides(brandKey: string): Promise<BrandConfigDoc | nu
   try {
     const c = await getContainer();
     const { resource } = await c.item("brand:config", brandKey).read<BrandConfigDoc>();
-    return resource || null;
+    if (resource) return resource;
+
+    // Fallback: try the legacy platform alias (basaltsurge ↔ portalpay share the same brand config)
+    const PLATFORM_ALIASES: Record<string, string> = { basaltsurge: "portalpay", portalpay: "basaltsurge" };
+    const fallbackKey = PLATFORM_ALIASES[brandKey];
+    if (fallbackKey) {
+      const { resource: fb } = await c.item("brand:config", fallbackKey).read<BrandConfigDoc>();
+      return fb || null;
+    }
+
+    return null;
   } catch {
     return null;
   }

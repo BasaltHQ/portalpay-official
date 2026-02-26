@@ -258,64 +258,114 @@ export async function GET(_req: NextRequest) {
         validWallets = matchedWallets;
 
         if (validWallets.size === 0) {
-          walletFilterClause = " AND false"; // Force 0 results if container has no merchants
+          walletFilterClause = "EMPTY"; // Force 0 results if container has no merchants
         } else {
-          const wArray = Array.from(validWallets).map(w => `'${w}'`);
-          walletFilterClause = ` AND c.wallet IN (${wArray.join(",")})`;
+          walletFilterClause = "FILTER";
         }
       }
     } catch (e) {
       console.error("Failed to map brand wallets for metrics", e);
     }
 
+    // Build wallet parameter list for ARRAY_CONTAINS queries
+    const walletArray = validWallets ? Array.from(validWallets) : [];
+    const walletParams = walletArray.length > 0 ? [{ name: "@wallets", value: walletArray }] : [];
+    const hasWalletFilter = walletFilterClause === "FILTER";
+    const emptyWalletFilter = walletFilterClause === "EMPTY";
+
     try {
-      // 1. Merchant Earnings from split_index (using merchantWallet instead of wallet)
-      const earnedFilterClause = validWallets !== null
-        ? (validWallets.size === 0
-          ? " AND false"
-          : ` AND c.merchantWallet IN (${Array.from(validWallets).map(w => `'${w}'`).join(",")})`)
-        : "";
-      const qEarned = { query: `SELECT VALUE SUM(c.totalVolumeUsd) FROM c WHERE c.type='split_index'${earnedFilterClause}`, parameters: [] } as any;
-      const { resources: rEarned } = await c.items.query(qEarned).fetchAll();
-      merchantEarnedUsdTotal = Number((rEarned && rEarned[0]) || 0);
+      // 1. Merchant Earnings from split_index
+      if (emptyWalletFilter) {
+        merchantEarnedUsdTotal = 0;
+      } else if (hasWalletFilter) {
+        const qEarned = { query: "SELECT VALUE SUM(c.totalVolumeUsd) FROM c WHERE c.type='split_index' AND ARRAY_CONTAINS(@wallets, c.merchantWallet)", parameters: [...walletParams] } as any;
+        const { resources: rEarned } = await c.items.query(qEarned).fetchAll();
+        merchantEarnedUsdTotal = Number((rEarned && rEarned[0]) || 0);
+      } else {
+        const qEarned = { query: "SELECT VALUE SUM(c.totalVolumeUsd) FROM c WHERE c.type='split_index'", parameters: [] } as any;
+        const { resources: rEarned } = await c.items.query(qEarned).fetchAll();
+        merchantEarnedUsdTotal = Number((rEarned && rEarned[0]) || 0);
+      }
 
       // All-time receipts count and total USD
-      const qRecCnt = { query: `SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid'${walletFilterClause}`, parameters: [] } as any;
-      const qRecSum = { query: `SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid'${walletFilterClause}`, parameters: [] } as any;
-      const [{ resources: rCnt }, { resources: rSum }] = await Promise.all([
-        c.items.query(qRecCnt).fetchAll(),
-        c.items.query(qRecSum).fetchAll(),
-      ]);
-      receiptsCount = Number((rCnt && rCnt[0]) || 0);
-      receiptsTotalUsd = Number((rSum && rSum[0]) || 0);
+      if (emptyWalletFilter) {
+        receiptsCount = 0;
+        receiptsTotalUsd = 0;
+      } else if (hasWalletFilter) {
+        const qRecCnt = { query: "SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid' AND ARRAY_CONTAINS(@wallets, c.wallet)", parameters: [...walletParams] } as any;
+        const qRecSum = { query: "SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid' AND ARRAY_CONTAINS(@wallets, c.wallet)", parameters: [...walletParams] } as any;
+        const [{ resources: rCnt }, { resources: rSum }] = await Promise.all([
+          c.items.query(qRecCnt).fetchAll(),
+          c.items.query(qRecSum).fetchAll(),
+        ]);
+        receiptsCount = Number((rCnt && rCnt[0]) || 0);
+        receiptsTotalUsd = Number((rSum && rSum[0]) || 0);
+      } else {
+        const qRecCnt = { query: "SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid'", parameters: [] } as any;
+        const qRecSum = { query: "SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid'", parameters: [] } as any;
+        const [{ resources: rCnt }, { resources: rSum }] = await Promise.all([
+          c.items.query(qRecCnt).fetchAll(),
+          c.items.query(qRecSum).fetchAll(),
+        ]);
+        receiptsCount = Number((rCnt && rCnt[0]) || 0);
+        receiptsTotalUsd = Number((rSum && rSum[0]) || 0);
+      }
 
       // 24h receipts count and total USD
-      const qRecCnt24 = { query: `SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since${walletFilterClause}`, parameters: [{ name: "@since", value: since24h }] } as any;
-      const qRecSum24 = { query: `SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since${walletFilterClause}`, parameters: [{ name: "@since", value: since24h }] } as any;
-      const [{ resources: rCnt24 }, { resources: rSum24 }] = await Promise.all([
-        c.items.query(qRecCnt24).fetchAll(),
-        c.items.query(qRecSum24).fetchAll(),
-      ]);
-      receiptsCount24h = Number((rCnt24 && rCnt24[0]) || 0);
-      receiptsTotalUsd24h = Number((rSum24 && rSum24[0]) || 0);
+      if (emptyWalletFilter) {
+        receiptsCount24h = 0;
+        receiptsTotalUsd24h = 0;
+      } else if (hasWalletFilter) {
+        const qRecCnt24 = { query: "SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since AND ARRAY_CONTAINS(@wallets, c.wallet)", parameters: [{ name: "@since", value: since24h }, ...walletParams] } as any;
+        const qRecSum24 = { query: "SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since AND ARRAY_CONTAINS(@wallets, c.wallet)", parameters: [{ name: "@since", value: since24h }, ...walletParams] } as any;
+        const [{ resources: rCnt24 }, { resources: rSum24 }] = await Promise.all([
+          c.items.query(qRecCnt24).fetchAll(),
+          c.items.query(qRecSum24).fetchAll(),
+        ]);
+        receiptsCount24h = Number((rCnt24 && rCnt24[0]) || 0);
+        receiptsTotalUsd24h = Number((rSum24 && rSum24[0]) || 0);
+      } else {
+        const qRecCnt24 = { query: "SELECT VALUE COUNT(1) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since", parameters: [{ name: "@since", value: since24h }] } as any;
+        const qRecSum24 = { query: "SELECT VALUE SUM(c.totalUsd) FROM c WHERE c.type='receipt' AND c.status='paid' AND c.createdAt > @since", parameters: [{ name: "@since", value: since24h }] } as any;
+        const [{ resources: rCnt24 }, { resources: rSum24 }] = await Promise.all([
+          c.items.query(qRecCnt24).fetchAll(),
+          c.items.query(qRecSum24).fetchAll(),
+        ]);
+        receiptsCount24h = Number((rCnt24 && rCnt24[0]) || 0);
+        receiptsTotalUsd24h = Number((rSum24 && rSum24[0]) || 0);
+      }
 
       // Average receipt USD
       averageReceiptUsd = receiptsCount > 0 ? Math.floor((receiptsTotalUsd * 100) / receiptsCount) / 100 : 0;
 
       // Merchants count by distinct wallet
-      const qWalletsQuery = { query: `SELECT DISTINCT VALUE c.wallet FROM c WHERE c.type='receipt' AND c.status='paid'${walletFilterClause}`, parameters: [] } as any;
-      const { resources: wRows } = await c.items.query(qWalletsQuery).fetchAll();
-      merchantsCount = (wRows || []).length;
+      if (emptyWalletFilter) {
+        merchantsCount = 0;
+      } else if (hasWalletFilter) {
+        const qWalletsQuery = { query: "SELECT DISTINCT VALUE c.wallet FROM c WHERE c.type='receipt' AND c.status='paid' AND ARRAY_CONTAINS(@wallets, c.wallet)", parameters: [...walletParams] } as any;
+        const { resources: wRows } = await c.items.query(qWalletsQuery).fetchAll();
+        merchantsCount = (wRows || []).length;
+      } else {
+        const qWalletsQuery = { query: "SELECT DISTINCT VALUE c.wallet FROM c WHERE c.type='receipt' AND c.status='paid'", parameters: [] } as any;
+        const { resources: wRows } = await c.items.query(qWalletsQuery).fetchAll();
+        merchantsCount = (wRows || []).length;
+      }
 
       // Top currency
-      const qCurr = { query: `SELECT VALUE c.currency FROM c WHERE c.type='receipt' AND c.status='paid' AND IS_DEFINED(c.currency)${walletFilterClause}`, parameters: [] } as any;
-      const { resources: currRows } = await c.items.query(qCurr).fetchAll();
-      const currCounts: Record<string, number> = {};
-      for (const row of (currRows || [])) {
-        const cur = String(row || "").trim().toUpperCase();
-        if (cur) currCounts[cur] = (currCounts[cur] || 0) + 1;
+      if (emptyWalletFilter) {
+        topCurrency = '';
+      } else {
+        const qCurr = hasWalletFilter
+          ? { query: "SELECT VALUE c.currency FROM c WHERE c.type='receipt' AND c.status='paid' AND IS_DEFINED(c.currency) AND ARRAY_CONTAINS(@wallets, c.wallet)", parameters: [...walletParams] } as any
+          : { query: "SELECT VALUE c.currency FROM c WHERE c.type='receipt' AND c.status='paid' AND IS_DEFINED(c.currency)", parameters: [] } as any;
+        const { resources: currRows } = await c.items.query(qCurr).fetchAll();
+        const currCounts: Record<string, number> = {};
+        for (const row of (currRows || [])) {
+          const cur = String(row || "").trim().toUpperCase();
+          if (cur) currCounts[cur] = (currCounts[cur] || 0) + 1;
+        }
+        topCurrency = Object.entries(currCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
       }
-      topCurrency = Object.entries(currCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
     } catch { }
 
     const averageSeconds = sessionsCount > 0 ? Math.floor(sessionsTotalSeconds / sessionsCount) : 0;

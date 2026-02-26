@@ -29,11 +29,11 @@ export async function GET(req: NextRequest) {
 
         if (profiles.length > 0) {
             const uniqueMerchants = Array.from(new Set(profiles.map((p: any) => p.merchantWallet)));
-            // Cosmos IN clause
-            const merchantList = uniqueMerchants.map(m => `"${m}"`).join(",");
 
+            // Use ARRAY_CONTAINS for parameterized lookup (transpiler-safe)
             const configQuery = {
-                query: `SELECT c.wallet, c.name, c.theme FROM c WHERE c.type = 'shop_config' AND c.wallet IN (${merchantList})`
+                query: `SELECT c.wallet, c.name, c.theme FROM c WHERE c.type = 'shop_config' AND ARRAY_CONTAINS(@wallets, c.wallet)`,
+                parameters: [{ name: "@wallets", value: uniqueMerchants }],
             };
             const { resources: configs } = await container.items.query(configQuery).fetchAll();
 

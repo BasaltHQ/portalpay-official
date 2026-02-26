@@ -168,12 +168,29 @@ export function getContainerIdentity(host?: string): ContainerIdentity {
 /**
  * Read brand overrides directly from Cosmos DB.
  * No HTTP calls - direct database access.
+ * 
+ * Handles platform brand aliasing: "basaltsurge" and "portalpay" are the same
+ * platform brand. Migrated data may use either key as the partition (wallet field).
  */
 export async function readBrandOverridesFromCosmos(brandKey: string): Promise<BrandConfigDoc | null> {
   try {
     const c = await getContainer();
     const { resource } = await c.item("brand:config", brandKey).read<BrandConfigDoc>();
-    return resource || null;
+    if (resource) return resource;
+
+    // Fallback: try the legacy platform alias if the primary lookup returned nothing.
+    // "basaltsurge" and "portalpay" share the same brand config in the DB.
+    const PLATFORM_ALIASES: Record<string, string> = {
+      basaltsurge: "portalpay",
+      portalpay: "basaltsurge",
+    };
+    const fallbackKey = PLATFORM_ALIASES[brandKey];
+    if (fallbackKey) {
+      const { resource: fallbackResource } = await c.item("brand:config", fallbackKey).read<BrandConfigDoc>();
+      return fallbackResource || null;
+    }
+
+    return null;
   } catch {
     return null;
   }
@@ -271,17 +288,17 @@ export function toEffectiveBrand(brandKey: string, overrides?: Partial<BrandConf
     accessMode: (overrides.accessMode === "request" || overrides.accessMode === "open") ? overrides.accessMode : withDefaults.accessMode,
   });
 
-  // FORCE override for BasaltSurge to ensure new branding assets are used
-  // This protections prevents old DB configs from reverting the hardcoded improvements
+  // BasaltSurge defaults: only apply when the DB doesn't have explicit values.
+  // After the MongoDB migration, the DB is the source of truth for brand config.
   if (key === "basaltsurge") {
-    merged.colors.primary = "#35ff7c";
-    merged.colors.accent = "#FF6B35";
-    merged.logos.app = "/BasaltSurgeWideD.png";
-    merged.logos.symbol = "/BasaltSurgeD.png";
-    merged.logos.og = "/BasaltSurgeD.png";
-    merged.logos.twitter = "/BasaltSurgeD.png";
-    (merged.logos as any).navbarMode = "logo";
-    merged.name = "BasaltSurge";
+    if (!overrides?.colors?.primary) merged.colors.primary = "#35ff7c";
+    if (!overrides?.colors?.accent) merged.colors.accent = "#FF6B35";
+    if (!overrides?.logos?.app) merged.logos.app = "/BasaltSurgeWideD.png";
+    if (!overrides?.logos?.symbol) merged.logos.symbol = "/BasaltSurgeD.png";
+    if (!overrides?.logos?.og) merged.logos.og = "/BasaltSurgeD.png";
+    if (!overrides?.logos?.twitter) merged.logos.twitter = "/BasaltSurgeD.png";
+    if (!(overrides?.logos as any)?.navbarMode) (merged.logos as any).navbarMode = "logo";
+    if (!overrides?.name) merged.name = "BasaltSurge";
   }
 
   return merged;

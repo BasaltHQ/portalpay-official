@@ -1,0 +1,11 @@
+1. [src/app/api/merchant/team/stats/route.ts:40]
+   SELECT c.staffId, MAX(c.startTime) as lastActive, SUM(c.totalTips) as unpaidTips FROM c WHERE c.type='terminal_session' AND c.merchantWallet=@w AND (NOT IS_DEFINED(c.tipsPaid) OR c.tipsPaid=false) GROUP BY c.staffId
+
+2. [src/app/api/orders/reindex/route.ts:854]
+   SELECT c.id, c.wallet, c.receiptId, c.createdAt, c.metadata FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.createdAt BETWEEN @start AND @end
+
+3. [src/app/api/orders/reindex/route.ts:964]
+   SELECT c.id, c.wallet, c.receiptId, c.totalUsd, c.createdAt, c.status FROM c WHERE c.type='receipt' AND c.wallet=@merchant AND c.createdAt BETWEEN @start AND @end AND c.totalUsd >= @minUsd AND c.totalUsd <= @maxUsd
+
+4. [src/app/api/orders/route.ts:442]
+   SELECT * FROM c WHERE c.docType='discount' AND c.status='active' AND (c.shopId=@wallet OR LOWER(c.shopId)=@walletLower

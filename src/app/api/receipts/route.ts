@@ -71,8 +71,8 @@ export async function GET(req: NextRequest) {
   try {
     const container = await getContainer();
 
-    let query = `SELECT TOP ${limit} c.receiptId, c.totalUsd, c.currency, c.lineItems, c.createdAt, c.brandName, c.status FROM c WHERE c.type='receipt' AND c.wallet=@wallet`;
-    const parameters = [{ name: "@wallet", value: wallet }];
+    let query = `SELECT TOP @limit c.receiptId, c.totalUsd, c.currency, c.lineItems, c.createdAt, c.brandName, c.status FROM c WHERE c.type='receipt' AND c.wallet=@wallet`;
+    const parameters: { name: string; value: any }[] = [{ name: "@wallet", value: wallet }, { name: "@limit", value: limit }];
 
     if (startTs > 0) {
       query += ` AND c.createdAt >= @start`;

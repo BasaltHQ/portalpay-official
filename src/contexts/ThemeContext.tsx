@@ -400,9 +400,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
               x.secondaryColor = defaultAccent;
             }
           }
-          // STRICT override for BasaltSurge: Always enforce new assets
-          // BUT only if we are NOT in a specific merchant context (i.e. no shopTheme loaded)
-          if (isBS && !shopTheme) {
+          // BasaltSurge defaults: only force for global/landing page (no wallet, no shop)
+          // Per-merchant configs from the API already include the correct merged colors.
+          if (isBS && !shopTheme && isGlobal) {
             x.primaryColor = '#35ff7c';
             x.secondaryColor = '#FF6B35';
             x.brandLogoUrl = '/BasaltSurgeWideD.png';

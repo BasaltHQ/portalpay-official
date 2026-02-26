@@ -439,25 +439,36 @@ export async function POST(req: NextRequest) {
         }
       } catch (e) { }
 
-      let query = "SELECT * FROM c WHERE c.docType='discount' AND c.status='active' AND (c.shopId=@wallet OR LOWER(c.shopId)=@walletLower";
-      const parameters = [
+      // Build distinct static queries based on conditions to avoid dynamic string concat
+      let querySpec: { query: string; parameters: { name: string; value: any }[] };
+
+      const baseParams: { name: string; value: any }[] = [
         { name: "@wallet", value: wallet },
-        { name: "@walletLower", value: wallet.toLowerCase() }
+        { name: "@walletLower", value: wallet.toLowerCase() },
       ];
 
-      if (shopSlug) {
-        query += " OR c.shopSlug=@shopSlug OR LOWER(c.shopSlug)=@shopSlug";
-        parameters.push({ name: "@shopSlug", value: shopSlug });
+      if (shopSlug && includePlatform && platformWallet) {
+        querySpec = {
+          query: "SELECT * FROM c WHERE c.docType='discount' AND c.status='active' AND (c.shopId=@wallet OR LOWER(c.shopId)=@walletLower OR c.shopSlug=@shopSlug OR LOWER(c.shopSlug)=@shopSlug OR c.shopId=@platformWallet OR LOWER(c.shopId)=@platformWallet)",
+          parameters: [...baseParams, { name: "@shopSlug", value: shopSlug }, { name: "@platformWallet", value: platformWallet }],
+        };
+      } else if (shopSlug) {
+        querySpec = {
+          query: "SELECT * FROM c WHERE c.docType='discount' AND c.status='active' AND (c.shopId=@wallet OR LOWER(c.shopId)=@walletLower OR c.shopSlug=@shopSlug OR LOWER(c.shopSlug)=@shopSlug)",
+          parameters: [...baseParams, { name: "@shopSlug", value: shopSlug }],
+        };
+      } else if (includePlatform && platformWallet) {
+        querySpec = {
+          query: "SELECT * FROM c WHERE c.docType='discount' AND c.status='active' AND (c.shopId=@wallet OR LOWER(c.shopId)=@walletLower OR c.shopId=@platformWallet OR LOWER(c.shopId)=@platformWallet)",
+          parameters: [...baseParams, { name: "@platformWallet", value: platformWallet }],
+        };
+      } else {
+        querySpec = {
+          query: "SELECT * FROM c WHERE c.docType='discount' AND c.status='active' AND (c.shopId=@wallet OR LOWER(c.shopId)=@walletLower)",
+          parameters: baseParams,
+        };
       }
 
-      if (includePlatform && platformWallet) {
-        query += " OR c.shopId=@platformWallet OR LOWER(c.shopId)=@platformWallet";
-        parameters.push({ name: "@platformWallet", value: platformWallet });
-      }
-
-      query += ")";
-
-      const querySpec = { query, parameters };
       const { resources: allDiscounts } = await container.items.query(querySpec).fetchAll();
 
       const now = new Date();

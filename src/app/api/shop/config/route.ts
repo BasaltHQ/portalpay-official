@@ -26,8 +26,8 @@ const DOC_ID = "shop:config";
 function getDocIdForBrand(brandKey?: string): string {
   try {
     const key = String(brandKey || "").toLowerCase();
-    if (!key || key === "basaltsurge") return "site:config:basaltsurge";
-    if (key === "portalpay") return DOC_ID;
+    // basaltsurge / portalpay shop configs use the legacy "shop:config" doc ID
+    if (!key || key === "basaltsurge" || key === "portalpay") return DOC_ID;
     return `${DOC_ID}:${key}`;
   } catch {
     return DOC_ID;
