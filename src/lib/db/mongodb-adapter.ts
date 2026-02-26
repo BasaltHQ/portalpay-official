@@ -213,6 +213,12 @@ class MongoItemsReference {
                     hasMoreResults: false,
                 };
             },
+
+            // Add fetchAll to mock Cosmos SDK
+            async fetchAll(): Promise<FeedResponse<T>> {
+                // Just reuse fetchNext since it natively does toArray() with the provided limits/skips
+                return this.fetchNext();
+            }
         };
     }
 
