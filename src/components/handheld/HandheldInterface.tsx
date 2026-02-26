@@ -777,7 +777,7 @@ export default function HandheldInterface({
 
                                 <button
                                     onClick={async () => {
-                                        if (hasPrinter && currentReceipt) {
+                                        if (currentReceipt) {
                                             const origin = typeof window !== "undefined" ? window.location.origin : "";
                                             const rawId = String(currentReceipt.receiptId || currentReceipt.id || "").replace("receipt:", "");
                                             const pUrl = `${origin}/portal/${encodeURIComponent(rawId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
@@ -787,19 +787,18 @@ export default function HandheldInterface({
                                             if (canvas && canvas.width > 0) {
                                                 qrBase64 = canvas.toDataURL("image/png").split(',')[1] || canvas.toDataURL("image/png");
                                             }
+                                            // Always try native printer first — same as Terminal
                                             try {
                                                 const result = await printDocument({ text: receiptText, base64Image: qrBase64 });
-                                                alert("[DEBUG] Print result: " + result);
+                                                if (!result) {
+                                                    // Native printer returned false — fall back to system print
+                                                    console.warn('[PRINTER] Native print returned false, falling back to window.print()');
+                                                    window.print();
+                                                }
                                             } catch (e: any) {
-                                                alert("[DEBUG] Print threw: " + (e?.message || e));
-                                            }
-                                        } else {
-                                            alert("Fallback to window.print() triggered. hasPrinter=" + hasPrinter);
-                                            const prev = selectedOrderForPayment;
-                                            setSelectedOrderForPayment(currentReceipt);
-                                            setTimeout(() => {
+                                                console.error('[PRINTER] Native print threw:', e);
                                                 window.print();
-                                            }, 100);
+                                            }
                                         }
                                     }}
                                     className="w-full h-12 bg-black text-white rounded-xl font-bold active:scale-95 transition-all text-sm flex items-center justify-center space-x-2 shadow-lg"
@@ -978,7 +977,7 @@ export default function HandheldInterface({
                             <div className="grid grid-cols-2 space-x-4 w-full">
                                 <button
                                     onClick={async () => {
-                                        if (hasPrinter && selectedOrderForPayment) {
+                                        if (selectedOrderForPayment) {
                                             const origin = typeof window !== "undefined" ? window.location.origin : "";
                                             const rawId = String(selectedOrderForPayment.receiptId || selectedOrderForPayment.id || "").replace("receipt:", "");
                                             const pUrl = `${origin}/portal/${encodeURIComponent(rawId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
@@ -988,15 +987,17 @@ export default function HandheldInterface({
                                             if (canvas && canvas.width > 0) {
                                                 qrBase64 = canvas.toDataURL("image/png").split(',')[1] || canvas.toDataURL("image/png");
                                             }
+                                            // Always try native printer first — same as Terminal
                                             try {
                                                 const result = await printDocument({ text: receiptText, base64Image: qrBase64 });
-                                                alert("[DEBUG] Print result: " + result);
+                                                if (!result) {
+                                                    console.warn('[PRINTER] Native print returned false, falling back to window.print()');
+                                                    window.print();
+                                                }
                                             } catch (e: any) {
-                                                alert("[DEBUG] Print threw: " + (e?.message || e));
+                                                console.error('[PRINTER] Native print threw:', e);
+                                                window.print();
                                             }
-                                        } else {
-                                            alert("Fallback to window.print() triggered. hasPrinter=" + hasPrinter);
-                                            window.print();
                                         }
                                     }}
                                     className="h-16 bg-white/10 text-white rounded-2xl font-bold text-lg active:scale-95 transition-all flex items-center justify-center space-x-2 border border-white/5"

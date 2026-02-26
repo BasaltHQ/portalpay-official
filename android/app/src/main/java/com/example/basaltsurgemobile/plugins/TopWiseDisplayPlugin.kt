@@ -40,9 +40,10 @@ class TopWiseDisplayPlugin : Plugin() {
         val bitMatrix = writer.encode(data, BarcodeFormat.QR_CODE, size, size, hints)
         
         val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val darkBg = Color.rgb(24, 24, 27) // zinc-900 — matches the app dark theme
         for (x in 0 until size) {
             for (y in 0 until size) {
-                bmp.setPixel(x, y, if (bitMatrix.get(x, y)) Color.BLACK else Color.WHITE)
+                bmp.setPixel(x, y, if (bitMatrix.get(x, y)) Color.WHITE else darkBg)
             }
         }
         return bmp
