@@ -25,11 +25,39 @@ export function DeviceStyleInjector() {
              These run ONLY on legacy endpoints like the Valor VP550
           ======================================================= */
 
-          /* 1. ThirdWeb Modal Text Contrast & Background */
+          /* 1. Global Backgrounds & Transparency Fallbacks */
+          /* Chrome 70 fails severely on backdrop-filter and color-mix */
+          body::before, .glass-pane, .glass-backdrop, .tw-modal {
+            background: rgba(10, 10, 10, 0.92) !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }
+
+          .global-gradient-layer div {
+            background: linear-gradient(135deg, #064e3b 0%, #000000 100%) !important;
+            filter: none !important;
+          }
+
+          /* 2. Fix the "Giant Logo" issue */
+          /* Forced strict dimensions for logos that use Next.js 'fill' which breaks in old Chrome */
+          nav img, [class*="Logo"] img, .group img {
+            max-height: 40px !important;
+            width: auto !important;
+            position: relative !important;
+            object-fit: contain !important;
+          }
+
+          /* Specifically target the giant X logo (Basalt logo) */
+          img[src*="Surge"], img[src*="Basalt"] {
+            max-height: 48px !important;
+            width: auto !important;
+          }
+
+          /* 3. ThirdWeb Modal Text Contrast */
           .tw-modal, .tw-connect, div[role="dialog"][class*="tw-"] {
             --tw-color-text: #ffffff !important;
             --tw-color-primary-text: #ffffff !important;
-            --tw-color-secondary-text: #e5e7eb !important;
+            --tw-color-secondary-text: #d1d5db !important;
           }
 
           .tw-modal *, .tw-connect * {
@@ -38,42 +66,26 @@ export function DeviceStyleInjector() {
             opacity: 1 !important;
           }
 
-          /* 2. Fix the "Pay" button spacing (locked to the bottom otherwise on VP550) */
+          /* 4. Fix Button Spacings */
+          button {
+            border-radius: 8px !important;
+          }
+
           .tw-connect-wallet--modal-overlay > div,
           .tw-modal > div:first-child {
             margin-bottom: 24px !important;
           }
 
-          button:has(> span:contains("Pay ")),
-          button:has(> span > span:contains("Pay ")),
-          .tw-modal button,
-          .tw-connect button {
-            margin-bottom: 8px !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          /* 5. Icon Scaling (Lucide SVGs) */
+          svg {
+            max-width: 24px !important;
+            max-height: 24px !important;
           }
 
-          /* 3. Re-align the 'Transactions' label to match the SVG */
-          .tw-modal span:has(> svg) + span {
-            display: inline-flex !important;
-            align-items: center !important;
-            height: 100% !important;
-            vertical-align: middle !important;
-          }
-
-          /* 4. Pad the Copy Wallet / Manage Wallet nested buttons */
-          .tw-modal .tw-wallet-select-wallet-button {
-            padding: 12px 16px !important;
-          }
-
-          /* 5. Fallback Glassmorphism (Chrome 70 fails severely on backdrop-filter) */
-          .glass-pane, .glass-backdrop, .tw-modal {
-            background: rgba(15, 23, 42, 0.98) !important;
-            border: 1px solid rgba(255, 255, 255, 0.12) !important;
-          }
-          
-          /* Ensure disabled buttons aren't blinding */
-          .tw-modal button:disabled {
-            opacity: 0.6 !important;
+          /* Section-specific fixes for Touchpoint Setup */
+          h1 {
+            font-size: 1.25rem !important;
+            line-height: 1.5rem !important;
           }
         `;
         document.head.appendChild(style);
