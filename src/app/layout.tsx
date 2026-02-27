@@ -12,6 +12,7 @@ import { ThirdwebAppProvider } from "@/components/providers/thirdweb-app-provide
 import { ThemeLoader } from "@/components/providers/theme-loader";
 import { ThemeReadyGate } from "@/components/providers/theme-ready-gate";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { DeviceStyleInjector } from "@/components/DeviceStyleInjector";
 import { I18nProvider } from "@/components/providers/i18n-provider";
 import { AutoTranslateProvider } from "@/components/providers/auto-translate-provider";
 import FarcasterProvider from "@/components/providers/FarcasterProvider";
@@ -663,6 +664,7 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ overflowX: 'hidden' }}
       >
+        <DeviceStyleInjector />
         <Script id="pp-preset-vars" strategy="beforeInteractive">{`try {
           var d=document.documentElement;
           var dp=d.getAttribute('data-pp-brand-primary')||'#1f2937';

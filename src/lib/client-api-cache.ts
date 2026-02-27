@@ -1,3 +1,5 @@
+import { getInternalBaseUrl } from './base-url';
+
 /**
  * Client-side API cache utility for deduplicating common API calls
  * Prevents repeated fetches during HMR and component re-renders
@@ -53,8 +55,14 @@ export function cachedFetch<T = any>(url: string, options?: RequestInit): Promis
     return cached.promise;
   }
 
+  // Ensure absolute fetch URL during Server-Side Rendering
+  let fetchUrl = url;
+  if (typeof window === 'undefined' && url.startsWith('/')) {
+    fetchUrl = `${getInternalBaseUrl()}${url}`;
+  }
+
   // Create new fetch and cache it
-  const promise = fetch(url, options)
+  const promise = fetch(fetchUrl, options)
     .then(async (r) => {
       const text = await r.text();
       try {
