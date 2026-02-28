@@ -17,7 +17,14 @@ export function DeviceStyleInjector() {
         // Prevent duplicate injections
         if (document.getElementById("vp550-legacy-styles")) return;
 
-        // 1. SES-safe Style Injection (Flattened, no @layers)
+        // 1. Load Flattened External Stylesheet
+        const link = document.createElement("link");
+        link.id = "vp550-legacy-link";
+        link.rel = "stylesheet";
+        link.href = "/css/legacy.css";
+        document.head.appendChild(link);
+
+        // 2. SES-safe Style Injection (Inline fallback)
         const style = document.createElement("style");
         style.id = "vp550-legacy-styles";
         const css = `

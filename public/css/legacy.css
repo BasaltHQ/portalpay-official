@@ -1,0 +1,77 @@
+/* 
+   LEGACY FLATTENED STYLES (No @layers)
+   Targeted for Chrome 70 / Android 6 (VP550)
+*/
+
+/* 1. Global Resets & Background Fixes */
+body,
+html {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+}
+
+body::before,
+.glass-pane,
+.glass-backdrop,
+.tw-modal {
+    background: rgba(10, 10, 10, 0.98) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* 2. Brand Specific Fallbacks */
+.global-gradient-layer div {
+    background: #052e16 !important;
+    /* Static fallback for color-mix */
+    filter: none !important;
+}
+
+/* 3. Layout Fixes (The "Giant Logo" & Icons) */
+nav img,
+[src*="Surge"],
+[src*="Basalt"],
+[class*="Logo"] img,
+.group img {
+    max-height: 42px !important;
+    width: auto !important;
+    position: relative !important;
+    object-fit: contain !important;
+    display: inline-block !important;
+}
+
+svg {
+    max-width: 24px !important;
+    max-height: 24px !important;
+}
+
+/* 4. Thirdweb & Modal Fixes */
+.tw-modal *,
+.tw-connect * {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+/* 5. Utility Overrides (Tailwind replacements) */
+.flex {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.rounded-lg {
+    border-radius: 8px !important;
+}
+
+.rounded-xl {
+    border-radius: 12px !important;
+}
+
+/* 6. Decorative elements that break in old Chrome */
+.shield-gleam-container,
+.shield-gleam {
+    display: none !important;
+}
