@@ -23,6 +23,7 @@ export class S3StorageProvider implements StorageProvider {
             throw new Error("S3_ENDPOINT is required for S3 Storage Provider");
         }
 
+        // The user explicitly requested to use the configured region from environment variables.
         this.client = new S3Client({
             region: this.region,
             endpoint: this.endpoint,
@@ -30,23 +31,17 @@ export class S3StorageProvider implements StorageProvider {
                 accessKeyId: process.env.S3_ACCESS_KEY || "",
                 secretAccessKey: process.env.S3_SECRET_KEY || ""
             },
-            forcePathStyle: true, // Often needed for MinIO/compatible providers
+            forcePathStyle: false, // Use Virtual-Hosted Style for OVH as requested
         });
     }
 
     /**
-     * Strip the Azure container prefix from a path.
-     * The app passes paths like "portalpay/brands/logo.png" where "portalpay" was
-     * the Azure Blob container. In S3, the bucket replaces the container, so we
-     * only need "brands/logo.png" as the S3 key.
+     * Helper to clean up the path for S3.
+     * We map the Azure container name directly to an S3 top-level folder
+     * to maintain the same exact folder structure.
      */
     private toKey(path: string): string {
-        const clean = path.startsWith("/") ? path.substring(1) : path;
-        const parts = clean.split("/");
-        // If only one segment, it's just a filename — no prefix to strip
-        if (parts.length <= 1) return clean;
-        // Strip the first segment (Azure container name)
-        return parts.slice(1).join("/");
+        return path.startsWith("/") ? path.substring(1) : path;
     }
 
     async upload(path: string, data: Buffer | string | Blob | ArrayBuffer, contentType: string): Promise<string> {
@@ -94,8 +89,8 @@ export class S3StorageProvider implements StorageProvider {
             return `${cleanBase}/${key}`;
         }
 
-        // Default to Virtual-Hosted Style URL construction
-        // format: https://[bucket].[domain]/[key]
+        // Use Virtual-Hosted Style URL construction
+        // format: https://[bucket].[endpoint-hostname]/[key]
         const endpointUrl = new URL(this.endpoint);
         return `${endpointUrl.protocol}//${this.bucket}.${endpointUrl.hostname}/${key}`;
     }

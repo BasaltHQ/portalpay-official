@@ -33,102 +33,7 @@ type ShopConfig = {
   industryPack?: 'restaurant' | 'retail' | 'hotel' | 'freelancer';
 };
 
-// Azure helpers (copied from media/upload route pattern)
-function parseAzureConnString(conn?: string): { accountName?: string; accountKey?: string } {
-  try {
-    const s = String(conn || '');
-    const parts = s.split(';').map((p) => p.trim());
-    const out: Record<string, string> = {};
-    for (const p of parts) {
-      const [k, v] = p.split('=');
-      if (k && v) out[k] = v;
-    }
-    return { accountName: out['AccountName'], accountKey: out['AccountKey'] };
-  } catch {
-    return {};
-  }
-}
-
-function getAccountCreds(): { accountName: string; accountKey: string } {
-  const fromConn = parseAzureConnString(process.env.AZURE_BLOB_CONNECTION_STRING);
-  const accountName = process.env.AZURE_BLOB_ACCOUNT_NAME || fromConn.accountName || '';
-  const accountKey = process.env.AZURE_BLOB_ACCOUNT_KEY || fromConn.accountKey || '';
-  if (!accountName || !accountKey) {
-    throw new Error('azure_creds_missing');
-  }
-  return { accountName, accountKey };
-}
-
-function buildBlobUrl(accountName: string, container: string, blobName: string): string {
-  return `https://${accountName}.blob.core.windows.net/${container}/${blobName}`;
-}
-
-async function uploadBlobSharedKey(
-  accountName: string,
-  accountKey: string,
-  container: string,
-  blobName: string,
-  contentType: string,
-  body: Uint8Array
-): Promise<void> {
-  const xmsVersion = '2021-12-02';
-  const xmsDate = new Date().toUTCString();
-  const contentLength = body.byteLength;
-
-  const canonHeaders =
-    `x-ms-blob-type:BlockBlob\n` +
-    `x-ms-date:${xmsDate}\n` +
-    `x-ms-version:${xmsVersion}\n`;
-
-  const canonResource = `/${accountName}/${container}/${blobName}`;
-
-  const stringToSign =
-    `PUT\n` +
-    `\n` +
-    `\n` +
-    `${contentLength}\n` +
-    `\n` +
-    `${contentType}\n` +
-    `\n` +
-    `\n` +
-    `\n` +
-    `\n` +
-    `\n` +
-    `\n` +
-    `${canonHeaders}` +
-    `${canonResource}`;
-
-  const key = Buffer.from(accountKey, 'base64');
-  const sig = crypto.createHmac('sha256', key).update(stringToSign, 'utf8').digest('base64');
-  const auth = `SharedKey ${accountName}:${sig}`;
-
-  await new Promise<void>((resolve, reject) => {
-    const options = {
-      hostname: `${accountName}.blob.core.windows.net`,
-      path: `/${container}/${blobName}`,
-      method: 'PUT',
-      headers: {
-        'x-ms-blob-type': 'BlockBlob',
-        'x-ms-date': xmsDate,
-        'x-ms-version': xmsVersion,
-        'Content-Type': contentType,
-        'Content-Length': contentLength,
-        Authorization: auth,
-      },
-    };
-    const req = httpsRequest(options, (res) => {
-      const status = res.statusCode || 0;
-      if (status >= 200 && status < 300) {
-        resolve();
-      } else {
-        reject(new Error(`azure_put_failed_${status}`));
-      }
-    });
-    req.on('error', (err) => reject(err));
-    req.write(body);
-    req.end();
-  });
-}
+import { StorageFactory } from '@/lib/storage';
 
 async function fetchImageAsBuffer(url: string): Promise<Buffer | null> {
   try {
@@ -478,35 +383,20 @@ export async function GET(
       .jpeg({ quality: 85 })
       .toBuffer();
 
-    // Upload to Azure Blob
-    const { accountName, accountKey } = getAccountCreds();
+    // Upload using StorageFactory
+    const storage = StorageFactory.getProvider();
+    let publicUrl = '';
 
     try {
-      await uploadBlobSharedKey(
-        accountName,
-        accountKey,
-        containerName,
-        blobName,
-        'image/jpeg',
-        new Uint8Array(finalImage)
+      publicUrl = await storage.upload(
+        `${containerName}/${blobName}`,
+        finalImage,
+        'image/jpeg'
       );
     } catch (e) {
-      console.error('Azure upload failed:', e);
+      console.error('Storage upload failed:', e);
       // Continue anyway and return the image
     }
-
-    // Construct public URL
-    const storageUrl = buildBlobUrl(accountName, containerName, blobName);
-    const publicBase = process.env.AZURE_BLOB_PUBLIC_BASE_URL;
-    const publicUrl = (() => {
-      try {
-        if (publicBase) {
-          const u = new URL(storageUrl);
-          return `${publicBase}${u.pathname}`;
-        }
-      } catch { }
-      return storageUrl;
-    })();
 
     // Return the generated image directly (convert Buffer to Uint8Array for NextResponse)
     return new NextResponse(new Uint8Array(finalImage), {
