@@ -17,78 +17,77 @@ export function DeviceStyleInjector() {
         // Prevent duplicate injections
         if (document.getElementById("vp550-legacy-styles")) return;
 
+        // 1. SES-safe Style Injection (Flattened, no @layers)
         const style = document.createElement("style");
         style.id = "vp550-legacy-styles";
-        style.innerHTML = `
-          /* =======================================================
-             VP550 / Android Terminal Specific Layout Overrides
-             These run ONLY on legacy endpoints like the Valor VP550
-          ======================================================= */
-
-          /* 1. Global Backgrounds & Transparency Fallbacks */
-          /* Chrome 70 fails severely on backdrop-filter and color-mix */
+        const css = `
+          /* VP550 Flattened Overrides */
           body::before, .glass-pane, .glass-backdrop, .tw-modal {
-            background: rgba(10, 10, 10, 0.92) !important;
+            background: rgba(10, 10, 10, 0.95) !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
           }
-
           .global-gradient-layer div {
-            background: linear-gradient(135deg, #064e3b 0%, #000000 100%) !important;
+            background: #052e16 !important; /* Static fallback for color-mix */
             filter: none !important;
           }
-
-          /* 2. Fix the "Giant Logo" issue */
-          /* Forced strict dimensions for logos that use Next.js 'fill' which breaks in old Chrome */
-          nav img, [class*="Logo"] img, .group img {
-            max-height: 40px !important;
-            width: auto !important;
-            position: relative !important;
-            object-fit: contain !important;
-          }
-
-          /* Specifically target the giant X logo (Basalt logo) */
-          img[src*="Surge"], img[src*="Basalt"] {
-            max-height: 48px !important;
-            width: auto !important;
-          }
-
-          /* 3. ThirdWeb Modal Text Contrast */
-          .tw-modal, .tw-connect, div[role="dialog"][class*="tw-"] {
-            --tw-color-text: #ffffff !important;
-            --tw-color-primary-text: #ffffff !important;
-            --tw-color-secondary-text: #d1d5db !important;
-          }
-
+          /* Thirdweb contrast fixes */
           .tw-modal *, .tw-connect * {
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
-            opacity: 1 !important;
           }
-
-          /* 4. Fix Button Spacings */
-          button {
-            border-radius: 8px !important;
-          }
-
-          .tw-connect-wallet--modal-overlay > div,
-          .tw-modal > div:first-child {
-            margin-bottom: 24px !important;
-          }
-
-          /* 5. Icon Scaling (Lucide SVGs) */
-          svg {
-            max-width: 24px !important;
-            max-height: 24px !important;
-          }
-
-          /* Section-specific fixes for Touchpoint Setup */
-          h1 {
-            font-size: 1.25rem !important;
-            line-height: 1.5rem !important;
+          /* Hide things that break layout in Chrome 70 */
+          .shield-gleam-container, .shield-gleam {
+            display: none !important;
           }
         `;
+        // Use createTextNode for better compatibility/safety in older engines
+        style.appendChild(document.createTextNode(css));
         document.head.appendChild(style);
+
+        // 2. Direct DOM Manipulation (MutationObserver)
+        // This ensures that even if CSS fails to parse due to @layers, 
+        // critical layout elements (like the giant logo) are fixed by JS.
+        const fixLayout = (root: Node) => {
+          const el = root as HTMLElement;
+          if (!el.querySelectorAll) return;
+
+          // Fix Logos
+          const logos = el.querySelectorAll('nav img, [src*="Surge"], [src*="Basalt"], [class*="Logo"] img');
+          logos.forEach((img: any) => {
+            img.style.maxHeight = '42px';
+            img.style.width = 'auto';
+            img.style.position = 'relative';
+            img.style.objectFit = 'contain';
+            img.style.display = 'block';
+          });
+
+          // Fix SVGs/Icons
+          const svgs = el.querySelectorAll('svg');
+          svgs.forEach((svg: any) => {
+            svg.style.maxWidth = '24px';
+            svg.style.maxHeight = '24px';
+          });
+
+          // Fix Backgrounds (Direct style set)
+          const panes = el.querySelectorAll('.glass-pane, .tw-modal');
+          panes.forEach((p: any) => {
+            p.style.background = 'rgba(10, 10, 10, 0.95)';
+            p.style.backdropFilter = 'none';
+          });
+        };
+
+        // Run initial fix
+        fixLayout(document.body);
+
+        // Observe future changes
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => fixLayout(node));
+          });
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
       }
     }
   }, []);
