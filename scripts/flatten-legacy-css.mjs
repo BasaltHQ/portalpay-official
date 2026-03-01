@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import postcss from 'postcss';
-import cascadeLayers from '@csstools/postcss-cascade-layers';
 
 const __dirname = path.resolve();
 
@@ -23,15 +22,33 @@ try {
 // 2. Read the compiled CSS
 const compiledCss = fs.readFileSync(tempCss, 'utf-8');
 
-// 3. Process with PostCSS to flatten cascade layers
-console.log('Flattening @layer rules for legacy (Chrome 70) compatibility...');
-postcss([cascadeLayers()])
+// 3. Process with PostCSS to literally UNWRAP layers (no specificity hacks)
+console.log('Stripping @layer boundaries for legacy compatibility...');
+
+const unwrapLayersPlugin = () => {
+    return {
+        postcssPlugin: 'unwrap-layers',
+        AtRule: {
+            layer: (rule) => {
+                // Unpack all child nodes to the parent level
+                if (rule.nodes) {
+                    rule.replaceWith(rule.nodes);
+                } else {
+                    rule.remove(); // Remove empty @layer statements
+                }
+            }
+        }
+    }
+};
+unwrapLayersPlugin.postcss = true;
+
+postcss([unwrapLayersPlugin()])
     .process(compiledCss, { from: tempCss, to: outputCss })
     .then(result => {
         fs.writeFileSync(outputCss, result.css);
         // Cleanup temp file
         fs.unlinkSync(tempCss);
-        console.log(`✅ Successfully generated flattened legacy CSS at ${outputCss}`);
+        console.log(`✅ Successfully generated pure legacy CSS at ${outputCss}`);
     })
     .catch(error => {
         console.error("PostCSS processing failed:", error);

@@ -93,7 +93,6 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@csstools/postcss-cascade-layers": "^6.0.0",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/archiver": "^7.0.0",
