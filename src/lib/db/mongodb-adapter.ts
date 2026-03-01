@@ -246,9 +246,16 @@ class MongoItemsReference {
             throw new Error("Upserted document must have an id");
         }
 
-        // Use the business ID for upserting, keeping MongoDB's _id as internal
-        await this.collection.updateOne(
-            { id: id },
+        // Use the business ID and partition key (wallet) for upserting to match Cosmos DB semantics.
+        // This prevents documents with the same business ID but different wallets from colliding.
+        const filter: Document = { id: id };
+        const wallet = (body as any).wallet || (doc as any).wallet;
+        if (wallet) {
+            filter.wallet = wallet;
+        }
+
+        const res = await this.collection.updateOne(
+            filter,
             { $set: doc },
             { upsert: true }
         );

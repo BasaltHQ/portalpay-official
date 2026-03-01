@@ -797,7 +797,7 @@ function normalizeSiteConfig(raw?: any, targetWallet?: string) {
   // Default payment token: only allow configured tokens
   const allowedTokens = new Set(["USDC", "USDT", "cbBTC", "cbXRP", "ETH", "SOL"]);
   if (typeof config.defaultPaymentToken !== "string" || !allowedTokens.has(config.defaultPaymentToken)) {
-    config.defaultPaymentToken = undefined;
+    config.defaultPaymentToken = "USDC";
   }
 
   // Store currency: validate and default to USD
@@ -1147,12 +1147,12 @@ export async function GET(req: NextRequest) {
             } catch { }
           }
           // Use site_config if found, otherwise if we have shopConfig, use that as base
-          const base = resource || (shopConfig ? { ...shopConfig, type: 'site_config' } : null);
+          const baseBrand = resource || (shopConfig ? { ...shopConfig, type: 'site_config' } : null);
 
-          if (!base) {
+          if (!baseBrand) {
             // Fallback to legacy
           } else {
-            let finalConfig = { ...base };
+            let finalConfig = { ...baseBrand };
 
             // Merge legacy doc fields that may be more up-to-date (admin panel writes to legacy doc)
             try {
@@ -1160,15 +1160,15 @@ export async function GET(req: NextRequest) {
               if (legacyDoc) {
                 if (legacyDoc.accumulationMode && !finalConfig.accumulationMode) finalConfig.accumulationMode = legacyDoc.accumulationMode;
                 if (legacyDoc.accumulationMode === "fixed" && finalConfig.accumulationMode === "dynamic") finalConfig.accumulationMode = "fixed";
-                if (legacyDoc.reserveRatios && typeof legacyDoc.reserveRatios === "object") finalConfig.reserveRatios = legacyDoc.reserveRatios;
-                if (legacyDoc.defaultPaymentToken) finalConfig.defaultPaymentToken = legacyDoc.defaultPaymentToken;
-                if (legacyDoc.storeCurrency) finalConfig.storeCurrency = legacyDoc.storeCurrency;
-                if (typeof legacyDoc.processingFeePct === "number") finalConfig.processingFeePct = legacyDoc.processingFeePct;
+                if (legacyDoc.reserveRatios && typeof legacyDoc.reserveRatios === "object" && !finalConfig.reserveRatios) finalConfig.reserveRatios = legacyDoc.reserveRatios;
+                if (legacyDoc.defaultPaymentToken && !finalConfig.defaultPaymentToken) finalConfig.defaultPaymentToken = legacyDoc.defaultPaymentToken;
+                if (legacyDoc.storeCurrency && !finalConfig.storeCurrency) finalConfig.storeCurrency = legacyDoc.storeCurrency;
+                if (typeof legacyDoc.processingFeePct === "number" && typeof finalConfig.processingFeePct !== "number") finalConfig.processingFeePct = legacyDoc.processingFeePct;
               }
             } catch { }
 
             // Merge if shop config found
-            if (shopConfig && base.type === 'site_config') {
+            if (shopConfig && baseBrand.type === 'site_config') {
               finalConfig = mergeConfigs(finalConfig, shopConfig);
             }
 
@@ -1597,7 +1597,7 @@ export async function POST(req: NextRequest) {
       wallet: wallet,
       type: "site_config",
       brandKey: normalizedBrand, // Explicit brand key for easier querying and tenant isolation
-      updatedAt: Date.now(),
+      updatedAt: new Date(),
     } as any;
     try {
       const c = await getContainer();

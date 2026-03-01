@@ -216,12 +216,28 @@ export function ReserveSettings({ walletOverride, brandKey }: ReserveSettingsPro
         setError(j?.error || "Failed to save");
         return;
       }
-      // Successful save: update baselines and pulse
-      setLastSavedProcessingFeePct(Math.max(0, Number(processingFeePct)));
-      setLastSavedStoreCurrency(storeCurrency || "USD");
-      setLastSavedRatios({ ...ratios });
-      setLastSavedDefaultPaymentToken(defaultPaymentToken);
-      setLastSavedAccumulationMode(accumulationMode);
+      // Successful save: update baselines from server response to ensure we have the normalized values
+      const savedCfg = j?.config || {};
+      if (typeof savedCfg.processingFeePct === "number") {
+        setProcessingFeePct(savedCfg.processingFeePct);
+        setLastSavedProcessingFeePct(savedCfg.processingFeePct);
+      }
+      if (typeof savedCfg.storeCurrency === "string") {
+        setStoreCurrency(savedCfg.storeCurrency);
+        setLastSavedStoreCurrency(savedCfg.storeCurrency);
+      }
+      if (savedCfg.reserveRatios && typeof savedCfg.reserveRatios === "object") {
+        setRatios({ ...savedCfg.reserveRatios });
+        setLastSavedRatios({ ...savedCfg.reserveRatios });
+      }
+      if (savedCfg.defaultPaymentToken) {
+        setDefaultPaymentToken(savedCfg.defaultPaymentToken);
+        setLastSavedDefaultPaymentToken(savedCfg.defaultPaymentToken);
+      }
+      if (savedCfg.accumulationMode) {
+        setAccumulationMode(savedCfg.accumulationMode);
+        setLastSavedAccumulationMode(savedCfg.accumulationMode);
+      }
       setSavedPulse(true);
       try { setTimeout(() => setSavedPulse(false), 1500); } catch { }
     } catch (e: any) {
@@ -256,7 +272,24 @@ export function ReserveSettings({ walletOverride, brandKey }: ReserveSettingsPro
         <select
           className={`w-full h-9 px-3 py-1 border rounded-md bg-background ${(storeCurrency !== lastSavedStoreCurrency) ? "ring-1 ring-amber-500 border-amber-300" : ""}`}
           value={storeCurrency}
-          onChange={(e) => setStoreCurrency(e.target.value)}
+          onChange={(e) => {
+            const currency = e.target.value;
+            setStoreCurrency(currency);
+            (async () => {
+              try {
+                const r = await fetch("/api/site/config", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "x-wallet": effectiveWallet },
+                  body: JSON.stringify({ storeCurrency: currency }),
+                });
+                if (r.ok) {
+                  setLastSavedStoreCurrency(currency);
+                  setSavedPulse(true);
+                  try { setTimeout(() => setSavedPulse(false), 1200); } catch { }
+                }
+              } catch { }
+            })();
+          }}
         >
           {SUPPORTED_CURRENCIES.map((c) => (
             <option key={c.code} value={c.code}>
@@ -277,7 +310,28 @@ export function ReserveSettings({ walletOverride, brandKey }: ReserveSettingsPro
           step={0.01}
           className={`w-full h-9 px-3 py-1 border rounded-md bg-background ${(Math.abs((processingFeePct || 0) - (lastSavedProcessingFeePct || 0)) > 0.0001) ? "ring-1 ring-amber-500 border-amber-300" : ""}`}
           value={processingFeePct}
-          onChange={(e) => setProcessingFeePct(Math.max(0, Number(e.target.value || 0)))}
+          onChange={(e) => {
+            const raw = Number(e.target.value || 0);
+            const val = Math.max(0, raw);
+            setProcessingFeePct(val);
+          }}
+          onBlur={() => {
+            if (processingFeePct === lastSavedProcessingFeePct) return;
+            (async () => {
+              try {
+                const r = await fetch("/api/site/config", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "x-wallet": effectiveWallet },
+                  body: JSON.stringify({ processingFeePct }),
+                });
+                if (r.ok) {
+                  setLastSavedProcessingFeePct(processingFeePct);
+                  setSavedPulse(true);
+                  try { setTimeout(() => setSavedPulse(false), 1200); } catch { }
+                }
+              } catch { }
+            })();
+          }}
         />
         <div className="microtext text-muted-foreground mt-1">
           Base 0.5% is automatically included. This field adds your extra percentage (e.g., 2.5 = +2.5%). The merchant receives anything above the 0.5% base.
@@ -326,7 +380,24 @@ export function ReserveSettings({ walletOverride, brandKey }: ReserveSettingsPro
           <select
             className={`w-full h-9 px-3 py-1 border rounded-md bg-background ${(defaultPaymentToken !== lastSavedDefaultPaymentToken) ? "ring-1 ring-amber-500 border-amber-300" : ""}`}
             value={defaultPaymentToken}
-            onChange={(e) => setDefaultPaymentToken(e.target.value as any)}
+            onChange={(e) => {
+              const token = e.target.value as any;
+              setDefaultPaymentToken(token);
+              (async () => {
+                try {
+                  const r = await fetch("/api/site/config", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "x-wallet": effectiveWallet },
+                    body: JSON.stringify({ defaultPaymentToken: token }),
+                  });
+                  if (r.ok) {
+                    setLastSavedDefaultPaymentToken(token);
+                    setSavedPulse(true);
+                    try { setTimeout(() => setSavedPulse(false), 1200); } catch { }
+                  }
+                } catch { }
+              })();
+            }}
           >
             <option value="ETH">ETH (Ethereum)</option>
             <option value="USDC">USDC (USD Coin)</option>
