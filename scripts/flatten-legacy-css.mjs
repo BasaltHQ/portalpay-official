@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import postcss from 'postcss';
+import { transform } from 'lightningcss';
 
 const __dirname = path.resolve();
 
@@ -45,7 +46,19 @@ unwrapLayersPlugin.postcss = true;
 postcss([unwrapLayersPlugin()])
     .process(compiledCss, { from: tempCss, to: outputCss })
     .then(result => {
-        fs.writeFileSync(outputCss, result.css);
+        // 4. Transform with LightningCSS to downlevel to Chrome 70
+        console.log('Transpiling modern CSS features (oklch, nesting) to Chrome 70...');
+
+        const finalCss = transform({
+            filename: outputCss,
+            code: Buffer.from(result.css),
+            minify: true,
+            targets: {
+                chrome: 70 << 16 // Targets Chrome 70
+            }
+        });
+
+        fs.writeFileSync(outputCss, finalCss.code);
         // Cleanup temp file
         fs.unlinkSync(tempCss);
         console.log(`✅ Successfully generated pure legacy CSS at ${outputCss}`);
