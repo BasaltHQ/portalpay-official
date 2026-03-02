@@ -16,10 +16,10 @@ export default async function Image() {
         const headersList = await headers();
         const host = headersList.get('x-forwarded-host') || headersList.get('host') || '';
 
-        const { getContainerIdentity } = require('@/lib/brand-config');
-        const identity = getContainerIdentity(host);
+        const { deriveContainerIdentityFromHostname } = require('@/lib/brand-config');
+        const identity = deriveContainerIdentityFromHostname(host);
 
-        if (identity.brandKey) {
+        if (identity?.brandKey) {
             const { getBrandConfigFromCosmos } = require('@/lib/brand-config');
             const { brand } = await getBrandConfigFromCosmos(identity.brandKey);
             if (brand) explicitBrandConfig = brand;

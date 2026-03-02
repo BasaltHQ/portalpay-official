@@ -193,9 +193,19 @@ export async function generateMetadata(): Promise<Metadata> {
   // Derive brand key from hostname (e.g., paynex.azurewebsites.net -> paynex)
   let brandKeyFromHost: string | undefined;
   try {
-    const hostUrl = getBaseUrl();
-    const u = new URL(hostUrl);
-    const host = u.hostname || "";
+    let host = "";
+    try {
+      const { headers } = require('next/headers');
+      const headersList = headers();
+      host = headersList.get('x-forwarded-host') || headersList.get('host') || "";
+      if (host) host = host.split(":")[0];
+    } catch { }
+
+    if (!host) {
+      const hostUrl = getBaseUrl();
+      const u = new URL(hostUrl);
+      host = u.hostname || "";
+    }
 
     // Instead of duplicating logic, use the shared module that knows about all partner domains
     const { deriveContainerIdentityFromHostname } = require("@/lib/brand-config");
@@ -572,9 +582,19 @@ export default async function RootLayout({
   // Derive brand key from hostname (e.g., paynex.azurewebsites.net -> paynex)
   let brandKeyFromHost: string | undefined;
   try {
-    const hostUrl = getBaseUrl();
-    const u = new URL(hostUrl);
-    const host = u.hostname || "";
+    let host = "";
+    try {
+      const { headers } = require('next/headers');
+      const headersList = headers();
+      host = headersList.get('x-forwarded-host') || headersList.get('host') || "";
+      if (host) host = host.split(":")[0];
+    } catch { }
+
+    if (!host) {
+      const hostUrl = getBaseUrl();
+      const u = new URL(hostUrl);
+      host = u.hostname || "";
+    }
 
     const { deriveContainerIdentityFromHostname } = require("@/lib/brand-config");
     const derived = deriveContainerIdentityFromHostname(host);
