@@ -42,14 +42,35 @@ export function DeviceStyleInjector() {
 
     console.log('[DeviceStyleInjector] Injecting legacy CSS for Chrome', chromeVersion);
 
-    // 1. Load Flattened External Stylesheet (Chrome 93-compatible, no @layer/oklch)
+    // ── STEP 0: Disable conflicting Next.js SSR stylesheets ──
+    // Next.js SSR embeds CSS with @layer directives that Chrome <99 can't parse.
+    // This results in partial/broken styles that conflict with our legacy.css.
+    // We disable them entirely so legacy.css is the sole source of styles.
+    const ssrSheets = document.querySelectorAll('style[data-next-font], link[rel="stylesheet"][href*="/_next/"]');
+    ssrSheets.forEach((sheet) => {
+      (sheet as HTMLElement).setAttribute('media', 'not all');
+      console.log('[DeviceStyleInjector] Disabled SSR stylesheet:', sheet.tagName, (sheet as any).href || 'inline');
+    });
+
+    // Also disable inline <style> tags injected by Next.js that contain @layer
+    const allStyles = document.querySelectorAll('style');
+    allStyles.forEach((styleEl) => {
+      if (styleEl.id === 'vp550-legacy-styles' || styleEl.id === 'vp550-legacy-link') return;
+      const text = styleEl.textContent || '';
+      if (text.includes('@layer') || text.includes('oklch(') || text.includes('@import "tailwindcss"')) {
+        styleEl.setAttribute('media', 'not all');
+        console.log('[DeviceStyleInjector] Disabled @layer stylesheet (inline)');
+      }
+    });
+
+    // ── STEP 1: Load Flattened External Stylesheet ──
     const link = document.createElement("link");
     link.id = "vp550-legacy-link";
     link.rel = "stylesheet";
     link.href = "/css/legacy.css";
     document.head.appendChild(link);
 
-    // 2. SES-safe inline overrides for glass effects and backdrop-filter
+    // ── STEP 2: SES-safe inline overrides ──
     const style = document.createElement("style");
     style.id = "vp550-legacy-styles";
     const css = `
@@ -76,7 +97,7 @@ export function DeviceStyleInjector() {
     style.appendChild(document.createTextNode(css));
     document.head.appendChild(style);
 
-    // 3. Direct DOM Manipulation (MutationObserver)
+    // ── STEP 3: Direct DOM Manipulation (MutationObserver) ──
     const fixLayout = (root: Node) => {
       const el = root as HTMLElement;
       if (!el.querySelectorAll) return;
