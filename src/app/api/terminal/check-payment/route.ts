@@ -4,11 +4,18 @@ import { getContract, getContractEvents, prepareEvent, createThirdwebClient } fr
 import { base } from "thirdweb/chains";
 import { getContainer } from "@/lib/cosmos";
 
-// Helper to create Thirdweb client
-const client = createThirdwebClient({
-    clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "",
-    secretKey: process.env.THIRDWEB_SECRET_KEY || ""
-});
+// Lazy client initialization — avoids crash during `next build` when env vars
+// aren't available in the shell session (Plesk injects them only at runtime).
+let _client: ReturnType<typeof createThirdwebClient> | null = null;
+function getThirdwebClient() {
+    if (!_client) {
+        _client = createThirdwebClient({
+            clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "",
+            secretKey: process.env.THIRDWEB_SECRET_KEY || ""
+        });
+    }
+    return _client;
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -92,7 +99,7 @@ export async function POST(req: NextRequest) {
             // Better to fail fast if we can't get block? No, try anyway.
 
             const contract = getContract({
-                client,
+                client: getThirdwebClient(),
                 chain: base,
                 address: splitAddress as `0x${string}`,
             });
@@ -115,7 +122,7 @@ export async function POST(req: NextRequest) {
             } else {
                 if (tokenConfig?.address) {
                     const tokenContract = getContract({
-                        client,
+                        client: getThirdwebClient(),
                         chain: base,
                         address: tokenConfig.address as `0x${string}`,
                     });
