@@ -1195,15 +1195,7 @@
     box-shadow: none;
   }
 
-  button {
-    -webkit-appearance: button;
-    -moz-appearance: button;
-    -ms-appearance: button;
-    -o-appearance: button;
-    appearance: button;
-  }
-
-  input[type="button"], [type="reset"], [type="submit"] {
+  button, input[type="button"], [type="reset"], [type="submit"] {
     -webkit-appearance: button;
     -moz-appearance: button;
     -ms-appearance: button;

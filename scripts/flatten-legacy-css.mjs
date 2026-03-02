@@ -28,7 +28,7 @@ const lightningResult = transform({
     filename: tempCss,
     code: Buffer.from(css),
     minify: false,
-    targets: { chrome: (70 << 16) },
+    targets: { chrome: (93 << 16) },
     include:
         Features.Nesting |
         Features.IsSelector |
