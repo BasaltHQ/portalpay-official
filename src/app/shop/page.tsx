@@ -1409,11 +1409,11 @@ export default function ShopBuilderPage() {
                     <div className="grid grid-cols-12 gap-2 text-xs items-center p-2 bg-background rounded border">
                       <div className="col-span-2 font-semibold">CNAME</div>
                       <div className="col-span-3 font-mono text-muted-foreground">@ (or subdomain)</div>
-                      <div className="col-span-5 font-mono break-all">{typeof window !== "undefined" ? window.location.host : "pay.ledger1.ai"}</div>
+                      <div className="col-span-5 font-mono break-all">{(verificationResult as any)?.cnameTarget || (typeof window !== "undefined" ? window.location.host : "surge.basalthq.com")}</div>
                       <div className="col-span-2 text-right">
                         <button
                           className="text-xs text-blue-500 hover:underline"
-                          onClick={() => navigator.clipboard.writeText(typeof window !== "undefined" ? window.location.host : "pay.ledger1.ai")}
+                          onClick={() => navigator.clipboard.writeText((verificationResult as any)?.cnameTarget || (typeof window !== "undefined" ? window.location.host : "surge.basalthq.com"))}
                         >
                           Copy
                         </button>

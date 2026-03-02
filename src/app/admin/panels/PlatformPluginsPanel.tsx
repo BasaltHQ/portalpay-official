@@ -634,7 +634,7 @@ export default function PlatformPluginsPanel() {
                     <div className="mt-0.5 min-w-[14px] h-[14px] border border-amber-400 rounded-sm flex items-center justify-center">
                       <div className="w-1.5 h-1.5 bg-amber-600 rounded-full" />
                     </div>
-                    <span>The code for these endpoints exists only on your local machine. Uber <b>must</b> be able to reach them at <code>pay.ledger1.ai</code> to complete registration.</span>
+                    <span>The code for these endpoints exists only on your local machine. Uber <b>must</b> be able to reach them at <code>surge.basalthq.com</code> to complete registration.</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
                     <div className="mt-0.5 min-w-[14px] h-[14px] border border-amber-400 rounded-sm flex items-center justify-center">
@@ -645,7 +645,7 @@ export default function PlatformPluginsPanel() {
                 </div>
                 <div className="pt-1">
                   <a
-                    href="https://pay.ledger1.ai/api/integrations/delivery/auth/token"
+                    href="https://surge.basalthq.com/api/integrations/delivery/auth/token"
                     target="_blank"
                     rel="noreferrer"
                     className="text-[10px] uppercase font-bold tracking-wider text-amber-600 hover:underline flex items-center gap-1"
@@ -663,12 +663,12 @@ export default function PlatformPluginsPanel() {
                       <code className="text-xs bg-muted p-2 rounded border font-mono flex-1 overflow-x-auto whitespace-nowrap">
                         {(() => {
                           if (typeof window === 'undefined') return '/api/integrations/delivery/webhooks';
-                          const origin = window.location.origin.includes('localhost') ? 'https://pay.ledger1.ai' : window.location.origin;
+                          const origin = window.location.origin.includes('localhost') ? 'https://surge.basalthq.com' : window.location.origin;
                           return `${origin}/api/integrations/delivery/webhooks`;
                         })()}
                       </code>
                       <button className="p-2 hover:bg-muted rounded text-muted-foreground hover:text-foreground" onClick={() => {
-                        const origin = window.location.origin.includes('localhost') ? 'https://pay.ledger1.ai' : window.location.origin;
+                        const origin = window.location.origin.includes('localhost') ? 'https://surge.basalthq.com' : window.location.origin;
                         navigator.clipboard.writeText(`${origin}/api/integrations/delivery/webhooks`);
                       }}>
                         <CopyIcon className="w-3.5 h-3.5" />
@@ -681,12 +681,12 @@ export default function PlatformPluginsPanel() {
                       <code className="text-xs bg-muted p-2 rounded border font-mono flex-1 overflow-x-auto whitespace-nowrap">
                         {(() => {
                           if (typeof window === 'undefined') return '/api/integrations/delivery/auth/token';
-                          const origin = window.location.origin.includes('localhost') ? 'https://pay.ledger1.ai' : window.location.origin;
+                          const origin = window.location.origin.includes('localhost') ? 'https://surge.basalthq.com' : window.location.origin;
                           return `${origin}/api/integrations/delivery/auth/token`;
                         })()}
                       </code>
                       <button className="p-2 hover:bg-muted rounded text-muted-foreground hover:text-foreground" onClick={() => {
-                        const origin = window.location.origin.includes('localhost') ? 'https://pay.ledger1.ai' : window.location.origin;
+                        const origin = window.location.origin.includes('localhost') ? 'https://surge.basalthq.com' : window.location.origin;
                         navigator.clipboard.writeText(`${origin}/api/integrations/delivery/auth/token`);
                       }}>
                         <CopyIcon className="w-3.5 h-3.5" />

@@ -22,11 +22,19 @@ export async function GET(req: NextRequest) {
 
         const expectedRecord = `${brandKey}-verification=${wallet.toLowerCase()}`;
 
+        // Determine hosting context for frontend DNS instructions
+        const hostingProvider = (process.env.HOSTING_PROVIDER || "azure").toLowerCase();
+        const cnameTarget = hostingProvider === "plesk"
+            ? (process.env.PLESK_MAIN_DOMAIN || "portalpay.io")
+            : (req.headers.get("host") || "surge.basalthq.com");
+
         return NextResponse.json({
             ok: true,
             expectedTxtRecord: expectedRecord,
             azureVerificationId, // Legacy field name, keeping for frontend compatibility
-            instructions: `Add a TXT record to your domain with the value: ${expectedRecord}`
+            hostingProvider,
+            cnameTarget,
+            instructions: `Add a CNAME record pointing to ${cnameTarget} and a TXT record with the value: ${expectedRecord}`
         });
     } catch (e: any) {
         return NextResponse.json({ error: e?.message || "unauthorized" }, { status: 401 });

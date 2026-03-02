@@ -223,7 +223,8 @@ export function proxy(req: NextRequest) {
         faviconHostname === "127.0.0.1" ||
         faviconHostname === "0.0.0.0" ||
         faviconHostname.includes("azurewebsites.net") ||
-        faviconHostname.includes("vercel.app");
+        faviconHostname.includes("vercel.app") ||
+        faviconHostname.includes("vps.ovh.us");
 
     // Rewrite dynamic favicon to brand/merchant-aware API
     // For custom domains, pass the hostname as shop parameter to resolve merchant favicon
@@ -288,7 +289,8 @@ export function proxy(req: NextRequest) {
         hostname === "0.0.0.0" ||
         hostname.includes("azurewebsites.net") ||
         hostname.includes("vercel.app") ||
-        hostname.includes("xpaypass.com"); // Add other platform domains as needed
+        hostname.includes("xpaypass.com") ||
+        hostname.includes("vps.ovh.us");
 
     if (!isMainDomain) {
         // It's a custom domain!

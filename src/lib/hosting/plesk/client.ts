@@ -1,3 +1,6 @@
+import https from "node:https";
+import { URL } from "node:url";
+
 export type PleskApiResponse = {
     status: 'ok' | 'error';
     code?: number;
@@ -8,6 +11,7 @@ export type PleskApiResponse = {
 
 /**
  * Minimal Plesk XML-RPC Client
+ * Supports self-signed certs (common on localhost Plesk panels).
  */
 export class PleskClient {
     private apiUrl: string;
@@ -16,7 +20,9 @@ export class PleskClient {
     private password?: string;
 
     constructor() {
-        this.apiUrl = process.env.PLESK_API_URL || "https://localhost:8443/enterprise/control/agent.php";
+        const base = process.env.PLESK_API_URL || "https://localhost:8443";
+        // Ensure we always hit the XML-RPC agent endpoint
+        this.apiUrl = base.replace(/\/+$/, "") + "/enterprise/control/agent.php";
         this.apiKey = process.env.PLESK_API_KEY;
         this.login = process.env.PLESK_LOGIN;
         this.password = process.env.PLESK_PASSWORD;
@@ -38,53 +44,60 @@ export class PleskClient {
         return headers;
     }
 
+    /**
+     * Execute an XML-RPC packet against the Plesk API.
+     * Uses Node.js https module directly to support self-signed certs on localhost.
+     */
     async execute(packet: string): Promise<string> {
-        // Basic wrapper for XML packet
         const xml = `<?xml version="1.0" encoding="UTF-8"?><packet>${packet}</packet>`;
+        const parsed = new URL(this.apiUrl);
 
-        // Allow self-signed certs for localhost Plesk
-        const agent = new (require("https").Agent)({ rejectUnauthorized: false });
+        const headers = this.getHeaders();
+        headers["Content-Length"] = String(Buffer.byteLength(xml, "utf-8"));
 
-        const res = await fetch(this.apiUrl, {
-            method: "POST",
-            headers: this.getHeaders(),
-            body: xml,
-            // @ts-ignore - node-fetch specific, native fetch in Node 18+ might support agent via dispatcher or custom implementation
-            // Next.js (Node 18+) native fetch doesn't support 'agent' directly.
-            // If running in Next.js, we might need to rely on global config or hope it works.
-            // However, for localhost verification, we might have issues with self-signed certs.
-            // If native fetch is used, we set NODE_TLS_REJECT_UNAUTHORIZED=0 in env for dev, 
-            // but strictly we should import https and use a custom fetcher if needed.
-            // For now, let's assume global fetch works or user sets env. 
-            // Actually, let's try to use 'agent' property as it works in many node-fetch polyfills used by Next.js < 13
-            // In Next.js 13+, 'next: { revalidate: 0 }' is standard.
-            // We will try to rely on environment variables for SSL trust or standard fetch behavior.
-            cache: 'no-store'
+        return new Promise<string>((resolve, reject) => {
+            const options: https.RequestOptions = {
+                hostname: parsed.hostname,
+                port: parsed.port || 8443,
+                path: parsed.pathname + parsed.search,
+                method: "POST",
+                headers,
+                // Accept self-signed certs (Plesk default on localhost)
+                rejectUnauthorized: false,
+                timeout: 15_000,
+            };
+
+            const req = https.request(options, (res) => {
+                const chunks: Buffer[] = [];
+                res.on("data", (chunk: Buffer) => chunks.push(chunk));
+                res.on("end", () => {
+                    const body = Buffer.concat(chunks).toString("utf-8");
+                    if (res.statusCode && res.statusCode >= 400) {
+                        reject(new Error(`Plesk API HTTP Error: ${res.statusCode} ${res.statusMessage}`));
+                    } else {
+                        resolve(body);
+                    }
+                });
+            });
+
+            req.on("error", (err) => reject(new Error(`Plesk API request failed: ${err.message}`)));
+            req.on("timeout", () => { req.destroy(); reject(new Error("Plesk API request timed out")); });
+            req.write(xml);
+            req.end();
         });
-
-        if (!res.ok) {
-            throw new Error(`Plesk API HTTP Error: ${res.status} ${res.statusText}`);
-        }
-
-        return await res.text();
     }
 
     /**
      * Helper to parse simple status from XML response.
-     * We refrain from full XML parsing lib to avoid deps if possible, 
-     * but for robust usage we might need one.
-     * For now, regex for <status>ok</status> is "good enough" for simple ops,
-     * but we should be careful.
+     * Uses regex extraction for lightweight parsing (no XML lib dependency).
      */
     parseStatus(xml: string): { ok: boolean; message?: string; id?: string } {
         const statusMatch = /<status>(.*?)<\/status>/i.exec(xml);
         const status = statusMatch ? statusMatch[1].toLowerCase() : "error";
 
-        // Try to find error text
         const errTextMatch = /<errtext>(.*?)<\/errtext>/i.exec(xml);
         const errText = errTextMatch ? errTextMatch[1] : undefined;
 
-        // Try to find ID (e.g. alias ID)
         const idMatch = /<id>(\d+)<\/id>/i.exec(xml);
 
         return {
