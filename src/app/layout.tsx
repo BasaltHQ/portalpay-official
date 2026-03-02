@@ -331,18 +331,16 @@ export async function generateMetadata(): Promise<Metadata> {
     }
     return runtimeBrand.meta?.ogTitle;
   })();
-  // Filter out "PortalPay" from all og title candidates when in partner containers
+  // Filter out "PortalPay" and "BasaltSurge" from all og title candidates when in partner containers
   const ogTitle = (() => {
     const candidates = [siteMetaTitle, platformMetaTitle, filteredOgTitle];
     for (const c of candidates) {
       let v = String(c || "").trim();
       if (!v) continue;
-      // Skip if it says "PortalPay" anywhere in partner containers (exact match or contains)
+      // Skip platform branding in partner containers
       if (isPartnerContainerForMeta) {
-        // Exact match "PortalPay" - skip entirely
-        if (/^portalpay$/i.test(v)) continue;
-        // Also skip titles that contain "PortalPay" as these leak platform branding
-        if (/portalpay/i.test(v)) continue;
+        if (/^(PortalPay|Portal\s*Pay|BasaltSurge|Basalt\s*Surge)$/i.test(v)) continue;
+        if (/(PortalPay|Portal\s*Pay|BasaltSurge|Basalt\s*Surge)/i.test(v)) continue;
       }
 
       // Override for Platform: If we are not a partner, and title is "PortalPay", force "BasaltSurge"
