@@ -183,6 +183,28 @@ css = stripSupports(css);
 // Match property declarations ending with lab(...) 
 css = css.replace(/[\w-]+\s*:\s*lab\([^)]*\)\s*;?/g, '');
 
+// ── Helper: Split CSS values respecting parentheses ──
+// "calc(var(--spacing) * 1) 20px" → ["calc(var(--spacing) * 1)", "20px"]
+// "10px 20px 30px 40px" → ["10px", "20px", "30px", "40px"]
+function splitCssValue(val) {
+    const parts = [];
+    let current = '';
+    let depth = 0;
+    for (let i = 0; i < val.length; i++) {
+        const ch = val[i];
+        if (ch === '(') depth++;
+        if (ch === ')') depth--;
+        if (ch === ' ' && depth === 0) {
+            if (current.trim()) parts.push(current.trim());
+            current = '';
+        } else {
+            current += ch;
+        }
+    }
+    if (current.trim()) parts.push(current.trim());
+    return parts;
+}
+
 // 3d. Replace :where(...) with inner selectors
 // :where() has zero specificity (Chrome 88+). Safe to replace with inner content.
 css = css.replace(/:where\(([^)]+)\)/g, '$1');
@@ -195,7 +217,7 @@ css = css.replace(/:is\(/g, ':-webkit-any(');
 css = css.replace(/([\{;])\s*translate\s*:\s*([^;{}]+)\s*;/g, (match, prefix, value) => {
     const v = value.trim();
     if (v === 'none') return `${prefix}transform:none;`;
-    const parts = v.split(/\s+/);
+    const parts = splitCssValue(v);
     if (parts.length >= 2) return `${prefix}transform:translate(${parts[0]},${parts[1]});`;
     return `${prefix}transform:translate(${parts[0]},0);`;
 });
@@ -203,7 +225,7 @@ css = css.replace(/([\{;])\s*translate\s*:\s*([^;{}]+)\s*;/g, (match, prefix, va
 // scale: Xval Yval  →  transform: scale(Xval, Yval)
 css = css.replace(/([\{;])\s*scale\s*:\s*([^;{}]+)\s*;/g, (match, prefix, value) => {
     const v = value.trim();
-    const parts = v.split(/\s+/);
+    const parts = splitCssValue(v);
     if (parts.length >= 2) return `${prefix}transform:scale(${parts[0]},${parts[1]});`;
     return `${prefix}transform:scale(${parts[0]});`;
 });
@@ -253,7 +275,7 @@ function expandShorthandLogical(input, logicalProp, physical1, physical2) {
     // prefix must be { or ; or newline+whitespace
     const re = new RegExp(`([{;\\n]\\s*)${logicalProp}\\s*:\\s*([^;{}]+)\\s*;`, 'g');
     return input.replace(re, (match, prefix, value) => {
-        const parts = value.trim().split(/\s+/);
+        const parts = splitCssValue(value.trim());
         return `${prefix}${physical1}:${parts[0]};${physical2}:${parts[1] || parts[0]};`;
     });
 }
@@ -269,7 +291,7 @@ css = expandShorthandLogical(css, 'border-block-style', 'border-top-style', 'bor
 
 // inset: V  →  top:V;right:V;bottom:V;left:V
 css = css.replace(/([\{;])\s*inset\s*:\s*([^;{}]+)\s*;/g, (match, prefix, value) => {
-    const parts = value.trim().split(/\s+/);
+    const parts = splitCssValue(value.trim());
     const t = parts[0], r = parts[1] || t, b = parts[2] || t, l = parts[3] || r;
     return `${prefix}top:${t};right:${r};bottom:${b};left:${l};`;
 });
