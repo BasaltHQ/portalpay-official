@@ -1420,10 +1420,10 @@ export default function ShopBuilderPage() {
                       </div>
                     </div>
 
-                    {/* PortalPay Verification TXT */}
+                    {/* Verification TXT (on _verify subdomain to avoid CNAME conflict) */}
                     <div className="grid grid-cols-12 gap-2 text-xs items-center p-2 bg-background rounded border">
                       <div className="col-span-2 font-semibold">TXT</div>
-                      <div className="col-span-3 font-mono text-muted-foreground">@ (or subdomain)</div>
+                      <div className="col-span-3 font-mono text-muted-foreground">_verify{cfg.customDomain ? `.${cfg.customDomain}` : ""}</div>
                       <div className="col-span-5 font-mono break-all truncate" title={verificationResult?.expectedTxtRecord || ""}>
                         {verificationResult?.expectedTxtRecord || "Loading..."}
                       </div>

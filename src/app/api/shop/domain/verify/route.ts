@@ -31,10 +31,12 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             ok: true,
             expectedTxtRecord: expectedRecord,
+            // TXT record must be set on _verify.<domain> to avoid CNAME conflict (RFC 1034)
+            txtSubdomain: "_verify",
             azureVerificationId, // Legacy field name, keeping for frontend compatibility
             hostingProvider,
             cnameTarget,
-            instructions: `Add a CNAME record pointing to ${cnameTarget} and a TXT record with the value: ${expectedRecord}`
+            instructions: `Add a CNAME record for your domain pointing to ${cnameTarget}, and a TXT record on _verify.<your-domain> with the value: ${expectedRecord}`
         });
     } catch (e: any) {
         return NextResponse.json({ error: e?.message || "unauthorized" }, { status: 401 });
@@ -58,16 +60,24 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Domain is required" }, { status: 400 });
         }
 
-        // 1. Resolve TXT records (Generic Check)
+        // 1. Resolve TXT records from _verify.<domain> subdomain
+        //    We use a separate subdomain to avoid CNAME+TXT conflict (RFC 1034:
+        //    CNAME records shadow all other record types at the same name).
+        const txtDomain = `_verify.${domain}`;
         let txtRecords: string[][] = [];
         try {
-            txtRecords = await dns.resolveTxt(domain);
+            txtRecords = await dns.resolveTxt(txtDomain);
         } catch (e: any) {
-            return NextResponse.json({
-                ok: false,
-                verified: false,
-                error: `DNS lookup failed: ${e.message}. Make sure the domain exists and has a TXT record.`
-            });
+            // Fallback: also try the bare domain (in case user set TXT there and has no CNAME conflict)
+            try {
+                txtRecords = await dns.resolveTxt(domain);
+            } catch {
+                return NextResponse.json({
+                    ok: false,
+                    verified: false,
+                    error: `DNS lookup failed for ${txtDomain}: ${e.message}. Add a TXT record on _verify.${domain} with your verification value.`
+                });
+            }
         }
 
         // 2. Check for the verification string (Dynamic Brand Key)
