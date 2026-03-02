@@ -148,7 +148,34 @@ export async function buildOgTwitterForRoute(opts: {
 
   // Title/description fallbacks - NOW uses site config values for partner containers
   // Priority: route-specific > site config (partner) > brand config > fallback
-  const ogTitle = title || siteMetaTitle || runtimeBrand.meta?.ogTitle || runtimeBrand.name;
+  const filteredOgTitle = (() => {
+    if (partner && /^portalpay$/i.test(String(runtimeBrand.meta?.ogTitle || "").trim())) {
+      return undefined;
+    }
+    return runtimeBrand.meta?.ogTitle;
+  })();
+
+  const ogTitle = (() => {
+    const candidates = [title, siteMetaTitle, filteredOgTitle];
+    for (const c of candidates) {
+      let v = String(c || "").trim();
+      if (!v) continue;
+
+      // Skip if it says "PortalPay" anywhere in partner containers
+      if (partner) {
+        if (/^portalpay$/i.test(v)) continue;
+        if (/portalpay/i.test(v)) continue;
+      }
+
+      // Override for Platform: If we are not a partner, and title is "PortalPay", force "BasaltSurge"
+      if (!partner && /^portalpay$/i.test(v)) {
+        return "BasaltSurge";
+      }
+      return v;
+    }
+    const { normalizeBrandName } = require("@/lib/branding");
+    return normalizeBrandName(runtimeBrand.name, brandKeyFromHost || runtimeBrand.key);
+  })();
   const fallbackDescription =
     `${runtimeBrand.name} is a full\u2011stack crypto commerce platform: multi\u2011currency payments on Base, ` +
     `instant receipts & QR terminals, inventory & orders, tax jurisdictions & components, reserve analytics & strategy, ` +

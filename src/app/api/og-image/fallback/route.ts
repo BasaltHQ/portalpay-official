@@ -50,8 +50,21 @@ export async function GET(req: NextRequest) {
   const brandParam = searchParams.get('brand') || '';
   const descParam = searchParams.get('desc') || '';
 
-  // Brand config
-  const brand = getBrandConfig();
+  // Retrieve host identity dynamically
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || '';
+  const { deriveContainerIdentityFromHostname, getBrandConfigFromCosmos } = require('@/lib/brand-config');
+
+  let brand = getBrandConfig(); // static fallback
+  try {
+    const identity = deriveContainerIdentityFromHostname(host);
+    if (identity?.brandKey) {
+      const { brand: dbBrand } = await getBrandConfigFromCosmos(identity.brandKey);
+      if (dbBrand) brand = dbBrand;
+    }
+  } catch (e) {
+    console.error('Fallback OG image brand detection failed:', e);
+  }
+
   const primary = (brand?.colors?.primary as string) || '#0ea5e9';
   const accent = (brand?.colors?.accent as string) || '#3b82f6';
   const symbolPath = (brand?.logos?.symbol || brand?.logos?.app || '/ppsymbol.png') as string;

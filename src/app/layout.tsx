@@ -196,10 +196,14 @@ export async function generateMetadata(): Promise<Metadata> {
     const hostUrl = getBaseUrl();
     const u = new URL(hostUrl);
     const host = u.hostname || "";
-    const parts = host.split(".");
-    if (parts.length >= 3 && host.endsWith(".azurewebsites.net")) {
-      brandKeyFromHost = parts[0].toLowerCase();
+
+    // Instead of duplicating logic, use the shared module that knows about all partner domains
+    const { deriveContainerIdentityFromHostname } = require("@/lib/brand-config");
+    const derived = deriveContainerIdentityFromHostname(host);
+    if (derived) {
+      brandKeyFromHost = derived.brandKey;
     }
+
     // Prefer server-provided container identity (uses NEXT_PUBLIC_BRAND_KEY/BRAND_KEY)
     // Direct env access - no HTTP call needed
     {
@@ -571,9 +575,11 @@ export default async function RootLayout({
     const hostUrl = getBaseUrl();
     const u = new URL(hostUrl);
     const host = u.hostname || "";
-    const parts = host.split(".");
-    if (parts.length >= 3 && host.endsWith(".azurewebsites.net")) {
-      brandKeyFromHost = parts[0].toLowerCase();
+
+    const { deriveContainerIdentityFromHostname } = require("@/lib/brand-config");
+    const derived = deriveContainerIdentityFromHostname(host);
+    if (derived) {
+      brandKeyFromHost = derived.brandKey;
     }
     // Prefer server-provided container identity (uses NEXT_PUBLIC_BRAND_KEY/BRAND_KEY)
     // Direct env access - no HTTP call needed

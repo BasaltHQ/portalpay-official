@@ -16,33 +16,12 @@ export default async function Image() {
         const headersList = await headers();
         const host = headersList.get('x-forwarded-host') || headersList.get('host') || '';
 
-        let brandKey = '';
-        // Same logic as layout.tsx to parse host
-        // remove port
-        const hostLower = host.toLowerCase().split(':')[0];
-        if (hostLower.includes('localhost') || hostLower.includes('127.0.0.1')) {
-            // local dev
-        } else {
-            // Azure/custom domain detection
-            const parts = hostLower.split('.');
-            if (parts.length >= 2) {
-                const candidate = parts[0];
-                // Check simplified Azure/AppService pattern
-                if (candidate && !['www', 'api', 'admin'].includes(candidate)) {
-                    const isAzure = hostLower.endsWith('.azurewebsites.net') || hostLower.endsWith('.azurecontainerapps.io');
-                    const isPayportal = hostLower.endsWith('.payportal.co') || hostLower.endsWith('.portalpay.app');
-                    if (isAzure || isPayportal) {
-                        brandKey = candidate;
-                    }
-                }
-                // Handle explicit known brands/domains if needed, but the candidate check catches 'xoinpay.azurewebsites.net'
-                if (hostLower === 'www.xoinpay.com' || hostLower === 'xoinpay.com') brandKey = 'xoinpay';
-            }
-        }
+        const { getContainerIdentity } = require('@/lib/brand-config');
+        const identity = getContainerIdentity(host);
 
-        if (brandKey) {
+        if (identity.brandKey) {
             const { getBrandConfigFromCosmos } = require('@/lib/brand-config');
-            const { brand } = await getBrandConfigFromCosmos(brandKey);
+            const { brand } = await getBrandConfigFromCosmos(identity.brandKey);
             if (brand) explicitBrandConfig = brand;
         }
     } catch (e) {

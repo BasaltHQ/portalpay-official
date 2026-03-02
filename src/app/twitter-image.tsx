@@ -2,11 +2,30 @@ import { generateBasaltOG } from '@/lib/og-template';
 import { loadBasaltDefaults } from '@/lib/og-asset-loader';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic'; // Allow headers() access for multi-tenant branding
 export const alt = 'Web3 Native Commerce & Payments';
 export const size = { width: 2400, height: 1260 };
 export const contentType = 'image/png';
 
 export default async function Image() {
+    let explicitBrandConfig = null;
+    try {
+        const { headers } = require('next/headers');
+        const headersList = await headers();
+        const host = headersList.get('x-forwarded-host') || headersList.get('host') || '';
+
+        const { getContainerIdentity } = require('@/lib/brand-config');
+        const identity = getContainerIdentity(host);
+
+        if (identity.brandKey) {
+            const { getBrandConfigFromCosmos } = require('@/lib/brand-config');
+            const { brand } = await getBrandConfigFromCosmos(identity.brandKey);
+            if (brand) explicitBrandConfig = brand;
+        }
+    } catch (e) {
+        console.error('Twitter Image brand detection failed:', e);
+    }
+
     const {
         bgBase64,
         blurredBgBase64,
@@ -14,7 +33,7 @@ export default async function Image() {
         shieldBase64,
         logoBase64,
         brand
-    } = await loadBasaltDefaults();
+    } = await loadBasaltDefaults(explicitBrandConfig);
 
     const primaryColor = brand.colors.primary || '#35ff7c';
     const isBasalt = String(brand.key).toLowerCase() === 'basaltsurge';
