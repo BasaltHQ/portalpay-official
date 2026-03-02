@@ -70,28 +70,60 @@ export class PleskDomainManager implements DomainManager {
         }
     }
 
+    /**
+     * Look up the numeric site ID for the main domain via Plesk XML-RPC.
+     */
+    private async getSiteId(): Promise<string | null> {
+        const xml = `
+      <site>
+        <get>
+          <filter>
+            <name>${this.mainDomain}</name>
+          </filter>
+          <dataset>
+            <gen_info/>
+          </dataset>
+        </get>
+      </site>
+    `;
+        try {
+            const res = await this.client.execute(xml);
+            // Extract <id> from response
+            const idMatch = /<id>(\d+)<\/id>/i.exec(res);
+            return idMatch ? idMatch[1] : null;
+        } catch (e: any) {
+            console.error("Plesk: Failed to get site ID:", e.message);
+            return null;
+        }
+    }
+
     async bindDomain(domain: string): Promise<DomainBindingResult> {
         if (!this.mainDomain) {
             return { success: false, message: "PLESK_MAIN_DOMAIN not configured" };
         }
 
-        // Create a domain alias in Plesk so the server accepts requests for this hostname
+        // 1. Look up the numeric site ID (required by Plesk XML-RPC for alias creation)
+        const siteId = await this.getSiteId();
+        if (!siteId) {
+            return { success: false, message: `Could not find site ID for ${this.mainDomain}. Verify PLESK_MAIN_DOMAIN is correct.` };
+        }
+
+        // 2. Create a domain alias using site-id
         const createXml = `
       <site-alias>
         <create>
-          <site-name>${this.mainDomain}</site-name>
+          <site-id>${siteId}</site-id>
           <name>${domain}</name>
           <pref>
-            <web>1</web>
-            <mail>0</mail>
-            <seo-redirect>0</seo-redirect>
+            <web>true</web>
+            <mail>false</mail>
           </pref>
         </create>
       </site-alias>
     `;
 
         try {
-            console.log(`Plesk: Creating alias ${domain} for ${this.mainDomain}...`);
+            console.log(`Plesk: Creating alias ${domain} for site ${this.mainDomain} (id=${siteId})...`);
             const res = await this.client.execute(createXml);
             const status = this.client.parseStatus(res);
 
@@ -103,7 +135,7 @@ export class PleskDomainManager implements DomainManager {
                 }
             }
 
-            // Auto-secure with Let's Encrypt
+            // 3. Auto-secure with Let's Encrypt
             await this.secureDomain(domain);
 
             return { success: true, message: "Domain bound and SSL requested" };
