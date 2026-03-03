@@ -23,6 +23,7 @@ export const EXCLUDE_PREFIXES = new Set<string>([
     "get-started", // get started landing page
     "leaderboard",
     "live",
+    "loyalty", // standalone loyalty/rewards page
     "kiosk", // kiosk mode
     "msa", // Master Services Agreement signing page
     "msas", // Master Services Agreement with special terms
