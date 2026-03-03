@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
-import { FileText, Download, Search, ChevronDown, ChevronRight, Loader2, Table2, Building2 } from "lucide-react";
+import { FileText, Download, Search, ChevronDown, ChevronRight, Loader2, Table2, Building2, DollarSign, TrendingUp, Receipt, Users, BarChart3, PieChart } from "lucide-react";
 import { formatCurrency } from "@/lib/fx";
+import { EnhancedStatCard, VolumeVsTipsBar, RevenueBreakdown, MerchantGrid, HorizontalBarChart } from "@/components/admin/ReportCharts";
 
 /**
  * ReportsPanelPartner — Partner/Admin-level reports panel.
@@ -264,14 +265,58 @@ export default function ReportsPanelPartner() {
 
             {/* Aggregate Stats */}
             {data?.aggregate && (
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-                    <StatCard label="Volume" value={formatCurrency(data.aggregate.totalSales, "USD")} />
-                    <StatCard label="Earned" value={formatCurrency(data.aggregate.merchantEarned, "USD")} />
-                    <StatCard label="Fees" value={formatCurrency(data.aggregate.platformFee, "USD")} />
-                    <StatCard label="Tips" value={formatCurrency(data.aggregate.totalTips, "USD")} />
-                    <StatCard label="Txns" value={data.aggregate.transactionCount} />
-                    <StatCard label="Merchants" value={data.aggregate.merchantCount} />
-                </div>
+                <>
+                    <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                        <EnhancedStatCard icon={DollarSign} label="Volume" value={formatCurrency(data.aggregate.totalSales, "USD")} accent="text-indigo-500" />
+                        <EnhancedStatCard icon={TrendingUp} label="Earned" value={formatCurrency(data.aggregate.merchantEarned, "USD")} accent="text-emerald-500" />
+                        <EnhancedStatCard icon={BarChart3} label="Fees" value={formatCurrency(data.aggregate.platformFee, "USD")} accent="text-amber-500" />
+                        <EnhancedStatCard icon={Receipt} label="Tips" value={formatCurrency(data.aggregate.totalTips, "USD")} accent="text-green-500" />
+                        <EnhancedStatCard icon={Receipt} label="Txns" value={data.aggregate.transactionCount} accent="text-blue-500" />
+                        <EnhancedStatCard icon={Users} label="Merchants" value={data.aggregate.merchantCount} accent="text-purple-500" />
+                    </div>
+
+                    {/* Analytics Row */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {(data.aggregate.totalSales > 0) && (
+                            <div className="rounded-xl border bg-card p-5">
+                                <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                                    <BarChart3 className="h-4 w-4 text-primary" />
+                                    Revenue Composition
+                                </h3>
+                                <VolumeVsTipsBar
+                                    volume={data.aggregate.totalSales}
+                                    tips={data.aggregate.totalTips}
+                                    fees={data.aggregate.platformFee}
+                                />
+                            </div>
+                        )}
+                        {(data.aggregate.merchantEarned > 0 || data.aggregate.platformFee > 0 || data.aggregate.totalTips > 0) && (
+                            <div className="rounded-xl border bg-card p-5">
+                                <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                                    <PieChart className="h-4 w-4 text-primary" />
+                                    Revenue Split
+                                </h3>
+                                <RevenueBreakdown
+                                    earned={data.aggregate.merchantEarned || 0}
+                                    fees={data.aggregate.platformFee || 0}
+                                    tips={data.aggregate.totalTips || 0}
+                                    volume={data.aggregate.totalSales || 0}
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Merchant Treemap */}
+                    {data?.merchants?.length > 0 && (
+                        <div className="rounded-xl border bg-card p-5">
+                            <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                                <Users className="h-4 w-4 text-primary" />
+                                Top Merchants by Volume
+                            </h3>
+                            <MerchantGrid merchants={data.merchants} maxItems={12} />
+                        </div>
+                    )}
+                </>
             )}
 
             {/* Merchant Table */}

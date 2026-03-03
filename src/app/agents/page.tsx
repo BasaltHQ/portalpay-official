@@ -7,6 +7,7 @@ import { client, chain } from "@/lib/thirdweb/client";
 import { useBrand } from "@/contexts/BrandContext";
 import TruncatedAddress from "@/components/truncated-address";
 import { formatCurrency } from "@/lib/fx";
+import { EnhancedStatCard, HorizontalBarChart, DonutChart, VolumeVsTipsBar } from "@/components/admin/ReportCharts";
 import {
     Wallet,
     TrendingUp,
@@ -118,107 +119,32 @@ const PAYMENT_SPLITTER_ABI = [
     { type: "function", name: "distribute", inputs: [{ name: "token", type: "address" }], outputs: [], stateMutability: "nonpayable" },
 ] as const;
 
-/* ─────────────── Stat Card ─────────────── */
-function StatCard({ icon: Icon, label, value, sub, accent, trend }: {
-    icon: any;
-    label: string;
-    value: string | number;
-    sub: string;
-    accent?: string;
-    trend?: "up" | "down" | "neutral";
-}) {
-    return (
-        <div className="relative overflow-hidden rounded-xl border bg-card p-5 hover:border-primary/30 transition-all group">
-            <div className="absolute top-3 right-3 h-10 w-10 rounded-lg bg-primary/10 grid place-items-center group-hover:bg-primary/15 transition">
-                <Icon className={`h-5 w-5 ${accent || "text-primary"}`} />
-            </div>
-            <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-1">{label}</div>
-            <div className="text-2xl font-bold flex items-center gap-2">
-                {value}
-                {trend === "up" && <TrendingUp className="h-4 w-4 text-green-500" />}
-                {trend === "down" && <TrendingDown className="h-4 w-4 text-red-400" />}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">{sub}</div>
-        </div>
-    );
-}
-
-/* ─────────────── Mini Bar Chart ─────────────── */
-function EarningsBar({ merchants }: { merchants: MerchantRow[] }) {
-    const maxEarnings = Math.max(...merchants.map((m) => m.estimatedEarnings), 1);
-    const colors = ["bg-primary", "bg-green-500", "bg-blue-500", "bg-amber-500", "bg-purple-500", "bg-rose-500"];
+/* ─────────────── Commission Rate Chart ─────────────── */
+function CommissionRateChart({ merchants }: { merchants: MerchantRow[] }) {
+    if (!merchants?.length) return null;
+    const maxBps = Math.max(...merchants.map(m => m.agentBps), 1);
+    const COLORS = ["#6366f1", "#22c55e", "#3b82f6", "#f59e0b", "#a855f7", "#f43f5e"];
     return (
         <div className="space-y-2">
-            {merchants.slice(0, 6).map((m, i) => (
-                <div key={m.wallet} className="flex items-center gap-3">
-                    <div className="w-28 text-xs text-muted-foreground truncate flex-shrink-0" title={m.shopName}>
+            {merchants.slice(0, 8).map((m, i) => (
+                <div key={m.wallet} className="flex items-center gap-3 group">
+                    <div className="w-28 text-xs text-muted-foreground truncate flex-shrink-0 group-hover:text-foreground transition" title={m.shopName}>
                         {m.shopName}
                     </div>
-                    <div className="flex-1 h-6 bg-muted/30 rounded-md overflow-hidden relative">
+                    <div className="flex-1 h-7 bg-muted/20 rounded-md overflow-hidden">
                         <div
-                            className={`h-full ${colors[i % colors.length]} rounded-md transition-all duration-700 ease-out`}
-                            style={{ width: `${Math.max(2, (m.estimatedEarnings / maxEarnings) * 100)}%` }}
+                            className="h-full rounded-md transition-all duration-700 ease-out"
+                            style={{
+                                width: `${Math.max(2, (m.agentBps / maxBps) * 100)}%`,
+                                background: `linear-gradient(90deg, ${COLORS[i % COLORS.length]}cc, ${COLORS[i % COLORS.length]})`,
+                            }}
                         />
                     </div>
-                    <div className="w-20 text-right text-xs font-mono font-semibold tabular-nums">
-                        {formatCurrency(m.estimatedEarnings, "USD")}
+                    <div className="w-16 text-right text-xs font-mono font-semibold tabular-nums">
+                        {(m.agentBps / 100).toFixed(2)}%
                     </div>
                 </div>
             ))}
-        </div>
-    );
-}
-
-/* ─────────────── Distribution Donut ─────────────── */
-function DistributionDonut({ merchants }: { merchants: MerchantRow[] }) {
-    const total = merchants.reduce((s, m) => s + m.estimatedEarnings, 0) || 1;
-    const colors = ["#6366f1", "#22c55e", "#3b82f6", "#f59e0b", "#a855f7", "#f43f5e"];
-    let cumPercent = 0;
-    const segments = merchants.slice(0, 5).map((m, i) => {
-        const pct = (m.estimatedEarnings / total) * 100;
-        const offset = cumPercent;
-        cumPercent += pct;
-        return { ...m, pct, offset, color: colors[i % colors.length] };
-    });
-    // "Other" segment
-    if (merchants.length > 5) {
-        const otherPct = 100 - cumPercent;
-        segments.push({ wallet: "other", shopName: `+${merchants.length - 5} more`, pct: otherPct, offset: cumPercent, color: "#71717a", estimatedEarnings: 0 } as any);
-    }
-
-    return (
-        <div className="flex items-center gap-6">
-            <div className="relative w-28 h-28 flex-shrink-0">
-                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                    {segments.map((seg, i) => (
-                        <circle
-                            key={i}
-                            r="16"
-                            cx="18"
-                            cy="18"
-                            fill="none"
-                            stroke={seg.color}
-                            strokeWidth="3"
-                            strokeDasharray={`${seg.pct} ${100 - seg.pct}`}
-                            strokeDashoffset={`${-seg.offset}`}
-                            className="transition-all duration-700"
-                        />
-                    ))}
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-[10px] text-muted-foreground">Total</span>
-                    <span className="text-xs font-bold">{merchants.length}</span>
-                </div>
-            </div>
-            <div className="space-y-1.5 flex-1 min-w-0">
-                {segments.map((seg, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs">
-                        <div className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: seg.color }} />
-                        <span className="truncate text-muted-foreground">{seg.shopName}</span>
-                        <span className="ml-auto font-mono tabular-nums font-semibold">{seg.pct.toFixed(1)}%</span>
-                    </div>
-                ))}
-            </div>
         </div>
     );
 }
@@ -846,63 +772,107 @@ export default function AgentDashboard() {
                 ) : data && agg ? (
                     <>
                         {/* ─── KPI Cards ─── */}
-                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                            <StatCard
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <EnhancedStatCard
                                 icon={DollarSign}
                                 label="Estimated Earnings"
                                 value={formatCurrency(agg.estimatedEarnings, "USD")}
                                 sub={getRangeLabel(range)}
                                 accent="text-green-500"
                             />
-                            <StatCard
+                            <EnhancedStatCard
                                 icon={TrendingUp}
                                 label="Volume Attributed"
                                 value={formatCurrency(agg.totalVolume, "USD")}
                                 sub="Merchant sales"
+                                accent="text-indigo-500"
                             />
-                            <StatCard
+                            <EnhancedStatCard
                                 icon={Receipt}
                                 label="Transactions"
                                 value={agg.transactionCount}
                                 sub={agg.transactionCount > 0
                                     ? `~${formatCurrency(agg.totalVolume / agg.transactionCount, "USD")} avg`
                                     : "No transactions"}
+                                accent="text-blue-500"
                             />
-                            <StatCard
-                                icon={Store}
-                                label="Merchants"
-                                value={agg.merchantCount}
-                                sub={topEarner ? `Top: ${topEarner.shopName}` : "—"}
-                            />
-                            <StatCard
+                            <EnhancedStatCard
                                 icon={Activity}
                                 label="Avg Commission"
                                 value={`${(agg.averageBps / 100).toFixed(2)}%`}
-                                sub={`${agg.averageBps} bps across all`}
+                                sub={`${agg.averageBps} bps · ${agg.merchantCount} merchant${agg.merchantCount !== 1 ? 's' : ''}`}
+                                accent="text-amber-500"
                             />
                         </div>
 
                         {/* ─── Analytics Row ─── */}
                         {sortedMerchants.length > 0 && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {/* Earnings Distribution Bar Chart */}
-                                <div className="rounded-xl border bg-card p-5">
-                                    <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
-                                        <BarChart3 className="h-4 w-4 text-primary" />
-                                        Earnings by Merchant
-                                    </h3>
-                                    <EarningsBar merchants={sortedMerchants} />
-                                </div>
+                            <>
+                                {/* Volume vs Earnings Breakdown */}
+                                {agg.totalVolume > 0 && (
+                                    <div className="rounded-xl border bg-card p-5">
+                                        <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                                            <BarChart3 className="h-4 w-4 text-primary" />
+                                            Volume vs Earnings
+                                        </h3>
+                                        <VolumeVsTipsBar
+                                            volume={agg.totalVolume - agg.estimatedEarnings}
+                                            tips={agg.estimatedEarnings}
+                                            volumeLabel="Merchant Volume"
+                                            tipsLabel="Your Earnings"
+                                        />
+                                    </div>
+                                )}
 
-                                {/* Distribution Donut */}
-                                <div className="rounded-xl border bg-card p-5">
-                                    <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
-                                        <PieChart className="h-4 w-4 text-primary" />
-                                        Earnings Distribution
-                                    </h3>
-                                    <DistributionDonut merchants={sortedMerchants} />
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {/* Earnings by Merchant */}
+                                    <div className="rounded-xl border bg-card p-5">
+                                        <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                                            <BarChart3 className="h-4 w-4 text-primary" />
+                                            Earnings by Merchant
+                                        </h3>
+                                        <HorizontalBarChart
+                                            data={sortedMerchants.map(m => ({ label: m.shopName, value: m.estimatedEarnings }))}
+                                            maxBars={8}
+                                        />
+                                    </div>
+
+                                    {/* Earnings Distribution Donut */}
+                                    <div className="rounded-xl border bg-card p-5">
+                                        <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                                            <PieChart className="h-4 w-4 text-primary" />
+                                            Earnings Distribution
+                                        </h3>
+                                        <DonutChart
+                                            data={sortedMerchants.map(m => ({ label: m.shopName, value: m.estimatedEarnings }))}
+                                            labelKey="label"
+                                            valueKey="value"
+                                            size={120}
+                                        />
+                                    </div>
+
+                                    {/* Commission Rate Comparison */}
+                                    <div className="rounded-xl border bg-card p-5">
+                                        <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                                            <Activity className="h-4 w-4 text-primary" />
+                                            Commission Rates
+                                        </h3>
+                                        <CommissionRateChart merchants={sortedMerchants} />
+                                    </div>
+
+                                    {/* Volume by Merchant */}
+                                    <div className="rounded-xl border bg-card p-5">
+                                        <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                                            <Store className="h-4 w-4 text-primary" />
+                                            Volume by Merchant
+                                        </h3>
+                                        <HorizontalBarChart
+                                            data={sortedMerchants.map(m => ({ label: m.shopName, value: m.volume }))}
+                                            maxBars={8}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            </>
                         )}
 
                         {/* ─── Bulk Withdraw ─── */}

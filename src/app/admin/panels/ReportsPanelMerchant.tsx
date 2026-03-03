@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
-import { FileText, Download, Calendar, User, Loader2, Printer, Table2 } from "lucide-react";
+import { FileText, Download, Calendar, User, Loader2, Printer, Table2, DollarSign, Receipt, TrendingUp, BarChart3, PieChart } from "lucide-react";
 import { formatCurrency } from "@/lib/fx";
+import { EnhancedStatCard, VolumeVsTipsBar, PaymentMethodDonut, VerticalBarChart, DonutChart, HorizontalBarChart } from "@/components/admin/ReportCharts";
 import { isValorAvailable, printValorReport } from "@/lib/valor-printer";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -351,11 +352,25 @@ export default function ReportsPanelMerchant() {
             {dashboardStats && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="md:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <StatCard label="Total Sales" value={formatCurrency(dashboardStats.summary?.totalSales || 0, "USD")} sub="Gross Revenue" />
-                        <StatCard label="Tips" value={formatCurrency(dashboardStats.summary?.totalTips || 0, "USD")} sub="Gratuity" />
-                        <StatCard label="Transactions" value={dashboardStats.summary?.transactionCount || 0} sub="Total Orders" />
-                        <StatCard label="Average Order" value={formatCurrency(dashboardStats.summary?.averageOrderValue || 0, "USD")} sub="Per Transaction" />
+                        <EnhancedStatCard icon={DollarSign} label="Total Sales" value={formatCurrency(dashboardStats.summary?.totalSales || 0, "USD")} sub="Gross Revenue" accent="text-indigo-500" />
+                        <EnhancedStatCard icon={TrendingUp} label="Tips" value={formatCurrency(dashboardStats.summary?.totalTips || 0, "USD")} sub="Gratuity" accent="text-green-500" />
+                        <EnhancedStatCard icon={Receipt} label="Transactions" value={dashboardStats.summary?.transactionCount || 0} sub="Total Orders" accent="text-blue-500" />
+                        <EnhancedStatCard icon={BarChart3} label="Average Order" value={formatCurrency(dashboardStats.summary?.averageOrderValue || 0, "USD")} sub="Per Transaction" accent="text-amber-500" />
                     </div>
+
+                    {/* Analytics Row */}
+                    {(dashboardStats.summary?.totalSales > 0 || dashboardStats.summary?.totalTips > 0) && (
+                        <div className="md:col-span-4 rounded-xl border bg-card p-5">
+                            <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                                <BarChart3 className="h-4 w-4 text-primary" />
+                                Revenue Breakdown
+                            </h3>
+                            <VolumeVsTipsBar
+                                volume={dashboardStats.summary?.totalSales || 0}
+                                tips={dashboardStats.summary?.totalTips || 0}
+                            />
+                        </div>
+                    )}
 
                     <div className="md:col-span-4 border rounded-xl p-6 bg-card min-h-[300px]">
                         <h3 className="text-lg font-bold mb-4 capitalize">{reportType.replace("-", " ")} Details</h3>
@@ -396,15 +411,17 @@ export default function ReportsPanelMerchant() {
 
                         {(reportType === "z-report" || reportType === "x-report") && dashboardStats.paymentMethods && (
                             <div className="space-y-6">
-                                <div>
-                                    <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-3">Payment Breakdown</h4>
-                                    <div className="space-y-2">
-                                        {dashboardStats.paymentMethods.map((m: any) => (
-                                            <div key={m.method} className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
-                                                <span className="font-medium">{m.method}</span>
-                                                <span className="font-mono">{formatCurrency(m.total, "USD")}</span>
-                                            </div>
-                                        ))}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-3">Payment Methods</h4>
+                                        <PaymentMethodDonut methods={dashboardStats.paymentMethods} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-3">By Volume</h4>
+                                        <HorizontalBarChart
+                                            data={dashboardStats.paymentMethods.map((m: any) => ({ label: m.method, value: m.total }))}
+                                            maxBars={6}
+                                        />
                                     </div>
                                 </div>
 
@@ -444,20 +461,12 @@ export default function ReportsPanelMerchant() {
                         )}
 
                         {reportType === "hourly" && (
-                            <div className="h-64 flex items-end gap-1 pt-4 pb-0 px-2 overflow-x-auto">
-                                {dashboardStats.hourly?.map((h: any) => (
-                                    <div key={h.hour} className="flex-1 flex flex-col justify-end items-center group min-w-[20px]">
-                                        <div
-                                            className="w-full bg-primary/80 rounded-t-sm hover:bg-primary transition-all relative"
-                                            style={{ height: `${Math.max(4, (h.amount / (Math.max(...dashboardStats.hourly.map((x: any) => x.amount)) || 1)) * 100)}%` }}
-                                        >
-                                            <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-10">
-                                                {formatCurrency(h.amount, "USD")}
-                                            </div>
-                                        </div>
-                                        <div className="text-[10px] text-muted-foreground mt-1">{h.hour}:00</div>
-                                    </div>
-                                ))}
+                            <div className="rounded-xl border bg-muted/5 p-4">
+                                <VerticalBarChart
+                                    data={(dashboardStats.hourly || []).map((h: any) => ({ label: `${h.hour}:00`, value: h.amount }))}
+                                    height={240}
+                                    barColor="#6366f1"
+                                />
                             </div>
                         )}
                     </div>
