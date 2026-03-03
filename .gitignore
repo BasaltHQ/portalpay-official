@@ -65,3 +65,7 @@ android/launcher/recovered
 
 # secrets
 env_dump.json
+
+# tokenomics
+tokenomics_paper.tex
+tokenomics_paper.pdf
