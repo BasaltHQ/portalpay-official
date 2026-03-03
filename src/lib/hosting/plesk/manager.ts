@@ -114,6 +114,7 @@ export class PleskDomainManager implements DomainManager {
         <create>
           <site-id>${siteId}</site-id>
           <name>${domain}</name>
+          <ascii-name>${domain}</ascii-name>
           <pref>
             <web>true</web>
             <mail>false</mail>
