@@ -108,17 +108,13 @@ export class PleskDomainManager implements DomainManager {
             return { success: false, message: `Could not find site ID for ${this.mainDomain}. Verify PLESK_MAIN_DOMAIN is correct.` };
         }
 
-        // 2. Create a domain alias using site-id
+        // 2. Create a domain alias using site-id (pref is not allowed in create, web defaults to enabled)
         const createXml = `
       <site-alias>
         <create>
           <site-id>${siteId}</site-id>
           <name>${domain}</name>
           <ascii-name>${domain}</ascii-name>
-          <pref>
-            <web>true</web>
-            <mail>false</mail>
-          </pref>
         </create>
       </site-alias>
     `;
