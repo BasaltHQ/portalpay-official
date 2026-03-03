@@ -71,7 +71,8 @@ type AdminTabKey =
   | 'reportsPlatform'
   | 'clientRequests'
   | 'agentRequests'
-  | 'subscriptions';
+  | 'subscriptions'
+  | 'modules';
 
 interface AdminSidebarProps {
   activeTab: AdminTabKey;
@@ -82,6 +83,7 @@ interface AdminSidebarProps {
   isSuperadmin: boolean;
   canAdmins?: boolean;
   onCollapseChange?: (collapsed: boolean) => void;
+  disabledMerchantModules?: string[];
 }
 
 interface NavItem {
@@ -174,7 +176,7 @@ function NavGroup({ item, activeTab, onChangeTab }: { item: NavItem; activeTab: 
   );
 }
 
-export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding, canMerchants, isSuperadmin, canAdmins, onCollapseChange }: AdminSidebarProps) {
+export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding, canMerchants, isSuperadmin, canAdmins, onCollapseChange, disabledMerchantModules = [] }: AdminSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const brand = useBrand();
   const { theme } = useTheme();
@@ -334,7 +336,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
         { title: 'Touchpoints', key: 'endpoints' as AdminTabKey },
         { title: 'Team', key: 'team' as AdminTabKey },
         { title: 'Reports', key: 'reports' as AdminTabKey },
-      ],
+      ].filter((item) => !disabledMerchantModules.includes(item.key)),
     },
     {
       title: 'Apps',
@@ -370,6 +372,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
               { title: 'Admin Users', key: 'admins' as AdminTabKey },
             ] : []),
             { title: 'Reports', key: 'reportsPartner' as AdminTabKey },
+            { title: 'Modules', key: 'modules' as AdminTabKey },
           ],
         } as NavItem,
       ]

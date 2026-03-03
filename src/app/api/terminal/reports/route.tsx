@@ -68,8 +68,8 @@ export async function GET(req: NextRequest) {
             }
 
             // Verify merchant belongs to this brand using multi-source resolution:
-            // Priority: site_config.brandKey > shop_config.theme.brandKey
-            const [{ resources: siteConfigs }, { resources: shopConfigs }] = await Promise.all([
+            // Priority: site_config.brandKey > split_index.brandKey > shop_config.theme.brandKey
+            const [{ resources: siteConfigs }, { resources: shopConfigs }, { resources: splitConfigs }] = await Promise.all([
                 container.items.query({
                     query: "SELECT c.brandKey FROM c WHERE c.type = 'site_config' AND c.wallet = @w",
                     parameters: [{ name: "@w", value: w }]
@@ -78,10 +78,15 @@ export async function GET(req: NextRequest) {
                     query: "SELECT c.theme.brandKey AS brandKey FROM c WHERE c.type = 'shop_config' AND c.wallet = @w",
                     parameters: [{ name: "@w", value: w }]
                 }).fetchAll(),
+                container.items.query({
+                    query: "SELECT c.brandKey FROM c WHERE c.type = 'split_index' AND c.merchantWallet = @w",
+                    parameters: [{ name: "@w", value: w }]
+                }).fetchAll(),
             ]);
 
+            // 3-pass resolution: site_config > split_index > shop_config
             const merchantBrand = String(
-                siteConfigs?.[0]?.brandKey || shopConfigs?.[0]?.brandKey || ""
+                siteConfigs?.[0]?.brandKey || splitConfigs?.[0]?.brandKey || shopConfigs?.[0]?.brandKey || ""
             ).toLowerCase();
 
             // Normalize: platform brands (portalpay/basaltsurge) are equivalent

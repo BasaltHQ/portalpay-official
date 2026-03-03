@@ -50,6 +50,8 @@ export default function ReportsPanelPartner() {
             start.setDate(now.getDate() - 7);
         } else if (r === "month") {
             start.setMonth(now.getMonth() - 1);
+        } else if (r === "all") {
+            start = new Date(0);
         }
 
         return {
@@ -245,7 +247,7 @@ export default function ReportsPanelPartner() {
                 </div>
                 <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex bg-muted/20 p-1 rounded-lg border flex-1">
-                        {["today", "yesterday", "week", "month", "custom"].map((r) => (
+                        {["today", "yesterday", "week", "month", "all", "custom"].map((r) => (
                             <button key={r} onClick={() => setRange(r)} className={`flex-1 text-[11px] uppercase font-bold tracking-wide py-2 rounded-md transition-all ${range === r ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}>
                                 {r}
                             </button>

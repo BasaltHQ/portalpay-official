@@ -150,54 +150,57 @@ export async function GET(req: NextRequest) {
             });
         }
 
-        // ── 5. Fetch receipts within time range for these merchants ──
-        // receipt.createdAt is in milliseconds; filter by status='paid'
-        const receiptQuery = {
-            query: `SELECT c.wallet, c.totalUsd, c.tipAmount, c.createdAt FROM c
-                    WHERE c.type = 'receipt' AND c.status = 'paid'
-                    AND ARRAY_CONTAINS(@wallets, c.wallet)
-                    AND c.createdAt >= @startMs AND c.createdAt <= @endMs`,
-            parameters: [
-                { name: "@wallets", value: partnerWalletArray },
-                { name: "@startMs", value: startMs },
-                { name: "@endMs", value: endMs },
-            ],
-        };
-        const { resources: receipts } = await container.items.query(receiptQuery).fetchAll();
+        // ── 5. Build per-merchant stats ──
+        // When "all time" (startMs === 0), use indexed split_index values directly
+        // instead of expensive receipt queries. Otherwise, query receipts for the range.
+        const useIndexed = startMs === 0;
 
-        // ── 6. Build per-merchant stats from receipts ──
         const merchantStatsMap = new Map<
             string,
             { totalSales: number; totalTips: number; transactionCount: number }
         >();
 
-        for (const r of receipts || []) {
-            const w = String(r.wallet || "").toLowerCase();
-            if (!partnerWallets.has(w)) continue;
+        if (!useIndexed) {
+            // Fetch receipts within time range for these merchants
+            const receiptQuery = {
+                query: `SELECT c.wallet, c.totalUsd, c.tipAmount, c.createdAt FROM c
+                        WHERE c.type = 'receipt' AND c.status = 'paid'
+                        AND ARRAY_CONTAINS(@wallets, c.wallet)
+                        AND c.createdAt >= @startMs AND c.createdAt <= @endMs`,
+                parameters: [
+                    { name: "@wallets", value: partnerWalletArray },
+                    { name: "@startMs", value: startMs },
+                    { name: "@endMs", value: endMs },
+                ],
+            };
+            const { resources: receipts } = await container.items.query(receiptQuery).fetchAll();
 
-            const totalUsd = Number(r.totalUsd || 0);
-            const tipAmount = Number(r.tipAmount || 0);
+            for (const r of receipts || []) {
+                const w = String(r.wallet || "").toLowerCase();
+                if (!partnerWallets.has(w)) continue;
 
-            const existing = merchantStatsMap.get(w);
-            if (existing) {
-                existing.totalSales += totalUsd;
-                existing.totalTips += tipAmount;
-                existing.transactionCount += 1;
-            } else {
-                merchantStatsMap.set(w, {
-                    totalSales: totalUsd,
-                    totalTips: tipAmount,
-                    transactionCount: 1,
-                });
+                const totalUsd = Number(r.totalUsd || 0);
+                const tipAmount = Number(r.tipAmount || 0);
+
+                const existing = merchantStatsMap.get(w);
+                if (existing) {
+                    existing.totalSales += totalUsd;
+                    existing.totalTips += tipAmount;
+                    existing.transactionCount += 1;
+                } else {
+                    merchantStatsMap.set(w, {
+                        totalSales: totalUsd,
+                        totalTips: tipAmount,
+                        transactionCount: 1,
+                    });
+                }
             }
         }
 
-        // ── 7. Also pull split_index for earned/fee breakdown per merchant ──
-        //    (These are all-time ratios used to estimate the earned/fee split
-        //     within the filtered volume.)
+        // ── 6. Also pull split_index for earned/fee breakdown per merchant ──
         const splitStatsMap = new Map<
             string,
-            { totalVolumeUsd: number; merchantEarnedUsd: number; platformFeeUsd: number; customers: number }
+            { totalVolumeUsd: number; merchantEarnedUsd: number; platformFeeUsd: number; customers: number; transactionCount: number }
         >();
 
         for (const row of splitRows) {
@@ -208,6 +211,7 @@ export async function GET(req: NextRequest) {
             const earned = Number(row.merchantEarnedUsd || 0);
             const fee = Number(row.platformFeeUsd || 0);
             const cust = Number(row.customers || 0);
+            const txCount = Number(row.transactionCount || 0);
 
             const existing = splitStatsMap.get(w);
             if (existing) {
@@ -215,43 +219,61 @@ export async function GET(req: NextRequest) {
                 existing.merchantEarnedUsd += earned;
                 existing.platformFeeUsd += fee;
                 existing.customers += cust;
+                existing.transactionCount += txCount;
             } else {
                 splitStatsMap.set(w, {
                     totalVolumeUsd: vol,
                     merchantEarnedUsd: earned,
                     platformFeeUsd: fee,
                     customers: cust,
+                    transactionCount: txCount,
                 });
             }
         }
 
-        // ── 8. Build merchant list ──
+        // ── 7. Build merchant list ──
         const merchants = partnerWalletArray.map((w) => {
             const shopInfo = shopMap.get(w);
             const receiptStats = merchantStatsMap.get(w);
             const splitStats = splitStatsMap.get(w);
 
-            const totalSales = receiptStats?.totalSales || 0;
-            const totalTips = receiptStats?.totalTips || 0;
-            const transactionCount = receiptStats?.transactionCount || 0;
-            const customers = splitStats?.customers || 0;
+            // For "all time", use indexed amounts directly
+            let totalSales: number;
+            let totalTips: number;
+            let transactionCount: number;
+            let merchantEarned: number;
+            let platformFee: number;
 
-            // Estimate earned/fee from receipt volume using the split_index ratio
-            let merchantEarned = totalSales;
-            let platformFee = 0;
-            if (splitStats && splitStats.totalVolumeUsd > 0) {
-                const feeRatio = splitStats.platformFeeUsd / splitStats.totalVolumeUsd;
-                platformFee = Math.round(totalSales * feeRatio * 100) / 100;
-                merchantEarned = Math.round((totalSales - platformFee) * 100) / 100;
+            if (useIndexed && splitStats) {
+                totalSales = splitStats.totalVolumeUsd;
+                merchantEarned = splitStats.merchantEarnedUsd;
+                platformFee = splitStats.platformFeeUsd;
+                totalTips = 0; // tips not tracked in split_index
+                transactionCount = splitStats.transactionCount;
+            } else {
+                totalSales = receiptStats?.totalSales || 0;
+                totalTips = receiptStats?.totalTips || 0;
+                transactionCount = receiptStats?.transactionCount || 0;
+
+                // Estimate earned/fee from receipt volume using the split_index ratio
+                merchantEarned = totalSales;
+                platformFee = 0;
+                if (splitStats && splitStats.totalVolumeUsd > 0) {
+                    const feeRatio = splitStats.platformFeeUsd / splitStats.totalVolumeUsd;
+                    platformFee = Math.round(totalSales * feeRatio * 100) / 100;
+                    merchantEarned = Math.round((totalSales - platformFee) * 100) / 100;
+                }
             }
+
+            const customers = splitStats?.customers || 0;
 
             return {
                 wallet: w,
                 name: shopInfo?.name || "Unknown Merchant",
                 logo: shopInfo?.logo,
                 totalSales: Math.round(totalSales * 100) / 100,
-                merchantEarned,
-                platformFee,
+                merchantEarned: Math.round(merchantEarned * 100) / 100,
+                platformFee: Math.round(platformFee * 100) / 100,
                 totalTips: Math.round(totalTips * 100) / 100,
                 transactionCount,
                 customers,

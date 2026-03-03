@@ -65,6 +65,7 @@ import ClientRequestsPanel from "@/app/admin/panels/ClientRequestsPanel";
 import AgentRequestsPanel from "@/app/admin/panels/AgentRequestsPanel";
 import TablesPanel from "@/app/admin/panels/TablesPanel";
 import SubscriptionsPanel from "@/app/admin/panels/SubscriptionsPanel";
+import ModulesPanel from "@/app/admin/panels/ModulesPanel";
 import { isPlatformCtx, isPartnerCtx, isPlatformSuperAdmin, canAccessPanel } from "@/lib/authz";
 
 
@@ -9191,9 +9192,22 @@ export default function AdminPage() {
     | "plugins"
     | "pluginStudio"
     | "subscriptions"
+    | "modules"
   >("reserve");
   const [industryPack, setIndustryPack] = useState<string | null>(null);
   const containerType = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || "platform").toLowerCase();
+
+  // Partner module configuration — which merchant panels are disabled
+  const [disabledMerchantModules, setDisabledMerchantModules] = useState<string[]>([]);
+  useEffect(() => {
+    if (!wallet) return;
+    fetch("/api/admin/modules", { headers: { "x-wallet": wallet } })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d?.disabledModules)) setDisabledMerchantModules(d.disabledModules);
+      })
+      .catch(() => { });
+  }, [wallet]);
 
   // When user lands on /admin without a valid auth session but with a connected wallet,
   // proactively prompt authentication to avoid “dead clicks” or silent failures.
@@ -9269,6 +9283,7 @@ export default function AdminPage() {
         isSuperadmin={isSuperadmin}
         canAdmins={canAdmins}
         onCollapseChange={setIsSidebarCollapsed}
+        disabledMerchantModules={disabledMerchantModules}
       />
       <div className="hidden">
         <h1 className="text-3xl font-bold">Admin</h1>
@@ -9588,6 +9603,11 @@ export default function AdminPage() {
       {activeTab === "agentRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
         <div className="glass-pane rounded-xl border p-6">
           <AgentRequestsPanel />
+        </div>
+      )}
+      {activeTab === "modules" && (canBranding || isSuperadmin) && (
+        <div className="glass-pane rounded-xl border p-6">
+          <ModulesPanel />
         </div>
       )}
       {activeTab === "support" && (
