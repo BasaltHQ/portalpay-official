@@ -575,7 +575,8 @@ export default function ClientRequestsPanel() {
                     </thead>
                     <tbody className="divide-y divide-foreground/5">
                         {paginatedItems.map((req, idx) => {
-                            const submitted = new Date(Number(req.createdAt || 0)).toLocaleString();
+                            const rawTs = Number(req.createdAt) || (Number((req as any)._ts) * 1000) || 0;
+                            const submitted = rawTs > 0 && !isNaN(new Date(rawTs).getTime()) ? new Date(rawTs).toLocaleString() : "—";
                             const badgeClass =
                                 req.status === "approved" ? "bg-green-500/10 text-green-500 border-green-500/20" :
                                     req.status === "orphaned" ? "bg-zinc-500/10 text-zinc-500 border-zinc-500/20 border-dashed" :

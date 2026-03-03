@@ -67,17 +67,31 @@ export async function GET(req: NextRequest) {
                 return NextResponse.json({ error: "Configuration error" }, { status: 500 });
             }
 
-            // Verify merchant belongs to this brand
-            // Similar to Auth check - query shop_config
-            const querySpec = {
-                query: "SELECT c.brandKey FROM c WHERE c.type = 'shop_config' AND c.wallet = @w",
-                parameters: [{ name: "@w", value: w }]
-            };
-            const { resources: shops } = await container.items.query(querySpec).fetchAll();
-            const shopBrand = String(shops?.[0]?.brandKey || "portalpay").toLowerCase();
+            // Verify merchant belongs to this brand using multi-source resolution:
+            // Priority: site_config.brandKey > shop_config.theme.brandKey
+            const [{ resources: siteConfigs }, { resources: shopConfigs }] = await Promise.all([
+                container.items.query({
+                    query: "SELECT c.brandKey FROM c WHERE c.type = 'site_config' AND c.wallet = @w",
+                    parameters: [{ name: "@w", value: w }]
+                }).fetchAll(),
+                container.items.query({
+                    query: "SELECT c.theme.brandKey AS brandKey FROM c WHERE c.type = 'shop_config' AND c.wallet = @w",
+                    parameters: [{ name: "@w", value: w }]
+                }).fetchAll(),
+            ]);
 
-            if (shopBrand !== branding.key) {
-                console.warn(`[Reports] Blocked cross-brand access: Merchant ${shopBrand} trying to access report on ${branding.key}`);
+            const merchantBrand = String(
+                siteConfigs?.[0]?.brandKey || shopConfigs?.[0]?.brandKey || ""
+            ).toLowerCase();
+
+            // Normalize: platform brands (portalpay/basaltsurge) are equivalent
+            const isPlatformBrandKey = (k: string) => !k || k === "portalpay" || k === "basaltsurge";
+            const brandMatches = isPlatformBrandKey(branding.key)
+                ? isPlatformBrandKey(merchantBrand)
+                : merchantBrand === branding.key;
+
+            if (!brandMatches) {
+                console.warn(`[Reports] Blocked cross-brand access: Merchant ${merchantBrand || "(none)"} trying to access report on ${branding.key}`);
                 return NextResponse.json({ error: "Unauthorized for this brand" }, { status: 403 });
             }
         }

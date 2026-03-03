@@ -6,8 +6,12 @@ export const dynamic = "force-dynamic";
 /**
  * Partner Reports API — Aggregates stats per merchant for a partner container.
  * Uses multi-source brand resolution (site_config > split_index > shop_config)
- * to discover merchants, then pulls stats from split_index (the same source
- * as the Merchants panel / Users panel).
+ * to discover merchants, then pulls stats from receipts filtered by time range
+ * (or from split_index for all-time totals, matching the Merchants panel).
+ *
+ * Query params:
+ *   start — Unix timestamp (seconds) for the start of the date range
+ *   end   — Unix timestamp (seconds) for the end of the date range
  *
  * Auth: x-wallet header must match an admin wallet for this container.
  */
@@ -45,6 +49,14 @@ export async function GET(req: NextRequest) {
 
         const isPlatformBrand = brandKey === "portalpay" || brandKey === "basaltsurge";
 
+        // Parse time range (frontend sends Unix seconds)
+        const { searchParams } = new URL(req.url);
+        const startSec = Number(searchParams.get("start") || 0);
+        const endSec = Number(searchParams.get("end") || 0);
+        // Convert to milliseconds (receipt.createdAt is in ms)
+        const startMs = startSec > 0 ? startSec * 1000 : 0;
+        const endMs = endSec > 0 ? endSec * 1000 : Date.now();
+
         const container = await getContainer();
 
         // ── 1. Parallel fetch: split_index, shop_config, site_config ──
@@ -60,7 +72,6 @@ export async function GET(req: NextRequest) {
                 query: `SELECT c.wallet, c.name, c.theme FROM c WHERE c.type = 'shop_config'`,
                 parameters: [],
             }).fetchAll(),
-            // site_config — authoritative brand source for onboarded merchants
             container.items.query({
                 query: `SELECT c.wallet, c.brandKey, c.splitAddress FROM c WHERE c.type = 'site_config'`,
                 parameters: [],
@@ -86,7 +97,6 @@ export async function GET(req: NextRequest) {
         // ── 3. Multi-source brand resolution ──
         // Priority: site_config.brandKey > split_index.brandKey > shop_config.theme.brandKey
         const walletBrand = new Map<string, string>();
-        const walletSplitAddr = new Map<string, string>();
 
         // Pass 1: shop_config.theme.brandKey (lowest priority)
         for (const shop of shops) {
@@ -102,8 +112,6 @@ export async function GET(req: NextRequest) {
             if (!hex(w)) continue;
             const rawBk = String(row.brandKey || "").toLowerCase();
             if (rawBk) walletBrand.set(w, rawBk);
-            const splitAddr = String(row.splitAddress || "").toLowerCase();
-            if (hex(splitAddr)) walletSplitAddr.set(w, splitAddr);
         }
 
         // Pass 3: site_config.brandKey (highest priority — set during onboarding)
@@ -112,121 +120,148 @@ export async function GET(req: NextRequest) {
             if (!hex(w)) continue;
             const rawBk = String(sc.brandKey || "").toLowerCase();
             if (rawBk) walletBrand.set(w, rawBk);
-            const splitAddr = String(sc.splitAddress || "").toLowerCase();
-            if (hex(splitAddr) && !walletSplitAddr.has(w)) walletSplitAddr.set(w, splitAddr);
         }
 
         // ── 4. Filter wallets belonging to this partner brand ──
         const partnerWallets = new Set<string>();
         for (const [w, resolvedBrand] of walletBrand.entries()) {
             if (isPlatformBrand) {
-                // Platform brand: include merchants with empty/portalpay/basaltsurge brand
                 if (!resolvedBrand || resolvedBrand === "portalpay" || resolvedBrand === "basaltsurge") {
                     partnerWallets.add(w);
                 }
             } else {
-                // Partner brand: exact match
                 if (resolvedBrand === brandKey) {
                     partnerWallets.add(w);
                 }
             }
         }
 
-        // ── 5. Build split_index stats map (same source as Merchants panel) ──
+        const partnerWalletArray = Array.from(partnerWallets);
+
+        if (partnerWalletArray.length === 0) {
+            // No merchants → return empty response
+            return NextResponse.json({
+                merchants: [],
+                aggregate: {
+                    totalSales: 0, merchantEarned: 0, platformFee: 0,
+                    totalTips: 0, transactionCount: 0, averageOrderValue: 0,
+                    merchantCount: 0, customers: 0,
+                },
+            });
+        }
+
+        // ── 5. Fetch receipts within time range for these merchants ──
+        // receipt.createdAt is in milliseconds; filter by status='paid'
+        const receiptQuery = {
+            query: `SELECT c.wallet, c.totalUsd, c.tipAmount, c.createdAt FROM c
+                    WHERE c.type = 'receipt' AND c.status = 'paid'
+                    AND ARRAY_CONTAINS(@wallets, c.wallet)
+                    AND c.createdAt >= @startMs AND c.createdAt <= @endMs`,
+            parameters: [
+                { name: "@wallets", value: partnerWalletArray },
+                { name: "@startMs", value: startMs },
+                { name: "@endMs", value: endMs },
+            ],
+        };
+        const { resources: receipts } = await container.items.query(receiptQuery).fetchAll();
+
+        // ── 6. Build per-merchant stats from receipts ──
+        const merchantStatsMap = new Map<
+            string,
+            { totalSales: number; totalTips: number; transactionCount: number }
+        >();
+
+        for (const r of receipts || []) {
+            const w = String(r.wallet || "").toLowerCase();
+            if (!partnerWallets.has(w)) continue;
+
+            const totalUsd = Number(r.totalUsd || 0);
+            const tipAmount = Number(r.tipAmount || 0);
+
+            const existing = merchantStatsMap.get(w);
+            if (existing) {
+                existing.totalSales += totalUsd;
+                existing.totalTips += tipAmount;
+                existing.transactionCount += 1;
+            } else {
+                merchantStatsMap.set(w, {
+                    totalSales: totalUsd,
+                    totalTips: tipAmount,
+                    transactionCount: 1,
+                });
+            }
+        }
+
+        // ── 7. Also pull split_index for earned/fee breakdown per merchant ──
+        //    (These are all-time ratios used to estimate the earned/fee split
+        //     within the filtered volume.)
         const splitStatsMap = new Map<
             string,
-            {
-                totalVolumeUsd: number;
-                merchantEarnedUsd: number;
-                platformFeeUsd: number;
-                customers: number;
-                totalCustomerXp: number;
-                transactionCount: number;
-            }
+            { totalVolumeUsd: number; merchantEarnedUsd: number; platformFeeUsd: number; customers: number }
         >();
 
         for (const row of splitRows) {
             const w = String(row.merchantWallet || "").toLowerCase();
-            if (!w || !partnerWallets.has(w)) continue;
+            if (!partnerWallets.has(w)) continue;
 
             const vol = Number(row.totalVolumeUsd || 0);
             const earned = Number(row.merchantEarnedUsd || 0);
             const fee = Number(row.platformFeeUsd || 0);
-            const txns = Number(row.transactionCount || 0);
             const cust = Number(row.customers || 0);
-            const xp = Number(row.totalCustomerXp || 0);
 
             const existing = splitStatsMap.get(w);
             if (existing) {
-                // Merge (same wallet may have multiple split_index entries)
                 existing.totalVolumeUsd += vol;
                 existing.merchantEarnedUsd += earned;
                 existing.platformFeeUsd += fee;
-                existing.transactionCount += txns;
                 existing.customers += cust;
-                existing.totalCustomerXp += xp;
             } else {
                 splitStatsMap.set(w, {
                     totalVolumeUsd: vol,
                     merchantEarnedUsd: earned,
                     platformFeeUsd: fee,
-                    transactionCount: txns,
                     customers: cust,
-                    totalCustomerXp: xp,
                 });
             }
         }
 
-        // ── 6. Build merchant list ──
-        const merchants = Array.from(partnerWallets).map((w) => {
+        // ── 8. Build merchant list ──
+        const merchants = partnerWalletArray.map((w) => {
             const shopInfo = shopMap.get(w);
-            const stats = splitStatsMap.get(w);
+            const receiptStats = merchantStatsMap.get(w);
+            const splitStats = splitStatsMap.get(w);
 
-            const totalSales = stats?.totalVolumeUsd || 0;
-            const merchantEarned = stats?.merchantEarnedUsd || 0;
-            const platformFee = stats?.platformFeeUsd || 0;
-            const transactionCount = stats?.transactionCount || 0;
-            const customers = stats?.customers || 0;
+            const totalSales = receiptStats?.totalSales || 0;
+            const totalTips = receiptStats?.totalTips || 0;
+            const transactionCount = receiptStats?.transactionCount || 0;
+            const customers = splitStats?.customers || 0;
+
+            // Estimate earned/fee from receipt volume using the split_index ratio
+            let merchantEarned = totalSales;
+            let platformFee = 0;
+            if (splitStats && splitStats.totalVolumeUsd > 0) {
+                const feeRatio = splitStats.platformFeeUsd / splitStats.totalVolumeUsd;
+                platformFee = Math.round(totalSales * feeRatio * 100) / 100;
+                merchantEarned = Math.round((totalSales - platformFee) * 100) / 100;
+            }
 
             return {
                 wallet: w,
                 name: shopInfo?.name || "Unknown Merchant",
                 logo: shopInfo?.logo,
-                totalSales,
+                totalSales: Math.round(totalSales * 100) / 100,
                 merchantEarned,
                 platformFee,
-                totalTips: 0,
+                totalTips: Math.round(totalTips * 100) / 100,
                 transactionCount,
                 customers,
-                averageOrderValue: transactionCount > 0 ? totalSales / transactionCount : 0,
+                averageOrderValue: transactionCount > 0
+                    ? Math.round((totalSales / transactionCount) * 100) / 100
+                    : 0,
             };
         });
 
-        // ── 7. Get tip totals from receipts ──
-        const merchantWallets = merchants.map((m) => m.wallet);
-        if (merchantWallets.length > 0) {
-            try {
-                const tipQuery = {
-                    query: `SELECT c.wallet, c.tipAmount FROM c
-                            WHERE c.type = 'receipt' AND c.status = 'paid'
-                            AND ARRAY_CONTAINS(@wallets, c.wallet)`,
-                    parameters: [{ name: "@wallets", value: merchantWallets }],
-                };
-                const { resources: tipReceipts } = await container.items
-                    .query(tipQuery)
-                    .fetchAll();
-                const tipMap = new Map<string, number>();
-                for (const r of tipReceipts || []) {
-                    const w = String(r.wallet || "").toLowerCase();
-                    tipMap.set(w, (tipMap.get(w) || 0) + Number(r.tipAmount || 0));
-                }
-                for (const m of merchants) {
-                    m.totalTips = tipMap.get(m.wallet) || 0;
-                }
-            } catch { /* tips are optional */ }
-        }
-
-        // ── 8. Overall aggregate ──
+        // ── 9. Overall aggregate ──
         const aggregate = {
             totalSales: merchants.reduce((s, m) => s + m.totalSales, 0),
             merchantEarned: merchants.reduce((s, m) => s + m.merchantEarned, 0),
@@ -234,12 +269,12 @@ export async function GET(req: NextRequest) {
             totalTips: merchants.reduce((s, m) => s + m.totalTips, 0),
             transactionCount: merchants.reduce((s, m) => s + m.transactionCount, 0),
             averageOrderValue: 0 as number,
-            merchantCount: merchants.length,
+            merchantCount: merchants.filter((m) => m.transactionCount > 0).length,
             customers: merchants.reduce((s, m) => s + m.customers, 0),
         };
         aggregate.averageOrderValue =
             aggregate.transactionCount > 0
-                ? aggregate.totalSales / aggregate.transactionCount
+                ? Math.round((aggregate.totalSales / aggregate.transactionCount) * 100) / 100
                 : 0;
 
         return NextResponse.json({ merchants, aggregate });
