@@ -70,6 +70,7 @@ type AdminTabKey =
   | 'reportsPartner'
   | 'reportsPlatform'
   | 'clientRequests'
+  | 'agentRequests'
   | 'subscriptions';
 
 interface AdminSidebarProps {
@@ -364,6 +365,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
             { title: 'Plugins', key: 'plugins' as AdminTabKey },
             // Client Requests: Show only in REQUEST mode (private) or superadmin
             ...((canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) ? [{ title: 'Client Requests', key: 'clientRequests' as AdminTabKey }] : []),
+            ...((canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) ? [{ title: 'Agent Requests', key: 'agentRequests' as AdminTabKey }] : []),
             ...(canAdmins ? [
               { title: 'Admin Users', key: 'admins' as AdminTabKey },
             ] : []),

@@ -62,6 +62,7 @@ import ReportsPanelMerchant from "@/app/admin/panels/ReportsPanelMerchant";
 import ReportsPanelPartner from "@/app/admin/panels/ReportsPanelPartner";
 import ReportsPanelPlatform from "@/app/admin/panels/ReportsPanelPlatform";
 import ClientRequestsPanel from "@/app/admin/panels/ClientRequestsPanel";
+import AgentRequestsPanel from "@/app/admin/panels/AgentRequestsPanel";
 import TablesPanel from "@/app/admin/panels/TablesPanel";
 import SubscriptionsPanel from "@/app/admin/panels/SubscriptionsPanel";
 import { isPlatformCtx, isPartnerCtx, isPlatformSuperAdmin, canAccessPanel } from "@/lib/authz";
@@ -9186,6 +9187,9 @@ export default function AdminPage() {
     | "reportsPartner"
     | "reportsPlatform"
     | "clientRequests"
+    | "agentRequests"
+    | "plugins"
+    | "pluginStudio"
     | "subscriptions"
   >("reserve");
   const [industryPack, setIndustryPack] = useState<string | null>(null);
@@ -9579,6 +9583,11 @@ export default function AdminPage() {
       {activeTab === "clientRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
         <div className="glass-pane rounded-xl border p-6">
           <ClientRequestsPanel />
+        </div>
+      )}
+      {activeTab === "agentRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
+        <div className="glass-pane rounded-xl border p-6">
+          <AgentRequestsPanel />
         </div>
       )}
       {activeTab === "support" && (

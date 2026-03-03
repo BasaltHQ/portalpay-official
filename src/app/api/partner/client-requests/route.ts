@@ -145,6 +145,15 @@ export async function GET(req: NextRequest) {
             // If statusFilter is set to 'pending', we skip orphans.
             if (statusFilter && statusFilter === "pending" && !req) return null;
 
+            // Parse any date format (BSON {$date: ...}, ISO string, or number) to ms epoch
+            const toMs = (v: any): number => {
+                if (!v) return 0;
+                if (typeof v === "number") return v;
+                if (typeof v === "string") { const t = new Date(v).getTime(); return Number.isFinite(t) ? t : 0; }
+                if (typeof v === "object" && v.$date) { const t = new Date(v.$date).getTime(); return Number.isFinite(t) ? t : 0; }
+                return 0;
+            };
+
             // Decrypt helpers
             const maskEin = (ein: string) => {
                 try {
@@ -157,8 +166,11 @@ export async function GET(req: NextRequest) {
             if (req) {
                 const deployedSplit = conf?.split;
                 const deployedAddress = conf?.splitAddress || conf?.split?.address;
+                // Normalize createdAt: handle BSON date, ISO string, or number
+                const normalizedCreatedAt = toMs(req.createdAt) || toMs(req.updatedAt) || ((req._ts || 0) * 1000) || Date.now();
                 const enriched = {
                     ...req,
+                    createdAt: normalizedCreatedAt,
                     deployedSplitAddress: deployedAddress,
                     splitHistory: conf?.splitHistory || [],
                     splitConfig: conf?.splitConfig || req.splitConfig, // Prefer deployed config
@@ -211,8 +223,8 @@ export async function GET(req: NextRequest) {
                 businessType: "unknown",
                 contactEmail: "",
                 status: "orphaned", // Distinct status
-                createdAt: (conf._ts || 0) * 1000,
-                updatedAt: (conf._ts || 0) * 1000,
+                createdAt: toMs(conf.createdAt) || ((conf._ts || 0) * 1000) || Date.now(),
+                updatedAt: toMs(conf.updatedAt) || ((conf._ts || 0) * 1000) || Date.now(),
                 splitConfig: conf.splitConfig,
                 deployedSplitAddress: conf.splitAddress || conf.split?.address,
                 splitHistory: conf.splitHistory || [],

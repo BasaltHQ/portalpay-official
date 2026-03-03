@@ -105,6 +105,7 @@ export default function ClientRequestsPanel() {
     const [partnerBps, setPartnerBps] = useState(50); // Default partner fee (0.5%)
     const [partnerWallet, setPartnerWallet] = useState("");
     const [agents, setAgents] = useState<{ wallet: string; bps: number }[]>([]);
+    const [approvedAgents, setApprovedAgents] = useState<{ wallet: string; name: string; email: string }[]>([]);
     const [deploying, setDeploying] = useState(false);
     const [deployResult, setDeployResult] = useState<string>("");
 
@@ -266,6 +267,14 @@ export default function ClientRequestsPanel() {
             setAgents([]);
             setLastVerifiedConfig(null); // No verified config for new splits
         }
+        // Fetch approved agents for dropdown
+        (async () => {
+            try {
+                const res = await fetch("/api/agents/list", { headers: { "x-wallet": account?.address || "" } });
+                const data = await res.json();
+                setApprovedAgents(data.agents || []);
+            } catch { setApprovedAgents([]); }
+        })();
     };
 
     // Calculate aggregate fee for display and updates
@@ -1013,41 +1022,72 @@ export default function ClientRequestsPanel() {
                                                 </button>
                                             </div>
                                             <div className="space-y-2">
-                                                {agents.map((agent, idx) => (
-                                                    <div key={idx} className="flex gap-2">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Agent Wallet (0x...)"
-                                                            value={agent.wallet}
-                                                            onChange={(e) => {
-                                                                const newAgents = [...agents];
-                                                                newAgents[idx].wallet = e.target.value;
-                                                                setAgents(newAgents);
-                                                            }}
-                                                            className="flex-1 bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none font-mono"
-                                                        />
-                                                        <div className="flex items-center gap-1 bg-black/40 border border-white/10 rounded px-2 w-24">
-                                                            <input
-                                                                type="number"
-                                                                placeholder="0"
-                                                                value={agent.bps}
-                                                                onChange={(e) => {
-                                                                    const newAgents = [...agents];
-                                                                    newAgents[idx].bps = parseInt(e.target.value) || 0;
-                                                                    setAgents(newAgents);
-                                                                }}
-                                                                className="w-full bg-transparent text-right font-mono text-sm text-white outline-none"
-                                                            />
-                                                            <span className="text-zinc-500 text-xs">bps</span>
+                                                {agents.map((agent, idx) => {
+                                                    const isRegistered = approvedAgents.some(a => a.wallet.toLowerCase() === agent.wallet.toLowerCase());
+                                                    const isCustomMode = !isRegistered && agent.wallet !== "";
+                                                    return (
+                                                        <div key={idx} className="space-y-1.5">
+                                                            <div className="flex gap-2">
+                                                                <select
+                                                                    value={isRegistered ? agent.wallet.toLowerCase() : (agent.wallet ? "__custom__" : "")}
+                                                                    onChange={(e) => {
+                                                                        const newAgents = [...agents];
+                                                                        if (e.target.value === "__custom__") {
+                                                                            newAgents[idx].wallet = "";
+                                                                        } else if (e.target.value === "") {
+                                                                            newAgents[idx].wallet = "";
+                                                                        } else {
+                                                                            newAgents[idx].wallet = e.target.value;
+                                                                        }
+                                                                        setAgents(newAgents);
+                                                                    }}
+                                                                    className="flex-1 bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none"
+                                                                >
+                                                                    <option value="" className="bg-zinc-900">Select agent…</option>
+                                                                    {approvedAgents.map(a => (
+                                                                        <option key={a.wallet} value={a.wallet.toLowerCase()} className="bg-zinc-900">
+                                                                            {a.name || "Unknown"} ({a.wallet.slice(0, 6)}…{a.wallet.slice(-4)})
+                                                                        </option>
+                                                                    ))}
+                                                                    <option value="__custom__" className="bg-zinc-900">⌨ Custom wallet…</option>
+                                                                </select>
+                                                                <div className="flex items-center gap-1 bg-black/40 border border-white/10 rounded px-2 w-24">
+                                                                    <input
+                                                                        type="number"
+                                                                        placeholder="0"
+                                                                        value={agent.bps}
+                                                                        onChange={(e) => {
+                                                                            const newAgents = [...agents];
+                                                                            newAgents[idx].bps = parseInt(e.target.value) || 0;
+                                                                            setAgents(newAgents);
+                                                                        }}
+                                                                        className="w-full bg-transparent text-right font-mono text-sm text-white outline-none"
+                                                                    />
+                                                                    <span className="text-zinc-500 text-xs">bps</span>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => setAgents(agents.filter((_, i) => i !== idx))}
+                                                                    className="p-2 hover:bg-red-500/20 text-zinc-500 hover:text-red-500 rounded transition-colors"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                                </button>
+                                                            </div>
+                                                            {isCustomMode && (
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Agent Wallet (0x...)"
+                                                                    value={agent.wallet}
+                                                                    onChange={(e) => {
+                                                                        const newAgents = [...agents];
+                                                                        newAgents[idx].wallet = e.target.value;
+                                                                        setAgents(newAgents);
+                                                                    }}
+                                                                    className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none font-mono"
+                                                                />
+                                                            )}
                                                         </div>
-                                                        <button
-                                                            onClick={() => setAgents(agents.filter((_, i) => i !== idx))}
-                                                            className="p-2 hover:bg-red-500/20 text-zinc-500 hover:text-red-500 rounded transition-colors"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                                        </button>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                                 {agents.length === 0 && (
                                                     <div className="text-center py-4 border border-dashed border-white/10 rounded-lg text-xs text-zinc-500">
                                                         No agents configured.
