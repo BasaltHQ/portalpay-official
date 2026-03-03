@@ -18,41 +18,37 @@ export function ReserveTabs() {
       <div className="glass-pane rounded-xl border">
         <nav className="flex items-center gap-2 p-2 overflow-x-auto">
           <button
-            className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap flex-shrink-0 rounded-md border text-sm ${
-              activeTab === "configuration"
+            className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap flex-shrink-0 rounded-md border text-sm ${activeTab === "configuration"
                 ? "bg-foreground/10 border-foreground/20"
                 : "hover:bg-foreground/5"
-            }`}
+              }`}
             onClick={() => setActiveTab("configuration")}
           >
             Reserve Configuration
           </button>
           <button
-            className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap flex-shrink-0 rounded-md border text-sm ${
-              activeTab === "analytics"
+            className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap flex-shrink-0 rounded-md border text-sm ${activeTab === "analytics"
                 ? "bg-foreground/10 border-foreground/20"
                 : "hover:bg-foreground/5"
-            }`}
+              }`}
             onClick={() => setActiveTab("analytics")}
           >
             Reserve Analytics
           </button>
           <button
-            className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap flex-shrink-0 rounded-md border text-sm ${
-              activeTab === "transactions"
+            className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap flex-shrink-0 rounded-md border text-sm ${activeTab === "transactions"
                 ? "bg-foreground/10 border-foreground/20"
                 : "hover:bg-foreground/5"
-            }`}
+              }`}
             onClick={() => setActiveTab("transactions")}
           >
             Transactions
           </button>
           <button
-            className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap flex-shrink-0 rounded-md border text-sm ${
-              activeTab === "tax"
+            className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap flex-shrink-0 rounded-md border text-sm ${activeTab === "tax"
                 ? "bg-foreground/10 border-foreground/20"
                 : "hover:bg-foreground/5"
-            }`}
+              }`}
             onClick={() => setActiveTab("tax")}
           >
             Tax Management
@@ -73,18 +69,6 @@ export function ReserveTabs() {
           </p>
           <ReserveSettings />
           <ReserveStrategy />
-          <div className="flex items-center justify-end">
-            <button
-              className="px-3 py-1.5 rounded-md border"
-              onClick={() => {
-                try {
-                  window.dispatchEvent(new CustomEvent("pp:saveReserveSettings"));
-                } catch {}
-              }}
-            >
-              Save Reserve Settings
-            </button>
-          </div>
         </div>
       )}
 
