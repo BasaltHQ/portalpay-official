@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useActiveAccount, ConnectButton } from "thirdweb/react";
 import { client, chain } from "@/lib/thirdweb/client";
 import { useBrand } from "@/contexts/BrandContext";
@@ -16,6 +16,8 @@ import {
     Phone,
     User,
     FileText,
+    ShieldCheck,
+    Building2,
 } from "lucide-react";
 
 export default function AgentSignUp() {
@@ -30,23 +32,50 @@ export default function AgentSignUp() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [existingStatus, setExistingStatus] = useState<string | null>(null);
+    const [existingCreatedAt, setExistingCreatedAt] = useState<number | null>(null);
     const [submitted, setSubmitted] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
 
-    // Check existing application
+    // Track previous wallet to detect connection changes
+    const prevWalletRef = useRef("");
+
+    // Check existing application whenever wallet connects/changes
     useEffect(() => {
-        if (!wallet) { setLoading(false); return; }
+        if (!wallet) {
+            // Wallet disconnected – reset
+            setExistingStatus(null);
+            setExistingCreatedAt(null);
+            setSubmitted(false);
+            setLoading(false);
+            return;
+        }
+
+        // If wallet same as before and we already checked, skip
+        if (wallet === prevWalletRef.current && existingStatus !== null) return;
+        prevWalletRef.current = wallet;
+
+        setLoading(true);
+        setError("");
+
         (async () => {
             try {
-                const res = await fetch("/api/agents/signup", { headers: { "x-wallet": wallet } });
+                const res = await fetch("/api/agents/signup", {
+                    headers: { "x-wallet": wallet },
+                });
                 const data = await res.json();
                 if (data.exists) {
                     setExistingStatus(data.status);
+                    setExistingCreatedAt(data.createdAt || null);
                     setName(data.name || "");
                     setEmail(data.email || "");
                     setPhone(data.phone || "");
+                } else {
+                    setExistingStatus(null);
                 }
-            } catch { }
+            } catch {
+                // Network error — allow form to show
+                setExistingStatus(null);
+            }
             setLoading(false);
         })();
     }, [wallet]);
@@ -67,6 +96,7 @@ export default function AgentSignUp() {
             if (!res.ok) throw new Error(data.error || "Failed to submit");
             setSubmitted(true);
             setExistingStatus("pending");
+            setExistingCreatedAt(Date.now());
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -74,38 +104,56 @@ export default function AgentSignUp() {
         }
     }
 
+    const brandName = brand?.name || "";
+    const brandLogo = (brand as any)?.logoUrl || "";
+
     /* ─── Not connected ─── */
     if (!account) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center px-4">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-blue-500/5 pointer-events-none" />
                 <div className="relative max-w-md w-full text-center space-y-6">
+                    {brandLogo && (
+                        <img src={brandLogo} alt={brandName} className="h-14 w-14 mx-auto rounded-xl object-contain border shadow-sm" />
+                    )}
                     <div className="h-20 w-20 mx-auto rounded-2xl bg-gradient-to-br from-primary/20 to-blue-500/10 grid place-items-center shadow-lg shadow-primary/10">
                         <UserPlus className="h-10 w-10 text-primary" />
                     </div>
                     <h1 className="text-3xl font-bold">Become an Agent</h1>
                     <p className="text-muted-foreground leading-relaxed">
-                        Connect your wallet to apply as a referral agent{brand?.name ? ` for ${brand.name}` : ""}. Earn commissions on merchants you bring to the platform.
+                        Connect your wallet to apply as a referral agent{brandName ? ` for ${brandName}` : ""}. Earn commissions on merchants you bring to the platform.
                     </p>
                     <div className="flex justify-center">
                         <ConnectButton client={client} chain={chain} />
+                    </div>
+                    <div className="pt-4 border-t border-border/50 space-y-2 text-xs text-muted-foreground">
+                        <p className="flex items-center justify-center gap-1.5">
+                            <ShieldCheck className="h-3 w-3" />
+                            Your wallet is your identity. Connect to check your application status or apply.
+                        </p>
+                        {brandName && <p className="opacity-60">Powered by {brandName}</p>}
                     </div>
                 </div>
             </div>
         );
     }
 
-    /* ─── Loading existing status ─── */
+    /* ─── Loading (checking existing application) ─── */
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="min-h-screen flex flex-col items-center justify-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Checking your application status…</p>
             </div>
         );
     }
 
     /* ─── Already submitted / has status ─── */
     if (existingStatus) {
+        const submittedDate = existingCreatedAt
+            ? new Date(existingCreatedAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })
+            : null;
+
         return (
             <div className="min-h-screen flex flex-col items-center justify-center px-4">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-blue-500/5 pointer-events-none" />
@@ -117,8 +165,32 @@ export default function AgentSignUp() {
                             </div>
                             <h1 className="text-3xl font-bold">Application Pending</h1>
                             <p className="text-muted-foreground">
-                                Your application is under review. The partner admin will approve or reject your application. Check back soon.
+                                Your application{brandName ? ` to become an agent for ${brandName}` : ""} is under review. The partner admin will approve or reject your application.
                             </p>
+                            {submittedDate && (
+                                <p className="text-xs text-muted-foreground/60">
+                                    Submitted on {submittedDate}
+                                </p>
+                            )}
+                            <div className="rounded-xl border bg-card p-4 space-y-2 text-left text-sm max-w-sm mx-auto">
+                                <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                    <User className="h-3 w-3" /> Application Details
+                                </div>
+                                <div className="grid grid-cols-[80px_1fr] gap-y-1 text-xs">
+                                    <span className="text-muted-foreground">Name</span>
+                                    <span>{name || "—"}</span>
+                                    <span className="text-muted-foreground">Email</span>
+                                    <span>{email || "—"}</span>
+                                    {phone && (
+                                        <>
+                                            <span className="text-muted-foreground">Phone</span>
+                                            <span>{phone}</span>
+                                        </>
+                                    )}
+                                    <span className="text-muted-foreground">Wallet</span>
+                                    <span className="font-mono text-[11px] truncate">{wallet}</span>
+                                </div>
+                            </div>
                         </>
                     )}
                     {existingStatus === "approved" && (
@@ -128,7 +200,7 @@ export default function AgentSignUp() {
                             </div>
                             <h1 className="text-3xl font-bold">You're Approved!</h1>
                             <p className="text-muted-foreground">
-                                Your agent application has been approved. Visit your dashboard to track earnings and withdraw commissions.
+                                Your agent application{brandName ? ` for ${brandName}` : ""} has been approved. Visit your dashboard to track earnings and withdraw commissions.
                             </p>
                             <a
                                 href="/agents"
@@ -145,7 +217,7 @@ export default function AgentSignUp() {
                             </div>
                             <h1 className="text-3xl font-bold">Application Declined</h1>
                             <p className="text-muted-foreground">
-                                Your application was not approved. You may re-apply with updated information below.
+                                Your application{brandName ? ` for ${brandName}` : ""} was not approved. You may re-apply with updated information below.
                             </p>
                             <button
                                 onClick={() => setExistingStatus(null)}
@@ -154,6 +226,20 @@ export default function AgentSignUp() {
                                 Re-Apply <ArrowRight className="h-4 w-4" />
                             </button>
                         </>
+                    )}
+
+                    {/* Partner badge */}
+                    {brandName && (
+                        <div className="pt-4 border-t border-border/50">
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-background/80 text-xs text-muted-foreground">
+                                {brandLogo ? (
+                                    <img src={brandLogo} alt="" className="h-4 w-4 rounded object-contain" />
+                                ) : (
+                                    <Building2 className="h-3 w-3" />
+                                )}
+                                {brandName} Partner
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>
@@ -166,12 +252,15 @@ export default function AgentSignUp() {
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-blue-500/5 pointer-events-none" />
             <div className="relative max-w-lg w-full space-y-8">
                 <div className="text-center space-y-2">
+                    {brandLogo && (
+                        <img src={brandLogo} alt={brandName} className="h-12 w-12 mx-auto rounded-xl object-contain border shadow-sm mb-3" />
+                    )}
                     <div className="h-16 w-16 mx-auto rounded-2xl bg-gradient-to-br from-primary/20 to-blue-500/10 grid place-items-center shadow-lg shadow-primary/10">
                         <UserPlus className="h-8 w-8 text-primary" />
                     </div>
                     <h1 className="text-2xl font-bold">Agent Application</h1>
                     <p className="text-sm text-muted-foreground">
-                        Apply to become a referral agent{brand?.name ? ` for ${brand.name}` : ""}. Earn commissions for every merchant you onboard.
+                        Apply to become a referral agent{brandName ? ` for ${brandName}` : ""}. Earn commissions for every merchant you onboard.
                     </p>
                 </div>
 
@@ -263,9 +352,23 @@ export default function AgentSignUp() {
                     </button>
 
                     <p className="text-center text-[10px] text-muted-foreground">
-                        By applying, you agree to represent {brand?.name || "the platform"} professionally and adhere to the agent code of conduct.
+                        By applying, you agree to represent {brandName || "the platform"} professionally and adhere to the agent code of conduct.
                     </p>
                 </form>
+
+                {/* Partner badge */}
+                {brandName && (
+                    <div className="text-center pt-2 border-t border-border/50">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-background/80 text-xs text-muted-foreground">
+                            {brandLogo ? (
+                                <img src={brandLogo} alt="" className="h-4 w-4 rounded object-contain" />
+                            ) : (
+                                <Building2 className="h-3 w-3" />
+                            )}
+                            {brandName} Partner
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
