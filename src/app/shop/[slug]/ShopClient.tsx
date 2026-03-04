@@ -1291,7 +1291,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                     if (typeof d.height === "number") {
                         try {
                             const winH = typeof window !== "undefined" ? window.innerHeight : 0;
-                            const clamp = Math.max(480, Math.min(d.height + 24, winH > 0 ? winH - 24 : d.height + 24));
+                            const clamp = Math.max(480, d.height + 24);
                             setPortalPreferredHeight(clamp);
                         } catch {
                             setPortalPreferredHeight(d.height);
@@ -2966,9 +2966,10 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                 }}
                             >
                                 <div
-                                    className="relative overflow-hidden rounded-none border-0 shadow-none bg-transparent"
+                                    className="relative overflow-y-auto rounded-none border-0 shadow-none bg-transparent"
                                     style={{
                                         width: "min(100vw, 880px)",
+                                        maxHeight: "calc(100vh - 32px)",
                                         height: portalPreferredHeight
                                             ? `${portalPreferredHeight}px`
                                             : portalLayout === "wide"

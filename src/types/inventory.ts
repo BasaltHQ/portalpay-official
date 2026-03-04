@@ -11,6 +11,47 @@ import type { IndustryPackType } from "@/lib/industry-packs";
 export type { IndustryPackType };
 
 // =============================================================================
+// SHIPPING CONFIGURATION
+// =============================================================================
+
+/**
+ * Shipping Configuration — Industry-standard per-item shipping parameters.
+ * Supports flat-rate, free-shipping thresholds, dimensional weight,
+ * handling time, method restrictions, and special handling requirements.
+ */
+export interface ShippingConfig {
+  /** Whether this item requires shipping */
+  enabled: boolean;
+  /** Weight in lbs */
+  weightLbs?: number;
+  /** Package dimensions */
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+    unit?: 'in' | 'cm';
+  };
+  /** Shipping class (standard, oversized, fragile, hazardous) */
+  shippingClass?: 'standard' | 'oversized' | 'fragile' | 'hazardous';
+  /** Free shipping threshold in USD (orders above this get free shipping; 0 = never free) */
+  freeShippingThreshold?: number;
+  /** Per-method pricing in USD (e.g. { standard: 5.99, express: 12.99, overnight: 24.99 }) */
+  methodPricing?: Record<string, number>;
+  /** Handling/processing time in business days before shipment */
+  handlingTimeDays?: number;
+  /** Allowed shipping methods for this item */
+  allowedMethods?: ('standard' | 'express' | 'overnight' | 'freight')[];
+  /** Ship-from origin country (ISO 3166-1 alpha-2 code, e.g. "US") */
+  originCountry?: string;
+  /** If true, only domestic shipping is allowed */
+  domesticOnly?: boolean;
+  /** Requires recipient signature on delivery */
+  requiresSignature?: boolean;
+  /** Insurance required for this item */
+  insuranceRequired?: boolean;
+}
+
+// =============================================================================
 // BASE INVENTORY ITEM
 // =============================================================================
 
@@ -34,6 +75,10 @@ export interface BaseInventoryItem {
   isSubscription?: boolean;
   /** Links to a subscription plan created in the Subscriptions panel */
   subscriptionPlanId?: string;
+  /** Quick-check flag: true if this item requires shipping */
+  shippingEnabled?: boolean;
+  /** Full shipping configuration for this item */
+  shippingConfig?: ShippingConfig;
   createdAt: number;
   updatedAt: number;
   attributes?: IndustryAttributes;
