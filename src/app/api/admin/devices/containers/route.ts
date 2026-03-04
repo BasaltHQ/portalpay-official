@@ -282,14 +282,19 @@ async function listRegistryImages(
  */
 async function checkApkExists(brandKey: string): Promise<boolean> {
   try {
-    const { storage } = await import("@/lib/azure-storage");
+    const { StorageFactory } = await import("@/lib/storage");
+    const storage = StorageFactory.getProvider();
     const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
     const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
 
-    const blobName = prefix ? `${prefix}/${brandKey}-signed.apk` : `${brandKey}-signed.apk`;
-    const fullPath = `${container}/${blobName}`;
+    const blobName = `${brandKey}-signed.apk`;
+    // S3: key is "prefix/blob", Azure: key is "container/prefix/blob"
+    const s3Path = prefix ? `${prefix}/${blobName}` : blobName;
+    const azurePath = prefix ? `${container}/${prefix}/${blobName}` : `${container}/${blobName}`;
 
-    return await storage.exists(fullPath);
+    if (await storage.exists(s3Path)) return true;
+    if (await storage.exists(azurePath)) return true;
+    return false;
   } catch {
     return false;
   }
@@ -300,24 +305,24 @@ async function checkApkExists(brandKey: string): Promise<boolean> {
  */
 async function checkPackageExists(brandKey: string): Promise<{ exists: boolean; url?: string }> {
   try {
-    const { storage } = await import("@/lib/azure-storage");
+    const { StorageFactory } = await import("@/lib/storage");
+    const storage = StorageFactory.getProvider();
     const container = String(process.env.PP_PACKAGES_CONTAINER || "device-packages").trim();
     const blobName = `${brandKey}/${brandKey}-installer.zip`;
-    // We assume the storage provider allows checking paths with container prefix if needed, 
-    // or we construct the path relative to the container depending on how the provider is configured.
-    // Based on previous refactors, `storage` usually takes the full path including container if it's dynamic, 
-    // or relative if fixed. 
-    // However, our StorageProvider implementation for Azure takes "container/blob" and S3 takes "key".
-    // Let's assume consistent usage: "container/path/to/blob".
 
-    const fullPath = `${container}/${blobName}`;
+    // S3: key is just "blobName", Azure: key is "container/blobName"
+    const s3Path = blobName;
+    const azurePath = `${container}/${blobName}`;
 
-    const exists = await storage.exists(fullPath);
-    if (!exists) return { exists: false };
+    let foundPath: string | null = null;
+    if (await storage.exists(s3Path)) foundPath = s3Path;
+    else if (await storage.exists(azurePath)) foundPath = azurePath;
+
+    if (!foundPath) return { exists: false };
 
     // Generate SAS URL for download (valid for 1 hour)
     try {
-      const url = await storage.getSignedUrl(fullPath, 3600);
+      const url = await storage.getSignedUrl(foundPath, 3600);
       return { exists: true, url };
     } catch {
       // Fallback or ignore

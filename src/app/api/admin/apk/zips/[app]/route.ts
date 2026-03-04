@@ -27,32 +27,33 @@ async function getApkStream(appKey: string): Promise<{ stream: Readable; length?
         const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
         const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
 
-        // Helper to construct path: "container/prefix/blob" or "container/blob"
-        const makePath = (name: string) => prefix ? `${container}/${prefix}/${name}` : `${container}/${name}`;
+        // In S3, the bucket IS the container, so the "container" name should NOT be
+        // prepended to the key. In Azure Blob, container is a separate concept.
+        // We try S3-style paths first (prefix/blob), then Azure-style (container/prefix/blob).
+        const makeS3Path = (name: string) => prefix ? `${prefix}/${name}` : name;
+        const makeAzurePath = (name: string) => prefix ? `${container}/${prefix}/${name}` : `${container}/${name}`;
 
-        // Try brand-specific APK from blob
+        // Try brand-specific APK from storage
         const tryBlob = async (key: string): Promise<{ stream: Readable; length?: number } | null> => {
-            try {
-                const blobName = `${key}-signed.apk`;
-                const fullPath = makePath(blobName);
+            const blobName = `${key}-signed.apk`;
 
-                console.log(`[APK ZIP] Checking storage: ${fullPath}`);
-                if (await storage.exists(fullPath)) {
-                    const buf = await storage.download(fullPath);
-                    console.log(`[APK ZIP] Found ${fullPath} (${buf.length} bytes)`);
+            // Try S3-style path first (e.g. "brands/basaltsurge-touchpoint-signed.apk")
+            for (const fullPath of [makeS3Path(blobName), makeAzurePath(blobName)]) {
+                try {
+                    console.log(`[APK ZIP] Checking storage: ${fullPath}`);
+                    if (await storage.exists(fullPath)) {
+                        const buf = await storage.download(fullPath);
+                        console.log(`[APK ZIP] Found ${fullPath} (${buf.length} bytes)`);
 
-                    // Create a readable stream from the buffer
-                    const stream = new Readable();
-                    stream.push(buf);
-                    stream.push(null); // End of stream
+                        const stream = new Readable();
+                        stream.push(buf);
+                        stream.push(null);
 
-                    return {
-                        stream,
-                        length: buf.length
-                    };
+                        return { stream, length: buf.length };
+                    }
+                } catch (e: any) {
+                    console.warn(`[APK ZIP] Failed to check ${fullPath}:`, e.message);
                 }
-            } catch (e: any) {
-                console.warn(`[APK ZIP] Failed to check ${key}:`, e.message);
             }
             return null;
         };

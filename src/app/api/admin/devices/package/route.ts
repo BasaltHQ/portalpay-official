@@ -53,47 +53,50 @@ function json(obj: any, init?: { status?: number; headers?: Record<string, strin
  * the brand identity is determined by the web app, not the APK itself.
  */
 async function getApkBytes(brandKey: string): Promise<{ bytes: Uint8Array; source: string } | null> {
-  // Prefer Azure Blob Storage if configured
+  // Prefer Hybrid Storage (S3 first, Azure fallback)
   try {
-    const { storage } = await import("@/lib/azure-storage");
+    const { StorageFactory } = await import("@/lib/storage");
+    const storage = StorageFactory.getProvider();
     const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
     const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
 
-    // Helper to construct path: "container/prefix/blob" or "container/blob"
-    const makePath = (name: string) => prefix ? `${container}/${prefix}/${name}` : `${container}/${name}`;
+    // S3: bucket IS the container, so key is just "prefix/blob"
+    // Azure: path is "container/prefix/blob"
+    const makeS3Path = (name: string) => prefix ? `${prefix}/${name}` : name;
+    const makeAzurePath = (name: string) => prefix ? `${container}/${prefix}/${name}` : `${container}/${name}`;
 
     // Try brand-specific APK first
-    try {
-      const blobName = `${brandKey}-signed.apk`;
-      const fullPath = makePath(blobName);
-
-      if (await storage.exists(fullPath)) {
-        console.log(`[APK Debug] Found brand-specific APK in storage: ${fullPath}`);
-        const buf = await storage.download(fullPath);
-        return {
-          bytes: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength),
-          source: `blob:${fullPath}`
-        };
-      }
-      console.log(`[APK Debug] Brand-specific APK not in storage: ${fullPath}`);
-    } catch { }
+    const blobName = `${brandKey}-signed.apk`;
+    for (const fullPath of [makeS3Path(blobName), makeAzurePath(blobName)]) {
+      try {
+        if (await storage.exists(fullPath)) {
+          console.log(`[APK Debug] Found brand-specific APK in storage: ${fullPath}`);
+          const buf = await storage.download(fullPath);
+          return {
+            bytes: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength),
+            source: `blob:${fullPath}`
+          };
+        }
+      } catch { }
+    }
+    console.log(`[APK Debug] Brand-specific APK not in storage for ${brandKey}`);
 
     // Fall back to base PortalPay APK for white-label brands
     if (brandKey !== "portalpay" && brandKey !== "paynex") {
-      try {
-        const fallbackBlobName = `portalpay-signed.apk`;
-        const fallbackPath = makePath(fallbackBlobName);
-
-        if (await storage.exists(fallbackPath)) {
-          console.log(`[APK Debug] Using fallback base APK from storage: ${fallbackPath}`);
-          const buf = await storage.download(fallbackPath);
-          return {
-            bytes: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength),
-            source: `blob:${fallbackPath} (base APK for white-label)`
-          };
-        }
-        console.log(`[APK Debug] Fallback APK not in storage: ${fallbackPath}`);
-      } catch { }
+      const fallbackBlobName = `portalpay-signed.apk`;
+      for (const fallbackPath of [makeS3Path(fallbackBlobName), makeAzurePath(fallbackBlobName)]) {
+        try {
+          if (await storage.exists(fallbackPath)) {
+            console.log(`[APK Debug] Using fallback base APK from storage: ${fallbackPath}`);
+            const buf = await storage.download(fallbackPath);
+            return {
+              bytes: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength),
+              source: `blob:${fallbackPath} (base APK for white-label)`
+            };
+          }
+        } catch { }
+      }
+      console.log(`[APK Debug] Fallback APK not in storage either`);
     }
   } catch (e) {
     console.warn("Storage provider error in getApkBytes:", e);
