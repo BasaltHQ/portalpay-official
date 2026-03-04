@@ -85,8 +85,25 @@ export class CloudflareDomainManager implements DomainManager {
 
         try {
             // Check if hostname already exists
-            const existing = await this.findCustomHostname(domain);
-            if (existing) {
+            const findRes = await fetch(
+                `https://api.cloudflare.com/client/v4/zones/${this.zoneId}/custom_hostnames?hostname=${encodeURIComponent(domain)}`,
+                {
+                    headers: {
+                        "Authorization": `Bearer ${this.apiToken}`,
+                    },
+                }
+            );
+            const findData = await findRes.json();
+            console.log(`Cloudflare findHostname response: status=${findRes.status}, success=${findData.success}, errors=${JSON.stringify(findData.errors)}`);
+
+            if (!findData.success) {
+                // If even the LIST call fails, return full error details
+                const fullErr = JSON.stringify(findData.errors || findData);
+                return { success: false, message: `Cloudflare Error: ${fullErr}` };
+            }
+
+            if (findData.result?.length > 0) {
+                const existing = findData.result[0];
                 console.log(`Cloudflare: Custom hostname ${domain} already exists (id=${existing.id}, status=${existing.status})`);
                 return {
                     success: true,
@@ -120,9 +137,9 @@ export class CloudflareDomainManager implements DomainManager {
             const data = await res.json();
 
             if (!data.success) {
-                const errors = data.errors?.map((e: any) => e.message).join("; ") || "Unknown error";
-                console.error(`Cloudflare: Failed to create custom hostname: ${errors}`);
-                return { success: false, message: `Cloudflare Error: ${errors}` };
+                const fullErr = JSON.stringify(data.errors || data);
+                console.error(`Cloudflare: Failed to create custom hostname: ${fullErr}`);
+                return { success: false, message: `Cloudflare Error: ${fullErr}` };
             }
 
             const hostnameId = data.result?.id;
