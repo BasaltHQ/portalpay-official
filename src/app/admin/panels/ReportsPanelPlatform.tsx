@@ -33,6 +33,11 @@ export default function ReportsPanelPlatform() {
     const [sortBy, setSortBy] = useState<"totalSales" | "transactionCount" | "name" | "brandKey">("totalSales");
     const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
+    // Merchant drill-down
+    const [expandedMerchant, setExpandedMerchant] = useState<string | null>(null);
+    const [merchantDetail, setMerchantDetail] = useState<any>(null);
+    const [detailLoading, setDetailLoading] = useState(false);
+
     function getDateRange(r: string) {
         const now = new Date();
         let start = new Date();
@@ -54,6 +59,8 @@ export default function ReportsPanelPlatform() {
             start.setDate(now.getDate() - 7);
         } else if (r === "month") {
             start.setMonth(now.getMonth() - 1);
+        } else if (r === "all") {
+            start = new Date(0);
         }
 
         return {
@@ -119,6 +126,35 @@ export default function ReportsPanelPlatform() {
 
     function deselectAllPartners() {
         setSelectedPartners(new Set());
+    }
+
+    async function loadMerchantDetail(merchantWallet: string) {
+        if (expandedMerchant === merchantWallet) {
+            setExpandedMerchant(null);
+            setMerchantDetail(null);
+            return;
+        }
+        setExpandedMerchant(merchantWallet);
+        setDetailLoading(true);
+        try {
+            const { start, end } = getDateRange(range);
+            const res = await fetch(
+                `/api/terminal/reports?type=z-report&start=${start}&end=${end}&format=json`,
+                {
+                    headers: {
+                        "x-wallet": merchantWallet,
+                        "x-linked-wallet": wallet,
+                    },
+                }
+            );
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || "Unable to load");
+            setMerchantDetail(json);
+        } catch (e: any) {
+            setMerchantDetail({ error: e.message });
+        } finally {
+            setDetailLoading(false);
+        }
     }
 
     function toggleSort(col: typeof sortBy) {
@@ -270,7 +306,7 @@ export default function ReportsPanelPlatform() {
                     </div>
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex bg-muted/20 p-1 rounded-lg border flex-1">
-                            {["today", "yesterday", "week", "month", "custom"].map((r) => (
+                            {["today", "yesterday", "week", "month", "all", "custom"].map((r) => (
                                 <button key={r} onClick={() => setRange(r)} className={`flex-1 text-[11px] uppercase font-bold tracking-wide py-2 rounded-md transition-all ${range === r ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}>
                                     {r}
                                 </button>
@@ -457,6 +493,7 @@ export default function ReportsPanelPlatform() {
                         <table className="w-full text-sm">
                             <thead className="text-xs uppercase text-muted-foreground border-b bg-muted/20">
                                 <tr>
+                                    <th className="text-left py-3 px-4 w-8" />
                                     <th className="text-left py-3 px-4 cursor-pointer hover:text-foreground" onClick={() => toggleSort("name")}>
                                         Merchant {sortBy === "name" && (sortDir === "asc" ? "↑" : "↓")}
                                     </th>
@@ -475,28 +512,151 @@ export default function ReportsPanelPlatform() {
                             </thead>
                             <tbody className="divide-y">
                                 {filteredMerchants.map((m: any, idx: number) => (
-                                    <tr key={`${m.wallet}-${idx}`} className="hover:bg-muted/10 transition-colors">
-                                        <td className="py-3 px-4">
-                                            <div className="flex items-center gap-3">
-                                                {m.logo && <img src={m.logo} alt="" className="w-6 h-6 rounded-full" />}
-                                                <div>
-                                                    <div className="font-medium">{m.name}</div>
-                                                    <div className="text-xs text-muted-foreground font-mono">{m.wallet.slice(0, 6)}...{m.wallet.slice(-4)}</div>
+                                    <React.Fragment key={`${m.wallet}-${idx}`}>
+                                        <tr className="hover:bg-muted/10 transition-colors cursor-pointer" onClick={() => loadMerchantDetail(m.wallet)}>
+                                            <td className="py-3 px-4">
+                                                {expandedMerchant === m.wallet ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-3">
+                                                    {m.logo && <img src={m.logo} alt="" className="w-6 h-6 rounded-full" />}
+                                                    <div>
+                                                        <div className="font-medium">{m.name}</div>
+                                                        <div className="text-xs text-muted-foreground font-mono">{m.wallet.slice(0, 6)}...{m.wallet.slice(-4)}</div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <span className="px-2 py-0.5 rounded-full bg-muted/50 text-xs font-medium">{m.brandKey}</span>
-                                        </td>
-                                        <td className="py-3 px-4 text-right font-mono font-semibold">{formatCurrency(m.totalSales, "USD")}</td>
-                                        <td className="py-3 px-4 text-right font-mono text-green-500">{formatCurrency(m.totalTips, "USD")}</td>
-                                        <td className="py-3 px-4 text-right">{m.transactionCount}</td>
-                                        <td className="py-3 px-4 text-right font-mono">{formatCurrency(m.averageOrderValue, "USD")}</td>
-                                    </tr>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <span className="px-2 py-0.5 rounded-full bg-muted/50 text-xs font-medium">{m.brandKey}</span>
+                                            </td>
+                                            <td className="py-3 px-4 text-right font-mono font-semibold">{formatCurrency(m.totalSales, "USD")}</td>
+                                            <td className="py-3 px-4 text-right font-mono text-green-500">{formatCurrency(m.totalTips, "USD")}</td>
+                                            <td className="py-3 px-4 text-right">{m.transactionCount}</td>
+                                            <td className="py-3 px-4 text-right font-mono">{formatCurrency(m.averageOrderValue, "USD")}</td>
+                                        </tr>
+                                        {expandedMerchant === m.wallet && (
+                                            <tr>
+                                                <td colSpan={7} className="p-0">
+                                                    <div className="p-4 bg-muted/10 border-t animate-in fade-in slide-in-from-top-2">
+                                                        {detailLoading ? (
+                                                            <div className="flex items-center justify-center py-6">
+                                                                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                                                                <span className="ml-2 text-sm text-muted-foreground">Loading details…</span>
+                                                            </div>
+                                                        ) : merchantDetail?.error ? (
+                                                            <div className="text-sm text-red-500 py-4">{merchantDetail.error}</div>
+                                                        ) : merchantDetail ? (
+                                                            <div className="space-y-4">
+                                                                {/* Summary Stats */}
+                                                                {merchantDetail.summary && (
+                                                                    <div>
+                                                                        <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">Summary</h4>
+                                                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                                                                            <div className="p-2 rounded-lg bg-background border">
+                                                                                <div className="text-[10px] text-muted-foreground uppercase">Volume</div>
+                                                                                <div className="text-sm font-mono font-semibold">{formatCurrency(merchantDetail.summary.totalSales, "USD")}</div>
+                                                                            </div>
+                                                                            <div className="p-2 rounded-lg bg-background border">
+                                                                                <div className="text-[10px] text-muted-foreground uppercase">Earned</div>
+                                                                                <div className="text-sm font-mono font-semibold text-emerald-500">{formatCurrency(merchantDetail.summary.merchantEarned || 0, "USD")}</div>
+                                                                            </div>
+                                                                            <div className="p-2 rounded-lg bg-background border">
+                                                                                <div className="text-[10px] text-muted-foreground uppercase">Fees</div>
+                                                                                <div className="text-sm font-mono font-semibold text-amber-500">{formatCurrency(merchantDetail.summary.platformFee || 0, "USD")}</div>
+                                                                            </div>
+                                                                            <div className="p-2 rounded-lg bg-background border">
+                                                                                <div className="text-[10px] text-muted-foreground uppercase">Tips</div>
+                                                                                <div className="text-sm font-mono font-semibold text-green-500">{formatCurrency(merchantDetail.summary.totalTips, "USD")}</div>
+                                                                            </div>
+                                                                            <div className="p-2 rounded-lg bg-background border">
+                                                                                <div className="text-[10px] text-muted-foreground uppercase">Transactions</div>
+                                                                                <div className="text-sm font-semibold">{merchantDetail.summary.transactionCount}</div>
+                                                                            </div>
+                                                                            <div className="p-2 rounded-lg bg-background border">
+                                                                                <div className="text-[10px] text-muted-foreground uppercase">Avg Order</div>
+                                                                                <div className="text-sm font-mono font-semibold">{formatCurrency(merchantDetail.summary.averageOrderValue, "USD")}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {merchantDetail.paymentMethods?.length > 0 && (
+                                                                    <div>
+                                                                        <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">Payment Breakdown</h4>
+                                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                                                            {merchantDetail.paymentMethods.map((pm: any) => (
+                                                                                <div key={pm.method} className="p-2 rounded-lg bg-background border flex justify-between">
+                                                                                    <span className="text-sm">{pm.method}</span>
+                                                                                    <span className="text-sm font-mono">{formatCurrency(pm.total, "USD")}</span>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {merchantDetail.employees?.length > 0 && (
+                                                                    <div>
+                                                                        <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">Staff</h4>
+                                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                                                            {merchantDetail.employees.map((e: any) => (
+                                                                                <div key={e.id} className="p-2 rounded-lg bg-background border">
+                                                                                    <div className="font-medium text-sm">{e.name || e.id}</div>
+                                                                                    <div className="text-xs text-muted-foreground mt-1">Sales: {formatCurrency(e.sales, "USD")} · Tips: {formatCurrency(e.tips, "USD")} · {e.count} orders</div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {/* On-Chain Transaction Hashes */}
+                                                                {merchantDetail.splitTransactions?.length > 0 && (
+                                                                    <div>
+                                                                        <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">On-Chain Transactions ({merchantDetail.splitTransactions.length})</h4>
+                                                                        <div className="max-h-64 overflow-y-auto rounded-lg border bg-background">
+                                                                            <table className="w-full text-xs">
+                                                                                <thead className="bg-muted/30 sticky top-0">
+                                                                                    <tr>
+                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Tx Hash</th>
+                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Type</th>
+                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Token</th>
+                                                                                        <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Value</th>
+                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">From</th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody className="divide-y divide-border/50">
+                                                                                    {merchantDetail.splitTransactions.map((tx: any) => (
+                                                                                        <tr key={tx.hash} className="hover:bg-muted/10">
+                                                                                            <td className="py-1.5 px-3">
+                                                                                                <a href={`https://basescan.org/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono text-primary hover:underline">
+                                                                                                    {tx.hash.slice(0, 10)}…{tx.hash.slice(-6)}
+                                                                                                </a>
+                                                                                            </td>
+                                                                                            <td className="py-1.5 px-3">
+                                                                                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${tx.txType === 'payment' ? 'bg-green-500/10 text-green-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                                                                                                    {tx.txType}
+                                                                                                </span>
+                                                                                            </td>
+                                                                                            <td className="py-1.5 px-3 font-medium">{tx.token}</td>
+                                                                                            <td className="py-1.5 px-3 text-right font-mono">{Number(tx.value || 0).toFixed(6)}</td>
+                                                                                            <td className="py-1.5 px-3 font-mono text-muted-foreground">{tx.from ? `${tx.from.slice(0, 6)}…${tx.from.slice(-4)}` : '—'}</td>
+                                                                                        </tr>
+                                                                                    ))}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {!merchantDetail.summary?.transactionCount && !merchantDetail.splitTransactions?.length && (
+                                                                    <div className="text-sm text-muted-foreground text-center py-4">No transactions found for this period</div>
+                                                                )}
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
                                 ))}
                                 {filteredMerchants.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="text-center py-8 text-muted-foreground text-sm">
+                                        <td colSpan={7} className="text-center py-8 text-muted-foreground text-sm">
                                             {merchantSearch ? "No merchants matching search" : selectedPartners.size === 0 ? "Select at least one partner" : "No merchants found"}
                                         </td>
                                     </tr>
