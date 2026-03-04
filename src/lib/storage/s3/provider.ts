@@ -176,6 +176,17 @@ export class S3StorageProvider implements StorageProvider {
         });
 
         // S3 Client must be initialized with region/cred for this to work
-        return await getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
+        let url = await getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
+
+        // AWS SDK v3 often forces Path-Style for custom endpoints. We manually convert it to Virtual-Hosted Style
+        // if it starts with the endpoint + bucket.
+        const pathStylePrefix = `${this.endpoint.replace(/\/$/, "")}/${this.bucket}`;
+        if (url.startsWith(pathStylePrefix)) {
+            const endpointUrl = new URL(this.endpoint);
+            const virtualHostPrefix = `${endpointUrl.protocol}//${this.bucket}.${endpointUrl.hostname}`;
+            url = url.replace(pathStylePrefix, virtualHostPrefix);
+        }
+
+        return url;
     }
 }
