@@ -50,6 +50,22 @@ type InventoryItemBody = {
   /** Subscription-linked item fields */
   isSubscription?: boolean;
   subscriptionPlanId?: string;
+  /** Shipping */
+  shippingEnabled?: boolean;
+  shippingConfig?: {
+    enabled: boolean;
+    weightLbs?: number;
+    dimensions?: { length?: number; width?: number; height?: number; unit?: 'in' | 'cm' };
+    shippingClass?: 'standard' | 'oversized' | 'fragile' | 'hazardous';
+    freeShippingThreshold?: number;
+    methodPricing?: Record<string, number>;
+    handlingTimeDays?: number;
+    allowedMethods?: ('standard' | 'express' | 'overnight' | 'freight')[];
+    originCountry?: string;
+    domesticOnly?: boolean;
+    requiresSignature?: boolean;
+    insuranceRequired?: boolean;
+  };
   contentDetails?: {
     // Core
     author?: string; // Primary Author
@@ -293,7 +309,7 @@ export async function GET(req: NextRequest) {
       }
       const spec = (() => {
         const baseSelect =
-          "SELECT c.id, c.wallet, c.sku, c.name, c.priceUsd, c.currency, c.stockQty, c.category, c.description, c.tags, c.images, c.attributes, c.costUsd, c.taxable, c.jurisdictionCode, c.industryPack, c.metrics, c.createdAt, c.updatedAt, c.isBook, c.bookFileUrl, c.bookCoverUrl, c.approvalStatus, c.contentDetails, c.releaseDate, c.previewUrl, c.allowDownload, c.drmEnabled, c.isSubscription, c.subscriptionPlanId FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet";
+          "SELECT c.id, c.wallet, c.sku, c.name, c.priceUsd, c.currency, c.stockQty, c.category, c.description, c.tags, c.images, c.attributes, c.costUsd, c.taxable, c.jurisdictionCode, c.industryPack, c.metrics, c.createdAt, c.updatedAt, c.isBook, c.bookFileUrl, c.bookCoverUrl, c.approvalStatus, c.contentDetails, c.releaseDate, c.previewUrl, c.allowDownload, c.drmEnabled, c.isSubscription, c.subscriptionPlanId, c.shippingEnabled, c.shippingConfig FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet";
         if (brandKey) {
           const partner = isPartnerContext();
           return partner
@@ -452,6 +468,35 @@ export async function POST(req: NextRequest) {
       // Subscription-linked item fields
       isSubscription: body.isSubscription === true,
       subscriptionPlanId: typeof body.subscriptionPlanId === "string" ? body.subscriptionPlanId : undefined,
+      // Shipping
+      shippingEnabled: body.shippingEnabled === true,
+      shippingConfig: body.shippingEnabled && body.shippingConfig && typeof body.shippingConfig === "object"
+        ? {
+          enabled: true,
+          weightLbs: typeof body.shippingConfig.weightLbs === "number" ? Math.max(0, body.shippingConfig.weightLbs) : undefined,
+          dimensions: body.shippingConfig.dimensions && typeof body.shippingConfig.dimensions === "object" ? {
+            length: typeof body.shippingConfig.dimensions.length === "number" ? Math.max(0, body.shippingConfig.dimensions.length) : undefined,
+            width: typeof body.shippingConfig.dimensions.width === "number" ? Math.max(0, body.shippingConfig.dimensions.width) : undefined,
+            height: typeof body.shippingConfig.dimensions.height === "number" ? Math.max(0, body.shippingConfig.dimensions.height) : undefined,
+            unit: body.shippingConfig.dimensions.unit === "cm" ? "cm" : "in",
+          } : undefined,
+          shippingClass: ["standard", "oversized", "fragile", "hazardous"].includes(body.shippingConfig.shippingClass || "") ? body.shippingConfig.shippingClass : "standard",
+          freeShippingThreshold: typeof body.shippingConfig.freeShippingThreshold === "number" ? Math.max(0, body.shippingConfig.freeShippingThreshold) : undefined,
+          methodPricing: body.shippingConfig.methodPricing && typeof body.shippingConfig.methodPricing === "object"
+            ? Object.fromEntries(
+              Object.entries(body.shippingConfig.methodPricing)
+                .filter(([k, v]) => ["standard", "express", "overnight", "freight"].includes(k) && typeof v === "number" && (v as number) >= 0)
+                .map(([k, v]) => [k, Math.round((v as number) * 100) / 100])
+            )
+            : undefined,
+          handlingTimeDays: typeof body.shippingConfig.handlingTimeDays === "number" ? Math.max(0, Math.floor(body.shippingConfig.handlingTimeDays)) : undefined,
+          allowedMethods: Array.isArray(body.shippingConfig.allowedMethods) ? body.shippingConfig.allowedMethods.filter((m: string) => ["standard", "express", "overnight", "freight"].includes(m)) : undefined,
+          originCountry: typeof body.shippingConfig.originCountry === "string" ? body.shippingConfig.originCountry.slice(0, 2).toUpperCase() : undefined,
+          domesticOnly: body.shippingConfig.domesticOnly === true,
+          requiresSignature: body.shippingConfig.requiresSignature === true,
+          insuranceRequired: body.shippingConfig.insuranceRequired === true,
+        }
+        : undefined,
     };
 
     try {

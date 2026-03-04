@@ -5842,6 +5842,40 @@ function InventoryPanel() {
   const [editIsSubscription, setEditIsSubscription] = useState(false);
   const [editSubscriptionPlanId, setEditSubscriptionPlanId] = useState("");
 
+  // Shipping state for Add modal
+  const [shippingEnabled, setShippingEnabled] = useState(false);
+  const [shippingWeightLbs, setShippingWeightLbs] = useState<number | undefined>(undefined);
+  const [shippingLength, setShippingLength] = useState<number | undefined>(undefined);
+  const [shippingWidth, setShippingWidth] = useState<number | undefined>(undefined);
+  const [shippingHeight, setShippingHeight] = useState<number | undefined>(undefined);
+  const [shippingDimUnit, setShippingDimUnit] = useState<'in' | 'cm'>('in');
+  const [shippingClass, setShippingClass] = useState<'standard' | 'oversized' | 'fragile' | 'hazardous'>('standard');
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number | undefined>(undefined);
+  const [methodPricing, setMethodPricing] = useState<Record<string, number>>({ standard: 5.99, express: 12.99, overnight: 24.99, freight: 29.99 });
+  const [handlingTimeDays, setHandlingTimeDays] = useState<number | undefined>(2);
+  const [shippingMethods, setShippingMethods] = useState<string[]>(['standard']);
+  const [originCountry, setOriginCountry] = useState('US');
+  const [domesticOnly, setDomesticOnly] = useState(false);
+  const [requiresSignature, setRequiresSignature] = useState(false);
+  const [insuranceRequired, setInsuranceRequired] = useState(false);
+
+  // Shipping state for Edit modal
+  const [editShippingEnabled, setEditShippingEnabled] = useState(false);
+  const [editShippingWeightLbs, setEditShippingWeightLbs] = useState<number | undefined>(undefined);
+  const [editShippingLength, setEditShippingLength] = useState<number | undefined>(undefined);
+  const [editShippingWidth, setEditShippingWidth] = useState<number | undefined>(undefined);
+  const [editShippingHeight, setEditShippingHeight] = useState<number | undefined>(undefined);
+  const [editShippingDimUnit, setEditShippingDimUnit] = useState<'in' | 'cm'>('in');
+  const [editShippingClass, setEditShippingClass] = useState<'standard' | 'oversized' | 'fragile' | 'hazardous'>('standard');
+  const [editFreeShippingThreshold, setEditFreeShippingThreshold] = useState<number | undefined>(undefined);
+  const [editMethodPricing, setEditMethodPricing] = useState<Record<string, number>>({ standard: 5.99, express: 12.99, overnight: 24.99, freight: 29.99 });
+  const [editHandlingTimeDays, setEditHandlingTimeDays] = useState<number | undefined>(2);
+  const [editShippingMethods, setEditShippingMethods] = useState<string[]>(['standard']);
+  const [editOriginCountry, setEditOriginCountry] = useState('US');
+  const [editDomesticOnly, setEditDomesticOnly] = useState(false);
+  const [editRequiresSignature, setEditRequiresSignature] = useState(false);
+  const [editInsuranceRequired, setEditInsuranceRequired] = useState(false);
+
   useEffect(() => {
     if (account?.address) {
       fetch(`/api/subscriptions/plans?wallet=${account.address}`)
@@ -5893,6 +5927,9 @@ function InventoryPanel() {
       setPubDownloadUrl(""); setPubPreviewUrl(""); setPubDrm(false);
       setIsSubscription(false);
       setSubscriptionPlanId("");
+      setShippingEnabled(false); setShippingWeightLbs(undefined); setShippingLength(undefined); setShippingWidth(undefined); setShippingHeight(undefined);
+      setShippingDimUnit('in'); setShippingClass('standard'); setFreeShippingThreshold(undefined); setMethodPricing({ standard: 5.99, express: 12.99, overnight: 24.99, freight: 29.99 });
+      setHandlingTimeDays(2); setShippingMethods(['standard']); setOriginCountry('US'); setDomesticOnly(false); setRequiresSignature(false); setInsuranceRequired(false);
       setAddOpen(true);
     } catch {
       setAddOpen(true);
@@ -5986,6 +6023,25 @@ function InventoryPanel() {
     setEditIsBook((item as any).isBook === true);
     setEditIsSubscription(!!(item as any).isSubscription);
     setEditSubscriptionPlanId((item as any).subscriptionPlanId || "");
+
+    // Hydrate shipping state
+    const sc = (item as any).shippingConfig || {};
+    setEditShippingEnabled(!!(item as any).shippingEnabled);
+    setEditShippingWeightLbs(typeof sc.weightLbs === 'number' ? sc.weightLbs : undefined);
+    setEditShippingLength(sc.dimensions?.length ?? undefined);
+    setEditShippingWidth(sc.dimensions?.width ?? undefined);
+    setEditShippingHeight(sc.dimensions?.height ?? undefined);
+    setEditShippingDimUnit(sc.dimensions?.unit === 'cm' ? 'cm' : 'in');
+    setEditShippingClass(sc.shippingClass || 'standard');
+    setEditFreeShippingThreshold(typeof sc.freeShippingThreshold === 'number' ? sc.freeShippingThreshold : undefined);
+    setEditMethodPricing(sc.methodPricing && typeof sc.methodPricing === 'object' ? sc.methodPricing : { standard: 5.99, express: 12.99, overnight: 24.99, freight: 29.99 });
+    setEditHandlingTimeDays(typeof sc.handlingTimeDays === 'number' ? sc.handlingTimeDays : 2);
+    setEditShippingMethods(Array.isArray(sc.allowedMethods) ? sc.allowedMethods : ['standard']);
+    setEditOriginCountry(typeof sc.originCountry === 'string' ? sc.originCountry : 'US');
+    setEditDomesticOnly(sc.domesticOnly === true);
+    setEditRequiresSignature(sc.requiresSignature === true);
+    setEditInsuranceRequired(sc.insuranceRequired === true);
+
     setEditOpenInv(true);
   }
 
@@ -6080,6 +6136,21 @@ function InventoryPanel() {
         industryPack: itemPack,
         isSubscription: editIsSubscription,
         subscriptionPlanId: editIsSubscription ? editSubscriptionPlanId : undefined,
+        shippingEnabled: editShippingEnabled,
+        shippingConfig: editShippingEnabled ? {
+          enabled: true,
+          weightLbs: editShippingWeightLbs,
+          dimensions: (editShippingLength || editShippingWidth || editShippingHeight) ? { length: editShippingLength, width: editShippingWidth, height: editShippingHeight, unit: editShippingDimUnit } : undefined,
+          shippingClass: editShippingClass,
+          freeShippingThreshold: editFreeShippingThreshold,
+          methodPricing: Object.fromEntries(editShippingMethods.map(m => [m, editMethodPricing[m] ?? 0])),
+          handlingTimeDays: editHandlingTimeDays,
+          allowedMethods: editShippingMethods.length ? editShippingMethods : undefined,
+          originCountry: editOriginCountry || undefined,
+          domesticOnly: editDomesticOnly,
+          requiresSignature: editRequiresSignature,
+          insuranceRequired: editInsuranceRequired,
+        } : undefined,
       };
 
       const r = await fetch("/api/inventory", {
@@ -6523,6 +6594,21 @@ function InventoryPanel() {
         industryPack: activeIndustryPack || 'general',
         isSubscription,
         subscriptionPlanId: isSubscription ? subscriptionPlanId : undefined,
+        shippingEnabled,
+        shippingConfig: shippingEnabled ? {
+          enabled: true,
+          weightLbs: shippingWeightLbs,
+          dimensions: (shippingLength || shippingWidth || shippingHeight) ? { length: shippingLength, width: shippingWidth, height: shippingHeight, unit: shippingDimUnit } : undefined,
+          shippingClass,
+          freeShippingThreshold,
+          methodPricing: Object.fromEntries(shippingMethods.map(m => [m, methodPricing[m] ?? 0])),
+          handlingTimeDays,
+          allowedMethods: shippingMethods.length ? shippingMethods as any : undefined,
+          originCountry: originCountry || undefined,
+          domesticOnly,
+          requiresSignature,
+          insuranceRequired,
+        } : undefined,
       };
       const r = await fetch("/api/inventory", {
         method: "POST",
@@ -7315,6 +7401,113 @@ function InventoryPanel() {
                   </div>
                 </div>
 
+                {/* ── Shipping Configuration ── */}
+                <div className="border-t pt-4 my-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={shippingEnabled}
+                      onChange={(e) => setShippingEnabled(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="font-medium text-sm">📦 Requires Shipping</span>
+                  </label>
+                  <div className="microtext text-muted-foreground mt-1 ml-6">Enable for physical items that need to be shipped to the customer.</div>
+                  {shippingEnabled && (
+                    <div className="mt-3 ml-6 space-y-3 p-3 rounded-md border bg-foreground/5">
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Shipping Parameters</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="microtext text-muted-foreground">Weight (lbs)</label>
+                          <input type="number" min={0} step={0.1} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof shippingWeightLbs === "number" ? shippingWeightLbs : ""} onChange={(e) => setShippingWeightLbs(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2.5" />
+                        </div>
+                        <div>
+                          <label className="microtext text-muted-foreground">Shipping Class</label>
+                          <select className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={shippingClass} onChange={(e) => setShippingClass(e.target.value as any)}>
+                            <option value="standard">Standard</option>
+                            <option value="oversized">Oversized</option>
+                            <option value="fragile">Fragile</option>
+                            <option value="hazardous">Hazardous</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="microtext text-muted-foreground">Dimensions</label>
+                        <div className="mt-1 flex items-center gap-2">
+                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof shippingLength === "number" ? shippingLength : ""} onChange={(e) => setShippingLength(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="L" title="Length" />
+                          <span className="text-muted-foreground">×</span>
+                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof shippingWidth === "number" ? shippingWidth : ""} onChange={(e) => setShippingWidth(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="W" title="Width" />
+                          <span className="text-muted-foreground">×</span>
+                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof shippingHeight === "number" ? shippingHeight : ""} onChange={(e) => setShippingHeight(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="H" title="Height" />
+                          <select className="h-9 px-2 py-1 border rounded-md bg-background" value={shippingDimUnit} onChange={(e) => setShippingDimUnit(e.target.value as any)}>
+                            <option value="in">in</option>
+                            <option value="cm">cm</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="microtext text-muted-foreground">Shipping Methods & Pricing</label>
+                        <div className="mt-1 space-y-2">
+                          {(['standard', 'express', 'overnight', 'freight'] as const).map((m) => (
+                            <div key={m} className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={shippingMethods.includes(m)}
+                                onChange={(e) => {
+                                  if (e.target.checked) setShippingMethods((prev) => [...prev, m]);
+                                  else setShippingMethods((prev) => prev.filter((x) => x !== m));
+                                }}
+                                className="rounded border-gray-300"
+                              />
+                              <span className="capitalize text-sm w-20">{m}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground">$</span>
+                                <input
+                                  type="number" min={0} step={0.01}
+                                  className="h-8 w-24 px-2 py-1 border rounded-md bg-background text-sm"
+                                  value={methodPricing[m] ?? ""}
+                                  onChange={(e) => setMethodPricing((prev) => ({ ...prev, [m]: e.target.value === "" ? 0 : Number(e.target.value) }))}
+                                  placeholder="0.00"
+                                  disabled={!shippingMethods.includes(m)}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="microtext text-muted-foreground">Free Shipping Threshold (USD)</label>
+                        <input type="number" min={0} step={0.01} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof freeShippingThreshold === "number" ? freeShippingThreshold : ""} onChange={(e) => setFreeShippingThreshold(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="Orders above this amount ship free" />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="microtext text-muted-foreground">Handling Time (business days)</label>
+                          <input type="number" min={0} step={1} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof handlingTimeDays === "number" ? handlingTimeDays : ""} onChange={(e) => setHandlingTimeDays(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2" />
+                        </div>
+                        <div>
+                          <label className="microtext text-muted-foreground">Origin Country</label>
+                          <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={originCountry} onChange={(e) => setOriginCountry(e.target.value.toUpperCase().slice(0, 2))} placeholder="US" maxLength={2} />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-4">
+                        <label className="inline-flex items-center gap-1.5 text-sm">
+                          <input type="checkbox" checked={domesticOnly} onChange={(e) => setDomesticOnly(e.target.checked)} className="rounded border-gray-300" />
+                          <span>Domestic Only</span>
+                        </label>
+                        <label className="inline-flex items-center gap-1.5 text-sm">
+                          <input type="checkbox" checked={requiresSignature} onChange={(e) => setRequiresSignature(e.target.checked)} className="rounded border-gray-300" />
+                          <span>Require Signature</span>
+                        </label>
+                        <label className="inline-flex items-center gap-1.5 text-sm">
+                          <input type="checkbox" checked={insuranceRequired} onChange={(e) => setInsuranceRequired(e.target.checked)} className="rounded border-gray-300" />
+                          <span>Insurance Required</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="border-t pt-4 my-4">
                   <label className="flex items-center gap-2">
                     <input
@@ -7815,6 +8008,113 @@ function InventoryPanel() {
                       <span>{editTarget?.taxable ? "Taxable" : "Non-taxable"}</span>
                     </label>
                   </div>
+                </div>
+
+                {/* ── Shipping Configuration (Edit) ── */}
+                <div className="border-t pt-4 my-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={editShippingEnabled}
+                      onChange={(e) => setEditShippingEnabled(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="font-medium text-sm">📦 Requires Shipping</span>
+                  </label>
+                  <div className="microtext text-muted-foreground mt-1 ml-6">Enable for physical items that need to be shipped to the customer.</div>
+                  {editShippingEnabled && (
+                    <div className="mt-3 ml-6 space-y-3 p-3 rounded-md border bg-foreground/5">
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Shipping Parameters</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="microtext text-muted-foreground">Weight (lbs)</label>
+                          <input type="number" min={0} step={0.1} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof editShippingWeightLbs === "number" ? editShippingWeightLbs : ""} onChange={(e) => setEditShippingWeightLbs(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2.5" />
+                        </div>
+                        <div>
+                          <label className="microtext text-muted-foreground">Shipping Class</label>
+                          <select className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={editShippingClass} onChange={(e) => setEditShippingClass(e.target.value as any)}>
+                            <option value="standard">Standard</option>
+                            <option value="oversized">Oversized</option>
+                            <option value="fragile">Fragile</option>
+                            <option value="hazardous">Hazardous</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="microtext text-muted-foreground">Dimensions</label>
+                        <div className="mt-1 flex items-center gap-2">
+                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof editShippingLength === "number" ? editShippingLength : ""} onChange={(e) => setEditShippingLength(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="L" title="Length" />
+                          <span className="text-muted-foreground">×</span>
+                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof editShippingWidth === "number" ? editShippingWidth : ""} onChange={(e) => setEditShippingWidth(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="W" title="Width" />
+                          <span className="text-muted-foreground">×</span>
+                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof editShippingHeight === "number" ? editShippingHeight : ""} onChange={(e) => setEditShippingHeight(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="H" title="Height" />
+                          <select className="h-9 px-2 py-1 border rounded-md bg-background" value={editShippingDimUnit} onChange={(e) => setEditShippingDimUnit(e.target.value as any)}>
+                            <option value="in">in</option>
+                            <option value="cm">cm</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="microtext text-muted-foreground">Shipping Methods & Pricing</label>
+                        <div className="mt-1 space-y-2">
+                          {(['standard', 'express', 'overnight', 'freight'] as const).map((m) => (
+                            <div key={m} className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={editShippingMethods.includes(m)}
+                                onChange={(e) => {
+                                  if (e.target.checked) setEditShippingMethods((prev) => [...prev, m]);
+                                  else setEditShippingMethods((prev) => prev.filter((x) => x !== m));
+                                }}
+                                className="rounded border-gray-300"
+                              />
+                              <span className="capitalize text-sm w-20">{m}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground">$</span>
+                                <input
+                                  type="number" min={0} step={0.01}
+                                  className="h-8 w-24 px-2 py-1 border rounded-md bg-background text-sm"
+                                  value={editMethodPricing[m] ?? ""}
+                                  onChange={(e) => setEditMethodPricing((prev) => ({ ...prev, [m]: e.target.value === "" ? 0 : Number(e.target.value) }))}
+                                  placeholder="0.00"
+                                  disabled={!editShippingMethods.includes(m)}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="microtext text-muted-foreground">Free Shipping Threshold (USD)</label>
+                        <input type="number" min={0} step={0.01} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof editFreeShippingThreshold === "number" ? editFreeShippingThreshold : ""} onChange={(e) => setEditFreeShippingThreshold(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="Orders above this amount ship free" />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="microtext text-muted-foreground">Handling Time (business days)</label>
+                          <input type="number" min={0} step={1} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof editHandlingTimeDays === "number" ? editHandlingTimeDays : ""} onChange={(e) => setEditHandlingTimeDays(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2" />
+                        </div>
+                        <div>
+                          <label className="microtext text-muted-foreground">Origin Country</label>
+                          <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={editOriginCountry} onChange={(e) => setEditOriginCountry(e.target.value.toUpperCase().slice(0, 2))} placeholder="US" maxLength={2} />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-4">
+                        <label className="inline-flex items-center gap-1.5 text-sm">
+                          <input type="checkbox" checked={editDomesticOnly} onChange={(e) => setEditDomesticOnly(e.target.checked)} className="rounded border-gray-300" />
+                          <span>Domestic Only</span>
+                        </label>
+                        <label className="inline-flex items-center gap-1.5 text-sm">
+                          <input type="checkbox" checked={editRequiresSignature} onChange={(e) => setEditRequiresSignature(e.target.checked)} className="rounded border-gray-300" />
+                          <span>Require Signature</span>
+                        </label>
+                        <label className="inline-flex items-center gap-1.5 text-sm">
+                          <input type="checkbox" checked={editInsuranceRequired} onChange={(e) => setEditInsuranceRequired(e.target.checked)} className="rounded border-gray-300" />
+                          <span>Insurance Required</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t pt-4 my-4">

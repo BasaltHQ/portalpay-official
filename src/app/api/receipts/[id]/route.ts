@@ -33,6 +33,9 @@ export type Receipt = {
   employeeId?: string;
   tipAmount?: number;
   buyerWallet?: string;
+  shippingAddress?: { name?: string; line1?: string; line2?: string; city?: string; state?: string; zip?: string; country?: string };
+  shippingMethod?: string;
+  shippingCostUsd?: number;
 };
 
 function toCents(n: number) {
@@ -110,7 +113,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     }
     const spec = {
       query:
-        "SELECT TOP 1 c.receiptId, c.totalUsd, c.currency, c.lineItems, c.createdAt, c.wallet, c.brandName, c.status, c.refunds, c.jurisdictionCode, c.taxRate, c.taxComponents, c.transactionHash, c.transactionTimestamp, c.employeeId, c.tipAmount, c.buyerWallet FROM c WHERE c.type='receipt' AND c.receiptId=@id ORDER BY c.createdAt DESC",
+        "SELECT TOP 1 c.receiptId, c.totalUsd, c.currency, c.lineItems, c.createdAt, c.wallet, c.brandName, c.status, c.refunds, c.jurisdictionCode, c.taxRate, c.taxComponents, c.transactionHash, c.transactionTimestamp, c.employeeId, c.tipAmount, c.buyerWallet, c.shippingAddress, c.shippingMethod, c.shippingCostUsd FROM c WHERE c.type='receipt' AND c.receiptId=@id ORDER BY c.createdAt DESC",
       parameters: [{ name: "@id", value: id }],
     } as { query: string; parameters: { name: string; value: any }[] };
 
@@ -136,6 +139,9 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
         employeeId: typeof (row as any)?.employeeId === "string" ? (row as any).employeeId : undefined,
         tipAmount: Number.isFinite(Number((row as any)?.tipAmount)) ? Number((row as any).tipAmount) : undefined,
         buyerWallet: typeof (row as any)?.buyerWallet === "string" ? (row as any).buyerWallet : undefined,
+        shippingAddress: (row as any)?.shippingAddress && typeof (row as any).shippingAddress === "object" ? (row as any).shippingAddress : undefined,
+        shippingMethod: typeof (row as any)?.shippingMethod === "string" ? (row as any).shippingMethod : undefined,
+        shippingCostUsd: Number.isFinite(Number((row as any)?.shippingCostUsd)) ? Number((row as any).shippingCostUsd) : undefined,
       };
       if (!(rec.totalUsd > 0)) {
         const candidate = sumLineItems(rec.lineItems || []);

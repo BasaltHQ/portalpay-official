@@ -50,6 +50,22 @@ type ReceiptLineItem = {
   bookFileUrl?: string;
   bookCoverUrl?: string;
   releaseDate?: number;
+  // Shipping fields
+  requiresShipping?: boolean;
+  shippingConfig?: {
+    enabled?: boolean;
+    weightLbs?: number;
+    dimensions?: { length?: number; width?: number; height?: number; unit?: string };
+    shippingClass?: string;
+    freeShippingThreshold?: number;
+    methodPricing?: Record<string, number>;
+    handlingTimeDays?: number;
+    allowedMethods?: string[];
+    originCountry?: string;
+    domesticOnly?: boolean;
+    requiresSignature?: boolean;
+    insuranceRequired?: boolean;
+  };
 };
 
 export type Receipt = {
@@ -357,7 +373,7 @@ export async function POST(req: NextRequest) {
     try {
       const container = await getContainer();
       const baseSelect =
-        "SELECT c.id, c.wallet, c.sku, c.name, c.priceUsd, c.currency, c.stockQty, c.category, c.description, c.tags, c.images, c.attributes, c.costUsd, c.taxable, c.jurisdictionCode, c.metrics, c.createdAt, c.updatedAt FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet";
+        "SELECT c.id, c.wallet, c.sku, c.name, c.priceUsd, c.currency, c.stockQty, c.category, c.description, c.tags, c.images, c.attributes, c.costUsd, c.taxable, c.jurisdictionCode, c.metrics, c.createdAt, c.updatedAt, c.shippingEnabled, c.shippingConfig FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet";
       // Determine if we're in a strict partner context
       const partner = isPartnerContext();
       const spec =
@@ -723,6 +739,21 @@ export async function POST(req: NextRequest) {
         bookFileUrl: typeof (inv as any).bookFileUrl === "string" ? (inv as any).bookFileUrl : undefined,
         bookCoverUrl: typeof (inv as any).bookCoverUrl === "string" ? (inv as any).bookCoverUrl : undefined,
         releaseDate: typeof (inv as any).releaseDate === "number" ? (inv as any).releaseDate : undefined,
+        requiresShipping: (inv as any).shippingEnabled === true ? true : undefined,
+        shippingConfig: (inv as any).shippingEnabled && (inv as any).shippingConfig && typeof (inv as any).shippingConfig === "object" ? {
+          enabled: true,
+          weightLbs: (inv as any).shippingConfig.weightLbs,
+          dimensions: (inv as any).shippingConfig.dimensions,
+          shippingClass: (inv as any).shippingConfig.shippingClass,
+          freeShippingThreshold: (inv as any).shippingConfig.freeShippingThreshold,
+          methodPricing: (inv as any).shippingConfig.methodPricing,
+          handlingTimeDays: (inv as any).shippingConfig.handlingTimeDays,
+          allowedMethods: (inv as any).shippingConfig.allowedMethods,
+          originCountry: (inv as any).shippingConfig.originCountry,
+          domesticOnly: (inv as any).shippingConfig.domesticOnly,
+          requiresSignature: (inv as any).shippingConfig.requiresSignature,
+          insuranceRequired: (inv as any).shippingConfig.insuranceRequired,
+        } : undefined,
       });
     }
 
