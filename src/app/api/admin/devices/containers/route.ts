@@ -367,111 +367,112 @@ export async function GET(req: NextRequest) {
     "thutilityco.azurecr.io";
   const subscription = process.env.AZURE_SUBSCRIPTION_ID || "";
 
-  let credential: any = null;
-  if (subscription) {
-    try {
-      const { DefaultAzureCredential } = await import("@azure/identity");
-      credential = new DefaultAzureCredential();
-    } catch (e: any) {
-      console.warn(`[GET /api/admin/devices/containers] Failed to init Azure Credential:`, e.message);
+  try {
+    let credential: any = null;
+    if (subscription) {
+      try {
+        const { DefaultAzureCredential } = await import("@azure/identity");
+        credential = new DefaultAzureCredential();
+      } catch (e: any) {
+        console.warn(`[GET /api/admin/devices/containers] Failed to init Azure Credential:`, e.message);
+      }
     }
-  }
 
-  // Fetch from all sources in parallel
-  const [appServiceResult, containerApps, registryImages, partnerBrands] = await Promise.all([
-    (subscription && credential) ? listAppServiceApps(credential, subscription, resourceGroup) : Promise.resolve({ results: [] }),
-    (subscription && credential) ? listContainerApps(credential, subscription, resourceGroup) : Promise.resolve([]),
-    (subscription && credential && registryName) ? listRegistryImages(credential, registryName.replace(/\.azurecr\.io$/, "")) : Promise.resolve([]),
-    listPartnerBrands(),
-  ]);
+    // Fetch from all sources in parallel
+    const [appServiceResult, containerApps, registryImages, partnerBrands] = await Promise.all([
+      (subscription && credential) ? listAppServiceApps(credential, subscription, resourceGroup) : Promise.resolve({ results: [] }),
+      (subscription && credential) ? listContainerApps(credential, subscription, resourceGroup) : Promise.resolve([]),
+      (subscription && credential && registryName) ? listRegistryImages(credential, registryName.replace(/\.azurecr\.io$/, "")) : Promise.resolve([]),
+      listPartnerBrands(),
+    ]);
 
-  // Log if there was an error fetching app service apps
-  if (appServiceResult.error) {
-    console.warn(`[GET /api/admin/devices/containers] App Service error: ${appServiceResult.error}`);
-  }
-
-  // Combine and dedupe containers
-  const allContainers = [...appServiceResult.results, ...containerApps];
-
-  // Create a map of partner brands by brandKey for quick lookup
-  const partnerMap = new Map<string, PartnerBrand>();
-  for (const p of partnerBrands) {
-    partnerMap.set(p.brandKey.toLowerCase(), p);
-  }
-
-  // Track which webapps exist (by brandKey)
-  const webappBrandKeys = new Set<string>();
-  for (const c of allContainers) {
-    if (c.brandKey) {
-      webappBrandKeys.add(c.brandKey.toLowerCase());
+    // Log if there was an error fetching app service apps
+    if (appServiceResult.error) {
+      console.warn(`[GET /api/admin/devices/containers] App Service error: ${appServiceResult.error}`);
     }
+
+    // Combine and dedupe containers
+    const allContainers = [...appServiceResult.results, ...containerApps];
+
+    // Create a map of partner brands by brandKey for quick lookup
+    const partnerMap = new Map<string, PartnerBrand>();
+    for (const p of partnerBrands) {
+      partnerMap.set(p.brandKey.toLowerCase(), p);
+    }
+
+    // Track which webapps exist (by brandKey)
+    const webappBrandKeys = new Set<string>();
+    for (const c of allContainers) {
+      if (c.brandKey) {
+        webappBrandKeys.add(c.brandKey.toLowerCase());
+      }
+    }
+
+    // Enrich with APK, package status, and partner matching
+    const enrichedContainers = await Promise.all(
+      allContainers.map(async (c) => {
+        const [hasSignedApk, packageInfo] = await Promise.all([
+          checkApkExists(c.brandKey),
+          checkPackageExists(c.brandKey),
+        ]);
+
+        // Check if this webapp has a matching partner in CosmosDB
+        const partner = partnerMap.get(c.brandKey.toLowerCase());
+
+        return {
+          ...c,
+          hasSignedApk,
+          hasPackage: packageInfo.exists,
+          packageUrl: packageInfo.url,
+          hasPartner: !!partner,
+          partnerInfo: partner ? {
+            brandKey: partner.brandKey,
+            name: partner.name,
+            appUrl: partner.appUrl,
+          } : undefined,
+        };
+      })
+    );
+
+    // Sort by updatedAt descending (most recent first)
+    enrichedContainers.sort((a, b) => {
+      const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+
+    // Enrich partners with hasWebapp flag
+    const enrichedPartners: PartnerBrand[] = partnerBrands.map(p => ({
+      ...p,
+      hasWebapp: webappBrandKeys.has(p.brandKey.toLowerCase()),
+    }));
+
+    // Find partners without matching webapps
+    const unmatchedPartners = enrichedPartners.filter(p => !p.hasWebapp);
+
+    const response: ListContainersResponse & { _debug?: any } = {
+      containers: enrichedContainers,
+      registryImages,
+      partners: enrichedPartners,
+      unmatchedPartners,
+      // Include debug info when containers are empty
+      _debug: enrichedContainers.length === 0 ? {
+        subscription: subscription ? `${subscription.slice(0, 8)}...` : "(missing)",
+        resourceGroup,
+        appServiceError: appServiceResult.error || null,
+        appServiceCount: appServiceResult.results.length,
+        containerAppsCount: containerApps.length,
+      } : undefined,
+    };
+
+    return json(response);
+  } catch (e: any) {
+    console.error("[GET /api/admin/devices/containers] Error:", e?.message || e);
+    return json({
+      error: "fetch_failed",
+      message: e?.message || "Failed to fetch containers",
+      containers: [],
+      registryImages: []
+    }, { status: 500 });
   }
-
-  // Enrich with APK, package status, and partner matching
-  const enrichedContainers = await Promise.all(
-    allContainers.map(async (c) => {
-      const [hasSignedApk, packageInfo] = await Promise.all([
-        checkApkExists(c.brandKey),
-        checkPackageExists(c.brandKey),
-      ]);
-
-      // Check if this webapp has a matching partner in CosmosDB
-      const partner = partnerMap.get(c.brandKey.toLowerCase());
-
-      return {
-        ...c,
-        hasSignedApk,
-        hasPackage: packageInfo.exists,
-        packageUrl: packageInfo.url,
-        hasPartner: !!partner,
-        partnerInfo: partner ? {
-          brandKey: partner.brandKey,
-          name: partner.name,
-          appUrl: partner.appUrl,
-        } : undefined,
-      };
-    })
-  );
-
-  // Sort by updatedAt descending (most recent first)
-  enrichedContainers.sort((a, b) => {
-    const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-    const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-    return dateB - dateA;
-  });
-
-  // Enrich partners with hasWebapp flag
-  const enrichedPartners: PartnerBrand[] = partnerBrands.map(p => ({
-    ...p,
-    hasWebapp: webappBrandKeys.has(p.brandKey.toLowerCase()),
-  }));
-
-  // Find partners without matching webapps
-  const unmatchedPartners = enrichedPartners.filter(p => !p.hasWebapp);
-
-  const response: ListContainersResponse & { _debug?: any } = {
-    containers: enrichedContainers,
-    registryImages,
-    partners: enrichedPartners,
-    unmatchedPartners,
-    // Include debug info when containers are empty
-    _debug: enrichedContainers.length === 0 ? {
-      subscription: subscription ? `${subscription.slice(0, 8)}...` : "(missing)",
-      resourceGroup,
-      appServiceError: appServiceResult.error || null,
-      appServiceCount: appServiceResult.results.length,
-      containerAppsCount: containerApps.length,
-    } : undefined,
-  };
-
-  return json(response);
-} catch (e: any) {
-  console.error("[GET /api/admin/devices/containers] Error:", e?.message || e);
-  return json({
-    error: "fetch_failed",
-    message: e?.message || "Failed to fetch containers",
-    containers: [],
-    registryImages: []
-  }, { status: 500 });
-}
 }
