@@ -23,9 +23,12 @@ export async function GET(req: NextRequest) {
         const expectedRecord = `${brandKey}-verification=${wallet.toLowerCase()}`;
 
         // Determine hosting context for frontend DNS instructions
-        const hostingProvider = (process.env.HOSTING_PROVIDER || "azure").toLowerCase();
-        const cnameTarget = hostingProvider === "plesk"
-            ? (process.env.PLESK_MAIN_DOMAIN || "portalpay.io")
+        const hasCloudflare = !!(process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ZONE_ID);
+        const hostingProvider = hasCloudflare
+            ? "cloudflare"
+            : (process.env.HOSTING_PROVIDER || "azure").toLowerCase();
+        const cnameTarget = (hostingProvider === "plesk" || hostingProvider === "cloudflare")
+            ? (process.env.PLESK_MAIN_DOMAIN || "surge.basalthq.com")
             : (req.headers.get("host") || "surge.basalthq.com");
 
         return NextResponse.json({

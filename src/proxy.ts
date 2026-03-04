@@ -213,7 +213,7 @@ export function proxy(req: NextRequest) {
     }
 
     // Custom Domain Detection (needed for favicon routing below)
-    let faviconHostname = req.headers.get("host") || url.hostname || "";
+    let faviconHostname = req.headers.get("x-custom-host") || req.headers.get("x-forwarded-host") || req.headers.get("host") || url.hostname || "";
     faviconHostname = faviconHostname.split(":")[0].toLowerCase();
 
     const isFaviconMainDomain =
@@ -277,7 +277,7 @@ export function proxy(req: NextRequest) {
 
     // Custom Domain Rewriting
     // If the hostname is NOT one of our main domains, we treat it as a custom shop domain.
-    let hostname = req.headers.get("host") || url.hostname || "";
+    let hostname = req.headers.get("x-custom-host") || req.headers.get("x-forwarded-host") || req.headers.get("host") || url.hostname || "";
     // Strip port if present
     hostname = hostname.split(":")[0].toLowerCase();
 
