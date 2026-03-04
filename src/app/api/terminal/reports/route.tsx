@@ -29,8 +29,10 @@ export async function GET(req: NextRequest) {
         // Params
         const type = searchParams.get("type") || "z-report"; // z-report, x-report, employee, hourly
         const format = searchParams.get("format") || "json"; // json, zip
-        const startTs = Number(searchParams.get("start"));
-        const endTs = Number(searchParams.get("end"));
+        const rawStart = Number(searchParams.get("start"));
+        const isAllTime = rawStart === 0; // "all time" sends start=0
+        const startTs = rawStart || Math.floor(new Date(2025, 9, 1).getTime() / 1000); // fallback: Oct 1, 2025
+        const endTs = Number(searchParams.get("end")) || Math.floor(Date.now() / 1000);
 
         // Auth Context
         const sessionId = searchParams.get("sessionId"); // Terminal Access
@@ -48,7 +50,7 @@ export async function GET(req: NextRequest) {
             finalAdminWallet: adminWallet
         });
 
-        if (!startTs || !endTs || !targetMerchantWallet) {
+        if (!searchParams.has("start") || !searchParams.has("end") || !targetMerchantWallet) {
             return NextResponse.json({ error: "Missing required params (start, end, wallet)" }, { status: 400 });
         }
 
@@ -135,21 +137,35 @@ export async function GET(req: NextRequest) {
                 staffName = "Owner";
                 console.log("[ReportsAPI] Owner Bypass Granted");
             } else {
-                // B. Manager Delegated Access
-                const memberQuery = {
-                    query: "SELECT * FROM c WHERE c.merchantWallet = @mw AND c.type = 'merchant_team_member' AND c.linkedWallet = @lw AND (c.role = 'manager' OR c.role = 'owner')",
-                    parameters: [
-                        { name: "@mw", value: w },
-                        { name: "@lw", value: requestWallet }
-                    ]
-                };
-                const { resources: members } = await container.items.query(memberQuery).fetchAll();
-                if (members.length > 0) {
+                // B. Platform/Partner Admin Bypass: Check if the requesting wallet is a recognized admin
+                const ownerEnv = String(process.env.NEXT_PUBLIC_OWNER_WALLET || "").toLowerCase();
+                const platformEnv = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
+                const adminList = String(process.env.ADMIN_WALLETS || "")
+                    .split(",")
+                    .map((s) => s.trim().toLowerCase())
+                    .filter(Boolean);
+
+                if (requestWallet === ownerEnv || requestWallet === platformEnv || adminList.includes(requestWallet)) {
                     authorized = true;
-                    staffName = members[0].name;
-                    console.log("[ReportsAPI] Manager/Team Access Granted");
+                    staffName = "Platform Admin";
+                    console.log("[ReportsAPI] Platform/Partner Admin Access Granted");
                 } else {
-                    console.warn("[ReportsAPI] Team Member Not Found for:", requestWallet);
+                    // C. Manager Delegated Access
+                    const memberQuery = {
+                        query: "SELECT * FROM c WHERE c.merchantWallet = @mw AND c.type = 'merchant_team_member' AND c.linkedWallet = @lw AND (c.role = 'manager' OR c.role = 'owner')",
+                        parameters: [
+                            { name: "@mw", value: w },
+                            { name: "@lw", value: requestWallet }
+                        ]
+                    };
+                    const { resources: members } = await container.items.query(memberQuery).fetchAll();
+                    if (members.length > 0) {
+                        authorized = true;
+                        staffName = members[0].name;
+                        console.log("[ReportsAPI] Manager/Team Access Granted");
+                    } else {
+                        console.warn("[ReportsAPI] Team Member Not Found for:", requestWallet);
+                    }
                 }
             }
         } else {
@@ -406,6 +422,33 @@ export async function GET(req: NextRequest) {
             }
         }
 
+        // --- SPLIT INDEX / ON-CHAIN TRANSACTION DATA ---
+        // Only for "all time" queries: provide split_index totals and on-chain tx hashes
+        let splitIndex: any = null;
+        let splitTransactions: any[] = [];
+
+        if (isAllTime) {
+            try {
+                const [{ resources: splitIdxRes }, { resources: splitTxRes }] = await Promise.all([
+                    container.items.query({
+                        query: "SELECT c.totalVolumeUsd, c.merchantEarnedUsd, c.platformFeeUsd, c.customers, c.transactionCount, c.splitAddress FROM c WHERE c.type = 'split_index' AND c.merchantWallet = @w",
+                        parameters: [{ name: "@w", value: w }]
+                    }).fetchAll(),
+                    container.items.query({
+                        query: "SELECT c.hash, c.token, c.value, c.timestamp, c.txType, c.from, c.blockNumber FROM c WHERE c.type = 'split_transaction' AND c.merchantWallet = @w ORDER BY c.timestamp DESC",
+                        parameters: [{ name: "@w", value: w }]
+                    }).fetchAll(),
+                ]);
+
+                if (splitIdxRes.length > 0) {
+                    splitIndex = splitIdxRes[0];
+                }
+                splitTransactions = splitTxRes || [];
+            } catch (e) {
+                console.warn("[ReportsAPI] Failed to fetch split data:", e);
+            }
+        }
+
         const reportData = {
             meta: {
                 type,
@@ -414,14 +457,26 @@ export async function GET(req: NextRequest) {
                 range: { start: startTs, end: endTs }
             },
             summary: {
-                totalSales,
+                totalSales: isAllTime && splitIndex && receipts.length === 0 ? splitIndex.totalVolumeUsd : totalSales,
                 totalTips,
-                transactionCount,
+                transactionCount: isAllTime && splitIndex && receipts.length === 0 ? splitIndex.transactionCount : transactionCount,
                 averageOrderValue,
-                net
+                net,
+                merchantEarned: isAllTime ? (splitIndex?.merchantEarnedUsd || 0) : 0,
+                platformFee: isAllTime ? (splitIndex?.platformFeeUsd || 0) : 0,
             },
             paymentMethods,
             ...detailedData,
+            splitIndex: isAllTime ? (splitIndex || null) : null,
+            splitTransactions: isAllTime ? splitTransactions.map((tx: any) => ({
+                hash: tx.hash,
+                token: tx.token,
+                value: tx.value,
+                timestamp: tx.timestamp,
+                txType: tx.txType,
+                from: tx.from,
+                blockNumber: tx.blockNumber,
+            })) : [],
             receipts: receipts.map((r: any) => ({
                 id: r.id,
                 totalUsd: r.totalUsd,

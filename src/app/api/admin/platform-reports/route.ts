@@ -34,6 +34,11 @@ export async function GET(req: NextRequest) {
 
         const { searchParams } = new URL(req.url);
         const partnersParam = searchParams.get("partners") || "";
+        const startSec = Number(searchParams.get("start") || 0);
+        const endSec = Number(searchParams.get("end") || Math.floor(Date.now() / 1000));
+        const startMs = startSec > 0 ? startSec * 1000 : 0;
+        const endMs = endSec * 1000;
+        const useIndexed = startMs === 0; // "all time" uses split_index totals
 
         const container = await getContainer();
 
@@ -194,29 +199,105 @@ export async function GET(req: NextRequest) {
             if (wallets) wallets.forEach((w) => selectedWallets.add(w));
         }
 
-        // Build merchant list with stats
+        // Build merchant list with stats — use receipt data for time ranges, split_index for all-time
+        // First, if not useIndexed, query receipts for the time range
+        const receiptStatsMap = new Map<
+            string,
+            { totalSales: number; totalTips: number; transactionCount: number }
+        >();
+
+        if (!useIndexed && selectedWallets.size > 0) {
+            try {
+                const receiptQuery = {
+                    query: `SELECT c.wallet, c.totalUsd, c.tipAmount FROM c
+                            WHERE c.type = 'receipt' AND c.status = 'paid'
+                            AND ARRAY_CONTAINS(@wallets, c.wallet)
+                            AND c.createdAt >= @startMs AND c.createdAt <= @endMs`,
+                    parameters: [
+                        { name: "@wallets", value: Array.from(selectedWallets) },
+                        { name: "@startMs", value: startMs },
+                        { name: "@endMs", value: endMs },
+                    ],
+                };
+                const { resources: receipts } = await container.items.query(receiptQuery).fetchAll();
+
+                for (const r of receipts || []) {
+                    const w = String(r.wallet || "").toLowerCase();
+                    const totalUsd = Number(r.totalUsd || 0);
+                    const tipAmount = Number(r.tipAmount || 0);
+
+                    const existing = receiptStatsMap.get(w);
+                    if (existing) {
+                        existing.totalSales += totalUsd;
+                        existing.totalTips += tipAmount;
+                        existing.transactionCount += 1;
+                    } else {
+                        receiptStatsMap.set(w, {
+                            totalSales: totalUsd,
+                            totalTips: tipAmount,
+                            transactionCount: 1,
+                        });
+                    }
+                }
+            } catch (e) {
+                console.warn("[PlatformReports] Receipt query failed:", e);
+            }
+        }
+
         const merchants = Array.from(selectedWallets).map((w) => {
             const shopInfo = shopMap.get(w);
-            const stats = merchantStatsMap.get(w);
+            const splitStats = merchantStatsMap.get(w);
+            const receiptStats = receiptStatsMap.get(w);
+
+            let totalSales: number;
+            let totalTips: number;
+            let transactionCount: number;
+            let merchantEarned: number;
+            let platformFee: number;
+            let customers: number;
+
+            if (useIndexed && splitStats) {
+                // All-time: use indexed split_index totals
+                totalSales = splitStats.totalVolumeUsd;
+                merchantEarned = splitStats.merchantEarnedUsd;
+                platformFee = splitStats.platformFeeUsd;
+                totalTips = 0;
+                transactionCount = splitStats.transactionCount;
+                customers = splitStats.customers;
+            } else {
+                // Time-bounded: use receipt data
+                totalSales = receiptStats?.totalSales || 0;
+                totalTips = receiptStats?.totalTips || 0;
+                transactionCount = receiptStats?.transactionCount || 0;
+                customers = 0;
+
+                // Estimate earned/fee from receipt volume using the split_index ratio
+                merchantEarned = totalSales;
+                platformFee = 0;
+                if (splitStats && splitStats.totalVolumeUsd > 0) {
+                    const feeRatio = splitStats.platformFeeUsd / splitStats.totalVolumeUsd;
+                    platformFee = Math.round(totalSales * feeRatio * 100) / 100;
+                    merchantEarned = Math.round((totalSales - platformFee) * 100) / 100;
+                }
+            }
+
             return {
                 wallet: w,
                 name: shopInfo?.name || "Unknown Merchant",
                 brandKey: walletBrand.get(w) || shopInfo?.brandKey || "basaltsurge",
                 logo: shopInfo?.logo,
-                totalSales: stats?.totalVolumeUsd || 0,
-                merchantEarned: stats?.merchantEarnedUsd || 0,
-                platformFee: stats?.platformFeeUsd || 0,
-                totalTips: 0,
-                transactionCount: stats?.transactionCount || 0,
-                customers: stats?.customers || 0,
-                averageOrderValue: (stats?.transactionCount || 0) > 0
-                    ? (stats?.totalVolumeUsd || 0) / stats!.transactionCount
-                    : 0,
+                totalSales,
+                merchantEarned,
+                platformFee,
+                totalTips,
+                transactionCount,
+                customers,
+                averageOrderValue: transactionCount > 0 ? totalSales / transactionCount : 0,
             };
         });
 
-        // 7. Get tips from receipts
-        if (selectedWallets.size > 0) {
+        // 7. Get tips from receipts (only needed for all-time since time-bounded already has tips)
+        if (useIndexed && selectedWallets.size > 0) {
             try {
                 const tipQuery = {
                     query: `SELECT c.wallet, c.tipAmount FROM c
