@@ -141,7 +141,21 @@ function applySecurityHeaders(req: NextRequest, res: NextResponse) {
     }
     res.headers.set("X-Content-Type-Options", "nosniff");
     res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-    const isShopLike = req.nextUrl.pathname.startsWith("/shop/") || (!isMainDomain && req.nextUrl.pathname === "/");
+    // Custom Domain Detection for headers
+    let headerHostname = req.headers.get("x-custom-host") || req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.hostname || "";
+    headerHostname = headerHostname.split(":")[0].toLowerCase();
+    const isMainDomainHeader =
+        (headerHostname.endsWith("basalthq.com")) ||
+        headerHostname.endsWith("portalpay.io") ||
+        headerHostname.includes("localhost") ||
+        headerHostname === "127.0.0.1" ||
+        headerHostname === "0.0.0.0" ||
+        headerHostname.includes("azurewebsites.net") ||
+        headerHostname.includes("vercel.app") ||
+        headerHostname.includes("xpaypass.com") ||
+        headerHostname.includes("vps.ovh.us");
+
+    const isShopLike = req.nextUrl.pathname.startsWith("/shop/") || (!isMainDomainHeader && req.nextUrl.pathname === "/");
     const micPolicy = isShopLike ? "microphone=(self)" : "microphone=()";
     // Explicitly allow WebUSB prompts in top-level contexts
     res.headers.set(
