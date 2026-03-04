@@ -161,14 +161,20 @@ export async function POST(req: NextRequest) {
         // 6. Bind Domain
         const bindResult = await manager.bindDomain(domain);
 
+        // TEMP DEBUG: surface token info in response to diagnose auth error
+        const _t = process.env.CLOUDFLARE_API_TOKEN || "";
+        const _z = process.env.CLOUDFLARE_ZONE_ID || "";
+        const _tPreview = _t.length > 6 ? `${_t.substring(0, 3)}...${_t.substring(_t.length - 3)} (len=${_t.length})` : `(empty, len=${_t.length})`;
+
         return NextResponse.json({
             ok: true,
             verified: true,
             domain,
-            azureBinding: bindResult.success ? "success" : "failed", // Legacy field name
+            azureBinding: bindResult.success ? "success" : "failed",
             message: bindResult.success
                 ? "Domain verified and bound. Ensure your DNS points to this service."
-                : `Domain verified. Binding warning: ${bindResult.message}`
+                : `Domain verified. Binding warning: ${bindResult.message}`,
+            _debug: { tokenPreview: _tPreview, zoneIdPrefix: _z.substring(0, 8), hasToken: !!_t, hasZone: !!_z }
         });
 
     } catch (e: any) {
