@@ -102,17 +102,23 @@ export async function POST(req: NextRequest) {
         }
 
         // 3. Platform Specific Checks (Azure ASUID / Plesk A-Record)
+        //    For Cloudflare for SaaS, we skip the CNAME check because Cloudflare handles
+        //    domain validation itself. The hostname must be created in Cloudflare BEFORE
+        //    the user sets up their CNAME — so requiring a CNAME first is backwards.
         const manager = DomainManagerFactory.getManager();
-        const verificationId = await manager.getVerificationId(domain, brandKey);
+        const hasCloudflareProvider = !!(process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ZONE_ID);
 
-        const platformCheck = await manager.verifyDomainOwnership(domain, verificationId, brandKey);
-        if (!platformCheck.verified) {
-            return NextResponse.json({
-                ok: true,
-                verified: false,
-                message: platformCheck.message || "Platform verification failed",
-                foundRecords: platformCheck.txtRecord ? [] : undefined // Simplified
-            });
+        if (!hasCloudflareProvider) {
+            const verificationId = await manager.getVerificationId(domain, brandKey);
+            const platformCheck = await manager.verifyDomainOwnership(domain, verificationId, brandKey);
+            if (!platformCheck.verified) {
+                return NextResponse.json({
+                    ok: true,
+                    verified: false,
+                    message: platformCheck.message || "Platform verification failed",
+                    foundRecords: platformCheck.txtRecord ? [] : undefined
+                });
+            }
         }
 
         // 4. Uniqueness Check (Cosmos)
