@@ -72,6 +72,13 @@ export class CloudflareDomainManager implements DomainManager {
     }
 
     async bindDomain(domain: string): Promise<DomainBindingResult> {
+        // Debug: trace what the VPS is actually reading from env vars
+        const tokenLen = this.apiToken?.length || 0;
+        const tokenPreview = tokenLen > 6
+            ? `${this.apiToken.substring(0, 3)}...${this.apiToken.substring(tokenLen - 3)} (len=${tokenLen})`
+            : `(empty or too short, len=${tokenLen})`;
+        console.log(`Cloudflare bindDomain: token=${tokenPreview}, zoneId=${this.zoneId?.substring(0, 8)}..., domain=${domain}`);
+
         if (!this.apiToken || !this.zoneId) {
             return { success: false, message: "CLOUDFLARE_API_TOKEN or CLOUDFLARE_ZONE_ID not configured" };
         }
