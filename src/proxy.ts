@@ -141,7 +141,8 @@ function applySecurityHeaders(req: NextRequest, res: NextResponse) {
     }
     res.headers.set("X-Content-Type-Options", "nosniff");
     res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-    const micPolicy = req.nextUrl.pathname.startsWith("/shop/") ? "microphone=(self)" : "microphone=()";
+    const isShopLike = req.nextUrl.pathname.startsWith("/shop/") || (!isMainDomain && req.nextUrl.pathname === "/");
+    const micPolicy = isShopLike ? "microphone=(self)" : "microphone=()";
     // Explicitly allow WebUSB prompts in top-level contexts
     res.headers.set(
         "Permissions-Policy",
