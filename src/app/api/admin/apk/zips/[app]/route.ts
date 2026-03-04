@@ -20,10 +20,10 @@ function getBrandKey(): string {
  * Returns a Readable stream of the APK file, or null if not found.
  */
 async function getApkStream(appKey: string): Promise<{ stream: Readable; length?: number } | null> {
-    // Prefer Azure Blob Storage if configured
-    // Prefer Azure Blob Storage if configured
+    // Prefer Hybrid Storage (S3 fronting Azure Blob fallback)
     try {
-        const { storage } = await import("@/lib/azure-storage");
+        const { StorageFactory } = await import("@/lib/storage");
+        const storage = StorageFactory.getProvider();
         const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
         const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
 
