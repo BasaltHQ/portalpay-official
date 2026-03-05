@@ -78,6 +78,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         // Recalculate total
         const newTotalUsd = Math.round(lineItems.reduce((sum: number, it: any) => sum + Number(it.priceUsd || 0), 0) * 100) / 100;
 
+        // Capture buyer wallet if provided (login-first shipping)
+        const buyerWallet = typeof body?.buyerWallet === "string" && /^0x[a-f0-9]{40}$/i.test(body.buyerWallet)
+            ? body.buyerWallet.toLowerCase()
+            : undefined;
+
         const updatedReceipt = {
             ...receipt,
             shippingAddress,
@@ -86,6 +91,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             lineItems,
             totalUsd: newTotalUsd,
             lastUpdatedAt: Date.now(),
+            ...(buyerWallet ? { buyerWallet } : {}),
         };
 
         await container.items.upsert(updatedReceipt);

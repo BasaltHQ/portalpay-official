@@ -182,6 +182,16 @@ class MongoItemsReference {
             fetchAll: async (): Promise<FeedResponse<T>> => {
                 const parsed = parseCosmosSql(spec.query, spec.parameters);
 
+                // ── TEMP DEBUG ──
+                if (spec.query.includes("type='receipt'")) {
+                    console.log("[MONGO-DEBUG] SQL:", spec.query.substring(0, 120));
+                    console.log("[MONGO-DEBUG] filter:", JSON.stringify(parsed.filter));
+                    console.log("[MONGO-DEBUG] projection:", JSON.stringify(parsed.projection));
+                    console.log("[MONGO-DEBUG] sort:", JSON.stringify(parsed.sort));
+                    console.log("[MONGO-DEBUG] limit:", parsed.limit);
+                }
+                // ── END TEMP DEBUG ──
+
                 if (parsed.isAggregate && parsed.pipeline.length > 0) {
                     const results = await this.collection
                         .aggregate(parsed.pipeline)
@@ -222,6 +232,18 @@ class MongoItemsReference {
                 }
 
                 const docs = await cursor.toArray();
+
+                // ── TEMP DEBUG (results) ──
+                if (spec.query.includes("type='receipt'") && spec.query.includes("c.wallet")) {
+                    const newest = docs[0] as any;
+                    console.log(`[MONGO-DEBUG] results: ${docs.length} docs, newest createdAt: ${newest?.createdAt}, receiptId: ${newest?.receiptId}`);
+                    if (docs.length > 0) {
+                        const oldest = docs[docs.length - 1] as any;
+                        console.log(`[MONGO-DEBUG] oldest createdAt: ${oldest?.createdAt}, receiptId: ${oldest?.receiptId}`);
+                    }
+                }
+                // ── END TEMP DEBUG ──
+
                 const resources = docs.map((d) => mongoDocToCosmos(d) as T);
 
                 return {
@@ -340,19 +362,37 @@ export async function getMongoContainer(
 
 // ── Document mapping helpers ────────────────────────────────────────────
 
+// Timestamp fields that were stored as Date objects in the Cosmos→MongoDB
+// migration but are supplied as epoch-ms numbers by the application code.
+const TIMESTAMP_FIELDS = ["createdAt", "lastUpdatedAt", "ts", "shippedAt", "updatedAt"];
+
 /**
  * Convert a Cosmos-style document (with `id`) to MongoDB.
  * Leaves `id` intact and allows MongoDB to use its own `_id`.
+ * Converts known timestamp fields from epoch-ms numbers to Date objects
+ * so that sorting is consistent with migrated documents.
  */
 function cosmosDocToMongo(doc: Record<string, any>): Document {
-    return { ...doc };
+    const result = { ...doc };
+    for (const field of TIMESTAMP_FIELDS) {
+        if (typeof result[field] === "number" && result[field] > 1_000_000_000_000) {
+            result[field] = new Date(result[field]);
+        }
+    }
+    return result;
 }
 
 /**
  * Convert a MongoDB document back to Cosmos-style.
  * Strips the MongoDB-internal `_id` field.
+ * Converts Date objects back to epoch-ms numbers for application compatibility.
  */
 function mongoDocToCosmos(doc: Document): Record<string, any> {
     const { _id, ...rest } = doc;
+    for (const field of TIMESTAMP_FIELDS) {
+        if (rest[field] instanceof Date) {
+            rest[field] = rest[field].getTime();
+        }
+    }
     return rest;
 }

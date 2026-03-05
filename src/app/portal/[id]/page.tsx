@@ -1355,6 +1355,7 @@ export default function PortalReceiptPage() {
           },
           shippingMethod: shipMethod,
           shippingCostUsd: shippingCostUsd,
+          buyerWallet: account?.address || undefined,
         }),
       });
       if (!res.ok) {
@@ -2804,57 +2805,82 @@ export default function PortalReceiptPage() {
                                     {/* Expanded form when not complete */}
                                     {!shippingComplete && (
                                       <div className="px-4 pb-4 space-y-3">
-                                        <div className="grid grid-cols-1 gap-2">
-                                          <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Full Name *" value={shipName} onChange={(e) => setShipName(e.target.value)} />
-                                          <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 1 *" value={shipLine1} onChange={(e) => setShipLine1(e.target.value)} />
-                                          <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 2 (optional)" value={shipLine2} onChange={(e) => setShipLine2(e.target.value)} />
-                                          <div className="grid grid-cols-2 gap-2">
-                                            <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="City *" value={shipCity} onChange={(e) => setShipCity(e.target.value)} />
-                                            <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="State/Province" value={shipState} onChange={(e) => setShipState(e.target.value)} />
+                                        {/* Login gate — require wallet connection before shipping */}
+                                        {!account?.address ? (
+                                          <div className="flex flex-col items-center gap-3 py-6 text-center">
+                                            <div className="text-sm text-white/70">Please log in to continue with shipping</div>
+                                            <ConnectButton
+                                              client={client}
+                                              chain={chain}
+                                              wallets={wallets}
+                                              connectButton={{
+                                                label: <span className="microtext">Login to Continue</span>,
+                                                className: connectButtonClass,
+                                                style: getConnectButtonStyle(),
+                                              }}
+                                              connectModal={{
+                                                showThirdwebBranding: false,
+                                                title: "Login",
+                                                size: "compact",
+                                              }}
+                                              theme={twTheme}
+                                            />
                                           </div>
-                                          <div className="grid grid-cols-2 gap-2">
-                                            <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="ZIP / Postal *" value={shipZip} onChange={(e) => setShipZip(e.target.value)} />
-                                            <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Country" value={shipCountry} onChange={(e) => setShipCountry(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} />
-                                          </div>
-                                        </div>
+                                        ) : (
+                                          <>
+                                            <div className="grid grid-cols-1 gap-2">
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Full Name *" value={shipName} onChange={(e) => setShipName(e.target.value)} />
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 1 *" value={shipLine1} onChange={(e) => setShipLine1(e.target.value)} />
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 2 (optional)" value={shipLine2} onChange={(e) => setShipLine2(e.target.value)} />
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="City *" value={shipCity} onChange={(e) => setShipCity(e.target.value)} />
+                                                <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="State/Province" value={shipState} onChange={(e) => setShipState(e.target.value)} />
+                                              </div>
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="ZIP / Postal *" value={shipZip} onChange={(e) => setShipZip(e.target.value)} />
+                                                <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Country" value={shipCountry} onChange={(e) => setShipCountry(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} />
+                                              </div>
+                                            </div>
 
-                                        {/* Shipping method selector with prices */}
-                                        <div>
-                                          <div className="text-xs text-white/50 mb-2 font-medium">Select Shipping Method</div>
-                                          <div className="space-y-1.5">
-                                            {shippingOptions.methods.map((m) => {
-                                              const price = shippingOptions.pricing[m] || 0;
-                                              const isFree = (() => {
-                                                const threshold = items.reduce((max, it) => {
-                                                  if (it.requiresShipping && it.shippingConfig?.freeShippingThreshold) return Math.max(max, it.shippingConfig.freeShippingThreshold);
-                                                  return max;
-                                                }, 0);
-                                                return threshold > 0 && itemsSubtotalUsd >= threshold;
-                                              })();
-                                              return (
-                                                <label key={m} className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${shipMethod === m ? 'bg-white/10 border border-white/20' : 'border border-transparent hover:bg-white/5'}`}>
-                                                  <div className="flex items-center gap-2">
-                                                    <input type="radio" name="shipMethod" value={m} checked={shipMethod === m} onChange={() => setShipMethod(m)} className="accent-emerald-500" />
-                                                    <span className="text-sm text-white capitalize">{m}</span>
-                                                  </div>
-                                                  <span className="text-sm font-medium text-white">{isFree ? 'Free' : price > 0 ? `$${price.toFixed(2)}` : 'Free'}</span>
-                                                </label>
-                                              );
-                                            })}
-                                          </div>
-                                        </div>
+                                            {/* Shipping method selector with prices */}
+                                            <div>
+                                              <div className="text-xs text-white/50 mb-2 font-medium">Select Shipping Method</div>
+                                              <div className="space-y-1.5">
+                                                {shippingOptions.methods.map((m) => {
+                                                  const price = shippingOptions.pricing[m] || 0;
+                                                  const isFree = (() => {
+                                                    const threshold = items.reduce((max, it) => {
+                                                      if (it.requiresShipping && it.shippingConfig?.freeShippingThreshold) return Math.max(max, it.shippingConfig.freeShippingThreshold);
+                                                      return max;
+                                                    }, 0);
+                                                    return threshold > 0 && itemsSubtotalUsd >= threshold;
+                                                  })();
+                                                  return (
+                                                    <label key={m} className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${shipMethod === m ? 'bg-white/10 border border-white/20' : 'border border-transparent hover:bg-white/5'}`}>
+                                                      <div className="flex items-center gap-2">
+                                                        <input type="radio" name="shipMethod" value={m} checked={shipMethod === m} onChange={() => setShipMethod(m)} className="accent-emerald-500" />
+                                                        <span className="text-sm text-white capitalize">{m}</span>
+                                                      </div>
+                                                      <span className="text-sm font-medium text-white">{isFree ? 'Free' : price > 0 ? `$${price.toFixed(2)}` : 'Free'}</span>
+                                                    </label>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
 
-                                        {shippingError && <div className="text-xs text-red-400">{shippingError}</div>}
+                                            {shippingError && <div className="text-xs text-red-400">{shippingError}</div>}
 
-                                        <button
-                                          type="button"
-                                          disabled={!shippingAddressValid || !shipMethod || shippingSaving}
-                                          onClick={handleShippingSubmit}
-                                          className="w-full h-10 rounded-lg text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                                          style={{ backgroundColor: shippingAddressValid && shipMethod ? (theme.primaryColor || '#10b981') : 'rgba(255,255,255,0.1)' }}
-                                        >
-                                          {shippingSaving ? 'Saving…' : 'Continue to Payment →'}
-                                        </button>
+                                            <button
+                                              type="button"
+                                              disabled={!shippingAddressValid || !shipMethod || shippingSaving}
+                                              onClick={handleShippingSubmit}
+                                              className="w-full h-10 rounded-lg text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                              style={{ backgroundColor: shippingAddressValid && shipMethod ? (theme.primaryColor || '#10b981') : 'rgba(255,255,255,0.1)' }}
+                                            >
+                                              {shippingSaving ? 'Saving…' : 'Continue to Payment →'}
+                                            </button>
+                                          </>
+                                        )}
                                       </div>
                                     )}
                                   </div>
@@ -3459,53 +3485,78 @@ export default function PortalReceiptPage() {
                                   )}
                                   {!shippingComplete && (
                                     <div className="px-4 pb-4 space-y-3">
-                                      <div className="grid grid-cols-1 gap-2">
-                                        <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Full Name *" value={shipName} onChange={(e) => setShipName(e.target.value)} />
-                                        <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 1 *" value={shipLine1} onChange={(e) => setShipLine1(e.target.value)} />
-                                        <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 2 (optional)" value={shipLine2} onChange={(e) => setShipLine2(e.target.value)} />
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="City *" value={shipCity} onChange={(e) => setShipCity(e.target.value)} />
-                                          <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="State/Province" value={shipState} onChange={(e) => setShipState(e.target.value)} />
+                                      {/* Login gate — require wallet connection before shipping */}
+                                      {!account?.address ? (
+                                        <div className="flex flex-col items-center gap-3 py-6 text-center">
+                                          <div className="text-sm text-white/70">Please log in to continue with shipping</div>
+                                          <ConnectButton
+                                            client={client}
+                                            chain={chain}
+                                            wallets={wallets}
+                                            connectButton={{
+                                              label: <span className="microtext">Login to Continue</span>,
+                                              className: connectButtonClass,
+                                              style: getConnectButtonStyle(),
+                                            }}
+                                            connectModal={{
+                                              showThirdwebBranding: false,
+                                              title: "Login",
+                                              size: "compact",
+                                            }}
+                                            theme={twTheme}
+                                          />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="ZIP / Postal *" value={shipZip} onChange={(e) => setShipZip(e.target.value)} />
-                                          <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Country" value={shipCountry} onChange={(e) => setShipCountry(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} />
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <div className="text-xs text-white/50 mb-2 font-medium">Select Shipping Method</div>
-                                        <div className="space-y-1.5">
-                                          {shippingOptions.methods.map((m) => {
-                                            const price = shippingOptions.pricing[m] || 0;
-                                            const isFree = (() => {
-                                              const threshold = items.reduce((max, it) => {
-                                                if (it.requiresShipping && it.shippingConfig?.freeShippingThreshold) return Math.max(max, it.shippingConfig.freeShippingThreshold);
-                                                return max;
-                                              }, 0);
-                                              return threshold > 0 && itemsSubtotalUsd >= threshold;
-                                            })();
-                                            return (
-                                              <label key={m} className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${shipMethod === m ? 'bg-white/10 border border-white/20' : 'border border-transparent hover:bg-white/5'}`}>
-                                                <div className="flex items-center gap-2">
-                                                  <input type="radio" name="shipMethodSingle" value={m} checked={shipMethod === m} onChange={() => setShipMethod(m)} className="accent-emerald-500" />
-                                                  <span className="text-sm text-white capitalize">{m}</span>
-                                                </div>
-                                                <span className="text-sm font-medium text-white">{isFree ? 'Free' : price > 0 ? `$${price.toFixed(2)}` : 'Free'}</span>
-                                              </label>
-                                            );
-                                          })}
-                                        </div>
-                                      </div>
-                                      {shippingError && <div className="text-xs text-red-400">{shippingError}</div>}
-                                      <button
-                                        type="button"
-                                        disabled={!shippingAddressValid || !shipMethod || shippingSaving}
-                                        onClick={handleShippingSubmit}
-                                        className="w-full h-10 rounded-lg text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                                        style={{ backgroundColor: shippingAddressValid && shipMethod ? (theme.primaryColor || '#10b981') : 'rgba(255,255,255,0.1)' }}
-                                      >
-                                        {shippingSaving ? 'Saving…' : 'Continue to Payment →'}
-                                      </button>
+                                      ) : (
+                                        <>
+                                          <div className="grid grid-cols-1 gap-2">
+                                            <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Full Name *" value={shipName} onChange={(e) => setShipName(e.target.value)} />
+                                            <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 1 *" value={shipLine1} onChange={(e) => setShipLine1(e.target.value)} />
+                                            <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 2 (optional)" value={shipLine2} onChange={(e) => setShipLine2(e.target.value)} />
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="City *" value={shipCity} onChange={(e) => setShipCity(e.target.value)} />
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="State/Province" value={shipState} onChange={(e) => setShipState(e.target.value)} />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="ZIP / Postal *" value={shipZip} onChange={(e) => setShipZip(e.target.value)} />
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Country" value={shipCountry} onChange={(e) => setShipCountry(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} />
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <div className="text-xs text-white/50 mb-2 font-medium">Select Shipping Method</div>
+                                            <div className="space-y-1.5">
+                                              {shippingOptions.methods.map((m) => {
+                                                const price = shippingOptions.pricing[m] || 0;
+                                                const isFree = (() => {
+                                                  const threshold = items.reduce((max, it) => {
+                                                    if (it.requiresShipping && it.shippingConfig?.freeShippingThreshold) return Math.max(max, it.shippingConfig.freeShippingThreshold);
+                                                    return max;
+                                                  }, 0);
+                                                  return threshold > 0 && itemsSubtotalUsd >= threshold;
+                                                })();
+                                                return (
+                                                  <label key={m} className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${shipMethod === m ? 'bg-white/10 border border-white/20' : 'border border-transparent hover:bg-white/5'}`}>
+                                                    <div className="flex items-center gap-2">
+                                                      <input type="radio" name="shipMethodSingle" value={m} checked={shipMethod === m} onChange={() => setShipMethod(m)} className="accent-emerald-500" />
+                                                      <span className="text-sm text-white capitalize">{m}</span>
+                                                    </div>
+                                                    <span className="text-sm font-medium text-white">{isFree ? 'Free' : price > 0 ? `$${price.toFixed(2)}` : 'Free'}</span>
+                                                  </label>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                          {shippingError && <div className="text-xs text-red-400">{shippingError}</div>}
+                                          <button
+                                            type="button"
+                                            disabled={!shippingAddressValid || !shipMethod || shippingSaving}
+                                            onClick={handleShippingSubmit}
+                                            className="w-full h-10 rounded-lg text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                            style={{ backgroundColor: shippingAddressValid && shipMethod ? (theme.primaryColor || '#10b981') : 'rgba(255,255,255,0.1)' }}
+                                          >
+                                            {shippingSaving ? 'Saving…' : 'Continue to Payment →'}
+                                          </button>
+                                        </>
+                                      )}
                                     </div>
                                   )}
                                 </div>

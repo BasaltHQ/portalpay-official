@@ -2151,6 +2151,8 @@ function ReceiptsAdmin() {
     taxComponents?: string[];
     employeeId?: string;
     tipAmount?: number;
+    shippingAddress?: any;
+    tracking?: { carrier?: string; trackingNumber?: string; trackingUrl?: string; shippedAt?: number; updatedAt?: number };
   }>>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -2170,6 +2172,8 @@ function ReceiptsAdmin() {
     taxComponents?: string[];
     employeeId?: string;
     tipAmount?: number;
+    shippingAddress?: any;
+    tracking?: { carrier?: string; trackingNumber?: string; trackingUrl?: string; shippedAt?: number; updatedAt?: number };
   } | null>(null);
   const [origin, setOrigin] = React.useState("");
   const [brandLogoUrl, setBrandLogoUrl] = React.useState<string>("");
@@ -2196,6 +2200,13 @@ function ReceiptsAdmin() {
   const [refundDraft, setRefundDraft] = React.useState<{ selected: Record<number, boolean>; buyerWallet: string; refundUsd: number }>({ selected: {}, buyerWallet: "", refundUsd: 0 });
   const [refundLoading, setRefundLoading] = React.useState(false);
   const [refundError, setRefundError] = React.useState("");
+  // Tracking state
+  const [trackingOpen, setTrackingOpen] = React.useState(false);
+  const [trackCarrier, setTrackCarrier] = React.useState("");
+  const [trackNumber, setTrackNumber] = React.useState("");
+  const [trackUrl, setTrackUrl] = React.useState("");
+  const [trackSaving, setTrackSaving] = React.useState(false);
+  const [trackError, setTrackError] = React.useState("");
   const account = useActiveAccount();
   const operatorWallet = (account?.address || "").toLowerCase();
   const superadminRecipient = (process.env.NEXT_PUBLIC_OWNER_WALLET || "").toLowerCase();
@@ -2809,8 +2820,8 @@ function ReceiptsAdmin() {
           <tbody>
             {(receipts || [])
               .filter((r: any) => !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST"))
-              .map((rec: any) => (
-                <tr key={rec.receiptId} className="border-t">
+              .map((rec: any, idx: number) => (
+                <tr key={rec.receiptId || `receipt-${idx}`} className="border-t">
                   <td className="px-3 py-2 font-mono">{rec.receiptId}</td>
                   <td className="px-3 py-2">{resolveBrandName(rec)}</td>
                   <td className="px-3 py-2">${Number(rec.totalUsd || 0).toFixed(2)}</td>
@@ -3050,6 +3061,116 @@ function ReceiptsAdmin() {
                     <button onClick={() => { try { openPortalWindow(portalUrl); } catch { } }} className="receipt-button">Open Portal</button>
                   </>
                 )}
+                {/* Show tracking button for shipping orders */}
+                {(selected as any)?.shippingAddress && (
+                  <button
+                    onClick={() => {
+                      setTrackCarrier((selected as any)?.tracking?.carrier || "");
+                      setTrackNumber((selected as any)?.tracking?.trackingNumber || "");
+                      setTrackUrl((selected as any)?.tracking?.trackingUrl || "");
+                      setTrackError("");
+                      setTrackingOpen(true);
+                    }}
+                    className="receipt-button"
+                  >
+                    {(selected as any)?.tracking?.trackingNumber ? '✓ Update Tracking' : '📦 Add Tracking'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        ) : null}
+
+      {/* Tracking modal */}
+      {trackingOpen && selected && typeof window !== "undefined"
+        ? createPortal(
+          <div className="fixed inset-0 z-[100001] bg-black/50 grid place-items-center p-4">
+            <div className="w-full max-w-sm rounded-md border bg-background p-4 relative">
+              <button
+                onClick={() => setTrackingOpen(false)}
+                className="absolute right-2 top-2 h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                title="Close"
+                aria-label="Close tracking modal"
+              >
+                ✕
+              </button>
+              <div className="text-lg font-semibold mb-1">Tracking Info</div>
+              <div className="microtext text-muted-foreground mb-3">
+                Receipt {selected.receiptId}
+                {(selected as any)?.shippingAddress?.name ? ` — ${(selected as any).shippingAddress.name}` : ""}
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <label className="microtext text-muted-foreground">Carrier *</label>
+                  <input
+                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background text-sm"
+                    placeholder="e.g., USPS, UPS, FedEx"
+                    value={trackCarrier}
+                    onChange={(e) => setTrackCarrier(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="microtext text-muted-foreground">Tracking Number *</label>
+                  <input
+                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background text-sm"
+                    placeholder="e.g., 9400111899999999999"
+                    value={trackNumber}
+                    onChange={(e) => setTrackNumber(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="microtext text-muted-foreground">Tracking URL (optional)</label>
+                  <input
+                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background text-sm"
+                    placeholder="https://tools.usps.com/go/TrackConfirmAction?tLabels=..."
+                    value={trackUrl}
+                    onChange={(e) => setTrackUrl(e.target.value)}
+                  />
+                </div>
+              </div>
+              {trackError && <div className="text-xs text-red-500 mt-2">{trackError}</div>}
+              {(selected as any)?.tracking?.shippedAt && (
+                <div className="microtext text-muted-foreground mt-2">
+                  Shipped {new Date((selected as any).tracking.shippedAt).toLocaleDateString()}
+                </div>
+              )}
+              <div className="flex items-center justify-end gap-2 mt-3">
+                <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => setTrackingOpen(false)}>Cancel</button>
+                <button
+                  className="px-3 py-1.5 rounded-md bg-foreground text-background text-sm font-semibold disabled:opacity-40"
+                  disabled={!trackCarrier.trim() || !trackNumber.trim() || trackSaving}
+                  onClick={async () => {
+                    try {
+                      setTrackSaving(true);
+                      setTrackError("");
+                      const r = await fetch(`/api/receipts/${encodeURIComponent(selected.receiptId)}/tracking`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "x-wallet": operatorWallet },
+                        body: JSON.stringify({
+                          carrier: trackCarrier.trim(),
+                          trackingNumber: trackNumber.trim(),
+                          trackingUrl: trackUrl.trim(),
+                        }),
+                      });
+                      const j = await r.json().catch(() => ({}));
+                      if (!r.ok) {
+                        setTrackError(j?.error || "Failed to save tracking");
+                        return;
+                      }
+                      // Update local state
+                      setSelected((prev: any) => prev ? { ...prev, tracking: j.tracking, status: "shipped" } : prev);
+                      setReceipts((prev) => prev.map((rx) => rx.receiptId === selected.receiptId ? { ...rx, tracking: j.tracking, status: "shipped" } as any : rx));
+                      setTrackingOpen(false);
+                    } catch (e: any) {
+                      setTrackError(e?.message || "Failed");
+                    } finally {
+                      setTrackSaving(false);
+                    }
+                  }}
+                >
+                  {trackSaving ? "Saving…" : (selected as any)?.tracking?.trackingNumber ? "Update Tracking" : "Save Tracking"}
+                </button>
               </div>
             </div>
           </div>,

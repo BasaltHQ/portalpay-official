@@ -45,6 +45,9 @@ type ReceiptSummary = {
   tokenSymbol?: string;
   tokenAmount?: number;
   transactionHash?: string;
+  // Shipping & tracking
+  shippingAddress?: { name?: string; line1?: string; city?: string; state?: string; zip?: string; country?: string };
+  tracking?: { carrier?: string; trackingNumber?: string; trackingUrl?: string; shippedAt?: number; updatedAt?: number };
 };
 
 function formatUsd(n: number) {
@@ -89,6 +92,8 @@ function statusToClasses(status: string): string {
       return "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300/50 dark:border-slate-600/50";
     case "recovered":
       return "bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-400 border-amber-300/60 dark:border-amber-700/40";
+    case "shipped":
+      return "bg-sky-50 dark:bg-sky-950/20 text-sky-700 dark:text-sky-400 border-sky-300/50 dark:border-sky-700/40";
     default:
       return "bg-foreground/5 border-foreground/10 text-muted-foreground";
   }
@@ -372,8 +377,8 @@ export default function MyPurchasesPanel() {
     if (isRecovered) return true;
     // Otherwise, hide raw tracking receipts
     if (trackingStatuses.has(status)) return false;
-    // Show canonical receipts (paid/reconciled or has tx)
-    if (status !== "paid" && status !== "reconciled" && !rec.transactionHash) return false;
+    // Show canonical receipts (paid/reconciled/shipped or has tx)
+    if (status !== "paid" && status !== "reconciled" && status !== "shipped" && !rec.transactionHash) return false;
     return true;
   }), [items]);
 
@@ -517,6 +522,42 @@ export default function MyPurchasesPanel() {
                               </a>
                             </>
                           )}
+                        </div>
+                      )}
+                      {/* Tracking info for shipped orders */}
+                      {(rec as any).tracking?.trackingNumber && (
+                        <div className="rounded-md border p-3 bg-sky-50/50 dark:bg-sky-950/20 border-sky-200/60 dark:border-sky-800/40">
+                          <div className="text-sm font-medium flex items-center gap-2">
+                            <span>📦</span>
+                            <span>Shipment Tracking</span>
+                            {(rec as any).tracking?.carrier && (
+                              <span className="microtext bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 px-1.5 py-0.5 rounded">{(rec as any).tracking.carrier}</span>
+                            )}
+                          </div>
+                          <div className="mt-1.5 microtext text-muted-foreground space-y-0.5">
+                            <div className="flex items-center gap-1">
+                              <span>Tracking #:</span>
+                              {(rec as any).tracking?.trackingUrl ? (
+                                <a href={(rec as any).tracking.trackingUrl} target="_blank" rel="noreferrer" className="font-mono underline text-sky-600 dark:text-sky-400">
+                                  {(rec as any).tracking.trackingNumber}
+                                </a>
+                              ) : (
+                                <span className="font-mono">{(rec as any).tracking.trackingNumber}</span>
+                              )}
+                            </div>
+                            {(rec as any).tracking?.shippedAt && (
+                              <div>Shipped {new Date((rec as any).tracking.shippedAt).toLocaleDateString()}</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {(rec as any).shippingAddress && !(rec as any).tracking?.trackingNumber && (
+                        <div className="rounded-md border p-3 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40">
+                          <div className="text-sm font-medium flex items-center gap-2">
+                            <span>📦</span>
+                            <span>Awaiting Shipment</span>
+                          </div>
+                          <div className="microtext text-muted-foreground mt-1">Your order is being prepared for shipping.</div>
                         </div>
                       )}
                       {/* Reviews summary for this purchase */}
