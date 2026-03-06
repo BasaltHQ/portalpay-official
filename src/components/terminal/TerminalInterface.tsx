@@ -7,7 +7,7 @@ import { fetchEthRates, fetchUsdRates } from "@/lib/eth";
 import { QRCode } from "react-qrcode-logo";
 import { createPortal } from "react-dom";
 import { getTheme } from "@/lib/themes";
-import { isPlatformBrand, getEffectiveBrandKey } from "@/lib/branding";
+import { isRuntimePlatformBrand } from "@/lib/branding";
 import { useQRCodeDisplay, useReceiptPrinter } from "@/lib/hardware/useHardwareHooks";
 
 // Shared Logic extracted from TerminalPage
@@ -451,7 +451,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                 {formatCurrency(totalConverted, terminalCurrency)}
                             </div>
 
-                            {isPlatformBrand(getEffectiveBrandKey()) && (
+                            {isRuntimePlatformBrand() && (
                                 <div className="text-xs text-muted-foreground px-4 opacity-50 mb-4 font-mono whitespace-nowrap overflow-hidden text-ellipsis w-full max-w-[300px] mx-auto">
                                     {portalUrl}
                                 </div>
@@ -567,7 +567,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                 />
                             </div>
 
-                            {isPlatformBrand(getEffectiveBrandKey()) && (
+                            {isRuntimePlatformBrand() && (
                                 <div className="text-center text-[8px] font-mono break-all opacity-70 mt-1">
                                     {window.location.host}/portal/{selected.receiptId.slice(0, 8)}...
                                 </div>

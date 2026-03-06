@@ -11,7 +11,7 @@ import { fetchEthRates, fetchUsdRates, fetchBtcUsd, fetchXrpUsd, type EthRates }
 import { SUPPORTED_CURRENCIES, convertFromUsd, formatCurrency, getCurrencyFlag, roundForCurrency } from "@/lib/fx";
 import { QRCodeCanvas } from "qrcode.react";
 import { createPortal } from "react-dom";
-import { isPlatformBrand, getEffectiveBrandKey } from "@/lib/branding";
+import { isRuntimePlatformBrand } from "@/lib/branding";
 
 /**
  * ISO Demo page - variant of Terminal page with customized fee structure:
@@ -321,7 +321,7 @@ function TerminalPanel() {
                         <div className="thermal-paper relative mx-auto">
                             <div className="grid place-items-center my-2"><QRCodeCanvas value={portalUrl} size={140} includeMargin fgColor="#000000" bgColor="#ffffff" /></div>
                             <div className="thermal-footer">Scan to pay or visit</div>
-                            {isPlatformBrand(getEffectiveBrandKey()) && <div className="thermal-footer text-xs break-all">{portalUrl}</div>}
+                            {isRuntimePlatformBrand() && <div className="thermal-footer text-xs break-all">{portalUrl}</div>}
                             <div className="thermal-rule" />
                             <div className="space-y-1">
                                 <div className="thermal-row"><span>Receipt #</span><span>{selected.receiptId}</span></div>

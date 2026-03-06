@@ -14,7 +14,7 @@ import { useServerAssistant } from "@/hooks/useServerAssistant";
 import { buildServerAssistantPrompt } from "@/agent/prompts/serverAssistantPrompt";
 import { QRCode } from "react-qrcode-logo";
 import { getTheme } from "@/lib/themes";
-import { isPlatformBrand, getEffectiveBrandKey } from "@/lib/branding";
+import { isRuntimePlatformBrand } from "@/lib/branding";
 import { useQRCodeDisplay, useReceiptPrinter } from "@/lib/hardware/useHardwareHooks";
 import {
     Activity, ArrowLeft, ChevronLeft, ChevronRight, CreditCard,
@@ -782,7 +782,7 @@ export default function HandheldInterface({
                                             const origin = typeof window !== "undefined" ? window.location.origin : "";
                                             const rawId = String(currentReceipt.receiptId || currentReceipt.id || "").replace("receipt:", "");
                                             const pUrl = `${origin}/portal/${encodeURIComponent(rawId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
-                                            const paymentLinkSection = isPlatformBrand(getEffectiveBrandKey()) ? `\n\nPay online at:\n${pUrl}` : "";
+                                            const paymentLinkSection = isRuntimePlatformBrand() ? `\n\nPay online at:\n${pUrl}` : "";
                                             const receiptText = `\nRECEIPT\nID: ${rawId}\nTOTAL: ${formatCurrency(currentReceipt.total || currentReceipt.totalUsd)}\nSTATUS: ${currentReceipt.status.toUpperCase()}${paymentLinkSection}\n\n`;
                                             let qrBase64 = undefined;
                                             const canvas = document.getElementById('handheld-qr-canvas-hist') as HTMLCanvasElement;
@@ -982,7 +982,7 @@ export default function HandheldInterface({
                                             const origin = typeof window !== "undefined" ? window.location.origin : "";
                                             const rawId = String(selectedOrderForPayment.receiptId || selectedOrderForPayment.id || "").replace("receipt:", "");
                                             const pUrl = `${origin}/portal/${encodeURIComponent(rawId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
-                                            const paymentLinkSection = isPlatformBrand(getEffectiveBrandKey()) ? `\n\nPay online at:\n${pUrl}` : "";
+                                            const paymentLinkSection = isRuntimePlatformBrand() ? `\n\nPay online at:\n${pUrl}` : "";
                                             const receiptText = `\nRECEIPT\nID: ${rawId}\nTOTAL: ${formatCurrency(selectedOrderForPayment.total)}\nSTATUS: ${selectedOrderForPayment.status.toUpperCase()}${paymentLinkSection}\n\n`;
                                             let qrBase64 = undefined;
                                             const canvas = document.getElementById('handheld-qr-canvas-pay') as HTMLCanvasElement;

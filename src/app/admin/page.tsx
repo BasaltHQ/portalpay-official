@@ -25,7 +25,7 @@ import PMSPanel from "@/components/admin/PMSPanel";
 import { ReserveTabs } from "@/components/admin/reserve";
 import { Modal } from "@/components/ui/modal";
 import { useBrand } from "@/contexts/BrandContext";
-import { getDefaultBrandName, isPlatformBrand, getEffectiveBrandKey } from "@/lib/branding";
+import { getDefaultBrandName, isPlatformBrand, getEffectiveBrandKey, isRuntimePlatformBrand } from "@/lib/branding";
 import BrandingPanelExt from "@/app/admin/panels/BrandingPanel";
 import { Thumbnail, type ReserveBalancesResponse, type SiteConfig, type TaxCatalogEntry } from "@/app/admin/panels/common";
 import PartnerManagementPanelExt from "@/app/admin/panels/PartnerManagementPanel";
@@ -3043,7 +3043,7 @@ function ReceiptsAdmin() {
                       />
                     </div>
                     <div className="thermal-footer">Scan to pay or visit</div>
-                    {isPlatformBrand(getEffectiveBrandKey()) && <div className="thermal-footer" style={{ wordBreak: "break-all" }}>
+                    {isRuntimePlatformBrand() && <div className="thermal-footer" style={{ wordBreak: "break-all" }}>
                       {portalUrl}
                     </div>}
                   </>
@@ -8812,7 +8812,7 @@ function TerminalPanel() {
                   <QRCode value={portalUrl} size={140} quietZone={10} fgColor="#000000" bgColor="#ffffff" />
                 </div>
                 <div className="thermal-footer">Scan to pay or visit</div>
-                {isPlatformBrand(getEffectiveBrandKey()) && <div className="thermal-footer" style={{ wordBreak: "break-all" }}>{portalUrl}</div>}
+                {isRuntimePlatformBrand() && <div className="thermal-footer" style={{ wordBreak: "break-all" }}>{portalUrl}</div>}
                 <div className="thermal-rule" />
                 <div className="space-y-1">
                   <div className="thermal-row"><span>Receipt #</span><span>{selected.receiptId}</span></div>

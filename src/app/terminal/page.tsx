@@ -12,7 +12,7 @@ import { SUPPORTED_CURRENCIES, convertFromUsd, formatCurrency, getCurrencyFlag, 
 import { buildPortalUrlForTest } from "@/lib/receipts";
 import { QRCodeCanvas } from "qrcode.react";
 import { createPortal } from "react-dom";
-import { getEffectiveBrandKey, getDefaultBrandName, getDefaultBrandSymbol, resolveBrandAppLogo, resolveBrandSymbol, isBasaltSurge, isPlatformBrand } from "@/lib/branding";
+import { getEffectiveBrandKey, getDefaultBrandName, getDefaultBrandSymbol, resolveBrandAppLogo, resolveBrandSymbol, isBasaltSurge, isPlatformBrand, isRuntimePlatformBrand } from "@/lib/branding";
 import { useTheme } from "@/contexts/ThemeContext";
 
 import TerminalAdminDashboard from "@/components/terminal/TerminalAdminDashboard";
@@ -527,7 +527,7 @@ function TerminalPanel() {
                   <QRCodeCanvas value={portalUrl} size={140} includeMargin fgColor="#000000" bgColor="#ffffff" />
                 </div>
                 <div className="thermal-footer">Scan to pay or visit</div>
-                {isPlatformBrand(getEffectiveBrandKey()) && <div className="thermal-footer" style={{ wordBreak: "break-all" }}>{portalUrl}</div>}
+                {isRuntimePlatformBrand() && <div className="thermal-footer" style={{ wordBreak: "break-all" }}>{portalUrl}</div>}
                 <div className="thermal-rule" />
                 <div className="space-y-1">
                   <div className="thermal-row"><span>Receipt #</span><span>{selected.receiptId}</span></div>

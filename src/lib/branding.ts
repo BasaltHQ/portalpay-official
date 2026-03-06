@@ -98,3 +98,28 @@ export function resolveBrandAppLogo(src?: string | null, brandKey?: string): str
     if (s) return s; // Trust the source - no blocking
     return getDefaultBrandSymbol(brandKey);
 }
+
+/**
+ * Runtime check: is the current deployment actually a platform container?
+ * Unlike isPlatformBrand(getEffectiveBrandKey()), this does NOT default to
+ * "basaltsurge" when nothing matches — so partner custom domains (e.g.
+ * xpaypass.com) correctly return false.
+ */
+export function isRuntimePlatformBrand(): boolean {
+    // 1. Explicit env var takes priority
+    const envKey = (process.env.NEXT_PUBLIC_BRAND_KEY || "").trim().toLowerCase();
+    if (envKey) return isPlatformBrand(envKey);
+
+    // 2. Hostname check — only known platform domains
+    if (typeof window !== "undefined") {
+        const host = window.location.host.toLowerCase();
+        if (host.includes("basalt") || host.includes("portalpay") || host.includes("localhost") || host.includes("127.0.0.1")) {
+            return true;
+        }
+        // Custom domain → partner container
+        return false;
+    }
+
+    // 3. SSR without env var — assume platform (safe default for build)
+    return true;
+}
