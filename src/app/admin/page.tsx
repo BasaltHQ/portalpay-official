@@ -2151,6 +2151,8 @@ function ReceiptsAdmin() {
     taxComponents?: string[];
     employeeId?: string;
     tipAmount?: number;
+    shippingAddress?: any;
+    tracking?: { carrier?: string; trackingNumber?: string; trackingUrl?: string; shippedAt?: number; updatedAt?: number };
   }>>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -2170,6 +2172,8 @@ function ReceiptsAdmin() {
     taxComponents?: string[];
     employeeId?: string;
     tipAmount?: number;
+    shippingAddress?: any;
+    tracking?: { carrier?: string; trackingNumber?: string; trackingUrl?: string; shippedAt?: number; updatedAt?: number };
   } | null>(null);
   const [origin, setOrigin] = React.useState("");
   const [brandLogoUrl, setBrandLogoUrl] = React.useState<string>("");
@@ -2196,6 +2200,13 @@ function ReceiptsAdmin() {
   const [refundDraft, setRefundDraft] = React.useState<{ selected: Record<number, boolean>; buyerWallet: string; refundUsd: number }>({ selected: {}, buyerWallet: "", refundUsd: 0 });
   const [refundLoading, setRefundLoading] = React.useState(false);
   const [refundError, setRefundError] = React.useState("");
+  // Tracking state
+  const [trackingOpen, setTrackingOpen] = React.useState(false);
+  const [trackCarrier, setTrackCarrier] = React.useState("");
+  const [trackNumber, setTrackNumber] = React.useState("");
+  const [trackUrl, setTrackUrl] = React.useState("");
+  const [trackSaving, setTrackSaving] = React.useState(false);
+  const [trackError, setTrackError] = React.useState("");
   const account = useActiveAccount();
   const operatorWallet = (account?.address || "").toLowerCase();
   const superadminRecipient = (process.env.NEXT_PUBLIC_OWNER_WALLET || "").toLowerCase();
@@ -2809,8 +2820,8 @@ function ReceiptsAdmin() {
           <tbody>
             {(receipts || [])
               .filter((r: any) => !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST"))
-              .map((rec: any) => (
-                <tr key={rec.receiptId} className="border-t">
+              .map((rec: any, idx: number) => (
+                <tr key={rec.receiptId || `receipt-${idx}`} className="border-t">
                   <td className="px-3 py-2 font-mono">{rec.receiptId}</td>
                   <td className="px-3 py-2">{resolveBrandName(rec)}</td>
                   <td className="px-3 py-2">${Number(rec.totalUsd || 0).toFixed(2)}</td>
@@ -3050,6 +3061,116 @@ function ReceiptsAdmin() {
                     <button onClick={() => { try { openPortalWindow(portalUrl); } catch { } }} className="receipt-button">Open Portal</button>
                   </>
                 )}
+                {/* Show tracking button for shipping orders */}
+                {(selected as any)?.shippingAddress && (
+                  <button
+                    onClick={() => {
+                      setTrackCarrier((selected as any)?.tracking?.carrier || "");
+                      setTrackNumber((selected as any)?.tracking?.trackingNumber || "");
+                      setTrackUrl((selected as any)?.tracking?.trackingUrl || "");
+                      setTrackError("");
+                      setTrackingOpen(true);
+                    }}
+                    className="receipt-button"
+                  >
+                    {(selected as any)?.tracking?.trackingNumber ? '✓ Update Tracking' : '📦 Add Tracking'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        ) : null}
+
+      {/* Tracking modal */}
+      {trackingOpen && selected && typeof window !== "undefined"
+        ? createPortal(
+          <div className="fixed inset-0 z-[100001] bg-black/50 grid place-items-center p-4">
+            <div className="w-full max-w-sm rounded-md border bg-background p-4 relative">
+              <button
+                onClick={() => setTrackingOpen(false)}
+                className="absolute right-2 top-2 h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                title="Close"
+                aria-label="Close tracking modal"
+              >
+                ✕
+              </button>
+              <div className="text-lg font-semibold mb-1">Tracking Info</div>
+              <div className="microtext text-muted-foreground mb-3">
+                Receipt {selected.receiptId}
+                {(selected as any)?.shippingAddress?.name ? ` — ${(selected as any).shippingAddress.name}` : ""}
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <label className="microtext text-muted-foreground">Carrier *</label>
+                  <input
+                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background text-sm"
+                    placeholder="e.g., USPS, UPS, FedEx"
+                    value={trackCarrier}
+                    onChange={(e) => setTrackCarrier(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="microtext text-muted-foreground">Tracking Number *</label>
+                  <input
+                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background text-sm"
+                    placeholder="e.g., 9400111899999999999"
+                    value={trackNumber}
+                    onChange={(e) => setTrackNumber(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="microtext text-muted-foreground">Tracking URL (optional)</label>
+                  <input
+                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background text-sm"
+                    placeholder="https://tools.usps.com/go/TrackConfirmAction?tLabels=..."
+                    value={trackUrl}
+                    onChange={(e) => setTrackUrl(e.target.value)}
+                  />
+                </div>
+              </div>
+              {trackError && <div className="text-xs text-red-500 mt-2">{trackError}</div>}
+              {(selected as any)?.tracking?.shippedAt && (
+                <div className="microtext text-muted-foreground mt-2">
+                  Shipped {new Date((selected as any).tracking.shippedAt).toLocaleDateString()}
+                </div>
+              )}
+              <div className="flex items-center justify-end gap-2 mt-3">
+                <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => setTrackingOpen(false)}>Cancel</button>
+                <button
+                  className="px-3 py-1.5 rounded-md bg-foreground text-background text-sm font-semibold disabled:opacity-40"
+                  disabled={!trackCarrier.trim() || !trackNumber.trim() || trackSaving}
+                  onClick={async () => {
+                    try {
+                      setTrackSaving(true);
+                      setTrackError("");
+                      const r = await fetch(`/api/receipts/${encodeURIComponent(selected.receiptId)}/tracking`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "x-wallet": operatorWallet },
+                        body: JSON.stringify({
+                          carrier: trackCarrier.trim(),
+                          trackingNumber: trackNumber.trim(),
+                          trackingUrl: trackUrl.trim(),
+                        }),
+                      });
+                      const j = await r.json().catch(() => ({}));
+                      if (!r.ok) {
+                        setTrackError(j?.error || "Failed to save tracking");
+                        return;
+                      }
+                      // Update local state
+                      setSelected((prev: any) => prev ? { ...prev, tracking: j.tracking, status: "shipped" } : prev);
+                      setReceipts((prev) => prev.map((rx) => rx.receiptId === selected.receiptId ? { ...rx, tracking: j.tracking, status: "shipped" } as any : rx));
+                      setTrackingOpen(false);
+                    } catch (e: any) {
+                      setTrackError(e?.message || "Failed");
+                    } finally {
+                      setTrackSaving(false);
+                    }
+                  }}
+                >
+                  {trackSaving ? "Saving…" : (selected as any)?.tracking?.trackingNumber ? "Update Tracking" : "Save Tracking"}
+                </button>
               </div>
             </div>
           </div>,
@@ -5842,6 +5963,40 @@ function InventoryPanel() {
   const [editIsSubscription, setEditIsSubscription] = useState(false);
   const [editSubscriptionPlanId, setEditSubscriptionPlanId] = useState("");
 
+  // Shipping state for Add modal
+  const [shippingEnabled, setShippingEnabled] = useState(false);
+  const [shippingWeightLbs, setShippingWeightLbs] = useState<number | undefined>(undefined);
+  const [shippingLength, setShippingLength] = useState<number | undefined>(undefined);
+  const [shippingWidth, setShippingWidth] = useState<number | undefined>(undefined);
+  const [shippingHeight, setShippingHeight] = useState<number | undefined>(undefined);
+  const [shippingDimUnit, setShippingDimUnit] = useState<'in' | 'cm'>('in');
+  const [shippingClass, setShippingClass] = useState<'standard' | 'oversized' | 'fragile' | 'hazardous'>('standard');
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number | undefined>(undefined);
+  const [methodPricing, setMethodPricing] = useState<Record<string, number>>({ standard: 5.99, express: 12.99, overnight: 24.99, freight: 29.99 });
+  const [handlingTimeDays, setHandlingTimeDays] = useState<number | undefined>(2);
+  const [shippingMethods, setShippingMethods] = useState<string[]>(['standard']);
+  const [originCountry, setOriginCountry] = useState('US');
+  const [domesticOnly, setDomesticOnly] = useState(false);
+  const [requiresSignature, setRequiresSignature] = useState(false);
+  const [insuranceRequired, setInsuranceRequired] = useState(false);
+
+  // Shipping state for Edit modal
+  const [editShippingEnabled, setEditShippingEnabled] = useState(false);
+  const [editShippingWeightLbs, setEditShippingWeightLbs] = useState<number | undefined>(undefined);
+  const [editShippingLength, setEditShippingLength] = useState<number | undefined>(undefined);
+  const [editShippingWidth, setEditShippingWidth] = useState<number | undefined>(undefined);
+  const [editShippingHeight, setEditShippingHeight] = useState<number | undefined>(undefined);
+  const [editShippingDimUnit, setEditShippingDimUnit] = useState<'in' | 'cm'>('in');
+  const [editShippingClass, setEditShippingClass] = useState<'standard' | 'oversized' | 'fragile' | 'hazardous'>('standard');
+  const [editFreeShippingThreshold, setEditFreeShippingThreshold] = useState<number | undefined>(undefined);
+  const [editMethodPricing, setEditMethodPricing] = useState<Record<string, number>>({ standard: 5.99, express: 12.99, overnight: 24.99, freight: 29.99 });
+  const [editHandlingTimeDays, setEditHandlingTimeDays] = useState<number | undefined>(2);
+  const [editShippingMethods, setEditShippingMethods] = useState<string[]>(['standard']);
+  const [editOriginCountry, setEditOriginCountry] = useState('US');
+  const [editDomesticOnly, setEditDomesticOnly] = useState(false);
+  const [editRequiresSignature, setEditRequiresSignature] = useState(false);
+  const [editInsuranceRequired, setEditInsuranceRequired] = useState(false);
+
   useEffect(() => {
     if (account?.address) {
       fetch(`/api/subscriptions/plans?wallet=${account.address}`)
@@ -5893,6 +6048,9 @@ function InventoryPanel() {
       setPubDownloadUrl(""); setPubPreviewUrl(""); setPubDrm(false);
       setIsSubscription(false);
       setSubscriptionPlanId("");
+      setShippingEnabled(false); setShippingWeightLbs(undefined); setShippingLength(undefined); setShippingWidth(undefined); setShippingHeight(undefined);
+      setShippingDimUnit('in'); setShippingClass('standard'); setFreeShippingThreshold(undefined); setMethodPricing({ standard: 5.99, express: 12.99, overnight: 24.99, freight: 29.99 });
+      setHandlingTimeDays(2); setShippingMethods(['standard']); setOriginCountry('US'); setDomesticOnly(false); setRequiresSignature(false); setInsuranceRequired(false);
       setAddOpen(true);
     } catch {
       setAddOpen(true);
@@ -5986,6 +6144,25 @@ function InventoryPanel() {
     setEditIsBook((item as any).isBook === true);
     setEditIsSubscription(!!(item as any).isSubscription);
     setEditSubscriptionPlanId((item as any).subscriptionPlanId || "");
+
+    // Hydrate shipping state
+    const sc = (item as any).shippingConfig || {};
+    setEditShippingEnabled(!!(item as any).shippingEnabled);
+    setEditShippingWeightLbs(typeof sc.weightLbs === 'number' ? sc.weightLbs : undefined);
+    setEditShippingLength(sc.dimensions?.length ?? undefined);
+    setEditShippingWidth(sc.dimensions?.width ?? undefined);
+    setEditShippingHeight(sc.dimensions?.height ?? undefined);
+    setEditShippingDimUnit(sc.dimensions?.unit === 'cm' ? 'cm' : 'in');
+    setEditShippingClass(sc.shippingClass || 'standard');
+    setEditFreeShippingThreshold(typeof sc.freeShippingThreshold === 'number' ? sc.freeShippingThreshold : undefined);
+    setEditMethodPricing(sc.methodPricing && typeof sc.methodPricing === 'object' ? sc.methodPricing : { standard: 5.99, express: 12.99, overnight: 24.99, freight: 29.99 });
+    setEditHandlingTimeDays(typeof sc.handlingTimeDays === 'number' ? sc.handlingTimeDays : 2);
+    setEditShippingMethods(Array.isArray(sc.allowedMethods) ? sc.allowedMethods : ['standard']);
+    setEditOriginCountry(typeof sc.originCountry === 'string' ? sc.originCountry : 'US');
+    setEditDomesticOnly(sc.domesticOnly === true);
+    setEditRequiresSignature(sc.requiresSignature === true);
+    setEditInsuranceRequired(sc.insuranceRequired === true);
+
     setEditOpenInv(true);
   }
 
@@ -6080,6 +6257,21 @@ function InventoryPanel() {
         industryPack: itemPack,
         isSubscription: editIsSubscription,
         subscriptionPlanId: editIsSubscription ? editSubscriptionPlanId : undefined,
+        shippingEnabled: editShippingEnabled,
+        shippingConfig: editShippingEnabled ? {
+          enabled: true,
+          weightLbs: editShippingWeightLbs,
+          dimensions: (editShippingLength || editShippingWidth || editShippingHeight) ? { length: editShippingLength, width: editShippingWidth, height: editShippingHeight, unit: editShippingDimUnit } : undefined,
+          shippingClass: editShippingClass,
+          freeShippingThreshold: editFreeShippingThreshold,
+          methodPricing: Object.fromEntries(editShippingMethods.map(m => [m, editMethodPricing[m] ?? 0])),
+          handlingTimeDays: editHandlingTimeDays,
+          allowedMethods: editShippingMethods.length ? editShippingMethods : undefined,
+          originCountry: editOriginCountry || undefined,
+          domesticOnly: editDomesticOnly,
+          requiresSignature: editRequiresSignature,
+          insuranceRequired: editInsuranceRequired,
+        } : undefined,
       };
 
       const r = await fetch("/api/inventory", {
@@ -6523,6 +6715,21 @@ function InventoryPanel() {
         industryPack: activeIndustryPack || 'general',
         isSubscription,
         subscriptionPlanId: isSubscription ? subscriptionPlanId : undefined,
+        shippingEnabled,
+        shippingConfig: shippingEnabled ? {
+          enabled: true,
+          weightLbs: shippingWeightLbs,
+          dimensions: (shippingLength || shippingWidth || shippingHeight) ? { length: shippingLength, width: shippingWidth, height: shippingHeight, unit: shippingDimUnit } : undefined,
+          shippingClass,
+          freeShippingThreshold,
+          methodPricing: Object.fromEntries(shippingMethods.map(m => [m, methodPricing[m] ?? 0])),
+          handlingTimeDays,
+          allowedMethods: shippingMethods.length ? shippingMethods as any : undefined,
+          originCountry: originCountry || undefined,
+          domesticOnly,
+          requiresSignature,
+          insuranceRequired,
+        } : undefined,
       };
       const r = await fetch("/api/inventory", {
         method: "POST",
@@ -7315,6 +7522,113 @@ function InventoryPanel() {
                   </div>
                 </div>
 
+                {/* ── Shipping Configuration ── */}
+                <div className="border-t pt-4 my-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={shippingEnabled}
+                      onChange={(e) => setShippingEnabled(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="font-medium text-sm">📦 Requires Shipping</span>
+                  </label>
+                  <div className="microtext text-muted-foreground mt-1 ml-6">Enable for physical items that need to be shipped to the customer.</div>
+                  {shippingEnabled && (
+                    <div className="mt-3 ml-6 space-y-3 p-3 rounded-md border bg-foreground/5">
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Shipping Parameters</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="microtext text-muted-foreground">Weight (lbs)</label>
+                          <input type="number" min={0} step={0.1} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof shippingWeightLbs === "number" ? shippingWeightLbs : ""} onChange={(e) => setShippingWeightLbs(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2.5" />
+                        </div>
+                        <div>
+                          <label className="microtext text-muted-foreground">Shipping Class</label>
+                          <select className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={shippingClass} onChange={(e) => setShippingClass(e.target.value as any)}>
+                            <option value="standard">Standard</option>
+                            <option value="oversized">Oversized</option>
+                            <option value="fragile">Fragile</option>
+                            <option value="hazardous">Hazardous</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="microtext text-muted-foreground">Dimensions</label>
+                        <div className="mt-1 flex items-center gap-2">
+                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof shippingLength === "number" ? shippingLength : ""} onChange={(e) => setShippingLength(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="L" title="Length" />
+                          <span className="text-muted-foreground">×</span>
+                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof shippingWidth === "number" ? shippingWidth : ""} onChange={(e) => setShippingWidth(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="W" title="Width" />
+                          <span className="text-muted-foreground">×</span>
+                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof shippingHeight === "number" ? shippingHeight : ""} onChange={(e) => setShippingHeight(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="H" title="Height" />
+                          <select className="h-9 px-2 py-1 border rounded-md bg-background" value={shippingDimUnit} onChange={(e) => setShippingDimUnit(e.target.value as any)}>
+                            <option value="in">in</option>
+                            <option value="cm">cm</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="microtext text-muted-foreground">Shipping Methods & Pricing</label>
+                        <div className="mt-1 space-y-2">
+                          {(['standard', 'express', 'overnight', 'freight'] as const).map((m) => (
+                            <div key={m} className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={shippingMethods.includes(m)}
+                                onChange={(e) => {
+                                  if (e.target.checked) setShippingMethods((prev) => [...prev, m]);
+                                  else setShippingMethods((prev) => prev.filter((x) => x !== m));
+                                }}
+                                className="rounded border-gray-300"
+                              />
+                              <span className="capitalize text-sm w-20">{m}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground">$</span>
+                                <input
+                                  type="number" min={0} step={0.01}
+                                  className="h-8 w-24 px-2 py-1 border rounded-md bg-background text-sm"
+                                  value={methodPricing[m] ?? ""}
+                                  onChange={(e) => setMethodPricing((prev) => ({ ...prev, [m]: e.target.value === "" ? 0 : Number(e.target.value) }))}
+                                  placeholder="0.00"
+                                  disabled={!shippingMethods.includes(m)}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="microtext text-muted-foreground">Free Shipping Threshold (USD)</label>
+                        <input type="number" min={0} step={0.01} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof freeShippingThreshold === "number" ? freeShippingThreshold : ""} onChange={(e) => setFreeShippingThreshold(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="Orders above this amount ship free" />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="microtext text-muted-foreground">Handling Time (business days)</label>
+                          <input type="number" min={0} step={1} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof handlingTimeDays === "number" ? handlingTimeDays : ""} onChange={(e) => setHandlingTimeDays(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2" />
+                        </div>
+                        <div>
+                          <label className="microtext text-muted-foreground">Origin Country</label>
+                          <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={originCountry} onChange={(e) => setOriginCountry(e.target.value.toUpperCase().slice(0, 2))} placeholder="US" maxLength={2} />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-4">
+                        <label className="inline-flex items-center gap-1.5 text-sm">
+                          <input type="checkbox" checked={domesticOnly} onChange={(e) => setDomesticOnly(e.target.checked)} className="rounded border-gray-300" />
+                          <span>Domestic Only</span>
+                        </label>
+                        <label className="inline-flex items-center gap-1.5 text-sm">
+                          <input type="checkbox" checked={requiresSignature} onChange={(e) => setRequiresSignature(e.target.checked)} className="rounded border-gray-300" />
+                          <span>Require Signature</span>
+                        </label>
+                        <label className="inline-flex items-center gap-1.5 text-sm">
+                          <input type="checkbox" checked={insuranceRequired} onChange={(e) => setInsuranceRequired(e.target.checked)} className="rounded border-gray-300" />
+                          <span>Insurance Required</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="border-t pt-4 my-4">
                   <label className="flex items-center gap-2">
                     <input
@@ -7815,6 +8129,113 @@ function InventoryPanel() {
                       <span>{editTarget?.taxable ? "Taxable" : "Non-taxable"}</span>
                     </label>
                   </div>
+                </div>
+
+                {/* ── Shipping Configuration (Edit) ── */}
+                <div className="border-t pt-4 my-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={editShippingEnabled}
+                      onChange={(e) => setEditShippingEnabled(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="font-medium text-sm">📦 Requires Shipping</span>
+                  </label>
+                  <div className="microtext text-muted-foreground mt-1 ml-6">Enable for physical items that need to be shipped to the customer.</div>
+                  {editShippingEnabled && (
+                    <div className="mt-3 ml-6 space-y-3 p-3 rounded-md border bg-foreground/5">
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Shipping Parameters</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="microtext text-muted-foreground">Weight (lbs)</label>
+                          <input type="number" min={0} step={0.1} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof editShippingWeightLbs === "number" ? editShippingWeightLbs : ""} onChange={(e) => setEditShippingWeightLbs(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2.5" />
+                        </div>
+                        <div>
+                          <label className="microtext text-muted-foreground">Shipping Class</label>
+                          <select className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={editShippingClass} onChange={(e) => setEditShippingClass(e.target.value as any)}>
+                            <option value="standard">Standard</option>
+                            <option value="oversized">Oversized</option>
+                            <option value="fragile">Fragile</option>
+                            <option value="hazardous">Hazardous</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="microtext text-muted-foreground">Dimensions</label>
+                        <div className="mt-1 flex items-center gap-2">
+                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof editShippingLength === "number" ? editShippingLength : ""} onChange={(e) => setEditShippingLength(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="L" title="Length" />
+                          <span className="text-muted-foreground">×</span>
+                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof editShippingWidth === "number" ? editShippingWidth : ""} onChange={(e) => setEditShippingWidth(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="W" title="Width" />
+                          <span className="text-muted-foreground">×</span>
+                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof editShippingHeight === "number" ? editShippingHeight : ""} onChange={(e) => setEditShippingHeight(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="H" title="Height" />
+                          <select className="h-9 px-2 py-1 border rounded-md bg-background" value={editShippingDimUnit} onChange={(e) => setEditShippingDimUnit(e.target.value as any)}>
+                            <option value="in">in</option>
+                            <option value="cm">cm</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="microtext text-muted-foreground">Shipping Methods & Pricing</label>
+                        <div className="mt-1 space-y-2">
+                          {(['standard', 'express', 'overnight', 'freight'] as const).map((m) => (
+                            <div key={m} className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={editShippingMethods.includes(m)}
+                                onChange={(e) => {
+                                  if (e.target.checked) setEditShippingMethods((prev) => [...prev, m]);
+                                  else setEditShippingMethods((prev) => prev.filter((x) => x !== m));
+                                }}
+                                className="rounded border-gray-300"
+                              />
+                              <span className="capitalize text-sm w-20">{m}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground">$</span>
+                                <input
+                                  type="number" min={0} step={0.01}
+                                  className="h-8 w-24 px-2 py-1 border rounded-md bg-background text-sm"
+                                  value={editMethodPricing[m] ?? ""}
+                                  onChange={(e) => setEditMethodPricing((prev) => ({ ...prev, [m]: e.target.value === "" ? 0 : Number(e.target.value) }))}
+                                  placeholder="0.00"
+                                  disabled={!editShippingMethods.includes(m)}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="microtext text-muted-foreground">Free Shipping Threshold (USD)</label>
+                        <input type="number" min={0} step={0.01} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof editFreeShippingThreshold === "number" ? editFreeShippingThreshold : ""} onChange={(e) => setEditFreeShippingThreshold(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="Orders above this amount ship free" />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="microtext text-muted-foreground">Handling Time (business days)</label>
+                          <input type="number" min={0} step={1} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof editHandlingTimeDays === "number" ? editHandlingTimeDays : ""} onChange={(e) => setEditHandlingTimeDays(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2" />
+                        </div>
+                        <div>
+                          <label className="microtext text-muted-foreground">Origin Country</label>
+                          <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={editOriginCountry} onChange={(e) => setEditOriginCountry(e.target.value.toUpperCase().slice(0, 2))} placeholder="US" maxLength={2} />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-4">
+                        <label className="inline-flex items-center gap-1.5 text-sm">
+                          <input type="checkbox" checked={editDomesticOnly} onChange={(e) => setEditDomesticOnly(e.target.checked)} className="rounded border-gray-300" />
+                          <span>Domestic Only</span>
+                        </label>
+                        <label className="inline-flex items-center gap-1.5 text-sm">
+                          <input type="checkbox" checked={editRequiresSignature} onChange={(e) => setEditRequiresSignature(e.target.checked)} className="rounded border-gray-300" />
+                          <span>Require Signature</span>
+                        </label>
+                        <label className="inline-flex items-center gap-1.5 text-sm">
+                          <input type="checkbox" checked={editInsuranceRequired} onChange={(e) => setEditInsuranceRequired(e.target.checked)} className="rounded border-gray-300" />
+                          <span>Insurance Required</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t pt-4 my-4">

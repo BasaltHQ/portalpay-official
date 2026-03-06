@@ -58,6 +58,19 @@ type ReceiptLineItem = {
   label: string;
   priceUsd: number;
   qty?: number;
+  requiresShipping?: boolean;
+  shippingConfig?: {
+    methodPricing?: Record<string, number>;
+    allowedMethods?: string[];
+    freeShippingThreshold?: number;
+    weightGrams?: number;
+    lengthCm?: number;
+    widthCm?: number;
+    heightCm?: number;
+    shippingClass?: string;
+    handlingTimeDays?: number;
+    originCountry?: string;
+  };
 };
 
 type Receipt = {
@@ -75,6 +88,9 @@ type Receipt = {
   sessionId?: string;
   status?: string;
   transactionHash?: string;
+  shippingAddress?: { name?: string; line1?: string; line2?: string; city?: string; state?: string; zip?: string; country?: string };
+  shippingMethod?: string;
+  shippingCostUsd?: number;
 };
 
 // Helper to determine if receipt is already paid/settled
@@ -1166,6 +1182,7 @@ export default function PortalReceiptPage() {
         .filter((it) => !/tax/i.test(it.label || ""))
         .filter((it) => !/gratuity/i.test(it.label || ""))
         .filter((it) => !/tip/i.test(it.label || ""))
+        .filter((it) => !/^shipping/i.test(it.label || ""))
         .reduce((s, it) => s + Number(it.priceUsd || 0), 0);
       const subtotal = +base.toFixed(2);
       if (subtotal > 0) return subtotal;
@@ -1237,21 +1254,133 @@ export default function PortalReceiptPage() {
     [itemsSubtotalUsd, taxUsd]
   );
 
-  const processingFeeUsd = useMemo(() => {
-    // If the backend firmly baked a processing fee/portal fee label and we strongly want to rely on it, we could.
-    // However, since the config might have updated after generation (or fixed recently), 
-    // it's safer and clearer to calculate exact math so the % matches the dollar amount cleanly.
-    const feePctFraction = Math.max(0, (basePlatformFeePct + Number(processingFeePct || 0)) / 100);
-    return +((itemsSubtotalUsd + taxUsd + tipUsd) * feePctFraction).toFixed(2);
-  }, [itemsSubtotalUsd, taxUsd, tipUsd, basePlatformFeePct, processingFeePct]);
+  // ──── SHIPPING STATE ────
+  const shippingRequired = useMemo(() => {
+    return items.some((it) => it.requiresShipping);
+  }, [items]);
 
-  // We calculate totalUsd dynamically to ensure the displayed total perfectly matches 
-  // the sum of the components (Subtotal + Tax + Tip + Processing Fee) especially 
-  // when the processing fee is actively recalculated on the frontend for older receipts.
+  const shippingOptions = useMemo(() => {
+    const methodSet = new Set<string>();
+    const pricingMap: Record<string, number> = {};
+    for (const it of items) {
+      if (!it.requiresShipping || !it.shippingConfig) continue;
+      const methods = it.shippingConfig.allowedMethods || [];
+      const pricing = it.shippingConfig.methodPricing || {};
+      for (const m of methods) {
+        methodSet.add(m);
+        if (typeof pricing[m] === 'number') {
+          pricingMap[m] = Math.max(pricingMap[m] || 0, pricing[m]);
+        }
+      }
+    }
+    if (methodSet.size === 0) methodSet.add('standard');
+    const methods = Array.from(methodSet).sort((a, b) => {
+      const order = ['standard', 'express', 'overnight', 'freight'];
+      return order.indexOf(a) - order.indexOf(b);
+    });
+    return { methods, pricing: pricingMap };
+  }, [items]);
+
+  const [shipName, setShipName] = useState('');
+  const [shipLine1, setShipLine1] = useState('');
+  const [shipLine2, setShipLine2] = useState('');
+  const [shipCity, setShipCity] = useState('');
+  const [shipState, setShipState] = useState('');
+  const [shipZip, setShipZip] = useState('');
+  const [shipCountry, setShipCountry] = useState('US');
+  const [shipMethod, setShipMethod] = useState('');
+  const [shippingComplete, setShippingComplete] = useState(false);
+  const [shippingSaving, setShippingSaving] = useState(false);
+  const [shippingError, setShippingError] = useState('');
+
+  // Auto-select first shipping method
+  useEffect(() => {
+    if (shippingRequired && shippingOptions.methods.length > 0 && !shipMethod) {
+      setShipMethod(shippingOptions.methods[0]);
+    }
+  }, [shippingRequired, shippingOptions.methods, shipMethod]);
+
+  // Auto-detect pre-existing shipping info (page refresh)
+  useEffect(() => {
+    if (receipt?.shippingAddress?.line1 && !shippingComplete) {
+      const a = receipt.shippingAddress;
+      if (a.name) setShipName(a.name);
+      if (a.line1) setShipLine1(a.line1);
+      if (a.line2) setShipLine2(a.line2);
+      if (a.city) setShipCity(a.city);
+      if (a.state) setShipState(a.state);
+      if (a.zip) setShipZip(a.zip);
+      if (a.country) setShipCountry(a.country);
+      if (receipt.shippingMethod) setShipMethod(receipt.shippingMethod);
+      setShippingComplete(true);
+    }
+  }, [receipt?.shippingAddress, receipt?.shippingMethod]);
+
+  const shippingCostUsd = useMemo(() => {
+    if (!shippingRequired || shippingComplete) {
+      return receipt?.shippingCostUsd || 0;
+    }
+    if (!shipMethod) return 0;
+    const threshold = items.reduce((max, it) => {
+      if (it.requiresShipping && it.shippingConfig?.freeShippingThreshold) {
+        return Math.max(max, it.shippingConfig.freeShippingThreshold);
+      }
+      return max;
+    }, 0);
+    if (threshold > 0 && itemsSubtotalUsd >= threshold) return 0;
+    return +(shippingOptions.pricing[shipMethod] || 0).toFixed(2);
+  }, [shippingRequired, shippingComplete, shipMethod, shippingOptions.pricing, itemsSubtotalUsd, items, receipt?.shippingCostUsd]);
+
+  const shippingAddressValid = useMemo(() => {
+    return !!(shipName.trim() && shipLine1.trim() && shipCity.trim() && shipZip.trim() && shipCountry.trim());
+  }, [shipName, shipLine1, shipCity, shipZip, shipCountry]);
+
+  const handleShippingSubmit = async () => {
+    if (!shippingAddressValid || !shipMethod || !receiptId) return;
+    setShippingSaving(true);
+    setShippingError('');
+    try {
+      const res = await fetch(`/api/receipts/${receiptId}/shipping`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shippingAddress: {
+            name: shipName.trim(),
+            line1: shipLine1.trim(),
+            line2: shipLine2.trim(),
+            city: shipCity.trim(),
+            state: shipState.trim(),
+            zip: shipZip.trim(),
+            country: shipCountry.trim(),
+          },
+          shippingMethod: shipMethod,
+          shippingCostUsd: shippingCostUsd,
+          buyerWallet: account?.address || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({ error: 'Failed to save shipping info' }));
+        throw new Error(j.error || 'Failed');
+      }
+      const j = await res.json();
+      if (j.receipt) setReceipt(j.receipt);
+      setShippingComplete(true);
+    } catch (err: any) {
+      setShippingError(err.message || 'Failed to save shipping info');
+    } finally {
+      setShippingSaving(false);
+    }
+  };
+
+  const processingFeeUsd = useMemo(() => {
+    const feePctFraction = Math.max(0, (basePlatformFeePct + Number(processingFeePct || 0)) / 100);
+    return +((itemsSubtotalUsd + taxUsd + tipUsd + shippingCostUsd) * feePctFraction).toFixed(2);
+  }, [itemsSubtotalUsd, taxUsd, tipUsd, shippingCostUsd, basePlatformFeePct, processingFeePct]);
+
   const totalUsd = useMemo(() => {
     if (!receipt) return 0;
-    return +(itemsSubtotalUsd + taxUsd + tipUsd + processingFeeUsd).toFixed(2);
-  }, [receipt, itemsSubtotalUsd, taxUsd, tipUsd, processingFeeUsd]);
+    return +(itemsSubtotalUsd + taxUsd + tipUsd + shippingCostUsd + processingFeeUsd).toFixed(2);
+  }, [receipt, itemsSubtotalUsd, taxUsd, tipUsd, shippingCostUsd, processingFeeUsd]);
 
   // Compute receipt readiness (loaded and has a positive total)
   useEffect(() => {
@@ -1298,7 +1427,8 @@ export default function PortalReceiptPage() {
       try {
         const el = contentRef.current || containerRef.current;
         let h = el ? el.scrollHeight : document.documentElement.scrollHeight;
-        const minH = isTwoColumnLayout ? (isEmbedded ? 580 : 720) : (isEmbedded ? 920 : 560);
+        const shippingExtra = shippingRequired ? 200 : 0;
+        const minH = isTwoColumnLayout ? (isEmbedded ? 580 + shippingExtra : 720 + shippingExtra) : (isEmbedded ? 920 + shippingExtra : 560 + shippingExtra);
         h = Math.max(minH, h);
         const last = lastPreferredHeightRef.current || 0;
         if (Math.abs(h - last) > 8) {
@@ -1322,7 +1452,7 @@ export default function PortalReceiptPage() {
         if (ro) ro.disconnect();
       } catch { }
     };
-  }, [isIframe, isTwoColumnLayout, receiptReady, configReady, totalUsd, correlationId, receiptId, targetOrigin]);
+  }, [isIframe, isTwoColumnLayout, receiptReady, configReady, totalUsd, correlationId, receiptId, targetOrigin, shippingRequired, shippingComplete]);
 
   // Currency and rates
   const [rates, setRates] = useState<EthRates>({});
@@ -2640,112 +2770,295 @@ export default function PortalReceiptPage() {
 
                             </div>
                           ) : (
-                            <CheckoutWidget
-                              key={`${token}-${currency}`}
-                              className="w-full"
-                              client={client}
-                              chain={chain}
-                              currency={widgetCurrency as any}
-                              amount={(isFiatFlow && widgetFiatAmount) ? (widgetFiatAmount as any) : widgetAmount}
-                              seller={sellerAddress || merchantWallet || recipient}
-                              tokenAddress={token === "ETH" ? undefined : (tokenAddr as any)}
-                              showThirdwebBranding={false}
-                              theme={darkTheme({
-                                colors: {
-                                  modalBg: "transparent",
-                                  borderColor: "transparent",
-                                  primaryText: "#ffffff",
-                                  secondaryText: "#ffffff",
-                                  accentText: "#ffffff",
-                                  accentButtonBg: theme.primaryColor,
-                                  accentButtonText: "#ffffff",
-                                  primaryButtonBg: theme.primaryColor,
-                                  primaryButtonText: "#ffffff",
-                                  connectedButtonBg: "rgba(255,255,255,0.04)",
-                                  connectedButtonBgHover: "rgba(255,255,255,0.08)",
-                                },
-                              })}
-                              style={{
-                                width: "100%",
-                                maxWidth: "100%",
+                            <>
+                              {/* ── SHIPPING ACCORDION ── */}
+                              {shippingRequired && (
+                                <div className="w-full mb-4">
+                                  {/* Step 1: Shipping Details */}
+                                  <div className="rounded-xl border border-white/10 overflow-hidden mb-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                    <button
+                                      type="button"
+                                      className="w-full flex items-center justify-between px-4 py-3 text-left"
+                                      onClick={() => { if (shippingComplete) setShippingComplete(false); }}
+                                      style={{ cursor: shippingComplete ? 'pointer' : 'default' }}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${shippingComplete ? 'bg-green-500 text-white' : 'bg-white/10 text-white'}`}>
+                                          {shippingComplete ? '✓' : '1'}
+                                        </div>
+                                        <span className="text-sm font-semibold text-white">Shipping Details</span>
+                                      </div>
+                                      {shippingComplete && (
+                                        <span className="text-xs text-white/50">Click to edit</span>
+                                      )}
+                                    </button>
 
-                                background: "transparent",
-                                border: "none",
-                                borderRadius: 0,
-                              }}
-                              connectOptions={{ accountAbstraction: { chain, sponsorGas: true } }}
-                              purchaseData={{
-                                productId: `portal:${receiptId}`,
-                                meta: {
-                                  token,
-                                  currency,
-                                  usd: totalUsd,
-                                  tipUsd,
-                                  itemsSubtotalUsd,
-                                  taxUsd,
-                                  processingFeeUsd: processingFeeUsd,
-                                  feePct: (basePlatformFeePct + Number(processingFeePct || 0)),
-                                },
-                              }}
-                              onSuccess={(result: any) => {
-                                // Onramp Tracking: Capture success and link txHash immediately
-                                console.log("[CHECKOUT] Success:", result);
-                                const txHash = result?.transactionHash || result?.hash;
-                                const buyer = (account?.address || "").toLowerCase();
+                                    {/* Collapsed summary when complete */}
+                                    {shippingComplete && (
+                                      <div className="px-4 pb-3 text-xs text-white/60">
+                                        <div>{shipName} · {shipLine1}{shipLine2 ? `, ${shipLine2}` : ''}</div>
+                                        <div>{shipCity}, {shipState} {shipZip} {shipCountry}</div>
+                                        <div className="mt-1 capitalize">{shipMethod} Shipping{shippingCostUsd > 0 ? ` · $${shippingCostUsd.toFixed(2)}` : ' · Free'}</div>
+                                      </div>
+                                    )}
 
-                                // IMMEDIATE STATE UPDATE TO BLOCK DOUBLE SPEND
-                                setPaymentConfirmed({
-                                  txHash: txHash || "",
-                                  amount: totalUsd,
-                                  token: token
-                                });
+                                    {/* Expanded form when not complete */}
+                                    {!shippingComplete && (
+                                      <div className="px-4 pb-4 space-y-3">
+                                        {/* Login gate — require wallet connection before shipping */}
+                                        {!account?.address ? (
+                                          <div className="flex flex-col items-center gap-3 py-6 text-center">
+                                            <div className="text-sm text-white/70">Please log in to continue with shipping</div>
+                                            <ConnectButton
+                                              client={client}
+                                              chain={chain}
+                                              wallets={wallets}
+                                              connectButton={{
+                                                label: <span className="microtext">Login to Continue</span>,
+                                                className: connectButtonClass,
+                                                style: getConnectButtonStyle(),
+                                              }}
+                                              connectModal={{
+                                                showThirdwebBranding: false,
+                                                title: "Login",
+                                                size: "compact",
+                                              }}
+                                              theme={twTheme}
+                                            />
+                                          </div>
+                                        ) : (
+                                          <>
+                                            <div className="grid grid-cols-1 gap-2">
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Full Name *" value={shipName} onChange={(e) => setShipName(e.target.value)} />
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 1 *" value={shipLine1} onChange={(e) => setShipLine1(e.target.value)} />
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 2 (optional)" value={shipLine2} onChange={(e) => setShipLine2(e.target.value)} />
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="City *" value={shipCity} onChange={(e) => setShipCity(e.target.value)} />
+                                                <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="State/Province" value={shipState} onChange={(e) => setShipState(e.target.value)} />
+                                              </div>
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="ZIP / Postal *" value={shipZip} onChange={(e) => setShipZip(e.target.value)} />
+                                                <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Country" value={shipCountry} onChange={(e) => setShipCountry(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} />
+                                              </div>
+                                            </div>
 
-                                // Link txHash to receipt immediately via receipt_claimed
-                                if (txHash && receiptId) {
-                                  postStatus("paid", {
-                                    buyerWallet: buyer,
-                                    txHash
-                                  }).catch(e => console.error("[CHECKOUT] Failed to update status:", e));
-                                } else {
-                                  postStatus("checkout_success", { buyer });
-                                }
+                                            {/* Shipping method selector with prices */}
+                                            <div>
+                                              <div className="text-xs text-white/50 mb-2 font-medium">Select Shipping Method</div>
+                                              <div className="space-y-1.5">
+                                                {shippingOptions.methods.map((m) => {
+                                                  const price = shippingOptions.pricing[m] || 0;
+                                                  const isFree = (() => {
+                                                    const threshold = items.reduce((max, it) => {
+                                                      if (it.requiresShipping && it.shippingConfig?.freeShippingThreshold) return Math.max(max, it.shippingConfig.freeShippingThreshold);
+                                                      return max;
+                                                    }, 0);
+                                                    return threshold > 0 && itemsSubtotalUsd >= threshold;
+                                                  })();
+                                                  return (
+                                                    <label key={m} className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${shipMethod === m ? 'bg-white/10 border border-white/20' : 'border border-transparent hover:bg-white/5'}`}>
+                                                      <div className="flex items-center gap-2">
+                                                        <input type="radio" name="shipMethod" value={m} checked={shipMethod === m} onChange={() => setShipMethod(m)} className="accent-emerald-500" />
+                                                        <span className="text-sm text-white capitalize">{m}</span>
+                                                      </div>
+                                                      <span className="text-sm font-medium text-white">{isFree ? 'Free' : price > 0 ? `$${price.toFixed(2)}` : 'Free'}</span>
+                                                    </label>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
 
-                                // Legacy post-processing steps (billing, postMessage)
-                                try {
-                                  fetch("/api/billing/purchase", {
-                                    method: "POST",
-                                    headers: {
-                                      "Content-Type": "application/json",
-                                      "x-wallet": buyer,
-                                      "x-recipient": merchantWallet || recipient,
+                                            {shippingError && <div className="text-xs text-red-400">{shippingError}</div>}
+
+                                            <button
+                                              type="button"
+                                              disabled={!shippingAddressValid || !shipMethod || shippingSaving}
+                                              onClick={handleShippingSubmit}
+                                              className="w-full h-10 rounded-lg text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                              style={{ backgroundColor: shippingAddressValid && shipMethod ? (theme.primaryColor || '#10b981') : 'rgba(255,255,255,0.1)' }}
+                                            >
+                                              {shippingSaving ? 'Saving…' : 'Continue to Payment →'}
+                                            </button>
+                                          </>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Step 2: Payment (visible only when shipping is complete) */}
+                                  <div className={`rounded-xl border overflow-hidden transition-all duration-300 ${shippingComplete ? 'border-white/10 opacity-100 max-h-[2000px]' : 'border-transparent opacity-40 max-h-12 pointer-events-none'}`} style={{ background: shippingComplete ? 'rgba(255,255,255,0.03)' : 'transparent' }}>
+                                    <div className="flex items-center gap-2 px-4 py-3">
+                                      <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${shippingComplete ? 'bg-white/10 text-white' : 'bg-white/5 text-white/40'}`}>2</div>
+                                      <span className={`text-sm font-semibold ${shippingComplete ? 'text-white' : 'text-white/40'}`}>Payment</span>
+                                    </div>
+                                    {shippingComplete && (
+                                      <div className="px-2 pb-2">
+                                        <CheckoutWidget
+                                          key={`${token}-${currency}`}
+                                          className="w-full"
+                                          client={client}
+                                          chain={chain}
+                                          currency={widgetCurrency as any}
+                                          amount={(isFiatFlow && widgetFiatAmount) ? (widgetFiatAmount as any) : widgetAmount}
+                                          seller={sellerAddress || merchantWallet || recipient}
+                                          tokenAddress={token === "ETH" ? undefined : (tokenAddr as any)}
+                                          showThirdwebBranding={false}
+                                          theme={darkTheme({
+                                            colors: {
+                                              modalBg: "transparent",
+                                              borderColor: "transparent",
+                                              primaryText: "#ffffff",
+                                              secondaryText: "#ffffff",
+                                              accentText: "#ffffff",
+                                              accentButtonBg: theme.primaryColor,
+                                              accentButtonText: "#ffffff",
+                                              primaryButtonBg: theme.primaryColor,
+                                              primaryButtonText: "#ffffff",
+                                              connectedButtonBg: "rgba(255,255,255,0.04)",
+                                              connectedButtonBgHover: "rgba(255,255,255,0.08)",
+                                            },
+                                          })}
+                                          style={{
+                                            width: "100%",
+                                            maxWidth: "100%",
+                                            background: "transparent",
+                                            border: "none",
+                                            borderRadius: 0,
+                                          }}
+                                          connectOptions={{ accountAbstraction: { chain, sponsorGas: true } }}
+                                          purchaseData={{
+                                            productId: `portal:${receiptId}`,
+                                            meta: {
+                                              token,
+                                              currency,
+                                              usd: totalUsd,
+                                              tipUsd,
+                                              itemsSubtotalUsd,
+                                              taxUsd,
+                                              processingFeeUsd,
+                                              feePct: (basePlatformFeePct + Number(processingFeePct || 0)),
+                                              shipping: {
+                                                name: shipName,
+                                                line1: shipLine1,
+                                                line2: shipLine2,
+                                                city: shipCity,
+                                                state: shipState,
+                                                zip: shipZip,
+                                                country: shipCountry,
+                                                method: shipMethod,
+                                                costUsd: shippingCostUsd,
+                                              }
+                                            },
+                                          }}
+                                          onSuccess={(result: any) => {
+                                            console.log("[CHECKOUT] Success:", result);
+                                            const txHash = result?.transactionHash || result?.hash;
+                                            const buyer = (account?.address || "").toLowerCase();
+                                            setPaymentConfirmed({ txHash: txHash || "", amount: totalUsd, token });
+                                            if (txHash && receiptId) {
+                                              postStatus("paid", { buyerWallet: buyer, txHash }).catch(e => console.error("[CHECKOUT] Failed:", e));
+                                            } else {
+                                              postStatus("checkout_success", { buyer });
+                                            }
+                                            try {
+                                              fetch("/api/billing/purchase", {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json", "x-wallet": buyer, "x-recipient": merchantWallet || recipient },
+                                                body: JSON.stringify({ seconds: 1, usd: Number(totalUsd.toFixed(2)), token, wallet: buyer, receiptId, recipient: merchantWallet || recipient, idempotencyKey: `portal:${receiptId}:${buyer}:${Date.now()}` }),
+                                              }).catch(() => { });
+                                              try { window.postMessage({ type: "billing:refresh" }, "*"); } catch { }
+                                              try {
+                                                if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+                                                  const confirmToken = `ppc_${receiptId}_${Date.now()}`;
+                                                  window.parent.postMessage({ type: "gateway-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                                  window.parent.postMessage({ type: "portalpay-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                                }
+                                              } catch { }
+                                            } catch { }
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              {/* Non-shipping: render CheckoutWidget directly */}
+                              {!shippingRequired && (
+                                <CheckoutWidget
+                                  key={`noshp-${token}-${currency}`}
+                                  className="w-full"
+                                  client={client}
+                                  chain={chain}
+                                  currency={widgetCurrency as any}
+                                  amount={(isFiatFlow && widgetFiatAmount) ? (widgetFiatAmount as any) : widgetAmount}
+                                  seller={sellerAddress || merchantWallet || recipient}
+                                  tokenAddress={token === "ETH" ? undefined : (tokenAddr as any)}
+                                  showThirdwebBranding={false}
+                                  theme={darkTheme({
+                                    colors: {
+                                      modalBg: "transparent",
+                                      borderColor: "transparent",
+                                      primaryText: "#ffffff",
+                                      secondaryText: "#ffffff",
+                                      accentText: "#ffffff",
+                                      accentButtonBg: theme.primaryColor,
+                                      accentButtonText: "#ffffff",
+                                      primaryButtonBg: theme.primaryColor,
+                                      primaryButtonText: "#ffffff",
+                                      connectedButtonBg: "rgba(255,255,255,0.04)",
+                                      connectedButtonBgHover: "rgba(255,255,255,0.08)",
                                     },
-                                    body: JSON.stringify({
-                                      seconds: 1,
-                                      usd: Number(totalUsd.toFixed(2)),
+                                  })}
+                                  style={{
+                                    width: "100%",
+                                    maxWidth: "100%",
+                                    background: "transparent",
+                                    border: "none",
+                                    borderRadius: 0,
+                                  }}
+                                  connectOptions={{ accountAbstraction: { chain, sponsorGas: true } }}
+                                  purchaseData={{
+                                    productId: `portal:${receiptId}`,
+                                    meta: {
                                       token,
-                                      wallet: buyer,
-                                      receiptId,
-                                      recipient: merchantWallet || recipient,
-                                      idempotencyKey: `portal:${receiptId}:${buyer}:${Date.now()}`,
-                                    }),
-                                  }).catch(() => { });
-
-                                  try {
-                                    window.postMessage({ type: "billing:refresh" }, "*");
-                                  } catch { }
-
-                                  try {
-                                    if (typeof window !== "undefined" && window.parent && window.parent !== window) {
-                                      const confirmToken = `ppc_${receiptId}_${Date.now()}`;
-                                      // New event name (primary)
-                                      window.parent.postMessage({ type: "gateway-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
-                                      // DEPRECATED: Remove after 2026-04-30 - kept for backwards compatibility
-                                      window.parent.postMessage({ type: "portalpay-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                      currency,
+                                      usd: totalUsd,
+                                      tipUsd,
+                                      itemsSubtotalUsd,
+                                      taxUsd,
+                                      processingFeeUsd,
+                                      feePct: (basePlatformFeePct + Number(processingFeePct || 0)),
+                                    },
+                                  }}
+                                  onSuccess={(result: any) => {
+                                    console.log("[CHECKOUT] Success:", result);
+                                    const txHash = result?.transactionHash || result?.hash;
+                                    const buyer = (account?.address || "").toLowerCase();
+                                    setPaymentConfirmed({ txHash: txHash || "", amount: totalUsd, token });
+                                    if (txHash && receiptId) {
+                                      postStatus("paid", { buyerWallet: buyer, txHash }).catch(e => console.error("[CHECKOUT] Failed:", e));
+                                    } else {
+                                      postStatus("checkout_success", { buyer });
                                     }
-                                  } catch { }
-                                } catch { }
-                              }}
-                            />
+                                    try {
+                                      fetch("/api/billing/purchase", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json", "x-wallet": buyer, "x-recipient": merchantWallet || recipient },
+                                        body: JSON.stringify({ seconds: 1, usd: Number(totalUsd.toFixed(2)), token, wallet: buyer, receiptId, recipient: merchantWallet || recipient, idempotencyKey: `portal:${receiptId}:${buyer}:${Date.now()}` }),
+                                      }).catch(() => { });
+                                      try { window.postMessage({ type: "billing:refresh" }, "*"); } catch { }
+                                      try {
+                                        if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+                                          const confirmToken = `ppc_${receiptId}_${Date.now()}`;
+                                          window.parent.postMessage({ type: "gateway-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                          window.parent.postMessage({ type: "portalpay-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                        }
+                                      } catch { }
+                                    } catch { }
+                                  }}
+                                />
+                              )}
+                            </>
                           )}
                         </>
                       ) : (
@@ -3141,120 +3454,302 @@ export default function PortalReceiptPage() {
                             </div>
                           </div>
                         ) : (
-                          <CheckoutWidget
-                            key={`${token}-${currency}`}
-                            className="w-full"
-                            client={client}
-                            chain={base} // FORCE Base chain to align with hardcoded Base tokens
-                            currency={currency as any} // valid on Base
-                            amount={(isFiatFlow && widgetFiatAmount) ? (widgetFiatAmount as any) : widgetAmount}
-                            seller={sellerAddress || merchantWallet || recipient}
-                            tokenAddress={token === "ETH" ? undefined : (tokenAddr as any)}
-                            showThirdwebBranding={false}
-                            theme={darkTheme({
-                              colors: {
-                                modalBg: "transparent",
-                                borderColor: "transparent",
-                                primaryText: "#ffffff",
-                                secondaryText: "#ffffff",
-                                accentText: "#ffffff",
-                                accentButtonBg: theme.primaryColor,
-                                accentButtonText: "#ffffff",
-                                primaryButtonBg: theme.primaryColor,
-                                primaryButtonText: "#ffffff",
-                                connectedButtonBg: "rgba(255,255,255,0.04)",
-                                connectedButtonBgHover: "rgba(255,255,255,0.08)",
-                              },
-                            })}
-                            style={{
-                              width: "100%",
-                              maxWidth: "100%",
-
-                              background: "transparent",
-                              border: "none",
-                              borderRadius: 0,
-                            }}
-                            connectOptions={{ accountAbstraction: { chain, sponsorGas: true } }}
-
-                            purchaseData={{
-                              productId: `portal:${receiptId}`,
-                              meta: {
-                                token,
-                                currency,
-                                usd: totalUsd,
-                                tipUsd,
-                                itemsSubtotalUsd,
-                                taxUsd,
-                                processingFeeUsd: processingFeeUsd,
-                                feePct: (basePlatformFeePct + Number(processingFeePct || 0)),
-                                employeeId: receipt?.employeeId,
-                                sessionId: receipt?.sessionId,
-                              },
-                            }}
-                            onSuccess={async (data: any) => {
-                              try {
-                                const wallet = (account?.address || "").toLowerCase();
-
-                                // Robust txHash extraction from Thirdweb SDK response
-                                // data: { quote: BridgePrepareResult; statuses: Array<CompletedStatusResult>; }
-                                let txHash = "";
-                                const statuses = Array.isArray(data?.statuses) ? data.statuses : [];
-
-                                // 1. Try to find a transaction hash in statuses
-                                const txStatus = statuses.find((s: any) => s.transactionHash);
-                                if (txStatus) txHash = txStatus.transactionHash;
-
-                                // 2. Fallback to top-level property (older SDK versions)
-                                if (!txHash && data?.transactionHash) txHash = data.transactionHash;
-
-                                // 3. Last resort fallback
-                                if (!txHash) txHash = "";
-
-                                setPaymentConfirmed({
-                                  txHash,
-                                  amount: totalUsd,
-                                  token: currency
-                                });
-
-                                await postStatus("paid", { buyerWallet: wallet, txHash });
-                                await fetch("/api/billing/purchase", {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                    "x-wallet": wallet,
-                                    "x-recipient": merchantWallet || recipient,
+                          <>
+                            {/* ── SHIPPING ACCORDION (single-column) ── */}
+                            {shippingRequired && (
+                              <div className="w-full mb-4">
+                                {/* Step 1: Shipping Details */}
+                                <div className="rounded-xl border border-white/10 overflow-hidden mb-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                  <button
+                                    type="button"
+                                    className="w-full flex items-center justify-between px-4 py-3 text-left"
+                                    onClick={() => { if (shippingComplete) setShippingComplete(false); }}
+                                    style={{ cursor: shippingComplete ? 'pointer' : 'default' }}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${shippingComplete ? 'bg-green-500 text-white' : 'bg-white/10 text-white'}`}>
+                                        {shippingComplete ? '✓' : '1'}
+                                      </div>
+                                      <span className="text-sm font-semibold text-white">Shipping Details</span>
+                                    </div>
+                                    {shippingComplete && (
+                                      <span className="text-xs text-white/50">Click to edit</span>
+                                    )}
+                                  </button>
+                                  {shippingComplete && (
+                                    <div className="px-4 pb-3 text-xs text-white/60">
+                                      <div>{shipName} · {shipLine1}{shipLine2 ? `, ${shipLine2}` : ''}</div>
+                                      <div>{shipCity}, {shipState} {shipZip} {shipCountry}</div>
+                                      <div className="mt-1 capitalize">{shipMethod} Shipping{shippingCostUsd > 0 ? ` · $${shippingCostUsd.toFixed(2)}` : ' · Free'}</div>
+                                    </div>
+                                  )}
+                                  {!shippingComplete && (
+                                    <div className="px-4 pb-4 space-y-3">
+                                      {/* Login gate — require wallet connection before shipping */}
+                                      {!account?.address ? (
+                                        <div className="flex flex-col items-center gap-3 py-6 text-center">
+                                          <div className="text-sm text-white/70">Please log in to continue with shipping</div>
+                                          <ConnectButton
+                                            client={client}
+                                            chain={chain}
+                                            wallets={wallets}
+                                            connectButton={{
+                                              label: <span className="microtext">Login to Continue</span>,
+                                              className: connectButtonClass,
+                                              style: getConnectButtonStyle(),
+                                            }}
+                                            connectModal={{
+                                              showThirdwebBranding: false,
+                                              title: "Login",
+                                              size: "compact",
+                                            }}
+                                            theme={twTheme}
+                                          />
+                                        </div>
+                                      ) : (
+                                        <>
+                                          <div className="grid grid-cols-1 gap-2">
+                                            <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Full Name *" value={shipName} onChange={(e) => setShipName(e.target.value)} />
+                                            <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 1 *" value={shipLine1} onChange={(e) => setShipLine1(e.target.value)} />
+                                            <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 2 (optional)" value={shipLine2} onChange={(e) => setShipLine2(e.target.value)} />
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="City *" value={shipCity} onChange={(e) => setShipCity(e.target.value)} />
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="State/Province" value={shipState} onChange={(e) => setShipState(e.target.value)} />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="ZIP / Postal *" value={shipZip} onChange={(e) => setShipZip(e.target.value)} />
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Country" value={shipCountry} onChange={(e) => setShipCountry(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} />
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <div className="text-xs text-white/50 mb-2 font-medium">Select Shipping Method</div>
+                                            <div className="space-y-1.5">
+                                              {shippingOptions.methods.map((m) => {
+                                                const price = shippingOptions.pricing[m] || 0;
+                                                const isFree = (() => {
+                                                  const threshold = items.reduce((max, it) => {
+                                                    if (it.requiresShipping && it.shippingConfig?.freeShippingThreshold) return Math.max(max, it.shippingConfig.freeShippingThreshold);
+                                                    return max;
+                                                  }, 0);
+                                                  return threshold > 0 && itemsSubtotalUsd >= threshold;
+                                                })();
+                                                return (
+                                                  <label key={m} className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${shipMethod === m ? 'bg-white/10 border border-white/20' : 'border border-transparent hover:bg-white/5'}`}>
+                                                    <div className="flex items-center gap-2">
+                                                      <input type="radio" name="shipMethodSingle" value={m} checked={shipMethod === m} onChange={() => setShipMethod(m)} className="accent-emerald-500" />
+                                                      <span className="text-sm text-white capitalize">{m}</span>
+                                                    </div>
+                                                    <span className="text-sm font-medium text-white">{isFree ? 'Free' : price > 0 ? `$${price.toFixed(2)}` : 'Free'}</span>
+                                                  </label>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                          {shippingError && <div className="text-xs text-red-400">{shippingError}</div>}
+                                          <button
+                                            type="button"
+                                            disabled={!shippingAddressValid || !shipMethod || shippingSaving}
+                                            onClick={handleShippingSubmit}
+                                            className="w-full h-10 rounded-lg text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                            style={{ backgroundColor: shippingAddressValid && shipMethod ? (theme.primaryColor || '#10b981') : 'rgba(255,255,255,0.1)' }}
+                                          >
+                                            {shippingSaving ? 'Saving…' : 'Continue to Payment →'}
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                {/* Step 2: Payment */}
+                                <div className={`rounded-xl border overflow-hidden transition-all duration-300 ${shippingComplete ? 'border-white/10 opacity-100 max-h-[2000px]' : 'border-transparent opacity-40 max-h-12 pointer-events-none'}`} style={{ background: shippingComplete ? 'rgba(255,255,255,0.03)' : 'transparent' }}>
+                                  <div className="flex items-center gap-2 px-4 py-3">
+                                    <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${shippingComplete ? 'bg-white/10 text-white' : 'bg-white/5 text-white/40'}`}>2</div>
+                                    <span className={`text-sm font-semibold ${shippingComplete ? 'text-white' : 'text-white/40'}`}>Payment</span>
+                                  </div>
+                                  {shippingComplete && (
+                                    <div className="px-2 pb-2">
+                                      <CheckoutWidget
+                                        key={`ship-${token}-${currency}`}
+                                        className="w-full"
+                                        client={client}
+                                        chain={base}
+                                        currency={currency as any}
+                                        amount={(isFiatFlow && widgetFiatAmount) ? (widgetFiatAmount as any) : widgetAmount}
+                                        seller={sellerAddress || merchantWallet || recipient}
+                                        tokenAddress={token === "ETH" ? undefined : (tokenAddr as any)}
+                                        showThirdwebBranding={false}
+                                        theme={darkTheme({
+                                          colors: {
+                                            modalBg: "transparent",
+                                            borderColor: "transparent",
+                                            primaryText: "#ffffff",
+                                            secondaryText: "#ffffff",
+                                            accentText: "#ffffff",
+                                            accentButtonBg: theme.primaryColor,
+                                            accentButtonText: "#ffffff",
+                                            primaryButtonBg: theme.primaryColor,
+                                            primaryButtonText: "#ffffff",
+                                            connectedButtonBg: "rgba(255,255,255,0.04)",
+                                            connectedButtonBgHover: "rgba(255,255,255,0.08)",
+                                          },
+                                        })}
+                                        style={{ width: "100%", maxWidth: "100%", background: "transparent", border: "none", borderRadius: 0 }}
+                                        connectOptions={{ accountAbstraction: { chain, sponsorGas: true } }}
+                                        purchaseData={{
+                                          productId: `portal:${receiptId}`,
+                                          meta: { token, currency, usd: totalUsd, tipUsd, itemsSubtotalUsd, taxUsd, processingFeeUsd, feePct: (basePlatformFeePct + Number(processingFeePct || 0)) },
+                                        }}
+                                        onSuccess={async (data: any) => {
+                                          try {
+                                            const wallet = (account?.address || "").toLowerCase();
+                                            let txHash = "";
+                                            const statuses = data?.status || [];
+                                            const txStatus = statuses.find((s: any) => s.transactionHash);
+                                            if (txStatus) txHash = txStatus.transactionHash;
+                                            if (!txHash && data?.transactionHash) txHash = data.transactionHash;
+                                            if (!txHash) txHash = "";
+                                            setPaymentConfirmed({ txHash, amount: totalUsd, token: currency });
+                                            await postStatus("paid", { buyerWallet: wallet, txHash });
+                                            await fetch("/api/billing/purchase", {
+                                              method: "POST",
+                                              headers: { "Content-Type": "application/json", "x-wallet": wallet, "x-recipient": merchantWallet || recipient },
+                                              body: JSON.stringify({ seconds: 1, usd: Number(totalUsd.toFixed(2)), token, wallet, receiptId, recipient: merchantWallet || recipient, idempotencyKey: `portal:${receiptId}:${wallet}:${Date.now()}` }),
+                                            });
+                                            try { window.postMessage({ type: "billing:refresh" }, "*"); } catch { }
+                                            try {
+                                              if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+                                                const confirmToken = `ppc_${receiptId}_${Date.now()}`;
+                                                window.parent.postMessage({ type: "gateway-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient, txHash }, targetOrigin);
+                                                window.parent.postMessage({ type: "portalpay-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                              }
+                                            } catch { }
+                                          } catch (err) { console.error("Checkout success handler error", err); }
+                                        }}
+                                        onError={(error) => { console.error("CheckoutWidget Error:", error); postStatus("checkout_error", { error: error.message }); }}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            {/* Non-shipping: render CheckoutWidget directly */}
+                            {!shippingRequired && (
+                              <CheckoutWidget
+                                key={`noshp-${token}-${currency}`}
+                                className="w-full"
+                                client={client}
+                                chain={base}
+                                currency={currency as any}
+                                amount={(isFiatFlow && widgetFiatAmount) ? (widgetFiatAmount as any) : widgetAmount}
+                                seller={sellerAddress || merchantWallet || recipient}
+                                tokenAddress={token === "ETH" ? undefined : (tokenAddr as any)}
+                                showThirdwebBranding={false}
+                                theme={darkTheme({
+                                  colors: {
+                                    modalBg: "transparent",
+                                    borderColor: "transparent",
+                                    primaryText: "#ffffff",
+                                    secondaryText: "#ffffff",
+                                    accentText: "#ffffff",
+                                    accentButtonBg: theme.primaryColor,
+                                    accentButtonText: "#ffffff",
+                                    primaryButtonBg: theme.primaryColor,
+                                    primaryButtonText: "#ffffff",
+                                    connectedButtonBg: "rgba(255,255,255,0.04)",
+                                    connectedButtonBgHover: "rgba(255,255,255,0.08)",
                                   },
-                                  body: JSON.stringify({
-                                    seconds: 1,
-                                    usd: Number(totalUsd.toFixed(2)),
+                                })}
+                                style={{
+                                  width: "100%",
+                                  maxWidth: "100%",
+
+                                  background: "transparent",
+                                  border: "none",
+                                  borderRadius: 0,
+                                }}
+                                connectOptions={{ accountAbstraction: { chain, sponsorGas: true } }}
+
+                                purchaseData={{
+                                  productId: `portal:${receiptId}`,
+                                  meta: {
                                     token,
-                                    wallet,
-                                    receiptId,
-                                    recipient: merchantWallet || recipient,
-                                    idempotencyKey: `portal:${receiptId}:${wallet}:${Date.now()}`,
-                                  }),
-                                });
-                                try {
-                                  window.postMessage({ type: "billing:refresh" }, "*");
-                                } catch { }
-                                try {
-                                  if (typeof window !== "undefined" && window.parent && window.parent !== window) {
-                                    const confirmToken = `ppc_${receiptId}_${Date.now()}`;
-                                    // New event name (primary)
-                                    window.parent.postMessage({ type: "gateway-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient, txHash }, targetOrigin);
-                                    // DEPRECATED: Remove after 2026-04-30 - kept for backwards compatibility
-                                    window.parent.postMessage({ type: "portalpay-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                    currency,
+                                    usd: totalUsd,
+                                    tipUsd,
+                                    itemsSubtotalUsd,
+                                    taxUsd,
+                                    processingFeeUsd: processingFeeUsd,
+                                    feePct: (basePlatformFeePct + Number(processingFeePct || 0)),
+                                    employeeId: receipt?.employeeId,
+                                    sessionId: receipt?.sessionId,
+                                  },
+                                }}
+                                onSuccess={async (data: any) => {
+                                  try {
+                                    const wallet = (account?.address || "").toLowerCase();
+
+                                    // Robust txHash extraction from Thirdweb SDK response
+                                    // data: { quote: BridgePrepareResult; statuses: Array<CompletedStatusResult>; }
+                                    let txHash = "";
+                                    const statuses = Array.isArray(data?.statuses) ? data.statuses : [];
+
+                                    // 1. Try to find a transaction hash in statuses
+                                    const txStatus = statuses.find((s: any) => s.transactionHash);
+                                    if (txStatus) txHash = txStatus.transactionHash;
+
+                                    // 2. Fallback to top-level property (older SDK versions)
+                                    if (!txHash && data?.transactionHash) txHash = data.transactionHash;
+
+                                    // 3. Last resort fallback
+                                    if (!txHash) txHash = "";
+
+                                    setPaymentConfirmed({
+                                      txHash,
+                                      amount: totalUsd,
+                                      token: currency
+                                    });
+
+                                    await postStatus("paid", { buyerWallet: wallet, txHash });
+                                    await fetch("/api/billing/purchase", {
+                                      method: "POST",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                        "x-wallet": wallet,
+                                        "x-recipient": merchantWallet || recipient,
+                                      },
+                                      body: JSON.stringify({
+                                        seconds: 1,
+                                        usd: Number(totalUsd.toFixed(2)),
+                                        token,
+                                        wallet,
+                                        receiptId,
+                                        recipient: merchantWallet || recipient,
+                                        idempotencyKey: `portal:${receiptId}:${wallet}:${Date.now()}`,
+                                      }),
+                                    });
+                                    try {
+                                      window.postMessage({ type: "billing:refresh" }, "*");
+                                    } catch { }
+                                    try {
+                                      if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+                                        const confirmToken = `ppc_${receiptId}_${Date.now()}`;
+                                        // New event name (primary)
+                                        window.parent.postMessage({ type: "gateway-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient, txHash }, targetOrigin);
+                                        // DEPRECATED: Remove after 2026-04-30 - kept for backwards compatibility
+                                        window.parent.postMessage({ type: "portalpay-card-success", token: confirmToken, correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
+                                      }
+                                    } catch { }
+                                  } catch (err) {
+                                    console.error("Checkout success handler error", err);
                                   }
-                                } catch { }
-                              } catch (err) {
-                                console.error("Checkout success handler error", err);
-                              }
-                            }}
-                            onError={(error) => {
-                              console.error("CheckoutWidget Error:", error);
-                              postStatus("checkout_error", { error: error.message });
-                            }}
-                          />
+                                }}
+                                onError={(error) => {
+                                  console.error("CheckoutWidget Error:", error);
+                                  postStatus("checkout_error", { error: error.message });
+                                }}
+                              />
+                            )}
+                          </>
                         )}
                       </>
                     ) : (

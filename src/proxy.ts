@@ -141,7 +141,22 @@ function applySecurityHeaders(req: NextRequest, res: NextResponse) {
     }
     res.headers.set("X-Content-Type-Options", "nosniff");
     res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-    const micPolicy = req.nextUrl.pathname.startsWith("/shop/") ? "microphone=(self)" : "microphone=()";
+    // Custom Domain Detection for headers
+    let headerHostname = req.headers.get("x-custom-host") || req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.hostname || "";
+    headerHostname = headerHostname.split(":")[0].toLowerCase();
+    const isMainDomainHeader =
+        (headerHostname.endsWith("basalthq.com")) ||
+        headerHostname.endsWith("portalpay.io") ||
+        headerHostname.includes("localhost") ||
+        headerHostname === "127.0.0.1" ||
+        headerHostname === "0.0.0.0" ||
+        headerHostname.includes("azurewebsites.net") ||
+        headerHostname.includes("vercel.app") ||
+        headerHostname.includes("xpaypass.com") ||
+        headerHostname.includes("vps.ovh.us");
+
+    const isShopLike = req.nextUrl.pathname.startsWith("/shop/") || (!isMainDomainHeader && req.nextUrl.pathname === "/");
+    const micPolicy = isShopLike ? "microphone=(self)" : "microphone=()";
     // Explicitly allow WebUSB prompts in top-level contexts
     res.headers.set(
         "Permissions-Policy",
@@ -213,7 +228,7 @@ export function proxy(req: NextRequest) {
     }
 
     // Custom Domain Detection (needed for favicon routing below)
-    let faviconHostname = req.headers.get("host") || url.hostname || "";
+    let faviconHostname = req.headers.get("x-custom-host") || req.headers.get("x-forwarded-host") || req.headers.get("host") || url.hostname || "";
     faviconHostname = faviconHostname.split(":")[0].toLowerCase();
 
     const isFaviconMainDomain =
@@ -277,7 +292,7 @@ export function proxy(req: NextRequest) {
 
     // Custom Domain Rewriting
     // If the hostname is NOT one of our main domains, we treat it as a custom shop domain.
-    let hostname = req.headers.get("host") || url.hostname || "";
+    let hostname = req.headers.get("x-custom-host") || req.headers.get("x-forwarded-host") || req.headers.get("host") || url.hostname || "";
     // Strip port if present
     hostname = hostname.split(":")[0].toLowerCase();
 

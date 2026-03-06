@@ -544,11 +544,11 @@ function parseOrderBy(sql: string): Sort {
 /** Parse projection from SELECT clause */
 function parseProjection(sql: string): Document | null {
     // SELECT * → no projection
-    if (/^SELECT\s+(\*|TOP\s+\d+\s+\*)/i.test(sql.trim())) return null;
+    if (/^SELECT\s+(\*|TOP\s+(?:\d+|@\w+)\s+\*)/i.test(sql.trim())) return null;
     // SELECT TOP N * → no projection
-    if (/^SELECT\s+TOP\s+\d+\s+\*/i.test(sql.trim())) return null;
+    if (/^SELECT\s+TOP\s+(?:\d+|@\w+)\s+\*/i.test(sql.trim())) return null;
     // SELECT TOP N c.a, c.b → projection
-    const selMatch = /^SELECT\s+(?:TOP\s+\d+\s+)?(.+?)\s+FROM\s/i.exec(sql.trim());
+    const selMatch = /^SELECT\s+(?:TOP\s+(?:\d+|@\w+)\s+)?(.+?)\s+FROM\s/i.exec(sql.trim());
     if (!selMatch) return null;
     const cols = selMatch[1];
     if (cols.trim() === "*") return null;

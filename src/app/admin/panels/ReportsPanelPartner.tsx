@@ -389,6 +389,38 @@ export default function ReportsPanelPartner() {
                                                             <div className="text-sm text-red-500 py-4">{merchantDetail.error}</div>
                                                         ) : merchantDetail ? (
                                                             <div className="space-y-4">
+                                                                {/* Summary Stats */}
+                                                                {merchantDetail.summary && (
+                                                                    <div>
+                                                                        <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">Summary</h4>
+                                                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                                                                            <div className="p-2 rounded-lg bg-background border">
+                                                                                <div className="text-[10px] text-muted-foreground uppercase">Volume</div>
+                                                                                <div className="text-sm font-mono font-semibold">{formatCurrency(merchantDetail.summary.totalSales, "USD")}</div>
+                                                                            </div>
+                                                                            <div className="p-2 rounded-lg bg-background border">
+                                                                                <div className="text-[10px] text-muted-foreground uppercase">Earned</div>
+                                                                                <div className="text-sm font-mono font-semibold text-emerald-500">{formatCurrency(merchantDetail.summary.merchantEarned || 0, "USD")}</div>
+                                                                            </div>
+                                                                            <div className="p-2 rounded-lg bg-background border">
+                                                                                <div className="text-[10px] text-muted-foreground uppercase">Fees</div>
+                                                                                <div className="text-sm font-mono font-semibold text-amber-500">{formatCurrency(merchantDetail.summary.platformFee || 0, "USD")}</div>
+                                                                            </div>
+                                                                            <div className="p-2 rounded-lg bg-background border">
+                                                                                <div className="text-[10px] text-muted-foreground uppercase">Tips</div>
+                                                                                <div className="text-sm font-mono font-semibold text-green-500">{formatCurrency(merchantDetail.summary.totalTips, "USD")}</div>
+                                                                            </div>
+                                                                            <div className="p-2 rounded-lg bg-background border">
+                                                                                <div className="text-[10px] text-muted-foreground uppercase">Transactions</div>
+                                                                                <div className="text-sm font-semibold">{merchantDetail.summary.transactionCount}</div>
+                                                                            </div>
+                                                                            <div className="p-2 rounded-lg bg-background border">
+                                                                                <div className="text-[10px] text-muted-foreground uppercase">Avg Order</div>
+                                                                                <div className="text-sm font-mono font-semibold">{formatCurrency(merchantDetail.summary.averageOrderValue, "USD")}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                                 {merchantDetail.paymentMethods?.length > 0 && (
                                                                     <div>
                                                                         <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">Payment Breakdown</h4>
@@ -414,6 +446,47 @@ export default function ReportsPanelPartner() {
                                                                             ))}
                                                                         </div>
                                                                     </div>
+                                                                )}
+                                                                {/* On-Chain Transaction Hashes */}
+                                                                {merchantDetail.splitTransactions?.length > 0 && (
+                                                                    <div>
+                                                                        <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">On-Chain Transactions ({merchantDetail.splitTransactions.length})</h4>
+                                                                        <div className="max-h-64 overflow-y-auto rounded-lg border bg-background">
+                                                                            <table className="w-full text-xs">
+                                                                                <thead className="bg-muted/30 sticky top-0">
+                                                                                    <tr>
+                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Tx Hash</th>
+                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Type</th>
+                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Token</th>
+                                                                                        <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Value</th>
+                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">From</th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody className="divide-y divide-border/50">
+                                                                                    {merchantDetail.splitTransactions.map((tx: any) => (
+                                                                                        <tr key={tx.hash} className="hover:bg-muted/10">
+                                                                                            <td className="py-1.5 px-3">
+                                                                                                <a href={`https://basescan.org/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono text-primary hover:underline">
+                                                                                                    {tx.hash.slice(0, 10)}…{tx.hash.slice(-6)}
+                                                                                                </a>
+                                                                                            </td>
+                                                                                            <td className="py-1.5 px-3">
+                                                                                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${tx.txType === 'payment' ? 'bg-green-500/10 text-green-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                                                                                                    {tx.txType}
+                                                                                                </span>
+                                                                                            </td>
+                                                                                            <td className="py-1.5 px-3 font-medium">{tx.token}</td>
+                                                                                            <td className="py-1.5 px-3 text-right font-mono">{Number(tx.value || 0).toFixed(6)}</td>
+                                                                                            <td className="py-1.5 px-3 font-mono text-muted-foreground">{tx.from ? `${tx.from.slice(0, 6)}…${tx.from.slice(-4)}` : '—'}</td>
+                                                                                        </tr>
+                                                                                    ))}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {!merchantDetail.summary?.transactionCount && !merchantDetail.splitTransactions?.length && (
+                                                                    <div className="text-sm text-muted-foreground text-center py-4">No transactions found for this period</div>
                                                                 )}
                                                             </div>
                                                         ) : null}

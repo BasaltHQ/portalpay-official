@@ -23,9 +23,12 @@ export async function GET(req: NextRequest) {
         const expectedRecord = `${brandKey}-verification=${wallet.toLowerCase()}`;
 
         // Determine hosting context for frontend DNS instructions
-        const hostingProvider = (process.env.HOSTING_PROVIDER || "azure").toLowerCase();
-        const cnameTarget = hostingProvider === "plesk"
-            ? (process.env.PLESK_MAIN_DOMAIN || "portalpay.io")
+        const hasCloudflare = !!(process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ZONE_ID);
+        const hostingProvider = hasCloudflare
+            ? "cloudflare"
+            : (process.env.HOSTING_PROVIDER || "azure").toLowerCase();
+        const cnameTarget = (hostingProvider === "plesk" || hostingProvider === "cloudflare")
+            ? (process.env.PLESK_MAIN_DOMAIN || "surge.basalthq.com")
             : (req.headers.get("host") || "surge.basalthq.com");
 
         return NextResponse.json({
@@ -99,17 +102,23 @@ export async function POST(req: NextRequest) {
         }
 
         // 3. Platform Specific Checks (Azure ASUID / Plesk A-Record)
+        //    For Cloudflare for SaaS, we skip the CNAME check because Cloudflare handles
+        //    domain validation itself. The hostname must be created in Cloudflare BEFORE
+        //    the user sets up their CNAME — so requiring a CNAME first is backwards.
         const manager = DomainManagerFactory.getManager();
-        const verificationId = await manager.getVerificationId(domain, brandKey);
+        const hasCloudflareProvider = !!(process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ZONE_ID);
 
-        const platformCheck = await manager.verifyDomainOwnership(domain, verificationId, brandKey);
-        if (!platformCheck.verified) {
-            return NextResponse.json({
-                ok: true,
-                verified: false,
-                message: platformCheck.message || "Platform verification failed",
-                foundRecords: platformCheck.txtRecord ? [] : undefined // Simplified
-            });
+        if (!hasCloudflareProvider) {
+            const verificationId = await manager.getVerificationId(domain, brandKey);
+            const platformCheck = await manager.verifyDomainOwnership(domain, verificationId, brandKey);
+            if (!platformCheck.verified) {
+                return NextResponse.json({
+                    ok: true,
+                    verified: false,
+                    message: platformCheck.message || "Platform verification failed",
+                    foundRecords: platformCheck.txtRecord ? [] : undefined
+                });
+            }
         }
 
         // 4. Uniqueness Check (Cosmos)
@@ -152,14 +161,20 @@ export async function POST(req: NextRequest) {
         // 6. Bind Domain
         const bindResult = await manager.bindDomain(domain);
 
+        // TEMP DEBUG: surface token info in response to diagnose auth error
+        const _t = process.env.CLOUDFLARE_API_TOKEN || "";
+        const _z = process.env.CLOUDFLARE_ZONE_ID || "";
+        const _tPreview = _t.length > 6 ? `${_t.substring(0, 3)}...${_t.substring(_t.length - 3)} (len=${_t.length})` : `(empty, len=${_t.length})`;
+
         return NextResponse.json({
             ok: true,
             verified: true,
             domain,
-            azureBinding: bindResult.success ? "success" : "failed", // Legacy field name
+            azureBinding: bindResult.success ? "success" : "failed",
             message: bindResult.success
                 ? "Domain verified and bound. Ensure your DNS points to this service."
-                : `Domain verified. Binding warning: ${bindResult.message}`
+                : `Domain verified. Binding warning: ${bindResult.message}`,
+            _debug: { tokenPreview: _tPreview, zoneIdPrefix: _z.substring(0, 8), hasToken: !!_t, hasZone: !!_z }
         });
 
     } catch (e: any) {

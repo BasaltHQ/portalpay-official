@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       const spec = {
         // Cross-partition query scanning receipts for the buyer
         query:
-          "SELECT c.id, c.wallet, c.receiptId, c.totalUsd, c.currency, c.lineItems, c.createdAt, c.brandName, c.jurisdictionCode, c.taxRate, c.taxComponents, c.status, c.buyerWallet, c.shopSlug, c.metadata, c.transactionHash FROM c WHERE c.type = 'receipt' AND c.buyerWallet = @buyer",
+          "SELECT c.id, c.wallet, c.receiptId, c.totalUsd, c.currency, c.lineItems, c.createdAt, c.brandName, c.jurisdictionCode, c.taxRate, c.taxComponents, c.status, c.buyerWallet, c.shopSlug, c.metadata, c.transactionHash, c.tracking, c.shippingAddress FROM c WHERE c.type = 'receipt' AND c.buyerWallet = @buyer",
         parameters: [{ name: "@buyer", value: me }],
       } as { query: string; parameters: { name: string; value: any }[] };
 
@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
 
           // Strict filtering: Only show Paid/Settled receipts (User Request: "only reciepts that got to the paid status should be counted")
           // We also include receipts with a transactionHash as proof of payment, or claimed: true (user claimed loyalty)
-          const validStatuses = new Set(["paid", "checkout_success", "confirmed", "tx_mined", "reconciled"]);
+          const validStatuses = new Set(["paid", "checkout_success", "confirmed", "tx_mined", "reconciled", "shipped"]);
           resources = resources.filter((r: any) => {
             const st = String(r?.status || "").toLowerCase();
             const hasTx = typeof r?.transactionHash === "string" && !!r.transactionHash;
@@ -222,6 +222,9 @@ export async function GET(req: NextRequest) {
           : typeof r?.metadata?.txHash === "string" && r.metadata.txHash
             ? String(r.metadata.txHash)
             : "",
+      // Shipping & tracking
+      shippingAddress: r?.shippingAddress && typeof r.shippingAddress === "object" ? r.shippingAddress : undefined,
+      tracking: r?.tracking && typeof r.tracking === "object" ? r.tracking : undefined,
     }));
 
     return NextResponse.json(

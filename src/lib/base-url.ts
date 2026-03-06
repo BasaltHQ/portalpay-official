@@ -10,6 +10,11 @@ export function getInternalBaseUrl(): string {
     return internal.replace(/\/$/, '');
   }
 
+  // Plesk / Passenger doesn't listen on localhost:3000
+  if (process.env.HOSTING_PROVIDER === 'plesk') {
+    return process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://surge.basalthq.com';
+  }
+
   // In production without INTERNAL_BASE_URL, use localhost:3000
   // Note: Server binds to 0.0.0.0:3000 but localhost/127.0.0.1 should work for internal calls
   if (process.env.NODE_ENV === 'production') {

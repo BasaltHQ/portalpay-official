@@ -26,12 +26,17 @@ export class S3StorageProvider implements StorageProvider {
         // The user explicitly requested to use the configured region from environment variables.
         this.client = new S3Client({
             region: this.region,
+            // When using a custom endpoint, some AWS SDK versions ignore `forcePathStyle: false`
+            // if the endpoint doesn't look like an AWS endpoint.
+            // By putting the bucket in the endpoint or leaving it standard, we can handle it.
+            // For OVH Cloud: `https://s3.us-west-or.io.cloud.ovh.us`
+            // If we want virtual hosted URLs naturally from the SDK, we just provide the base endpoint.
             endpoint: this.endpoint,
             credentials: {
                 accessKeyId: process.env.S3_ACCESS_KEY || "",
                 secretAccessKey: process.env.S3_SECRET_KEY || ""
             },
-            forcePathStyle: false, // Use Virtual-Hosted Style for OVH as requested
+            forcePathStyle: false, // Attempt to use Virtual-Hosted Style
         });
     }
 
@@ -176,6 +181,7 @@ export class S3StorageProvider implements StorageProvider {
         });
 
         // S3 Client must be initialized with region/cred for this to work
-        return await getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
+        let url = await getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
+        return url;
     }
 }

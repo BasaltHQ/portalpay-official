@@ -15,6 +15,16 @@ type ReceiptLineItem = {
   label: string;
   priceUsd: number;
   qty?: number;
+  /** Flags this line item as a physical product that requires shipping */
+  requiresShipping?: boolean;
+  /** Item-level shipping config for portal to use */
+  shippingConfig?: {
+    methodPricing?: Record<string, number>;
+    freeShippingThreshold?: number;
+    allowedMethods?: string[];
+    weightLbs?: number;
+    handlingTimeDays?: number;
+  };
 };
 
 export type Receipt = {
@@ -28,6 +38,19 @@ export type Receipt = {
   employeeId?: string;
   employeeName?: string;
   sessionId?: string;
+  /** Shipping fields — populated by the portal checkout before payment */
+  shippingAddress?: {
+    name?: string;
+    line1?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+  };
+  shippingMethod?: 'standard' | 'express' | 'overnight' | 'freight';
+  shippingCostUsd?: number;
+  tracking?: { carrier?: string; trackingNumber?: string; trackingUrl?: string; shippedAt?: number; updatedAt?: number };
 };
 
 // ... existing imports
@@ -66,12 +89,12 @@ export async function GET(req: NextRequest) {
       );
     }
   }
-  const wallet = caller.wallet;
+  const wallet = String(caller.wallet || "").toLowerCase();
 
   try {
     const container = await getContainer();
 
-    let query = `SELECT TOP @limit c.receiptId, c.totalUsd, c.currency, c.lineItems, c.createdAt, c.brandName, c.status FROM c WHERE c.type='receipt' AND c.wallet=@wallet`;
+    let query = `SELECT TOP @limit c.receiptId, c.totalUsd, c.currency, c.lineItems, c.createdAt, c.brandName, c.status, c.shippingAddress, c.shippingMethod, c.shippingCostUsd, c.tracking FROM c WHERE c.type='receipt' AND c.wallet=@wallet`;
     const parameters: { name: string; value: any }[] = [{ name: "@wallet", value: wallet }, { name: "@limit", value: limit }];
 
     if (startTs > 0) {
@@ -97,6 +120,8 @@ export async function GET(req: NextRequest) {
         createdAt: Number(row.createdAt || Date.now()),
         brandName: typeof row.brandName === "string" ? row.brandName : undefined,
         status: typeof row.status === "string" ? row.status : undefined,
+        shippingAddress: row?.shippingAddress && typeof row.shippingAddress === "object" ? row.shippingAddress : undefined,
+        tracking: row?.tracking && typeof row.tracking === "object" ? row.tracking : undefined,
       }))
       : [];
 
@@ -190,6 +215,16 @@ export async function POST(req: NextRequest) {
       label: String(it.label || "").slice(0, 120) || "Item",
       priceUsd: Number(it.priceUsd || 0),
       qty: typeof it.qty === "number" && Number.isFinite(it.qty) && it.qty > 0 ? Math.floor(it.qty) : undefined,
+      requiresShipping: it.requiresShipping === true ? true : undefined,
+      shippingConfig: it.requiresShipping && it.shippingConfig && typeof it.shippingConfig === "object" ? {
+        methodPricing: it.shippingConfig.methodPricing && typeof it.shippingConfig.methodPricing === "object"
+          ? Object.fromEntries(Object.entries(it.shippingConfig.methodPricing).filter(([, v]) => typeof v === "number" && (v as number) >= 0).map(([k, v]) => [k, Math.round((v as number) * 100) / 100]))
+          : undefined,
+        freeShippingThreshold: typeof it.shippingConfig.freeShippingThreshold === "number" ? it.shippingConfig.freeShippingThreshold : undefined,
+        allowedMethods: Array.isArray(it.shippingConfig.allowedMethods) ? it.shippingConfig.allowedMethods : undefined,
+        weightLbs: typeof it.shippingConfig.weightLbs === "number" ? it.shippingConfig.weightLbs : undefined,
+        handlingTimeDays: typeof it.shippingConfig.handlingTimeDays === "number" ? it.shippingConfig.handlingTimeDays : undefined,
+      } : undefined,
     }));
 
     const now = Date.now();
