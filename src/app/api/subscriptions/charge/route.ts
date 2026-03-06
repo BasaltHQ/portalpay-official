@@ -65,6 +65,22 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Check if the spend permission has expired
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        if (sub.permissionData.end && nowSeconds >= sub.permissionData.end) {
+            // Auto-expire the subscription
+            await markPastDue(subscriptionId); // will be caught and marked
+            const container = await getContainer();
+            await container.items.upsert(
+                { ...sub, status: "expired" as const, updatedAt: Date.now() },
+                { disableAutomaticIdGeneration: true }
+            );
+            return NextResponse.json(
+                { error: "permission_expired", message: "EIP-712 spend permission has expired", subscriptionId },
+                { status: 400, headers: { "x-correlation-id": correlationId } }
+            );
+        }
+
         // ─── Thirdweb Engine SDK Setup ──────────────────────────────────────
         const secretKey = process.env.THIRDWEB_SECRET_KEY;
         const serverWalletAddress = process.env.THIRDWEB_ENGINE_WALLET;
@@ -102,9 +118,9 @@ export async function POST(req: NextRequest) {
             spender: pd.spender,
             token: pd.token,
             allowance: BigInt(pd.allowance),
-            period: BigInt(pd.period),
-            start: BigInt(pd.start),
-            end: BigInt(pd.end),
+            period: Number(pd.period),
+            start: Number(pd.start),
+            end: Number(pd.end),
             salt: BigInt(pd.salt),
             extraData: pd.extraData as `0x${string}`,
         };

@@ -78,6 +78,7 @@ export type SpendPermissionMessage = {
 
 /** Standard billing periods in seconds */
 export const BILLING_PERIODS = {
+    DAILY: 1 * 24 * 60 * 60,         // 86400
     WEEKLY: 7 * 24 * 60 * 60,        // 604800
     BIWEEKLY: 14 * 24 * 60 * 60,     // 1209600
     MONTHLY: 30 * 24 * 60 * 60,      // 2592000

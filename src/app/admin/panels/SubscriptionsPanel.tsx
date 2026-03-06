@@ -42,6 +42,7 @@ type Subscription = {
 };
 
 const PERIOD_LABELS: Record<string, string> = {
+    DAILY: "Daily",
     WEEKLY: "Weekly",
     BIWEEKLY: "Bi-Weekly",
     MONTHLY: "Monthly",
@@ -184,10 +185,11 @@ export default function SubscriptionsPanel() {
     const activeSubscriptions = subscriptions.filter((s) => s.status === "active");
     const mrr = activeSubscriptions.reduce((sum, s) => {
         const multiplier =
-            s.period === "WEEKLY" ? 4.33 :
-                s.period === "BIWEEKLY" ? 2.17 :
-                    s.period === "QUARTERLY" ? 0.33 :
-                        s.period === "YEARLY" ? 0.083 : 1;
+            s.period === "DAILY" ? 30 :
+                s.period === "WEEKLY" ? 4.33 :
+                    s.period === "BIWEEKLY" ? 2.17 :
+                        s.period === "QUARTERLY" ? 0.33 :
+                            s.period === "YEARLY" ? 0.083 : 1;
         return sum + s.priceUsd * multiplier;
     }, 0);
     const totalRevenue = subscriptions.reduce((sum, s) => sum + s.totalChargedUsd, 0);

@@ -28,6 +28,7 @@ type Subscription = {
 };
 
 const PERIOD_LABELS: Record<string, string> = {
+    DAILY: "day",
     WEEKLY: "week",
     BIWEEKLY: "2 weeks",
     MONTHLY: "month",

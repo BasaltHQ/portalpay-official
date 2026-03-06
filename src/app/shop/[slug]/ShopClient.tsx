@@ -1516,7 +1516,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                     priceUsd={subPlans[(it as any).subscriptionPlanId].priceUsd}
                                     period={subPlans[(it as any).subscriptionPlanId].period}
                                     merchantWallet={merchantWallet}
-                                    spenderWallet={subPlans[(it as any).subscriptionPlanId].merchantWallet}
+                                    spenderWallet={process.env.NEXT_PUBLIC_THIRDWEB_ENGINE_WALLET || ""}
                                     className="!py-2 !px-4 !text-sm !rounded-md"
                                 />
                             </div>
