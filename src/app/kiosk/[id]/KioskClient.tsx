@@ -9,6 +9,7 @@ import { resolveThemeId, resolveKioskConfig, useApplyTheme } from "@/lib/themes"
 import type { KioskLayout, ColorMode } from "@/lib/themes";
 import KioskModifierSheet from "./KioskModifierSheet";
 import type { ModifierSheetResult } from "./KioskModifierSheet";
+import { isPlatformBrand, getEffectiveBrandKey } from "@/lib/branding";
 import { QRCode } from "react-qrcode-logo";
 
 // ─── Mesh Gradient Placeholder ─────────────────────────────────────────────
@@ -475,7 +476,7 @@ export default function KioskClient({ config, items: initialItems, merchantWalle
                             <div className="text-gray-400 animate-pulse font-medium text-lg">Generating...</div>
                         )}
                     </div>
-                    {qrValue && !isPaid && (
+                    {qrValue && !isPaid && isPlatformBrand(getEffectiveBrandKey()) && (
                         <div className="mt-4 text-[10px] text-gray-400 font-mono whitespace-nowrap overflow-hidden text-ellipsis w-full max-w-[300px] mx-auto text-center opacity-60">
                             {qrValue.replace(/^https?:\/\//, '')}
                         </div>

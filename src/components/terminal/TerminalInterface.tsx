@@ -7,6 +7,7 @@ import { fetchEthRates, fetchUsdRates } from "@/lib/eth";
 import { QRCode } from "react-qrcode-logo";
 import { createPortal } from "react-dom";
 import { getTheme } from "@/lib/themes";
+import { isPlatformBrand, getEffectiveBrandKey } from "@/lib/branding";
 import { useQRCodeDisplay, useReceiptPrinter } from "@/lib/hardware/useHardwareHooks";
 
 // Shared Logic extracted from TerminalPage
@@ -271,7 +272,6 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                     removeQrCodeBehindLogo={false}
                     logoImage=""
                     logoWidth={48}
-                    logoCrossOrigin="anonymous"
                     ecLevel="Q"
                     quietZone={5}
                 />
@@ -287,7 +287,6 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                     removeQrCodeBehindLogo={false}
                     logoImage=""
                     logoWidth={48}
-                    logoCrossOrigin="anonymous"
                     ecLevel="Q"
                     quietZone={5}
                 />
@@ -432,11 +431,9 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                     logoWidth={40}
                                     logoHeight={40}
                                     removeQrCodeBehindLogo={true}
-                                    logoCrossOrigin="anonymous"
                                     logoPadding={5}
                                     ecLevel="H"
                                     quietZone={10}
-                                    logoCrossOrigin="anonymous"
                                 />
                                 {/* Success Overlay */}
                                 {selected?.status === "paid" && (
@@ -454,9 +451,11 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                 {formatCurrency(totalConverted, terminalCurrency)}
                             </div>
 
-                            <div className="text-xs text-muted-foreground px-4 opacity-50 mb-4 font-mono whitespace-nowrap overflow-hidden text-ellipsis w-full max-w-[300px] mx-auto">
-                                {portalUrl}
-                            </div>
+                            {isPlatformBrand(getEffectiveBrandKey()) && (
+                                <div className="text-xs text-muted-foreground px-4 opacity-50 mb-4 font-mono whitespace-nowrap overflow-hidden text-ellipsis w-full max-w-[300px] mx-auto">
+                                    {portalUrl}
+                                </div>
+                            )}
 
                             {/* Polling / Fallback Status */}
                             {selected?.status !== "paid" && (
@@ -568,9 +567,11 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                 />
                             </div>
 
-                            <div className="text-center text-[8px] font-mono break-all opacity-70 mt-1">
-                                {window.location.host}/portal/{selected.receiptId.slice(0, 8)}...
-                            </div>
+                            {isPlatformBrand(getEffectiveBrandKey()) && (
+                                <div className="text-center text-[8px] font-mono break-all opacity-70 mt-1">
+                                    {window.location.host}/portal/{selected.receiptId.slice(0, 8)}...
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>,
