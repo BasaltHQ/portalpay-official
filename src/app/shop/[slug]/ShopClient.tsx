@@ -1516,7 +1516,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                     priceUsd={subPlans[(it as any).subscriptionPlanId].priceUsd}
                                     period={subPlans[(it as any).subscriptionPlanId].period}
                                     merchantWallet={merchantWallet}
-                                    spenderWallet={process.env.NEXT_PUBLIC_THIRDWEB_ENGINE_WALLET || ""}
+                                    spenderWallet={process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || ""}
                                     className="!py-2 !px-4 !text-sm !rounded-md"
                                 />
                             </div>
@@ -1621,7 +1621,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                             priceUsd={subPlans[(it as any).subscriptionPlanId].priceUsd}
                             period={subPlans[(it as any).subscriptionPlanId].period}
                             merchantWallet={merchantWallet}
-                            spenderWallet={subPlans[(it as any).subscriptionPlanId].merchantWallet}
+                            spenderWallet={process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || ""}
                             className={`!${sizeClasses.buttonSize} !rounded-md w-full`}
                         />
                     </div>
@@ -1730,7 +1730,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                             priceUsd={subPlans[(it as any).subscriptionPlanId].priceUsd}
                             period={subPlans[(it as any).subscriptionPlanId].period}
                             merchantWallet={merchantWallet}
-                            spenderWallet={subPlans[(it as any).subscriptionPlanId].merchantWallet}
+                            spenderWallet={process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || ""}
                             className={`!${sizeClasses.buttonSize} !rounded-md w-full`}
                         />
                     </div>
@@ -2830,7 +2830,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                             priceUsd={subPlans[(selectedItem as any).subscriptionPlanId].priceUsd}
                                                             period={subPlans[(selectedItem as any).subscriptionPlanId].period}
                                                             merchantWallet={merchantWallet}
-                                                            spenderWallet={subPlans[(selectedItem as any).subscriptionPlanId].merchantWallet}
+                                                            spenderWallet={process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || ""}
                                                             className="w-full !py-3 !rounded-lg"
                                                         />
                                                     ) : (
@@ -2916,7 +2916,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                         priceUsd={subPlans[(selectedItem as any).subscriptionPlanId].priceUsd}
                                                         period={subPlans[(selectedItem as any).subscriptionPlanId].period}
                                                         merchantWallet={merchantWallet}
-                                                        spenderWallet={subPlans[(selectedItem as any).subscriptionPlanId].merchantWallet}
+                                                        spenderWallet={process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || ""}
                                                         className="w-full !py-3 !rounded-lg"
                                                     />
                                                 ) : (

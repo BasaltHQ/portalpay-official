@@ -172,6 +172,30 @@ export default function SubscriptionsPanel() {
         }
     };
 
+    const handleCancelSubscription = async (subId: string) => {
+        if (!confirm("Are you sure you want to cancel this subscription? The customer will no longer be charged.")) return;
+        if (!merchantWallet) return;
+        try {
+            setLoading(true);
+            const res = await fetch(`/api/subscriptions/merchant/cancel`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-wallet": merchantWallet },
+                body: JSON.stringify({ subscriptionId: subId })
+            });
+            if (res.ok) {
+                fetchData();
+            } else {
+                const data = await res.json();
+                alert(data.error || "Failed to cancel subscription");
+            }
+        } catch (err) {
+            console.error("Failed to cancel subscription:", err);
+            alert("Failed to cancel subscription");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const openCreate = () => {
         setEditingPlan(null);
         setNewPlanName("");
@@ -412,6 +436,7 @@ export default function SubscriptionsPanel() {
                                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
                                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Next Charge</th>
                                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Charged</th>
+                                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
@@ -439,6 +464,16 @@ export default function SubscriptionsPanel() {
                                             </td>
                                             <td className="px-4 py-3 text-foreground font-medium">
                                                 {fmtCurrency(sub.totalChargedUsd)}
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                {sub.status === "active" && (
+                                                    <button
+                                                        onClick={() => handleCancelSubscription(sub.subscriptionId)}
+                                                        className="text-xs px-2 py-1 rounded bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     );
