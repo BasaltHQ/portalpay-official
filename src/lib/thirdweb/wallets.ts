@@ -2,9 +2,14 @@ import { inAppWallet, createWallet } from "thirdweb/wallets";
 import type { Chain } from "thirdweb/chains";
 
 /**
- * Gas Sponsorship Strategy (Dual-Mode):
- * - Wallet-level: EIP-7702 on inAppWallet — sponsors gas for ALL wallets (in-app + EOAs)
- * - Component-level: EIP-4337 accountAbstraction on ConnectButton/CheckoutWidget (fallback)
+ * Gas Sponsorship via EIP-4337 Smart Accounts.
+ *
+ * IMPORTANT: Do NOT switch existing wallets to EIP-7702 mode — all user sessions,
+ * JWTs, and DB records are keyed to Smart Account addresses derived from EIP-4337.
+ * Switching modes changes the wallet address and breaks everything.
+ *
+ * TODO: To add EIP-7702 support, introduce it as a SEPARATE wallet option
+ * alongside EIP-4337, so new users can opt in without breaking existing ones.
  */
 
 // Produce wallets lazily with a provided chain to avoid module-eval side effects on the server
@@ -25,8 +30,11 @@ export function getWallets(chain: Chain) {
         ],
       },
       executionMode: {
-        mode: "EIP7702",
-        sponsorGas: true,
+        mode: "EIP4337",
+        smartAccount: {
+          chain,
+          sponsorGas: true,
+        },
       },
     }),
     createWallet("io.metamask"),
@@ -49,8 +57,11 @@ export function getPrivateWallets(chain: Chain) {
         ],
       },
       executionMode: {
-        mode: "EIP7702",
-        sponsorGas: true,
+        mode: "EIP4337",
+        smartAccount: {
+          chain,
+          sponsorGas: true,
+        },
       },
     }),
   ];
@@ -64,8 +75,11 @@ export function getOwnerModeWallets(chain: Chain) {
         options: ["email", "phone"],
       },
       executionMode: {
-        mode: "EIP7702",
-        sponsorGas: true,
+        mode: "EIP4337",
+        smartAccount: {
+          chain,
+          sponsorGas: true,
+        },
       },
     }),
   ];
@@ -86,8 +100,11 @@ export function getPrivateLoginWallets(chain: Chain) {
         ],
       },
       executionMode: {
-        mode: "EIP7702",
-        sponsorGas: true,
+        mode: "EIP4337",
+        smartAccount: {
+          chain,
+          sponsorGas: true,
+        },
       },
     }),
     createWallet("io.metamask"),
