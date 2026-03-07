@@ -1161,12 +1161,10 @@ function ReserveSettings({ merchantWallet, theme, reserveRatios, accumulationMod
         setTransferModalOpen(true);
     }
 
-    // QR Scanner helpers
+    // QR Scanner helpers — uses jsQR for universal canvas-based QR decoding
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
-
     const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     async function startQrScanner() {
         setQrScannerOpen(true);
@@ -1188,53 +1186,53 @@ function ReserveSettings({ merchantWallet, theme, reserveRatios, accumulationMod
                         return;
                     }
                 } catch {
-                    // Permissions API may not support 'camera' query in all browsers — proceed anyway
+                    // Permissions API may not support 'camera' query — proceed anyway
                 }
             }
 
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } }
+            });
             streamRef.current = stream;
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
                 videoRef.current.play();
             }
 
-            // Try BarcodeDetector first, then fall back to canvas-based scanning
-            const hasBarcodeDetector = typeof window !== "undefined" && "BarcodeDetector" in window;
+            // Wait for video to be ready, then start scanning with jsQR
+            const onReady = async () => {
+                // Dynamically import jsQR to keep initial bundle smaller
+                const jsQR = (await import("jsqr")).default;
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d", { willReadFrequently: true });
+                if (!ctx) return;
 
-            const startScanning = () => {
-                if (hasBarcodeDetector) {
-                    // Native BarcodeDetector path
-                    const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
-                    const scan = async () => {
-                        if (!videoRef.current || !streamRef.current) return;
-                        try {
-                            const barcodes = await detector.detect(videoRef.current);
-                            for (const bc of barcodes) {
-                                const val = String(bc.rawValue || "").trim();
-                                const match = val.match(/(?:ethereum:)?(0x[a-fA-F0-9]{40})/i);
-                                if (match) {
-                                    setTransferRecipient(match[1]);
-                                    stopQrScanner();
-                                    return;
-                                }
-                            }
-                        } catch { }
-                        if (streamRef.current) requestAnimationFrame(scan);
-                    };
-                    requestAnimationFrame(scan);
-                } else {
-                    // Fallback: Canvas-based frame capture + ImageBitmap approach
-                    // For browsers without BarcodeDetector, we set up periodic canvas captures
-                    // and attempt to extract addresses from any decoded content.
-                    // Since we can't decode QR without a library, we show the camera
-                    // and let the user visually read & manually enter the address.
-                    // The camera still helps them see the QR code on another device.
-                }
+                // Scan loop at ~15fps
+                scanIntervalRef.current = setInterval(() => {
+                    const video = videoRef.current;
+                    if (!video || !streamRef.current || video.readyState < 2) return;
+
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, canvas.width, canvas.height, { inversionAttempts: "dontInvert" });
+
+                    if (code?.data) {
+                        const val = code.data.trim();
+                        // Extract address from ethereum: URI, raw address, or any text containing 0x
+                        const match = val.match(/(?:ethereum:)?(0x[a-fA-F0-9]{40})/i);
+                        if (match) {
+                            setTransferRecipient(match[1]);
+                            stopQrScanner();
+                        }
+                    }
+                }, 66); // ~15fps
             };
 
             if (videoRef.current) {
-                videoRef.current.addEventListener("loadeddata", startScanning, { once: true });
+                videoRef.current.addEventListener("loadeddata", onReady, { once: true });
             }
         } catch (e: any) {
             const msg = String(e?.message || "").toLowerCase();
@@ -1248,6 +1246,10 @@ function ReserveSettings({ merchantWallet, theme, reserveRatios, accumulationMod
     }
 
     function stopQrScanner() {
+        if (scanIntervalRef.current) {
+            clearInterval(scanIntervalRef.current);
+            scanIntervalRef.current = null;
+        }
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(t => t.stop());
             streamRef.current = null;
