@@ -1,6 +1,12 @@
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import type { Chain } from "thirdweb/chains";
 
+/**
+ * Gas Sponsorship Strategy (Dual-Mode):
+ * - Wallet-level: EIP-7702 on inAppWallet — sponsors gas for ALL wallets (in-app + EOAs)
+ * - Component-level: EIP-4337 accountAbstraction on ConnectButton/CheckoutWidget (fallback)
+ */
+
 // Produce wallets lazily with a provided chain to avoid module-eval side effects on the server
 export function getWallets(chain: Chain) {
   return [
@@ -19,11 +25,8 @@ export function getWallets(chain: Chain) {
         ],
       },
       executionMode: {
-        mode: "EIP4337",
-        smartAccount: {
-          chain,
-          sponsorGas: true,
-        },
+        mode: "EIP7702",
+        sponsorGas: true,
       },
     }),
     createWallet("io.metamask"),
@@ -46,11 +49,8 @@ export function getPrivateWallets(chain: Chain) {
         ],
       },
       executionMode: {
-        mode: "EIP4337",
-        smartAccount: {
-          chain,
-          sponsorGas: true,
-        },
+        mode: "EIP7702",
+        sponsorGas: true,
       },
     }),
   ];
@@ -64,11 +64,8 @@ export function getOwnerModeWallets(chain: Chain) {
         options: ["email", "phone"],
       },
       executionMode: {
-        mode: "EIP4337",
-        smartAccount: {
-          chain,
-          sponsorGas: true,
-        },
+        mode: "EIP7702",
+        sponsorGas: true,
       },
     }),
   ];
@@ -89,11 +86,8 @@ export function getPrivateLoginWallets(chain: Chain) {
         ],
       },
       executionMode: {
-        mode: "EIP4337",
-        smartAccount: {
-          chain,
-          sponsorGas: true,
-        },
+        mode: "EIP7702",
+        sponsorGas: true,
       },
     }),
     createWallet("io.metamask"),
