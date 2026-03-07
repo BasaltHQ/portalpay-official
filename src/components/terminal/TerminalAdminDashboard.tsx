@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { formatCurrency } from "@/lib/fx";
 import { createPortal } from "react-dom";
 import ReportsPanelv2 from "@/app/admin/panels/ReportsPanelv2";
@@ -330,9 +330,10 @@ function ActivityPanel({ merchantWallet, theme }: PanelProps) {
    SETTINGS PANEL
    ========================= */
 import { ensureSplitForWallet } from "@/lib/thirdweb/split";
-import { useActiveAccount } from "thirdweb/react";
-import { getContract, prepareContractCall, sendTransaction } from "thirdweb";
+import { useActiveAccount, TransactionButton } from "thirdweb/react";
+import { getContract, prepareContractCall, sendTransaction, prepareTransaction, readContract } from "thirdweb";
 import { client, chain } from "@/lib/thirdweb/client";
+import { getRpcClient, eth_getBalance } from "thirdweb/rpc";
 // Removed duplicate React imports
 
 function SettingsPanel({ merchantWallet, theme, splitAddress, reserveRatios, accumulationMode }: PanelProps & { splitAddress?: string; reserveRatios?: Record<string, number>; accumulationMode?: "fixed" | "dynamic" }) {
@@ -1031,6 +1032,229 @@ function ReserveSettings({ merchantWallet, theme, reserveRatios, accumulationMod
         }
     }
 
+    // ────────────────────────────────────────────────────────────────────────────
+    // TRANSFER FEATURE — State, helpers, and wallet balance fetching
+    // ────────────────────────────────────────────────────────────────────────────
+
+    const [transferModalOpen, setTransferModalOpen] = useState(false);
+    const [transferToken, setTransferToken] = useState<string>("ETH");
+    const [transferRecipient, setTransferRecipient] = useState("");
+    const [transferAmount, setTransferAmount] = useState("");
+    const [transferStatus, setTransferStatus] = useState<string>("");
+    const [transferError, setTransferError] = useState<string>("");
+    const [walletBalances, setWalletBalances] = useState<Record<string, { raw: bigint; units: number; decimals: number }>>({});
+    const [fetchingWalletBal, setFetchingWalletBal] = useState(false);
+    const [qrScannerOpen, setQrScannerOpen] = useState(false);
+    const [resolvingEns, setResolvingEns] = useState(false);
+
+    // Token definitions — addresses from env vars
+    const USDC_ADDR = process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS || "";
+    const USDT_ADDR = process.env.NEXT_PUBLIC_BASE_USDT_ADDRESS || "";
+    const CBBTC_ADDR = process.env.NEXT_PUBLIC_BASE_CBBTC_ADDRESS || "";
+    const CBXRP_ADDR = process.env.NEXT_PUBLIC_BASE_CBXRP_ADDRESS || "";
+    const SOL_ADDR = process.env.NEXT_PUBLIC_BASE_SOL_ADDRESS || "";
+
+    const USDC_DEC = Number(process.env.NEXT_PUBLIC_BASE_USDC_DECIMALS || 6);
+    const USDT_DEC = Number(process.env.NEXT_PUBLIC_BASE_USDT_DECIMALS || 6);
+    const CBBTC_DEC = Number(process.env.NEXT_PUBLIC_BASE_CBBTC_DECIMALS || 8);
+    const CBXRP_DEC = Number(process.env.NEXT_PUBLIC_BASE_CBXRP_DECIMALS || 6);
+    const SOL_DEC = Number(process.env.NEXT_PUBLIC_BASE_SOL_DECIMALS || 9);
+
+    type TransferTokenDef = { symbol: string; type: "native" | "erc20"; address?: string; decimals: number };
+
+    const transferTokenDefs: TransferTokenDef[] = useMemo(() => {
+        const isValid = (a: string) => /^0x[a-fA-F0-9]{40}$/i.test(a);
+        const defs: TransferTokenDef[] = [{ symbol: "ETH", type: "native", decimals: 18 }];
+        if (isValid(USDC_ADDR)) defs.push({ symbol: "USDC", type: "erc20", address: USDC_ADDR, decimals: USDC_DEC });
+        if (isValid(USDT_ADDR)) defs.push({ symbol: "USDT", type: "erc20", address: USDT_ADDR, decimals: USDT_DEC });
+        if (isValid(CBBTC_ADDR)) defs.push({ symbol: "cbBTC", type: "erc20", address: CBBTC_ADDR, decimals: CBBTC_DEC });
+        if (isValid(CBXRP_ADDR)) defs.push({ symbol: "cbXRP", type: "erc20", address: CBXRP_ADDR, decimals: CBXRP_DEC });
+        if (isValid(SOL_ADDR)) defs.push({ symbol: "SOL", type: "erc20", address: SOL_ADDR, decimals: SOL_DEC });
+        return defs;
+    }, [USDC_ADDR, USDT_ADDR, CBBTC_ADDR, CBXRP_ADDR, SOL_ADDR]);
+
+    function getTransferTokenDef(sym: string): TransferTokenDef | undefined {
+        return transferTokenDefs.find(t => t.symbol === sym);
+    }
+
+    function parseToUnits(v: string, decimals: number): bigint {
+        const n = Math.max(0, Number(v || 0));
+        const s = n.toFixed(Math.max(0, Math.min(18, decimals)));
+        const [w, f = ""] = s.split(".");
+        const frac = (f + "0".repeat(decimals)).slice(0, decimals);
+        return BigInt(w) * BigInt("1" + "0".repeat(decimals)) + BigInt(frac || "0");
+    }
+
+    function formatTokenUnits(raw: bigint, decimals: number): string {
+        try {
+            const n = Number(raw) / Math.pow(10, decimals);
+            if (!isFinite(n)) return "~";
+            return n.toLocaleString(undefined, { maximumFractionDigits: Math.min(6, decimals) });
+        } catch { return "~"; }
+    }
+
+    function isValidAddress(addr: string): boolean {
+        return /^0x[a-fA-F0-9]{40}$/.test(String(addr || ""));
+    }
+
+    // Fetch wallet balances for all supported tokens
+    const fetchWalletBalances = async () => {
+        if (!activeAccount?.address) return;
+        setFetchingWalletBal(true);
+        const newBals: Record<string, { raw: bigint; units: number; decimals: number }> = {};
+        try {
+            for (const tok of transferTokenDefs) {
+                try {
+                    let raw = BigInt(0);
+                    if (tok.type === "native") {
+                        const rpc = getRpcClient({ client, chain });
+                        const hex = await eth_getBalance(rpc, { address: activeAccount.address as `0x${string}` });
+                        raw = BigInt(hex);
+                    } else if (tok.address) {
+                        const contract = getContract({ client, chain, address: tok.address as `0x${string}` });
+                        const res = await readContract({
+                            contract,
+                            method: "function balanceOf(address) view returns (uint256)",
+                            params: [activeAccount.address as `0x${string}`],
+                        });
+                        raw = typeof res === "bigint" ? res : BigInt(String(res));
+                    }
+                    newBals[tok.symbol] = { raw, units: Number(raw) / Math.pow(10, tok.decimals), decimals: tok.decimals };
+                } catch {
+                    newBals[tok.symbol] = { raw: BigInt(0), units: 0, decimals: tok.decimals };
+                }
+            }
+        } catch { }
+        setWalletBalances(newBals);
+        setFetchingWalletBal(false);
+    };
+
+    // Fetch wallet balances on mount and after withdrawals
+    useEffect(() => {
+        if (activeAccount?.address) fetchWalletBalances();
+    }, [activeAccount?.address]);
+
+    // Also refresh wallet balances when reserve balances change (after withdraw)
+    useEffect(() => {
+        if (activeAccount?.address && balances) {
+            const timer = setTimeout(() => fetchWalletBalances(), 500);
+            return () => clearTimeout(timer);
+        }
+    }, [balances]);
+
+    // ENS resolution
+    async function resolveEns(name: string): Promise<string | null> {
+        try {
+            setResolvingEns(true);
+            const res = await fetch(`https://api.ensideas.com/ens/resolve/${encodeURIComponent(name)}`);
+            const data = await res.json();
+            return data?.address && isValidAddress(data.address) ? data.address : null;
+        } catch { return null; } finally { setResolvingEns(false); }
+    }
+
+    function openTransferModal(symbol: string) {
+        setTransferToken(symbol);
+        setTransferRecipient("");
+        setTransferAmount("");
+        setTransferStatus("");
+        setTransferError("");
+        setTransferModalOpen(true);
+    }
+
+    // QR Scanner helpers
+    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+
+    const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+    async function startQrScanner() {
+        setQrScannerOpen(true);
+        setTransferError("");
+        try {
+            if (!navigator?.mediaDevices?.getUserMedia) {
+                setTransferError("Camera not available on this device.");
+                setQrScannerOpen(false);
+                return;
+            }
+
+            // Pre-check camera permissions if Permissions API is available
+            if (navigator.permissions) {
+                try {
+                    const permStatus = await navigator.permissions.query({ name: "camera" as PermissionName });
+                    if (permStatus.state === "denied") {
+                        setTransferError("Camera permission is blocked. Please enable camera access in your browser settings.");
+                        setQrScannerOpen(false);
+                        return;
+                    }
+                } catch {
+                    // Permissions API may not support 'camera' query in all browsers — proceed anyway
+                }
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            streamRef.current = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                videoRef.current.play();
+            }
+
+            // Try BarcodeDetector first, then fall back to canvas-based scanning
+            const hasBarcodeDetector = typeof window !== "undefined" && "BarcodeDetector" in window;
+
+            const startScanning = () => {
+                if (hasBarcodeDetector) {
+                    // Native BarcodeDetector path
+                    const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
+                    const scan = async () => {
+                        if (!videoRef.current || !streamRef.current) return;
+                        try {
+                            const barcodes = await detector.detect(videoRef.current);
+                            for (const bc of barcodes) {
+                                const val = String(bc.rawValue || "").trim();
+                                const match = val.match(/(?:ethereum:)?(0x[a-fA-F0-9]{40})/i);
+                                if (match) {
+                                    setTransferRecipient(match[1]);
+                                    stopQrScanner();
+                                    return;
+                                }
+                            }
+                        } catch { }
+                        if (streamRef.current) requestAnimationFrame(scan);
+                    };
+                    requestAnimationFrame(scan);
+                } else {
+                    // Fallback: Canvas-based frame capture + ImageBitmap approach
+                    // For browsers without BarcodeDetector, we set up periodic canvas captures
+                    // and attempt to extract addresses from any decoded content.
+                    // Since we can't decode QR without a library, we show the camera
+                    // and let the user visually read & manually enter the address.
+                    // The camera still helps them see the QR code on another device.
+                }
+            };
+
+            if (videoRef.current) {
+                videoRef.current.addEventListener("loadeddata", startScanning, { once: true });
+            }
+        } catch (e: any) {
+            const msg = String(e?.message || "").toLowerCase();
+            if (msg.includes("denied") || msg.includes("permission")) {
+                setTransferError("Camera permission denied. Please allow camera access.");
+            } else {
+                setTransferError("Camera not available.");
+            }
+            setQrScannerOpen(false);
+        }
+    }
+
+    function stopQrScanner() {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(t => t.stop());
+            streamRef.current = null;
+        }
+        setQrScannerOpen(false);
+    }
+
     const formatCurrency = (amount: number, currency: string) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
@@ -1383,36 +1607,65 @@ function ReserveSettings({ merchantWallet, theme, reserveRatios, accumulationMod
                     <div className="text-sm text-muted-foreground">No balance data available.</div>
                 ) : (
                     <div className="space-y-3">
-                        {Object.entries(balances).map(([token, data]: [string, any]) => (
-                            <div key={token} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border hover:border-border/80 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    {getTokenIcon(token)}
-                                    <div>
-                                        <div className="font-bold">{token}</div>
-                                        <div className="text-xs text-muted-foreground font-mono">
-                                            {data.units?.toLocaleString(undefined, { maximumFractionDigits: 6 })} {token}
+                        {Object.entries(balances).map(([token, data]: [string, any]) => {
+                            const wb = walletBalances[token];
+                            const walletUnits = wb?.units || 0;
+                            const tokDef = getTransferTokenDef(token);
+                            return (
+                                <div key={token} className="p-4 bg-muted/30 rounded-xl border hover:border-border/80 transition-colors space-y-3">
+                                    {/* Token Header */}
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            {getTokenIcon(token)}
+                                            <div className="font-bold text-base">{token}</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="font-bold">{formatCurrency(data.usd || 0, "USD")}</div>
+                                            {data.address && (
+                                                <div className="text-[10px] text-muted-foreground font-mono">
+                                                    {data.address.slice(0, 6)}...{data.address.slice(-4)}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="font-bold">{formatCurrency(data.usd || 0, "USD")}</div>
-                                    {data.address && (
-                                        <div className="text-xs text-muted-foreground font-mono">
-                                            {data.address.slice(0, 6)}...{data.address.slice(-4)}
+
+                                    {/* Reserve Balance Row */}
+                                    <div className="flex items-center justify-between px-3 py-2 bg-background/50 rounded-lg">
+                                        <div>
+                                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Reserve Balance</div>
+                                            <div className="text-sm font-mono font-semibold">
+                                                {data.units?.toLocaleString(undefined, { maximumFractionDigits: 6 })} {token}
+                                            </div>
                                         </div>
-                                    )}
-                                    <div className="mt-1">
                                         <button
                                             onClick={() => executeWithdraw(token, data.address)}
                                             disabled={withdrawing[token] || !(data.units > 0)}
-                                            className="text-[10px] px-2 py-1 bg-background border rounded hover:bg-muted disabled:opacity-50 transition-colors"
+                                            className="text-[10px] px-3 py-1.5 bg-background border rounded-lg hover:bg-muted disabled:opacity-40 transition-colors font-medium"
                                         >
                                             {withdrawing[token] ? "Withdrawing..." : "Withdraw"}
                                         </button>
                                     </div>
+
+                                    {/* My Wallet Balance Row */}
+                                    <div className="flex items-center justify-between px-3 py-2 bg-background/50 rounded-lg">
+                                        <div>
+                                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">My Wallet</div>
+                                            <div className="text-sm font-mono font-semibold">
+                                                {fetchingWalletBal ? "..." : walletUnits.toLocaleString(undefined, { maximumFractionDigits: 6 })} {token}
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => openTransferModal(token)}
+                                            disabled={!activeAccount || walletUnits <= 0 || !tokDef}
+                                            className="text-[10px] px-3 py-1.5 rounded-lg font-medium text-primary-foreground hover:brightness-110 disabled:opacity-40 transition-all"
+                                            style={{ backgroundColor: theme?.primaryColor || '#3b82f6' }}
+                                        >
+                                            Transfer
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -1553,6 +1806,236 @@ function ReserveSettings({ merchantWallet, theme, reserveRatios, accumulationMod
                     document.body
                 )
             }
+
+            {/* ── Transfer Modal ─────────────────────────────────────────────── */}
+            {transferModalOpen && typeof window !== "undefined" && createPortal(
+                <div
+                    className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4 transition-all duration-200"
+                    onClick={(e) => { if (e.target === e.currentTarget && !qrScannerOpen) { setTransferModalOpen(false); stopQrScanner(); } }}
+                >
+                    <div className="w-full max-w-md rounded-xl border bg-background p-5 shadow-2xl relative animate-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-5">
+                            <div className="flex items-center gap-2">
+                                {getTokenIcon(transferToken)}
+                                <h3 className="text-base font-bold">Transfer {transferToken}</h3>
+                            </div>
+                            <button
+                                onClick={() => { setTransferModalOpen(false); stopQrScanner(); }}
+                                className="w-7 h-7 rounded-full border flex items-center justify-center hover:bg-muted text-xs"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Status Messages */}
+                            {transferStatus && <div className="text-xs p-2 rounded-lg bg-green-500/10 text-green-600 font-medium">{transferStatus}</div>}
+                            {transferError && <div className="text-xs p-2 rounded-lg bg-red-500/10 text-red-500 font-medium">{transferError}</div>}
+
+                            {/* QR Scanner */}
+                            {qrScannerOpen && (
+                                <div className="relative rounded-xl overflow-hidden border bg-black aspect-square max-h-64 mx-auto">
+                                    <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                        <div className="w-48 h-48 border-2 border-white/40 rounded-xl" />
+                                    </div>
+                                    <button
+                                        onClick={stopQrScanner}
+                                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center text-xs hover:bg-black/80"
+                                    >
+                                        ✕
+                                    </button>
+                                    <div className="absolute bottom-2 left-0 right-0 text-center text-xs text-white/70">
+                                        Point at a wallet QR code
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Recipient Input */}
+                            <div>
+                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1.5">Recipient</label>
+                                <div className="flex gap-2">
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="text"
+                                            value={transferRecipient}
+                                            onChange={(e) => { setTransferRecipient(e.target.value); setTransferError(""); }}
+                                            onBlur={async () => {
+                                                const v = transferRecipient.trim();
+                                                if (v.endsWith(".eth") || v.endsWith(".xyz") || v.endsWith(".id")) {
+                                                    const resolved = await resolveEns(v);
+                                                    if (resolved) setTransferRecipient(resolved);
+                                                    else setTransferError(`Could not resolve "${v}"`);
+                                                }
+                                            }}
+                                            placeholder="0x... address or ENS name"
+                                            className="w-full h-10 px-3 text-sm bg-background border rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                        />
+                                        {resolvingEns && (
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* Paste Button */}
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                const text = await navigator.clipboard.readText();
+                                                if (text) setTransferRecipient(text.trim());
+                                            } catch { }
+                                        }}
+                                        className="h-10 px-3 border rounded-lg hover:bg-muted transition-colors text-xs font-medium shrink-0"
+                                        title="Paste from clipboard"
+                                    >
+                                        Paste
+                                    </button>
+                                    {/* QR Scan Button */}
+                                    <button
+                                        onClick={qrScannerOpen ? stopQrScanner : startQrScanner}
+                                        className="h-10 w-10 border rounded-lg hover:bg-muted transition-colors shrink-0 flex items-center justify-center"
+                                        title="Scan QR code"
+                                    >
+                                        {qrScannerOpen ? (
+                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M18 6L6 18M6 6l12 12" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                                                <circle cx="12" cy="13" r="4" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
+                                {isValidAddress(transferRecipient) && (
+                                    <div className="text-[10px] text-green-600 mt-1 font-mono">
+                                        ✓ Valid address: {transferRecipient.slice(0, 6)}...{transferRecipient.slice(-4)}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Amount Input */}
+                            <div>
+                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1.5">Amount</label>
+                                <div className="flex gap-2">
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="text"
+                                            inputMode="decimal"
+                                            value={transferAmount}
+                                            onChange={(e) => { setTransferAmount(e.target.value); setTransferError(""); }}
+                                            placeholder={`0.00 ${transferToken}`}
+                                            className="w-full h-10 px-3 text-sm bg-background border rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const wb = walletBalances[transferToken];
+                                            if (wb) {
+                                                // For ETH, leave a small amount for gas
+                                                if (transferToken === "ETH") {
+                                                    const gasReserve = BigInt("500000000000000"); // 0.0005 ETH for gas
+                                                    const maxRaw = wb.raw > gasReserve ? wb.raw - gasReserve : BigInt(0);
+                                                    setTransferAmount(formatTokenUnits(maxRaw, wb.decimals));
+                                                } else {
+                                                    setTransferAmount(formatTokenUnits(wb.raw, wb.decimals));
+                                                }
+                                            }
+                                        }}
+                                        className="h-10 px-3 border rounded-lg hover:bg-muted transition-colors text-xs font-medium shrink-0"
+                                    >
+                                        Max
+                                    </button>
+                                </div>
+                                <div className="flex items-center justify-between mt-1.5">
+                                    <div className="text-[10px] text-muted-foreground">
+                                        Available: {fetchingWalletBal ? "..." : (walletBalances[transferToken] ? formatTokenUnits(walletBalances[transferToken].raw, walletBalances[transferToken].decimals) : "0")} {transferToken}
+                                    </div>
+                                    {(() => {
+                                        const wb = walletBalances[transferToken];
+                                        const tokDef = getTransferTokenDef(transferToken);
+                                        if (wb && tokDef && transferAmount) {
+                                            const desired = parseToUnits(transferAmount, tokDef.decimals);
+                                            if (desired > wb.raw) return <div className="text-[10px] text-red-500 font-medium">Insufficient balance</div>;
+                                        }
+                                        return null;
+                                    })()}
+                                </div>
+                            </div>
+
+                            {/* Send Button */}
+                            <TransactionButton
+                                transaction={() => {
+                                    const tokDef = getTransferTokenDef(transferToken);
+                                    if (!tokDef) throw new Error("Unsupported token");
+                                    if (!isValidAddress(transferRecipient)) throw new Error("Invalid recipient address");
+                                    const units = parseToUnits(transferAmount, tokDef.decimals);
+                                    if (units <= BigInt(0)) throw new Error("Enter a valid amount");
+
+                                    if (tokDef.type === "native") {
+                                        return prepareTransaction({
+                                            client,
+                                            chain,
+                                            to: transferRecipient as `0x${string}`,
+                                            value: units,
+                                        });
+                                    } else {
+                                        if (!tokDef.address) throw new Error("Token address not configured");
+                                        const contract = getContract({
+                                            client,
+                                            chain,
+                                            address: tokDef.address as `0x${string}`,
+                                        });
+                                        return prepareContractCall({
+                                            contract,
+                                            method: "function transfer(address to, uint256 value)",
+                                            params: [transferRecipient as `0x${string}`, units],
+                                        });
+                                    }
+                                }}
+                                style={{ backgroundColor: theme?.primaryColor || '#3b82f6', width: '100%' }}
+                                className="w-full py-3 rounded-xl font-semibold text-primary-foreground hover:brightness-110 transition-all text-sm"
+                                disabled={
+                                    !activeAccount?.address ||
+                                    !isValidAddress(transferRecipient) ||
+                                    !transferAmount ||
+                                    Number(transferAmount || 0) <= 0 ||
+                                    (() => {
+                                        const wb = walletBalances[transferToken];
+                                        const tokDef = getTransferTokenDef(transferToken);
+                                        if (wb && tokDef) return parseToUnits(transferAmount, tokDef.decimals) > wb.raw;
+                                        return true;
+                                    })()
+                                }
+                                onTransactionSent={() => {
+                                    setTransferStatus("Transaction submitted. Awaiting confirmation...");
+                                    setTransferError("");
+                                }}
+                                onError={(e) => {
+                                    setTransferError(e?.message ? String(e.message).slice(0, 200) : "Transaction failed");
+                                    setTransferStatus("");
+                                }}
+                                onTransactionConfirmed={() => {
+                                    setTransferStatus("Transfer confirmed!");
+                                    setTransferAmount("");
+                                    setTransferRecipient("");
+                                    // Refresh wallet balances
+                                    setTimeout(() => fetchWalletBalances(), 1500);
+                                    setTimeout(() => {
+                                        setTransferModalOpen(false);
+                                        setTransferStatus("");
+                                    }, 2000);
+                                }}
+                            >
+                                Send {transferToken}
+                            </TransactionButton>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div >
     );
 }
