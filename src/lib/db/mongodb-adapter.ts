@@ -364,7 +364,7 @@ export async function getMongoContainer(
 
 // Timestamp fields that were stored as Date objects in the Cosmos→MongoDB
 // migration but are supplied as epoch-ms numbers by the application code.
-const TIMESTAMP_FIELDS = ["createdAt", "lastUpdatedAt", "ts", "shippedAt", "updatedAt"];
+const TIMESTAMP_FIELDS = ["createdAt", "lastUpdatedAt", "ts", "shippedAt", "updatedAt", "industryPackActivatedAt"];
 
 /**
  * Convert a Cosmos-style document (with `id`) to MongoDB.

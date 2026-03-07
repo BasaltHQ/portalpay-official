@@ -20,6 +20,7 @@ type UsersAggRow = {
   totalVolumeEth?: number;
   kioskEnabled?: boolean;
   terminalEnabled?: boolean;
+  createdAt?: number;
 };
 
 export async function GET(req: NextRequest) {
@@ -238,7 +239,7 @@ export async function GET(req: NextRequest) {
     try {
       const spec = {
         query: `
-          SELECT c.wallet, c.kioskEnabled, c.terminalEnabled, c.brandKey
+          SELECT c.wallet, c.kioskEnabled, c.terminalEnabled, c.brandKey, c.createdAt
           FROM c
           WHERE c.type='shop_config'
         `,
@@ -246,7 +247,7 @@ export async function GET(req: NextRequest) {
       const { resources } = await container.items.query(spec as any).fetchAll();
       featureRows = Array.isArray(resources) ? resources as any[] : [];
     } catch { }
-    const featuresMap = new Map<string, { kioskEnabled: boolean; terminalEnabled: boolean }>();
+    const featuresMap = new Map<string, { kioskEnabled: boolean; terminalEnabled: boolean; createdAt?: number }>();
 
     // Priority map to track which brandKey we have currently stored for a wallet
     // We want 'basaltsurge' to override 'portalpay' or others.
@@ -291,9 +292,17 @@ export async function GET(req: NextRequest) {
           const newKiosk = r.kioskEnabled !== undefined ? !!r.kioskEnabled : current.kioskEnabled;
           const newTerminal = r.terminalEnabled !== undefined ? !!r.terminalEnabled : current.terminalEnabled;
 
+          // Normalize createdAt — may be a Date object from the migration or epoch-ms from new signups
+          let rawCreated = (r as any).createdAt;
+          let createdAtMs: number | undefined = current.createdAt;
+          if (rawCreated instanceof Date) createdAtMs = rawCreated.getTime();
+          else if (typeof rawCreated === "string") { const d = new Date(rawCreated); if (!isNaN(d.getTime())) createdAtMs = d.getTime(); }
+          else if (typeof rawCreated === "number" && Number.isFinite(rawCreated)) createdAtMs = rawCreated;
+
           featuresMap.set(w, {
             kioskEnabled: newKiosk,
-            terminalEnabled: newTerminal
+            terminalEnabled: newTerminal,
+            createdAt: createdAtMs,
           });
           brandPriorityMap.set(w, b);
         }
@@ -446,9 +455,16 @@ export async function GET(req: NextRequest) {
           totalVolumeEth,
           kioskEnabled: featuresMap.get(m)?.kioskEnabled ?? false,
           terminalEnabled: featuresMap.get(m)?.terminalEnabled ?? false,
+          createdAt: featuresMap.get(m)?.createdAt,
         };
       })
-      .sort((a, b) => b.totalEarnedUsd - a.totalEarnedUsd);
+      .sort((a, b) => {
+        // Primary: totalEarnedUsd descending
+        const earned = b.totalEarnedUsd - a.totalEarnedUsd;
+        if (earned !== 0) return earned;
+        // Secondary: createdAt descending (newest first)
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
 
     try {
       await auditEvent(req, {

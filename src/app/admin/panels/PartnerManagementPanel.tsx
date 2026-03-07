@@ -132,7 +132,7 @@ export default function PartnerManagementPanel() {
   }
 
   // Merchants under selected partner
-  const [users, setUsers] = useState<Array<{ merchant: string; splitAddress?: string; kioskEnabled?: boolean; terminalEnabled?: boolean }>>([]);
+  const [users, setUsers] = useState<Array<{ merchant: string; splitAddress?: string; kioskEnabled?: boolean; terminalEnabled?: boolean; createdAt?: number }>>([]);
 
   async function toggleMerchantFeature(merchant: string, feature: 'kioskEnabled' | 'terminalEnabled', value: boolean) {
     // Optimistic update
@@ -265,8 +265,9 @@ export default function PartnerManagementPanel() {
         merchant: String(it.merchant || ""),
         splitAddress: it.splitAddress,
         kioskEnabled: !!it.kioskEnabled,
-        terminalEnabled: !!it.terminalEnabled
-      })));
+        terminalEnabled: !!it.terminalEnabled,
+        createdAt: typeof it.createdAt === "number" ? it.createdAt : 0,
+      })).sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0)));
     } catch (e: any) {
       setError(e?.message || "Failed to load partner data");
     } finally {
