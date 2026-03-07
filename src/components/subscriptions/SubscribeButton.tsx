@@ -123,49 +123,28 @@ export default function SubscribeButton({
                 durationMonths: 12,
             });
 
-            // Request EIP-712 signature from wallet
-            // Using window.ethereum directly for signTypedData_v4
-            const provider = (window as any).ethereum;
-            if (!provider) {
-                throw new Error("No Ethereum provider found. Please use a Web3 wallet.");
-            }
-
-            const msgParams = {
-                domain: spendPermissionDomain,
+            // Request EIP-712 signature from wallet via Thirdweb's account API
+            // This routes through the correct wallet adapter (Phantom, MetaMask, Coinbase, etc.)
+            const signature = await account.signTypedData({
+                domain: {
+                    name: spendPermissionDomain.name,
+                    version: spendPermissionDomain.version,
+                    chainId: spendPermissionDomain.chainId,
+                    verifyingContract: spendPermissionDomain.verifyingContract as `0x${string}`,
+                },
                 types: spendPermissionTypes,
                 primaryType: "SpendPermission" as const,
                 message: {
                     account: permission.account,
                     spender: permission.spender,
                     token: permission.token,
-                    allowance: permission.allowance.toString(),
+                    allowance: permission.allowance,
                     period: permission.period,
                     start: permission.start,
                     end: permission.end,
-                    salt: permission.salt.toString(),
+                    salt: permission.salt,
                     extraData: permission.extraData,
                 },
-            };
-
-            const signature = await provider.request({
-                method: "eth_signTypedData_v4",
-                params: [
-                    customerWallet,
-                    JSON.stringify({
-                        types: {
-                            EIP712Domain: [
-                                { name: "name", type: "string" },
-                                { name: "version", type: "string" },
-                                { name: "chainId", type: "uint256" },
-                                { name: "verifyingContract", type: "address" },
-                            ],
-                            ...spendPermissionTypes,
-                        },
-                        primaryType: "SpendPermission",
-                        domain: spendPermissionDomain,
-                        message: msgParams.message,
-                    }),
-                ],
             });
 
             setStep("submitting");
@@ -195,6 +174,10 @@ export default function SubscribeButton({
             const data = await res.json();
 
             if (data.success) {
+                // Check if the immediate first charge succeeded
+                if (data.firstCharge && !data.firstCharge.success) {
+                    console.warn("[SubscribeButton] Subscription created but first charge failed:", data.firstCharge.error);
+                }
                 setStep("success");
                 onSuccess?.(data.subscription?.subscriptionId);
             } else {

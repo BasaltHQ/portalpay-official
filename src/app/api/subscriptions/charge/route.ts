@@ -3,8 +3,10 @@ import {
     createThirdwebClient,
     getContract,
     prepareContractCall,
-    Engine,
+    sendTransaction,
+    waitForReceipt,
 } from "thirdweb";
+import { privateKeyToAccount } from "thirdweb/wallets";
 import { base } from "thirdweb/chains";
 import { getContainer, type BillingEvent } from "@/lib/cosmos";
 import { getSubscription, recordCharge, markPastDue } from "@/lib/subscriptions";
@@ -85,8 +87,17 @@ export async function POST(req: NextRequest) {
         const secretKey = process.env.THIRDWEB_SECRET_KEY;
         const serverWalletAddress = process.env.THIRDWEB_ENGINE_WALLET;
 
-        if (!secretKey || !serverWalletAddress) {
-            console.error("[charge] THIRDWEB_SECRET_KEY or THIRDWEB_ENGINE_WALLET not configured");
+        if (!secretKey) {
+            console.error("[charge] THIRDWEB_SECRET_KEY not configured");
+            return NextResponse.json(
+                { error: "engine_not_configured" },
+                { status: 500, headers: { "x-correlation-id": correlationId } }
+            );
+        }
+
+        const adminPrivateKey = process.env.THIRDWEB_ADMIN_PRIVATE_KEY;
+        if (!adminPrivateKey) {
+            console.error("[charge] THIRDWEB_ADMIN_PRIVATE_KEY not configured");
             return NextResponse.json(
                 { error: "engine_not_configured" },
                 { status: 500, headers: { "x-correlation-id": correlationId } }
@@ -95,9 +106,10 @@ export async function POST(req: NextRequest) {
 
         const client = createThirdwebClient({ secretKey });
 
-        const serverWallet = Engine.serverWallet({
+        const pk = adminPrivateKey.startsWith("0x") ? adminPrivateKey : `0x${adminPrivateKey}`;
+        const account = privateKeyToAccount({
             client,
-            address: serverWalletAddress,
+            privateKey: pk as `0x${string}`,
         });
 
         const spendManagerContract = getContract({
@@ -156,11 +168,12 @@ export async function POST(req: NextRequest) {
                 params: [spendPermissionTuple, sub.permissionSignature as `0x${string}`],
             });
 
-            const { transactionId: approveTxId } = await serverWallet.enqueueTransaction({
-                transaction: approveTx,
-            });
-            // Wait for approval to land on-chain
-            await Engine.waitForTransactionHash({ client, transactionId: approveTxId });
+            const approveResult = await sendTransaction({
+                    account,
+                    transaction: approveTx,
+                });
+                // Wait for approval to land on-chain
+                await waitForReceipt(approveResult);
 
             // Step 2: Execute the spend (transfer USDC from customer to spender/merchant)
             const spendTx = prepareContractCall({
@@ -192,13 +205,11 @@ export async function POST(req: NextRequest) {
                 params: [spendPermissionTuple, chargeAmountWei],
             });
 
-            const { transactionId: spendTxId } = await serverWallet.enqueueTransaction({
-                transaction: spendTx,
-            });
-            const txHash = await Engine.waitForTransactionHash({
-                client,
-                transactionId: spendTxId,
-            });
+                const spendResult = await sendTransaction({
+                    account,
+                    transaction: spendTx,
+                });
+                const txReceipt = await waitForReceipt(spendResult);
 
             // Record successful charge
             const updated = await recordCharge(subscriptionId, sub.priceUsd);
@@ -216,7 +227,7 @@ export async function POST(req: NextRequest) {
                 wallet: sub.customerWallet,
                 seconds: 0,
                 usd: sub.priceUsd,
-                txHash: txHash?.transactionHash || undefined,
+                txHash: txReceipt?.transactionHash || undefined,
                 recipient: sub.merchantWallet,
                 receiptId: `sub_${subscriptionId}_${sub.chargeCount + 1}`,
                 portalFeeUsd: platformFeeUsd,
@@ -233,7 +244,7 @@ export async function POST(req: NextRequest) {
                     success: true,
                     subscriptionId,
                     chargeAmountUsd: sub.priceUsd,
-                    transactionHash: txHash?.transactionHash,
+                    transactionHash: txReceipt?.transactionHash,
                     nextChargeAt: updated?.nextChargeAt,
                     chargeCount: updated?.chargeCount,
                 },

@@ -1061,6 +1061,13 @@ export function Navbar() {
 
                 {/* Mobile Menu Overlay */}
                 {mobileOpen && (
+                    <>
+                    {/* Backdrop — tap outside to close */}
+                    <div
+                        className="lg:hidden fixed inset-0 z-[-1]"
+                        onClick={() => setMobileOpen(false)}
+                        aria-hidden
+                    />
                     <div
                         className="lg:hidden backdrop-blur-xl absolute top-[calc(100%+1px)] left-4 right-4 rounded-2xl p-4 shadow-2xl animate-in slide-in-from-top-2 max-h-[70vh] overflow-y-auto"
                         style={{
@@ -1194,10 +1201,12 @@ export function Navbar() {
                                     }}
                                     connectModal={{ title: tCommon("login"), titleIcon: modalTitleIcon, size: "compact", showThirdwebBranding: false }}
                                     theme={twTheme}
+                                    onConnect={() => setMobileOpen(false)}
                                 />
                             </div>
                         </div>
                     </div>
+                    </>
                 )}
 
                 {/* HUD Decorative Lines */}

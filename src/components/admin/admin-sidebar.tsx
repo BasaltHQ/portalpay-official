@@ -72,6 +72,8 @@ type AdminTabKey =
   | 'clientRequests'
   | 'agentRequests'
   | 'subscriptions'
+  | 'shopifyPartner'
+  | 'shopifyPlatform'
   | 'modules';
 
 interface AdminSidebarProps {
