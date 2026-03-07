@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedWallet } from "@/lib/auth";
-import { createSubscription, getPlan, recordCharge, markPastDue } from "@/lib/subscriptions";
+import { createSubscription, getPlan, recordCharge } from "@/lib/subscriptions";
 import { getContainer, type BillingEvent } from "@/lib/cosmos";
 import type { BillingPeriod } from "@/lib/eip712-subscriptions";
 import {
@@ -13,8 +13,9 @@ import {
 import { privateKeyToAccount } from "thirdweb/wallets";
 import { base } from "thirdweb/chains";
 import {
-    SPEND_PERMISSION_MANAGER_ADDRESS,
+    BASE_USDC_ADDRESS,
     BASE_USDC_DECIMALS,
+    BILLING_PERIODS,
 } from "@/lib/eip712-subscriptions";
 
 export const runtime = "nodejs";
@@ -23,18 +24,20 @@ export const dynamic = "force-dynamic";
 /**
  * POST /api/subscriptions/create
  *
- * Customer subscribes to a merchant's plan.
- * After the customer signs the EIP-712 SpendPermission on the client side,
- * the frontend sends the signature + permission data here to store the subscription
- * and execute the first charge immediately.
+ * Universal subscription creation using ERC-20 Approve + TransferFrom.
+ *
+ * The customer has already approved the platform wallet to spend their USDC
+ * via an on-chain approve() transaction on the frontend. This endpoint:
+ * 1. Records the subscription
+ * 2. Executes the first charge via USDC.transferFrom()
  *
  * Body: {
  *   planId,
  *   customerWallet,
- *   permissionSignature,   // "0x..." EIP-712 signature
- *   permissionData: {      // the signed SpendPermission struct
- *     account, spender, token, allowance, period, start, end, salt, extraData
- *   }
+ *   approvalTxHash,         // on-chain USDC.approve() tx hash
+ *   approvedSpender,        // platform wallet address
+ *   approvedAllowance,      // total USDC approved (as string)
+ *   periodSeconds,          // billing period in seconds
  * }
  */
 export async function POST(req: NextRequest) {
@@ -72,62 +75,43 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const sig = String(body.permissionSignature || "").trim();
-        if (!sig || !sig.startsWith("0x")) {
+        const approvalTxHash = String(body.approvalTxHash || "").trim();
+        const approvedSpender = String(body.approvedSpender || "").toLowerCase().trim();
+        const approvedAllowance = String(body.approvedAllowance || "0");
+        const periodSeconds = Number(body.periodSeconds) || BILLING_PERIODS[plan.period];
+
+        if (!approvalTxHash || !approvalTxHash.startsWith("0x")) {
             return NextResponse.json(
-                { error: "signature_required", message: "EIP-712 permissionSignature required" },
+                { error: "approval_required", message: "USDC approval transaction hash required" },
                 { status: 400, headers: { "x-correlation-id": correlationId } }
             );
         }
 
-        const pd = body.permissionData;
-        if (
-            !pd ||
-            !pd.account ||
-            !pd.spender ||
-            !pd.token ||
-            !pd.allowance ||
-            !pd.period ||
-            !pd.start ||
-            !pd.end
-        ) {
-            return NextResponse.json(
-                { error: "permission_data_required", message: "Full permissionData struct required" },
-                { status: 400, headers: { "x-correlation-id": correlationId } }
-            );
-        }
-
-        // Ensure customer wallet matches the signed permission account
-        if (String(pd.account || "").toLowerCase() !== customerWallet) {
-            return NextResponse.json(
-                { error: "wallet_mismatch", message: "permissionData.account must match customerWallet" },
-                { status: 400, headers: { "x-correlation-id": correlationId } }
-            );
-        }
-
+        // Create the subscription record
         const subscription = await createSubscription({
             planId: plan.planId,
             merchantWallet: plan.merchantWallet,
             customerWallet,
             priceUsd: plan.priceUsd,
             period: plan.period,
-            permissionSignature: sig,
+            // Store ERC-20 approval data instead of SpendPermission data
+            permissionSignature: approvalTxHash, // repurpose field for approval tx hash
             permissionData: {
-                account: String(pd.account).toLowerCase(),
-                spender: String(pd.spender).toLowerCase(),
-                token: String(pd.token).toLowerCase(),
-                allowance: String(pd.allowance),
-                period: Number(pd.period),
-                start: Number(pd.start),
-                end: Number(pd.end),
-                salt: String(pd.salt || "0"),
-                extraData: String(pd.extraData || "0x"),
+                account: customerWallet,
+                spender: approvedSpender,
+                token: BASE_USDC_ADDRESS.toLowerCase(),
+                allowance: approvedAllowance,
+                period: periodSeconds,
+                start: Math.floor(Date.now() / 1000),
+                end: Math.floor(Date.now() / 1000) + (12 * 30 * 24 * 60 * 60), // 12 months
+                salt: "0",
+                extraData: "0x",
             },
         });
 
-        // ─── Immediate First Charge ─────────────────────────────────────────
-        // Execute the first charge right now so the customer pays on subscribe.
-        // If the charge fails, the subscription is still created (cron can retry).
+        // ─── Immediate First Charge via USDC.transferFrom() ─────────────────
+        // The customer already approved our platform wallet to spend USDC.
+        // Now we call transferFrom to pull the first payment.
         let firstChargeResult: {
             success: boolean;
             transactionHash?: string;
@@ -142,14 +126,14 @@ export async function POST(req: NextRequest) {
                 const client = createThirdwebClient({ secretKey });
 
                 const pk = adminPrivateKey.startsWith("0x") ? adminPrivateKey : `0x${adminPrivateKey}`;
-                const account = privateKeyToAccount({
+                const adminAccount = privateKeyToAccount({
                     client,
                     privateKey: pk as `0x${string}`,
                 });
 
-                const spendManagerContract = getContract({
+                const usdcContract = getContract({
                     client,
-                    address: SPEND_PERMISSION_MANAGER_ADDRESS,
+                    address: BASE_USDC_ADDRESS,
                     chain: base,
                 });
 
@@ -157,91 +141,48 @@ export async function POST(req: NextRequest) {
                     Math.round(plan.priceUsd * 10 ** BASE_USDC_DECIMALS)
                 );
 
-                const spendPermissionTuple = {
-                    account: subscription.permissionData.account,
-                    spender: subscription.permissionData.spender,
-                    token: subscription.permissionData.token,
-                    allowance: BigInt(subscription.permissionData.allowance),
-                    period: Number(subscription.permissionData.period),
-                    start: Number(subscription.permissionData.start),
-                    end: Number(subscription.permissionData.end),
-                    salt: BigInt(subscription.permissionData.salt),
-                    extraData: subscription.permissionData.extraData as `0x${string}`,
-                };
+                // The platform wallet is both the approved spender AND the recipient
+                const platformWallet = adminAccount.address as `0x${string}`;
 
-                // Step 1: Approve the spend permission on-chain
-                const approveTx = prepareContractCall({
-                    contract: spendManagerContract,
+                console.log(`[subscriptions/create] Executing first charge:`, {
+                    from: customerWallet,
+                    to: platformWallet,
+                    amount: chargeAmountWei.toString(),
+                    amountUsd: plan.priceUsd,
+                });
+
+                // Execute USDC.transferFrom(customer, platformWallet, amount)
+                const transferFromTx = prepareContractCall({
+                    contract: usdcContract,
                     method: {
                         type: "function",
-                        name: "approveWithSignature",
+                        name: "transferFrom",
                         inputs: [
-                            {
-                                name: "spendPermission",
-                                type: "tuple",
-                                components: [
-                                    { name: "account", type: "address" },
-                                    { name: "spender", type: "address" },
-                                    { name: "token", type: "address" },
-                                    { name: "allowance", type: "uint160" },
-                                    { name: "period", type: "uint48" },
-                                    { name: "start", type: "uint48" },
-                                    { name: "end", type: "uint48" },
-                                    { name: "salt", type: "uint256" },
-                                    { name: "extraData", type: "bytes" },
-                                ],
-                            },
-                            { name: "signature", type: "bytes" },
+                            { name: "from", type: "address" },
+                            { name: "to", type: "address" },
+                            { name: "value", type: "uint256" },
                         ],
-                        outputs: [],
+                        outputs: [{ name: "", type: "bool" }],
                         stateMutability: "nonpayable",
                     },
-                    params: [spendPermissionTuple, subscription.permissionSignature as `0x${string}`],
+                    params: [
+                        customerWallet as `0x${string}`,
+                        platformWallet,
+                        chargeAmountWei,
+                    ],
                 });
 
-                const approveResult = await sendTransaction({
-                    account,
-                    transaction: approveTx,
+                const txResult = await sendTransaction({
+                    account: adminAccount,
+                    transaction: transferFromTx,
                 });
-                await waitForReceipt(approveResult);
-
-                // Step 2: Execute the spend (transfer USDC from customer)
-                const spendTx = prepareContractCall({
-                    contract: spendManagerContract,
-                    method: {
-                        type: "function",
-                        name: "spend",
-                        inputs: [
-                            {
-                                name: "spendPermission",
-                                type: "tuple",
-                                components: [
-                                    { name: "account", type: "address" },
-                                    { name: "spender", type: "address" },
-                                    { name: "token", type: "address" },
-                                    { name: "allowance", type: "uint160" },
-                                    { name: "period", type: "uint48" },
-                                    { name: "start", type: "uint48" },
-                                    { name: "end", type: "uint48" },
-                                    { name: "salt", type: "uint256" },
-                                    { name: "extraData", type: "bytes" },
-                                ],
-                            },
-                            { name: "value", type: "uint160" },
-                        ],
-                        outputs: [],
-                        stateMutability: "nonpayable",
-                    },
-                    params: [spendPermissionTuple, chargeAmountWei],
+                const txReceipt = await waitForReceipt({
+                    ...txResult,
+                    client,
+                    chain: base,
                 });
 
-                const spendResult = await sendTransaction({
-                    account,
-                    transaction: spendTx,
-                });
-                const txReceipt = await waitForReceipt(spendResult);
-
-                // Record the successful charge (updates nextChargeAt to now + period)
+                // Record the successful charge
                 await recordCharge(subscription.subscriptionId, plan.priceUsd);
 
                 // Create billing event
@@ -309,4 +250,3 @@ export async function POST(req: NextRequest) {
         );
     }
 }
-

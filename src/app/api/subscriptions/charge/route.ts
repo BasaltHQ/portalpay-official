@@ -11,8 +11,7 @@ import { base } from "thirdweb/chains";
 import { getContainer, type BillingEvent } from "@/lib/cosmos";
 import { getSubscription, recordCharge, markPastDue } from "@/lib/subscriptions";
 import {
-    SPEND_PERMISSION_MANAGER_ADDRESS,
-    SPEND_PERMISSION_MANAGER_ABI,
+    BASE_USDC_ADDRESS,
     BASE_USDC_DECIMALS,
 } from "@/lib/eip712-subscriptions";
 
@@ -22,18 +21,19 @@ export const dynamic = "force-dynamic";
 /**
  * POST /api/subscriptions/charge
  *
- * Execute a single subscription charge via Thirdweb Engine SDK.
- * Calls SpendPermissionManager.spend() to transfer USDC from customer → merchant.
+ * Execute a recurring subscription charge via USDC.transferFrom().
+ * The customer's one-time ERC-20 approve() grants the platform wallet
+ * permission to pull USDC for each billing cycle.
  *
  * Body: { subscriptionId }
- * Auth: requires CRON_SECRET or admin wallet
+ * Auth: requires CRON_SECRET
  */
 export async function POST(req: NextRequest) {
     const correlationId = crypto.randomUUID();
     try {
         const body = await req.json().catch(() => ({}));
 
-        // Auth: CRON_SECRET header or admin
+        // Auth: CRON_SECRET header or body
         const cronSecret = req.headers.get("x-cron-secret") || body.cronSecret;
         const envSecret = process.env.CRON_SECRET;
         if (!envSecret || cronSecret !== envSecret) {
@@ -67,39 +67,37 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Check if the spend permission has expired
+        // Check if the permission/approval window has expired
         const nowSeconds = Math.floor(Date.now() / 1000);
         if (sub.permissionData.end && nowSeconds >= sub.permissionData.end) {
-            // Auto-expire the subscription
-            await markPastDue(subscriptionId); // will be caught and marked
+            await markPastDue(subscriptionId);
             const container = await getContainer();
             await container.items.upsert(
                 { ...sub, status: "expired" as const, updatedAt: Date.now() },
                 { disableAutomaticIdGeneration: true }
             );
             return NextResponse.json(
-                { error: "permission_expired", message: "EIP-712 spend permission has expired", subscriptionId },
+                { error: "approval_expired", message: "USDC approval period has expired", subscriptionId },
                 { status: 400, headers: { "x-correlation-id": correlationId } }
             );
         }
 
-        // ─── Thirdweb Engine SDK Setup ──────────────────────────────────────
+        // ─── Setup ──────────────────────────────────────────────────────────
         const secretKey = process.env.THIRDWEB_SECRET_KEY;
-        const serverWalletAddress = process.env.THIRDWEB_ENGINE_WALLET;
+        const adminPrivateKey = process.env.THIRDWEB_ADMIN_PRIVATE_KEY;
 
         if (!secretKey) {
             console.error("[charge] THIRDWEB_SECRET_KEY not configured");
             return NextResponse.json(
-                { error: "engine_not_configured" },
+                { error: "wallet_not_configured" },
                 { status: 500, headers: { "x-correlation-id": correlationId } }
             );
         }
 
-        const adminPrivateKey = process.env.THIRDWEB_ADMIN_PRIVATE_KEY;
         if (!adminPrivateKey) {
             console.error("[charge] THIRDWEB_ADMIN_PRIVATE_KEY not configured");
             return NextResponse.json(
-                { error: "engine_not_configured" },
+                { error: "wallet_not_configured" },
                 { status: 500, headers: { "x-correlation-id": correlationId } }
             );
         }
@@ -107,109 +105,62 @@ export async function POST(req: NextRequest) {
         const client = createThirdwebClient({ secretKey });
 
         const pk = adminPrivateKey.startsWith("0x") ? adminPrivateKey : `0x${adminPrivateKey}`;
-        const account = privateKeyToAccount({
+        const adminAccount = privateKeyToAccount({
             client,
             privateKey: pk as `0x${string}`,
         });
 
-        const spendManagerContract = getContract({
+        const usdcContract = getContract({
             client,
-            address: SPEND_PERMISSION_MANAGER_ADDRESS,
+            address: BASE_USDC_ADDRESS,
             chain: base,
         });
 
-        // Amount in USDC wei
         const chargeAmountWei = BigInt(
             Math.round(sub.priceUsd * 10 ** BASE_USDC_DECIMALS)
         );
 
-        // Build the spend permission tuple
-        const pd = sub.permissionData;
-        const spendPermissionTuple = {
-            account: pd.account,
-            spender: pd.spender,
-            token: pd.token,
-            allowance: BigInt(pd.allowance),
-            period: Number(pd.period),
-            start: Number(pd.start),
-            end: Number(pd.end),
-            salt: BigInt(pd.salt),
-            extraData: pd.extraData as `0x${string}`,
-        };
+        const platformWallet = adminAccount.address as `0x${string}`;
 
         try {
-            // Step 1: Approve the spend permission on-chain (idempotent)
-            const approveTx = prepareContractCall({
-                contract: spendManagerContract,
-                method: {
-                    type: "function",
-                    name: "approveWithSignature",
-                    inputs: [
-                        {
-                            name: "spendPermission",
-                            type: "tuple",
-                            components: [
-                                { name: "account", type: "address" },
-                                { name: "spender", type: "address" },
-                                { name: "token", type: "address" },
-                                { name: "allowance", type: "uint160" },
-                                { name: "period", type: "uint48" },
-                                { name: "start", type: "uint48" },
-                                { name: "end", type: "uint48" },
-                                { name: "salt", type: "uint256" },
-                                { name: "extraData", type: "bytes" },
-                            ],
-                        },
-                        { name: "signature", type: "bytes" },
-                    ],
-                    outputs: [],
-                    stateMutability: "nonpayable",
-                },
-                params: [spendPermissionTuple, sub.permissionSignature as `0x${string}`],
+            console.log(`[charge] Executing recurring charge for ${subscriptionId}:`, {
+                from: sub.customerWallet,
+                to: platformWallet,
+                amount: chargeAmountWei.toString(),
+                amountUsd: sub.priceUsd,
+                chargeNumber: sub.chargeCount + 1,
             });
 
-            const approveResult = await sendTransaction({
-                    account,
-                    transaction: approveTx,
-                });
-                // Wait for approval to land on-chain
-                await waitForReceipt(approveResult);
-
-            // Step 2: Execute the spend (transfer USDC from customer to spender/merchant)
-            const spendTx = prepareContractCall({
-                contract: spendManagerContract,
+            // Execute USDC.transferFrom(customer, platformWallet, amount)
+            const transferFromTx = prepareContractCall({
+                contract: usdcContract,
                 method: {
                     type: "function",
-                    name: "spend",
+                    name: "transferFrom",
                     inputs: [
-                        {
-                            name: "spendPermission",
-                            type: "tuple",
-                            components: [
-                                { name: "account", type: "address" },
-                                { name: "spender", type: "address" },
-                                { name: "token", type: "address" },
-                                { name: "allowance", type: "uint160" },
-                                { name: "period", type: "uint48" },
-                                { name: "start", type: "uint48" },
-                                { name: "end", type: "uint48" },
-                                { name: "salt", type: "uint256" },
-                                { name: "extraData", type: "bytes" },
-                            ],
-                        },
-                        { name: "value", type: "uint160" },
+                        { name: "from", type: "address" },
+                        { name: "to", type: "address" },
+                        { name: "value", type: "uint256" },
                     ],
-                    outputs: [],
+                    outputs: [{ name: "", type: "bool" }],
                     stateMutability: "nonpayable",
                 },
-                params: [spendPermissionTuple, chargeAmountWei],
+                params: [
+                    sub.customerWallet as `0x${string}`,
+                    platformWallet,
+                    chargeAmountWei,
+                ],
             });
 
-                const spendResult = await sendTransaction({
-                    account,
-                    transaction: spendTx,
-                });
-                const txReceipt = await waitForReceipt(spendResult);
+            const txResult = await sendTransaction({
+                account: adminAccount,
+                transaction: transferFromTx,
+            });
+            const txReceipt = await waitForReceipt({
+                ...txResult,
+                client,
+                chain: base,
+            });
 
             // Record successful charge
             const updated = await recordCharge(subscriptionId, sub.priceUsd);
@@ -239,6 +190,8 @@ export async function POST(req: NextRequest) {
             const container = await getContainer();
             await container.items.upsert(billingEvent, { disableAutomaticIdGeneration: true });
 
+            console.log(`[charge] Charge successful for ${subscriptionId}: ${txReceipt?.transactionHash}`);
+
             return NextResponse.json(
                 {
                     success: true,
@@ -250,13 +203,13 @@ export async function POST(req: NextRequest) {
                 },
                 { headers: { "x-correlation-id": correlationId } }
             );
-        } catch (engineErr: any) {
-            console.error("[charge] Engine SDK call failed:", engineErr);
+        } catch (chargeErr: any) {
+            console.error("[charge] transferFrom failed:", chargeErr);
             await markPastDue(subscriptionId);
             return NextResponse.json(
                 {
                     error: "charge_failed",
-                    message: engineErr?.message || "Thirdweb Engine call failed",
+                    message: chargeErr?.message || "USDC transferFrom failed",
                     subscriptionId,
                 },
                 { status: 502, headers: { "x-correlation-id": correlationId } }
