@@ -50,6 +50,15 @@ const PERIOD_LABELS: Record<string, string> = {
     YEARLY: "Yearly",
 };
 
+const PERIOD_SHORT: Record<string, string> = {
+    DAILY: "day",
+    WEEKLY: "wk",
+    BIWEEKLY: "2wk",
+    MONTHLY: "mo",
+    QUARTERLY: "qtr",
+    YEARLY: "yr",
+};
+
 function formatDate(ts: number): string {
     if (!ts) return "—";
     return new Date(ts).toLocaleDateString("en-US", {
@@ -158,6 +167,30 @@ export default function SubscriptionsPanel() {
             }
         } catch (err) {
             console.error("Failed to delete plan:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCancelSubscription = async (subId: string) => {
+        if (!confirm("Are you sure you want to cancel this subscription? The customer will no longer be charged.")) return;
+        if (!merchantWallet) return;
+        try {
+            setLoading(true);
+            const res = await fetch(`/api/subscriptions/merchant/cancel`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-wallet": merchantWallet },
+                body: JSON.stringify({ subscriptionId: subId })
+            });
+            if (res.ok) {
+                fetchData();
+            } else {
+                const data = await res.json();
+                alert(data.error || "Failed to cancel subscription");
+            }
+        } catch (err) {
+            console.error("Failed to cancel subscription:", err);
+            alert("Failed to cancel subscription");
         } finally {
             setLoading(false);
         }
@@ -403,6 +436,7 @@ export default function SubscriptionsPanel() {
                                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
                                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Next Charge</th>
                                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Charged</th>
+                                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
@@ -423,13 +457,23 @@ export default function SubscriptionsPanel() {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-foreground">
-                                                {fmtCurrency(sub.priceUsd)}/{PERIOD_LABELS[sub.period]?.slice(0, 3).toLowerCase() || "mo"}
+                                                {fmtCurrency(sub.priceUsd)}/{PERIOD_SHORT[sub.period] || "mo"}
                                             </td>
                                             <td className="px-4 py-3 text-muted-foreground">
                                                 {sub.status === "active" ? formatDate(sub.nextChargeAt) : "—"}
                                             </td>
                                             <td className="px-4 py-3 text-foreground font-medium">
                                                 {fmtCurrency(sub.totalChargedUsd)}
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                {sub.status === "active" && (
+                                                    <button
+                                                        onClick={() => handleCancelSubscription(sub.subscriptionId)}
+                                                        className="text-xs px-2 py-1 rounded bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     );

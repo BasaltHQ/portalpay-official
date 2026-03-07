@@ -4294,6 +4294,7 @@ function UsersPanel() {
     shopSlug?: string;
     kioskEnabled?: boolean;
     terminalEnabled?: boolean;
+    splitAddress?: string;
   }>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -5691,6 +5692,7 @@ type InventoryItem = {
   taxable?: boolean;
   jurisdictionCode?: string;
   industryPack?: 'general' | 'restaurant' | 'retail' | 'hotel' | 'freelancer';
+  isSubscription?: boolean;
   createdAt: number;
   updatedAt: number;
 };

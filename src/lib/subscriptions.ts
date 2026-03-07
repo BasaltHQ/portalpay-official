@@ -295,6 +295,24 @@ export async function cancelSubscription(
     return true;
 }
 
+/** Cancel a subscription (Merchant-initiated) */
+export async function cancelSubscriptionByMerchant(
+    subscriptionId: string,
+    merchantWallet: string
+): Promise<boolean> {
+    const sub = await getSubscription(subscriptionId);
+    if (!sub) return false;
+    if (sub.merchantWallet !== normalizeHex(merchantWallet)) return false;
+    if (sub.status === "cancelled") return true; // idempotent
+
+    const container = await getContainer();
+    await container.items.upsert(
+        { ...sub, status: "cancelled" as const, updatedAt: now() },
+        { disableAutomaticIdGeneration: true }
+    );
+    return true;
+}
+
 /** Get all active subscriptions due for charging */
 export async function getDueSubscriptions(): Promise<SubscriptionRecord[]> {
     const ts = now();

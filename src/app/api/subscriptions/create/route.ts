@@ -7,8 +7,10 @@ import {
     createThirdwebClient,
     getContract,
     prepareContractCall,
-    Engine,
+    sendTransaction,
+    waitForReceipt,
 } from "thirdweb";
+import { privateKeyToAccount } from "thirdweb/wallets";
 import { base } from "thirdweb/chains";
 import {
     SPEND_PERMISSION_MANAGER_ADDRESS,
@@ -133,15 +135,16 @@ export async function POST(req: NextRequest) {
         } = { success: false };
 
         const secretKey = process.env.THIRDWEB_SECRET_KEY;
-        const serverWalletAddress = process.env.THIRDWEB_ENGINE_WALLET;
+        const adminPrivateKey = process.env.THIRDWEB_ADMIN_PRIVATE_KEY;
 
-        if (secretKey && serverWalletAddress) {
+        if (secretKey && adminPrivateKey) {
             try {
                 const client = createThirdwebClient({ secretKey });
 
-                const serverWallet = Engine.serverWallet({
+                const pk = adminPrivateKey.startsWith("0x") ? adminPrivateKey : `0x${adminPrivateKey}`;
+                const account = privateKeyToAccount({
                     client,
-                    address: serverWalletAddress,
+                    privateKey: pk as `0x${string}`,
                 });
 
                 const spendManagerContract = getContract({
@@ -196,10 +199,11 @@ export async function POST(req: NextRequest) {
                     params: [spendPermissionTuple, subscription.permissionSignature as `0x${string}`],
                 });
 
-                const { transactionId: approveTxId } = await serverWallet.enqueueTransaction({
+                const approveResult = await sendTransaction({
+                    account,
                     transaction: approveTx,
                 });
-                await Engine.waitForTransactionHash({ client, transactionId: approveTxId });
+                await waitForReceipt(approveResult);
 
                 // Step 2: Execute the spend (transfer USDC from customer)
                 const spendTx = prepareContractCall({
@@ -231,13 +235,11 @@ export async function POST(req: NextRequest) {
                     params: [spendPermissionTuple, chargeAmountWei],
                 });
 
-                const { transactionId: spendTxId } = await serverWallet.enqueueTransaction({
+                const spendResult = await sendTransaction({
+                    account,
                     transaction: spendTx,
                 });
-                const txHash = await Engine.waitForTransactionHash({
-                    client,
-                    transactionId: spendTxId,
-                });
+                const txReceipt = await waitForReceipt(spendResult);
 
                 // Record the successful charge (updates nextChargeAt to now + period)
                 await recordCharge(subscription.subscriptionId, plan.priceUsd);
@@ -255,7 +257,7 @@ export async function POST(req: NextRequest) {
                     wallet: customerWallet,
                     seconds: 0,
                     usd: plan.priceUsd,
-                    txHash: txHash?.transactionHash || undefined,
+                    txHash: txReceipt?.transactionHash || undefined,
                     recipient: plan.merchantWallet,
                     receiptId: `sub_${subscription.subscriptionId}_1`,
                     portalFeeUsd: platformFeeUsd,
@@ -269,11 +271,11 @@ export async function POST(req: NextRequest) {
 
                 firstChargeResult = {
                     success: true,
-                    transactionHash: txHash?.transactionHash,
+                    transactionHash: txReceipt?.transactionHash,
                 };
 
                 console.log(
-                    `[subscriptions/create] First charge successful for ${subscription.subscriptionId}: ${txHash?.transactionHash}`
+                    `[subscriptions/create] First charge successful for ${subscription.subscriptionId}: ${txReceipt?.transactionHash}`
                 );
             } catch (chargeErr: any) {
                 console.error(
@@ -287,8 +289,8 @@ export async function POST(req: NextRequest) {
                 // Subscription is still created — cron will retry the charge
             }
         } else {
-            console.warn("[subscriptions/create] Engine not configured, skipping first charge");
-            firstChargeResult = { success: false, error: "engine_not_configured" };
+            console.warn("[subscriptions/create] THIRDWEB_SECRET_KEY or THIRDWEB_ADMIN_PRIVATE_KEY not configured, skipping first charge");
+            firstChargeResult = { success: false, error: "wallet_not_configured" };
         }
 
         return NextResponse.json(
