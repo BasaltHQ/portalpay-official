@@ -22,34 +22,43 @@ export async function GET(req: NextRequest) {
         const url = new URL(req.url);
         const brandKey = url.searchParams.get("brandKey");
 
-        let query = "SELECT c.id, c.wallet, c.name, c.industryPack, c.loyalty, c.industryPackActivatedAt, c.slug, c.theme, c.kioskEnabled, c.terminalEnabled FROM c WHERE c.type='shop_config'";
+        let query = "SELECT c.id, c.wallet, c.name, c.industryPack, c.loyalty, c.industryPackActivatedAt, c.createdAt, c.slug, c.theme, c.kioskEnabled, c.terminalEnabled, c.brandKey FROM c WHERE c.type='shop_config'";
         const parameters: any[] = [];
 
         if (brandKey) {
-            query += " AND c.theme.brandKey = @brandKey";
+            query += " AND (LOWER(c.brandKey) = @brandKey OR c.theme.brandKey = @brandKey)";
             parameters.push({ name: "@brandKey", value: brandKey });
         }
+
+        query += " ORDER BY c.createdAt DESC";
 
         const spec = { query, parameters };
 
         const { resources } = await container.items.query(spec).fetchAll();
 
-        // We might want to aggregate member counts here, but for now let's stick to config data 
-        // to keep it fast. Detailed stats can be fetched individually or added later if needed.
-        // If we really need member counts, we'd need another query to user_merchant.
+        // Use createdAt as primary "joined" timestamp — always set for new merchants.
+        // Fall back to industryPackActivatedAt for pre-migration data where createdAt may be missing.
+        // Normalize Date objects to epoch-ms if the adapter didn't catch them.
+        function toEpochMs(v: any): number {
+            if (!v) return 0;
+            if (v instanceof Date) return v.getTime();
+            if (typeof v === "string") { const d = new Date(v); return isNaN(d.getTime()) ? 0 : d.getTime(); }
+            if (typeof v === "number" && Number.isFinite(v)) return v;
+            return 0;
+        }
 
-        const merchants = Array.isArray(resources) ? resources.map((r: any) => ({
+        const merchants = (Array.isArray(resources) ? resources.map((r: any) => ({
             id: r.id,
             wallet: r.wallet,
             name: r.name,
             industryPack: r.industryPack || "Generic",
             platformOptIn: !!r?.loyalty?.platformOptIn,
-            joinedAt: r.industryPackActivatedAt || 0,
+            joinedAt: toEpochMs(r.createdAt) || toEpochMs(r.industryPackActivatedAt) || 0,
             slug: r.slug,
             logo: r.theme?.brandLogoUrl,
             kioskEnabled: !!r.kioskEnabled,
             terminalEnabled: !!r.terminalEnabled
-        })) : [];
+        })) : []).sort((a, b) => b.joinedAt - a.joinedAt);
 
         return NextResponse.json({ ok: true, merchants }, { headers: { "x-correlation-id": correlationId } });
     } catch (e: any) {
