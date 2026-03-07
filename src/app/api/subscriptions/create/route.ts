@@ -169,10 +169,43 @@ export async function POST(req: NextRequest) {
                     extraData: subscription.permissionData.extraData as `0x${string}`,
                 };
 
-                // The frontend already requested the spend permission from the wallet,
-                // which handles installing the SpendPermissionManager as an owner and approving it.
-                // We can proceed directly to spending the initial charge.
+                // Step 1: Approve the spend permission on-chain
+                const approveTx = prepareContractCall({
+                    contract: spendManagerContract,
+                    method: {
+                        type: "function",
+                        name: "approveWithSignature",
+                        inputs: [
+                            {
+                                name: "spendPermission",
+                                type: "tuple",
+                                components: [
+                                    { name: "account", type: "address" },
+                                    { name: "spender", type: "address" },
+                                    { name: "token", type: "address" },
+                                    { name: "allowance", type: "uint160" },
+                                    { name: "period", type: "uint48" },
+                                    { name: "start", type: "uint48" },
+                                    { name: "end", type: "uint48" },
+                                    { name: "salt", type: "uint256" },
+                                    { name: "extraData", type: "bytes" },
+                                ],
+                            },
+                            { name: "signature", type: "bytes" },
+                        ],
+                        outputs: [],
+                        stateMutability: "nonpayable",
+                    },
+                    params: [spendPermissionTuple, subscription.permissionSignature as `0x${string}`],
+                });
 
+                const approveResult = await sendTransaction({
+                    account,
+                    transaction: approveTx,
+                });
+                await waitForReceipt(approveResult);
+
+                // Step 2: Execute the spend (transfer USDC from customer)
                 const spendTx = prepareContractCall({
                     contract: spendManagerContract,
                     method: {

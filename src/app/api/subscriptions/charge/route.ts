@@ -138,8 +138,42 @@ export async function POST(req: NextRequest) {
         };
 
         try {
-            // The spend permission must already be approved on-chain via the customer's wallet.
-            // Execute the spend (transfer USDC from customer to spender/merchant)
+            // Step 1: Approve the spend permission on-chain (idempotent)
+            const approveTx = prepareContractCall({
+                contract: spendManagerContract,
+                method: {
+                    type: "function",
+                    name: "approveWithSignature",
+                    inputs: [
+                        {
+                            name: "spendPermission",
+                            type: "tuple",
+                            components: [
+                                { name: "account", type: "address" },
+                                { name: "spender", type: "address" },
+                                { name: "token", type: "address" },
+                                { name: "allowance", type: "uint160" },
+                                { name: "period", type: "uint48" },
+                                { name: "start", type: "uint48" },
+                                { name: "end", type: "uint48" },
+                                { name: "salt", type: "uint256" },
+                                { name: "extraData", type: "bytes" },
+                            ],
+                        },
+                        { name: "signature", type: "bytes" },
+                    ],
+                    outputs: [],
+                    stateMutability: "nonpayable",
+                },
+                params: [spendPermissionTuple, sub.permissionSignature as `0x${string}`],
+            });
+
+            const approveResult = await sendTransaction({
+                    account,
+                    transaction: approveTx,
+                });
+                // Wait for approval to land on-chain
+                await waitForReceipt(approveResult);
 
             // Step 2: Execute the spend (transfer USDC from customer to spender/merchant)
             const spendTx = prepareContractCall({
