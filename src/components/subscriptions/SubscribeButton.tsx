@@ -148,6 +148,15 @@ export default function SubscribeButton({
                         });
                         return txHash;
                     }
+                    if (method === "eth_signTypedData_v4") {
+                        const parsed = typeof params[1] === "string" ? JSON.parse(params[1]) : params[1];
+                        return await account.signTypedData({
+                            domain: parsed.domain,
+                            types: parsed.types,
+                            primaryType: parsed.primaryType,
+                            message: parsed.message
+                        });
+                    }
                     // For standard transactions/signing, pass down or throw
                     throw new Error(`Method ${method} not implemented in custom adapter`);
                 }
