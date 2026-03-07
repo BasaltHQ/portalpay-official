@@ -50,6 +50,15 @@ const PERIOD_LABELS: Record<string, string> = {
     YEARLY: "Yearly",
 };
 
+const PERIOD_SHORT: Record<string, string> = {
+    DAILY: "day",
+    WEEKLY: "wk",
+    BIWEEKLY: "2wk",
+    MONTHLY: "mo",
+    QUARTERLY: "qtr",
+    YEARLY: "yr",
+};
+
 function formatDate(ts: number): string {
     if (!ts) return "—";
     return new Date(ts).toLocaleDateString("en-US", {
@@ -423,7 +432,7 @@ export default function SubscriptionsPanel() {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-foreground">
-                                                {fmtCurrency(sub.priceUsd)}/{PERIOD_LABELS[sub.period]?.slice(0, 3).toLowerCase() || "mo"}
+                                                {fmtCurrency(sub.priceUsd)}/{PERIOD_SHORT[sub.period] || "mo"}
                                             </td>
                                             <td className="px-4 py-3 text-muted-foreground">
                                                 {sub.status === "active" ? formatDate(sub.nextChargeAt) : "—"}
