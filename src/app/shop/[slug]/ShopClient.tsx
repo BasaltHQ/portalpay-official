@@ -2969,12 +2969,12 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                     className="relative overflow-y-auto rounded-none border-0 shadow-none bg-transparent"
                                     style={{
                                         width: "min(100vw, 880px)",
-                                        maxHeight: "calc(100vh - 32px)",
+                                        maxHeight: "calc(100vh - 16px)",
                                         height: portalPreferredHeight
                                             ? `${portalPreferredHeight}px`
                                             : portalLayout === "wide"
-                                                ? "min(88vh, 700px)"
-                                                : "min(100svh, 740px)",
+                                                ? "96vh"
+                                                : "100svh",
                                     }}
                                     onClick={(e) => e.stopPropagation()}
                                 >

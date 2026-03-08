@@ -85,6 +85,26 @@ function clampBps(v: any): number {
   return Math.max(0, Math.min(10000, Math.floor(n)));
 }
 
+/** Read the brand split-versions registry from Cosmos (for force-redeploy checks) */
+async function readBrandSplitVersions(brandKey: string): Promise<{
+  currentVersion?: number;
+  forceRedeployOlder?: boolean;
+  requireRedeployOnWalletChange?: boolean;
+} | null> {
+  try {
+    const c = await getContainer();
+    const { resource } = await c.item("brand:split_versions", brandKey).read<any>();
+    if (!resource) return null;
+    return {
+      currentVersion: typeof resource.currentVersion === "number" ? resource.currentVersion : undefined,
+      forceRedeployOlder: !!resource.forceRedeployOlder,
+      requireRedeployOnWalletChange: !!resource.requireRedeployOnWalletChange,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** Resolve platform shares bps using brand overrides, brand config, env, or defaults.
  * No longer using static BRANDS map - all brand data should come from Cosmos DB via /api/platform/brands/{key}/config
  */
@@ -272,10 +292,25 @@ export async function GET(req: NextRequest) {
         split = split || { address: splitAddr, recipients: [] };
         // Ensure response brand key matches the request context for consistency
         const responseBrandKey = originalBrandKey || (cfg as any)?.brandKey || "portalpay";
+
+        // ── Version registry check: force-redeploy if merchant is on an older version ──
+        let misconfiguredSplit: any = undefined;
+        try {
+          const versionKey = String(responseBrandKey || "basaltsurge").toLowerCase();
+          const reg = await readBrandSplitVersions(versionKey);
+          if (reg && reg.forceRedeployOlder && typeof reg.currentVersion === "number") {
+            const merchantVersion = Number((cfg as any)?.splitVersion || 0);
+            if (merchantVersion < reg.currentVersion) {
+              misconfiguredSplit = { needsRedeploy: true, reason: "version_outdated", merchantVersion, currentVersion: reg.currentVersion };
+            }
+          }
+        } catch { /* version check is best-effort */ }
+
         return jsonResponse({
           split: { ...split, address: splitAddr, brandKey: String(responseBrandKey).toLowerCase() },
           brandKey: responseBrandKey,
           legacy: true,
+          ...(misconfiguredSplit ? { misconfiguredSplit } : {}),
         });
       }
     } catch (e) {
@@ -450,7 +485,7 @@ export async function POST(req: NextRequest) {
     const isAdmin = caller.role === "admin" || (caller.permissions && caller.permissions.includes("split:write"));
 
     // Platform admin check: allow if caller is in the DB-backed admin list (or env fallback)
-    const platformWallet = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0x00fe4f0104a989ca65df6b825a6c1682413bca56").toLowerCase();
+    const platformWallet = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0xaCDAa0314000a1d10f3e9EF1B88e986A72AA3f6e").toLowerCase();
     const platformAdminWallets = await getPlatformAdminWallets();
     const isPlatformAdmin = platformAdminWallets.includes(callerWallet);
 
@@ -494,8 +529,8 @@ export async function POST(req: NextRequest) {
 
     // Safety check: specific hardcoded platform wallet for PortalPay/Basalt
     // If we are in a partner context and the platform recipient matches the partner wallet, we must fix it.
-    // The known Platform (Basalt) wallet is 0x00fe4f0104a989ca65df6b825a6c1682413bca56
-    const CANONICAL_PLATFORM_WALLET = "0x00fe4f0104a989ca65df6b825a6c1682413bca56";
+    // The known Platform (Basalt) wallet is 0xaCDAa0314000a1d10f3e9EF1B88e986A72AA3f6e
+    const CANONICAL_PLATFORM_WALLET = "0xaCDAa0314000a1d10f3e9EF1B88e986A72AA3f6e";
     const partnerWalletBrand = String(brand?.partnerWallet || "").toLowerCase();
 
     if (platformRecipient === partnerWalletBrand && partnerWalletBrand !== "") {
@@ -593,6 +628,13 @@ export async function POST(req: NextRequest) {
         const splitHistory = Array.isArray(prev.splitHistory) ? [historyEntry, ...prev.splitHistory] : [historyEntry];
 
         // IMPORTANT: Explicitly preserve theme and other merchant-specific data when updating split
+        // Read current version from split registry for stamping
+        let deployVersion: number | undefined;
+        try {
+          const reg = await readBrandSplitVersions(brandKey);
+          if (reg && typeof reg.currentVersion === "number") deployVersion = reg.currentVersion;
+        } catch { /* best-effort */ }
+
         const nextConfigOverride: any = {
           ...(prev || {}),
           splitHistory,
@@ -604,6 +646,7 @@ export async function POST(req: NextRequest) {
           updatedAt: Date.now(),
           splitAddress: splitAddress || prev.splitAddress,
           partnerWallet: partnerWallet || undefined,
+          ...(typeof deployVersion === "number" ? { splitVersion: deployVersion } : {}),
           split: {
             address: splitAddress || prev.splitAddress,
             recipients,
@@ -692,6 +735,13 @@ export async function POST(req: NextRequest) {
 
     // Build updated config document
     // IMPORTANT: Explicitly preserve theme and other merchant-specific data to prevent data loss
+    // Read current version from split registry for stamping
+    let deployVersionNew: number | undefined;
+    try {
+      const reg = await readBrandSplitVersions(brandKey);
+      if (reg && typeof reg.currentVersion === "number") deployVersionNew = reg.currentVersion;
+    } catch { /* best-effort */ }
+
     const nextConfig: any = {
       ...(prev || {}),
       id: docId,
@@ -702,6 +752,7 @@ export async function POST(req: NextRequest) {
       updatedAt: Date.now(),
       splitAddress: effectiveSplitAddress || undefined,
       partnerWallet: partnerWallet || undefined,
+      ...(typeof deployVersionNew === "number" ? { splitVersion: deployVersionNew } : {}),
       split: {
         address: effectiveSplitAddress || "",
         recipients,

@@ -4,11 +4,16 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
 import { base } from "thirdweb/chains";
 import {
-    spendPermissionDomain,
-    spendPermissionTypes,
-    buildSpendPermission,
+    getContract,
+    prepareContractCall,
+    sendTransaction,
+    waitForReceipt,
+} from "thirdweb";
+import { client } from "@/lib/thirdweb/client";
+import {
     BASE_USDC_ADDRESS,
     BASE_USDC_DECIMALS,
+    BILLING_PERIODS,
     type BillingPeriod,
 } from "@/lib/eip712-subscriptions";
 import {
@@ -25,7 +30,7 @@ type SubscribeButtonProps = {
     priceUsd: number;
     period: BillingPeriod;
     merchantWallet: string;
-    /** Backend wallet (spender) address — from env or plan config */
+    /** Platform wallet address that will execute transferFrom — from env */
     spenderWallet: string;
     onSuccess?: (subscriptionId: string) => void;
     onError?: (error: string) => void;
@@ -35,12 +40,13 @@ type SubscribeButtonProps = {
 /**
  * Customer-facing Subscribe Button.
  *
- * Flow:
+ * Universal ERC-20 Approve + TransferFrom flow:
  * 1. Check USDC balance → show funding prompt if low
- * 2. Build EIP-712 SpendPermission message
- * 3. Prompt wallet signature (signTypedData)
- * 4. POST /api/subscriptions/create with signature + permission data
- * 5. Show success
+ * 2. Call USDC.approve(platformWallet, totalAllowance) from customer's wallet
+ * 3. POST /api/subscriptions/create — backend executes first charge via transferFrom
+ * 4. Show success
+ *
+ * Works with ALL wallet types: Smart Accounts, EOAs, Coinbase Smart Wallets.
  */
 export default function SubscribeButton({
     planId,
@@ -55,7 +61,7 @@ export default function SubscribeButton({
 }: SubscribeButtonProps) {
     const account = useActiveAccount();
     const chain = useActiveWalletChain();
-    const [step, setStep] = useState<"idle" | "signing" | "submitting" | "success" | "error">("idle");
+    const [step, setStep] = useState<"idle" | "approving" | "submitting" | "success" | "error">("idle");
     const [errorMsg, setErrorMsg] = useState("");
     const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
     const [checkingBalance, setCheckingBalance] = useState(false);
@@ -69,7 +75,6 @@ export default function SubscribeButton({
         if (!customerWallet) return;
         setCheckingBalance(true);
         try {
-            // Use a simple eth_call to check USDC balance
             const balanceOfData = `0x70a08231000000000000000000000000${customerWallet.slice(2)}`;
             const response = await fetch(`https://mainnet.base.org`, {
                 method: "POST",
@@ -102,7 +107,7 @@ export default function SubscribeButton({
 
     const needsFunding = usdcBalance !== null && usdcBalance < priceUsd;
 
-    // Handle subscribe
+    // Handle subscribe — ERC-20 approve flow
     const handleSubscribe = async () => {
         if (!customerWallet || !account) {
             setErrorMsg("Connect your wallet first");
@@ -110,103 +115,88 @@ export default function SubscribeButton({
             return;
         }
 
-        setStep("signing");
+        if (!spenderWallet || !/^0x[a-fA-F0-9]{40}$/.test(spenderWallet)) {
+            setErrorMsg("Platform wallet not configured");
+            setStep("error");
+            return;
+        }
+
+        setStep("approving");
         setErrorMsg("");
 
         try {
-            // Build the spend permission message
-            const permission = buildSpendPermission({
-                account: customerWallet,
-                spender: spenderWallet as `0x${string}`,
-                priceUsd,
-                period,
-                durationMonths: 12,
+            // Calculate total allowance: price × 12 periods (or subscription duration)
+            const durationPeriods = 12;
+            const totalAllowanceUsd = priceUsd * durationPeriods;
+            const totalAllowanceWei = BigInt(
+                Math.round(totalAllowanceUsd * 10 ** BASE_USDC_DECIMALS)
+            );
+            const periodSeconds = BILLING_PERIODS[period];
+
+            // Get the USDC contract
+            const usdcContract = getContract({
+                client,
+                address: BASE_USDC_ADDRESS,
+                chain: base,
             });
 
-            // Generate a Viem wallet client from the Thirdweb account
-            // This is required because @base-org/account expects a Viem Provider/WalletClient
-            // We need a custom EIP-1193 provider that calls the thirdweb account's sign message/send trans methods
-            const provider = {
-                request: async ({ method, params }: any) => {
-                    if (method === "eth_accounts") {
-                        return [customerWallet];
-                    }
-                    if (method === "eth_chainId") {
-                        return `0x${base.id.toString(16)}`;
-                    }
-                    if (method === "wallet_sendCalls") {
-                        const { sendCalls } = await import("thirdweb/wallets/eip5792");
-                        const txHash = await sendCalls({
-                            account,
-                            client: account.client,
-                            calls: params[0].calls.map((c: any) => ({
-                                to: c.to,
-                                data: c.data,
-                                value: c.value ? BigInt(c.value) : undefined
-                            })),
-                            version: params[0].version
-                        });
-                        return txHash;
-                    }
-                    if (method === "eth_signTypedData_v4") {
-                        const parsed = typeof params[1] === "string" ? JSON.parse(params[1]) : params[1];
-                        return await account.signTypedData({
-                            domain: parsed.domain,
-                            types: parsed.types,
-                            primaryType: parsed.primaryType,
-                            message: parsed.message
-                        });
-                    }
-                    // For standard transactions/signing, pass down or throw
-                    throw new Error(`Method ${method} not implemented in custom adapter`);
-                }
-            } as any;
-
-            // Use the official Base interface to handle the wallet_sendCalls flow
-            // This automatically attaches the SpendPermissionManager as an owner (ERC-6492 side effects)
-            const { requestSpendPermission } = await import("@base-org/account/spend-permission");
-            const sdkPermission = await requestSpendPermission({
-                account: customerWallet,
-                spender: spenderWallet as `0x${string}`,
-                token: BASE_USDC_ADDRESS,
-                allowance: permission.allowance,
-                periodInDays: 30, // For monthly, we map to days for the SDK helper
-                chainId: base.id,
-                provider,
+            // Step 1: Customer approves the platform wallet to spend their USDC
+            // This is the ONLY wallet interaction — wallet popup appears here
+            console.log("[SubscribeButton] Requesting USDC approval:", {
+                spender: spenderWallet,
+                allowance: totalAllowanceWei.toString(),
+                allowanceUsd: totalAllowanceUsd,
             });
-            
-            // The signature is now handled inside requestSpendPermission via wallet_sendCalls/signTypedData
-            // And `sdkPermission` contains the fully approved on-chain permission structure.
-            const signature = sdkPermission.signature || "0x";
 
+            const approveTx = prepareContractCall({
+                contract: usdcContract,
+                method: {
+                    type: "function",
+                    name: "approve",
+                    inputs: [
+                        { name: "spender", type: "address" },
+                        { name: "amount", type: "uint256" },
+                    ],
+                    outputs: [{ name: "", type: "bool" }],
+                    stateMutability: "nonpayable",
+                },
+                params: [spenderWallet as `0x${string}`, totalAllowanceWei],
+            });
+
+            const approvalResult = await sendTransaction({
+                account,
+                transaction: approveTx,
+            });
+
+            // Wait for approval tx to confirm on-chain
+            const approvalReceipt = await waitForReceipt({
+                ...approvalResult,
+                client,
+                chain: base,
+            });
+
+            console.log("[SubscribeButton] USDC approval confirmed:", approvalReceipt.transactionHash);
+
+            // Step 2: Send subscription request to backend
+            // Backend will execute the first charge via USDC.transferFrom()
             setStep("submitting");
 
-            // Submit to our API
             const res = await fetch("/api/subscriptions/create", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     planId,
                     customerWallet,
-                    permissionSignature: signature,
-                    permissionData: {
-                        account: sdkPermission.permission.account,
-                        spender: sdkPermission.permission.spender,
-                        token: sdkPermission.permission.token,
-                        allowance: sdkPermission.permission.allowance.toString(),
-                        period: Number(sdkPermission.permission.period),
-                        start: Number(sdkPermission.permission.start),
-                        end: Number(sdkPermission.permission.end),
-                        salt: sdkPermission.permission.salt.toString(),
-                        extraData: sdkPermission.permission.extraData,
-                    },
+                    approvalTxHash: approvalReceipt.transactionHash,
+                    approvedSpender: spenderWallet.toLowerCase(),
+                    approvedAllowance: totalAllowanceWei.toString(),
+                    periodSeconds,
                 }),
             });
 
             const data = await res.json();
 
             if (data.success) {
-                // Check if the immediate first charge succeeded
                 if (data.firstCharge && !data.firstCharge.success) {
                     console.warn("[SubscribeButton] Subscription created but first charge failed:", data.firstCharge.error);
                 }
@@ -218,7 +208,11 @@ export default function SubscribeButton({
         } catch (err: any) {
             console.error("Subscribe error:", err);
             const msg = err?.message || "Failed to subscribe";
-            setErrorMsg(msg.includes("rejected") || msg.includes("denied") ? "Signature rejected by user" : msg);
+            setErrorMsg(
+                msg.includes("rejected") || msg.includes("denied") || msg.includes("User rejected")
+                    ? "Transaction rejected by user"
+                    : msg
+            );
             setStep("error");
             onError?.(msg);
         }
@@ -279,7 +273,7 @@ export default function SubscribeButton({
 
             <button
                 onClick={handleSubscribe}
-                disabled={step === "signing" || step === "submitting" || needsFunding}
+                disabled={step === "approving" || step === "submitting" || needsFunding}
                 className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all w-full
           ${needsFunding
                         ? "bg-amber-500/10 text-amber-500 cursor-not-allowed"
@@ -289,16 +283,16 @@ export default function SubscribeButton({
           ${className || ""}
         `}
             >
-                {step === "signing" && (
+                {step === "approving" && (
                     <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Sign in wallet...
+                        Approve USDC in wallet...
                     </>
                 )}
                 {step === "submitting" && (
                     <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Creating subscription...
+                        Processing first charge...
                     </>
                 )}
                 {step === "idle" && !needsFunding && (

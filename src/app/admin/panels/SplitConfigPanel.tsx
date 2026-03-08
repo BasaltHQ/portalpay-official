@@ -70,6 +70,12 @@ export default function SplitConfigPanel() {
   const [newNotes, setNewNotes] = useState<string>("");
   const [publishOnCreate, setPublishOnCreate] = useState<boolean>(false);
 
+  // Reference wallet addresses
+  const [platformWalletRef, setPlatformWalletRef] = useState<string>(
+    (process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0xaCDAa0314000a1d10f3e9EF1B88e986A72AA3f6e").toLowerCase()
+  );
+  const [partnerWalletRef, setPartnerWalletRef] = useState<string>("");
+
   // UX state
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
@@ -210,6 +216,9 @@ export default function SplitConfigPanel() {
         if (Number.isFinite(part)) {
           setNewPartnerFeeBps(Math.max(0, Math.min(10000, Math.floor(part))));
         }
+        // Populate reference wallet addresses
+        const pw = String(eff?.partnerWallet || "").toLowerCase();
+        if (pw && /^0x[a-fA-F0-9]{40}$/.test(pw)) setPartnerWalletRef(pw);
       } catch {
         // ignore
       }
@@ -359,6 +368,48 @@ export default function SplitConfigPanel() {
           {isPlatform
             ? "Manage versioned splits for the main Platform split. Each version updates platform fee bps and notes."
             : "Manage versioned splits for partner brands. Each version freezes partner wallet and fee bps. New merchants bind to the current version."}
+        </div>
+      </div>
+
+      {/* Reference Wallets */}
+      <div className="glass-pane rounded-xl border p-5 space-y-3">
+        <div className="text-sm font-medium">Reference Wallets</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <div className="microtext text-muted-foreground mb-1">Platform Wallet</div>
+            <div className="flex items-center gap-2">
+              <TruncatedAddress address={platformWalletRef as any} />
+              <button
+                className="microtext text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => { try { navigator.clipboard.writeText(platformWalletRef); } catch { } }}
+                title="Copy full address"
+              >
+                📋
+              </button>
+            </div>
+            <div className="microtext text-muted-foreground mt-0.5 font-mono select-all break-all">{platformWalletRef}</div>
+          </div>
+          {!isPlatform && partnerWalletRef && (
+            <div>
+              <div className="microtext text-muted-foreground mb-1">Partner Wallet</div>
+              <div className="flex items-center gap-2">
+                <TruncatedAddress address={partnerWalletRef as any} />
+                <button
+                  className="microtext text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => { try { navigator.clipboard.writeText(partnerWalletRef); } catch { } }}
+                  title="Copy full address"
+                >
+                  📋
+                </button>
+              </div>
+              <div className="microtext text-muted-foreground mt-0.5 font-mono select-all break-all">{partnerWalletRef}</div>
+            </div>
+          )}
+        </div>
+        <div className="microtext text-muted-foreground">
+          {isPlatform
+            ? "The platform wallet receives the platform fee share from all merchant splits."
+            : "These wallets receive fee shares from merchant payment splits on this container."}
         </div>
       </div>
 
