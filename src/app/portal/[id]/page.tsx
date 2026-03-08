@@ -570,6 +570,51 @@ export default function PortalReceiptPage() {
     setIsClientSide(true);
   }, []);
 
+  // ── Broadcast content height to parent frame for dynamic iframe sizing ──
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    // Only broadcast when embedded in an iframe
+    let inIframe = false;
+    try { inIframe = window.self !== window.top; } catch { inIframe = true; }
+    if (!inIframe) return;
+
+    let rafId: number | undefined;
+    const broadcast = () => {
+      try {
+        const h = document.documentElement.scrollHeight;
+        // Only send if height changed by > 10px to avoid noise
+        if (Math.abs(h - lastPreferredHeightRef.current) > 10) {
+          lastPreferredHeightRef.current = h;
+          window.parent.postMessage(
+            { type: "portalpay-preferred-height", height: h },
+            "*"
+          );
+        }
+      } catch { }
+    };
+    const scheduleBroadcast = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(broadcast);
+    };
+
+    // Observe body size changes (covers Thirdweb widget internal resizes)
+    const ro = new ResizeObserver(scheduleBroadcast);
+    ro.observe(document.body);
+
+    // Also observe DOM mutations in case new elements are added/removed
+    const mo = new MutationObserver(scheduleBroadcast);
+    mo.observe(document.body, { childList: true, subtree: true, attributes: true });
+
+    // Initial broadcast
+    scheduleBroadcast();
+
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   // Fetch partner brand colors, logos, and name for partner containers
   useEffect(() => {
     let cancelled = false;
@@ -2650,7 +2695,7 @@ export default function PortalReceiptPage() {
                 <div className="h-full flex flex-col justify-center">
                   {/* Payment Section */}
                   <div ref={payRef} className={`mt-0 md:mt-0 ${isEmbedded ? "rounded-none border-0 p-0 bg-transparent" : "rounded-2xl border p-3 bg-background/70"} flex flex-col`}>
-                    <div ref={widgetRootRef} className={isEmbedded ? "mt-0 border-2 rounded-2xl p-3" : "mt-0 rounded-2xl border p-3"} style={{ minHeight: isEmbedded ? `${EMBEDDED_WIDGET_HEIGHT}px` : undefined, overflow: isEmbedded ? "hidden" : undefined, borderColor: isEmbedded ? "rgba(255,255,255,0.1)" : undefined }}>
+                    <div ref={widgetRootRef} className={isEmbedded ? "mt-0 border-2 rounded-2xl p-3" : "mt-0 rounded-2xl border p-3"} style={{ minHeight: isEmbedded ? `${EMBEDDED_WIDGET_HEIGHT}px` : undefined, overflow: isEmbedded ? "auto" : undefined, borderColor: isEmbedded ? "rgba(255,255,255,0.1)" : undefined }}>
                       {!loadingReceipt && receipt && totalUsd > 0 && amountReady && merchantWallet && tokenDef && hasTokenAddr && widgetSupported ? (
                         <>
                           {/* Payment Complete State - Blocks Double Payment */}
@@ -3333,7 +3378,7 @@ export default function PortalReceiptPage() {
 
                 {/* Payment Section */}
                 <div ref={payRef} className={`mt-4 ${isEmbedded ? "rounded-none border-0 p-0 bg-transparent" : "rounded-2xl border p-3 bg-background/70"}`}>
-                  <div ref={widgetRootRef} className={isEmbedded ? "mt-1 flex-1 border-2 rounded-2xl p-3" : "mt-2 rounded-2xl border p-3 flex-1"} style={{ minHeight: isEmbedded ? `${EMBEDDED_WIDGET_HEIGHT}px` : undefined, overflow: isEmbedded ? "hidden" : undefined, borderColor: isEmbedded ? "rgba(255,255,255,0.1)" : undefined }}>
+                  <div ref={widgetRootRef} className={isEmbedded ? "mt-1 flex-1 border-2 rounded-2xl p-3" : "mt-2 rounded-2xl border p-3 flex-1"} style={{ minHeight: isEmbedded ? `${EMBEDDED_WIDGET_HEIGHT}px` : undefined, overflow: isEmbedded ? "auto" : undefined, borderColor: isEmbedded ? "rgba(255,255,255,0.1)" : undefined }}>
                     {!loadingReceipt && receipt && totalUsd > 0 && amountReady && merchantWallet && tokenDef && hasTokenAddr && widgetSupported ? (
                       <>
                         {(paymentConfirmed || isSettled(receipt.status)) ? (
