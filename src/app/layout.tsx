@@ -25,6 +25,8 @@ import { getContainer } from "@/lib/cosmos";
 import { getEnv } from "@/lib/env";
 import { getBrandConfigFromCosmos, getContainerIdentity } from "@/lib/brand-config";
 import { normalizeBrandName, resolveBrandAppLogo, resolveBrandSymbol, getDefaultBrandName } from "@/lib/branding";
+import { printBanner, isDebug } from "@/lib/logger";
+import { ConsoleBanner } from "@/components/ConsoleBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -196,7 +198,7 @@ export async function generateMetadata(): Promise<Metadata> {
     let host = "";
     try {
       const { headers } = require('next/headers');
-      const headersList = headers();
+      const headersList = await headers();
       host = headersList.get('x-forwarded-host') || headersList.get('host') || "";
       if (host) host = host.split(":")[0];
     } catch { }
@@ -577,13 +579,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Print branded startup banner once on first render
+  printBanner();
+
   // Derive brand key from hostname (e.g., paynex.azurewebsites.net -> paynex)
   let brandKeyFromHost: string | undefined;
   try {
     let host = "";
     try {
       const { headers } = require('next/headers');
-      const headersList = headers();
+      const headersList = await headers();
       host = headersList.get('x-forwarded-host') || headersList.get('host') || "";
       if (host) host = host.split(":")[0];
     } catch { }
@@ -689,6 +694,8 @@ export default async function RootLayout({
         style={{ overflowX: 'hidden' }}
       >
         <DeviceStyleInjector />
+        {!isDebug() && <Script id="pp-silence-console" strategy="beforeInteractive">{`try{var _l=console.log.bind(console);console.log=function(){};console._log=_l}catch(e){}`}</Script>}
+        <ConsoleBanner />
         <Script id="pp-preset-vars" strategy="beforeInteractive">{`try {
           var d=document.documentElement;
           var dp=d.getAttribute('data-pp-brand-primary')||'#1f2937';
@@ -1107,6 +1114,6 @@ export default async function RootLayout({
           </ThirdwebAppProvider>
         </BrandProvider>
       </body>
-    </html>
+    </html >
   );
 }

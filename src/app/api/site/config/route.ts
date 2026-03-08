@@ -8,6 +8,7 @@ import crypto from "node:crypto";
 import { parseJsonBody, validateSiteConfigUpdateOrThrow } from "@/lib/validation";
 import { auditEvent } from "@/lib/audit";
 import { getBrandConfig, getBrandKey, applyBrandDefaults } from "@/config/brands";
+import { debug } from "@/lib/logger";
 import { isPartnerContext } from "@/lib/env";
 import { getBaseUrl } from "@/lib/base-url";
 import { getContainerIdentity, getBrandConfigFromCosmos } from "@/lib/brand-config";
@@ -104,7 +105,7 @@ async function applyPartnerOverrides(req: NextRequest, cfg: any): Promise<any> {
 
       // If merchant in partner container hasn't customized their theme, apply partner defaults
       if (isPartnerMerchant && !hasCustomSymbol) {
-        console.log("[site/config] Per-merchant in partner container without custom theme - will apply partner defaults", {
+        debug("site/config", "Per-merchant in partner container without custom theme - will apply partner defaults", {
           wallet: cfgWallet,
           containerBrandKey,
           hasCustomSymbol
@@ -952,7 +953,7 @@ export async function GET(req: NextRequest) {
     const isTerminalRef = refPath.startsWith("/terminal");
     const isTerminalTagged = (xThemeCaller || "").toLowerCase() === "terminal";
     try {
-      console.log("[site/config][GET] request", {
+      debug("site/config", "GET request", {
         correlationId,
         url: url.toString(),
         referer,
@@ -996,7 +997,7 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-      console.log("[site/config][GET] wallet_selected", {
+      debug("site/config", "GET wallet_selected", {
         correlationId,
         queryWallet,
         headerWallet: headerWalletIn,
@@ -1208,7 +1209,7 @@ export async function GET(req: NextRequest) {
           const final = applyThemeOverrides(cfg);
 
           const payload = { config: await applyPartnerOverrides(req, final) };
-          console.log("[site/config][GET] returning merged config for wallet", { wallet, docId: DOC_ID, hasBrandKey: !!brandKey, mergedShop: !!shopConfig });
+          debug("site/config", "returning merged config for wallet", { wallet, docId: DOC_ID, hasBrandKey: !!brandKey, mergedShop: !!shopConfig });
           return jsonResponse(payload, {
             headers: {
               "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",

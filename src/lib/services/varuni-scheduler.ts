@@ -2,6 +2,7 @@ import { connectDB } from '@/lib/db/connection';
 import AIInsight from '@/lib/models/AIInsight';
 import { VaruniAgent, createGraphQLTool } from './varuni-agent';
 import { upsertEmbedding } from './rag';
+import { debug } from '@/lib/logger';
 
 let schedulerInitialized = false;
 
@@ -28,17 +29,17 @@ async function runNightlyInsights(): Promise<void> {
 			],
 		});
 
-		const modules: Array<'dashboard'|'inventory'|'scheduling'|'invoicing'|'menu'|'analytics'|'hostpro'> = ['dashboard','inventory','scheduling','invoicing','menu','analytics','hostpro'];
+		const modules: Array<'dashboard' | 'inventory' | 'scheduling' | 'invoicing' | 'menu' | 'analytics' | 'hostpro'> = ['dashboard', 'inventory', 'scheduling', 'invoicing', 'menu', 'analytics', 'hostpro'];
 		const today = new Date();
 		const forDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
 		for (const m of modules) {
 			const result = await agent.chat(
-				`Generate 3-5 actionable ${m} insights for ${forDate.toISOString().slice(0,10)} with fields: title, description, action, urgency (low|medium|critical), impact. Respond with JSON array only, no prose.`,
+				`Generate 3-5 actionable ${m} insights for ${forDate.toISOString().slice(0, 10)} with fields: title, description, action, urgency (low|medium|critical), impact. Respond with JSON array only, no prose.`,
 				{ graphqlEndpoint: endpoint, callGraphQL },
 				m
 			);
 			let parsed: any[] = [];
-			try { parsed = JSON.parse(result.text || '[]'); } catch {}
+			try { parsed = JSON.parse(result.text || '[]'); } catch { }
 			if (!Array.isArray(parsed)) parsed = [];
 			const docs = parsed.slice(0, 6).map((p) => ({
 				module: m,
@@ -54,7 +55,7 @@ async function runNightlyInsights(): Promise<void> {
 			}));
 			if (docs.length) await AIInsight.insertMany(docs);
 		}
-		console.log('[Varuni Scheduler] Nightly insights generated');
+		debug('Varuni Scheduler', 'Nightly insights generated');
 	} catch (e) {
 		console.error('[Varuni Scheduler] error', e);
 	}
@@ -78,7 +79,7 @@ export function initVaruniScheduler(): void {
 			setTimeout(async () => {
 				try {
 					await fetch((process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://localhost:3000') + '/api/varuni/reindex', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-					console.log('[Varuni Scheduler] Nightly reindex triggered');
+					debug('Varuni Scheduler', 'Nightly reindex triggered');
 				} catch (e) {
 					console.warn('[Varuni Scheduler] Nightly reindex failed', e);
 				}

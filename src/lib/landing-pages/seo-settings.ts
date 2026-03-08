@@ -6,6 +6,7 @@
 import { getContainer } from "@/lib/cosmos";
 import { getBrandKey } from "@/config/brands";
 import { isPartnerContext } from "@/lib/env";
+import { debug } from "@/lib/logger";
 
 // Document ID pattern: seo:pages:<brandKey>
 function getDocId(brandKey: string): string {
@@ -111,34 +112,34 @@ export async function isPageEnabled(
     }
     brandKey = String(brandKey || "basaltsurge").toLowerCase();
 
-    console.log(`[seo-settings] Checking page: ${pageKey} for brand: ${brandKey}`);
+    debug("seo-settings", `Checking page: ${pageKey} for brand: ${brandKey}`);
 
     const settings = await getSEOPagesSettings(brandKeyOverride);
 
     // No settings document - default to enabled
     if (!settings) {
-      console.log(`[seo-settings] No settings document found for brand: ${brandKey} - defaulting to enabled`);
+      debug("seo-settings", `No settings document found for brand: ${brandKey} - defaulting to enabled`);
       return true;
     }
 
-    console.log(`[seo-settings] Found settings with ${Object.keys(settings.pageStatuses).length} page statuses`);
+    debug("seo-settings", `Found settings with ${Object.keys(settings.pageStatuses).length} page statuses`);
 
     const status = settings.pageStatuses[pageKey];
 
     // No explicit setting for this page - default to enabled
     if (!status) {
-      console.log(`[seo-settings] No status entry for ${pageKey} - defaulting to enabled`);
+      debug("seo-settings", `No status entry for ${pageKey} - defaulting to enabled`);
       return true;
     }
 
     // Log the actual status
-    console.log(`[seo-settings] Page ${pageKey} status:`, JSON.stringify(status));
+    debug("seo-settings", `Page ${pageKey} status: ${JSON.stringify(status)}`);
 
     // Log for debugging when a page is disabled
     if (!status.enabled) {
-      console.log(`[seo-settings] Page ${pageKey} is explicitly disabled`);
+      debug("seo-settings", `Page ${pageKey} is explicitly disabled`);
     } else {
-      console.log(`[seo-settings] Page ${pageKey} is enabled`);
+      debug("seo-settings", `Page ${pageKey} is enabled`);
     }
 
     return status.enabled;

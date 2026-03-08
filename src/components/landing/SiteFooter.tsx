@@ -238,6 +238,9 @@ export default function SiteFooter() {
             <Link href="/legal/terms" className="text-gray-500 text-xs hover:text-white transition-colors">
               Terms of Service
             </Link>
+            <Link href="/legal/ai-data-processing" className="text-gray-500 text-xs hover:text-white transition-colors">
+              AI Data Processing
+            </Link>
           </div>
         </div>
       </div>

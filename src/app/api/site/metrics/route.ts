@@ -274,15 +274,18 @@ export async function GET(_req: NextRequest) {
     const emptyWalletFilter = walletFilterClause === "EMPTY";
 
     try {
-      // 1. Merchant Earnings from split_index
+      // 1. Merchant Earnings — prefer merchantEarnedUsd from split_index (actual merchant share).
+      //    Sanity check: if the split_index value is unreasonably large (>10x receipt totals or >$1M
+      //    when receipts are tiny), fall back to receipt-based totals. This guards against inflated
+      //    split_index data from prior indexing bugs.
       if (emptyWalletFilter) {
         merchantEarnedUsdTotal = 0;
       } else if (hasWalletFilter) {
-        const qEarned = { query: "SELECT VALUE SUM(c.totalVolumeUsd) FROM c WHERE c.type='split_index' AND ARRAY_CONTAINS(@wallets, c.merchantWallet)", parameters: [...walletParams] } as any;
+        const qEarned = { query: "SELECT VALUE SUM(c.merchantEarnedUsd) FROM c WHERE c.type='split_index' AND ARRAY_CONTAINS(@wallets, c.merchantWallet)", parameters: [...walletParams] } as any;
         const { resources: rEarned } = await c.items.query(qEarned).fetchAll();
         merchantEarnedUsdTotal = Number((rEarned && rEarned[0]) || 0);
       } else {
-        const qEarned = { query: "SELECT VALUE SUM(c.totalVolumeUsd) FROM c WHERE c.type='split_index'", parameters: [] } as any;
+        const qEarned = { query: "SELECT VALUE SUM(c.merchantEarnedUsd) FROM c WHERE c.type='split_index'", parameters: [] } as any;
         const { resources: rEarned } = await c.items.query(qEarned).fetchAll();
         merchantEarnedUsdTotal = Number((rEarned && rEarned[0]) || 0);
       }
@@ -337,6 +340,15 @@ export async function GET(_req: NextRequest) {
 
       // Average receipt USD
       averageReceiptUsd = receiptsCount > 0 ? Math.floor((receiptsTotalUsd * 100) / receiptsCount) / 100 : 0;
+
+      // Sanity guard: if split_index data is unreasonably inflated (>10x receipt totals AND >$10k),
+      // fall back to receipt-derived totals as the authoritative source.
+      if (receiptsTotalUsd > 0 && merchantEarnedUsdTotal > receiptsTotalUsd * 10 && merchantEarnedUsdTotal > 10000) {
+        merchantEarnedUsdTotal = receiptsTotalUsd;
+      } else if (receiptsCount > 0 && merchantEarnedUsdTotal <= 0) {
+        // If split_index returned 0 but we have receipts, use receipt totals
+        merchantEarnedUsdTotal = receiptsTotalUsd;
+      }
 
       // Merchants count by distinct wallet
       if (emptyWalletFilter) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
+import { debug } from "@/lib/logger";
 
 /**
  * GET /api/split/transactions
@@ -127,8 +128,8 @@ export async function GET(req: NextRequest) {
     const PAYMENT_RELEASED_TOPIC = "0xdf20fd1e76bc69d672e4814fafb2c449bba3a5369d8359adf9e05e6fde87b056";
 
     const ethTransactions: any[] = [];
-    console.log(`[SPLIT TX] Processing ${logItems.length} contract event logs for ${splitAddrLower}`);
-    console.log(`[SPLIT TX] merchantAddr=${merchantAddrLower}, platformAddr=${platformAddrLower}`);
+    debug("SPLIT TX", `Processing ${logItems.length} contract event logs for ${splitAddrLower}`);
+    debug("SPLIT TX", `merchantAddr=${merchantAddrLower}, platformAddr=${platformAddrLower}`);
 
     for (const log of logItems) {
       try {
@@ -159,7 +160,7 @@ export async function GET(req: NextRequest) {
             status: "success", type: 'payment', token: 'ETH',
             relatedTokens: [],
           });
-          console.log(`[SPLIT TX] PaymentReceived: from=${addr} amount=${amountEth} ETH`);
+          debug("SPLIT TX", `PaymentReceived: from=${addr} amount=${amountEth} ETH`);
         } else if (topic0 === PAYMENT_RELEASED_TOPIC.toLowerCase()) {
           // PaymentReleased(address to, uint256 amount) — ETH released FROM the split
           let releaseType: 'merchant' | 'platform' | undefined;
@@ -179,7 +180,7 @@ export async function GET(req: NextRequest) {
               releaseType, releaseTo: addr, token: 'ETH',
               relatedTokens: [],
             });
-            console.log(`[SPLIT TX] PaymentReleased: to=${addr} amount=${amountEth} ETH type=${releaseType}`);
+            debug("SPLIT TX", `PaymentReleased: to=${addr} amount=${amountEth} ETH type=${releaseType}`);
           }
         }
       } catch (e) { /* skip malformed log */ }

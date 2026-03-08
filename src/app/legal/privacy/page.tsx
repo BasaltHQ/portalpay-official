@@ -6,6 +6,34 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { cachedFetch } from "@/lib/client-api-cache";
 
 export default function PrivacyPolicyPage() {
+    const [hasReachedBottom, setHasReachedBottom] = React.useState(false);
+    const [isTracking, setIsTracking] = React.useState(false);
+
+    // Scroll-to-bottom tracking for auth modal read verification
+    React.useEffect(() => {
+        if (typeof window === "undefined") return;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("track") !== "1") return;
+        setIsTracking(true);
+
+        const onScroll = () => {
+            const scrollTop = window.scrollY || document.documentElement.scrollTop;
+            const clientHeight = window.innerHeight;
+            const scrollHeight = document.documentElement.scrollHeight;
+            if (scrollTop + clientHeight >= scrollHeight - 80) {
+                setHasReachedBottom(true);
+                try {
+                    const bc = new BroadcastChannel("legal-read");
+                    bc.postMessage({ doc: "privacy", read: true });
+                    bc.close();
+                } catch { }
+                window.removeEventListener("scroll", onScroll);
+            }
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
     const brand = useBrand();
     const { theme: rawTheme } = useTheme();
     const [containerBrandKey, setContainerBrandKey] = React.useState<string>("");
@@ -66,6 +94,23 @@ export default function PrivacyPolicyPage() {
                         Last updated: January 28, 2025
                     </p>
                 </header>
+
+                {/* Tracking indicator */}
+                {isTracking && (
+                    <div className={`sticky top-4 z-50 mx-auto max-w-md mb-8 px-4 py-3 rounded-lg border text-center text-xs font-semibold uppercase tracking-wide transition-all duration-500 ${hasReachedBottom
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                        : "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                        }`}>
+                        {hasReachedBottom ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                Document reviewed — you may close this window
+                            </span>
+                        ) : (
+                            <span>↓ Please scroll to the bottom to confirm you have read this document</span>
+                        )}
+                    </div>
+                )}
 
                 <div className="prose prose-slate dark:prose-invert max-w-none space-y-8">
                     <section>

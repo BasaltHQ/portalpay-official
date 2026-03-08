@@ -1,6 +1,7 @@
 import { StorageProvider } from "../provider";
 import { AzureStorageProvider } from "../azure/provider";
 import { S3StorageProvider } from "../s3/provider";
+import { debug } from "@/lib/logger";
 
 export class HybridStorageProvider implements StorageProvider {
     private s3: S3StorageProvider | null = null;
@@ -9,14 +10,14 @@ export class HybridStorageProvider implements StorageProvider {
     constructor() {
         try {
             this.s3 = new S3StorageProvider();
-            console.log("[HybridStorage] S3 provider initialized");
+            debug("HybridStorage", "S3 provider initialized");
         } catch (e: any) {
             console.warn("[HybridStorage] S3 provider failed to initialize:", e.message);
         }
 
         try {
             this.azure = new AzureStorageProvider();
-            console.log("[HybridStorage] Azure provider initialized");
+            debug("HybridStorage", "Azure provider initialized");
         } catch (e: any) {
             console.warn("[HybridStorage] Azure provider failed to initialize:", e.message);
         }
@@ -71,7 +72,7 @@ export class HybridStorageProvider implements StorageProvider {
                 await this.s3.delete(path);
                 deleted = true;
             } catch (e) {
-                console.debug(`[HybridStorage] S3 delete failed or skipped for ${path}`);
+                debug("HybridStorage", `S3 delete failed or skipped for ${path}`);
             }
         }
         if (this.azure) {
@@ -79,7 +80,7 @@ export class HybridStorageProvider implements StorageProvider {
                 await this.azure.delete(path);
                 deleted = true;
             } catch (e) {
-                console.debug(`[HybridStorage] Azure delete failed or skipped for ${path}`);
+                debug("HybridStorage", `Azure delete failed or skipped for ${path}`);
             }
         }
         if (!deleted) throw new Error(`[HybridStorage] Failed to delete ${path} from any provider`);
