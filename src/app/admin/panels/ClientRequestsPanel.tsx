@@ -971,7 +971,7 @@ export default function ClientRequestsPanel() {
                                             <div className="text-[10px] text-zinc-500 font-mono flex justify-between">
                                                 <span>Wallet</span>
                                                 <span className="select-all" title={process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS}>
-                                                    {(process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0x00fe4f0104a989ca65df6b825a6c1682413bca56").slice(0, 6)}...{(process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0x00fe4f0104a989ca65df6b825a6c1682413bca56").slice(-4)}
+                                                    {(process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0xaCDAa0314000a1d10f3e9EF1B88e986A72AA3f6e").slice(0, 6)}...{(process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0xaCDAa0314000a1d10f3e9EF1B88e986A72AA3f6e").slice(-4)}
                                                 </span>
                                             </div>
                                         </div>

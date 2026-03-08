@@ -526,7 +526,7 @@ function normalizeSiteConfig(raw?: any, targetWallet?: string) {
     // Generate splitConfig if missing - compute from recipients
     const recipientsForConfig = nestedSplit.recipients || nestedRecipients || [];
     if (!config.splitConfig && Array.isArray(recipientsForConfig) && recipientsForConfig.length > 0) {
-      const PLATFORM_WALLET = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.PLATFORM_WALLET || "0x00fe4f0104a989ca65df6b825a6c1682413bca56").toLowerCase();
+      const PLATFORM_WALLET = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.PLATFORM_WALLET || "0xaCDAa0314000a1d10f3e9EF1B88e986A72AA3f6e").toLowerCase();
       let merchantBps = 0;
       let platformBps = 0;
       let partnerBps = 0;
