@@ -281,7 +281,9 @@ export function Navbar() {
     useEffect(() => {
         const w = (account?.address || "").toLowerCase();
         // If wizard is open, DO NOT run this auth check. The wizard handles its own flow.
-        if (!w || checkingAuth.current || showSignupWizard) {
+        // Also suppress auth modal on legal review pages (?track=1) opened from the auth modal
+        const isLegalReviewTab = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('track') === '1';
+        if (!w || checkingAuth.current || showSignupWizard || isLegalReviewTab) {
             return;
         }
 
@@ -1062,150 +1064,150 @@ export function Navbar() {
                 {/* Mobile Menu Overlay */}
                 {mobileOpen && (
                     <>
-                    {/* Backdrop — tap outside to close */}
-                    <div
-                        className="lg:hidden fixed inset-0 z-[-1]"
-                        onClick={() => setMobileOpen(false)}
-                        aria-hidden
-                    />
-                    <div
-                        className="lg:hidden backdrop-blur-xl absolute top-[calc(100%+1px)] left-4 right-4 rounded-2xl p-4 shadow-2xl animate-in slide-in-from-top-2 max-h-[70vh] overflow-y-auto"
-                        style={{
-                            backgroundColor: 'rgba(0, 0, 0, 0.92)',
-                            border: `1px solid ${themeColor}30`,
-                            boxShadow: `0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px ${themeColor}15`
-                        }}
-                    >
-                        {/* Themed top accent line */}
+                        {/* Backdrop — tap outside to close */}
                         <div
-                            className="absolute top-0 left-4 right-4 h-[2px] rounded-full"
-                            style={{
-                                background: `linear-gradient(90deg, transparent, ${themeColor}, transparent)`,
-                                opacity: 0.8
-                            }}
+                            className="lg:hidden fixed inset-0 z-[-1]"
+                            onClick={() => setMobileOpen(false)}
+                            aria-hidden
                         />
+                        <div
+                            className="lg:hidden backdrop-blur-xl absolute top-[calc(100%+1px)] left-4 right-4 rounded-2xl p-4 shadow-2xl animate-in slide-in-from-top-2 max-h-[70vh] overflow-y-auto"
+                            style={{
+                                backgroundColor: 'rgba(0, 0, 0, 0.92)',
+                                border: `1px solid ${themeColor}30`,
+                                boxShadow: `0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px ${themeColor}15`
+                            }}
+                        >
+                            {/* Themed top accent line */}
+                            <div
+                                className="absolute top-0 left-4 right-4 h-[2px] rounded-full"
+                                style={{
+                                    background: `linear-gradient(90deg, transparent, ${themeColor}, transparent)`,
+                                    opacity: 0.8
+                                }}
+                            />
 
-                        <div className="flex flex-col gap-2 pt-2">
-                            {/* Explore Section - SEO Pages */}
-                            <div className="mb-2 pb-2" style={{ borderBottom: `1px solid ${themeColor}20` }}>
-                                <button
-                                    onClick={() => setMobileExploreOpen(o => !o)}
-                                    className="w-full px-4 py-3 text-sm font-mono tracking-wider text-gray-300 hover:text-white rounded-lg transition-all flex items-center justify-between"
-                                    style={{
-                                        backgroundColor: mobileExploreOpen ? `${themeColor}10` : 'transparent',
-                                    }}
-                                >
-                                    <span style={{ color: mobileExploreOpen ? themeColor : undefined }}>EXPLORE</span>
-                                    <ChevronDown
-                                        className={`w-4 h-4 transition-transform ${mobileExploreOpen ? 'rotate-180' : ''}`}
-                                        style={{ color: mobileExploreOpen ? themeColor : undefined }}
-                                    />
-                                </button>
-                                {mobileExploreOpen && (
-                                    <div className="pl-4 mt-1 space-y-1">
-                                        {seoCategoryVisibility.industries && (
-                                            <Link
-                                                href="/crypto-payments"
-                                                onClick={() => setMobileOpen(false)}
-                                                className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors"
-                                                style={{ '--hover-color': themeColor } as any}
-                                            >
-                                                INDUSTRIES
-                                            </Link>
-                                        )}
-                                        {seoCategoryVisibility.comparisons && (
-                                            <Link href="/vs" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">COMPARISONS</Link>
-                                        )}
-                                        {seoCategoryVisibility.locations && (
-                                            <Link href="/locations" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">LOCATIONS</Link>
-                                        )}
-                                        <Link href="/developers" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">DEVELOPERS</Link>
-                                    </div>
-                                )}
-                            </div>
-                            {account?.address && (
+                            <div className="flex flex-col gap-2 pt-2">
+                                {/* Explore Section - SEO Pages */}
                                 <div className="mb-2 pb-2" style={{ borderBottom: `1px solid ${themeColor}20` }}>
                                     <button
-                                        onClick={() => setMobileSocialOpen(o => !o)}
+                                        onClick={() => setMobileExploreOpen(o => !o)}
                                         className="w-full px-4 py-3 text-sm font-mono tracking-wider text-gray-300 hover:text-white rounded-lg transition-all flex items-center justify-between"
                                         style={{
-                                            backgroundColor: mobileSocialOpen ? `${themeColor}10` : 'transparent',
+                                            backgroundColor: mobileExploreOpen ? `${themeColor}10` : 'transparent',
                                         }}
                                     >
-                                        <span style={{ color: mobileSocialOpen ? themeColor : undefined }}>LOYALTY</span>
+                                        <span style={{ color: mobileExploreOpen ? themeColor : undefined }}>EXPLORE</span>
                                         <ChevronDown
-                                            className={`w-4 h-4 transition-transform ${mobileSocialOpen ? 'rotate-180' : ''}`}
-                                            style={{ color: mobileSocialOpen ? themeColor : undefined }}
+                                            className={`w-4 h-4 transition-transform ${mobileExploreOpen ? 'rotate-180' : ''}`}
+                                            style={{ color: mobileExploreOpen ? themeColor : undefined }}
                                         />
                                     </button>
-                                    {mobileSocialOpen && (
+                                    {mobileExploreOpen && (
                                         <div className="pl-4 mt-1 space-y-1">
-                                            <Link href="/analytics" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">ANALYTICS</Link>
-                                            <Link href="/leaderboard" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">LEADERBOARD</Link>
+                                            {seoCategoryVisibility.industries && (
+                                                <Link
+                                                    href="/crypto-payments"
+                                                    onClick={() => setMobileOpen(false)}
+                                                    className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors"
+                                                    style={{ '--hover-color': themeColor } as any}
+                                                >
+                                                    INDUSTRIES
+                                                </Link>
+                                            )}
+                                            {seoCategoryVisibility.comparisons && (
+                                                <Link href="/vs" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">COMPARISONS</Link>
+                                            )}
+                                            {seoCategoryVisibility.locations && (
+                                                <Link href="/locations" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">LOCATIONS</Link>
+                                            )}
+                                            <Link href="/developers" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">DEVELOPERS</Link>
                                         </div>
                                     )}
                                 </div>
-                            )}
+                                {account?.address && (
+                                    <div className="mb-2 pb-2" style={{ borderBottom: `1px solid ${themeColor}20` }}>
+                                        <button
+                                            onClick={() => setMobileSocialOpen(o => !o)}
+                                            className="w-full px-4 py-3 text-sm font-mono tracking-wider text-gray-300 hover:text-white rounded-lg transition-all flex items-center justify-between"
+                                            style={{
+                                                backgroundColor: mobileSocialOpen ? `${themeColor}10` : 'transparent',
+                                            }}
+                                        >
+                                            <span style={{ color: mobileSocialOpen ? themeColor : undefined }}>LOYALTY</span>
+                                            <ChevronDown
+                                                className={`w-4 h-4 transition-transform ${mobileSocialOpen ? 'rotate-180' : ''}`}
+                                                style={{ color: mobileSocialOpen ? themeColor : undefined }}
+                                            />
+                                        </button>
+                                        {mobileSocialOpen && (
+                                            <div className="pl-4 mt-1 space-y-1">
+                                                <Link href="/analytics" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">ANALYTICS</Link>
+                                                <Link href="/leaderboard" onClick={() => setMobileOpen(false)} className="block px-4 py-2 text-xs font-mono text-gray-400 hover:text-white rounded transition-colors">LEADERBOARD</Link>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
-                            {items.map((it) => (
-                                <Link
-                                    key={it.href}
-                                    href={it.href}
-                                    onClick={(e) => {
-                                        if (it.href === "/admin" && !authed) {
-                                            e.preventDefault();
-                                            setMobileOpen(false);
-                                            setPendingAdminNav(true);
-                                            const walletId = activeWallet?.id;
-                                            const isEmbeddedWallet = walletId === "inApp" || walletId === "embedded";
-                                            setIsSocialLogin(isEmbeddedWallet);
-                                            setShowAuthModal(true);
-                                        } else {
-                                            setMobileOpen(false);
-                                        }
-                                    }}
-                                    className="px-4 py-3 text-sm font-mono tracking-wider text-gray-300 hover:text-white rounded-lg transition-all uppercase nav-item-custom-border"
-                                    style={{
-                                        backgroundColor: pathname?.startsWith(it.href) ? `${themeColor}10` : 'transparent',
-                                        color: pathname?.startsWith(it.href) ? themeColor : undefined,
-                                    }}
-                                >
-                                    {it.label}
-                                </Link>
-                            ))}
-
-                            <div className="mt-4 pt-4 flex flex-col gap-3" style={{ borderTop: `1px solid ${themeColor}20` }}>
-                                {!account?.address && (
-                                    <button
-                                        onClick={() => {
-                                            setMobileOpen(false);
-                                            setShowSignupWizard(true);
+                                {items.map((it) => (
+                                    <Link
+                                        key={it.href}
+                                        href={it.href}
+                                        onClick={(e) => {
+                                            if (it.href === "/admin" && !authed) {
+                                                e.preventDefault();
+                                                setMobileOpen(false);
+                                                setPendingAdminNav(true);
+                                                const walletId = activeWallet?.id;
+                                                const isEmbeddedWallet = walletId === "inApp" || walletId === "embedded";
+                                                setIsSocialLogin(isEmbeddedWallet);
+                                                setShowAuthModal(true);
+                                            } else {
+                                                setMobileOpen(false);
+                                            }
                                         }}
-                                        className="w-full py-3 rounded-lg text-white text-xs font-mono tracking-wider font-bold transition-all hover:opacity-90"
+                                        className="px-4 py-3 text-sm font-mono tracking-wider text-gray-300 hover:text-white rounded-lg transition-all uppercase nav-item-custom-border"
                                         style={{
-                                            border: `1px solid ${themeColor}50`,
-                                            backgroundColor: `${themeColor}10`,
+                                            backgroundColor: pathname?.startsWith(it.href) ? `${themeColor}10` : 'transparent',
+                                            color: pathname?.startsWith(it.href) ? themeColor : undefined,
                                         }}
                                     >
-                                        SIGNUP
-                                    </button>
-                                )}
-                                <ConnectButton
-                                    client={client}
-                                    chain={chain}
-                                    wallets={wallets}
-                                    connectButton={{
-                                        label: <span className="text-xs font-mono font-bold">LOGIN</span>,
-                                        className: "!text-white !w-full !justify-center !rounded-lg !py-3",
-                                        style: { backgroundColor: secondaryColor }
-                                    }}
-                                    connectModal={{ title: tCommon("login"), titleIcon: modalTitleIcon, size: "compact", showThirdwebBranding: false }}
-                                    theme={twTheme}
-                                    onConnect={() => setMobileOpen(false)}
-                                />
+                                        {it.label}
+                                    </Link>
+                                ))}
+
+                                <div className="mt-4 pt-4 flex flex-col gap-3" style={{ borderTop: `1px solid ${themeColor}20` }}>
+                                    {!account?.address && (
+                                        <button
+                                            onClick={() => {
+                                                setMobileOpen(false);
+                                                setShowSignupWizard(true);
+                                            }}
+                                            className="w-full py-3 rounded-lg text-white text-xs font-mono tracking-wider font-bold transition-all hover:opacity-90"
+                                            style={{
+                                                border: `1px solid ${themeColor}50`,
+                                                backgroundColor: `${themeColor}10`,
+                                            }}
+                                        >
+                                            SIGNUP
+                                        </button>
+                                    )}
+                                    <ConnectButton
+                                        client={client}
+                                        chain={chain}
+                                        wallets={wallets}
+                                        connectButton={{
+                                            label: <span className="text-xs font-mono font-bold">LOGIN</span>,
+                                            className: "!text-white !w-full !justify-center !rounded-lg !py-3",
+                                            style: { backgroundColor: secondaryColor }
+                                        }}
+                                        connectModal={{ title: tCommon("login"), titleIcon: modalTitleIcon, size: "compact", showThirdwebBranding: false }}
+                                        theme={twTheme}
+                                        onConnect={() => setMobileOpen(false)}
+                                    />
+                                </div>
                             </div>
                         </div>
-                    </div>
                     </>
                 )}
 
