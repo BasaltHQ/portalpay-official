@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth";
 import { fetchEthRates, fetchBtcUsd, fetchXrpUsd, fetchSolUsd } from "@/lib/eth";
 import * as crypto from "node:crypto";
 import { getClient, chain } from "@/lib/thirdweb/client";
+import { debug } from "@/lib/logger";
 import { getContract, readContract } from "thirdweb";
 
 /**
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     // Require admin role
     const caller = await requireRole(req, "admin");
 
-    console.log(`[BATCH REINDEX] Starting batch reindex initiated by ${caller.wallet.slice(0, 10)}...`);
+    debug("BATCH REINDEX", `Starting batch reindex initiated by ${caller.wallet.slice(0, 10)}...`);
 
     const container = await getContainer();
 
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
     const { resources } = await container.items.query(spec as any).fetchAll();
     const configs = Array.isArray(resources) ? resources as any[] : [];
 
-    console.log(`[BATCH REINDEX] Found ${configs.length} merchants with split addresses in site_config`);
+    debug("BATCH REINDEX", `Found ${configs.length} merchants with split addresses in site_config`);
 
     // Trigger indexing for each merchant
     const results = [];
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
       seenSplits.add(uniqueKey);
 
       try {
-        console.log(`[BATCH REINDEX] Indexing merchant ${merchantWallet.slice(0, 10)}... split ${splitAddress.slice(0, 10)}...`);
+        debug("BATCH REINDEX", `Indexing merchant ${merchantWallet.slice(0, 10)}... split ${splitAddress.slice(0, 10)}...`);
 
         // Call indexing logic directly instead of making HTTP request
         const indexResult = await indexSplitTransactionsDirect(splitAddress, merchantWallet, container);
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
             indexed: indexResult.indexed,
             metrics: indexResult.metrics,
           });
-          console.log(`[BATCH REINDEX] ✓ Indexed ${indexResult.indexed} txs for ${merchantWallet.slice(0, 10)}...`);
+          debug("BATCH REINDEX", `✓ Indexed ${indexResult.indexed} txs for ${merchantWallet.slice(0, 10)}...`);
         } else {
           errorCount++;
           results.push({
@@ -94,7 +95,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log(`[BATCH REINDEX] Completed - ${successCount} success, ${errorCount} errors`);
+    debug("BATCH REINDEX", `Completed - ${successCount} success, ${errorCount} errors`);
 
     return NextResponse.json(
       {

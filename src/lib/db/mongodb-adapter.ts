@@ -7,6 +7,9 @@
 
 import { MongoClient, Collection, Db, Document, ObjectId } from "mongodb";
 import { parseCosmosSql } from "./sql-parser";
+import { isDebug } from "@/lib/logger";
+
+const _isDebug = isDebug();
 
 // ── Connection pool ─────────────────────────────────────────────────────
 
@@ -182,15 +185,14 @@ class MongoItemsReference {
             fetchAll: async (): Promise<FeedResponse<T>> => {
                 const parsed = parseCosmosSql(spec.query, spec.parameters);
 
-                // ── TEMP DEBUG ──
-                if (spec.query.includes("type='receipt'")) {
+                // Debug logging (only when DEBUG=true)
+                if (_isDebug && spec.query.includes("type='receipt'")) {
                     console.log("[MONGO-DEBUG] SQL:", spec.query.substring(0, 120));
                     console.log("[MONGO-DEBUG] filter:", JSON.stringify(parsed.filter));
                     console.log("[MONGO-DEBUG] projection:", JSON.stringify(parsed.projection));
                     console.log("[MONGO-DEBUG] sort:", JSON.stringify(parsed.sort));
                     console.log("[MONGO-DEBUG] limit:", parsed.limit);
                 }
-                // ── END TEMP DEBUG ──
 
                 if (parsed.isAggregate && parsed.pipeline.length > 0) {
                     const results = await this.collection
@@ -233,8 +235,8 @@ class MongoItemsReference {
 
                 const docs = await cursor.toArray();
 
-                // ── TEMP DEBUG (results) ──
-                if (spec.query.includes("type='receipt'") && spec.query.includes("c.wallet")) {
+                // Debug logging (only when DEBUG=true)
+                if (_isDebug && spec.query.includes("type='receipt'") && spec.query.includes("c.wallet")) {
                     const newest = docs[0] as any;
                     console.log(`[MONGO-DEBUG] results: ${docs.length} docs, newest createdAt: ${newest?.createdAt}, receiptId: ${newest?.receiptId}`);
                     if (docs.length > 0) {
@@ -242,7 +244,6 @@ class MongoItemsReference {
                         console.log(`[MONGO-DEBUG] oldest createdAt: ${oldest?.createdAt}, receiptId: ${oldest?.receiptId}`);
                     }
                 }
-                // ── END TEMP DEBUG ──
 
                 const resources = docs.map((d) => mongoDocToCosmos(d) as T);
 

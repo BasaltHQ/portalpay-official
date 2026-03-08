@@ -6,6 +6,7 @@
  */
 
 import { getContainer } from "@/lib/cosmos";
+import { debug } from "@/lib/logger";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -172,7 +173,7 @@ export async function createJiraTicket(ticket: SurgeTicket): Promise<JiraCreateR
         const issueKey = data.issueKey;
         const issueId = data.issueId;
 
-        console.log(`[Jira] Created ${issueKey} for ticket ${ticket.id} (${ticket.brandKey})`);
+        debug("Jira", `Created ${issueKey} for ticket ${ticket.id} (${ticket.brandKey})`);
 
         // Set custom fields via standard Jira API (Service Desk API doesn't support custom fields directly)
         // Custom field IDs are currently hardcoded constants, assuming they exist in the target Jira instance
@@ -298,7 +299,7 @@ export async function addJiraComment(
             return false;
         }
 
-        console.log(`[Jira] Comment added to ${issueKey}`);
+        debug("Jira", `Comment added to ${issueKey}`);
         return true;
     } catch (err) {
         console.error("[Jira] Add comment error:", err);
@@ -368,7 +369,7 @@ export async function updateJiraStatus(brandKey: string, issueKey: string, surge
             return false;
         }
 
-        console.log(`[Jira] Transitioned ${issueKey} to '${matchedTransition.name}'`);
+        debug("Jira", `Transitioned ${issueKey} to '${matchedTransition.name}'`);
         return true;
     } catch (err) {
         console.error("[Jira] Status update error:", err);

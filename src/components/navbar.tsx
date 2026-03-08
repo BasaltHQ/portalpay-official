@@ -797,6 +797,7 @@ export function Navbar() {
                                             fill
                                             className="object-contain"
                                             priority
+                                            sizes="40px"
                                         />
                                         <div
                                             className="shield-gleam-container"

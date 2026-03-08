@@ -1,6 +1,7 @@
 import { registerPlugin } from '@capacitor/core';
 import { useCallback, useState, useEffect } from 'react';
 import { getHardwareProfile, HardwareProfile } from './DeviceCapabilities';
+import { debug } from '@/lib/logger';
 
 // ---- Plugin Interfaces ----
 export interface ScannerPlugin {
@@ -8,7 +9,7 @@ export interface ScannerPlugin {
     stopScan(): Promise<void>;
 }
 export interface PrinterPlugin {
-    printText(options: { text: string }): Promise<{ success: boolean }>;
+    printText(options: { text: string; ipAddress?: string; port?: number }): Promise<{ success: boolean }>;
     printImage(options: { base64: string }): Promise<{ success: boolean }>;
     printDocument(options: { text?: string; base64?: string }): Promise<{ success: boolean }>;
 }
@@ -90,11 +91,11 @@ export function useReceiptPrinter() {
 
     const printDocument = useCallback(async (content: { text?: string; base64Image?: string }, printOptions?: { externalIp?: string }) => {
         try {
-            console.log('[PRINTER] printDocument called. Profile:', JSON.stringify(profile), 'Content text length:', content.text?.length, 'Content base64 length:', content.base64Image?.length);
+            debug('PRINTER', `printDocument called. Profile: ${JSON.stringify(profile)} Content text length: ${content.text?.length} Content base64 length: ${content.base64Image?.length}`);
 
             // Prioritize external network printer if IP is provided
             if (printOptions?.externalIp) {
-                console.log('[PRINTER] Using external printer at:', printOptions.externalIp);
+                debug('PRINTER', `Using external printer at: ${printOptions.externalIp}`);
                 if (content.text) {
                     await ExternalPrinter.printText({
                         ipAddress: printOptions.externalIp,
@@ -114,23 +115,23 @@ export function useReceiptPrinter() {
             let activePrinter: PrinterPlugin;
 
             if (profile.type === 'VALOR_VP550' || profile.type === 'VALOR_VP800') {
-                console.log('[PRINTER] Selected ValorPrinter for device type:', profile.type);
+                debug('PRINTER', `Selected ValorPrinter for device type: ${profile.type}`);
                 activePrinter = ValorPrinter;
             } else if (profile.type === 'KIOSK_H2150B') {
-                console.log('[PRINTER] Selected KioskPrinter');
+                debug('PRINTER', 'Selected KioskPrinter');
                 activePrinter = KioskPrinter;
             } else {
-                console.log('[PRINTER] Selected TopWisePrinter for device type:', profile.type);
+                debug('PRINTER', `Selected TopWisePrinter for device type: ${profile.type}`);
                 activePrinter = TopWisePrinter;
             }
 
             // Use the unified native document printing method to prevent overlapping hardware buffer jobs
-            console.log('[PRINTER] Calling activePrinter.printDocument...');
+            debug('PRINTER', 'Calling activePrinter.printDocument...');
             await activePrinter.printDocument({
                 text: content.text,
                 base64: content.base64Image
             });
-            console.log('[PRINTER] printDocument resolved successfully');
+            debug('PRINTER', 'printDocument resolved successfully');
             return true;
         } catch (err: any) {
             console.error('[PRINTER] Print failed:', err?.message || err, err);

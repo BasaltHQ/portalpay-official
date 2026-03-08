@@ -9,6 +9,7 @@
 
 import { getContainer } from "@/lib/cosmos";
 import { decrypt } from "@/lib/crypto";
+import { debug } from "@/lib/logger";
 
 // Token cache TTL: 25 days (buffer before 30-day expiry)
 const TOKEN_TTL_MS = 25 * 24 * 60 * 60 * 1000;
@@ -78,7 +79,7 @@ export async function getAccessToken(): Promise<CachedToken | null> {
         const { resource: tokenDoc } = await container.item(tokenDocId, "portalpay").read();
 
         if (tokenDoc && tokenDoc.expiresAt > Date.now()) {
-            console.log("[UberEats] Using cached access token");
+            debug("UberEats", "Using cached access token");
             return {
                 accessToken: tokenDoc.accessToken,
                 expiresAt: tokenDoc.expiresAt,
@@ -103,7 +104,7 @@ export async function getAccessToken(): Promise<CachedToken | null> {
     params.append("scope", "eats.store eats.order eats.store.orders.read eats.store.status.write");
 
     const authUrl = getAuthUrl(config.isSandbox);
-    console.log(`[UberEats] Fetching new token from ${config.isSandbox ? 'sandbox' : 'production'}`);
+    debug("UberEats", `Fetching new token from ${config.isSandbox ? 'sandbox' : 'production'}`);
 
     const response = await fetch(authUrl, {
         method: "POST",
@@ -133,7 +134,7 @@ export async function getAccessToken(): Promise<CachedToken | null> {
 
     try {
         await container.items.upsert(tokenDoc);
-        console.log("[UberEats] Token cached successfully, expires:", new Date(expiresAt).toISOString());
+        debug("UberEats", `Token cached successfully, expires: ${new Date(expiresAt).toISOString()}`);
     } catch (err) {
         console.error("[UberEats] Failed to cache token:", err);
     }
@@ -169,7 +170,7 @@ export async function uberEatsApiCall<T = any>(
     const baseUrl = getApiBaseUrl(config.isSandbox);
     const url = `${baseUrl}${endpoint}`;
 
-    console.log(`[UberEats API] ${options.method || "GET"} ${url}`);
+    debug("UberEats API", `${options.method || "GET"} ${url}`);
 
     try {
         const response = await fetch(url, {
