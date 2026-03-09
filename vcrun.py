@@ -37,7 +37,7 @@ AZURE_OPENAI_DEPLOYMENT = "gpt-5-nano"  # Your deployment name
 AZURE_OPENAI_API_VERSION = "2024-04-01-preview"
 
 # File Paths (iCloud Drive)
-BASE_PATH = Path("h:/iCloud/iCloudDrive/Business Ventures Main/BasaltHQ, Inc./BasaltSurge/Ledger1")
+BASE_PATH = Path("h:/iCloud/iCloudDrive/Business Ventures Main/BasaltHQ, Inc./BasaltSurge/BasaltHQ")
 CSV_FILE = BASE_PATH / "deliverable-filtered-test_Web3CryptoInvestors_emails.csv"
 XLSX_FILE_1 = BASE_PATH / "Web3Crypto Investors_emails.xlsx"
 XLSX_FILE_2 = BASE_PATH / "Web3Crypto Investors_names & phones.xlsx"
@@ -63,7 +63,7 @@ TEST_EMAIL = "founders@basalthq.com"  # Email to use in test mode
 # Links
 INVESTOR_PORTAL_LINK = "https://stack.angellist.com/s/lp1srl5cnf"
 DATA_ROOM_LINK = "https://stack.angellist.com/s/x8g9yjgpbw"
-PORTALPAY_LINK = "https://pay.ledger1.ai"
+PORTALPAY_LINK = "https://surge.basalthq.com"
 CALENDAR_LINK = "https://calendar.app.google/EJ4WsqeS2JSXt6ZcA"
 # Google Apps Script Web App URL that updates a Google Sheet and returns a 1x1 pixel
 # Example: https://script.google.com/macros/s/AKfycb.../exec
@@ -71,8 +71,8 @@ TRACKING_PIXEL_URL = 'https://script.google.com/macros/s/AKfycbzrcA4iT15y1WU01iF
 
 # Your Company Info (for CAN-SPAM compliance)
 COMPANY_NAME = "BasaltHQ, Inc."
-COMPANY_ADDRESS = "1005 Wellesley Dr. SE"
-COMPANY_CITY_STATE_ZIP = "Albuquerque, NM 87106"
+COMPANY_ADDRESS = "31723 Wintergreen Way"
+COMPANY_CITY_STATE_ZIP = "Murrieta, CA 92563"
 
 # ============================================================================
 # GMAIL API SETUP
