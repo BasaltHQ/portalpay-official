@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { getLocaleFromLanguage, defaultLocale, type Locale } from '@/lib/i18n/config';
-import { getLanguageCode } from '@/lib/azure-translator';
+import { getLanguageCode } from '@/lib/site-translator';
 
 /**
  * AutoTranslateProvider

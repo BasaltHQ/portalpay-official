@@ -300,17 +300,16 @@ def generate_personalized_email(contact: Dict[str,str], azure_client: AzureOpenA
     founder_state = cfg["FOUNDER_STATE"]
 
     prompt = f"""Persona:
-You are {founder_name} — Founder of The Utility Company (TUC) and creator of PortalPay. Write entirely in first person (I/me) as {founder_name}; never refer to yourself in third person. Your voice is principled builder, analytical and candid, confident but not salesy.
-
+You are {founder_name} — Founder of BasaltHQ, Inc. and creator of BasaltSurge. Write entirely in first person (I/me) as {founder_name}; never refer to yourself in third person. Your voice is principled builder, analytical and candid, confident but not salesy.
 Goal:
-Craft a personalized VC outreach email about PortalPay tailored to the recipient, using any available firm/company research.
+Craft a personalized VC outreach email about BasaltSurge tailored to the recipient, using any available firm/company research.
 
 Voice and Style:
 - Narrative, insight-driven prose; no section headings or bullet points in the email body.
 - Avoid phrases like “Founder note”.
 - Be concise, confident, and specific; show operator depth and strategic clarity.
 
-PortalPay Briefing (context for personalization):
+BasaltSurge Briefing (context for personalization):
 - Crypto-native payment gateway enabling physical merchants to accept stablecoins and crypto tokens at checkout via QR scan; on-chain settlement that’s transparent and efficient.
 - Innovations:
   • Multi-Token Infrastructure: USDC, USDT, cbBTC, cbXRP, ETH on Base
@@ -341,14 +340,15 @@ Contact:
 Company Research (optional):
 {company_info if company_info else "N/A"}
 
-Requirements:
-- Output JSON ONLY with keys "subject" and "body". Example: {{"subject":"...","body":"..."}}
+Constraints & Rules:
+- Return ONLY valid JSON with exactly two uppercase keys: {{"SUBJECT": "...", "BODY": "..."}}.
+- Subject MUST be concise (under 7 words), personalized, and engaging. DO NOT use the words "PortalPay" or "BasaltSurge" in the subject under any circumstances.
 - Body MUST be plain text (no HTML, signature, resources section, footers, or disclaimers).
 - Length: 250–300 words.
 - Open with a hook tied to their thesis/portfolio using available research.
-- Personalize: connect PortalPay’s value to their focus; demonstrate homework.
+- Personalize: connect BasaltSurge’s value to their focus; demonstrate homework.
 - Use preferred nickname if the email username or research suggests one.
-- Maintain first-person voice throughout (I/me). No third-person references. No “Founder note”.
+- Maintain first-person voice throughout (I/me). No third-person references to {founder_name}. No “Founder note”.
 - No explicit headings; write as natural prose paragraphs.
 - End with a confident CTA that mentions remote availability and my location.
 
@@ -366,7 +366,7 @@ Return EXACTLY this JSON object:
             messages=[
                 {
                     "role": "system",
-                    "content": f"You are {founder_name}. Write outreach emails AS YOURSELF in first person (I/me) — never third person. Return JSON with keys 'subject' and 'body' only. Do not include HTML/signatures/resources/disclaimers."
+                    "content": f"You are {founder_name}. Write all outreach emails AS YOURSELF in first person (I/me) — never third person. Return structured JSON with keys 'SUBJECT' and 'BODY' only. Do not include HTML, signatures, resources sections, or disclaimers."
                 },
                 {"role": "user", "content": prompt}
             ],

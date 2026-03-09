@@ -51,16 +51,28 @@ export class HybridStorageProvider implements StorageProvider {
     }
 
     async getUrl(path: string): Promise<string> {
-        if (this.s3 && await this.s3.exists(path)) {
-            return this.s3.getUrl(path);
+        if (this.s3) {
+            try {
+                if (await this.s3.exists(path)) return await this.s3.getUrl(path);
+            } catch(e) {}
         }
-        if (this.azure && await this.azure.exists(path)) {
-            return this.azure.getUrl(path);
+        if (this.azure) {
+             try {
+                if (await this.azure.exists(path)) return await this.azure.getUrl(path);
+             } catch(e) {}
         }
         // Default to returning S3 URL if neither exists (or we can't tell),
         // or Azure if S3 isn't configured at all.
-        if (this.s3) return this.s3.getUrl(path);
-        if (this.azure) return this.azure.getUrl(path);
+        if (this.s3) {
+             try {
+                return await this.s3.getUrl(path);
+             } catch(e) {}
+        }
+        if (this.azure) {
+             try {
+                return await this.azure.getUrl(path);
+             } catch(e) {}
+        }
         throw new Error("[HybridStorage] No storage providers available.");
     }
 
@@ -87,17 +99,37 @@ export class HybridStorageProvider implements StorageProvider {
     }
 
     async exists(path: string): Promise<boolean> {
-        if (this.s3 && await this.s3.exists(path)) return true;
-        if (this.azure && await this.azure.exists(path)) return true;
+        if (this.s3) {
+            try {
+                if (await this.s3.exists(path)) return true;
+            } catch (e) {
+                // ignore
+            }
+        }
+        if (this.azure) {
+            try {
+                if (await this.azure.exists(path)) return true;
+            } catch (e) {
+                // ignore
+            }
+        }
         return false;
     }
 
     async download(path: string): Promise<Buffer> {
-        if (this.s3 && await this.s3.exists(path)) {
-            return this.s3.download(path);
+        if (this.s3) {
+            try {
+                if (await this.s3.exists(path)) return await this.s3.download(path);
+            } catch (e) {
+                // ignore
+            }
         }
-        if (this.azure && await this.azure.exists(path)) {
-            return this.azure.download(path);
+        if (this.azure) {
+            try {
+                if (await this.azure.exists(path)) return await this.azure.download(path);
+            } catch (e) {
+                // ignore
+            }
         }
         throw new Error(`[HybridStorage] File ${path} not found in any provider for download.`);
     }
@@ -121,15 +153,27 @@ export class HybridStorageProvider implements StorageProvider {
     }
 
     async getSignedUrl(path: string, expiresInSeconds?: number): Promise<string> {
-        if (this.s3 && await this.s3.exists(path)) {
-            return this.s3.getSignedUrl(path, expiresInSeconds);
+        if (this.s3) {
+            try {
+                if (await this.s3.exists(path)) return await this.s3.getSignedUrl(path, expiresInSeconds);
+            } catch(e) {}
         }
-        if (this.azure && await this.azure.exists(path)) {
-            return this.azure.getSignedUrl(path, expiresInSeconds);
+        if (this.azure) {
+            try {
+                if (await this.azure.exists(path)) return await this.azure.getSignedUrl(path, expiresInSeconds);
+            } catch(e) {}
         }
         // Default to returning S3 URL if neither exists yet (pre-signing for upload)
-        if (this.s3) return this.s3.getSignedUrl(path, expiresInSeconds);
-        if (this.azure) return this.azure.getSignedUrl(path, expiresInSeconds);
+        if (this.s3) {
+            try {
+                 return await this.s3.getSignedUrl(path, expiresInSeconds);
+            } catch(e) {}
+        }
+        if (this.azure) {
+            try {
+                return await this.azure.getSignedUrl(path, expiresInSeconds);
+            } catch(e) {}
+        }
         throw new Error("[HybridStorage] No storage providers available.");
     }
 }

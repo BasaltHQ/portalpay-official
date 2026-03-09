@@ -3,7 +3,7 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { defaultLocale, getLocaleFromLanguage, getLanguageDirection, type Locale } from '@/lib/i18n/config';
-import { getLanguageCode } from '@/lib/azure-translator';
+import { getLanguageCode } from '@/lib/site-translator';
 
 interface I18nProviderProps {
   children: React.ReactNode;

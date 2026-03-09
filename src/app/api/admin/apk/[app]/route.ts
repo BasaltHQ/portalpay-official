@@ -78,14 +78,26 @@ export async function GET(
       const container = String(process.env.PP_APK_CONTAINER || "portalpay").trim();
       const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
 
-      // Helper to construct path: "container/prefix/blob" or "container/blob"
-      const makePath = (name: string) => prefix ? `${container}/${prefix}/${name}` : `${container}/${name}`;
+      const getPossiblePaths = (name: string) => {
+        const paths = [];
+        if (prefix) paths.push(`${container}/${prefix}/${name}`);
+        paths.push(`${container}/${name}`);
+        if (prefix) paths.push(`${prefix}/${name}`);
+        paths.push(`${name}`);
+        return paths;
+      };
 
       const blobName = `${effectiveKey}-signed.apk`;
-      const fullPath = makePath(blobName);
+      let foundPath: string | null = null;
+      for (const p of getPossiblePaths(blobName)) {
+        if (await storage.exists(p)) {
+          foundPath = p;
+          break;
+        }
+      }
 
-      if (await storage.exists(fullPath)) {
-        const buf = await storage.download(fullPath);
+      if (foundPath) {
+        const buf = await storage.download(foundPath);
         const body = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
 
         const stream = new ReadableStream({

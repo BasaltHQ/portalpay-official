@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Globe, Search } from "lucide-react";
 import { GROUPS, LANGS_BY_REGION_OR_GROUP } from "@/lib/master-langs";
-import { isLanguageSupported, getLanguageCode } from "@/lib/azure-translator";
+import { isLanguageSupported, getLanguageCode } from "@/lib/site-translator";
 import { useTranslations } from "next-intl";
 
 /**

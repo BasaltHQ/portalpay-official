@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { isLanguageSupported, getLanguageCode } from "@/lib/azure-translator";
+import { isLanguageSupported, getLanguageCode } from "@/lib/site-translator";
 
 interface Props {
   className?: string;

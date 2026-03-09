@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { translateTexts, getLanguageCode, isLanguageSupported } from '@/lib/azure-translator';
+import { translateTexts, getLanguageCode, isLanguageSupported } from '@/lib/site-translator';
 import { getOrTranslate } from '@/lib/translation-cache';
 import { type Locale } from '@/lib/i18n/config';
 
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: `Language "${targetLang}" is not supported by the translation service`,
-          supportedLanguages: 'Check language mapping in azure-translator.ts',
+          supportedLanguages: 'Check language mapping in site-translator.ts',
           failedLanguage: targetLang
         },
         { status: 400, headers: { 'Cache-Control': 'no-store, max-age=0' } }

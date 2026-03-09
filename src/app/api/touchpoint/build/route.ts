@@ -32,37 +32,41 @@ async function getBaseTouchpointApk(brandKey: string): Promise<Uint8Array | null
 
     // We construct the path as container/prefix/filename or container/filename
     // to match StorageProvider.download expectations
-    const makePath = (name: string) => prefix ? `${container}/${prefix}/${name}` : `${container}/${name}`;
+    const getPossiblePaths = (name: string) => {
+        const paths = [];
+        if (prefix) paths.push(`${container}/${prefix}/${name}`);
+        paths.push(`${container}/${name}`);
+        if (prefix) paths.push(`${prefix}/${name}`);
+        paths.push(`${name}`);
+        return paths;
+    };
+
+    const tryDownload = async (name: string): Promise<Uint8Array | null> => {
+        for (const p of getPossiblePaths(name)) {
+            try {
+                if (await storage.exists(p)) {
+                    const buf = await storage.download(p);
+                    console.log(`[Touchpoint Build] Using APK: ${p}`);
+                    return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+                }
+            } catch (e) {
+                // Ignore and try next path
+            }
+        }
+        return null;
+    };
 
     // 1. Try brand-specific APK first
-    try {
-        const path = makePath(`${brandKey}-signed.apk`);
-        if (await storage.exists(path)) {
-            const buf = await storage.download(path);
-            console.log(`[Touchpoint Build] Using brand-specific APK: ${path}`);
-            return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-        }
-    } catch { }
+    let res = await tryDownload(`${brandKey}-signed.apk`);
+    if (res) return res;
 
     // 2. Try surge-touchpoint
-    try {
-        const path = makePath(`surge-touchpoint-signed.apk`);
-        if (await storage.exists(path)) {
-            const buf = await storage.download(path);
-            console.log(`[Touchpoint Build] Using surge-touchpoint: ${path}`);
-            return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-        }
-    } catch { }
+    res = await tryDownload(`surge-touchpoint-signed.apk`);
+    if (res) return res;
 
     // 3. Fall back to portalpay APK
-    try {
-        const path = makePath(`portalpay-signed.apk`);
-        if (await storage.exists(path)) {
-            const buf = await storage.download(path);
-            console.log(`[Touchpoint Build] Using fallback portalpay: ${path}`);
-            return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-        }
-    } catch { }
+    res = await tryDownload(`portalpay-signed.apk`);
+    if (res) return res;
 
     // Local filesystem fallback
     const portalPayPath = path.join(process.cwd(), "android", "launcher", "recovered", "portalpay-signed.apk");
