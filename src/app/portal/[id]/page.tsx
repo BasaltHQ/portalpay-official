@@ -2145,12 +2145,17 @@ export default function PortalReceiptPage() {
       const originalHtmlOverflow = htmlEl.style.overflow;
       const originalBodyOverscroll = (bodyEl.style as any).overscrollBehavior;
       const originalHtmlOverscroll = (htmlEl.style as any).overscrollBehavior;
+      const originalBodyHeight = bodyEl.style.height;
+      const originalHtmlHeight = htmlEl.style.height;
 
       // Make embed background transparent and prevent outer scrollbars
       bodyEl.style.background = "transparent";
       htmlEl.style.background = "transparent";
       bodyEl.style.overflow = "hidden";
       htmlEl.style.overflow = "hidden";
+      // Explicit height for the percentage chain so child 100% resolves to iframe viewport
+      bodyEl.style.height = "100%";
+      htmlEl.style.height = "100%";
       try {
         (bodyEl.style as any).overscrollBehavior = "contain";
         (htmlEl.style as any).overscrollBehavior = "contain";
@@ -2161,12 +2166,22 @@ export default function PortalReceiptPage() {
         htmlEl.style.background = originalHtmlBg;
         bodyEl.style.overflow = originalBodyOverflow;
         htmlEl.style.overflow = originalHtmlOverflow;
+        bodyEl.style.height = originalBodyHeight;
+        htmlEl.style.height = originalHtmlHeight;
         try {
           (bodyEl.style as any).overscrollBehavior = originalBodyOverscroll || "";
           (htmlEl.style as any).overscrollBehavior = originalHtmlOverscroll || "";
         } catch { }
       };
     } catch { }
+
+    // Force scroll to top so the header is visible on load
+    window.scrollTo(0, 0);
+    requestAnimationFrame(() => {
+      const portal = document.querySelector('.pp-portal-container');
+      if (portal) portal.scrollTop = 0;
+      window.scrollTo(0, 0);
+    });
   }, [isEmbedded]);
 
   // ── Touchpoint theme DOM mutator ──
@@ -2306,16 +2321,16 @@ export default function PortalReceiptPage() {
     >
       <div
         ref={containerRef}
-        className={`pp-portal-container pp-embed-white-text relative ${isEmbedded ? "border-2 rounded-2xl shadow-none bg-transparent" : (isInvoiceLayout ? "rounded-none border-0 shadow-none bg-transparent" : "rounded-2xl border shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur")} ${isTwoColumnLayout ? (isInvoiceLayout ? "w-full max-w-none mx-auto" : "w-full max-w-none mx-auto") : ""} ${isEmbedded ? "no-scrollbar" : ""}`}
+        className={`pp-portal-container pp-embed-white-text relative ${isEmbedded ? "border-0 rounded-none md:border-2 md:rounded-2xl shadow-none bg-transparent" : (isInvoiceLayout ? "rounded-none border-0 shadow-none bg-transparent" : "rounded-2xl border shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur")} ${isTwoColumnLayout ? (isInvoiceLayout ? "w-full max-w-none mx-auto" : "w-full max-w-none mx-auto") : ""} ${isEmbedded ? "no-scrollbar" : ""}`}
         data-tp-active={tpThemeApplied ? "1" : undefined}
         style={{
           ...backgroundStyle,
           display: "flex",
           flexDirection: "column",
           flex: "1 1 auto",
-          height: isEmbedded ? "100%" : "var(--pp-vh)",
-          minHeight: isEmbedded ? "100%" : undefined,
-          maxHeight: isEmbedded ? undefined : "var(--pp-vh)",
+          height: isEmbedded ? "auto" : "var(--pp-vh)",
+          minHeight: isEmbedded ? 0 : undefined,
+          maxHeight: isEmbedded ? "100%" : "var(--pp-vh)",
           // Embedded: always use auto to allow scrolling when content exceeds container
           overflowY: "auto", // Fix: explicit overflow-y
           WebkitOverflowScrolling: "touch", // Fix: native momentum scrolling
@@ -2341,8 +2356,8 @@ export default function PortalReceiptPage() {
 
         {/* Header (centered card width) */}
         <div
-          className={`relative z-[10] flex items-center gap-3 w-full overflow-hidden ${isEmbedded ? "px-3 py-2 rounded-t-2xl" : (isTwoColumnLayout ? (isInvoiceLayout ? "max-w-none px-4 md:px-6 py-1 md:py-2" : "max-w-none px-4 md:px-6 py-1 md:py-2") : "px-4 md:px-6 py-2")}`}
-          style={{ background: effectivePrimaryColor, color: "var(--pp-text-header)" }}
+          className={`relative z-[10] flex items-center gap-3 w-full overflow-hidden ${isEmbedded ? "px-4 py-2 min-h-[56px] rounded-none md:rounded-t-2xl" : (isTwoColumnLayout ? (isInvoiceLayout ? "max-w-none px-4 md:px-6 py-1 md:py-2" : "max-w-none px-4 md:px-6 py-1 md:py-2") : "px-4 md:px-6 py-2")}`}
+          style={{ background: effectivePrimaryColor, color: "var(--pp-text-header)", flexShrink: 0 }}
         >
           {effectiveNavbarMode === "logo" ? (
             // Full-width logo (no text)
@@ -2465,7 +2480,7 @@ export default function PortalReceiptPage() {
           className={`flex-1 flex flex-col ${isTwoColumnLayout ? ("items-stretch justify-start py-6 md:py-10 w-full " + (isInvoiceLayout ? "max-w-6xl" : "max-w-6xl")) : "items-center justify-start max-w-[428px]"} ${isEmbedded && !isTwoColumnLayout ? "px-3" : "px-3"} mx-auto`}
           style={{
             backdropFilter: "saturate(1.02) contrast(1.02)",
-            paddingTop: isEmbedded ? "env(safe-area-inset-top, 0px)" : undefined,
+            paddingTop: isEmbedded ? "8px" : undefined,
             maxWidth: isEmbedded ? "none" : undefined,
             paddingLeft: isEmbedded && !isTwoColumnLayout ? undefined : (isEmbedded ? 0 : undefined),
             paddingRight: isEmbedded && !isTwoColumnLayout ? undefined : (isEmbedded ? 0 : undefined),
@@ -3160,17 +3175,15 @@ export default function PortalReceiptPage() {
           ) : (
             <>
               {/* Currency equivalents selector */}
-              <div className={isEmbedded ? "rounded-none border-0 bg-transparent p-0" : "rounded-xl border bg-background/80 p-3"} ref={currencyRef}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-semibold">Order Preview</div>
-                    <div className="microtext text-muted-foreground">
-                      Totals are shown in the selected currency. USD equivalent is shown when applicable.
-                    </div>
+              <div className={isEmbedded ? "rounded-none border-0 bg-transparent px-1" : "rounded-xl border bg-background/80 p-3"} ref={currencyRef}>
+                <div className="flex items-baseline justify-between">
+                  <div className="text-sm font-semibold">Order Preview</div>
+                  <div className="microtext text-muted-foreground/60 tabular-nums">
+                    {ratesUpdatedAt ? `Rates · ${ratesUpdatedAt.toLocaleTimeString()}` : "Loading rates…"}
                   </div>
-                  <div className="microtext text-muted-foreground">
-                    {ratesUpdatedAt ? `Rates ${ratesUpdatedAt.toLocaleTimeString()}` : "Loading rates…"}
-                  </div>
+                </div>
+                <div className="microtext text-muted-foreground/50 mt-0.5">
+                  Totals are shown in the selected currency. USD equivalent is shown when applicable.
                 </div>
 
                 <div className="mt-3">

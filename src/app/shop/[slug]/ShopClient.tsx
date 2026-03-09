@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useLayoutEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useActiveAccount } from "thirdweb/react";
-import { X, Youtube, Twitch, MessageSquare, Github, Linkedin, Instagram, Send, Music, Mail, Globe, Cloud, Grid3x3, List, Tag, Search, SlidersHorizontal, ChevronUp, ChevronDown, User, Star, Settings, Percent, Ticket, Sparkles, BookOpen, Library, RefreshCw } from "lucide-react";
+import { X, Youtube, Twitch, MessageSquare, Github, Linkedin, Instagram, Send, Music, Mail, Globe, Cloud, Grid3x3, List, Tag, Search, SlidersHorizontal, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, User, Star, Settings, Percent, Ticket, Sparkles, BookOpen, Library, RefreshCw } from "lucide-react";
 import SubscribeButton from "@/components/subscriptions/SubscribeButton";
 import type { BillingPeriod } from "@/lib/eip712-subscriptions";
 import { ShopThemeAuditor } from "@/components/providers/shop-theme-auditor";
@@ -346,6 +347,10 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             .catch(() => setWallets([]));
         return () => { mounted = false; };
     }, []);
+    // Shop pages don't use the global theme pipeline — dismiss the CSS loading overlay immediately
+    useEffect(() => {
+        try { document.documentElement.setAttribute("data-pp-theme-ready", "1"); } catch { }
+    }, []);
     const isOwner = useMemo(() => {
         if (!account?.address || !merchantWallet) return false;
         return account.address.toLowerCase() === merchantWallet.toLowerCase();
@@ -392,10 +397,17 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
     const [activeTab, setActiveTab] = useState<"shop" | "reviews">("shop");
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
     const [modalTab, setModalTab] = useState<"details" | "series">("details");
+    const [galleryIndex, setGalleryIndex] = useState(0);
+    const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+    const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
-    // Reset modal tab when opening a new item
+    // Reset modal tab and gallery index when opening a new item
     useEffect(() => {
-        if (selectedItem) setModalTab("details");
+        if (selectedItem) {
+            setModalTab("details");
+            setGalleryIndex(0);
+            setFullscreenImage(null);
+        }
     }, [selectedItem]);
 
     const [selectedModifiers, setSelectedModifiers] = useState<SelectedModifier[]>([]);
@@ -433,8 +445,34 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
     // Checkout
     const [embeddedCheckout, setEmbeddedCheckout] = useState<{ receiptId: string; receiptData: any } | null>(null);
     const [portalPreferredHeight, setPortalPreferredHeight] = useState<number | null>(null);
+    const lastPortalHeightRef = React.useRef<number>(0);
+    const portalHeightTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const [checkingOut, setCheckingOut] = useState(false);
     const [checkoutError, setCheckoutError] = useState("");
+
+    // Lock body scroll when checkout overlay is open to prevent gap at bottom
+    useEffect(() => {
+        if (!embeddedCheckout) return;
+        const body = document.body;
+        const html = document.documentElement;
+        const prevOverflow = body.style.overflow;
+        const prevHeight = body.style.height;
+        const prevHtmlOverflow = html.style.overflow;
+        const prevBodyBg = body.style.background;
+        const prevHtmlBg = html.style.background;
+        body.style.overflow = "hidden";
+        body.style.height = "100dvh";
+        html.style.overflow = "hidden";
+        body.style.background = "#000";
+        html.style.background = "#000";
+        return () => {
+            body.style.overflow = prevOverflow;
+            body.style.height = prevHeight;
+            html.style.overflow = prevHtmlOverflow;
+            body.style.background = prevBodyBg;
+            html.style.background = prevHtmlBg;
+        };
+    }, [embeddedCheckout]);
 
     // User receipts (for context)
     const [myReceipts, setMyReceipts] = useState<any[]>([]);
@@ -1290,11 +1328,25 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                 if (d.type === "gateway-preferred-height" || d.type === "portalpay-preferred-height") {
                     if (typeof d.height === "number") {
                         try {
-                            const winH = typeof window !== "undefined" ? window.innerHeight : 0;
-                            const clamp = Math.max(480, d.height + 24);
-                            setPortalPreferredHeight(clamp);
+                            // Only apply dynamic height on wide/desktop layout (>= 1024px).
+                            // On compact layout, the iframe fills the viewport and scrolls internally.
+                            const isWide = typeof window !== "undefined" && window.innerWidth >= 1024;
+                            if (isWide) {
+                                const clamp = Math.max(480, d.height + 24);
+                                // Debounce + delta-check to prevent resize↔broadcast feedback loop.
+                                // The portal's ResizeObserver/MutationObserver fires rapidly;
+                                // only apply height once values stabilize.
+                                const delta = Math.abs(clamp - lastPortalHeightRef.current);
+                                if (delta > 30) {
+                                    if (portalHeightTimerRef.current) clearTimeout(portalHeightTimerRef.current);
+                                    portalHeightTimerRef.current = setTimeout(() => {
+                                        lastPortalHeightRef.current = clamp;
+                                        setPortalPreferredHeight(clamp);
+                                    }, 200);
+                                }
+                            }
                         } catch {
-                            setPortalPreferredHeight(d.height);
+                            // ignore
                         }
                     }
                 } else if (d.type === "gateway-card-cancel" || d.type === "gateway-card-success" || d.type === "portalpay-card-cancel" || d.type === "portalpay-card-success") {
@@ -1304,7 +1356,6 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
         }
         try {
             document.body.style.overflow = "hidden";
-            document.body.style.touchAction = "none";
         } catch { }
         window.addEventListener("message", onMessage);
         const onKey = (e: KeyboardEvent) => {
@@ -1316,10 +1367,11 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
         return () => {
             try {
                 document.body.style.overflow = "";
-                document.body.style.touchAction = "";
             } catch { }
             try { window.removeEventListener("keydown", onKey); } catch { }
             window.removeEventListener("message", onMessage);
+            if (portalHeightTimerRef.current) clearTimeout(portalHeightTimerRef.current);
+            lastPortalHeightRef.current = 0;
             setPortalPreferredHeight(null);
         };
     }, [embeddedCheckout]);
@@ -2042,7 +2094,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                         </div>
                     </div>
 
-                    <div className="max-w-7xl mx-auto px-4 pt-6 pb-24 md:pb-10 space-y-6">
+                    <div className={`max-w-7xl mx-auto px-4 pt-6 ${embeddedCheckout ? "pb-0" : "pb-24"} md:pb-10 space-y-6`}>
                         <div className={`rounded-t-2xl border shadow transition-all duration-500 ${heroCollapsed ? "h-auto" : ""}`} style={{ borderColor: "var(--shop-primary)" }}>
                             {!heroCollapsed && coverUrl && !useSideLayout && layoutMode !== "minimalist" && (
                                 <div className="w-full overflow-hidden rounded-t-2xl">
@@ -2264,8 +2316,8 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                             </>
                                         )}
 
-                                        <div className="md:hidden relative z-[1200] mt-3 flex flex-col items-stretch gap-3">
-                                            <div className="w-full h-9">
+                                        <div className="md:hidden relative z-[1200] mt-3 mb-1 flex flex-row items-center gap-2">
+                                            <div className="flex-1">
                                                 <ClientOnly fallback={<div style={{ height: "36px", width: "100%" }} />}>
                                                     <ConnectButton
                                                         client={client}
@@ -2567,10 +2619,20 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                             <div className={`grid ${cardSize === "small" ? "grid-cols-3 md:grid-cols-4 lg:grid-cols-5" :
                                                 cardSize === "large" ? "grid-cols-1 md:grid-cols-2" :
                                                     "grid-cols-2 md:grid-cols-3"
-                                                } gap-3 md:gap-4 animate-pulse`}>
+                                                } gap-3 md:gap-4`}>
                                                 {[...Array(6)].map((_, i) => (
-                                                    <div key={i} className="h-80 bg-foreground/5 rounded-lg" />
+                                                    <div key={i} className="rounded-xl border border-foreground/5 overflow-hidden">
+                                                        <div className="aspect-square bg-foreground/5 relative overflow-hidden">
+                                                            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite]" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)" }} />
+                                                        </div>
+                                                        <div className="p-3 space-y-2">
+                                                            <div className="h-4 bg-foreground/5 rounded w-3/4" />
+                                                            <div className="h-3 bg-foreground/5 rounded w-1/2" />
+                                                            <div className="h-4 bg-foreground/8 rounded w-1/3 mt-2" />
+                                                        </div>
+                                                    </div>
                                                 ))}
+                                                <style>{`@keyframes shimmer { to { transform: translateX(200%); } }`}</style>
                                             </div>
                                         ) : filteredAndSortedItems.length === 0 ? (
                                             <div className="text-center py-12">
@@ -2855,15 +2917,78 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                         <div className="w-full max-w-lg max-h-[90vh] overflow-hidden rounded-xl border bg-background relative flex flex-col" onClick={(e) => e.stopPropagation()}>
                                             <div className="relative flex-shrink-0">
                                                 <div className="relative aspect-[16/9] bg-gradient-to-br from-muted to-muted/50 overflow-hidden">
-                                                    <Thumbnail
-                                                        src={Array.isArray(selectedItem.images) && selectedItem.images.length ? selectedItem.images[0] : undefined}
-                                                        fill
-                                                        alt={selectedItem.name}
-                                                        itemId={selectedItem.id}
-                                                        primaryColor={cfg?.theme?.primaryColor}
-                                                        secondaryColor={cfg?.theme?.secondaryColor}
-                                                        logoUrl={cfg?.theme?.brandLogoUrl}
-                                                    />
+                                                    {(() => {
+                                                        const imgs = Array.isArray(selectedItem.images) ? selectedItem.images.filter(Boolean) : [];
+                                                        const hasMultiple = imgs.length > 1;
+                                                        const currentImg = imgs[galleryIndex] || imgs[0];
+                                                        return (
+                                                            <>
+                                                                {currentImg ? (
+                                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                                    <img
+                                                                        src={currentImg}
+                                                                        alt={`${selectedItem.name} ${galleryIndex + 1}`}
+                                                                        className="w-full h-full object-cover cursor-pointer transition-opacity duration-300"
+                                                                        onClick={() => setFullscreenImage(currentImg)}
+                                                                        draggable={false}
+                                                                    />
+                                                                ) : (
+                                                                    <Thumbnail
+                                                                        src={undefined}
+                                                                        fill
+                                                                        alt={selectedItem.name}
+                                                                        itemId={selectedItem.id}
+                                                                        primaryColor={cfg?.theme?.primaryColor}
+                                                                        secondaryColor={cfg?.theme?.secondaryColor}
+                                                                        logoUrl={cfg?.theme?.brandLogoUrl}
+                                                                    />
+                                                                )}
+                                                                {/* Fullscreen expand button */}
+                                                                {currentImg && (
+                                                                    <button
+                                                                        className="absolute top-3 left-3 z-[110] h-8 w-8 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm flex items-center justify-center transition-colors"
+                                                                        onClick={(e) => { e.stopPropagation(); setFullscreenImage(currentImg); }}
+                                                                        aria-label="View fullscreen"
+                                                                    >
+                                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" /></svg>
+                                                                    </button>
+                                                                )}
+                                                                {/* Left arrow */}
+                                                                {hasMultiple && (
+                                                                    <button
+                                                                        className="absolute left-2 top-1/2 -translate-y-1/2 z-[110] h-8 w-8 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-sm flex items-center justify-center transition-colors"
+                                                                        onClick={(e) => { e.stopPropagation(); setGalleryIndex((prev) => (prev - 1 + imgs.length) % imgs.length); }}
+                                                                        aria-label="Previous image"
+                                                                    >
+                                                                        <ChevronLeft size={18} />
+                                                                    </button>
+                                                                )}
+                                                                {/* Right arrow */}
+                                                                {hasMultiple && (
+                                                                    <button
+                                                                        className="absolute right-12 top-1/2 -translate-y-1/2 z-[110] h-8 w-8 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-sm flex items-center justify-center transition-colors"
+                                                                        onClick={(e) => { e.stopPropagation(); setGalleryIndex((prev) => (prev + 1) % imgs.length); }}
+                                                                        aria-label="Next image"
+                                                                    >
+                                                                        <ChevronRight size={18} />
+                                                                    </button>
+                                                                )}
+                                                                {/* Dot indicators */}
+                                                                {hasMultiple && (
+                                                                    <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5">
+                                                                        {imgs.map((_, i) => (
+                                                                            <button
+                                                                                key={i}
+                                                                                className={`rounded-full transition-all ${i === galleryIndex ? "w-3 h-3 bg-white shadow-lg" : "w-2 h-2 bg-white/50 hover:bg-white/70"}`}
+                                                                                onClick={(e) => { e.stopPropagation(); setGalleryIndex(i); }}
+                                                                                aria-label={`View image ${i + 1}`}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        );
+                                                    })()}
                                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                                                     <button
                                                         className="absolute top-3 right-3 z-[110] h-8 w-8 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm flex items-center justify-center transition-colors"
@@ -2944,9 +3069,123 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                             </div>
                         )}
 
-                        {embeddedCheckout && (
+                        {/* Fullscreen Image Lightbox */}
+                        {fullscreenImage && (() => {
+                            const imgs = selectedItem && Array.isArray(selectedItem.images) ? selectedItem.images.filter(Boolean) : [];
+                            const hasMultiple = imgs.length > 1;
+                            const currentFsIndex = imgs.indexOf(fullscreenImage);
+                            const fsIndex = currentFsIndex >= 0 ? currentFsIndex : 0;
+                            return (
+                                <div
+                                    className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex items-center justify-center"
+                                    onClick={() => setFullscreenImage(null)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Escape") setFullscreenImage(null);
+                                        if (e.key === "ArrowLeft" && hasMultiple) {
+                                            const newIdx = (fsIndex - 1 + imgs.length) % imgs.length;
+                                            setFullscreenImage(imgs[newIdx]);
+                                            setGalleryIndex(newIdx);
+                                        }
+                                        if (e.key === "ArrowRight" && hasMultiple) {
+                                            const newIdx = (fsIndex + 1) % imgs.length;
+                                            setFullscreenImage(imgs[newIdx]);
+                                            setGalleryIndex(newIdx);
+                                        }
+                                    }}
+                                    onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
+                                    onTouchEnd={(e) => {
+                                        if (touchStartX === null || !hasMultiple) return;
+                                        const diff = e.changedTouches[0].clientX - touchStartX;
+                                        if (Math.abs(diff) > 50) {
+                                            const newIdx = diff > 0
+                                                ? (fsIndex - 1 + imgs.length) % imgs.length
+                                                : (fsIndex + 1) % imgs.length;
+                                            setFullscreenImage(imgs[newIdx]);
+                                            setGalleryIndex(newIdx);
+                                        }
+                                        setTouchStartX(null);
+                                    }}
+                                    tabIndex={0}
+                                    role="dialog"
+                                    aria-modal="true"
+                                >
+                                    {/* Close button */}
+                                    <button
+                                        className="absolute top-4 right-4 z-[210] h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors text-xl"
+                                        onClick={() => setFullscreenImage(null)}
+                                        aria-label="Close fullscreen"
+                                    >
+                                        ×
+                                    </button>
+                                    {/* Counter */}
+                                    {hasMultiple && (
+                                        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-[210] text-white/70 text-sm font-medium">
+                                            {fsIndex + 1} / {imgs.length}
+                                        </div>
+                                    )}
+                                    {/* Left arrow */}
+                                    {hasMultiple && (
+                                        <button
+                                            className="absolute left-4 top-1/2 -translate-y-1/2 z-[210] h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const newIdx = (fsIndex - 1 + imgs.length) % imgs.length;
+                                                setFullscreenImage(imgs[newIdx]);
+                                                setGalleryIndex(newIdx);
+                                            }}
+                                            aria-label="Previous image"
+                                        >
+                                            <ChevronLeft size={24} />
+                                        </button>
+                                    )}
+                                    {/* Image */}
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={fullscreenImage}
+                                        alt={selectedItem?.name || "Fullscreen"}
+                                        className="max-w-[90vw] max-h-[85vh] object-contain select-none"
+                                        onClick={(e) => e.stopPropagation()}
+                                        draggable={false}
+                                    />
+                                    {/* Right arrow */}
+                                    {hasMultiple && (
+                                        <button
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 z-[210] h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const newIdx = (fsIndex + 1) % imgs.length;
+                                                setFullscreenImage(imgs[newIdx]);
+                                                setGalleryIndex(newIdx);
+                                            }}
+                                            aria-label="Next image"
+                                        >
+                                            <ChevronRight size={24} />
+                                        </button>
+                                    )}
+                                    {/* Dot indicators */}
+                                    {hasMultiple && (
+                                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[210] flex items-center gap-2">
+                                            {imgs.map((img, i) => (
+                                                <button
+                                                    key={i}
+                                                    className={`rounded-full transition-all ${i === fsIndex ? "w-3 h-3 bg-white shadow-lg" : "w-2 h-2 bg-white/40 hover:bg-white/60"}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setFullscreenImage(img);
+                                                        setGalleryIndex(i);
+                                                    }}
+                                                    aria-label={`View image ${i + 1}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
+
+                        {embeddedCheckout && typeof document !== "undefined" && createPortal(
                             <div
-                                className="fixed inset-0 z-[2147483647] bg-black/80 backdrop-blur-sm flex items-center justify-center p-0 md:p-4"
+                                className="fixed inset-0 z-[2147483647] bg-black/[0.92] backdrop-blur-md flex items-start md:items-center justify-center p-0 md:p-4"
                                 role="dialog"
                                 aria-modal="true"
                                 tabIndex={-1}
@@ -2966,15 +3205,17 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                 }}
                             >
                                 <div
-                                    className="relative overflow-y-auto rounded-none border-0 shadow-none bg-transparent"
+                                    className={`relative rounded-none border-0 shadow-none bg-transparent ${portalLayout === "wide" ? "overflow-y-auto" : "overflow-hidden"}`}
                                     style={{
                                         width: "min(100vw, 880px)",
-                                        maxHeight: "calc(100vh - 16px)",
+                                        maxHeight: portalLayout === "wide" ? "calc(100vh - 32px)" : "100%",
                                         height: portalPreferredHeight
                                             ? `${portalPreferredHeight}px`
                                             : portalLayout === "wide"
                                                 ? "96vh"
-                                                : "100svh",
+                                                : "100%",
+                                        overscrollBehavior: "contain",
+                                        WebkitOverflowScrolling: "touch",
                                     }}
                                     onClick={(e) => e.stopPropagation()}
                                 >
@@ -2992,7 +3233,8 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                         allow="payment; clipboard-write"
                                     />
                                 </div>
-                            </div>
+                            </div>,
+                            document.body
                         )}
 
                         {/* Message Modal - unified aesthetic */}
@@ -3173,7 +3415,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
 
                         {error && <div className="rounded-md border p-3 text-sm text-red-600">{error}</div>}
 
-                        <div className={`${isPreview ? "sticky bottom-0 mt-auto" : "fixed bottom-0 left-0 right-0"} h-8 z-30 pointer-events-none`} style={{ background: shopPrimary }}>
+                        <div className={`${isPreview ? "sticky bottom-0 mt-auto" : "fixed bottom-0 left-0 right-0"} h-8 z-30 pointer-events-none ${embeddedCheckout ? "hidden md:flex" : ""}`} style={{ background: shopPrimary }}>
                             <div className="max-w-7xl mx-auto h-full flex items-center justify-center px-3">
                                 <span className="text-xs font-semibold tracking-widest" style={{ color: poweredTextColor, letterSpacing: "0.2em" }}>{`POWERED BY ${(brand?.name || "").toUpperCase() || "BRAND"}`}</span>
                             </div>
