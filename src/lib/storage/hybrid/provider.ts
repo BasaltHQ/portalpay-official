@@ -12,7 +12,8 @@ export class HybridStorageProvider implements StorageProvider {
             this.s3 = new S3StorageProvider();
             debug("HybridStorage", "S3 provider initialized");
         } catch (e: any) {
-            console.warn("[HybridStorage] S3 provider failed to initialize:", e.message);
+            console.error("[HybridStorage] CRITICAL S3 provider failed to initialize:", e.message);
+            console.error(e.stack);
         }
 
         try {
@@ -47,7 +48,7 @@ export class HybridStorageProvider implements StorageProvider {
             }
         }
 
-        throw s3Error || new Error("[HybridStorage] No storage providers available for upload.");
+        throw s3Error || new Error(`[HybridStorage] No storage providers available for upload. S3 Error: ${s3Error?.message || 'None'}`);
     }
 
     async getUrl(path: string): Promise<string> {
@@ -117,21 +118,23 @@ export class HybridStorageProvider implements StorageProvider {
     }
 
     async download(path: string): Promise<Buffer> {
+        let s3Error: Error | null = null;
         if (this.s3) {
             try {
                 if (await this.s3.exists(path)) return await this.s3.download(path);
-            } catch (e) {
-                // ignore
+            } catch (e: any) {
+                s3Error = e;
+                console.error(`[HybridStorage] S3 download failed for ${path}:`, e.message);
             }
         }
         if (this.azure) {
             try {
                 if (await this.azure.exists(path)) return await this.azure.download(path);
-            } catch (e) {
-                // ignore
+            } catch (e: any) {
+                console.error(`[HybridStorage] Azure download failed for ${path}:`, e.message);
             }
         }
-        throw new Error(`[HybridStorage] File ${path} not found in any provider for download.`);
+        throw new Error(`[HybridStorage] File ${path} not found in any provider for download. S3 Error: ${s3Error?.message || 'None'}`);
     }
 
     async list(pathPrefix?: string): Promise<string[]> {
