@@ -30,33 +30,42 @@ export async function GET(req: NextRequest) {
         const container = String(process.env.PP_APK_CONTAINER || "basaltsurge").trim();
         const prefix = String(process.env.PP_APK_BLOB_PREFIX || "brands").trim().replace(/^\/+|\/+$/g, "");
 
-        const makePath = (name: string) => prefix ? `${container}/${prefix}/${name}` : `${container}/${name}`;
+        const getPossiblePaths = (name: string) => {
+            const paths = [];
+            if (prefix) paths.push(`${container}/${prefix}/${name}`);
+            paths.push(`${container}/${name}`);
+            if (prefix) paths.push(`${prefix}/${name}`);
+            paths.push(`${name}`);
+            return paths;
+        };
 
         try {
-            const blobName = `${brandKey}-touchpoint-signed.apk`;
-            const fullPath = makePath(blobName);
+            const namesToCheck = [
+                `${brandKey}-touchpoint-signed.apk`,
+                `${brandKey}-signed.apk`
+            ];
 
-            // Check if blob exists
-            const exists = await storage.exists(fullPath);
-            if (!exists) {
-                // Try alternative naming convention
-                const altBlobName = `${brandKey}-signed.apk`;
-                const altPath = makePath(altBlobName);
-                const altExists = await storage.exists(altPath);
+            let foundPath: string | null = null;
 
-                if (!altExists) {
-                    return NextResponse.json({
-                        error: "apk_not_found",
-                        message: `No APK found for brand: ${brandKey}. Build the APK first from Admin Panel.`
-                    }, { status: 404 });
+            for (const name of namesToCheck) {
+                const possiblePaths = getPossiblePaths(name);
+                for (const p of possiblePaths) {
+                    if (await storage.exists(p)) {
+                        foundPath = p;
+                        break;
+                    }
                 }
-
-                // Use alternative blob
-                const buf = await storage.download(altPath);
-                return createApkResponse(buf, brandKey);
+                if (foundPath) break;
             }
 
-            const buf = await storage.download(fullPath);
+            if (!foundPath) {
+                return NextResponse.json({
+                    error: "apk_not_found",
+                    message: `No APK found for brand: ${brandKey}. Build the APK first from Admin Panel.`
+                }, { status: 404 });
+            }
+
+            const buf = await storage.download(foundPath);
             return createApkResponse(buf, brandKey);
 
         } catch (e: any) {
