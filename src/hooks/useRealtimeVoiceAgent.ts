@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { useConversation } from "@elevenlabs/react";
 import { buildShopConciergePrompt } from "../agent/prompts/shopConciergePrompt";
-import { getLanguageCode } from "@/lib/azure-translator";
+import { getLanguageCode } from "@/lib/site-translator";
 import { getLocaleFromLanguage } from "@/lib/i18n/config";
 
 // ─── Sound Effects ───

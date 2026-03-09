@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useConversation } from "@elevenlabs/react";
 import { buildServerAssistantPrompt, type ShopContextPrompt } from "../agent/prompts/serverAssistantPrompt";
-import { getLanguageCode } from "@/lib/azure-translator";
+import { getLanguageCode } from "@/lib/site-translator";
 import { getLocaleFromLanguage } from "@/lib/i18n/config";
 
 /**
