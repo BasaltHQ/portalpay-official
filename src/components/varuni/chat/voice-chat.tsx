@@ -481,7 +481,7 @@ Context: You are assisting an auto shop backoffice director inside LedgerOne. Pr
 About ledger1:
 ledger1 is a unified backoffice demo platform for hospitality operations.
 
-Core Operating Principles (inherited from The Utility Company):
+Core Operating Principles (inherited from BasaltHQ, Inc.):
 - Decentralized Ownership: Enable stakeholders to own, not just participate.
 - Self-Reliance: Build systems where individuals and communities can create more than they consume.
 - Transparency by Design: Every action should leave a verifiable digital trace, ensuring accountability and trust.

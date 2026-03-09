@@ -355,9 +355,9 @@
 //         <div className="text-center mt-8 text-xs text-white/50 drop-shadow">
 //           <p>© 2025 ledger1. All rights reserved.</p>
 //           <p className="mt-1">Visit <a href="https://ledger1.ai" target="_blank" rel="noopener noreferrer" className="underline hover:text-white">ledger1.ai</a> for more information</p>
-//           <p className="mt-3 text-[10px] text-white/30">An Endeavor of The Utility Co.</p>
+//           <p className="mt-3 text-[10px] text-white/30">An Endeavor of BasaltHQ, Inc.</p>
 //         </div>
 //       </div>
 //     </div>
 //   );
-// } 
+// }
