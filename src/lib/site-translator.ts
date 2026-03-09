@@ -16,8 +16,8 @@ async function fallbackToCloudflare(
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
 
   if (!token || !accountId) {
-    console.warn('Cloudflare tokens missing. Returning original texts.');
-    return returnFallback(texts);
+    console.warn('Cloudflare tokens missing. Throwing error to avoid caching English text.');
+    throw new Error('Cloudflare tokens missing. Please set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.');
   }
 
   // Cloudflare M2M100 supported language English names mapping
@@ -43,43 +43,57 @@ async function fallbackToCloudflare(
 
   if (!cfTarget) {
     console.warn(`Cloudflare fallback does not support locale: ${targetLocale}`);
-    return returnFallback(texts);
+    throw new Error(`Cloudflare fallback does not support locale: ${targetLocale}`);
   }
 
   const results: BatchTranslationResult = {};
   
-  // M2M100 handles one text per request. To avoid rate limits on CF, we chunk parallel requests 
-  // into small batches of 5 at a time, or we just do them consecutively. We'll do simple consecutive to be safe, 
-  // as this is just the fallback mechanism. It might be slower but highly resilient.
-  for (const text of texts) {
-    try {
-      const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/m2m100-1.2b`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          text,
-          source_lang: cfSource,
-          target_lang: cfTarget
-        })
-      });
+  // M2M100 handles one text per request. To avoid rate limits on CF when passing 200+ texts,
+  // we process in concurrent chunks of 10 requests, with a small 300ms delay between chunks.
+  const chunkSize = 10;
+  let successCount = 0;
 
-      if (!response.ok) {
-        throw new Error('CF API Error: ' + response.status);
-      }
+  for (let i = 0; i < texts.length; i += chunkSize) {
+    const chunk = texts.slice(i, i + chunkSize);
+    
+    await Promise.all(chunk.map(async (text) => {
+      try {
+        const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/m2m100-1.2b`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            text,
+            source_lang: cfSource,
+            target_lang: cfTarget
+          })
+        });
 
-      const data = await response.json();
-      if (data.success && data.result && data.result.translated_text) {
-        results[text] = data.result.translated_text;
-      } else {
-        results[text] = text;
+        if (!response.ok) {
+          throw new Error('CF API Error: ' + response.status);
+        }
+
+        const data = await response.json();
+        if (data.success && data.result && data.result.translated_text) {
+          results[text] = data.result.translated_text;
+          successCount++;
+        }
+      } catch (err) {
+        console.error('Cloudflare Translation single text failed:', err);
+        // Do not add to results so it doesn't get cached incorrectly
       }
-    } catch (err) {
-      console.error('Cloudflare Translation single text failed:', err);
-      results[text] = text;
+    }));
+
+    // Wait 300ms before processing the next 10 items to prevent strict rate limiting
+    if (i + chunkSize < texts.length) {
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
+  }
+
+  if (successCount === 0 && texts.length > 0) {
+    throw new Error('Cloudflare fallback completely failed. Check rate limits or API status.');
   }
 
   return results;
