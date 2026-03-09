@@ -769,18 +769,23 @@ html[data-pp-theme-ready="0"] body::before {
   -webkit-backdrop-filter: blur(10px) saturate(1.05);
 }
 
-/* Centered spinner */
+/* Skeleton shop layout */
 html[data-pp-theme-ready="0"] body::after {
-  top: 50%;
-  left: 50%;
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  border-top-color: var(--pp-secondary, #9ca3af);
-  transform: translate(-50%, -50%);
-  animation: ssr-spin 0.9s linear infinite;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 56px 1fr;
+  gap: 16px;
+  padding: 16px;
   background: transparent;
+  pointer-events: none;
+}
+
+/* Shimmer overlay on the backdrop */
+html[data-pp-theme-ready="0"] body::before {
+  inset: 0;
+  background: hsl(220 18% 5% / 0.75);
+  backdrop-filter: blur(16px) saturate(1.05);
+  -webkit-backdrop-filter: blur(16px) saturate(1.05);
 }
 
 /* Partner-brand skeleton shimmer (used for navbar logo while partner assets load) */

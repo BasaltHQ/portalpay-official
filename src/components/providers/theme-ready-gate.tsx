@@ -485,7 +485,8 @@ export function ThemeReadyGate() {
   const themeReadyOk = ready && (!requireMerchantStage || stage === "merchant");
   const shouldShow = navBlock || (isPortalRoute ? (!portalReady) : baseBlock);
   const isLandingPage = pathname === "/";
-  if (!shouldShow || isLandingPage) return null;
+  const isShopRoute = pathname.startsWith("/shop");
+  if (!shouldShow || isLandingPage || isShopRoute) return null;
 
   return (
     <div
@@ -497,8 +498,38 @@ export function ThemeReadyGate() {
         WebkitBackdropFilter: "blur(16px) saturate(1.05)",
       }}
     >
-      {/* Quotes begin below the centered spinner, without affecting its centering */}
-      <div className={`absolute left-1/2 -translate-x-1/2 top-1/2 mt-[64px] text-center text-[11px] max-w-[80vw] md:max-w-md transition-opacity duration-700 ${quoteVisible ? "opacity-80" : "opacity-0"} h-[200px] leading-[16px] overflow-hidden flex flex-col items-center justify-center`}>
+      {/* Skeleton shop layout */}
+      <div className="max-w-5xl mx-auto px-4 pt-6 space-y-4">
+        {/* Banner skeleton */}
+        <div className="h-32 md:h-48 rounded-xl bg-white/[0.03] relative overflow-hidden">
+          <div className="absolute inset-0 -translate-x-full animate-[brand-shimmer_1.2s_ease-in-out_infinite]" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)" }} />
+        </div>
+        {/* Heading skeleton */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-white/[0.04]" />
+          <div className="space-y-1.5">
+            <div className="h-4 w-36 rounded bg-white/[0.04]" />
+            <div className="h-3 w-24 rounded bg-white/[0.03]" />
+          </div>
+        </div>
+        {/* Product grid skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mt-2">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="rounded-xl overflow-hidden border border-white/[0.04]">
+              <div className="aspect-square bg-white/[0.03] relative overflow-hidden">
+                <div className="absolute inset-0 -translate-x-full animate-[brand-shimmer_1.2s_ease-in-out_infinite]" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)", animationDelay: `${i * 150}ms` }} />
+              </div>
+              <div className="p-3 space-y-2">
+                <div className="h-3.5 bg-white/[0.04] rounded w-3/4" />
+                <div className="h-3 bg-white/[0.03] rounded w-1/2" />
+                <div className="h-3.5 bg-white/[0.05] rounded w-1/3 mt-1" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Quotes below the skeleton */}
+      <div className={`absolute left-1/2 -translate-x-1/2 bottom-8 text-center text-[11px] max-w-[80vw] md:max-w-md transition-opacity duration-700 ${quoteVisible ? "opacity-80" : "opacity-0"} leading-[16px] flex flex-col items-center justify-center`}>
         <>
           <div className="opacity-90">{quotesRef.current[qIndex]?.text}</div>
           <div className="opacity-60 italic">• {quotesRef.current[qIndex]?.author}</div>
