@@ -113,13 +113,18 @@ export async function POST(request: NextRequest) {
  * Get translation service status
  */
 export async function GET() {
-  const configured = !!(process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_API_KEY);
-  const cosmosConfigured = !!process.env.COSMOS_CONNECTION_STRING;
+  const cfConfigured = !!(process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ACCOUNT_ID);
+  const dbConfigured = !!(
+    process.env.COSMOS_CONNECTION_STRING ||
+    process.env.MONGODB_CONNECTION_STRING ||
+    process.env.DB_CONNECTION_STRING
+  );
 
   return NextResponse.json({
     status: 'ok',
-    translatorConfigured: configured,
-    cacheConfigured: cosmosConfigured,
-    endpoint: process.env.AZURE_OPENAI_ENDPOINT || 'not configured',
+    translatorConfigured: cfConfigured,
+    cacheConfigured: dbConfigured,
+    engine: 'cloudflare-workers-ai',
+    model: '@cf/meta/m2m100-1.2b',
   }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
 }

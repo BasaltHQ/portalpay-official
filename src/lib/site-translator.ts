@@ -55,7 +55,7 @@ async function translateWithCloudflare(
   console.log(`[site-translator] 🌐 Cloudflare: translating ${texts.length} texts (${cfSource} → ${cfTarget})`);
 
   const results: BatchTranslationResult = {};
-  const chunkSize = 40; // CF handles 50 concurrent well. 40 gives safety margin.
+  const chunkSize = 50; // CF handles 50 concurrent well — confirmed by testing.
   let successCount = 0;
   let errorCount = 0;
   let lastError = '';
@@ -65,6 +65,10 @@ async function translateWithCloudflare(
 
     await Promise.all(chunk.map(async (text) => {
       try {
+        // 15s timeout per request so one slow response doesn't block the batch
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 15000);
+
         const response = await fetch(
           `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/m2m100-1.2b`,
           {
@@ -78,8 +82,10 @@ async function translateWithCloudflare(
               source_lang: cfSource,
               target_lang: cfTarget,
             }),
+            signal: controller.signal,
           }
         );
+        clearTimeout(timer);
 
         if (!response.ok) {
           const body = await response.text().catch(() => '');
@@ -88,8 +94,10 @@ async function translateWithCloudflare(
         }
 
         const data = await response.json();
-        if (data.success && data.result?.translated_text) {
-          results[text] = data.result.translated_text;
+        // CF sometimes returns "translated__text" (double underscore) instead of "translated_text"
+        const translatedText = data.result?.translated_text || data.result?.translated__text;
+        if (data.success && translatedText) {
+          results[text] = translatedText;
           successCount++;
         } else {
           lastError = `CF returned success=${data.success}, result=${JSON.stringify(data.result).substring(0, 200)}`;

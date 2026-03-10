@@ -1,24 +1,78 @@
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { getLocaleFromLanguage, defaultLocale, type Locale } from '@/lib/i18n/config';
 import { getLanguageCode } from '@/lib/site-translator';
 
+// ── Client-side translation cache ────────────────────────────────────────
+// Key format: "sourceText|targetLang" → translatedText
+// Persisted to sessionStorage so it survives soft navigations.
+
+const CACHE_STORAGE_KEY = 'pp:translation-cache';
+const MAX_CACHE_ENTRIES = 5000; // cap to prevent unbounded growth
+
+let clientCache: Map<string, string> = new Map();
+let cacheLoaded = false;
+
+function cacheKey(text: string, targetLang: string): string {
+  return `${text}|${targetLang}`;
+}
+
+function loadCacheFromStorage() {
+  if (cacheLoaded) return;
+  cacheLoaded = true;
+  try {
+    const raw = sessionStorage.getItem(CACHE_STORAGE_KEY);
+    if (raw) {
+      const entries: [string, string][] = JSON.parse(raw);
+      clientCache = new Map(entries);
+    }
+  } catch {
+    // sessionStorage unavailable or corrupt — start fresh
+  }
+}
+
+function persistCacheToStorage() {
+  try {
+    // Trim if too large (keep most recent entries)
+    if (clientCache.size > MAX_CACHE_ENTRIES) {
+      const entries = Array.from(clientCache.entries());
+      clientCache = new Map(entries.slice(entries.length - MAX_CACHE_ENTRIES));
+    }
+    sessionStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(Array.from(clientCache.entries())));
+  } catch {
+    // storage full or unavailable — non-critical
+  }
+}
+
+function getCachedTranslation(text: string, targetLang: string): string | undefined {
+  return clientCache.get(cacheKey(text, targetLang));
+}
+
+function setCachedTranslation(text: string, targetLang: string, translated: string) {
+  clientCache.set(cacheKey(text, targetLang), translated);
+}
+
 /**
  * AutoTranslateProvider
- * Automatically translates all text content in the DOM when language changes
+ * Automatically translates all text content in the DOM when language changes.
+ * Uses a 3-layer cache: client memory → sessionStorage → server (MongoDB → Cloudflare).
  */
 export function AutoTranslateProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [currentLocale, setCurrentLocale] = useState<Locale>(defaultLocale);
   const originalTextsRef = useRef<Map<Node, string>>(new Map());
   const isTranslatingRef = useRef(false);
+  const isApplyingRef = useRef(false); // guards MutationObserver during DOM writes
   const lastPathnameRef = useRef(pathname);
   const originalAttrsRef = useRef<Map<Element, Map<string, string>>>(new Map());
   const ATTRS_TO_TRANSLATE = ['placeholder', 'title', 'aria-label', 'alt'];
 
   useEffect(() => {
+    // Load client-side cache from sessionStorage
+    loadCacheFromStorage();
+
     // Load saved language/locale on mount
     try {
       const savedLocale = localStorage.getItem("pp:locale");
@@ -35,7 +89,7 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
       const localeFromEvent = event.detail?.locale as string | undefined;
       const locale = (localeFromEvent || (language ? (getLanguageCode(language) || getLocaleFromLanguage(language)) : defaultLocale)) as Locale;
       setCurrentLocale(locale);
-      // Clear caches when language changes to avoid stale text/attrs on mobile
+      // Clear DOM caches when language changes to avoid stale text/attrs on mobile
       try {
         originalTextsRef.current.clear();
         originalAttrsRef.current.clear();
@@ -61,13 +115,12 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     if (pathname !== lastPathnameRef.current) {
       lastPathnameRef.current = pathname;
-      console.log('🔄 Route changed to:', pathname);
-      
+
       if (currentLocale !== defaultLocale && !isTranslatingRef.current) {
         // Clear original texts/attrs cache for new page
         originalTextsRef.current.clear();
         try { originalAttrsRef.current.clear(); } catch {}
-        
+
         // Translate new page content after a short delay to let DOM settle
         setTimeout(() => {
           if (!isTranslatingRef.current) {
@@ -87,26 +140,27 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
       if (debounceTimer) return;
       debounceTimer = window.setTimeout(() => {
         debounceTimer = null;
-        if (currentLocale !== defaultLocale && !isTranslatingRef.current) {
+        // Skip if we are currently applying translations (our own writes)
+        if (currentLocale !== defaultLocale && !isTranslatingRef.current && !isApplyingRef.current) {
           translatePageContent(currentLocale);
         }
-      }, 300);
+      }, 600); // 600ms debounce (up from 300ms) to reduce noise
     };
 
     const observer = new MutationObserver((mutations) => {
+      // Skip mutations triggered by our own translation writes
+      if (isApplyingRef.current) return;
+
       for (const m of mutations) {
         if (m.type === 'childList') {
-          // New nodes added/removed (e.g., opening a modal or cart updates)
           schedule();
           break;
         }
         if (m.type === 'characterData' && m.target && (m.target as Node).nodeType === Node.TEXT_NODE) {
-          // Text node content changed
           schedule();
           break;
         }
         if (m.type === 'attributes' && ATTRS_TO_TRANSLATE.includes(m.attributeName || '')) {
-          // Watched attribute changed (placeholder/title/aria-label/alt)
           schedule();
           break;
         }
@@ -133,24 +187,15 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
   }, [currentLocale]);
 
   function shouldSkipElement(element: Element): boolean {
-    // Skip translation for certain elements
     const skipTags = ['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'INPUT'];
     if (skipTags.includes(element.tagName)) return true;
-
-    // Skip elements with data-notranslate attribute
     if (element.hasAttribute('data-notranslate')) return true;
-
-    // Skip elements with translate="no"
     if (element.getAttribute('translate') === 'no') return true;
-
-    // Skip class="notranslate"
     if (element.classList.contains('notranslate')) return true;
-
     return false;
   }
 
   function collectTextNodes(root: Node, textNodes: Array<{ node: Node; text: string }> = []): Array<{ node: Node; text: string }> {
-    // Walk the DOM tree and collect all text nodes
     const walker = document.createTreeWalker(
       root,
       NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
@@ -164,7 +209,6 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
           }
           if (node.nodeType === Node.TEXT_NODE) {
             const text = node.textContent?.trim() || '';
-            // Only include non-empty text nodes
             if (text.length > 0 && !/^[\s\n\r]*$/.test(text)) {
               return NodeFilter.FILTER_ACCEPT;
             }
@@ -180,18 +224,15 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
         const text = node.textContent?.trim() || '';
         if (text) {
           textNodes.push({ node, text });
-          // Store original text if not already stored
           if (!originalTextsRef.current.has(node)) {
             originalTextsRef.current.set(node, node.textContent || '');
           }
         }
       }
     }
-
     return textNodes;
   }
 
-  // Collect translatable attribute texts from elements
   function collectAttributeTexts(root: Element): Array<{ element: Element; attr: string; text: string }> {
     const out: Array<{ element: Element; attr: string; text: string }> = [];
     try {
@@ -215,7 +256,6 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
               const val = (el.getAttribute(attr) || '').trim();
               if (val.length > 0 && !/^[\s\n\r]*$/.test(val)) {
                 out.push({ element: el, attr, text: val });
-                // Store original attr value once for restoration
                 if (!originalAttrsRef.current.has(el)) {
                   originalAttrsRef.current.set(el, new Map<string, string>());
                 }
@@ -234,76 +274,101 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
 
   async function translatePageContent(targetLocale: Locale) {
     if (isTranslatingRef.current) return;
-    
+
     isTranslatingRef.current = true;
-    console.log('🌍 Auto-translating page content to:', targetLocale);
 
     try {
-      // Collect all text nodes from the body
       const textNodes = collectTextNodes(document.body);
-      console.log(`Found ${textNodes.length} text nodes to translate`);
-
       if (textNodes.length === 0) {
         isTranslatingRef.current = false;
         return;
       }
 
-      // Extract unique texts (avoid translating duplicates)
       const attrEntries = collectAttributeTexts(document.body);
-      const uniqueTexts = Array.from(new Set([
+      const allTexts = Array.from(new Set([
         ...textNodes.map(tn => tn.text),
         ...attrEntries.map(ae => ae.text)
       ]));
-      console.log(`Translating ${uniqueTexts.length} unique texts`);
 
-      // Convert locale to language code for consistent caching
       const targetCode = getLanguageCode(targetLocale) || targetLocale;
       const sourceCode = getLanguageCode(defaultLocale) || defaultLocale;
 
-      // Call translation API
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store',
-        body: JSON.stringify({
-          texts: uniqueTexts,
-          targetLang: targetCode,
-          sourceLang: sourceCode,
-        }),
-      });
+      // ─── Layer 1: Check client-side cache first ────────────────────
+      const translations: Record<string, string> = {};
+      const uncachedTexts: string[] = [];
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        // Emit failure event if this was due to unsupported language
-        if (errorData.failedLanguage) {
-          window.dispatchEvent(new CustomEvent('pp:translation:failed', { 
-            detail: { language: errorData.failedLanguage } 
-          }));
+      for (const text of allTexts) {
+        const cached = getCachedTranslation(text, targetCode);
+        if (cached) {
+          translations[text] = cached;
+        } else {
+          uncachedTexts.push(text);
         }
-        throw new Error('Translation failed');
       }
 
-      const data = await response.json();
-      const translations: Record<string, string> = data.translations;
-      console.log(`Received ${Object.keys(translations).length} translations`);
+      const clientHits = allTexts.length - uncachedTexts.length;
+      console.log(`[AutoTranslate] ${allTexts.length} unique texts: ${clientHits} client-cached, ${uncachedTexts.length} need server`);
+
+      // ─── Layer 2+3: Fetch uncached from server ─────────────────────
+      if (uncachedTexts.length > 0) {
+        try {
+          const response = await fetch('/api/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-store',
+            body: JSON.stringify({
+              texts: uncachedTexts,
+              targetLang: targetCode,
+              sourceLang: sourceCode,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            if (errorData.failedLanguage) {
+              window.dispatchEvent(new CustomEvent('pp:translation:failed', {
+                detail: { language: errorData.failedLanguage }
+              }));
+            }
+            throw new Error('Translation failed');
+          }
+
+          const data = await response.json();
+          const serverTranslations: Record<string, string> = data.translations;
+
+          // Merge server results into translations + client cache
+          for (const [src, translated] of Object.entries(serverTranslations)) {
+            translations[src] = translated;
+            if (translated !== src) {
+              setCachedTranslation(src, targetCode, translated);
+            }
+          }
+
+          // Persist updated cache to sessionStorage
+          persistCacheToStorage();
+
+          console.log(`[AutoTranslate] Server returned ${Object.keys(serverTranslations).length} translations (cached: ${data.cached || 0})`);
+        } catch (error) {
+          console.error('[AutoTranslate] Server translation failed:', error);
+          // Continue with whatever we have from client cache
+        }
+      }
+
+      // ─── Apply translations to DOM ─────────────────────────────────
+      // Guard: pause MutationObserver while we write to avoid re-triggering
+      isApplyingRef.current = true;
+
+      let updatedCount = 0;
       let updatedAttrs = 0;
 
-      // Apply translations to text nodes
-      let updatedCount = 0;
-      let sameCount = 0;
       textNodes.forEach(({ node, text }) => {
         const translated = translations[text];
-        if (translated) {
-          if (translated !== text) {
-            node.textContent = translated;
-            updatedCount++;
-          } else {
-            sameCount++;
-          }
+        if (translated && translated !== text) {
+          node.textContent = translated;
+          updatedCount++;
         }
       });
 
-      // Apply translations to watched attributes (placeholder, title, aria-label, alt)
       try {
         attrEntries.forEach(({ element, attr, text }) => {
           const translated = translations[text];
@@ -314,20 +379,20 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
         });
       } catch {}
 
-      console.log(`✅ Updated ${updatedCount} text nodes and ${updatedAttrs} attributes with translations`);
-      console.log(`⚠️ ${sameCount} translations were identical to source (API not translating properly)`);
-      if (sameCount > 0) {
-        console.log('Sample identical:', Object.entries(translations).slice(0, 3));
-      }
+      // Release guard after a tick so queued mutation events are ignored
+      requestAnimationFrame(() => {
+        isApplyingRef.current = false;
+      });
+
+      console.log(`[AutoTranslate] ✅ Applied ${updatedCount} text nodes + ${updatedAttrs} attributes`);
     } catch (error) {
-      console.error('Auto-translation failed:', error);
+      console.error('[AutoTranslate] Failed:', error);
     } finally {
       isTranslatingRef.current = false;
     }
   }
 
   function restoreOriginalTexts() {
-    console.log('🔄 Restoring original English text and attributes');
     let restored = 0;
     originalTextsRef.current.forEach((originalText, node) => {
       if (node.textContent !== originalText) {
@@ -344,7 +409,7 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
         }
       });
     });
-    console.log(`✅ Restored ${restored} text nodes and ${restoredAttrs} attributes to English`);
+    console.log(`[AutoTranslate] Restored ${restored} text nodes + ${restoredAttrs} attributes to English`);
   }
 
   // Ensure DOM auto-translation follows after i18n messages complete (navbar translated) on mobile
