@@ -220,8 +220,10 @@ export async function POST(req: NextRequest) {
 
           for (const tx of (txResult.transactions || [])) {
             const hash = String(tx.hash || "").toLowerCase();
-            if (hash && !seenHashes.has(hash)) {
-              seenHashes.add(hash);
+            // Composite key: split releases all payees in one tx (same hash)
+            const dedupKey = `${hash}|${tx.type || ''}|${tx.releaseType || ''}|${String(tx.to || '').toLowerCase()}`;
+            if (dedupKey && !seenHashes.has(dedupKey)) {
+              seenHashes.add(dedupKey);
               allTransactions.push({ ...tx, splitAddress: split.address, splitVersion: split.version });
             }
           }
@@ -472,26 +474,42 @@ async function fetchSplitTransactionsDirect(
 ): Promise<{ ok: boolean; transactions?: any[]; cumulative?: any; error?: string }> {
   try {
     const transactionsUrl = `https://base.blockscout.com/api/v2/addresses/${splitAddress}/transactions`;
-    const tokenTransfersUrl = `https://base.blockscout.com/api/v2/addresses/${splitAddress}/token-transfers`;
+    const tokenTransfersBaseUrl = `https://base.blockscout.com/api/v2/addresses/${splitAddress}/token-transfers`;
     const logsUrl = `https://base.blockscout.com/api/v2/addresses/${splitAddress}/logs`;
 
-    const [txResponse, tokenResponse, logsResponse] = await Promise.all([
+    const [txResponse, logsResponse] = await Promise.all([
       fetch(transactionsUrl, { headers: { "Accept": "application/json" } }),
-      fetch(tokenTransfersUrl, { headers: { "Accept": "application/json" } }),
       fetch(logsUrl, { headers: { "Accept": "application/json" } }).catch(() => null)
     ]);
 
     if (!txResponse.ok) {
       return { ok: false, error: `Blockscout transactions API returned ${txResponse.status}` };
     }
-    if (!tokenResponse.ok) {
-      return { ok: false, error: `Blockscout token-transfers API returned ${tokenResponse.status}` };
+
+    // Paginate token transfers to capture ALL tokens (cbBTC, etc. may be on later pages)
+    let allTokenItems: any[] = [];
+    let tokenUrl: string | null = tokenTransfersBaseUrl;
+    for (let page = 0; page < 5 && tokenUrl; page++) {
+      try {
+        const tokenResponse = await fetch(tokenUrl, { headers: { "Accept": "application/json" } });
+        if (!tokenResponse.ok) break;
+        const tokenData = await tokenResponse.json();
+        const items = Array.isArray(tokenData?.items) ? tokenData.items : [];
+        allTokenItems = allTokenItems.concat(items);
+        // Follow next_page_params if available
+        if (tokenData?.next_page_params) {
+          const params = new URLSearchParams();
+          for (const [k, v] of Object.entries(tokenData.next_page_params)) {
+            params.set(k, String(v));
+          }
+          tokenUrl = `${tokenTransfersBaseUrl}?${params.toString()}`;
+        } else {
+          tokenUrl = null;
+        }
+      } catch { break; }
     }
 
-    const [txData, tokenData] = await Promise.all([
-      txResponse.json(),
-      tokenResponse.json()
-    ]);
+    const txData = await txResponse.json();
 
     let logsData: any = null;
     if (logsResponse && logsResponse.ok) {
@@ -499,7 +517,7 @@ async function fetchSplitTransactionsDirect(
     }
 
     const ethItems = Array.isArray(txData?.items) ? txData.items : [];
-    const tokenItems = Array.isArray(tokenData?.items) ? tokenData.items : [];
+    const tokenItems = allTokenItems;
     const logItems = Array.isArray(logsData?.items) ? logsData.items : [];
 
     const splitAddrLower = splitAddress.toLowerCase();

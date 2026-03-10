@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
   const merchantWallet = url.searchParams.get("merchantWallet");
   const limit = Math.min(1000, Math.max(1, Number(url.searchParams.get("limit") || 50)));
   const forceLive = url.searchParams.get("live") === "true";
+  const qPartnerWallet = (url.searchParams.get("partnerWallet") || "").toLowerCase();
+  const qAgentWallets = (url.searchParams.get("agentWallets") || "").split(",").map(s => s.trim().toLowerCase()).filter(s => /^0x[a-f0-9]{40}$/i.test(s));
 
   const merchantAddrLower = merchantWallet?.toLowerCase() || "";
 
@@ -52,6 +54,9 @@ export async function GET(req: NextRequest) {
       // Step 1: Discover ALL split addresses from site_config docs
       // (handles old splits stored in config.split on separate docs, splitHistory, splitAddress, etc.)
       const discoveredSplits = new Set<string>();
+      // Also extract partner wallet and agent wallets from site_config for release classification
+      let resolvedPartnerWallet = "";
+      const resolvedAgentWallets = new Set<string>();
       try {
         const { resources: allSiteConfigs } = await container.items.query({
           query: `SELECT * FROM c WHERE c.type = 'site_config' AND c.wallet = @w`,
@@ -76,6 +81,16 @@ export async function GET(req: NextRequest) {
               discoveredSplits.add(a);
             }
           }
+          // Extract partner wallet from site_config (most recent doc wins)
+          const pw = String(doc?.partnerWallet || "").toLowerCase();
+          if (/^0x[a-f0-9]{40}$/i.test(pw)) resolvedPartnerWallet = pw;
+          // Extract agent wallets from splitConfig.agents
+          if (Array.isArray(doc?.splitConfig?.agents)) {
+            for (const a of doc.splitConfig.agents) {
+              const aw = String(a?.wallet || "").toLowerCase();
+              if (/^0x[a-f0-9]{40}$/i.test(aw)) resolvedAgentWallets.add(aw);
+            }
+          }
         }
       } catch (e) {
         debug("SPLIT TX", `Failed to query site_config for ${merchantAddrLower}: ${e}`);
@@ -84,10 +99,12 @@ export async function GET(req: NextRequest) {
       // Step 2: Check persisted split_index — are all discovered splits covered?
       let persistedTxs: any[] = [];
       let persistedSplitAddresses = new Set<string>();
+      let persistedResource: any = null;
       try {
         const indexId = `split_index_${merchantAddrLower}`;
         const { resource } = await container.item(indexId, indexId).read();
         if (resource && Array.isArray(resource.transactions)) {
+          persistedResource = resource;
           persistedTxs = resource.transactions;
           for (const tx of persistedTxs) {
             const sa = String(tx.splitAddress || "").toLowerCase();
@@ -101,15 +118,19 @@ export async function GET(req: NextRequest) {
       // Determine which splits are NOT yet represented in persisted data
       const uncoveredSplits = [...discoveredSplits].filter(s => !persistedSplitAddresses.has(s));
 
-      // If persisted data covers all discovered splits and has transactions, serve it
-      if (persistedTxs.length > 0 && uncoveredSplits.length === 0) {
+      // If persisted data covers all discovered splits and has transactions, serve it (unless forceLive)
+      if (!forceLive && persistedTxs.length > 0 && uncoveredSplits.length === 0) {
         debug("SPLIT TX", `Serving ${persistedTxs.length} persisted txs — all ${discoveredSplits.size} splits covered`);
         return NextResponse.json(
           {
             ok: true,
             transactions: persistedTxs.slice(0, limit),
             cumulative: {
-              payments: {}, merchantReleases: {}, platformReleases: {},
+              payments: persistedResource?.cumulativePayments || {},
+              merchantReleases: persistedResource?.cumulativeMerchantReleases || {},
+              partnerReleases: persistedResource?.cumulativePartnerReleases || {},
+              agentReleases: persistedResource?.cumulativeAgentReleases || {},
+              platformReleases: persistedResource?.cumulativePlatformReleases || {},
             },
             source: "persisted",
           },
@@ -119,7 +140,7 @@ export async function GET(req: NextRequest) {
 
       // Step 3: Fetch live from Blockscout for ALL discovered splits (or just uncovered ones)
       // If we have partial persisted data, fetch only the missing splits and merge
-      const splitsToFetch = persistedTxs.length > 0 ? uncoveredSplits : [...discoveredSplits];
+      const splitsToFetch = (forceLive || persistedTxs.length === 0) ? [...discoveredSplits] : uncoveredSplits;
 
       if (splitsToFetch.length === 0 && discoveredSplits.size === 0) {
         return NextResponse.json(
@@ -132,16 +153,19 @@ export async function GET(req: NextRequest) {
 
       const allTxs: any[] = [];
       const seenHashes = new Set<string>();
-      const mergedCumulative: { payments: Record<string, number>; merchantReleases: Record<string, number>; platformReleases: Record<string, number> } = {
-        payments: {}, merchantReleases: {}, platformReleases: {},
+      const mergedCumulative: { payments: Record<string, number>; merchantReleases: Record<string, number>; partnerReleases: Record<string, number>; agentReleases: Record<string, number>; platformReleases: Record<string, number> } = {
+        payments: {}, merchantReleases: {}, partnerReleases: {}, agentReleases: {}, platformReleases: {},
       };
 
-      // Start with persisted transactions (already known good)
-      for (const tx of persistedTxs) {
-        const hash = String(tx.hash || "").toLowerCase();
-        if (hash && !seenHashes.has(hash)) {
-          seenHashes.add(hash);
-          allTxs.push(tx);
+      // Start with persisted transactions (skip when forceLive — fresh data only)
+      if (!forceLive) {
+        for (const tx of persistedTxs) {
+          const hash = String(tx.hash || "").toLowerCase();
+          const dedupKey = `${hash}|${tx.type || ''}|${tx.releaseType || ''}|${String(tx.to || '').toLowerCase()}`;
+          if (dedupKey && !seenHashes.has(dedupKey)) {
+            seenHashes.add(dedupKey);
+            allTxs.push(tx);
+          }
         }
       }
 
@@ -149,14 +173,17 @@ export async function GET(req: NextRequest) {
       for (const splitAddr of splitsToFetch) {
         try {
           const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-          const fetchUrl = `${baseUrl}/api/split/transactions?splitAddress=${encodeURIComponent(splitAddr)}&merchantWallet=${encodeURIComponent(merchantAddrLower)}&limit=${limit}&live=true`;
+          const walletParams = resolvedPartnerWallet ? `&partnerWallet=${encodeURIComponent(resolvedPartnerWallet)}` : '';
+          const agentParams = resolvedAgentWallets.size > 0 ? `&agentWallets=${encodeURIComponent(Array.from(resolvedAgentWallets).join(','))}` : '';
+          const fetchUrl = `${baseUrl}/api/split/transactions?splitAddress=${encodeURIComponent(splitAddr)}&merchantWallet=${encodeURIComponent(merchantAddrLower)}&limit=${limit}&live=true${walletParams}${agentParams}`;
           const r = await fetch(fetchUrl, { cache: "no-store" });
           const j = await r.json().catch(() => ({}));
           if (j?.ok && Array.isArray(j.transactions)) {
             for (const tx of j.transactions) {
               const hash = String(tx.hash || "").toLowerCase();
-              if (hash && !seenHashes.has(hash)) {
-                seenHashes.add(hash);
+              const dedupKey = `${hash}|${tx.type || ''}|${tx.releaseType || ''}|${String(tx.to || '').toLowerCase()}`;
+              if (dedupKey && !seenHashes.has(dedupKey)) {
+                seenHashes.add(dedupKey);
                 allTxs.push({ ...tx, splitAddress: splitAddr });
               }
             }
@@ -165,6 +192,12 @@ export async function GET(req: NextRequest) {
             }
             for (const [token, amount] of Object.entries(j.cumulative?.merchantReleases || {})) {
               mergedCumulative.merchantReleases[token] = (mergedCumulative.merchantReleases[token] || 0) + Number(amount || 0);
+            }
+            for (const [token, amount] of Object.entries(j.cumulative?.partnerReleases || {})) {
+              mergedCumulative.partnerReleases[token] = (mergedCumulative.partnerReleases[token] || 0) + Number(amount || 0);
+            }
+            for (const [token, amount] of Object.entries(j.cumulative?.agentReleases || {})) {
+              mergedCumulative.agentReleases[token] = (mergedCumulative.agentReleases[token] || 0) + Number(amount || 0);
             }
             for (const [token, amount] of Object.entries(j.cumulative?.platformReleases || {})) {
               mergedCumulative.platformReleases[token] = (mergedCumulative.platformReleases[token] || 0) + Number(amount || 0);
@@ -234,6 +267,8 @@ export async function GET(req: NextRequest) {
               cumulative: {
                 payments: resource.cumulativePayments || {},
                 merchantReleases: resource.cumulativeMerchantReleases || {},
+                partnerReleases: resource.cumulativePartnerReleases || {},
+                agentReleases: resource.cumulativeAgentReleases || {},
                 platformReleases: resource.cumulativePlatformReleases || {},
               },
               source: "persisted",
@@ -249,26 +284,46 @@ export async function GET(req: NextRequest) {
 
     // ── STEP 2: Fetch live from Blockscout ──
     const transactionsUrl = `https://base.blockscout.com/api/v2/addresses/${splitAddress}/transactions`;
-    const tokenTransfersUrl = `https://base.blockscout.com/api/v2/addresses/${splitAddress}/token-transfers`;
+    const tokenTransfersBaseUrl = `https://base.blockscout.com/api/v2/addresses/${splitAddress}/token-transfers`;
     const logsUrl = `https://base.blockscout.com/api/v2/addresses/${splitAddress}/logs`;
 
-    const [txResponse, tokenResponse, logsResponse] = await Promise.all([
+    const [txResponse, logsResponse] = await Promise.all([
       fetch(transactionsUrl, { headers: { "Accept": "application/json" } }),
-      fetch(tokenTransfersUrl, { headers: { "Accept": "application/json" } }),
       fetch(logsUrl, { headers: { "Accept": "application/json" } }).catch(() => null)
     ]);
 
     if (!txResponse.ok) throw new Error(`Blockscout transactions API returned ${txResponse.status}`);
-    if (!tokenResponse.ok) throw new Error(`Blockscout token-transfers API returned ${tokenResponse.status}`);
 
-    const [txData, tokenData] = await Promise.all([txResponse.json(), tokenResponse.json()]);
+    // Paginate token transfers to capture ALL tokens (cbBTC, etc. may be on later pages)
+    let allTokenItems: any[] = [];
+    let tokenPageUrl: string | null = tokenTransfersBaseUrl;
+    for (let page = 0; page < 5 && tokenPageUrl; page++) {
+      try {
+        const tokenResponse = await fetch(tokenPageUrl, { headers: { "Accept": "application/json" } });
+        if (!tokenResponse.ok) break;
+        const tokenData = await tokenResponse.json();
+        const items = Array.isArray(tokenData?.items) ? tokenData.items : [];
+        allTokenItems = allTokenItems.concat(items);
+        if (tokenData?.next_page_params) {
+          const params = new URLSearchParams();
+          for (const [k, v] of Object.entries(tokenData.next_page_params)) {
+            params.set(k, String(v));
+          }
+          tokenPageUrl = `${tokenTransfersBaseUrl}?${params.toString()}`;
+        } else {
+          tokenPageUrl = null;
+        }
+      } catch { break; }
+    }
+
+    const txData = await txResponse.json();
 
     let logsData: any = null;
     if (logsResponse && logsResponse.ok) {
       try { logsData = await logsResponse.json(); } catch { }
     }
 
-    const tokenItems = Array.isArray(tokenData?.items) ? tokenData.items : [];
+    const tokenItems = allTokenItems;
     const logItems = Array.isArray(logsData?.items) ? logsData.items : [];
 
     // Token addresses for identification
@@ -286,12 +341,13 @@ export async function GET(req: NextRequest) {
       if (addr && addr !== "native") addressToToken.set(addr, symbol);
     }
 
-    // Platform wallet: current + any historical ones from PLATFORM_WALLET_HISTORY env
+    // Platform wallet: current + old hardcoded + any historical ones from PLATFORM_WALLET_HISTORY env
+    const OLD_PLATFORM_WALLET = "0x00fe4f0104a989ca65df6b825a6c1682413bca56";
     const currentPlatformAddr = (process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "").toLowerCase();
     const platformWalletHistory = String(process.env.PLATFORM_WALLET_HISTORY || "").toLowerCase()
       .split(",").map(s => s.trim()).filter(s => /^0x[a-f0-9]{40}$/i.test(s));
     const allPlatformWallets = new Set<string>(
-      [currentPlatformAddr, ...platformWalletHistory].filter(s => /^0x[a-f0-9]{40}$/i.test(s))
+      [currentPlatformAddr, OLD_PLATFORM_WALLET, ...platformWalletHistory].filter(s => /^0x[a-f0-9]{40}$/i.test(s))
     );
 
     // Build tx_hash → timestamp map from the transactions endpoint
@@ -306,6 +362,8 @@ export async function GET(req: NextRequest) {
 
     const cumulativePayments: Record<string, number> = {};
     const cumulativeMerchantReleases: Record<string, number> = {};
+    const cumulativePartnerReleases: Record<string, number> = {};
+    const cumulativeAgentReleases: Record<string, number> = {};
     const cumulativePlatformReleases: Record<string, number> = {};
 
     // ── ETH FLOW DETECTION VIA CONTRACT EVENT LOGS ──
@@ -344,16 +402,19 @@ export async function GET(req: NextRequest) {
             status: "success", type: 'payment', token: 'ETH',
           });
         } else if (topic0 === PAYMENT_RELEASED_TOPIC.toLowerCase()) {
-          // RELEASE DETECTION:
-          // If target is the merchant → merchant release
-          // If target is ANY known platform wallet (current or historical) → platform release
-          // If target is neither → also platform release (split only has merchant + platform payees)
-          let releaseType: 'merchant' | 'platform' = 'platform';
+          // RELEASE DETECTION — 4-way reconciliation:
+          // merchant → partner (qPartnerWallet) → agent (qAgentWallets) → platform (remainder)
+          let releaseType: 'merchant' | 'partner' | 'agent' | 'platform' = 'platform';
           if (addr === merchantAddrLower) {
             releaseType = 'merchant';
             cumulativeMerchantReleases['ETH'] = (cumulativeMerchantReleases['ETH'] || 0) + amountEth;
+          } else if (qPartnerWallet && addr === qPartnerWallet && !allPlatformWallets.has(addr)) {
+            releaseType = 'partner';
+            cumulativePartnerReleases['ETH'] = (cumulativePartnerReleases['ETH'] || 0) + amountEth;
+          } else if (qAgentWallets.includes(addr)) {
+            releaseType = 'agent';
+            cumulativeAgentReleases['ETH'] = (cumulativeAgentReleases['ETH'] || 0) + amountEth;
           } else {
-            // Any non-merchant release from a split is a platform/partner release
             releaseType = 'platform';
             cumulativePlatformReleases['ETH'] = (cumulativePlatformReleases['ETH'] || 0) + amountEth;
           }
@@ -426,7 +487,7 @@ export async function GET(req: NextRequest) {
       const to = String(transfer?.to?.hash || "").toLowerCase();
 
       let txType: 'payment' | 'release' | 'unknown' = 'unknown';
-      let releaseType: 'merchant' | 'platform' | undefined;
+      let releaseType: 'merchant' | 'partner' | 'agent' | 'platform' | undefined;
       let releaseTo: string | undefined;
 
       const isPayment = to === splitAddrLower && from !== merchantAddrLower && !allPlatformWallets.has(from);
@@ -438,11 +499,17 @@ export async function GET(req: NextRequest) {
       } else if (isRelease) {
         txType = 'release';
         releaseTo = to;
+        // 4-way reconciliation: merchant → partner → agent → platform (remainder)
         if (to === merchantAddrLower) {
           releaseType = 'merchant';
           cumulativeMerchantReleases[tokenSymbol] = (cumulativeMerchantReleases[tokenSymbol] || 0) + valueInToken;
+        } else if (qPartnerWallet && to === qPartnerWallet && !allPlatformWallets.has(to)) {
+          releaseType = 'partner';
+          cumulativePartnerReleases[tokenSymbol] = (cumulativePartnerReleases[tokenSymbol] || 0) + valueInToken;
+        } else if (qAgentWallets.includes(to)) {
+          releaseType = 'agent';
+          cumulativeAgentReleases[tokenSymbol] = (cumulativeAgentReleases[tokenSymbol] || 0) + valueInToken;
         } else {
-          // Any non-merchant release = platform/partner release
           releaseType = 'platform';
           cumulativePlatformReleases[tokenSymbol] = (cumulativePlatformReleases[tokenSymbol] || 0) + valueInToken;
         }
@@ -527,6 +594,8 @@ export async function GET(req: NextRequest) {
           splitAddresses: existingDoc?.splitAddresses || [{ address: splitAddrLower, version: "current" }],
           cumulativePayments: cumulativePayments,
           cumulativeMerchantReleases: cumulativeMerchantReleases,
+          cumulativePartnerReleases: cumulativePartnerReleases,
+          cumulativeAgentReleases: cumulativeAgentReleases,
           cumulativePlatformReleases: cumulativePlatformReleases,
           transactions: mergedTransactions,
           transactionCount: mergedTransactions.length,
@@ -552,6 +621,8 @@ export async function GET(req: NextRequest) {
         cumulative: {
           payments: cumulativePayments,
           merchantReleases: cumulativeMerchantReleases,
+          partnerReleases: cumulativePartnerReleases,
+          agentReleases: cumulativeAgentReleases,
           platformReleases: cumulativePlatformReleases,
         },
         source: "blockscout",
