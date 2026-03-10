@@ -173,13 +173,12 @@ export async function getOrTranslate(
         );
       }
     } catch (error) {
-      console.error('Translation failed:', error);
-      // Return what we have cached, with source text fallback for failures
-      uncached.forEach(text => {
-        if (!cached.has(text)) {
-          cached.set(text, text);
-        }
-      });
+      console.error('[translation-cache] Translation engine failed:', error);
+      // 🔥 CRITICAL FIX: Do NOT silently return English source text here.
+      // If we return source text, the frontend will cache it as a valid translation.
+      // Instead, we throw the error so the API returns a 500, and the frontend
+      // knows to try again later instead of caching English as Spanish.
+      throw error;
     }
   }
 

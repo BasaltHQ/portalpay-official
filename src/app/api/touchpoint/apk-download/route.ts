@@ -72,7 +72,13 @@ export async function GET(req: NextRequest) {
             console.error("[touchpoint/apk-download] Blob error:", e);
             return NextResponse.json({
                 error: "apk_download_failed",
-                message: "Failed to download APK from storage"
+                message: "Failed to download APK from storage",
+                // TEMP: diagnostic info for partner container debugging
+                debug_error: e?.message || String(e),
+                debug_stack: e?.stack?.split("\n").slice(0, 5),
+                debug_s3_endpoint: process.env.S3_ENDPOINT ? "SET" : "MISSING",
+                debug_s3_bucket: process.env.S3_BUCKET_NAME || "NOT_SET",
+                debug_s3_key: process.env.S3_ACCESS_KEY ? "SET" : "MISSING",
             }, { status: 500 });
         }
 
