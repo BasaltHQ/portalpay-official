@@ -423,27 +423,36 @@ export async function GET(req: NextRequest) {
         }
 
         // --- SPLIT INDEX / ON-CHAIN TRANSACTION DATA ---
-        // Only for "all time" queries: provide split_index totals and on-chain tx hashes
+        // Only for "all time" queries: provide split_index totals and on-chain tx details
         let splitIndex: any = null;
         let splitTransactions: any[] = [];
 
         if (isAllTime) {
             try {
-                const [{ resources: splitIdxRes }, { resources: splitTxRes }] = await Promise.all([
-                    container.items.query({
-                        query: "SELECT c.totalVolumeUsd, c.merchantEarnedUsd, c.platformFeeUsd, c.customers, c.transactionCount, c.splitAddress FROM c WHERE c.type = 'split_index' AND c.merchantWallet = @w",
-                        parameters: [{ name: "@w", value: w }]
-                    }).fetchAll(),
-                    container.items.query({
-                        query: "SELECT c.hash, c.token, c.value, c.timestamp, c.txType, c.from, c.blockNumber FROM c WHERE c.type = 'split_transaction' AND c.merchantWallet = @w ORDER BY c.timestamp DESC",
-                        parameters: [{ name: "@w", value: w }]
-                    }).fetchAll(),
-                ]);
+                // Fetch the comprehensive split_index document (now includes per-tx details)
+                const { resources: splitIdxRes } = await container.items.query({
+                    query: "SELECT * FROM c WHERE c.type = 'split_index' AND c.merchantWallet = @w",
+                    parameters: [{ name: "@w", value: w }]
+                }).fetchAll();
 
                 if (splitIdxRes.length > 0) {
                     splitIndex = splitIdxRes[0];
+
+                    // Use embedded transactions array if available (post-enhancement)
+                    if (Array.isArray(splitIndex.transactions) && splitIndex.transactions.length > 0) {
+                        splitTransactions = splitIndex.transactions;
+                    }
                 }
-                splitTransactions = splitTxRes || [];
+
+                // Fallback: if split_index doesn't have embedded transactions
+                // (backward compat for pre-enhancement indexed data)
+                if (splitTransactions.length === 0) {
+                    const { resources: splitTxRes } = await container.items.query({
+                        query: "SELECT c.hash, c.token, c.value, c.timestamp, c.txType, c.from, c.blockNumber FROM c WHERE c.type = 'split_transaction' AND c.merchantWallet = @w ORDER BY c.timestamp DESC",
+                        parameters: [{ name: "@w", value: w }]
+                    }).fetchAll();
+                    splitTransactions = splitTxRes || [];
+                }
             } catch (e) {
                 console.warn("[ReportsAPI] Failed to fetch split data:", e);
             }
@@ -472,10 +481,13 @@ export async function GET(req: NextRequest) {
                 hash: tx.hash,
                 token: tx.token,
                 value: tx.value,
+                valueUsd: tx.valueUsd || null,
                 timestamp: tx.timestamp,
-                txType: tx.txType,
+                txType: tx.txType || tx.type,
                 from: tx.from,
+                to: tx.to,
                 blockNumber: tx.blockNumber,
+                releaseType: tx.releaseType || null,
             })) : [],
             receipts: receipts.map((r: any) => ({
                 id: r.id,

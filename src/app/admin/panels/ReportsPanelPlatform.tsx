@@ -613,28 +613,34 @@ export default function ReportsPanelPlatform() {
                                                                             <table className="w-full text-xs">
                                                                                 <thead className="bg-muted/30 sticky top-0">
                                                                                     <tr>
+                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Date</th>
                                                                                         <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Tx Hash</th>
                                                                                         <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Type</th>
                                                                                         <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Token</th>
-                                                                                        <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Value</th>
+                                                                                        <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Amount</th>
+                                                                                        <th className="text-right py-2 px-3 font-semibold text-muted-foreground">USD</th>
                                                                                         <th className="text-left py-2 px-3 font-semibold text-muted-foreground">From</th>
                                                                                     </tr>
                                                                                 </thead>
                                                                                 <tbody className="divide-y divide-border/50">
-                                                                                    {merchantDetail.splitTransactions.map((tx: any) => (
-                                                                                        <tr key={tx.hash} className="hover:bg-muted/10">
+                                                                                    {merchantDetail.splitTransactions.map((tx: any, txIdx: number) => (
+                                                                                        <tr key={`${tx.hash}-${txIdx}`} className="hover:bg-muted/10">
+                                                                                            <td className="py-1.5 px-3 text-muted-foreground whitespace-nowrap">
+                                                                                                {tx.timestamp ? new Date(tx.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }) : '—'}
+                                                                                            </td>
                                                                                             <td className="py-1.5 px-3">
                                                                                                 <a href={`https://basescan.org/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono text-primary hover:underline">
                                                                                                     {tx.hash.slice(0, 10)}…{tx.hash.slice(-6)}
                                                                                                 </a>
                                                                                             </td>
                                                                                             <td className="py-1.5 px-3">
-                                                                                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${tx.txType === 'payment' ? 'bg-green-500/10 text-green-500' : 'bg-blue-500/10 text-blue-500'}`}>
-                                                                                                    {tx.txType}
+                                                                                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${(tx.txType || tx.type) === 'payment' ? 'bg-green-500/10 text-green-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                                                                                                    {tx.txType || tx.type}
                                                                                                 </span>
                                                                                             </td>
                                                                                             <td className="py-1.5 px-3 font-medium">{tx.token}</td>
                                                                                             <td className="py-1.5 px-3 text-right font-mono">{Number(tx.value || 0).toFixed(6)}</td>
+                                                                                            <td className="py-1.5 px-3 text-right font-mono text-muted-foreground">{tx.valueUsd != null ? `$${Number(tx.valueUsd).toFixed(2)}` : '—'}</td>
                                                                                             <td className="py-1.5 px-3 font-mono text-muted-foreground">{tx.from ? `${tx.from.slice(0, 6)}…${tx.from.slice(-4)}` : '—'}</td>
                                                                                         </tr>
                                                                                     ))}

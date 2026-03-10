@@ -21,6 +21,7 @@ type UsersAggRow = {
   kioskEnabled?: boolean;
   terminalEnabled?: boolean;
   createdAt?: number;
+  allSplitAddresses?: Array<{ address: string; deployedAt?: number; current?: boolean }>;
 };
 
 export async function GET(req: NextRequest) {
@@ -164,6 +165,7 @@ export async function GET(req: NextRequest) {
 
     // Fetch split addresses and reserve balances for accurate totalEarnedUsd across all tokens
     const splitAddressMap = new Map<string, string>();
+    const splitAddressTimestamps = new Map<string, number>(); // Track updatedAt for each wallet's current split
     const reserveDataMap = new Map<string, { totalUsd: number; balances: Record<string, { units: number; usd: number }> }>();
 
     // Get ETH rate for USD conversion
@@ -317,6 +319,9 @@ export async function GET(req: NextRequest) {
       customers: number;
       totalCustomerXp: number;
       transactionCount: number;
+      cumulativePayments: Record<string, number>;
+      cumulativeMerchantReleases: Record<string, number>;
+      cumulativePlatformReleases: Record<string, number>;
     }>();
     const brandMap = new Map<string, string>();
     const disallowedWallets = new Set<string>();
@@ -335,15 +340,46 @@ export async function GET(req: NextRequest) {
         const brandMatches = isPlatformQuery ? rowIsPlatform : (rowBrand === brandFilter);
 
         if (brandMatches) {
-          splitAddressMap.set(wallet, splitAddr);
-          indexedMetricsMap.set(wallet, {
-            totalVolumeUsd: Number(row?.totalVolumeUsd || 0),
-            merchantEarnedUsd: Number(row?.merchantEarnedUsd || 0),
-            platformFeeUsd: Number(row?.platformFeeUsd || 0),
-            customers: Number(row?.customers || 0),
-            totalCustomerXp: Number(row?.totalCustomerXp || 0),
-            transactionCount: Number(row?.transactionCount || 0),
-          });
+          // NOTE: Do NOT set splitAddressMap here — multiple split_index rows per merchant
+          // exist for historical splits. splitAddressMap is set from site_config (newest doc) below.
+
+          // AGGREGATE metrics across all split_index records for this merchant
+          // (a merchant may have multiple historical splits, each with their own metrics)
+          const existing = indexedMetricsMap.get(wallet);
+          const rowCumulativePayments = (row?.cumulativePayments || {}) as Record<string, number>;
+          const rowCumulativeMR = (row?.cumulativeMerchantReleases || {}) as Record<string, number>;
+          const rowCumulativePR = (row?.cumulativePlatformReleases || {}) as Record<string, number>;
+
+          if (existing) {
+            // Merge cumulative token amounts
+            for (const [token, amount] of Object.entries(rowCumulativePayments)) {
+              existing.cumulativePayments[token] = (existing.cumulativePayments[token] || 0) + Number(amount || 0);
+            }
+            for (const [token, amount] of Object.entries(rowCumulativeMR)) {
+              existing.cumulativeMerchantReleases[token] = (existing.cumulativeMerchantReleases[token] || 0) + Number(amount || 0);
+            }
+            for (const [token, amount] of Object.entries(rowCumulativePR)) {
+              existing.cumulativePlatformReleases[token] = (existing.cumulativePlatformReleases[token] || 0) + Number(amount || 0);
+            }
+            existing.totalVolumeUsd += Number(row?.totalVolumeUsd || 0);
+            existing.merchantEarnedUsd += Number(row?.merchantEarnedUsd || 0);
+            existing.platformFeeUsd += Number(row?.platformFeeUsd || 0);
+            existing.customers += Number(row?.customers || 0);
+            existing.totalCustomerXp += Number(row?.totalCustomerXp || 0);
+            existing.transactionCount += Number(row?.transactionCount || 0);
+          } else {
+            indexedMetricsMap.set(wallet, {
+              totalVolumeUsd: Number(row?.totalVolumeUsd || 0),
+              merchantEarnedUsd: Number(row?.merchantEarnedUsd || 0),
+              platformFeeUsd: Number(row?.platformFeeUsd || 0),
+              customers: Number(row?.customers || 0),
+              totalCustomerXp: Number(row?.totalCustomerXp || 0),
+              transactionCount: Number(row?.transactionCount || 0),
+              cumulativePayments: { ...rowCumulativePayments },
+              cumulativeMerchantReleases: { ...rowCumulativeMR },
+              cumulativePlatformReleases: { ...rowCumulativePR },
+            });
+          }
         }
 
         // Track brand for filtering purposes
@@ -360,11 +396,11 @@ export async function GET(req: NextRequest) {
     // - If a brandKey was explicitly requested, include only wallets matching that brand
     // - If no brandKey was provided, include ALL wallets (activity ∪ profiles), even if not indexed yet
     // Fallback for partner containers: include wallets whose site_config is brand-scoped even if split_index missing
-    let brandSiteConfigRows: Array<{ wallet?: string; id?: string; brandKey?: string; splitAddress?: string }> = [];
+    let brandSiteConfigRows: Array<{ wallet?: string; id?: string; brandKey?: string; splitAddress?: string; split?: any; splitHistory?: any[]; updatedAt?: any; config?: any }> = [];
     try {
       const spec = {
         query: `
-          SELECT c.wallet, c.id, c.brandKey, c.splitAddress
+          SELECT c.wallet, c.id, c.brandKey, c.splitAddress, c.split, c.splitHistory, c.updatedAt, c.config
           FROM c
           WHERE c.type='site_config'
             AND (
@@ -385,17 +421,78 @@ export async function GET(req: NextRequest) {
       .filter(([_, b]) => b === brandFilter)
       .map(([w]) => w);
 
+    // Build comprehensive split address history per merchant from ALL site_config docs
+    // This discovers addresses from splitAddress, split.address, AND splitHistory across all docs
+    const allSplitAddressesMap = new Map<string, Array<{ address: string; deployedAt?: number; current?: boolean }>>();
+
     // For site_config fallback, also extract split addresses
     const fallbackWalletsFromSiteConfig: string[] = [];
     for (const r of brandSiteConfigRows) {
       const w = String(r?.wallet || "").toLowerCase();
       if (!hex(w)) continue;
       fallbackWalletsFromSiteConfig.push(w);
-      // Extract split address from site_config if not already in splitAddressMap
+      // Set splitAddressMap to the NEWEST doc's splitAddress (by updatedAt)
+      // This ensures the current/active split is used, not a historical one
       const scSplitAddress = String((r as any)?.splitAddress || "").toLowerCase();
-      if (hex(scSplitAddress) && !splitAddressMap.has(w)) {
-        splitAddressMap.set(w, scSplitAddress);
+      if (hex(scSplitAddress)) {
+        const existingSplit = splitAddressMap.get(w);
+        if (!existingSplit) {
+          splitAddressMap.set(w, scSplitAddress);
+          splitAddressTimestamps.set(w, r?.updatedAt ? new Date(r.updatedAt).getTime() : 0);
+        } else {
+          // If we already have one, keep the one from the newer doc
+          // We track this by storing the updatedAt along with the address
+          const existingTime = splitAddressTimestamps.get(w) || 0;
+          const thisTime = r?.updatedAt ? new Date(r.updatedAt).getTime() : 0;
+          if (thisTime > existingTime) {
+            splitAddressMap.set(w, scSplitAddress);
+            splitAddressTimestamps.set(w, thisTime);
+          }
+        }
       }
+
+      // Collect ALL split addresses for this wallet from this doc
+      const existing = allSplitAddressesMap.get(w) || [];
+      const seenAddrs = new Set(existing.map(e => e.address));
+
+      // From top-level splitAddress
+      if (hex(scSplitAddress) && !seenAddrs.has(scSplitAddress)) {
+        seenAddrs.add(scSplitAddress);
+        existing.push({
+          address: scSplitAddress,
+          deployedAt: r?.updatedAt ? new Date(r.updatedAt).getTime() : undefined,
+        });
+      }
+
+      // From nested split.address or config.split.address (legacy doc structure)
+      const nestedAddr = String(r?.split?.address || "").toLowerCase();
+      const configNestedAddr = String(r?.config?.split?.address || "").toLowerCase();
+      const configTopAddr = String(r?.config?.splitAddress || "").toLowerCase();
+      for (const addr of [nestedAddr, configNestedAddr, configTopAddr]) {
+        if (hex(addr) && !seenAddrs.has(addr)) {
+          seenAddrs.add(addr);
+          existing.push({
+            address: addr,
+            deployedAt: r?.updatedAt ? new Date(r.updatedAt).getTime() : undefined,
+          });
+        }
+      }
+
+      // From explicit splitHistory entries
+      if (Array.isArray(r?.splitHistory)) {
+        for (const h of r.splitHistory) {
+          const hAddr = String(h?.address || "").toLowerCase();
+          if (hex(hAddr) && !seenAddrs.has(hAddr)) {
+            seenAddrs.add(hAddr);
+            existing.push({
+              address: hAddr,
+              deployedAt: h?.deployedAt || h?.archivedAt || undefined,
+            });
+          }
+        }
+      }
+
+      allSplitAddressesMap.set(w, existing);
     }
 
     const allowedWallets =
@@ -426,13 +523,46 @@ export async function GET(req: NextRequest) {
 
         // Use indexed split data as the ONLY source of truth when available
         if (indexedMetrics) {
-          // Use total volume (all payments into the split) as "Total Earned" — not just released amounts
-          totalEarnedUsd = round2(indexedMetrics.totalVolumeUsd);
           customers = indexedMetrics.customers;
           totalCustomerXp = indexedMetrics.totalCustomerXp;
-          platformFeeUsd = round2(indexedMetrics.platformFeeUsd);
           transactionCount = indexedMetrics.transactionCount;
-          totalVolumeEth = round2(indexedMetrics.totalVolumeUsd / (ethUsdRate || 1));
+
+          // Compute total earned from cumulativeMerchantReleases (actual on-chain merchant payouts)
+          // This is more accurate than totalVolumeUsd which may be stale/incorrectly computed
+          const cumulativeMR = indexedMetrics.cumulativeMerchantReleases || {};
+          const cumulativePR = indexedMetrics.cumulativePlatformReleases || {};
+          const cumulativePayments = indexedMetrics.cumulativePayments || {};
+
+          // Sum merchant releases converted to USD
+          let merchantEarnedUsd = 0;
+          for (const [token, amount] of Object.entries(cumulativeMR)) {
+            const price = tokenPrices[token] || 0;
+            merchantEarnedUsd += Number(amount || 0) * price;
+          }
+
+          // Sum platform releases converted to USD
+          let platformEarnedUsd = 0;
+          for (const [token, amount] of Object.entries(cumulativePR)) {
+            const price = tokenPrices[token] || 0;
+            platformEarnedUsd += Number(amount || 0) * price;
+          }
+
+          // If no releases yet but payments exist, use payments as volume (not yet distributed)
+          if (merchantEarnedUsd === 0 && platformEarnedUsd === 0) {
+            let totalPaymentsUsd = 0;
+            for (const [token, amount] of Object.entries(cumulativePayments)) {
+              const price = tokenPrices[token] || 0;
+              totalPaymentsUsd += Number(amount || 0) * price;
+            }
+            // If payments exist but nothing released yet, show payment volume
+            // Fall back to stored totalVolumeUsd only as last resort
+            totalEarnedUsd = round2(totalPaymentsUsd > 0 ? totalPaymentsUsd : indexedMetrics.totalVolumeUsd);
+          } else {
+            totalEarnedUsd = round2(merchantEarnedUsd);
+          }
+
+          platformFeeUsd = round2(platformEarnedUsd > 0 ? platformEarnedUsd : indexedMetrics.platformFeeUsd);
+          totalVolumeEth = round2((merchantEarnedUsd + platformEarnedUsd) / (ethUsdRate || 1));
         } else {
           // Fallback to receipt-based data ONLY if split index unavailable
           const acc = byMerchant.get(m) || { buyers: new Set<string>(), xpSum: 0, grossUsd: 0, platformFeeUsd: 0 };
@@ -441,6 +571,14 @@ export async function GET(req: NextRequest) {
           totalCustomerXp = Math.floor(Math.max(0, acc.xpSum || 0));
           platformFeeUsd = round2(acc.platformFeeUsd || 0);
         }
+
+        // Mark current split address in allSplitAddresses
+        const allSplits = allSplitAddressesMap.get(m) || [];
+        const currentSplit = splitAddress || "";
+        const markedSplits = allSplits.map(s => ({
+          ...s,
+          current: s.address === currentSplit,
+        }));
 
         return {
           merchant: m,
@@ -456,6 +594,7 @@ export async function GET(req: NextRequest) {
           kioskEnabled: featuresMap.get(m)?.kioskEnabled ?? false,
           terminalEnabled: featuresMap.get(m)?.terminalEnabled ?? false,
           createdAt: featuresMap.get(m)?.createdAt,
+          allSplitAddresses: markedSplits.length > 0 ? markedSplits : undefined,
         };
       })
       .sort((a, b) => {
