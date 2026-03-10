@@ -19,25 +19,29 @@ export class S3StorageProvider implements StorageProvider {
         // If S3_PUBLIC_URL is set, use it. Otherwise, try to construct it.
         this.publicUrlBase = process.env.S3_PUBLIC_URL || this.endpoint;
 
-        if (!this.endpoint) {
-            throw new Error("S3_ENDPOINT is required for S3 Storage Provider");
-        }
-
         // The user explicitly requested to use the configured region from environment variables.
-        this.client = new S3Client({
-            region: this.region,
-            // When using a custom endpoint, some AWS SDK versions ignore `forcePathStyle: false`
-            // if the endpoint doesn't look like an AWS endpoint.
-            // By putting the bucket in the endpoint or leaving it standard, we can handle it.
-            // For OVH Cloud: `https://s3.us-west-or.io.cloud.ovh.us`
-            // If we want virtual hosted URLs naturally from the SDK, we just provide the base endpoint.
-            endpoint: this.endpoint,
-            credentials: {
-                accessKeyId: process.env.S3_ACCESS_KEY || "",
-                secretAccessKey: process.env.S3_SECRET_KEY || ""
-            },
-            forcePathStyle: false, // Attempt to use Virtual-Hosted Style
-        });
+        if (this.endpoint) {
+            this.client = new S3Client({
+                region: this.region,
+                // When using a custom endpoint, some AWS SDK versions ignore `forcePathStyle: false`
+                // if the endpoint doesn't look like an AWS endpoint.
+                // By putting the bucket in the endpoint or leaving it standard, we can handle it.
+                // For OVH Cloud: `https://s3.us-west-or.io.cloud.ovh.us`
+                // If we want virtual hosted URLs naturally from the SDK, we just provide the base endpoint.
+                endpoint: this.endpoint,
+                credentials: {
+                    accessKeyId: process.env.S3_ACCESS_KEY || "",
+                    secretAccessKey: process.env.S3_SECRET_KEY || ""
+                },
+                forcePathStyle: false, // Attempt to use Virtual-Hosted Style
+            });
+        }
+    }
+
+    private ensureClient(): void {
+        if (!this.client) {
+            throw new Error("S3_ENDPOINT is required but not configured for S3 Storage Provider");
+        }
     }
 
     /**
@@ -71,6 +75,7 @@ export class S3StorageProvider implements StorageProvider {
             ACL: 'public-read' // Assumes we want public access for these assets
         });
 
+        this.ensureClient();
         await this.client.send(command);
 
         return this.getUrl(key);
@@ -106,6 +111,7 @@ export class S3StorageProvider implements StorageProvider {
             Bucket: this.bucket,
             Key: key
         });
+        this.ensureClient();
         await this.client.send(command);
     }
 
@@ -116,6 +122,7 @@ export class S3StorageProvider implements StorageProvider {
                 Bucket: this.bucket,
                 Key: key
             });
+            this.ensureClient();
             await this.client.send(command);
             return true;
         } catch (e: any) {
@@ -133,19 +140,38 @@ export class S3StorageProvider implements StorageProvider {
             Key: key
         });
 
-        const response = await this.client.send(command);
+        try {
+            this.ensureClient();
+            const response = await this.client.send(command);
 
-        if (!response.Body) {
-            throw new Error("Empty body in S3 response");
-        }
+            if (!response.Body) {
+                throw new Error("Empty body in S3 response");
+            }
 
-        // response.Body is a stream in Node.js
-        const stream = response.Body as any; // ReadableStream or IncomingMessage
-        const chunks: Uint8Array[] = [];
-        for await (const chunk of stream) {
-            chunks.push(chunk);
+            // response.Body is a stream in Node.js
+            const stream = response.Body as any; // ReadableStream or IncomingMessage
+            const chunks: Uint8Array[] = [];
+            for await (const chunk of stream) {
+                chunks.push(chunk);
+            }
+            return Buffer.concat(chunks);
+        } catch (e: any) {
+            console.error(`[S3Provider] AWS SDK Download failed for key ${key}:`, e.message);
+            // Fallback: try fetching the signed URL natively
+            try {
+                console.log(`[S3Provider] Attempting fetch fallback for key ${key}...`);
+                const signedUrl = await this.getSignedUrl(key, 300);
+                const fetchRes = await fetch(signedUrl);
+                if (!fetchRes.ok) {
+                    throw new Error(`Fetch fallback failed with status ${fetchRes.status}: ${fetchRes.statusText}`);
+                }
+                const arrayBuffer = await fetchRes.arrayBuffer();
+                return Buffer.from(arrayBuffer);
+            } catch (fallbackError: any) {
+                console.error(`[S3Provider] Fetch fallback also failed for key ${key}:`, fallbackError.message);
+                throw e; // throw the original error
+            }
         }
-        return Buffer.concat(chunks);
     }
 
     async list(pathPrefix: string = ""): Promise<string[]> {
@@ -159,6 +185,7 @@ export class S3StorageProvider implements StorageProvider {
             Prefix: key
         });
 
+        this.ensureClient();
         const response = await this.client.send(command);
         const items: string[] = [];
 
@@ -180,6 +207,7 @@ export class S3StorageProvider implements StorageProvider {
             Key: key
         });
 
+        this.ensureClient();
         // S3 Client must be initialized with region/cred for this to work
         let url = await getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
         return url;
