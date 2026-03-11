@@ -73,8 +73,49 @@ export const MASTER_LANGS_FLAT: string[] = [
   "Angas (Ngas)","Carolinian","Chamorro","Ebira","Fon","Glosa","Hawaiian","Ido","Iban","Isoko","Jju","Jukun","Kawi","Kutenai","Lojban","Manchu","Minionese (Despicable Me)","Mende","Mossi","Nama","Nogai","North Frisian","Novial","Nyanja","Old Church Slavonic","Old English","Old French","Old High German","Old Norse","Old Prussian","Other","Palauan","Pali","Phoenician","Rusyn","Shan","Sotho","Twi",
   // CONSTRUCTED & FICTIONAL LANGUAGES
   "CONSTRUCTED & FICTIONAL LANGUAGES",
-  "Al Bhed (Final Fantasy)","Ancient Egyptian","Atlantean (Disney)","Babm","Barsoomian (Martian, Burroughs)","Black Speech (Tolkien)","Brithenig","Cityspeak (Blade Runner)","Clockwork Orange Nadsat","Cockney Rhyming Slang","D'ni (Myst)","Dovahzul (Skyrim)","Dothraki","Enochian","Esperanto","Furbish (Furby)","Gargish (Ultima)","Gnommish (Artemis Fowl)","Goa'uld (Stargate)","Huttese (Star Wars)","Interlingua","Interlingue (Occidental)","Klingon (tlhIngan Hol)","Kobold (D&D)","Kryptonian","Lapine (Watership Down)","Láadan","Lojban","Minionese (Despicable Me)","Na'vi","Newspeak (Orwell)","Old Tongue (Wheel of Time)","Parseltongue (Harry Potter)","Quenya (Elvish)","R'lyehian","Rohirric (Tolkien)","Simlish (The Sims)","Sindarin (Elvish)","Solresol","Star Wars Basic","Syldavian (Tintin)","Tengwar (Tolkien)","Toki Pona","Valyrian (High Valyrian)","Vulcan (Star Trek)",
+  "Al Bhed (Final Fantasy)","Ancient Egyptian","Atlantean (Disney)","Babm","Barsoomian (Martian, Burroughs)","Black Speech (Tolkien)","Brithenig","Cityspeak (Blade Runner)","Clockwork Orange Nadsat","Cockney Rhyming Slang","D'ni (Myst)","Dovahzul (Skyrim)","Dothraki","Enochian","Esperanto","Furbish (Furby)","Gargish (Ultima)","Gen Z Slang (Brainrot)","Gnommish (Artemis Fowl)","Goa'uld (Stargate)","Groot","Hodor","Huttese (Star Wars)","Interlingua","Interlingue (Occidental)","Klingon (tlhIngan Hol)","Kobold (D&D)","Kryptonian","Lapine (Watership Down)","Láadan","Lojban","Minionese (Despicable Me)","Na'vi","Newspeak (Orwell)","Old Tongue (Wheel of Time)","Parseltongue (Harry Potter)","Pirate Speak","Quenya (Elvish)","R'lyehian","Rohirric (Tolkien)","Shakespearean English","Simlish (The Sims)","Sindarin (Elvish)","Solresol","Star Wars Basic","Syldavian (Tintin)","Tengwar (Tolkien)","Toki Pona","UwU Speak","Valyrian (High Valyrian)","Vulcan (Star Trek)",
 ];
+
+export const FICTIONAL_LANG_ICONS: Record<string, string> = {
+  "Al Bhed (Final Fantasy)": "🎮",
+  "Ancient Egyptian": "🛕",
+  "Atlantean (Disney)": "🔱",
+  "Barsoomian (Martian, Burroughs)": "👽",
+  "Black Speech (Tolkien)": "🌋",
+  "Cityspeak (Blade Runner)": "🏙️",
+  "Clockwork Orange Nadsat": "🥛",
+  "Cockney Rhyming Slang": "🎩",
+  "Dovahzul (Skyrim)": "🐉",
+  "Dothraki": "🐎",
+  "Esperanto": "🌍",
+  "Furbish (Furby)": "🦉",
+  "Gen Z Slang (Brainrot)": "💀",
+  "Gnommish (Artemis Fowl)": "🍄",
+  "Goa'uld (Stargate)": "🌌",
+  "Groot": "🌳",
+  "Hodor": "🚪",
+  "Huttese (Star Wars)": "🐌",
+  "Klingon (tlhIngan Hol)": "🛸",
+  "Kobold (D&D)": "🦎",
+  "Kryptonian": "🦸‍♂️",
+  "Lapine (Watership Down)": "🐇",
+  "Minionese (Despicable Me)": "🍌",
+  "Na'vi": "🏹",
+  "Newspeak (Orwell)": "👁️",
+  "Parseltongue (Harry Potter)": "🐍",
+  "Pirate Speak": "🏴‍☠️",
+  "Quenya (Elvish)": "🧝‍♂️",
+  "R'lyehian": "🦑",
+  "Rohirric (Tolkien)": "🐎",
+  "Shakespearean English": "🎭",
+  "Simlish (The Sims)": "💎",
+  "Sindarin (Elvish)": "🧝‍♀️",
+  "Star Wars Basic": "⭐",
+  "Tengwar (Tolkien)": "✍️",
+  "UwU Speak": "✨",
+  "Valyrian (High Valyrian)": "🐉",
+  "Vulcan (Star Trek)": "🖖"
+};
 
 export function regionKeyFromGroup(group: string): (RegionKey | null) {
   // Only return geographic regions; non-geographic groups map to null
