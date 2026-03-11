@@ -4716,11 +4716,11 @@ function UsersPanel() {
   }
 
   // Fetch split transactions for a merchant
-  async function fetchMerchantTransactions(wallet: string) {
+  async function fetchMerchantTransactions(wallet: string, overrideSplitAddress?: string, forceLive?: boolean) {
     try {
       const w = String(wallet || "").toLowerCase();
       const b = balancesCache.get(w);
-      const splitAddress = b?.splitAddressUsed;
+      const splitAddress = overrideSplitAddress || b?.splitAddressUsed;
 
       if (!splitAddress || !/^0x[a-f0-9]{40}$/i.test(splitAddress)) {
         setTxError(prev => ({ ...prev, [w]: "No split address configured" }));
@@ -4730,7 +4730,10 @@ function UsersPanel() {
       setTxLoading(prev => ({ ...prev, [w]: true }));
       setTxError(prev => ({ ...prev, [w]: "" }));
 
-      const r = await fetch(`/api/split/transactions?splitAddress=${encodeURIComponent(splitAddress)}&merchantWallet=${encodeURIComponent(w)}&limit=1000`, {
+      // Force live fetch on accordion expansion to capture correct on-chain timestamps
+      // Persisted data from initial indexing may have had Date.now() timestamps
+      const liveParam = forceLive ? '&live=true' : '';
+      const r = await fetch(`/api/split/transactions?splitAddress=${encodeURIComponent(splitAddress)}&merchantWallet=${encodeURIComponent(w)}&limit=1000${liveParam}`, {
         cache: "no-store"
       });
       const j = await r.json().catch(() => ({}));
@@ -4793,10 +4796,10 @@ function UsersPanel() {
         const splitAddr = balanceData?.splitAddressUsed || splitFromItems;
 
         if (splitAddr && /^0x[a-f0-9]{40}$/i.test(splitAddr)) {
-          // Run these in parallel
+          // Run these in parallel — forceLive=true to re-index with correct timestamps
           await Promise.all([
             fetchReleasable(w),
-            fetchMerchantTransactions(w)
+            fetchMerchantTransactions(w, splitAddr, true)
           ]);
         }
       } catch (e) {
@@ -5252,7 +5255,19 @@ function UsersPanel() {
                     <td className="px-3 py-2">${Number(it.totalEarnedUsd || 0).toFixed(2)}</td>
                     <td className="px-3 py-2">{Number(it.customers || 0)}</td>
                     <td className="px-3 py-2">{Number(it.totalCustomerXp || 0)}</td>
-                    <td className="px-3 py-2">${Number(it.platformFeeUsd || 0).toFixed(2)}</td>
+                    <td className="px-3 py-2">
+                      {(() => {
+                        const receiptFee = Number(it.platformFeeUsd || 0);
+                        if (receiptFee > 0) return `$${receiptFee.toFixed(2)}`;
+                        // Fallback to on-chain platform releases
+                        const platRel = cumulative.platformReleases || {};
+                        const onChainTokens = Object.entries(platRel).filter(([, v]) => Number(v) > 0);
+                        if (onChainTokens.length > 0) {
+                          return onChainTokens.map(([token, v]) => `${Number(v).toFixed(4)} ${token}`).join(", ");
+                        }
+                        return "$0.00";
+                      })()}
+                    </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-4">
                         <div className="flex flex-col gap-1">
@@ -5319,31 +5334,70 @@ function UsersPanel() {
                         <div className="rounded-md border p-3 space-y-3">
                           <div className="flex items-center justify-between">
                             <div className="microtext text-muted-foreground">
-                              Split: {b && b.splitAddressUsed ? (
-                                <div className="flex items-center gap-2 inline-flex">
-                                  <a className="underline" href={`https://base.blockscout.com/address/${b.splitAddressUsed}`} target="_blank" rel="noopener noreferrer">
-                                    <TruncatedAddress address={b.splitAddressUsed} />
-                                  </a>
-                                  {b.splitHistory && b.splitHistory.length > 0 && (
-                                    <select
-                                      className="ml-2 h-6 text-xs border rounded bg-background px-1"
-                                      value={b.splitAddressUsed}
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        setSelectedMerchantSplitVersion(prev => ({ ...prev, [w]: val }));
-                                        fetchMerchantBalances(w, val);
-                                      }}
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      {b.splitHistory.map((h, i) => (
-                                        <option key={h.address} value={h.address}>
-                                          v{i + 1} ({h.address.slice(0, 6)}...) {i === b.splitHistory!.length - 1 ? "(Latest)" : ""}
+                              Split: {(() => {
+                                // Determine the canonical current split from stable users API data
+                                const canonicalCurrent = String(it.splitAddress || b?.splitAddressUsed || "").toLowerCase();
+                                if (!canonicalCurrent || !/^0x[a-f0-9]{40}$/i.test(canonicalCurrent)) return "Not configured";
+
+                                const viewingAddr = selectedMerchantSplitVersion[w] || b?.splitAddressUsed || canonicalCurrent;
+                                const allHistory: Array<{ address: string;[k: string]: any }> = [];
+                                const seenAddrs = new Set<string>();
+                                // Merge from users API (it.allSplitAddresses - discovers from ALL site_config docs)
+                                if (Array.isArray((it as any).allSplitAddresses)) {
+                                  for (const h of (it as any).allSplitAddresses) {
+                                    const addr = String(h?.address || "").toLowerCase();
+                                    if (addr && /^0x[a-f0-9]{40}$/i.test(addr) && !seenAddrs.has(addr)) {
+                                      seenAddrs.add(addr);
+                                      allHistory.push(h);
+                                    }
+                                  }
+                                }
+                                // Also merge from reserve/balances API (b.splitHistory)
+                                if (b && Array.isArray(b.splitHistory)) {
+                                  for (const h of b.splitHistory) {
+                                    const addr = String(h?.address || "").toLowerCase();
+                                    if (addr && /^0x[a-f0-9]{40}$/i.test(addr) && !seenAddrs.has(addr)) {
+                                      seenAddrs.add(addr);
+                                      allHistory.push(h);
+                                    }
+                                  }
+                                }
+                                // Historical entries that aren't the canonical current
+                                const historicalEntries = allHistory.filter(
+                                  (h: any) => String(h.address || "").toLowerCase() !== canonicalCurrent
+                                );
+                                return (
+                                  <div className="flex items-center gap-2 inline-flex">
+                                    <a className="underline" href={`https://base.blockscout.com/address/${viewingAddr}`} target="_blank" rel="noopener noreferrer">
+                                      <TruncatedAddress address={viewingAddr} />
+                                    </a>
+                                    {historicalEntries.length > 0 && (
+                                      <select
+                                        className="ml-2 h-6 text-xs border rounded bg-background px-1"
+                                        value={selectedMerchantSplitVersion[w] || canonicalCurrent}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setSelectedMerchantSplitVersion(prev => ({ ...prev, [w]: val }));
+                                          fetchMerchantBalances(w, val);
+                                          fetchMerchantTransactions(w, val);
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {/* Current active split — always present */}
+                                        <option value={canonicalCurrent}>
+                                          Current ({canonicalCurrent.slice(0, 6)}...{canonicalCurrent.slice(-4)})
                                         </option>
-                                      ))}
-                                    </select>
-                                  )}
-                                </div>
-                              ) : "Not configured"}
+                                        {/* Archived old splits */}
+                                        {historicalEntries.map((h: any, i: number) => (
+                                          <option key={h.address} value={String(h.address || "").toLowerCase()}>
+                                            v{historicalEntries.length - i} ({String(h.address || "").slice(0, 6)}...{String(h.address || "").slice(-4)})
+                                          </option>
+                                        ))}
+                                      </select>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
                             <div className="flex items-center gap-2">
                               <button
@@ -5362,13 +5416,36 @@ function UsersPanel() {
                           </div>
                           <div className="space-y-1 mb-2">
                             <div className="microtext text-muted-foreground">
-                              Platform fee (from receipts): ${Number(it.platformFeeUsd || 0).toFixed(2)}
+                              {(() => {
+                                const receiptFee = Number(it.platformFeeUsd || 0);
+                                const onChainReleases = Object.entries(cumulative.platformReleases || {});
+                                const onChainTokens = onChainReleases.filter(([, v]) => Number(v) > 0);
+                                const onChainSummary = onChainTokens
+                                  .map(([token, v]) => `${Number(v).toFixed(4)} ${token}`)
+                                  .join(", ");
+
+                                if (receiptFee > 0) {
+                                  return `Platform fee: $${receiptFee.toFixed(2)} (receipts)`;
+                                } else if (onChainTokens.length > 0) {
+                                  return `Platform fee: ${onChainSummary} (on-chain releases)`;
+                                }
+                                return "Platform fee: $0.00";
+                              })()}
                             </div>
                             {transactions.length > 0 && (
                               <div className="microtext text-muted-foreground">
                                 Recent transactions: {transactions.length} • Total volume: {(() => {
-                                  const total = transactions.reduce((sum, tx) => sum + Number(tx.value || 0), 0);
-                                  return `${total.toFixed(4)} ETH`;
+                                  const byToken: Record<string, number> = {};
+                                  for (const tx of transactions) {
+                                    if (tx?.type === 'payment') {
+                                      const token = String(tx.token || 'ETH');
+                                      byToken[token] = (byToken[token] || 0) + Number(tx.value || 0);
+                                    }
+                                  }
+                                  const parts = Object.entries(byToken)
+                                    .filter(([, v]) => v > 0)
+                                    .map(([token, v]) => `${v.toFixed(4)} ${token}`);
+                                  return parts.length > 0 ? parts.join(", ") : "0";
                                 })()}
                               </div>
                             )}

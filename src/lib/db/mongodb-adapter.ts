@@ -333,6 +333,14 @@ export class MongoDBContainerAdapter {
     item(id: string, _partitionKey?: string): MongoItemReference {
         return new MongoItemReference(this.collection, id, _partitionKey);
     }
+
+    /**
+     * Expose the raw MongoDB collection for performance-critical batch operations
+     * (e.g. $in queries for translation cache lookups).
+     */
+    getCollection(): Collection<Document> {
+        return this.collection;
+    }
 }
 
 // ── Factory function (called from cosmos.ts) ────────────────────────────

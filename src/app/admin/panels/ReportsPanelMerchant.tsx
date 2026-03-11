@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
-import { FileText, Download, Calendar, User, Loader2, Printer, Table2, DollarSign, Receipt, TrendingUp, BarChart3, PieChart } from "lucide-react";
+import { FileText, Download, Calendar, User, Loader2, Printer, Table2, DollarSign, Receipt, TrendingUp, BarChart3, PieChart, ArrowUpDown, Link2 } from "lucide-react";
 import { formatCurrency } from "@/lib/fx";
 import { EnhancedStatCard, VolumeVsTipsBar, PaymentMethodDonut, VerticalBarChart, DonutChart, HorizontalBarChart } from "@/components/admin/ReportCharts";
 import { isValorAvailable, printValorReport } from "@/lib/valor-printer";
@@ -39,6 +39,11 @@ export default function ReportsPanelMerchant() {
         open: false, title: "", message: "", type: "info",
     });
 
+    // On-chain transactions from split_index
+    const [splitTransactions, setSplitTransactions] = useState<any[]>([]);
+    const [splitTxLoading, setSplitTxLoading] = useState(false);
+    const [txTypeFilter, setTxTypeFilter] = useState<"all" | "payment" | "merchant" | "platform">("all");
+
     function getDateRange(r: string) {
         const now = new Date();
         let start = new Date();
@@ -60,6 +65,8 @@ export default function ReportsPanelMerchant() {
             start.setDate(now.getDate() - 7);
         } else if (r === "month") {
             start.setMonth(now.getMonth() - 1);
+        } else if (r === "all") {
+            start = new Date(0);
         }
 
         return {
@@ -100,9 +107,40 @@ export default function ReportsPanelMerchant() {
     useEffect(() => {
         if (merchantWallet) {
             if (range === "custom" && (!customStart || !customEnd)) return;
-            loadDashboard();
+            if (reportType !== "transactions") loadDashboard();
+            fetchSplitTransactions();
         }
     }, [range, reportType, merchantWallet, customStart, customEnd, employeeFilter]);
+
+    async function fetchSplitTransactions() {
+        if (!merchantWallet) return;
+        setSplitTxLoading(true);
+        try {
+            const r = await fetch(`/api/split/transactions?merchantWallet=${encodeURIComponent(merchantWallet)}&limit=1000`, {
+                cache: "no-store",
+            });
+            const j = await r.json();
+            if (j.ok && Array.isArray(j.transactions)) {
+                const { start, end } = getDateRange(range);
+                const startMs = start * 1000;
+                const endMs = end * 1000;
+                // Filter by selected date range (0 = all time)
+                const filtered = startMs === 0
+                    ? j.transactions
+                    : j.transactions.filter((tx: any) => {
+                        const ts = Number(tx.timestamp || 0);
+                        return ts >= startMs && ts <= endMs;
+                    });
+                setSplitTransactions(filtered);
+            } else {
+                setSplitTransactions([]);
+            }
+        } catch {
+            setSplitTransactions([]);
+        } finally {
+            setSplitTxLoading(false);
+        }
+    }
 
     async function downloadReport(format: "pdf" | "zip") {
         setReportLoading(true);
@@ -128,6 +166,7 @@ export default function ReportsPanelMerchant() {
     }
 
     function exportExcel() {
+        if (reportType === "transactions") return exportTransactionsExcel();
         if (!dashboardStats) return;
         try {
             const rows: string[][] = [];
@@ -181,6 +220,67 @@ export default function ReportsPanelMerchant() {
         } catch (e: any) {
             setReportError(e.message);
         }
+    }
+
+    function exportTransactionsExcel() {
+        if (!splitTransactions.length) return;
+        try {
+            const rows: string[][] = [];
+            rows.push(["On-Chain Transactions Report"]);
+            rows.push(["Date Range", range]);
+            rows.push(["Total Transactions", String(splitTransactions.length)]);
+            rows.push([]);
+            rows.push(["Date", "Tx Hash", "Type", "Token", "Amount", "From/To"]);
+            for (const tx of splitTransactions) {
+                const dateStr = tx.timestamp ? new Date(tx.timestamp).toLocaleString() : "—";
+                const txType = tx.type === "release" ? `${tx.releaseType || ""} release` : tx.type;
+                const addr = tx.type === "payment" ? (tx.from || "") : (tx.to || tx.releaseTo || "");
+                rows.push([dateStr, tx.hash || "", txType, tx.token || "", String(Number(tx.value || 0).toFixed(6)), addr]);
+            }
+            const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+            const BOM = "\uFEFF";
+            const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = `onchain-transactions-${range}-${new Date().toISOString().split("T")[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (e: any) {
+            setReportError(e.message);
+        }
+    }
+
+    function exportTransactionsPDF() {
+        if (!splitTransactions.length) return;
+        const w = window.open("", "_blank", "width=1000,height=700");
+        if (!w) return;
+        const dateStr = new Date().toLocaleString();
+        const txRows = splitTransactions.map((tx: any) => {
+            const d = tx.timestamp ? new Date(tx.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" }) : "—";
+            const txType = tx.type === "release" ? `${tx.releaseType || ""} release` : (tx.type || "—");
+            const hash = tx.hash ? `${tx.hash.slice(0, 10)}…${tx.hash.slice(-6)}` : "—";
+            const addr = tx.type === "payment" ? (tx.from || "") : (tx.to || tx.releaseTo || "");
+            const addrShort = addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : "—";
+            return `<tr><td>${d}</td><td class="mono">${hash}</td><td>${txType}</td><td>${tx.token || "—"}</td><td class="right mono">${Number(tx.value || 0).toFixed(6)}</td><td class="mono">${addrShort}</td></tr>`;
+        }).join("");
+
+        w.document.write(`<html><head><title>On-Chain Transactions</title><style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 960px; margin: 0 auto; padding: 24px; color: #1a1a1a; }
+            h1 { font-size: 20px; margin-bottom: 4px; } .meta { color: #666; font-size: 12px; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { text-align: left; padding: 8px 6px; border-bottom: 2px solid #333; font-size: 10px; text-transform: uppercase; color: #888; }
+            td { padding: 6px; border-bottom: 1px solid #eee; }
+            .right { text-align: right; } .mono { font-family: 'SF Mono', 'Courier New', monospace; font-size: 11px; }
+            .footer { margin-top: 20px; font-size: 10px; color: #888; text-align: center; }
+        </style></head><body>
+            <h1>On-Chain Transactions Report</h1>
+            <div class="meta">Date Range: ${range} | ${splitTransactions.length} transactions | Generated: ${dateStr}</div>
+            <table><thead><tr><th>Date</th><th>Tx Hash</th><th>Type</th><th>Token</th><th class="right">Amount</th><th>From/To</th></tr></thead><tbody>${txRows}</tbody></table>
+            <div class="footer">On-Chain Transaction Report — ${dateStr}</div>
+            <script>window.onload=function(){window.print();setTimeout(function(){window.close()},500)}<\/script>
+        </body></html>`);
+        w.document.close();
     }
 
     async function handleEmailReport() {
@@ -247,21 +347,34 @@ export default function ReportsPanelMerchant() {
                     </h2>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                    <button onClick={printReport} disabled={reportLoading || !dashboardStats} className="h-8 flex items-center gap-2 px-3 bg-card border hover:bg-muted text-foreground rounded-lg disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all">
-                        <Printer className="w-3.5 h-3.5" /> Print
-                    </button>
-                    <button onClick={() => setEmailDialogOpen(true)} disabled={reportLoading} className="h-8 flex items-center gap-2 px-3 bg-secondary text-secondary-foreground rounded-lg hover:brightness-95 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider border border-secondary">
-                        <FileText className="w-3.5 h-3.5" /> Email
-                    </button>
-                    <button onClick={() => downloadReport("pdf")} disabled={reportLoading} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider">
-                        <FileText className="w-3.5 h-3.5" /> PDF
-                    </button>
-                    <button onClick={exportExcel} disabled={reportLoading || !dashboardStats} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider">
-                        <Table2 className="w-3.5 h-3.5" /> Excel
-                    </button>
-                    <button onClick={() => downloadReport("zip")} disabled={reportLoading} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider shadow-sm opacity-80">
-                        <Download className="w-3.5 h-3.5" /> ZIP
-                    </button>
+                    {reportType === "transactions" ? (
+                        <>
+                            <button onClick={exportTransactionsPDF} disabled={splitTxLoading || !splitTransactions.length} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider">
+                                <FileText className="w-3.5 h-3.5" /> PDF
+                            </button>
+                            <button onClick={exportTransactionsExcel} disabled={splitTxLoading || !splitTransactions.length} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider">
+                                <Table2 className="w-3.5 h-3.5" /> Excel
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button onClick={printReport} disabled={reportLoading || !dashboardStats} className="h-8 flex items-center gap-2 px-3 bg-card border hover:bg-muted text-foreground rounded-lg disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all">
+                                <Printer className="w-3.5 h-3.5" /> Print
+                            </button>
+                            <button onClick={() => setEmailDialogOpen(true)} disabled={reportLoading} className="h-8 flex items-center gap-2 px-3 bg-secondary text-secondary-foreground rounded-lg hover:brightness-95 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider border border-secondary">
+                                <FileText className="w-3.5 h-3.5" /> Email
+                            </button>
+                            <button onClick={() => downloadReport("pdf")} disabled={reportLoading} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider">
+                                <FileText className="w-3.5 h-3.5" /> PDF
+                            </button>
+                            <button onClick={exportExcel} disabled={reportLoading || !dashboardStats} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider">
+                                <Table2 className="w-3.5 h-3.5" /> Excel
+                            </button>
+                            <button onClick={() => downloadReport("zip")} disabled={reportLoading} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider shadow-sm opacity-80">
+                                <Download className="w-3.5 h-3.5" /> ZIP
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -302,7 +415,7 @@ export default function ReportsPanelMerchant() {
                         <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Report Type</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        {[{ id: "z-report", label: "Z-Report" }, { id: "x-report", label: "X-Report" }, { id: "employee", label: "Staff" }, { id: "hourly", label: "Hourly" }].map((t) => (
+                        {[{ id: "z-report", label: "Z-Report" }, { id: "x-report", label: "X-Report" }, { id: "employee", label: "Staff" }, { id: "hourly", label: "Hourly" }, { id: "transactions", label: "Txns" }].map((t) => (
                             <button key={t.id} onClick={() => setReportType(t.id)} className={`flex-1 min-w-[80px] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${reportType === t.id ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-background text-muted-foreground border-border hover:bg-muted/50 hover:text-foreground"}`}>
                                 {t.label}
                             </button>
@@ -310,18 +423,20 @@ export default function ReportsPanelMerchant() {
                     </div>
                 </div>
 
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <User className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Staff Filter</span>
+                {reportType !== "transactions" && (
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <User className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Staff Filter</span>
+                        </div>
+                        <select value={employeeFilter} onChange={(e) => setEmployeeFilter(e.target.value)} className="w-full h-[38px] px-3 rounded-lg border bg-background text-xs font-medium focus:ring-1 focus:ring-primary">
+                            <option value="">All Staff</option>
+                            {employees.map((emp) => (
+                                <option key={emp.id} value={emp.id}>{emp.name}</option>
+                            ))}
+                        </select>
                     </div>
-                    <select value={employeeFilter} onChange={(e) => setEmployeeFilter(e.target.value)} className="w-full h-[38px] px-3 rounded-lg border bg-background text-xs font-medium focus:ring-1 focus:ring-primary">
-                        <option value="">All Staff</option>
-                        {employees.map((emp) => (
-                            <option key={emp.id} value={emp.id}>{emp.name}</option>
-                        ))}
-                    </select>
-                </div>
+                )}
 
                 <div className="md:col-span-2">
                     <div className="flex items-center gap-2 mb-2">
@@ -329,7 +444,7 @@ export default function ReportsPanelMerchant() {
                     </div>
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex bg-muted/20 p-1 rounded-lg border flex-1">
-                            {["today", "yesterday", "week", "month", "custom"].map((r) => (
+                            {["today", "yesterday", "week", "month", "all", "custom"].map((r) => (
                                 <button key={r} onClick={() => setRange(r)} className={`flex-1 text-[11px] uppercase font-bold tracking-wide py-2 rounded-md transition-all ${range === r ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}>
                                     {r}
                                 </button>
@@ -348,8 +463,8 @@ export default function ReportsPanelMerchant() {
 
             {reportError && <div className="p-4 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl">{reportError}</div>}
 
-            {/* Stats and Details */}
-            {dashboardStats && (
+            {/* Stats and Details — hidden when on Transactions tab */}
+            {reportType !== "transactions" && dashboardStats && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="md:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                         <EnhancedStatCard icon={DollarSign} label="Total Sales" value={formatCurrency(dashboardStats.summary?.totalSales || 0, "USD")} sub="Gross Revenue" accent="text-indigo-500" />
@@ -470,6 +585,109 @@ export default function ReportsPanelMerchant() {
                             </div>
                         )}
                     </div>
+                </div>
+            )}
+
+            {/* On-Chain Transactions Tab */}
+            {reportType === "transactions" && (
+                <div className="border rounded-xl bg-card overflow-hidden">
+                    <div className="p-4 border-b space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                <Link2 className="w-5 h-5 text-primary" />
+                                On-Chain Transactions
+                                {splitTxLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                                {!splitTxLoading && <span className="text-sm font-normal text-muted-foreground">({splitTransactions.filter((tx: any) => {
+                                    if (txTypeFilter === "all") return true;
+                                    if (txTypeFilter === "payment") return tx.type === "payment";
+                                    if (txTypeFilter === "merchant") return tx.type === "release" && tx.releaseType === "merchant";
+                                    if (txTypeFilter === "platform") return tx.type === "release" && tx.releaseType === "platform";
+                                    return true;
+                                }).length})</span>}
+                            </h3>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                            {(["all", "payment", "merchant", "platform"] as const).map(f => {
+                                const labels = { all: "All", payment: "Payment", merchant: "Merchant Release", platform: "Platform Release" };
+                                const colors = { all: "", payment: "bg-blue-500/10 text-blue-400 border-blue-500/30", merchant: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30", platform: "bg-amber-500/10 text-amber-400 border-amber-500/30" };
+                                const isActive = txTypeFilter === f;
+                                return (
+                                    <button key={f} onClick={() => setTxTypeFilter(f)}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${isActive
+                                                ? (f === "all" ? "bg-primary text-primary-foreground border-primary" : colors[f])
+                                                : "bg-background text-muted-foreground border-border hover:bg-muted/50"
+                                            }`}>
+                                        {labels[f]}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    {splitTransactions.filter((tx: any) => {
+                        if (txTypeFilter === "all") return true;
+                        if (txTypeFilter === "payment") return tx.type === "payment";
+                        if (txTypeFilter === "merchant") return tx.type === "release" && tx.releaseType === "merchant";
+                        if (txTypeFilter === "platform") return tx.type === "release" && tx.releaseType === "platform";
+                        return true;
+                    }).length > 0 ? (
+                        <div className="max-h-[600px] overflow-y-auto">
+                            <table className="w-full text-sm">
+                                <thead className="text-xs uppercase text-muted-foreground border-b bg-muted/20 sticky top-0">
+                                    <tr>
+                                        <th className="text-left py-2.5 px-4">Date</th>
+                                        <th className="text-left py-2.5 px-4">Tx Hash</th>
+                                        <th className="text-left py-2.5 px-4">Type</th>
+                                        <th className="text-left py-2.5 px-4">Token</th>
+                                        <th className="text-right py-2.5 px-4">Amount</th>
+                                        <th className="text-left py-2.5 px-4">From / To</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border/50">
+                                    {splitTransactions.filter((tx: any) => {
+                                        if (txTypeFilter === "all") return true;
+                                        if (txTypeFilter === "payment") return tx.type === "payment";
+                                        if (txTypeFilter === "merchant") return tx.type === "release" && tx.releaseType === "merchant";
+                                        if (txTypeFilter === "platform") return tx.type === "release" && tx.releaseType === "platform";
+                                        return true;
+                                    }).map((tx: any, txIdx: number) => (
+                                        <tr key={`${tx.hash}-${txIdx}`} className="hover:bg-muted/10 transition-colors">
+                                            <td className="py-2 px-4 text-muted-foreground whitespace-nowrap">
+                                                {tx.timestamp ? new Date(tx.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }) : '\u2014'}
+                                            </td>
+                                            <td className="py-2 px-4">
+                                                <a href={`https://basescan.org/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono text-primary hover:underline text-xs">
+                                                    {tx.hash?.slice(0, 10)}\u2026{tx.hash?.slice(-6)}
+                                                </a>
+                                            </td>
+                                            <td className="py-2 px-4">
+                                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${tx.type === 'payment' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20'
+                                                        : tx.releaseType === 'merchant' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                                                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
+                                                    }`}>
+                                                    {tx.type === 'release' ? `${tx.releaseType || ''} release` : tx.type}
+                                                </span>
+                                            </td>
+                                            <td className="py-2 px-4 font-medium">{tx.token}</td>
+                                            <td className="py-2 px-4 text-right font-mono">{Number(tx.value || 0).toFixed(6)}</td>
+                                            <td className="py-2 px-4 font-mono text-muted-foreground text-xs">
+                                                {tx.type === 'payment'
+                                                    ? `From: ${(tx.from || '').slice(0, 6)}\u2026${(tx.from || '').slice(-4)}`
+                                                    : `To: ${(tx.to || tx.releaseTo || '').slice(0, 6)}\u2026${(tx.to || tx.releaseTo || '').slice(-4)}`
+                                                }
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : !splitTxLoading ? (
+                        <div className="text-sm text-muted-foreground text-center py-12">No on-chain transactions found for this period</div>
+                    ) : (
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                            <span className="ml-2 text-sm text-muted-foreground">Loading transactions\u2026</span>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

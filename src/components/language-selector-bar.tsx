@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Globe, Search } from "lucide-react";
 import Link from "next/link";
-import { GROUPS, LANGS_BY_REGION_OR_GROUP } from "@/lib/master-langs";
+import { GROUPS, LANGS_BY_REGION_OR_GROUP, FICTIONAL_LANG_ICONS } from "@/lib/master-langs";
 import { useTheme } from "@/contexts/ThemeContext";
-import { isLanguageSupported, getLanguageCode } from "@/lib/site-translator";
+import { getSupportedLanguages, isLanguageSupported, getLanguageCode } from "@/lib/site-translator";
 import { useTranslations } from "next-intl";
 import { getAllIndustries } from "@/lib/landing-pages/industries";
 import { getAllComparisons } from "@/lib/landing-pages/comparisons";
@@ -68,10 +68,6 @@ export function LanguageSelectorBar({ className = "" }: LanguageSelectorBarProps
         setCurrentLanguage(saved);
       }
 
-      const failed = localStorage.getItem("pp:failed-languages");
-      if (failed) {
-        setFailedLanguages(new Set(JSON.parse(failed)));
-      }
     } catch { }
 
     // Load SEO page settings to determine category visibility
@@ -111,6 +107,12 @@ export function LanguageSelectorBar({ className = "" }: LanguageSelectorBarProps
     }
 
     loadSeoPageSettings();
+
+    // Clear any previously stored failed languages so users can retry
+    // especially Fictional languages that triggered 400 errors previously
+    try {
+      localStorage.removeItem("pp:failed-languages");
+    } catch { }
 
     // Listen for translation failures
     const handleTranslationFailed = (event: CustomEvent) => {
@@ -204,11 +206,9 @@ export function LanguageSelectorBar({ className = "" }: LanguageSelectorBarProps
   }, [searchQuery]);
 
   const handleLanguageChange = (language: string) => {
-    // Don't allow selecting failed languages
-    if (failedLanguages.has(language)) {
-      return;
-    }
-
+    // Note: Fictional languages previously got locked out here due to Cloudflare 400s.
+    // They are now allowed to pass through repeatedly.
+    
     // Resolve ISO locale code from display name
     const locale = getLanguageCode(language) || language;
 
@@ -224,8 +224,6 @@ export function LanguageSelectorBar({ className = "" }: LanguageSelectorBarProps
       window.dispatchEvent(new CustomEvent("pp:language:changed", { detail: { language, locale } }));
     } catch { }
   };
-
-  const isLanguageFailed = (lang: string) => failedLanguages.has(lang);
 
   return (
     <>
@@ -328,25 +326,21 @@ export function LanguageSelectorBar({ className = "" }: LanguageSelectorBarProps
                       </div>
                       <div className="space-y-0">
                         {supportedPopularLanguages.map((lang) => {
-                          const isFailed = isLanguageFailed(lang);
+                          const emoji = FICTIONAL_LANG_ICONS[lang];
                           return (
                             <button
                               key={lang}
                               onClick={() => handleLanguageChange(lang)}
-                              disabled={isFailed}
-                              className={`w-full text-left px-1.5 py-0.5 rounded microtext text-[9px] transition-colors flex items-center justify-between ${isFailed
-                                ? "opacity-50 cursor-not-allowed"
-                                : currentLanguage === lang
+                              className={`w-full text-left px-1.5 py-0.5 rounded microtext text-[9px] transition-colors flex items-center justify-between ${
+                                currentLanguage === lang
                                   ? "bg-foreground/5 font-medium text-foreground"
                                   : "text-foreground/80 hover:bg-foreground/10"
                                 }`}
                             >
-                              <span>{lang}</span>
-                              {isFailed && (
-                                <span className="text-[7px] px-1 py-0.5 rounded bg-yellow-500/20 text-yellow-600 dark:text-yellow-400">
-                                  Coming Soon
-                                </span>
-                              )}
+                              <span className="flex items-center gap-1.5">
+                                {emoji && <span className="text-[10px]">{emoji}</span>}
+                                <span>{lang}</span>
+                              </span>
                             </button>
                           );
                         })}
@@ -368,25 +362,21 @@ export function LanguageSelectorBar({ className = "" }: LanguageSelectorBarProps
                           </div>
                           <div className="space-y-0">
                             {languages.map((lang) => {
-                              const isFailed = isLanguageFailed(lang);
+                              const emoji = FICTIONAL_LANG_ICONS[lang];
                               return (
                                 <button
                                   key={lang}
                                   onClick={() => handleLanguageChange(lang)}
-                                  disabled={isFailed}
-                                  className={`w-full text-left px-1.5 py-0.5 rounded microtext text-[9px] transition-colors flex items-center justify-between ${isFailed
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : currentLanguage === lang
+                                  className={`w-full text-left px-1.5 py-0.5 rounded microtext text-[9px] transition-colors flex items-center justify-between ${
+                                    currentLanguage === lang
                                       ? "bg-foreground/5 font-medium text-foreground"
                                       : "text-foreground/80 hover:bg-foreground/10"
                                     }`}
                                 >
-                                  <span>{lang}</span>
-                                  {isFailed && (
-                                    <span className="text-[7px] px-1 py-0.5 rounded bg-yellow-500/20 text-yellow-600 dark:text-yellow-400">
-                                      Coming Soon
-                                    </span>
-                                  )}
+                                  <span className="flex items-center gap-1.5">
+                                    {emoji && <span className="text-[10px]">{emoji}</span>}
+                                    <span>{lang}</span>
+                                  </span>
                                 </button>
                               );
                             })}
@@ -407,25 +397,21 @@ export function LanguageSelectorBar({ className = "" }: LanguageSelectorBarProps
                           </div>
                           <div className="space-y-0">
                             {languages.map((lang) => {
-                              const isFailed = isLanguageFailed(lang);
+                              const emoji = FICTIONAL_LANG_ICONS[lang];
                               return (
                                 <button
                                   key={lang}
                                   onClick={() => handleLanguageChange(lang)}
-                                  disabled={isFailed}
-                                  className={`w-full text-left px-1.5 py-0.5 rounded microtext text-[9px] transition-colors flex items-center justify-between ${isFailed
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : currentLanguage === lang
+                                  className={`w-full text-left px-1.5 py-0.5 rounded microtext text-[9px] transition-colors flex items-center justify-between ${
+                                    currentLanguage === lang
                                       ? "bg-foreground/5 font-medium text-foreground"
                                       : "text-foreground/80 hover:bg-foreground/10"
                                     }`}
                                 >
-                                  <span>{lang}</span>
-                                  {isFailed && (
-                                    <span className="text-[7px] px-1 py-0.5 rounded bg-yellow-500/20 text-yellow-600 dark:text-yellow-400">
-                                      Coming Soon
-                                    </span>
-                                  )}
+                                  <span className="flex items-center gap-1.5">
+                                    {emoji && <span className="text-[10px]">{emoji}</span>}
+                                    <span>{lang}</span>
+                                  </span>
                                 </button>
                               );
                             })}

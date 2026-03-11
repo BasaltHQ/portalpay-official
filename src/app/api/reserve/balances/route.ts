@@ -230,6 +230,111 @@ export async function GET(req: NextRequest) {
       console.error("[RESERVE BALANCES] Error fetching indexed metrics:", e);
     }
 
+    // Build comprehensive splitHistory from ALL site_config docs for this wallet
+    // (some merchants have multiple docs — one with new split in splitAddress, another with old in split.address)
+    let mergedSplitHistory: any[] = [];
+    try {
+      const container2 = await getContainer();
+      // Use a broader query — fetch ALL fields for site_config docs matching this wallet
+      // (avoid LOWER() which the MongoDB adapter may not support in SQL mode)
+      const { resources: allSiteConfigs } = await container2.items.query({
+        query: `SELECT * FROM c WHERE c.type = 'site_config' AND c.wallet = @w`,
+        parameters: [{ name: "@w", value: wallet }],
+      }).fetchAll();
+
+      console.log(`[RESERVE BALANCES] Found ${(allSiteConfigs || []).length} site_config docs for wallet ${wallet.slice(0, 10)}...`);
+      for (const doc of (allSiteConfigs || [])) {
+        console.log(`[RESERVE BALANCES] Doc keys: ${Object.keys(doc).join(', ')}`);
+        console.log(`[RESERVE BALANCES]   splitAddress: ${doc?.splitAddress}`);
+        console.log(`[RESERVE BALANCES]   split: ${JSON.stringify(doc?.split)?.slice(0, 200)}`);
+        console.log(`[RESERVE BALANCES]   split?.address: ${doc?.split?.address}`);
+        console.log(`[RESERVE BALANCES]   splitHistory: ${JSON.stringify(doc?.splitHistory)?.slice(0, 200)}`);
+      }
+
+      const seenAddrs = new Set<string>();
+      const currentSplit = walletToQuery !== wallet ? walletToQuery : "";
+      if (currentSplit) seenAddrs.add(currentSplit); // Don't include the current active split in history
+
+      // Pass 1: Collect explicit splitHistory entries from all docs
+      for (const doc of (allSiteConfigs || [])) {
+        if (Array.isArray(doc.splitHistory)) {
+          for (const h of doc.splitHistory) {
+            const addr = String(h?.address || "").toLowerCase();
+            if (addr && /^0x[a-f0-9]{40}$/i.test(addr) && !seenAddrs.has(addr)) {
+              seenAddrs.add(addr);
+              mergedSplitHistory.push(h);
+            }
+          }
+        }
+      }
+
+      // Pass 2: Discover split addresses from splitAddress / split.address across docs
+      // that aren't already in splitHistory and aren't the current active split
+      const discoveredAddresses: string[] = [];
+      for (const doc of (allSiteConfigs || [])) {
+        const topLevel = String(doc?.splitAddress || "").toLowerCase();
+        const nested = String(doc?.split?.address || "").toLowerCase();
+        // Also check config.split.address and config.splitAddress (legacy doc structure)
+        const configNested = String(doc?.config?.split?.address || "").toLowerCase();
+        const configTop = String(doc?.config?.splitAddress || "").toLowerCase();
+        for (const addr of [topLevel, nested, configNested, configTop]) {
+          if (addr && /^0x[a-f0-9]{40}$/i.test(addr) && !seenAddrs.has(addr)) {
+            seenAddrs.add(addr);
+            discoveredAddresses.push(addr);
+            mergedSplitHistory.push({
+              address: addr,
+              recipients: doc?.split?.recipients || doc?.config?.split?.recipients || [],
+              deployedAt: doc?.updatedAt ? new Date(doc.updatedAt).getTime() : 0,
+              discoveredFromDoc: true,
+            });
+          }
+        }
+      }
+
+      // AUTO-HEAL: If we discovered addresses not in any splitHistory, permanently patch the newest doc
+      if (discoveredAddresses.length > 0 && (allSiteConfigs || []).length > 0) {
+        console.log(`[RESERVE BALANCES] Auto-healing: Adding ${discoveredAddresses.length} discovered split(s) to splitHistory for ${wallet.slice(0, 10)}...`);
+        try {
+          // Find the newest doc (the one with the current split)
+          const sortedDocs = [...(allSiteConfigs || [])].sort((a: any, b: any) => {
+            const aTime = new Date(a.updatedAt || 0).getTime();
+            const bTime = new Date(b.updatedAt || 0).getTime();
+            return bTime - aTime;
+          });
+          const newestDoc = sortedDocs[0];
+          if (newestDoc) {
+            const existingHistory = Array.isArray(newestDoc.splitHistory) ? newestDoc.splitHistory : [];
+            const existingAddrs = new Set(existingHistory.map((h: any) => String(h?.address || "").toLowerCase()));
+            const newEntries = discoveredAddresses
+              .filter(a => !existingAddrs.has(a))
+              .map(a => ({
+                address: a,
+                recipients: [],
+                deployedAt: 0,
+                archivedAt: Date.now(),
+                recoveredFromSeparateDoc: true,
+              }));
+            if (newEntries.length > 0) {
+              await container2.items.upsert({
+                ...newestDoc,
+                splitHistory: [...existingHistory, ...newEntries],
+                updatedAt: Date.now(),
+              });
+              console.log(`[RESERVE BALANCES] ✓ Patched splitHistory with ${newEntries.length} entries for ${wallet.slice(0, 10)}...`);
+            }
+          }
+        } catch (e) {
+          console.warn(`[RESERVE BALANCES] Failed to auto-heal splitHistory for ${wallet.slice(0, 10)}:`, e);
+        }
+      }
+    } catch (e) {
+      console.warn("[RESERVE BALANCES] Split history merge failed:", e);
+      // Fallback to single doc
+      try {
+        mergedSplitHistory = (await getSiteConfigForWallet(wallet, queryBrandKey) as any)?.splitHistory || [];
+      } catch { }
+    }
+
     return NextResponse.json(
       {
         merchantWallet: wallet,
@@ -239,7 +344,7 @@ export async function GET(req: NextRequest) {
         rates,
         totalUsd,
         indexedMetrics,
-        splitHistory: (await getSiteConfigForWallet(wallet, queryBrandKey) as any)?.splitHistory || []
+        splitHistory: mergedSplitHistory,
       },
       { headers: { "x-correlation-id": correlationId } }
     );

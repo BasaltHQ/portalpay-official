@@ -64,7 +64,9 @@ export async function GET(req: NextRequest) {
             container.items.query({
                 query: `SELECT c.merchantWallet, c.splitAddress, c.brandKey,
                                c.totalVolumeUsd, c.merchantEarnedUsd, c.platformFeeUsd,
-                               c.customers, c.totalCustomerXp, c.transactionCount
+                               c.customers, c.totalCustomerXp, c.transactionCount,
+                               c.cumulativePayments, c.cumulativeMerchantReleases, c.cumulativePlatformReleases,
+                               c.transactions
                         FROM c WHERE c.type = 'split_index'`,
                 parameters: [],
             }).fetchAll(),
@@ -157,13 +159,13 @@ export async function GET(req: NextRequest) {
 
         const merchantStatsMap = new Map<
             string,
-            { totalSales: number; totalTips: number; transactionCount: number }
+            { totalSales: number; totalTips: number; transactionCount: number; cashSales: number; cashTransactionCount: number }
         >();
 
         if (!useIndexed) {
             // Fetch receipts within time range for these merchants
             const receiptQuery = {
-                query: `SELECT c.wallet, c.totalUsd, c.tipAmount, c.createdAt FROM c
+                query: `SELECT c.wallet, c.totalUsd, c.tipAmount, c.createdAt, c.paymentMethod FROM c
                         WHERE c.type = 'receipt' AND c.status = 'paid'
                         AND ARRAY_CONTAINS(@wallets, c.wallet)
                         AND c.createdAt >= @startMs AND c.createdAt <= @endMs`,
@@ -181,20 +183,97 @@ export async function GET(req: NextRequest) {
 
                 const totalUsd = Number(r.totalUsd || 0);
                 const tipAmount = Number(r.tipAmount || 0);
+                const isCash = String(r.paymentMethod || "").toLowerCase() === "cash";
 
                 const existing = merchantStatsMap.get(w);
                 if (existing) {
                     existing.totalSales += totalUsd;
                     existing.totalTips += tipAmount;
                     existing.transactionCount += 1;
+                    if (isCash) {
+                        existing.cashSales += totalUsd;
+                        existing.cashTransactionCount += 1;
+                    }
                 } else {
                     merchantStatsMap.set(w, {
                         totalSales: totalUsd,
                         totalTips: tipAmount,
                         transactionCount: 1,
+                        cashSales: isCash ? totalUsd : 0,
+                        cashTransactionCount: isCash ? 1 : 0,
                     });
                 }
             }
+        } else {
+            // All-time: still query ALL receipts as primary source of truth
+            // (split_index totalVolumeUsd can be inflated due to stale/incorrect indexing)
+            try {
+                const receiptQuery = {
+                    query: `SELECT c.wallet, c.totalUsd, c.tipAmount, c.paymentMethod FROM c
+                            WHERE c.type = 'receipt' AND c.status = 'paid'
+                            AND ARRAY_CONTAINS(@wallets, c.wallet)`,
+                    parameters: [
+                        { name: "@wallets", value: partnerWalletArray },
+                    ],
+                };
+                const { resources: receipts } = await container.items.query(receiptQuery).fetchAll();
+
+                for (const r of receipts || []) {
+                    const w = String(r.wallet || "").toLowerCase();
+                    if (!partnerWallets.has(w)) continue;
+
+                    const totalUsd = Number(r.totalUsd || 0);
+                    const tipAmount = Number(r.tipAmount || 0);
+                    const isCash = String(r.paymentMethod || "").toLowerCase() === "cash";
+
+                    const existing = merchantStatsMap.get(w);
+                    if (existing) {
+                        existing.totalSales += totalUsd;
+                        existing.totalTips += tipAmount;
+                        existing.transactionCount += 1;
+                        if (isCash) {
+                            existing.cashSales += totalUsd;
+                            existing.cashTransactionCount += 1;
+                        }
+                    } else {
+                        merchantStatsMap.set(w, {
+                            totalSales: totalUsd,
+                            totalTips: tipAmount,
+                            transactionCount: 1,
+                            cashSales: isCash ? totalUsd : 0,
+                            cashTransactionCount: isCash ? 1 : 0,
+                        });
+                    }
+                }
+            } catch (e) {
+                console.warn("[PartnerReports] All-time receipt query failed:", e);
+            }
+        }
+
+        // Token prices for USD conversion from cumulative on-chain data
+        let ethUsdRate = 0;
+        try {
+            const { fetchEthRates } = await import("@/lib/eth");
+            const rates = await fetchEthRates();
+            ethUsdRate = Number(rates?.USD || 0);
+        } catch { }
+
+        const tokenPrices: Record<string, number> = {
+            ETH: ethUsdRate || 2500,
+            USDC: 1.0,
+            USDT: 1.0,
+            cbBTC: 65000,
+            cbXRP: 0.50,
+        };
+
+        function cumulativeToUsd(cumMap: Record<string, number> | undefined): number {
+            if (!cumMap) return 0;
+            let total = 0;
+            for (const [token, amount] of Object.entries(cumMap)) {
+                const price = tokenPrices[token] || 0;
+                total += Number(amount || 0) * price;
+            }
+            return total;
         }
 
         // ── 6. Also pull split_index for earned/fee breakdown per merchant ──
@@ -207,11 +286,78 @@ export async function GET(req: NextRequest) {
             const w = String(row.merchantWallet || "").toLowerCase();
             if (!partnerWallets.has(w)) continue;
 
-            const vol = Number(row.totalVolumeUsd || 0);
-            const earned = Number(row.merchantEarnedUsd || 0);
-            const fee = Number(row.platformFeeUsd || 0);
-            const cust = Number(row.customers || 0);
-            const txCount = Number(row.transactionCount || 0);
+            let vol: number, earned: number, fee: number;
+            let cust: number, txCount: number;
+
+            if (!useIndexed && startMs > 0) {
+                // Date-bounded: filter persisted transactions by timestamp
+                const txs = Array.isArray(row.transactions) ? row.transactions : [];
+                const filteredTxs = txs.filter((tx: any) => {
+                    const ts = Number(tx.timestamp || 0);
+                    return ts >= startMs && ts <= endMs;
+                });
+
+                // Recompute cumulative from filtered transactions
+                const filtCumPayments: Record<string, number> = {};
+                const filtCumMR: Record<string, number> = {};
+                const filtCumPR: Record<string, number> = {};
+                const uniqueCustomers = new Set<string>();
+
+                for (const tx of filteredTxs) {
+                    const token = String(tx.token || "ETH");
+                    const value = Number(tx.value || 0);
+                    if (tx.type === 'payment') {
+                        filtCumPayments[token] = (filtCumPayments[token] || 0) + value;
+                        const from = String(tx.from || "").toLowerCase();
+                        if (from) uniqueCustomers.add(from);
+                    } else if (tx.type === 'release') {
+                        if (tx.releaseType === 'merchant') {
+                            filtCumMR[token] = (filtCumMR[token] || 0) + value;
+                        } else {
+                            filtCumPR[token] = (filtCumPR[token] || 0) + value;
+                        }
+                    }
+                }
+
+                const merchantReleasesUsd = cumulativeToUsd(filtCumMR);
+                const platformReleasesUsd = cumulativeToUsd(filtCumPR);
+                const paymentsUsd = cumulativeToUsd(filtCumPayments);
+
+                if (merchantReleasesUsd > 0 || platformReleasesUsd > 0) {
+                    earned = merchantReleasesUsd;
+                    fee = platformReleasesUsd;
+                    vol = earned + fee;
+                } else if (paymentsUsd > 0) {
+                    vol = paymentsUsd;
+                    earned = vol;
+                    fee = 0;
+                } else {
+                    vol = 0; earned = 0; fee = 0;
+                }
+                cust = uniqueCustomers.size;
+                txCount = filteredTxs.filter((tx: any) => tx.type === 'payment').length;
+            } else {
+                // All-time: use full cumulative data
+                const merchantReleasesUsd = cumulativeToUsd(row.cumulativeMerchantReleases);
+                const platformReleasesUsd = cumulativeToUsd(row.cumulativePlatformReleases);
+                const paymentsUsd = cumulativeToUsd(row.cumulativePayments);
+
+                if (merchantReleasesUsd > 0 || platformReleasesUsd > 0) {
+                    earned = merchantReleasesUsd;
+                    fee = platformReleasesUsd;
+                    vol = earned + fee;
+                } else if (paymentsUsd > 0) {
+                    vol = paymentsUsd;
+                    earned = vol;
+                    fee = 0;
+                } else {
+                    vol = Number(row.totalVolumeUsd || 0);
+                    earned = Number(row.merchantEarnedUsd || 0);
+                    fee = Number(row.platformFeeUsd || 0);
+                }
+                cust = Number(row.customers || 0);
+                txCount = Number(row.transactionCount || 0);
+            }
 
             const existing = splitStatsMap.get(w);
             if (existing) {
@@ -237,32 +383,47 @@ export async function GET(req: NextRequest) {
             const receiptStats = merchantStatsMap.get(w);
             const splitStats = splitStatsMap.get(w);
 
-            // For "all time", use indexed amounts directly
             let totalSales: number;
             let totalTips: number;
             let transactionCount: number;
             let merchantEarned: number;
             let platformFee: number;
 
-            if (useIndexed && splitStats) {
+            // Split_index is the SOURCE OF TRUTH for volume/fees (blockchain data survives receipt loss).
+            // Only fall back to receipts when split_index is missing or has obviously bad data
+            // (e.g. pre-fix inflated totalVolumeUsd > $50M threshold from the cbBTC decimal bug).
+            const MAX_SANE_VOLUME = 50_000_000;
+            const splitIsValid = splitStats && splitStats.totalVolumeUsd > 0 && splitStats.totalVolumeUsd < MAX_SANE_VOLUME;
+            const hasReceipts = receiptStats && receiptStats.transactionCount > 0;
+
+            if (useIndexed && splitIsValid) {
+                // All-time with valid split_index: use as source of truth
                 totalSales = splitStats.totalVolumeUsd;
                 merchantEarned = splitStats.merchantEarnedUsd;
                 platformFee = splitStats.platformFeeUsd;
-                totalTips = 0; // tips not tracked in split_index
+                totalTips = receiptStats?.totalTips || 0; // tips from receipts (not on-chain)
                 transactionCount = splitStats.transactionCount;
-            } else {
-                totalSales = receiptStats?.totalSales || 0;
-                totalTips = receiptStats?.totalTips || 0;
-                transactionCount = receiptStats?.transactionCount || 0;
+            } else if (hasReceipts) {
+                // Fallback: use receipt-based calculation
+                totalSales = receiptStats.totalSales;
+                totalTips = receiptStats.totalTips;
+                transactionCount = receiptStats.transactionCount;
 
-                // Estimate earned/fee from receipt volume using the split_index ratio
+                // Estimate earned/fee from receipt volume using the split_index fee ratio
                 merchantEarned = totalSales;
                 platformFee = 0;
-                if (splitStats && splitStats.totalVolumeUsd > 0) {
+                if (splitIsValid && splitStats.totalVolumeUsd > 0) {
                     const feeRatio = splitStats.platformFeeUsd / splitStats.totalVolumeUsd;
                     platformFee = Math.round(totalSales * feeRatio * 100) / 100;
                     merchantEarned = Math.round((totalSales - platformFee) * 100) / 100;
                 }
+            } else {
+                // No data at all
+                totalSales = 0;
+                totalTips = 0;
+                transactionCount = 0;
+                merchantEarned = 0;
+                platformFee = 0;
             }
 
             const customers = splitStats?.customers || 0;
@@ -280,6 +441,8 @@ export async function GET(req: NextRequest) {
                 averageOrderValue: transactionCount > 0
                     ? Math.round((totalSales / transactionCount) * 100) / 100
                     : 0,
+                cashSales: Math.round((receiptStats?.cashSales || 0) * 100) / 100,
+                cashTransactionCount: receiptStats?.cashTransactionCount || 0,
             };
         });
 
@@ -293,6 +456,8 @@ export async function GET(req: NextRequest) {
             averageOrderValue: 0 as number,
             merchantCount: merchants.filter((m) => m.transactionCount > 0).length,
             customers: merchants.reduce((s, m) => s + m.customers, 0),
+            cashSales: merchants.reduce((s, m) => s + m.cashSales, 0),
+            cashTransactionCount: merchants.reduce((s, m) => s + m.cashTransactionCount, 0),
         };
         aggregate.averageOrderValue =
             aggregate.transactionCount > 0

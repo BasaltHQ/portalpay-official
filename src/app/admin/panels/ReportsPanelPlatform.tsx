@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
-import { FileText, Search, ChevronDown, ChevronRight, Loader2, Table2, Globe, Check, X, DollarSign, TrendingUp, Receipt, Users, BarChart3, PieChart, Building2 } from "lucide-react";
+import { FileText, Search, ChevronDown, ChevronRight, Loader2, Table2, Globe, Check, X, DollarSign, TrendingUp, Receipt, Users, BarChart3, PieChart, Building2, Link2 } from "lucide-react";
 import { formatCurrency } from "@/lib/fx";
 import { EnhancedStatCard, VolumeVsTipsBar, RevenueBreakdown, MerchantGrid, HorizontalBarChart, DonutChart } from "@/components/admin/ReportCharts";
 
@@ -37,6 +37,33 @@ export default function ReportsPanelPlatform() {
     const [expandedMerchant, setExpandedMerchant] = useState<string | null>(null);
     const [merchantDetail, setMerchantDetail] = useState<any>(null);
     const [detailLoading, setDetailLoading] = useState(false);
+
+    // View mode: dashboard vs transactions
+    const [viewMode, setViewMode] = useState<"dashboard" | "transactions">("dashboard");
+    const [allTransactions, setAllTransactions] = useState<any[]>([]);
+    const [txLoading, setTxLoading] = useState(false);
+    const [txTypeFilter, setTxTypeFilter] = useState<"all" | "payment" | "merchant" | "partner" | "agent" | "platform">("all");
+    const [txMerchantFilter, setTxMerchantFilter] = useState("");
+    const [tokenPrices, setTokenPrices] = useState<Record<string, number>>({ USDC: 1, USDT: 1, ETH: 2500, cbBTC: 65000, cbXRP: 0.50 });
+    const [txCumulative, setTxCumulative] = useState<{ payments: Record<string, number>; merchantReleases: Record<string, number>; partnerReleases: Record<string, number>; agentReleases: Record<string, number>; platformReleases: Record<string, number> }>({ payments: {}, merchantReleases: {}, partnerReleases: {}, agentReleases: {}, platformReleases: {} });
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const [ethRes, btcRes] = await Promise.all([
+                    fetch("https://api.coinbase.com/v2/exchange-rates?currency=ETH").then(r => r.json()).catch(() => null),
+                    fetch("https://api.coinbase.com/v2/exchange-rates?currency=BTC").then(r => r.json()).catch(() => null),
+                ]);
+                const ethUsd = Number(ethRes?.data?.rates?.USD || 0);
+                const btcUsd = Number(btcRes?.data?.rates?.USD || 0);
+                setTokenPrices(prev => ({
+                    ...prev,
+                    ...(ethUsd > 0 ? { ETH: ethUsd } : {}),
+                    ...(btcUsd > 0 ? { cbBTC: btcUsd } : {}),
+                }));
+            } catch { }
+        })();
+    }, []);
 
     function getDateRange(r: string) {
         const now = new Date();
@@ -162,6 +189,71 @@ export default function ReportsPanelPlatform() {
         else { setSortBy(col); setSortDir("desc"); }
     }
 
+    // Load all on-chain transactions across merchants
+    async function loadAllTransactions(forceLive = false) {
+        if (!data?.merchants?.length) return;
+        setTxLoading(true);
+        try {
+            const allTxs: any[] = [];
+            const seenHashes = new Set<string>();
+            const mergedCum = { payments: {} as Record<string, number>, merchantReleases: {} as Record<string, number>, partnerReleases: {} as Record<string, number>, agentReleases: {} as Record<string, number>, platformReleases: {} as Record<string, number> };
+            await Promise.all(
+                data.merchants.map(async (m: any) => {
+                    try {
+                        const liveParam = forceLive ? '&live=true' : '';
+                        const res = await fetch(`/api/split/transactions?merchantWallet=${encodeURIComponent(m.wallet)}&limit=500${liveParam}`, { cache: "no-store" });
+                        const j = await res.json().catch(() => ({}));
+                        if (j?.ok && Array.isArray(j.transactions)) {
+                            for (const tx of j.transactions) {
+                                const hash = String(tx.hash || "").toLowerCase();
+                                const dedupKey = `${hash}|${tx.type || ''}|${tx.releaseType || ''}|${String(tx.to || '').toLowerCase()}`;
+                                if (dedupKey && !seenHashes.has(dedupKey)) {
+                                    seenHashes.add(dedupKey);
+                                    allTxs.push({
+                                        ...tx,
+                                        merchantWallet: m.wallet.toLowerCase(),
+                                        merchantName: m.name || m.wallet.slice(0, 10),
+                                        merchantLogo: m.logo,
+                                        brandKey: m.brandKey,
+                                    });
+                                }
+                            }
+                            // Merge cumulative data from API (accurate even if tx list is incomplete)
+                            if (j.cumulative) {
+                                for (const [tok, amt] of Object.entries(j.cumulative.payments || {})) {
+                                    mergedCum.payments[tok] = (mergedCum.payments[tok] || 0) + Number(amt || 0);
+                                }
+                                for (const [tok, amt] of Object.entries(j.cumulative.merchantReleases || {})) {
+                                    mergedCum.merchantReleases[tok] = (mergedCum.merchantReleases[tok] || 0) + Number(amt || 0);
+                                }
+                                for (const [tok, amt] of Object.entries(j.cumulative.partnerReleases || {})) {
+                                    mergedCum.partnerReleases[tok] = (mergedCum.partnerReleases[tok] || 0) + Number(amt || 0);
+                                }
+                                for (const [tok, amt] of Object.entries(j.cumulative.agentReleases || {})) {
+                                    mergedCum.agentReleases[tok] = (mergedCum.agentReleases[tok] || 0) + Number(amt || 0);
+                                }
+                                for (const [tok, amt] of Object.entries(j.cumulative.platformReleases || {})) {
+                                    mergedCum.platformReleases[tok] = (mergedCum.platformReleases[tok] || 0) + Number(amt || 0);
+                                }
+                            }
+                        }
+                    } catch { /* skip */ }
+                })
+            );
+            allTxs.sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
+            setAllTransactions(allTxs);
+            setTxCumulative(mergedCum);
+        } catch { /* skip */ } finally {
+            setTxLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        if (viewMode === "transactions" && data?.merchants?.length && allTransactions.length === 0) {
+            loadAllTransactions();
+        }
+    }, [viewMode, data]);
+
     function exportPDF() {
         if (!data?.merchants?.length) return;
         const w = window.open("", "_blank", "width=900,height=700");
@@ -255,6 +347,85 @@ export default function ReportsPanelPlatform() {
         }
     }
 
+    function getFilteredTransactions() {
+        const { start, end } = getDateRange(range);
+        return allTransactions.filter((tx: any) => {
+            if (tx.timestamp) {
+                const ts = Math.floor(new Date(tx.timestamp).getTime() / 1000);
+                if (ts < start || ts > end) return false;
+            }
+            if (txTypeFilter !== "all") {
+                if (txTypeFilter === "payment" && tx.type !== "payment") return false;
+                if (txTypeFilter === "merchant" && !(tx.type === "release" && tx.releaseType === "merchant")) return false;
+                if (txTypeFilter === "partner" && !(tx.type === "release" && tx.releaseType === "partner")) return false;
+                if (txTypeFilter === "agent" && !(tx.type === "release" && tx.releaseType === "agent")) return false;
+                if (txTypeFilter === "platform" && !(tx.type === "release" && tx.releaseType === "platform")) return false;
+            }
+            if (txMerchantFilter && tx.merchantWallet !== txMerchantFilter) return false;
+            return true;
+        });
+    }
+
+    function exportTxPDF() {
+        const txs = getFilteredTransactions();
+        if (!txs.length) return;
+        const w = window.open("", "_blank", "width=900,height=700");
+        if (!w) return;
+        const dateStr = new Date().toLocaleString();
+        const rows = txs.map((tx: any) =>
+            `<tr><td>${tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : '—'}</td><td>${tx.merchantName || '—'}</td><td>${tx.brandKey || '—'}</td><td class="mono">${tx.hash?.slice(0, 10)}…${tx.hash?.slice(-6)}</td><td>${tx.type === 'release' ? `${tx.releaseType || ''} release` : tx.type}</td><td>${tx.token || '—'}</td><td class="right mono">${Number(tx.value || 0).toFixed(6)}</td></tr>`
+        ).join("");
+        w.document.write(`<html><head><title>Platform Transactions</title><style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 900px; margin: 0 auto; padding: 24px; color: #1a1a1a; }
+            h1 { font-size: 20px; margin-bottom: 4px; }
+            .meta { color: #666; font-size: 12px; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { text-align: left; padding: 6px 8px; border-bottom: 2px solid #333; font-size: 10px; text-transform: uppercase; color: #888; }
+            td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+            .right { text-align: right; }
+            .mono { font-family: monospace; }
+            .footer { margin-top: 20px; font-size: 10px; color: #888; text-align: center; }
+        </style></head><body>
+            <h1>Platform — On-Chain Transactions</h1>
+            <div class="meta">Date Range: ${range} | Filter: ${txTypeFilter} | Generated: ${dateStr}</div>
+            <table><thead><tr><th>Date</th><th>Merchant</th><th>Partner</th><th>Tx Hash</th><th>Type</th><th>Token</th><th class="right">Amount</th></tr></thead>
+            <tbody>${rows}</tbody></table>
+            <div class="footer">Platform Transaction Report — ${dateStr}</div>
+            <script>window.onload=function(){window.print();setTimeout(function(){window.close()},500)}</script>
+        </body></html>`);
+        w.document.close();
+    }
+
+    function exportTxExcel() {
+        const txs = getFilteredTransactions();
+        if (!txs.length) return;
+        const rows: string[][] = [];
+        rows.push(["Platform Transaction Report"]);
+        rows.push(["Date Range", range, "Filter", txTypeFilter]);
+        rows.push([]);
+        rows.push(["Date", "Merchant", "Partner", "Tx Hash", "Type", "Token", "Amount"]);
+        for (const tx of txs) {
+            rows.push([
+                tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : '',
+                tx.merchantName || '',
+                tx.brandKey || '',
+                tx.hash || '',
+                tx.type === 'release' ? `${tx.releaseType || ''} release` : tx.type,
+                tx.token || '',
+                String(Number(tx.value || 0).toFixed(6)),
+            ]);
+        }
+        const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+        const BOM = "\uFEFF";
+        const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `platform-transactions-${range}-${new Date().toISOString().split("T")[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    }
+
     const filteredPartners = (data?.availablePartners || []).filter((p: any) =>
         !partnerSearch || p.brandKey.includes(partnerSearch.toLowerCase()) || p.name.toLowerCase().includes(partnerSearch.toLowerCase())
     );
@@ -287,12 +458,32 @@ export default function ReportsPanelPlatform() {
                         {loading && <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />}
                     </h2>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                    <button onClick={exportPDF} disabled={loading || !data} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-sm text-[10px] font-bold uppercase tracking-wider">
-                        <FileText className="w-3.5 h-3.5" /> PDF
+                <div className="flex gap-2 flex-wrap items-center">
+                    {viewMode === "dashboard" && (
+                        <>
+                            <button onClick={exportPDF} disabled={loading || !data} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-sm text-[10px] font-bold uppercase tracking-wider">
+                                <FileText className="w-3.5 h-3.5" /> PDF
+                            </button>
+                            <button onClick={exportExcel} disabled={loading || !data} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-sm text-[10px] font-bold uppercase tracking-wider">
+                                <Table2 className="w-3.5 h-3.5" /> Excel
+                            </button>
+                        </>
+                    )}
+                    {viewMode === "transactions" && (
+                        <>
+                            <button onClick={exportTxPDF} disabled={txLoading || allTransactions.length === 0} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-sm text-[10px] font-bold uppercase tracking-wider">
+                                <FileText className="w-3.5 h-3.5" /> PDF
+                            </button>
+                            <button onClick={exportTxExcel} disabled={txLoading || allTransactions.length === 0} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-sm text-[10px] font-bold uppercase tracking-wider">
+                                <Table2 className="w-3.5 h-3.5" /> Excel
+                            </button>
+                        </>
+                    )}
+                    <button onClick={() => setViewMode("dashboard")} className={`h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${viewMode === "dashboard" ? "bg-primary text-primary-foreground shadow-sm" : "border bg-background text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}>
+                        <BarChart3 className="w-3 h-3 inline mr-1.5" />Dashboard
                     </button>
-                    <button onClick={exportExcel} disabled={loading || !data} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-sm text-[10px] font-bold uppercase tracking-wider">
-                        <Table2 className="w-3.5 h-3.5" /> Excel
+                    <button onClick={() => setViewMode("transactions")} className={`h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${viewMode === "transactions" ? "bg-primary text-primary-foreground shadow-sm" : "border bg-background text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}>
+                        <Link2 className="w-3 h-3 inline mr-1.5" />Txns
                     </button>
                 </div>
             </div>
@@ -368,7 +559,7 @@ export default function ReportsPanelPlatform() {
             {error && <div className="p-4 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl">{error}</div>}
 
             {/* Aggregate Stats */}
-            {data?.aggregate && (
+            {viewMode === "dashboard" && data?.aggregate && (
                 <>
                     <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
                         <EnhancedStatCard icon={DollarSign} label="Volume" value={formatCurrency(data.aggregate.totalSales, "USD")} accent="text-indigo-500" />
@@ -438,7 +629,7 @@ export default function ReportsPanelPlatform() {
             )}
 
             {/* Partner Breakdown */}
-            {data?.partners && data.partners.length > 0 && (
+            {viewMode === "dashboard" && data?.partners && data.partners.length > 0 && (
                 <div className="border rounded-xl bg-card overflow-hidden">
                     <div className="p-4 border-b">
                         <h3 className="text-lg font-bold">Partner Breakdown</h3>
@@ -474,7 +665,7 @@ export default function ReportsPanelPlatform() {
             )}
 
             {/* Merchant Table */}
-            {data && (
+            {viewMode === "dashboard" && data && (
                 <div className="border rounded-xl bg-card overflow-hidden">
                     <div className="p-4 border-b flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">
                         <h3 className="text-lg font-bold">All Merchants ({filteredMerchants.length})</h3>
@@ -547,6 +738,36 @@ export default function ReportsPanelPlatform() {
                                                             <div className="text-sm text-red-500 py-4">{merchantDetail.error}</div>
                                                         ) : merchantDetail ? (
                                                             <div className="space-y-4">
+                                                                {/* Print Reports */}
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <span className="text-[10px] font-bold uppercase text-muted-foreground">Download:</span>
+                                                                    {[
+                                                                        { type: "z-report", label: "Z-Report" },
+                                                                        { type: "employee", label: "Employee" },
+                                                                        { type: "hourly", label: "Hourly" },
+                                                                        { type: "ledger", label: "Ledger" },
+                                                                    ].map((rpt) => {
+                                                                        const { start, end } = getDateRange(range);
+                                                                        const base = `/api/terminal/reports?type=${rpt.type}&start=${start}&end=${end}&wallet=${m.wallet}&linkedWallet=${wallet}&merchantName=${encodeURIComponent(m.name || "")}`;
+                                                                        return (
+                                                                            <div key={rpt.type} className="flex items-center">
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); window.open(`${base}&format=pdf`, '_blank'); }}
+                                                                                    className="h-6 flex items-center gap-1 px-2 bg-primary text-primary-foreground rounded-l-md hover:brightness-110 text-[9px] font-bold uppercase tracking-wider"
+                                                                                >
+                                                                                    <FileText className="w-2.5 h-2.5" /> {rpt.label}
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); window.open(`${base}&format=zip`, '_blank'); }}
+                                                                                    className="h-6 flex items-center gap-1 px-1.5 bg-green-600 text-white rounded-r-md hover:bg-green-700 text-[9px] font-bold uppercase"
+                                                                                    title="PDF + CSV"
+                                                                                >
+                                                                                    <Table2 className="w-2.5 h-2.5" />
+                                                                                </button>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
                                                                 {/* Summary Stats */}
                                                                 {merchantDetail.summary && (
                                                                     <div>
@@ -613,28 +834,34 @@ export default function ReportsPanelPlatform() {
                                                                             <table className="w-full text-xs">
                                                                                 <thead className="bg-muted/30 sticky top-0">
                                                                                     <tr>
+                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Date</th>
                                                                                         <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Tx Hash</th>
                                                                                         <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Type</th>
                                                                                         <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Token</th>
-                                                                                        <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Value</th>
+                                                                                        <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Amount</th>
+                                                                                        <th className="text-right py-2 px-3 font-semibold text-muted-foreground">USD</th>
                                                                                         <th className="text-left py-2 px-3 font-semibold text-muted-foreground">From</th>
                                                                                     </tr>
                                                                                 </thead>
                                                                                 <tbody className="divide-y divide-border/50">
-                                                                                    {merchantDetail.splitTransactions.map((tx: any) => (
-                                                                                        <tr key={tx.hash} className="hover:bg-muted/10">
+                                                                                    {merchantDetail.splitTransactions.map((tx: any, txIdx: number) => (
+                                                                                        <tr key={`${tx.hash}-${txIdx}`} className="hover:bg-muted/10">
+                                                                                            <td className="py-1.5 px-3 text-muted-foreground whitespace-nowrap">
+                                                                                                {tx.timestamp ? new Date(tx.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }) : '—'}
+                                                                                            </td>
                                                                                             <td className="py-1.5 px-3">
                                                                                                 <a href={`https://basescan.org/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono text-primary hover:underline">
                                                                                                     {tx.hash.slice(0, 10)}…{tx.hash.slice(-6)}
                                                                                                 </a>
                                                                                             </td>
                                                                                             <td className="py-1.5 px-3">
-                                                                                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${tx.txType === 'payment' ? 'bg-green-500/10 text-green-500' : 'bg-blue-500/10 text-blue-500'}`}>
-                                                                                                    {tx.txType}
+                                                                                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${(tx.txType || tx.type) === 'payment' ? 'bg-green-500/10 text-green-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                                                                                                    {tx.txType || tx.type}
                                                                                                 </span>
                                                                                             </td>
                                                                                             <td className="py-1.5 px-3 font-medium">{tx.token}</td>
                                                                                             <td className="py-1.5 px-3 text-right font-mono">{Number(tx.value || 0).toFixed(6)}</td>
+                                                                                            <td className="py-1.5 px-3 text-right font-mono text-muted-foreground">{tx.valueUsd != null ? `$${Number(tx.valueUsd).toFixed(2)}` : '—'}</td>
                                                                                             <td className="py-1.5 px-3 font-mono text-muted-foreground">{tx.from ? `${tx.from.slice(0, 6)}…${tx.from.slice(-4)}` : '—'}</td>
                                                                                         </tr>
                                                                                     ))}
@@ -664,6 +891,192 @@ export default function ReportsPanelPlatform() {
                             </tbody>
                         </table>
                     </div>
+                </div>
+            )}
+
+            {/* Transactions Tab */}
+            {viewMode === "transactions" && (
+                <div className="border rounded-xl bg-card overflow-hidden">
+                    <div className="p-4 border-b space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                <Link2 className="w-5 h-5 text-primary" />
+                                On-Chain Transactions
+                                {txLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                                {!txLoading && <span className="text-sm font-normal text-muted-foreground">({getFilteredTransactions().length})</span>}
+                            </h3>
+                            <button onClick={() => loadAllTransactions(true)} disabled={txLoading} className="h-8 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider hover:bg-muted/50 disabled:opacity-50 transition-colors">
+                                Refresh
+                            </button>
+                        </div>
+                        <div className="flex gap-2 flex-wrap items-center">
+                            {(["all", "payment", "merchant", "partner", "agent", "platform"] as const).map(f => {
+                                const labels: Record<string, string> = { all: "All", payment: "Payment", merchant: "Merchant Release", partner: "Partner Release", agent: "Agent Release", platform: "Platform Release" };
+                                const colors: Record<string, string> = { all: "", payment: "bg-blue-500/10 text-blue-400 border-blue-500/30", merchant: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30", partner: "bg-purple-500/10 text-purple-400 border-purple-500/30", agent: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30", platform: "bg-amber-500/10 text-amber-400 border-amber-500/30" };
+                                const isActive = txTypeFilter === f;
+                                return (
+                                    <button key={f} onClick={() => setTxTypeFilter(f)}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${isActive
+                                            ? (f === "all" ? "bg-primary text-primary-foreground border-primary" : colors[f])
+                                            : "bg-background text-muted-foreground border-border hover:bg-muted/50"
+                                            }`}>
+                                        {labels[f]}
+                                    </button>
+                                );
+                            })}
+                            <div className="h-6 w-px bg-border mx-1" />
+                            <select value={txMerchantFilter} onChange={e => setTxMerchantFilter(e.target.value)}
+                                className="h-[30px] px-2 rounded-lg border bg-background text-[10px] font-bold uppercase tracking-wider focus:ring-1 focus:ring-primary">
+                                <option value="">All Merchants</option>
+                                {(data?.merchants || []).map((m: any) => (
+                                    <option key={m.wallet} value={m.wallet.toLowerCase()}>{m.name || m.wallet.slice(0, 10)}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    {/* HUD Stats */}
+                    {!txLoading && (() => {
+                        const txs = getFilteredTransactions();
+                        const merchants = new Set(txs.map((t: any) => t.merchantWallet));
+                        const volumeByToken: Record<string, number> = {};
+                        const merchantByToken: Record<string, number> = {};
+                        const partnerByToken: Record<string, number> = {};
+                        const agentByToken: Record<string, number> = {};
+                        const platformByToken: Record<string, number> = {};
+                        for (const tx of txs) {
+                            const val = Number(tx.value || 0);
+                            const tok = tx.token || 'UNKNOWN';
+                            if (tx.type === 'payment') volumeByToken[tok] = (volumeByToken[tok] || 0) + val;
+                            if (tx.type === 'release' && tx.releaseType === 'merchant') merchantByToken[tok] = (merchantByToken[tok] || 0) + val;
+                            if (tx.type === 'release' && tx.releaseType === 'partner') partnerByToken[tok] = (partnerByToken[tok] || 0) + val;
+                            if (tx.type === 'release' && tx.releaseType === 'agent') agentByToken[tok] = (agentByToken[tok] || 0) + val;
+                            if (tx.type === 'release' && tx.releaseType === 'platform') platformByToken[tok] = (platformByToken[tok] || 0) + val;
+                        }
+                        // Supplement: if a token has volume but no release txs, use cumulative API data
+                        for (const tok of Object.keys(volumeByToken)) {
+                            if (!(merchantByToken[tok] > 0) && !(partnerByToken[tok] > 0) && !(agentByToken[tok] > 0) && !(platformByToken[tok] > 0)) {
+                                if (txCumulative.merchantReleases[tok] > 0) merchantByToken[tok] = txCumulative.merchantReleases[tok];
+                                if (txCumulative.partnerReleases[tok] > 0) partnerByToken[tok] = txCumulative.partnerReleases[tok];
+                                if (txCumulative.agentReleases[tok] > 0) agentByToken[tok] = txCumulative.agentReleases[tok];
+                                if (txCumulative.platformReleases[tok] > 0) platformByToken[tok] = txCumulative.platformReleases[tok];
+                            }
+                        }
+                        const toUsd = (map: Record<string, number>) => Object.entries(map).reduce((sum, [tok, amt]) => sum + amt * (tokenPrices[tok] || 0), 0);
+                        const fmt = (v: number) => v < 0.01 ? v.toFixed(6) : v < 1 ? v.toFixed(4) : v.toFixed(2);
+                        const volumeUsd = toUsd(volumeByToken);
+                        const merchantUsd = toUsd(merchantByToken);
+                        const partnerUsd = toUsd(partnerByToken);
+                        const agentUsd = toUsd(agentByToken);
+                        const platformUsd = toUsd(platformByToken);
+                        const renderTokenRows = (map: Record<string, number>, colorClass: string) => {
+                            const entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
+                            return entries.length > 0 ? entries.map(([tok, val]) => (
+                                <div key={tok} className="flex justify-between items-center">
+                                    <span className={`text-xs font-medium ${colorClass}`}>{tok}</span>
+                                    <span className={`text-sm font-bold font-mono ${colorClass}`}>{fmt(val)}</span>
+                                </div>
+                            )) : null;
+                        };
+                        const hasAgent = agentUsd > 0 || Object.keys(agentByToken).length > 0;
+                        return (
+                            <div className={`grid grid-cols-2 ${hasAgent ? 'md:grid-cols-7' : 'md:grid-cols-6'} gap-3 px-4 py-3 border-b bg-muted/5`}>
+                                <div className="p-3 rounded-xl border bg-background/60">
+                                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Active Merchants</div>
+                                    <div className="text-2xl font-bold">{merchants.size}</div>
+                                </div>
+                                <div className="p-3 rounded-xl border bg-background/60">
+                                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Total Volume</div>
+                                    <div className="text-lg font-bold font-mono">{formatCurrency(volumeUsd, "USD")}</div>
+                                    {renderTokenRows(volumeByToken, 'text-muted-foreground')}
+                                </div>
+                                <div className="p-3 rounded-xl border bg-emerald-500/5 border-emerald-500/20">
+                                    <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1">Merchant Share</div>
+                                    <div className="text-lg font-bold text-emerald-400 font-mono">{formatCurrency(merchantUsd, "USD")}</div>
+                                    {renderTokenRows(merchantByToken, 'text-emerald-400/70')}
+                                </div>
+                                <div className="p-3 rounded-xl border bg-purple-500/5 border-purple-500/20">
+                                    <div className="text-[10px] font-bold uppercase tracking-wider text-purple-400 mb-1">Partner Share</div>
+                                    <div className="text-lg font-bold text-purple-400 font-mono">{formatCurrency(partnerUsd, "USD")}</div>
+                                    {renderTokenRows(partnerByToken, 'text-purple-400/70')}
+                                </div>
+                                {hasAgent && (
+                                    <div className="p-3 rounded-xl border bg-cyan-500/5 border-cyan-500/20">
+                                        <div className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">Agent Share</div>
+                                        <div className="text-lg font-bold text-cyan-400 font-mono">{formatCurrency(agentUsd, "USD")}</div>
+                                        {renderTokenRows(agentByToken, 'text-cyan-400/70')}
+                                    </div>
+                                )}
+                                <div className="p-3 rounded-xl border bg-amber-500/5 border-amber-500/20">
+                                    <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400 mb-1">Platform Share</div>
+                                    <div className="text-lg font-bold text-amber-400 font-mono">{formatCurrency(platformUsd, "USD")}</div>
+                                    {renderTokenRows(platformByToken, 'text-amber-400/70')}
+                                </div>
+                                <div className="p-3 rounded-xl border bg-blue-500/5 border-blue-500/20">
+                                    <div className="text-[10px] font-bold uppercase tracking-wider text-blue-400 mb-1">Total Transactions</div>
+                                    <div className="text-2xl font-bold text-blue-400">{txs.length}</div>
+                                    <div className="text-[10px] text-muted-foreground">on-chain</div>
+                                </div>
+                            </div>
+                        );
+                    })()}
+                    {(() => {
+                        const filtered = getFilteredTransactions();
+                        return filtered.length > 0 ? (
+                            <div className="max-h-[600px] overflow-y-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="text-xs uppercase text-muted-foreground border-b bg-muted/20 sticky top-0">
+                                        <tr>
+                                            <th className="text-left py-2.5 px-4">Date</th>
+                                            <th className="text-left py-2.5 px-4">Merchant</th>
+                                            <th className="text-left py-2.5 px-4">Tx Hash</th>
+                                            <th className="text-left py-2.5 px-4">Type</th>
+                                            <th className="text-left py-2.5 px-4">Token</th>
+                                            <th className="text-right py-2.5 px-4">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border/50">
+                                        {filtered.map((tx: any, idx: number) => (
+                                            <tr key={`${tx.hash}-${idx}`} className="hover:bg-muted/10 transition-colors">
+                                                <td className="py-2 px-4 text-muted-foreground whitespace-nowrap">
+                                                    {tx.timestamp ? new Date(tx.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }) : '\u2014'}
+                                                </td>
+                                                <td className="py-2 px-4">
+                                                    <div className="flex items-center gap-2">
+                                                        {tx.merchantLogo && <img src={tx.merchantLogo} alt="" className="w-5 h-5 rounded-full" />}
+                                                        <div>
+                                                            <span className="font-medium text-xs">{tx.merchantName}</span>
+                                                            {tx.brandKey && <span className="ml-1.5 text-[10px] text-muted-foreground">({tx.brandKey})</span>}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-2 px-4">
+                                                    <a href={`https://basescan.org/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono text-primary hover:underline text-xs">
+                                                        {tx.hash.slice(0, 8)}…{tx.hash.slice(-4)}
+                                                    </a>
+                                                </td>
+                                                <td className="py-2 px-4">
+                                                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${tx.type === 'payment' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20'
+                                                        : tx.releaseType === 'merchant' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                                                            : tx.releaseType === 'partner' ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20'
+                                                                : tx.releaseType === 'agent' ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/20'
+                                                                    : 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
+                                                        }`}>
+                                                        {tx.type === 'release' ? `${tx.releaseType || ''} release` : tx.type}
+                                                    </span>
+                                                </td>
+                                                <td className="py-2 px-4 font-medium">{tx.token}</td>
+                                                <td className="py-2 px-4 text-right font-mono">{Number(tx.value || 0).toFixed(6)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="p-12 text-center text-muted-foreground">
+                                {txLoading ? "Loading transactions..." : "No on-chain transactions found"}
+                            </div>
+                        );
+                    })()}
                 </div>
             )}
         </div>
