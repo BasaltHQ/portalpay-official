@@ -174,8 +174,21 @@ export default function HomeContent() {
     // For partners, SANITIZE: strip any BasaltSurge logos that leaked through from rawTheme
     if (isPartner) {
       const sanitizeLogo = (logo: string | undefined) => {
-        const s = String(logo || '').toLowerCase();
-        if (s.includes('basaltsurge') || s.includes('ppsymbol') || s.includes('portalpay')) {
+        if (!logo) return logo;
+        if (logo.startsWith('http')) return logo;
+        const s = String(logo).toLowerCase();
+        
+        const filename = s.split('/').pop()?.split('?')[0] || '';
+        const isPlatformAsset =
+          filename === 'basaltsurge.png' ||
+          filename === 'basaltsurgewided.png' ||
+          filename === 'basaltsurged.png' ||
+          filename === 'bssymbol.png' ||
+          filename === 'bswide.png' ||
+          filename === 'ppsymbol.png' ||
+          filename === 'cblogod.png';
+
+        if (isPlatformAsset) {
           return (brand as any)?.logos?.app || ''; // Use partner logo instead
         }
         return logo;

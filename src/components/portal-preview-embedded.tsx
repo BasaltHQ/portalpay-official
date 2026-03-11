@@ -446,6 +446,7 @@ export function PortalPreviewEmbedded({
   // Helper to detect generic platform assets that should be ignored in favor of user PFP
   const isGenericAsset = (url: string | undefined) => {
     if (!url) return false;
+    if (url.startsWith('http')) return false; // Never strip an uploaded S3 logo
     return /BasaltSurgeWideD\.png/i.test(url) ||
       /BasaltSurgeD\.png/i.test(url) ||
       /ppsymbol\.png/i.test(url) ||
@@ -476,8 +477,8 @@ export function PortalPreviewEmbedded({
     let brandCtxSymbol = (brandCtx as any)?.logos?.symbol;
     if (isGenericAsset(brandCtxSymbol)) brandCtxSymbol = undefined;
 
-    // Prio: Brand Context (Sanitized) > User PFP > Theme (Sanitized) > Default
-    const brandLogo = brandCtxApp || brandCtxSymbol || (brandCtx as any)?.avatar || userPfp;
+    // Prio: User PFP > Brand Context (Sanitized) > Theme (Sanitized) > Default
+    const brandLogo = userPfp || brandCtxApp || brandCtxSymbol || (brandCtx as any)?.avatar;
 
     // If we have a specific brand logo (or PFP), use it. Only use themeLogo if it survived sanitization (meaning it's custom).
     // CORRECT PRIORITY: Theme (Shop) > Brand (User PFP/Context) > Default
@@ -502,7 +503,7 @@ export function PortalPreviewEmbedded({
     if (isGenericAsset(brandCtxApp)) brandCtxApp = undefined;
 
     // CRITICAL FIX: Include .avatar as a valid symbol source AND fallback to API PFP
-    const brandSymbol = brandCtxSymbol || brandCtxApp || (brandCtx as any)?.avatar || userPfp;
+    const brandSymbol = userPfp || brandCtxSymbol || brandCtxApp || (brandCtx as any)?.avatar;
 
     let themeLogo = effectiveLogoSymbol || effectiveLogoFavicon || effectiveLogoApp;
     if (isGenericAsset(themeLogo)) {
