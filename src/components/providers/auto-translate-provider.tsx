@@ -89,11 +89,9 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
       const localeFromEvent = event.detail?.locale as string | undefined;
       const locale = (localeFromEvent || (language ? (getLanguageCode(language) || getLocaleFromLanguage(language)) : defaultLocale)) as Locale;
       setCurrentLocale(locale);
-      // Clear DOM caches when language changes to avoid stale text/attrs on mobile
-      try {
-        originalTextsRef.current.clear();
-        originalAttrsRef.current.clear();
-      } catch {}
+      // NOTE: Do NOT clear originalTextsRef here!
+      // The original English text must persist across language switches
+      // so we always translate FROM English, not from the previous translation.
     };
 
     window.addEventListener('pp:language:changed', handleLanguageChange as EventListener);
@@ -223,9 +221,14 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent?.trim() || '';
         if (text) {
-          textNodes.push({ node, text });
+          // Always store the FIRST text we ever see for this node (the English original)
           if (!originalTextsRef.current.has(node)) {
             originalTextsRef.current.set(node, node.textContent || '');
+          }
+          // Use the ORIGINAL English text as the source, not current DOM content
+          const sourceText = (originalTextsRef.current.get(node) || node.textContent || '').trim();
+          if (sourceText) {
+            textNodes.push({ node, text: sourceText });
           }
         }
       }
@@ -255,7 +258,7 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
             if (el.hasAttribute(attr)) {
               const val = (el.getAttribute(attr) || '').trim();
               if (val.length > 0 && !/^[\s\n\r]*$/.test(val)) {
-                out.push({ element: el, attr, text: val });
+                // Store original attribute value the first time we see it
                 if (!originalAttrsRef.current.has(el)) {
                   originalAttrsRef.current.set(el, new Map<string, string>());
                 }
@@ -263,6 +266,9 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
                 if (!m.has(attr)) {
                   m.set(attr, el.getAttribute(attr) || '');
                 }
+                // Use the ORIGINAL English attribute value as the source
+                const sourceVal = (m.get(attr) || val).trim();
+                out.push({ element: el, attr, text: sourceVal });
               }
             }
           }
@@ -292,6 +298,13 @@ export function AutoTranslateProvider({ children }: { children: React.ReactNode 
 
       const targetCode = getLanguageCode(targetLocale) || targetLocale;
       const sourceCode = getLanguageCode(defaultLocale) || defaultLocale;
+
+      // Restore english if target is english
+      if (targetCode === 'en' || targetCode === 'en-US' || targetCode === 'en-GB') {
+        restoreOriginalTexts();
+        isTranslatingRef.current = false;
+        return;
+      }
 
       // ─── Layer 1: Check client-side cache first ────────────────────
       const translations: Record<string, string> = {};
