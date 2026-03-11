@@ -159,13 +159,13 @@ export async function GET(req: NextRequest) {
 
         const merchantStatsMap = new Map<
             string,
-            { totalSales: number; totalTips: number; transactionCount: number }
+            { totalSales: number; totalTips: number; transactionCount: number; cashSales: number; cashTransactionCount: number }
         >();
 
         if (!useIndexed) {
             // Fetch receipts within time range for these merchants
             const receiptQuery = {
-                query: `SELECT c.wallet, c.totalUsd, c.tipAmount, c.createdAt FROM c
+                query: `SELECT c.wallet, c.totalUsd, c.tipAmount, c.createdAt, c.paymentMethod FROM c
                         WHERE c.type = 'receipt' AND c.status = 'paid'
                         AND ARRAY_CONTAINS(@wallets, c.wallet)
                         AND c.createdAt >= @startMs AND c.createdAt <= @endMs`,
@@ -183,17 +183,24 @@ export async function GET(req: NextRequest) {
 
                 const totalUsd = Number(r.totalUsd || 0);
                 const tipAmount = Number(r.tipAmount || 0);
+                const isCash = String(r.paymentMethod || "").toLowerCase() === "cash";
 
                 const existing = merchantStatsMap.get(w);
                 if (existing) {
                     existing.totalSales += totalUsd;
                     existing.totalTips += tipAmount;
                     existing.transactionCount += 1;
+                    if (isCash) {
+                        existing.cashSales += totalUsd;
+                        existing.cashTransactionCount += 1;
+                    }
                 } else {
                     merchantStatsMap.set(w, {
                         totalSales: totalUsd,
                         totalTips: tipAmount,
                         transactionCount: 1,
+                        cashSales: isCash ? totalUsd : 0,
+                        cashTransactionCount: isCash ? 1 : 0,
                     });
                 }
             }
@@ -202,7 +209,7 @@ export async function GET(req: NextRequest) {
             // (split_index totalVolumeUsd can be inflated due to stale/incorrect indexing)
             try {
                 const receiptQuery = {
-                    query: `SELECT c.wallet, c.totalUsd, c.tipAmount FROM c
+                    query: `SELECT c.wallet, c.totalUsd, c.tipAmount, c.paymentMethod FROM c
                             WHERE c.type = 'receipt' AND c.status = 'paid'
                             AND ARRAY_CONTAINS(@wallets, c.wallet)`,
                     parameters: [
@@ -217,17 +224,24 @@ export async function GET(req: NextRequest) {
 
                     const totalUsd = Number(r.totalUsd || 0);
                     const tipAmount = Number(r.tipAmount || 0);
+                    const isCash = String(r.paymentMethod || "").toLowerCase() === "cash";
 
                     const existing = merchantStatsMap.get(w);
                     if (existing) {
                         existing.totalSales += totalUsd;
                         existing.totalTips += tipAmount;
                         existing.transactionCount += 1;
+                        if (isCash) {
+                            existing.cashSales += totalUsd;
+                            existing.cashTransactionCount += 1;
+                        }
                     } else {
                         merchantStatsMap.set(w, {
                             totalSales: totalUsd,
                             totalTips: tipAmount,
                             transactionCount: 1,
+                            cashSales: isCash ? totalUsd : 0,
+                            cashTransactionCount: isCash ? 1 : 0,
                         });
                     }
                 }
@@ -427,6 +441,8 @@ export async function GET(req: NextRequest) {
                 averageOrderValue: transactionCount > 0
                     ? Math.round((totalSales / transactionCount) * 100) / 100
                     : 0,
+                cashSales: Math.round((receiptStats?.cashSales || 0) * 100) / 100,
+                cashTransactionCount: receiptStats?.cashTransactionCount || 0,
             };
         });
 
@@ -440,6 +456,8 @@ export async function GET(req: NextRequest) {
             averageOrderValue: 0 as number,
             merchantCount: merchants.filter((m) => m.transactionCount > 0).length,
             customers: merchants.reduce((s, m) => s + m.customers, 0),
+            cashSales: merchants.reduce((s, m) => s + m.cashSales, 0),
+            cashTransactionCount: merchants.reduce((s, m) => s + m.cashTransactionCount, 0),
         };
         aggregate.averageOrderValue =
             aggregate.transactionCount > 0

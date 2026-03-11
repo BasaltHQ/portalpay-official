@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getContainer } from "@/lib/cosmos";
 import { renderToStream } from "@react-pdf/renderer";
 import { EndOfDayPDF } from "@/components/reports/EndOfDayPDF";
+import { LedgerPDF } from "@/components/reports/LedgerPDF";
 import JSZip from "jszip";
 import React from "react";
 import sharp from "sharp";
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
 
         // Params
-        const type = searchParams.get("type") || "z-report"; // z-report, x-report, employee, hourly
+        const type = searchParams.get("type") || "z-report"; // z-report, x-report, employee, hourly, ledger
         const format = searchParams.get("format") || "json"; // json, zip
         const rawStart = Number(searchParams.get("start"));
         const isAllTime = rawStart === 0; // "all time" sends start=0
@@ -198,15 +199,20 @@ export async function GET(req: NextRequest) {
             FROM c 
             WHERE c.type = 'receipt' 
             AND c.wallet = @w 
-            AND c._ts >= @start 
-            AND c._ts <= @end
             AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed')
         `;
         const receiptsParams: { name: string; value: any }[] = [
             { name: "@w", value: w },
-            { name: "@start", value: startTs },
-            { name: "@end", value: endTs }
         ];
+
+        // Only apply time bounds for non-all-time queries
+        if (!isAllTime) {
+            receiptsQueryString += ` AND c._ts >= @start AND c._ts <= @end`;
+            receiptsParams.push(
+                { name: "@start", value: startTs },
+                { name: "@end", value: endTs }
+            );
+        }
 
         // Optional employee filter
         if (filterEmployeeId) {
@@ -448,7 +454,7 @@ export async function GET(req: NextRequest) {
                 // (backward compat for pre-enhancement indexed data)
                 if (splitTransactions.length === 0) {
                     const { resources: splitTxRes } = await container.items.query({
-                        query: "SELECT c.hash, c.token, c.value, c.timestamp, c.txType, c.from, c.blockNumber FROM c WHERE c.type = 'split_transaction' AND c.merchantWallet = @w ORDER BY c.timestamp DESC",
+                        query: "SELECT c.hash, c.token, c.value, c.timestamp, c.txType, c.releaseType, c.from, c.to, c.blockNumber FROM c WHERE c.type = 'split_transaction' AND c.merchantWallet = @w ORDER BY c.timestamp DESC",
                         parameters: [{ name: "@w", value: w }]
                     }).fetchAll();
                     splitTransactions = splitTxRes || [];
@@ -506,9 +512,10 @@ export async function GET(req: NextRequest) {
         if (format === "json") {
             return NextResponse.json(reportData);
         } else if (format === "zip" || format === "pdf") {
-            // Need Store Config for Branding
-            // Need Store Config for Branding
-            // Use robust query to handle case-sensitivity issues
+            // --- MERCHANT BRANDING RESOLUTION ---
+            // Multi-source: query param override > site_config > shop_config > fallback
+            const merchantNameOverride = searchParams.get("merchantName");
+
             const configQuery = {
                 query: "SELECT * FROM c WHERE LOWER(c.wallet) = @w AND c.type = 'shop_config'",
                 parameters: [{ name: "@w", value: w }]
@@ -516,17 +523,27 @@ export async function GET(req: NextRequest) {
             const { resources: configs } = await container.items.query(configQuery).fetchAll();
             let config = configs[0];
 
-            // Fallback: If no config found, try querying without type (rare but possible legacy)
-            if (!config) {
-                console.log("[ReportsAPI] Config not found with strict type, strictly checking ID...");
-                try {
-                    // Last ditch: Point Read with various casings? No, query is better.
-                    // Just use defaults.
-                    config = { name: "Merchant", theme: {} };
-                } catch { }
+            // Also try site_config for display name (more reliable for partner-onboarded merchants)
+            let siteDisplayName = "";
+            try {
+                const { resources: siteConfigs } = await container.items.query({
+                    query: "SELECT c.displayName, c.shopName, c.name FROM c WHERE c.type = 'site_config' AND c.wallet = @w",
+                    parameters: [{ name: "@w", value: w }]
+                }).fetchAll();
+                if (siteConfigs?.[0]) {
+                    siteDisplayName = siteConfigs[0].displayName || siteConfigs[0].shopName || siteConfigs[0].name || "";
+                }
+            } catch (e) {
+                console.warn("[ReportsAPI] site_config lookup failed:", e);
             }
-            // Ensure Config Object structure
-            if (!config) config = { name: "Merchant", theme: {} };
+
+            if (!config) {
+                config = { name: "Merchant", theme: {} };
+            }
+            if (!config.theme) config.theme = {};
+
+            // Resolve brand name: query param > site_config > shop_config > fallback
+            const resolvedBrandName = merchantNameOverride || siteDisplayName || config.name || "Merchant";
 
             if (config.theme) config.theme = sanitizeShopTheme(config.theme);
 
@@ -561,39 +578,102 @@ export async function GET(req: NextRequest) {
                 }
             }
 
-            console.log(`[ReportsAPI] PDF Branding: Name='${config.name}' Logo='${config.theme?.brandLogoUrl ? 'Present (DataURI)' : 'None'}' Color='${config.theme?.primaryColor}'`);
+            console.log(`[ReportsAPI] PDF Branding: Name='${resolvedBrandName}' (override=${merchantNameOverride || 'none'}, site=${siteDisplayName || 'none'}, shop=${config.name || 'none'}) Logo='${config.theme?.brandLogoUrl ? 'Present (DataURI)' : 'None'}' Color='${config.theme?.primaryColor}'`);
 
             const reportTitleMap: Record<string, string> = {
                 "z-report": "End of Day Report (Z)",
                 "x-report": "Snapshot Report (X)",
                 "employee": "Employee Performance Report",
-                "hourly": "Hourly Sales Report"
+                "hourly": "Hourly Sales Report",
+                "ledger": "Transaction Ledger"
             };
 
-            // PDF
-            const pdfStream = await renderToStream(
-                <EndOfDayPDF
-                    brandName={config.name || "Merchant"}
-                    logoUrl={config.theme?.brandLogoUrl}
-                    brandColor={config.theme?.primaryColor || config.theme?.brandColor}
-                    date={new Date(startTs * 1000).toLocaleDateString()}
-                    generatedBy={staffName}
-                    reportTitle={reportTitleMap[type] || "Report"}
-                    stats={{
-                        totalSales,
-                        totalTips,
-                        transactionCount,
-                        averageOrderValue
-                    }}
-                    paymentMethods={paymentMethods}
-                    employees={detailedData.employees}
-                    hourly={detailedData.hourly}
-                    // Explicit Visibility Flags
-                    showPayments={type === "z-report" || type === "x-report"}
-                    showEmployeeStats={type === "z-report" || type === "x-report" || type === "employee"}
-                    showHourlyStats={type === "z-report" || type === "x-report" || type === "hourly"}
-                />
-            );
+            // PDF — use LedgerPDF for ledger type, EndOfDayPDF for everything else
+            let pdfStream;
+            if (type === "ledger") {
+                const dateRangeStr = isAllTime
+                    ? "All Time"
+                    : `${new Date(startTs * 1000).toLocaleDateString()} — ${new Date(endTs * 1000).toLocaleDateString()}`;
+
+                // Fetch multi-token USD prices for on-chain value conversion
+                let tokenPrices: Record<string, number> = {};
+                try {
+                    const { fetchEthUsd, fetchBtcUsd, fetchXrpUsd, fetchSolUsd } = await import("@/lib/eth");
+                    const [ethUsd, btcUsd, xrpUsd, solUsd] = await Promise.all([
+                        fetchEthUsd(), fetchBtcUsd(), fetchXrpUsd(), fetchSolUsd()
+                    ]);
+                    tokenPrices = {
+                        ETH: ethUsd, WETH: ethUsd,
+                        BTC: btcUsd, cbBTC: btcUsd, WBTC: btcUsd,
+                        XRP: xrpUsd, cbXRP: xrpUsd,
+                        SOL: solUsd,
+                        USDC: 1, USDT: 1, DAI: 1, USD: 1,
+                    };
+                } catch (e) {
+                    console.warn("[ReportsAPI] Token price fetch failed:", e);
+                }
+
+                // Map split transactions with USD conversion
+                const enrichedSplitTx = splitTransactions.map((tx: any) => {
+                    const rawValue = Number(tx.value || 0);
+                    let valueUsd = Number(tx.valueUsd || 0);
+                    // If no pre-indexed USD value, convert using live prices
+                    if (!valueUsd && rawValue > 0 && tx.token) {
+                        const price = tokenPrices[tx.token] || tokenPrices[tx.token?.toUpperCase()] || 0;
+                        valueUsd = rawValue * price;
+                    }
+                    return {
+                        hash: tx.hash,
+                        token: tx.token,
+                        value: rawValue,
+                        valueUsd,
+                        timestamp: tx.timestamp,
+                        txType: tx.txType || tx.type,
+                        releaseType: tx.releaseType || null,
+                    };
+                });
+
+                pdfStream = await renderToStream(
+                    <LedgerPDF
+                        brandName={resolvedBrandName}
+                        brandColor={config.theme?.primaryColor || config.theme?.brandColor}
+                        date={new Date().toLocaleDateString()}
+                        dateRange={dateRangeStr}
+                        generatedBy={staffName}
+                        receipts={receipts.map((r: any) => ({
+                            id: r.id,
+                            totalUsd: r.totalUsd || 0,
+                            currency: r.currency,
+                            paymentMethod: r.paymentMethod,
+                            createdAt: r.createdAt,
+                        }))}
+                        splitTransactions={enrichedSplitTx}
+                    />
+                );
+            } else {
+                pdfStream = await renderToStream(
+                    <EndOfDayPDF
+                        brandName={resolvedBrandName}
+                        logoUrl={config.theme?.brandLogoUrl}
+                        brandColor={config.theme?.primaryColor || config.theme?.brandColor}
+                        date={new Date(startTs * 1000).toLocaleDateString()}
+                        generatedBy={staffName}
+                        reportTitle={reportTitleMap[type] || "Report"}
+                        stats={{
+                            totalSales,
+                            totalTips,
+                            transactionCount,
+                            averageOrderValue
+                        }}
+                        paymentMethods={paymentMethods}
+                        employees={detailedData.employees}
+                        hourly={detailedData.hourly}
+                        showPayments={type === "z-report" || type === "x-report"}
+                        showEmployeeStats={type === "z-report" || type === "x-report" || type === "employee"}
+                        showHourlyStats={type === "z-report" || type === "x-report" || type === "hourly"}
+                    />
+                );
+            }
 
             // Stream to Buffer
             const chunks: Uint8Array[] = [];
@@ -624,6 +704,34 @@ export async function GET(req: NextRequest) {
                     `${h.hour}:00,${h.amount}`
                 ).join("\n");
                 csv = header + rows;
+            } else if (type === "ledger") {
+                // Ledger CSV: all transactions unified
+                const csvHeader = "#,Date,Type,Method,AmountUSD,Reference\n";
+                const allEntries: any[] = [];
+                for (const r of receipts) {
+                    const isCash = String(r.paymentMethod || '').toLowerCase() === 'cash';
+                    allEntries.push({
+                        date: r.createdAt ? new Date(r.createdAt).toISOString() : '',
+                        type: isCash ? 'Cash' : 'Receipt',
+                        method: isCash ? 'Cash' : (r.paymentMethod || r.currency || 'Crypto'),
+                        amount: r.totalUsd || 0,
+                        ref: r.id || '',
+                        sortKey: r.createdAt || 0,
+                    });
+                }
+                for (const tx of splitTransactions) {
+                    allEntries.push({
+                        date: tx.timestamp ? new Date(tx.timestamp).toISOString() : '',
+                        type: 'On-Chain',
+                        method: tx.token || 'Token',
+                        amount: tx.valueUsd || Number(tx.value || 0),
+                        ref: tx.hash || '',
+                        sortKey: tx.timestamp ? new Date(tx.timestamp).getTime() : 0,
+                    });
+                }
+                allEntries.sort((a: any, b: any) => b.sortKey - a.sortKey);
+                const csvRows = allEntries.map((e: any, i: number) => `${i + 1},${e.date},${e.type},${e.method},${e.amount},${e.ref}`);
+                csv = csvHeader + csvRows.join("\n");
             } else {
                 // Default Z/X Report (Receipt Dump)
                 const rows = receipts.map((r: any) => {

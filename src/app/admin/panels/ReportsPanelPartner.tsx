@@ -462,13 +462,20 @@ export default function ReportsPanelPartner() {
             {/* Aggregate Stats */}
             {viewMode === "dashboard" && data?.aggregate && (
                 <>
-                    <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                    <div className={`grid grid-cols-3 ${data.aggregate.cashTransactionCount > 0 ? 'md:grid-cols-7' : 'md:grid-cols-6'} gap-3`}>
                         <EnhancedStatCard icon={DollarSign} label="Volume" value={formatCurrency(data.aggregate.totalSales, "USD")} accent="text-indigo-500" />
                         <EnhancedStatCard icon={TrendingUp} label="Earned" value={formatCurrency(data.aggregate.merchantEarned, "USD")} accent="text-emerald-500" />
                         <EnhancedStatCard icon={BarChart3} label="Fees" value={formatCurrency(data.aggregate.platformFee, "USD")} accent="text-amber-500" />
                         <EnhancedStatCard icon={Receipt} label="Tips" value={formatCurrency(data.aggregate.totalTips, "USD")} accent="text-green-500" />
                         <EnhancedStatCard icon={Receipt} label="Txns" value={data.aggregate.transactionCount} accent="text-blue-500" />
                         <EnhancedStatCard icon={Users} label="Merchants" value={data.aggregate.merchantCount} accent="text-purple-500" />
+                        {data.aggregate.cashTransactionCount > 0 && (
+                            <div className="p-3 rounded-xl border bg-orange-500/5 border-orange-500/20">
+                                <div className="text-[10px] font-bold uppercase tracking-wider text-orange-400 mb-1">💵 Cash Sales</div>
+                                <div className="text-lg font-bold text-orange-400 font-mono">{formatCurrency(data.aggregate.cashSales, "USD")}</div>
+                                <div className="text-[10px] text-orange-400/60">{data.aggregate.cashTransactionCount} cash txn{data.aggregate.cashTransactionCount !== 1 ? 's' : ''}</div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Analytics Row */}
@@ -567,7 +574,14 @@ export default function ReportsPanelPartner() {
                                             </td>
                                             <td className="py-3 px-4 text-right font-mono font-semibold">{formatCurrency(m.totalSales, "USD")}</td>
                                             <td className="py-3 px-4 text-right font-mono text-green-500">{formatCurrency(m.totalTips, "USD")}</td>
-                                            <td className="py-3 px-4 text-right">{m.transactionCount}</td>
+                                            <td className="py-3 px-4 text-right">
+                                                {m.transactionCount}
+                                                {m.cashTransactionCount > 0 && (
+                                                    <span className="ml-1.5 text-[9px] font-bold text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded-full border border-orange-500/20">
+                                                        💵{m.cashTransactionCount}
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td className="py-3 px-4 text-right font-mono">{formatCurrency(m.averageOrderValue, "USD")}</td>
                                         </tr>
                                         {expandedMerchant === m.wallet && (
@@ -581,109 +595,171 @@ export default function ReportsPanelPartner() {
                                                             </div>
                                                         ) : merchantDetail?.error ? (
                                                             <div className="text-sm text-red-500 py-4">{merchantDetail.error}</div>
-                                                        ) : merchantDetail ? (
-                                                            <div className="space-y-4">
-                                                                {/* Summary Stats */}
-                                                                {merchantDetail.summary && (
+                                                        ) : merchantDetail ? (() => {
+                                                            // Fallback summary: use parent row data if Z-report summary is empty
+                                                            const sum = (merchantDetail.summary?.transactionCount > 0)
+                                                                ? merchantDetail.summary
+                                                                : { totalSales: m.totalSales, merchantEarned: m.merchantEarned, platformFee: m.platformFee, totalTips: m.totalTips, transactionCount: m.transactionCount, averageOrderValue: m.averageOrderValue };
+                                                            const hasReceipts = merchantDetail.receipts?.length > 0;
+                                                            const cashReceipts = (merchantDetail.receipts || []).filter((r: any) => String(r.paymentMethod || '').toLowerCase() === 'cash');
+                                                            return (
+                                                                <div className="space-y-4">
+                                                                    {/* Print Reports */}
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        <span className="text-[10px] font-bold uppercase text-muted-foreground">Download:</span>
+                                                                        {[
+                                                                            { type: "z-report", label: "Z-Report" },
+                                                                            { type: "employee", label: "Employee" },
+                                                                            { type: "hourly", label: "Hourly" },
+                                                                            { type: "ledger", label: "Ledger" },
+                                                                        ].map((rpt) => {
+                                                                            const { start, end } = getDateRange(range);
+                                                                            const base = `/api/terminal/reports?type=${rpt.type}&start=${start}&end=${end}&wallet=${m.wallet}&linkedWallet=${wallet}&merchantName=${encodeURIComponent(m.name || "")}`;
+                                                                            return (
+                                                                                <div key={rpt.type} className="flex items-center">
+                                                                                    <button
+                                                                                        onClick={(e) => { e.stopPropagation(); window.open(`${base}&format=pdf`, '_blank'); }}
+                                                                                        className="h-6 flex items-center gap-1 px-2 bg-primary text-primary-foreground rounded-l-md hover:brightness-110 text-[9px] font-bold uppercase tracking-wider"
+                                                                                    >
+                                                                                        <FileText className="w-2.5 h-2.5" /> {rpt.label}
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={(e) => { e.stopPropagation(); window.open(`${base}&format=zip`, '_blank'); }}
+                                                                                        className="h-6 flex items-center gap-1 px-1.5 bg-green-600 text-white rounded-r-md hover:bg-green-700 text-[9px] font-bold uppercase"
+                                                                                        title="PDF + CSV"
+                                                                                    >
+                                                                                        <Table2 className="w-2.5 h-2.5" />
+                                                                                    </button>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                    {/* Summary Stats */}
                                                                     <div>
                                                                         <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">Summary</h4>
                                                                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
                                                                             <div className="p-2 rounded-lg bg-background border">
                                                                                 <div className="text-[10px] text-muted-foreground uppercase">Volume</div>
-                                                                                <div className="text-sm font-mono font-semibold">{formatCurrency(merchantDetail.summary.totalSales, "USD")}</div>
+                                                                                <div className="text-sm font-mono font-semibold">{formatCurrency(sum.totalSales, "USD")}</div>
                                                                             </div>
                                                                             <div className="p-2 rounded-lg bg-background border">
                                                                                 <div className="text-[10px] text-muted-foreground uppercase">Earned</div>
-                                                                                <div className="text-sm font-mono font-semibold text-emerald-500">{formatCurrency(merchantDetail.summary.merchantEarned || 0, "USD")}</div>
+                                                                                <div className="text-sm font-mono font-semibold text-emerald-500">{formatCurrency(sum.merchantEarned || 0, "USD")}</div>
                                                                             </div>
                                                                             <div className="p-2 rounded-lg bg-background border">
                                                                                 <div className="text-[10px] text-muted-foreground uppercase">Fees</div>
-                                                                                <div className="text-sm font-mono font-semibold text-amber-500">{formatCurrency(merchantDetail.summary.platformFee || 0, "USD")}</div>
+                                                                                <div className="text-sm font-mono font-semibold text-amber-500">{formatCurrency(sum.platformFee || 0, "USD")}</div>
                                                                             </div>
                                                                             <div className="p-2 rounded-lg bg-background border">
                                                                                 <div className="text-[10px] text-muted-foreground uppercase">Tips</div>
-                                                                                <div className="text-sm font-mono font-semibold text-green-500">{formatCurrency(merchantDetail.summary.totalTips, "USD")}</div>
+                                                                                <div className="text-sm font-mono font-semibold text-green-500">{formatCurrency(sum.totalTips, "USD")}</div>
                                                                             </div>
                                                                             <div className="p-2 rounded-lg bg-background border">
                                                                                 <div className="text-[10px] text-muted-foreground uppercase">Transactions</div>
-                                                                                <div className="text-sm font-semibold">{merchantDetail.summary.transactionCount}</div>
+                                                                                <div className="text-sm font-semibold">{sum.transactionCount}</div>
                                                                             </div>
                                                                             <div className="p-2 rounded-lg bg-background border">
                                                                                 <div className="text-[10px] text-muted-foreground uppercase">Avg Order</div>
-                                                                                <div className="text-sm font-mono font-semibold">{formatCurrency(merchantDetail.summary.averageOrderValue, "USD")}</div>
+                                                                                <div className="text-sm font-mono font-semibold">{formatCurrency(sum.averageOrderValue, "USD")}</div>
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                                )}
-                                                                {merchantDetail.paymentMethods?.length > 0 && (
-                                                                    <div>
-                                                                        <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">Payment Breakdown</h4>
-                                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                                                            {merchantDetail.paymentMethods.map((pm: any) => (
-                                                                                <div key={pm.method} className="p-2 rounded-lg bg-background border flex justify-between">
-                                                                                    <span className="text-sm">{pm.method}</span>
-                                                                                    <span className="text-sm font-mono">{formatCurrency(pm.total, "USD")}</span>
-                                                                                </div>
-                                                                            ))}
+                                                                    {merchantDetail.paymentMethods?.length > 0 && (
+                                                                        <div>
+                                                                            <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">Payment Breakdown</h4>
+                                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                                                                {merchantDetail.paymentMethods.map((pm: any) => (
+                                                                                    <div key={pm.method} className={`p-2 rounded-lg bg-background border flex justify-between ${String(pm.method).toLowerCase() === 'cash' ? 'border-orange-500/30' : ''}`}>
+                                                                                        <span className={`text-sm ${String(pm.method).toLowerCase() === 'cash' ? 'text-orange-400' : ''}`}>{pm.method === 'cash' ? '💵 Cash' : pm.method}</span>
+                                                                                        <span className="text-sm font-mono">{formatCurrency(pm.total, "USD")}</span>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                )}
-                                                                {merchantDetail.employees?.length > 0 && (
-                                                                    <div>
-                                                                        <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">Staff</h4>
-                                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                                                            {merchantDetail.employees.map((e: any) => (
-                                                                                <div key={e.id} className="p-2 rounded-lg bg-background border">
-                                                                                    <div className="font-medium text-sm">{e.name || e.id}</div>
-                                                                                    <div className="text-xs text-muted-foreground mt-1">Sales: {formatCurrency(e.sales, "USD")} · Tips: {formatCurrency(e.tips, "USD")} · {e.count} orders</div>
-                                                                                </div>
-                                                                            ))}
+                                                                    )}
+                                                                    {merchantDetail.employees?.length > 0 && (
+                                                                        <div>
+                                                                            <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">Staff</h4>
+                                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                                                                {merchantDetail.employees.map((e: any) => (
+                                                                                    <div key={e.id} className="p-2 rounded-lg bg-background border">
+                                                                                        <div className="font-medium text-sm">{e.name || e.id}</div>
+                                                                                        <div className="text-xs text-muted-foreground mt-1">Sales: {formatCurrency(e.sales, "USD")} · Tips: {formatCurrency(e.tips, "USD")} · {e.count} orders</div>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                )}
-                                                                {/* On-Chain Transaction Hashes */}
-                                                                {merchantDetail.splitTransactions?.length > 0 && (
-                                                                    <div>
-                                                                        <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">On-Chain Transactions ({merchantDetail.splitTransactions.length})</h4>
-                                                                        <div className="max-h-64 overflow-y-auto rounded-lg border bg-background">
-                                                                            <table className="w-full text-xs">
-                                                                                <thead className="bg-muted/30 sticky top-0">
-                                                                                    <tr>
-                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Tx Hash</th>
-                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Type</th>
-                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Token</th>
-                                                                                        <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Value</th>
-                                                                                        <th className="text-left py-2 px-3 font-semibold text-muted-foreground">From</th>
-                                                                                    </tr>
-                                                                                </thead>
-                                                                                <tbody className="divide-y divide-border/50">
-                                                                                    {merchantDetail.splitTransactions.map((tx: any) => (
-                                                                                        <tr key={tx.hash} className="hover:bg-muted/10">
-                                                                                            <td className="py-1.5 px-3">
-                                                                                                <a href={`https://basescan.org/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono text-primary hover:underline">
-                                                                                                    {tx.hash.slice(0, 10)}…{tx.hash.slice(-6)}
-                                                                                                </a>
-                                                                                            </td>
-                                                                                            <td className="py-1.5 px-3">
-                                                                                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${tx.txType === 'payment' ? 'bg-green-500/10 text-green-500' : 'bg-blue-500/10 text-blue-500'}`}>
-                                                                                                    {tx.txType}
-                                                                                                </span>
-                                                                                            </td>
-                                                                                            <td className="py-1.5 px-3 font-medium">{tx.token}</td>
-                                                                                            <td className="py-1.5 px-3 text-right font-mono">{Number(tx.value || 0).toFixed(6)}</td>
-                                                                                            <td className="py-1.5 px-3 font-mono text-muted-foreground">{tx.from ? `${tx.from.slice(0, 6)}…${tx.from.slice(-4)}` : '—'}</td>
+                                                                    )}
+                                                                    {/* Cash Receipts */}
+                                                                    {cashReceipts.length > 0 && (
+                                                                        <div>
+                                                                            <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">💵 Cash Receipts ({cashReceipts.length})</h4>
+                                                                            <div className="max-h-64 overflow-y-auto rounded-lg border bg-background">
+                                                                                <table className="w-full text-xs">
+                                                                                    <thead className="bg-muted/30 sticky top-0">
+                                                                                        <tr>
+                                                                                            <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Date</th>
+                                                                                            <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Method</th>
+                                                                                            <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Amount</th>
                                                                                         </tr>
-                                                                                    ))}
-                                                                                </tbody>
-                                                                            </table>
+                                                                                    </thead>
+                                                                                    <tbody className="divide-y divide-border/50">
+                                                                                        {cashReceipts.map((r: any, i: number) => (
+                                                                                            <tr key={r.id || i} className="hover:bg-muted/10">
+                                                                                                <td className="py-1.5 px-3 text-muted-foreground">{r.createdAt ? new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }) : '—'}</td>
+                                                                                                <td className="py-1.5 px-3"><span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-orange-500/10 text-orange-400 border border-orange-500/20">💵 Cash</span></td>
+                                                                                                <td className="py-1.5 px-3 text-right font-mono">{formatCurrency(r.totalUsd || 0, "USD")}</td>
+                                                                                            </tr>
+                                                                                        ))}
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                )}
-                                                                {!merchantDetail.summary?.transactionCount && !merchantDetail.splitTransactions?.length && (
-                                                                    <div className="text-sm text-muted-foreground text-center py-4">No transactions found for this period</div>
-                                                                )}
-                                                            </div>
-                                                        ) : null}
+                                                                    )}
+                                                                    {/* On-Chain Transaction Hashes */}
+                                                                    {merchantDetail.splitTransactions?.length > 0 && (
+                                                                        <div>
+                                                                            <h4 className="text-xs font-bold uppercase text-muted-foreground mb-2">On-Chain Transactions ({merchantDetail.splitTransactions.length})</h4>
+                                                                            <div className="max-h-64 overflow-y-auto rounded-lg border bg-background">
+                                                                                <table className="w-full text-xs">
+                                                                                    <thead className="bg-muted/30 sticky top-0">
+                                                                                        <tr>
+                                                                                            <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Tx Hash</th>
+                                                                                            <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Type</th>
+                                                                                            <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Token</th>
+                                                                                            <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Value</th>
+                                                                                            <th className="text-left py-2 px-3 font-semibold text-muted-foreground">From</th>
+                                                                                        </tr>
+                                                                                    </thead>
+                                                                                    <tbody className="divide-y divide-border/50">
+                                                                                        {merchantDetail.splitTransactions.map((tx: any, idx: number) => (
+                                                                                            <tr key={`${tx.hash}-${tx.type || ''}-${tx.releaseType || ''}-${idx}`} className="hover:bg-muted/10">
+                                                                                                <td className="py-1.5 px-3">
+                                                                                                    <a href={`https://basescan.org/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono text-primary hover:underline">
+                                                                                                        {tx.hash.slice(0, 10)}…{tx.hash.slice(-6)}
+                                                                                                    </a>
+                                                                                                </td>
+                                                                                                <td className="py-1.5 px-3">
+                                                                                                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${tx.txType === 'payment' ? 'bg-green-500/10 text-green-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                                                                                                        {tx.txType}
+                                                                                                    </span>
+                                                                                                </td>
+                                                                                                <td className="py-1.5 px-3 font-medium">{tx.token}</td>
+                                                                                                <td className="py-1.5 px-3 text-right font-mono">{Number(tx.value || 0).toFixed(6)}</td>
+                                                                                                <td className="py-1.5 px-3 font-mono text-muted-foreground">{tx.from ? `${tx.from.slice(0, 6)}…${tx.from.slice(-4)}` : '—'}</td>
+                                                                                            </tr>
+                                                                                        ))}
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                    {!hasReceipts && !merchantDetail.splitTransactions?.length && sum.transactionCount === 0 && (
+                                                                        <div className="text-sm text-muted-foreground text-center py-4">No transactions found for this period</div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })() : null}
                                                     </div>
                                                 </td>
                                             </tr>

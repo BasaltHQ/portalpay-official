@@ -738,6 +738,36 @@ export default function ReportsPanelPlatform() {
                                                             <div className="text-sm text-red-500 py-4">{merchantDetail.error}</div>
                                                         ) : merchantDetail ? (
                                                             <div className="space-y-4">
+                                                                {/* Print Reports */}
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <span className="text-[10px] font-bold uppercase text-muted-foreground">Download:</span>
+                                                                    {[
+                                                                        { type: "z-report", label: "Z-Report" },
+                                                                        { type: "employee", label: "Employee" },
+                                                                        { type: "hourly", label: "Hourly" },
+                                                                        { type: "ledger", label: "Ledger" },
+                                                                    ].map((rpt) => {
+                                                                        const { start, end } = getDateRange(range);
+                                                                        const base = `/api/terminal/reports?type=${rpt.type}&start=${start}&end=${end}&wallet=${m.wallet}&linkedWallet=${wallet}&merchantName=${encodeURIComponent(m.name || "")}`;
+                                                                        return (
+                                                                            <div key={rpt.type} className="flex items-center">
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); window.open(`${base}&format=pdf`, '_blank'); }}
+                                                                                    className="h-6 flex items-center gap-1 px-2 bg-primary text-primary-foreground rounded-l-md hover:brightness-110 text-[9px] font-bold uppercase tracking-wider"
+                                                                                >
+                                                                                    <FileText className="w-2.5 h-2.5" /> {rpt.label}
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); window.open(`${base}&format=zip`, '_blank'); }}
+                                                                                    className="h-6 flex items-center gap-1 px-1.5 bg-green-600 text-white rounded-r-md hover:bg-green-700 text-[9px] font-bold uppercase"
+                                                                                    title="PDF + CSV"
+                                                                                >
+                                                                                    <Table2 className="w-2.5 h-2.5" />
+                                                                                </button>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
                                                                 {/* Summary Stats */}
                                                                 {merchantDetail.summary && (
                                                                     <div>
