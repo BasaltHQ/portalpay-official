@@ -255,7 +255,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
     const isManagerOrKeyholder = employeeRole === 'manager' || employeeRole === 'keyholder';
 
     return (
-        <div className="h-[100dvh] flex flex-col overflow-hidden p-2 space-x-2 md:h-auto md:overflow-visible md:max-w-4xl md:mx-auto md:p-4 md:p-6 md:space-y-6 md:gap-0" style={{ backgroundColor: 'var(--tp-bg-primary)', color: 'var(--tp-text-primary)', fontFamily: tpTheme.fontFamily || undefined }}>
+        <div className="h-[100dvh] flex flex-col overflow-hidden p-2 space-x-2 md:h-auto md:overflow-visible md:max-w-4xl md:mx-auto md:p-4 md:p-6 md:space-y-6 md:gap-0" style={{ backgroundColor: 'var(--tp-bg-primary)', color: 'var(--tp-text-primary)', fontFamily: tpTheme.fontFamily || undefined, paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
             <div className="tp-ambient" />
 
             {/* Dedicated Invisible Canvases strictly formatted for Native Hardware Image Buffers */}

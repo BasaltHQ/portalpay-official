@@ -1915,7 +1915,11 @@ export default function HandheldInterface({
 
     // 2. Menu View
     return (
-        <div className="flex flex-col h-screen text-white overflow-hidden font-sans select-none relative" style={{ backgroundColor: tpTheme.primaryBg, fontFamily: tpTheme.fontFamily || undefined }}>
+        <div className="flex flex-col h-[100dvh] text-white overflow-hidden font-sans select-none relative" style={{ 
+            backgroundColor: tpTheme.primaryBg, 
+            fontFamily: tpTheme.fontFamily || undefined,
+            paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' 
+        }}>
 
             {/* BACKGROUND AMBIENCE */}
             <div className="tp-ambient" />
