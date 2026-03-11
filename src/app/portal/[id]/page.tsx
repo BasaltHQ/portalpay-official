@@ -512,7 +512,7 @@ export default function PortalReceiptPage() {
           // If the shop logo is missing OR matches a platform default/placeholder,
           // and we have a valid PFP, use the PFP instead.
           // Note: Since we ignored siteRes, 'effectiveLogo' is solely from Shop Config now.
-          const isGenericLogo = !effectiveLogo || effectiveLogo.includes("ppsymbol") || effectiveLogo.includes("BasaltSurge") || effectiveLogo.includes("placeholder");
+          const isGenericLogo = !effectiveLogo || (!effectiveLogo.startsWith('http') && (effectiveLogo.includes("ppsymbol") || effectiveLogo.includes("BasaltSurge") || effectiveLogo.includes("placeholder")));
 
           if (isClientSide) {
             console.log("[PortalTheme] Smart Logo Debug (Shop Config Only):", {
@@ -535,7 +535,7 @@ export default function PortalReceiptPage() {
 
             // Force overwrite symbol if it's currently a generic platform symbol or missing
             const currentSymbol = String(t.symbolLogoUrl || "");
-            const isGenericSymbol = !currentSymbol || currentSymbol.includes("ppsymbol") || currentSymbol.includes("BasaltSurge");
+            const isGenericSymbol = !currentSymbol || (!currentSymbol.startsWith('http') && (currentSymbol.includes("ppsymbol") || currentSymbol.includes("BasaltSurge")));
 
             if (isGenericSymbol) {
               t.symbolLogoUrl = effectiveLogo;
