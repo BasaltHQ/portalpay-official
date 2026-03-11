@@ -243,8 +243,9 @@ export function Navbar() {
 
         // For partners, NEVER return BasaltSurge logos - use partner's or empty
         const sanitizeLogoForPartner = (logo: string | undefined) => {
-            if (!isPartnerContainer) return logo;
-            const s = String(logo || '').toLowerCase();
+            if (!isPartnerContainer || !logo) return logo;
+            if (logo.startsWith('http')) return logo;
+            const s = String(logo).toLowerCase();
             // Only block specific known platform assets, not just any URL containing the string
             // This prevents blocking valid logos that might have 'basaltsurge' in the path (e.g. blob storage account)
             const filename = s.split('/').pop()?.split('?')[0] || '';
