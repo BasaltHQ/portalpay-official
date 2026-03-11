@@ -482,11 +482,11 @@ export default function PortalReceiptPage() {
         // Merge shop theme if present - SHOP takes priority for branding colors/logos
         // Merge shop theme if present - SHOP takes priority for branding colors/logos
         // USER REQUEST: Site config is deprecated, strictly use Shop Config + Profile
-        if (shopTheme) {
+        if (shopTheme || pfpUrl || shopName) {
           if (!j.config) j.config = {};
 
           // Start with a clean slate or safe defaults, IGNORING siteRes theme
-          // This ensures no "PortalPay" defaults bleed through from the deprecated site config
+          // This ensures no "BasaltSurge" defaults bleed through from the deprecated site config
           const cleanTheme = {
             primaryColor: "#10b981",
             secondaryColor: "#2dd4bf",
@@ -500,13 +500,13 @@ export default function PortalReceiptPage() {
             textColor: "#ffffff",
             headerTextColor: "#ffffff",
             bodyTextColor: "#e5e7eb",
-            ...shopTheme // Spread shop theme over defaults
+            ...(shopTheme || {}) // Spread shop theme over defaults
           };
 
           const t = cleanTheme as any;
 
           // Re-apply specific smart fallback logic on this clean object
-          let effectiveLogo = shopTheme.brandLogoUrl;
+          let effectiveLogo = (shopTheme || {}).brandLogoUrl;
 
           // Smart Logo Resolution:
           // If the shop logo is missing OR matches a platform default/placeholder,
@@ -974,7 +974,7 @@ export default function PortalReceiptPage() {
             secondaryColor: (typeof t.secondaryColor === "string" ? t.secondaryColor : undefined) || partnerBrandColors?.accent || "#2dd4bf",
             brandLogoUrl: (typeof t.brandLogoUrl === "string" ? t.brandLogoUrl : undefined) || partnerLogoApp || getDefaultBrandSymbol(t.brandKey),
             brandFaviconUrl: (typeof t.brandFaviconUrl === "string" ? t.brandFaviconUrl : undefined) || partnerLogoFavicon || "/favicon-32x32.png",
-            symbolLogoUrl: (typeof (t as any)?.logos?.symbol === "string" ? (t as any).logos.symbol : undefined) || partnerLogoSymbol,
+            symbolLogoUrl: (typeof t.symbolLogoUrl === "string" ? t.symbolLogoUrl : undefined) || (typeof (t as any)?.logos?.symbol === "string" ? (t as any).logos.symbol : undefined) || partnerLogoSymbol,
             brandName: (typeof t.brandName === "string" ? t.brandName : undefined) || partnerBrandName || "BasaltSurge",
             fontFamily: typeof t.fontFamily === "string" ? t.fontFamily : "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
             receiptBackgroundUrl: typeof t.receiptBackgroundUrl === "string" ? t.receiptBackgroundUrl : "/watermark.png",
