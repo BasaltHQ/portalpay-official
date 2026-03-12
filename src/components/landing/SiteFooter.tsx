@@ -42,7 +42,8 @@ export default function SiteFooter() {
     if (theme.navbarMode === "logo" || theme.navbarMode === "symbol") return theme.navbarMode;
     // Explicit brand mode takes second precedence
     if (brandNavbarMode === "logo" || brandNavbarMode === "symbol") return brandNavbarMode;
-    // Fallback
+    const effectiveBrandKey = String(theme.brandKey || (brand as any)?.key || "").toLowerCase();
+    if (effectiveBrandKey && effectiveBrandKey !== "portalpay" && effectiveBrandKey !== "basaltsurge") return "logo";
     return "symbol";
   })();
 
@@ -53,8 +54,35 @@ export default function SiteFooter() {
     return (key && key !== "basaltsurge" && key !== "portalpay") || domContainerType === "partner";
   }, [theme.brandKey, (brand as any)?.key]);
 
-  const displayBrandName = isPartner ? (theme.brandName || "Brand") : "BasaltSurge";
-  const displaySymbolUrl = isPartner ? (theme.symbolLogoUrl || theme.brandLogoUrl) : "/Surge.png";
+  const displayBrandName = isPartner ? (theme.brandName || (brand as any)?.name || "PortalPay") : "BasaltSurge";
+  const partnerSymbolFallback = (brand as any)?.logos?.symbol || (brand as any)?.logos?.app || "";
+  // For partners, skip default BasaltSurge symbols — they should show their own logo
+  const partnerSymbolUrl = (() => {
+    const sym = theme.symbolLogoUrl || '';
+    if (!sym) return '';
+    // Only filter LOCAL default paths (never touch S3/http URLs)
+    if (sym.startsWith('/') && (sym.includes('BasaltSurge') || sym.includes('Surge'))) return '';
+    return sym;
+  })();
+  const displaySymbolUrl = isPartner
+    ? (partnerSymbolUrl || theme.brandLogoUrl || partnerSymbolFallback)
+    : (theme.symbolLogoUrl || "/Surge.png");
+
+  // DEBUG: trace footer logo resolution
+  console.log('[SiteFooter LOGO DEBUG]', {
+    isPartner,
+    navbarMode,
+    'theme.brandKey': theme.brandKey,
+    'theme.symbolLogoUrl': theme.symbolLogoUrl,
+    'theme.brandLogoUrl': theme.brandLogoUrl,
+    'theme.navbarMode': theme.navbarMode,
+    partnerSymbolFallback,
+    displaySymbolUrl,
+    displayBrandName,
+    'brand?.logos?.app': (brand as any)?.logos?.app,
+    'brand?.logos?.symbol': (brand as any)?.logos?.symbol,
+    'brand?.key': (brand as any)?.key,
+  });
 
   return (
     <footer className="relative py-16 px-6 border-t border-white/10 mt-24">
@@ -64,19 +92,21 @@ export default function SiteFooter() {
           <div>
             {/* Check navbarMode for logo display preference */}
             {(() => {
-              const useFullWidthLogo = navbarMode === "logo" || (isPartner && navbarMode !== "symbol");
-              const fullWidthLogo = theme.brandLogoUrl || (brand as any)?.logos?.app;
+              // Sync with navbarMode — partners respect their configured mode
+              const useFullWidthLogo = navbarMode === "logo";
+              const partnerFullFallback = (brand as any)?.logos?.app || (brand as any)?.logos?.symbol || "";
+              const fullWidthLogo = isPartner ? (theme.brandLogoUrl || partnerFullFallback) : "/Surge.png";
 
               if (useFullWidthLogo && fullWidthLogo) {
                 // Full-width logo mode
                 return (
                   <div className="mb-6">
                     <div className="relative h-10 w-auto max-w-[200px]">
-                      <Image
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
                         src={fullWidthLogo}
                         alt={theme.brandName || "Brand Logo"}
-                        fill
-                        className="object-contain object-left"
+                        className="h-full w-full object-contain object-left"
                       />
                     </div>
                   </div>
@@ -87,11 +117,10 @@ export default function SiteFooter() {
                   <div className="flex items-center gap-3 mb-6">
                     <div className="relative w-12 h-12">
                       {displaySymbolUrl ? (
-                        <Image
+                        <img
                           src={displaySymbolUrl}
                           alt={displayBrandName}
-                          fill
-                          className="object-contain"
+                          className="w-full h-full object-contain"
                         />
                       ) : (
                         <div className="w-full h-full bg-white/10 rounded-full" />
