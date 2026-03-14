@@ -20,6 +20,7 @@ import {
   BookOpen,
   FileText,
   Sparkles,
+  Server,
 } from 'lucide-react';
 import { useBrand } from '@/contexts/BrandContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -74,6 +75,8 @@ type AdminTabKey =
   | 'subscriptions'
   | 'shopifyPartner'
   | 'shopifyPlatform'
+  | 'nodeOperators'
+  | 'nodeDashboard'
   | 'modules';
 
 interface AdminSidebarProps {
@@ -395,8 +398,20 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
                 { title: 'Plugin Studio', key: 'pluginStudio' as AdminTabKey },
                 { title: 'Support Admin', key: 'supportAdmin' as AdminTabKey },
                 { title: 'Reports', key: 'reportsPlatform' as AdminTabKey },
+                ...(process.env.NEXT_PUBLIC_DECENTRALIZATION?.toUpperCase() === 'TRUE' ? [{ title: 'Node Operators', key: 'nodeOperators' as AdminTabKey }] : []),
               ]
               : []),
+          ],
+        } as NavItem,
+      ]
+      : []),
+    ...(isSuperadmin
+      ? [
+        {
+          title: 'Nodes',
+          icon: <Server className="w-4 h-4" />,
+          items: [
+            { title: 'Dashboard', key: 'nodeDashboard' as AdminTabKey },
           ],
         } as NavItem,
       ]

@@ -66,6 +66,8 @@ import AgentRequestsPanel from "@/app/admin/panels/AgentRequestsPanel";
 import TablesPanel from "@/app/admin/panels/TablesPanel";
 import SubscriptionsPanel from "@/app/admin/panels/SubscriptionsPanel";
 import ModulesPanel from "@/app/admin/panels/ModulesPanel";
+import { NodeOperatorsPanel } from "@/app/admin/panels/NodeOperatorsPanel";
+import { NodeDashboardPanel } from "@/app/admin/panels/NodeDashboardPanel";
 import { isPlatformCtx, isPartnerCtx, isPlatformSuperAdmin, canAccessPanel } from "@/lib/authz";
 
 
@@ -9693,6 +9695,8 @@ export default function AdminPage() {
     | "pluginStudio"
     | "subscriptions"
     | "modules"
+    | "nodeOperators"
+    | "nodeDashboard"
   >("reserve");
   const [industryPack, setIndustryPack] = useState<string | null>(null);
   const containerType = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || "platform").toLowerCase();
@@ -10161,6 +10165,16 @@ export default function AdminPage() {
       )}
       {activeTab === "reportsPlatform" && isPlatform && isSuperadmin && (
         <ReportsPanelPlatform />
+      )}
+      {activeTab === "nodeOperators" && isPlatform && isSuperadmin && (
+        <div className="glass-pane rounded-xl border p-6">
+          <NodeOperatorsPanel />
+        </div>
+      )}
+      {activeTab === "nodeDashboard" && isSuperadmin && (
+        <div className="glass-pane rounded-xl border p-6">
+          <NodeDashboardPanel />
+        </div>
       )}
     </div>
   );
