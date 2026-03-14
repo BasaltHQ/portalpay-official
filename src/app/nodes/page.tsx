@@ -6,6 +6,7 @@
  */
 
 import type { Metadata } from 'next';
+import { NODE_REGIONS, TOTAL_GLOBAL_CAPACITY, getRegionCountByContinent } from '@/lib/node-regions';
 
 export const metadata: Metadata = {
   title: 'Node Network — BasaltSurge',
@@ -13,6 +14,10 @@ export const metadata: Metadata = {
 };
 
 export default function NodesPage() {
+  const regionCount = NODE_REGIONS.length;
+  const totalCapacity = TOTAL_GLOBAL_CAPACITY;
+  const continentCounts = getRegionCountByContinent();
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -85,8 +90,8 @@ export default function NodesPage() {
             flexWrap: 'wrap',
           }}>
             {[
-              ['150+', 'Regions'],
-              ['3,950', 'Node Capacity'],
+              [regionCount.toLocaleString(), 'Regions'],
+              [totalCapacity.toLocaleString(), 'Node Capacity'],
               ['25%', 'Revenue Share'],
               ['$0', 'Infra Fees'],
             ].map(([val, label]) => (
@@ -255,29 +260,32 @@ export default function NodesPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
             {[
-              { continent: 'North America', count: 41, cities: 'Virginia · New York · Toronto · Mexico City · São José' },
-              { continent: 'South America', count: 17, cities: 'São Paulo · Buenos Aires · Bogotá · Santiago · Lima' },
-              { continent: 'Europe', count: 42, cities: 'London · Frankfurt · Paris · Amsterdam · Stockholm' },
-              { continent: 'Africa', count: 20, cities: 'Lagos · Nairobi · Cape Town · Cairo · Accra' },
-              { continent: 'Middle East', count: 14, cities: 'Dubai · Riyadh · Istanbul · Tel Aviv · Doha' },
-              { continent: 'Asia', count: 35, cities: 'Tokyo · Singapore · Mumbai · Seoul · Bangkok' },
-              { continent: 'Oceania', count: 9, cities: 'Sydney · Melbourne · Auckland · Brisbane · Perth' },
-            ].map(({ continent, count, cities }) => (
-              <div key={continent} style={{
-                background: 'rgba(24,24,27,0.6)', borderRadius: 12, padding: 20,
-                border: '1px solid rgba(39,39,42,0.8)',
-                transition: 'border-color 0.2s',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700 }}>{continent}</span>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
-                    background: 'rgba(245,158,11,0.15)', color: '#f59e0b',
-                  }}>{count} regions</span>
+              { continent: 'North America', cities: 'Virginia · New York · Toronto · Mexico City · São José' },
+              { continent: 'South America', cities: 'São Paulo · Buenos Aires · Bogotá · Santiago · Lima' },
+              { continent: 'Europe', cities: 'London · Frankfurt · Paris · Amsterdam · Stockholm' },
+              { continent: 'Africa', cities: 'Lagos · Nairobi · Cape Town · Cairo · Accra' },
+              { continent: 'Middle East', cities: 'Dubai · Riyadh · Istanbul · Tel Aviv · Doha' },
+              { continent: 'Asia', cities: 'Tokyo · Singapore · Mumbai · Seoul · Bangkok' },
+              { continent: 'Oceania', cities: 'Sydney · Melbourne · Auckland · Brisbane · Perth' },
+            ].map(({ continent, cities }) => {
+              const count = continentCounts[continent] || 0;
+              return (
+                <div key={continent} style={{
+                  background: 'rgba(24,24,27,0.6)', borderRadius: 12, padding: 20,
+                  border: '1px solid rgba(39,39,42,0.8)',
+                  transition: 'border-color 0.2s',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700 }}>{continent}</span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+                      background: 'rgba(245,158,11,0.15)', color: '#f59e0b',
+                    }}>{count} regions</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#52525b', lineHeight: 1.6 }}>{cities}</div>
                 </div>
-                <div style={{ fontSize: 11, color: '#52525b', lineHeight: 1.6 }}>{cities}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
