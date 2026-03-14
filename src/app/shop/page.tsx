@@ -13,6 +13,7 @@ import ImageUploadField from "@/components/forms/ImageUploadField";
 import ShopWizard from "@/components/shop/ShopWizard";
 import ShopClient from "@/app/shop/[slug]/ShopClient";
 import { useBrand } from "@/contexts/BrandContext";
+import AdvancedShopTab from "@/components/admin/AdvancedShopTab";
 
 export type ShopTheme = {
   primaryColor?: string;
@@ -145,6 +146,7 @@ export default function ShopBuilderPage() {
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [deployOk, setDeployOk] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const [shopMode, setShopMode] = useState<'basic' | 'advanced'>('basic');
   const [showIndustryPacks, setShowIndustryPacks] = useState(false);
   const [activatingPack, setActivatingPack] = useState(false);
   const [packError, setPackError] = useState("");
@@ -819,21 +821,115 @@ export default function ShopBuilderPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10 space-y-6">
+    <div className={shopMode === 'advanced' ? 'overflow-hidden flex flex-col' : 'max-w-5xl mx-auto px-4 py-10 space-y-6'} style={shopMode === 'advanced' ? { height: 'calc(100vh - 118px)' } : undefined}>
       <ShopThemeAuditor expected={cfg.theme} />
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Shop</h1>
-          <span className="microtext badge-soft">Merchant setup</span>
+      <div className={`flex items-center justify-between ${shopMode === 'advanced' ? 'px-6 py-4 border-b border-white/5' : ''}`}>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className={shopMode === 'advanced' ? 'text-lg font-semibold' : 'text-3xl font-bold'}>Shop</h1>
+            {shopMode === 'basic' && <span className="microtext badge-soft">Merchant setup</span>}
+          </div>
+          {/* Basic / Advanced Toggle */}
+          <div className="flex gap-0.5 bg-black/20 p-0.5 rounded-lg">
+            <button
+              onClick={() => setShopMode('basic')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                shopMode === 'basic'
+                  ? 'bg-white/10 text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Basic
+            </button>
+            {process.env.NEXT_PUBLIC_SURGE_PLUS === 'true' && (
+              <button
+                onClick={() => setShopMode('advanced')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  shopMode === 'advanced'
+                    ? 'bg-emerald-500/10 text-emerald-400 shadow-sm border border-emerald-500/20'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Advanced
+              </button>
+            )}
+          </div>
         </div>
-        <button
-          onClick={() => setShowWizard(true)}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium shadow-sm hover:shadow-md transition-all active:scale-95"
-        >
-          Open Setup Wizard
-        </button>
+        {shopMode === 'basic' && (
+          <button
+            onClick={() => setShowWizard(true)}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium shadow-sm hover:shadow-md transition-all active:scale-95"
+          >
+            Open Setup Wizard
+          </button>
+        )}
       </div>
 
+      {shopMode === 'advanced' && (
+        <div className="flex-1 min-h-0">
+          <AdvancedShopTab
+            config={{
+              name: cfg.name,
+              description: cfg.description,
+              templateId: (cfg as any).templateId,
+              theme: {
+                primaryColor: cfg.theme.primaryColor,
+                secondaryColor: cfg.theme.secondaryColor,
+                brandLogoUrl: cfg.theme.brandLogoUrl,
+                brandFaviconUrl: "",
+                fontFamily: cfg.theme.fontFamily,
+              },
+            }}
+            setConfig={(updater) => {
+              const updated = typeof updater === 'function' ? updater({
+                name: cfg.name,
+                description: cfg.description,
+                templateId: (cfg as any).templateId,
+                theme: {
+                  primaryColor: cfg.theme.primaryColor,
+                  secondaryColor: cfg.theme.secondaryColor,
+                  brandLogoUrl: cfg.theme.brandLogoUrl,
+                  brandFaviconUrl: "",
+                  fontFamily: cfg.theme.fontFamily,
+                },
+              }) : updater;
+              setCfg(prev => ({
+                ...prev,
+                name: updated.name ?? prev.name,
+                description: updated.description ?? prev.description,
+                ...(updated.templateId !== undefined ? { templateId: updated.templateId } : {}),
+                theme: {
+                  ...prev.theme,
+                  primaryColor: updated.theme?.primaryColor ?? prev.theme.primaryColor,
+                  secondaryColor: updated.theme?.secondaryColor ?? prev.theme.secondaryColor,
+                  brandLogoUrl: updated.theme?.brandLogoUrl ?? prev.theme.brandLogoUrl,
+                  fontFamily: updated.theme?.fontFamily ?? prev.theme.fontFamily,
+                },
+              }));
+            }}
+            wallet={account?.address || ''}
+            brandKey={brand?.key || ''}
+            generateFavicon={async (logoUrl: string) => {
+              try {
+                const r = await fetch('/api/public/images/favicon', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-wallet': account?.address || '' },
+                  body: JSON.stringify({ logoUrl }),
+                });
+                const j = await r.json().catch(() => ({}));
+                if (j?.faviconUrl) {
+                  setCfg(prev => ({ ...prev, theme: { ...prev.theme, brandFaviconUrl: j.faviconUrl } }));
+                }
+              } catch {}
+            }}
+            onSave={saveConfig}
+            saving={saving}
+          />
+        </div>
+      )}
+
+      {/* ==================== BASIC MODE ==================== */}
+      {shopMode === 'basic' && (<>
       {/* Shop Design Section */}
       <div className="glass-pane rounded-xl border p-6 space-y-6">
         <div>
@@ -1918,6 +2014,7 @@ export default function ShopBuilderPage() {
           </div>
         )
       }
+      </>)}
     </div >
   );
 }

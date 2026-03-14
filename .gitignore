@@ -69,3 +69,9 @@ env_dump.json
 # tokenomics
 tokenomics_paper.tex
 tokenomics_paper.pdf
+
+# Ignore vcrun.py and vcrun_oss.py
+vcrun_oss.py
+Visa_Global_Registry_of_Service_Providers_February_27_2026.xls
+visa_iso_merchant_contacts.csv
+vcrun.py
