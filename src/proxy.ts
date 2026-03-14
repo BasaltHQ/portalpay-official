@@ -79,14 +79,14 @@ function buildCsp(req: NextRequest): string {
     } catch { }
     const imgSrc = [self, data, https, ...extras].join(" ");
     // Allow dev HMR WebSockets explicitly + WalletConnect + Privy
-    const connectSrc = [self, https, ws, wss, ...extras, "https://explorer-api.walletconnect.com", "wss://*.walletconnect.com", "https://*.walletconnect.com", "https://auth.privy.io", "https://*.rpc.privy.systems"].join(" ");
+    const connectSrc = [self, https, ws, wss, ...extras, "https://explorer-api.walletconnect.com", "wss://*.walletconnect.com", "https://*.walletconnect.com", "https://auth.privy.io", "https://*.rpc.privy.systems", "https://px.ads.linkedin.com", "https://snap.licdn.com"].join(" ");
     // Script-src: Allow unsafe-inline in production for Next.js managed inline scripts; unsafe-eval only in dev for HMR
     const scriptSrc = isDev
         ? `${self} 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com`
-        : `${self} 'unsafe-inline' https://static.cloudflareinsights.com`;
+        : `${self} 'unsafe-inline' https://static.cloudflareinsights.com https://snap.licdn.com`;
     const policy = [
         `default-src ${self}`,
-        `img-src ${imgSrc}`,
+        `img-src ${imgSrc} https://px.ads.linkedin.com`,
         `script-src ${scriptSrc}`,
         `style-src ${self} 'unsafe-inline' https://use.typekit.net https://p.typekit.net`,
         `connect-src ${connectSrc}`,
