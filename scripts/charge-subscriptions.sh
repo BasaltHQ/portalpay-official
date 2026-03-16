@@ -51,13 +51,13 @@ fi
 # ── Run ──────────────────────────────────────────────────
 echo "========================================" >> "$LOG"
 echo "[$(date -u)] 🔄 Starting subscription charges" >> "$LOG"
-echo "[$(date -u)] DEBUG: Calling http://127.0.0.1 with Host: ${APP_HOST}" >> "$LOG"
+echo "[$(date -u)] DEBUG: Calling https://${APP_HOST} via local IP" >> "$LOG"
 
-RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+RESPONSE=$(curl -s --insecure -w "\n%{http_code}" -X POST \
   -H "Content-Type: application/json" \
   -H "Host: ${APP_HOST}" \
   -H "x-cron-secret: ${CRON_SECRET}" \
-  "http://127.0.0.1/api/cron/charge-subscriptions" \
+  "https://51.81.186.244/api/cron/charge-subscriptions" \
   --max-time 120 2>>"$LOG") || true
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
