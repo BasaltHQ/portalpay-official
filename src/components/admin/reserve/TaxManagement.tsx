@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, lazy, Suspense } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import { createPortal } from "react-dom";
 import { Wand2, Plus } from "lucide-react";
+
+const Form1099DAPanel = lazy(() => import("@/components/reports/Form1099DAPanel"));
 
 type TaxCatalogEntry = {
   code: string;
@@ -557,6 +559,29 @@ export function TaxManagement() {
           document.body
         )
         : null}
+
+      {/* ─── 1099-DA Digital Asset Tax Reporting ─── */}
+      <div className="h-px bg-border my-8" />
+      <div className="glass-pane rounded-xl border p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">1099-DA Digital Asset Reporting</h2>
+            <p className="microtext text-muted-foreground">
+              IRS Form 1099-DA — Digital Asset Proceeds From Broker Transactions
+            </p>
+          </div>
+          <span className="px-2 py-0.5 rounded-full text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            PDAP Compliant
+          </span>
+        </div>
+        <Suspense fallback={
+          <div className="p-6 text-center text-muted-foreground">
+            Loading 1099-DA module…
+          </div>
+        }>
+          <Form1099DAPanel />
+        </Suspense>
+      </div>
     </div>
   );
 }
