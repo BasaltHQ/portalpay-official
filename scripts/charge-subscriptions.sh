@@ -51,13 +51,16 @@ fi
 # ── Run ──────────────────────────────────────────────────
 echo "========================================" >> "$LOG"
 echo "[$(date -u)] 🔄 Starting subscription charges" >> "$LOG"
-echo "[$(date -u)] DEBUG: Calling https://${APP_HOST} via local IP" >> "$LOG"
+echo "[$(date -u)] DEBUG: Calling https://${APP_HOST} (resolved to local IP)" >> "$LOG"
 
-RESPONSE=$(curl -s --insecure -w "\n%{http_code}" -X POST \
+# Use --resolve to route the domain to the local server IP.
+# This sets both Host header AND SSL SNI correctly so Apache
+# matches the right vhost. The request never leaves the server.
+RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+  --resolve "${APP_HOST}:443:51.81.186.244" \
   -H "Content-Type: application/json" \
-  -H "Host: ${APP_HOST}" \
   -H "x-cron-secret: ${CRON_SECRET}" \
-  "https://51.81.186.244/api/cron/charge-subscriptions" \
+  "https://${APP_HOST}/api/cron/charge-subscriptions" \
   --max-time 120 2>>"$LOG") || true
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
