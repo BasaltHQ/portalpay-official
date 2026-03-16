@@ -24,6 +24,11 @@ LOG="${APP_ROOT}/logs/charge-subscriptions.log"
 mkdir -p "$(dirname "$LOG")"
 
 # Load CRON_SECRET from the app's env file (production → local → default)
+echo "[$(date -u)] DEBUG: APP_ROOT=${APP_ROOT}" >> "$LOG"
+echo "[$(date -u)] DEBUG: .env.production exists? $([ -f "${APP_ROOT}/.env.production" ] && echo YES || echo NO)" >> "$LOG"
+echo "[$(date -u)] DEBUG: .env.local exists? $([ -f "${APP_ROOT}/.env.local" ] && echo YES || echo NO)" >> "$LOG"
+echo "[$(date -u)] DEBUG: .env exists? $([ -f "${APP_ROOT}/.env" ] && echo YES || echo NO)" >> "$LOG"
+
 if [ -f "${APP_ROOT}/.env.production" ]; then
   CRON_SECRET=$(grep -E '^CRON_SECRET=' "${APP_ROOT}/.env.production" | cut -d'=' -f2-)
 elif [ -f "${APP_ROOT}/.env.local" ]; then
@@ -33,7 +38,7 @@ elif [ -f "${APP_ROOT}/.env" ]; then
 fi
 
 if [ -z "${CRON_SECRET:-}" ]; then
-  echo "[$(date -u)] ❌ CRON_SECRET not found in .env or .env.local" >> "$LOG"
+  echo "[$(date -u)] ❌ CRON_SECRET not found in .env.production, .env.local, or .env" >> "$LOG"
   exit 1
 fi
 
