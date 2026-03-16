@@ -16,8 +16,11 @@ set -u  # warn on unset vars, but don't abort on errors
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# App port (Next.js default)
-APP_PORT="${APP_PORT:-3000}"
+# The app runs via Phusion Passenger behind Apache — there is no direct
+# Node.js port.  We call through the local web server with a Host header
+# so Apache routes to the correct vhost, staying entirely on-server
+# (never touches Cloudflare).
+APP_HOST="${APP_HOST:-surge.basalthq.com}"
 
 # Log file — lives alongside the app
 LOG="${APP_ROOT}/logs/charge-subscriptions.log"
@@ -48,12 +51,13 @@ fi
 # ── Run ──────────────────────────────────────────────────
 echo "========================================" >> "$LOG"
 echo "[$(date -u)] 🔄 Starting subscription charges" >> "$LOG"
-echo "[$(date -u)] DEBUG: Calling http://localhost:${APP_PORT}/api/cron/charge-subscriptions" >> "$LOG"
+echo "[$(date -u)] DEBUG: Calling http://127.0.0.1 with Host: ${APP_HOST}" >> "$LOG"
 
 RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
   -H "Content-Type: application/json" \
+  -H "Host: ${APP_HOST}" \
   -H "x-cron-secret: ${CRON_SECRET}" \
-  "http://localhost:${APP_PORT}/api/cron/charge-subscriptions" \
+  "http://127.0.0.1/api/cron/charge-subscriptions" \
   --max-time 120 2>>"$LOG") || true
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
@@ -62,7 +66,10 @@ BODY=$(echo "$RESPONSE" | sed '$d')
 echo "Status: ${HTTP_CODE}" >> "$LOG"
 echo "Response: ${BODY}" >> "$LOG"
 
-if [ "$HTTP_CODE" -ge 400 ] || [ -z "$HTTP_CODE" ]; then
+if [ -z "$HTTP_CODE" ] || [ "$HTTP_CODE" = "000" ]; then
+  echo "[$(date -u)] ❌ FAILED — could not connect to 127.0.0.1 (is Apache running?)" >> "$LOG"
+  exit 1
+elif [ "$HTTP_CODE" -ge 400 ]; then
   echo "[$(date -u)] ❌ FAILED (HTTP ${HTTP_CODE})" >> "$LOG"
   exit 1
 else
