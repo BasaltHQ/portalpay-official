@@ -1,9 +1,11 @@
 name: Charge Subscriptions
 
 on:
-    schedule:
-        # Daily at 8:30 AM UTC (standard 5-part cron)
-        - cron: "30 8 * * *"
+    # Schedule disabled — nightly charges now run via VPS cron job
+    # (scripts/charge-subscriptions.sh) to bypass Cloudflare Bot Fight Mode.
+    # Uncomment to re-enable if needed:
+    # schedule:
+    #     - cron: "30 8 * * *"
     workflow_dispatch: {} # Allow manual trigger from GitHub UI
 
 jobs:
