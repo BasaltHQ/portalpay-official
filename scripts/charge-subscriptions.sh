@@ -24,17 +24,20 @@ LOG="${APP_ROOT}/logs/charge-subscriptions.log"
 mkdir -p "$(dirname "$LOG")"
 
 # Load CRON_SECRET from the app's env file (production → local → default)
+# Handles both `CRON_SECRET=value` and `export CRON_SECRET="value"` formats
 echo "[$(date -u)] DEBUG: APP_ROOT=${APP_ROOT}" >> "$LOG"
 echo "[$(date -u)] DEBUG: .env.production exists? $([ -f "${APP_ROOT}/.env.production" ] && echo YES || echo NO)" >> "$LOG"
-echo "[$(date -u)] DEBUG: .env.local exists? $([ -f "${APP_ROOT}/.env.local" ] && echo YES || echo NO)" >> "$LOG"
-echo "[$(date -u)] DEBUG: .env exists? $([ -f "${APP_ROOT}/.env" ] && echo YES || echo NO)" >> "$LOG"
+
+extract_secret() {
+  grep -E '(^|export\s+)CRON_SECRET=' "$1" | sed 's/^export\s*//' | cut -d'=' -f2- | tr -d '"' | tr -d "'"
+}
 
 if [ -f "${APP_ROOT}/.env.production" ]; then
-  CRON_SECRET=$(grep -E '^CRON_SECRET=' "${APP_ROOT}/.env.production" | cut -d'=' -f2-)
+  CRON_SECRET=$(extract_secret "${APP_ROOT}/.env.production")
 elif [ -f "${APP_ROOT}/.env.local" ]; then
-  CRON_SECRET=$(grep -E '^CRON_SECRET=' "${APP_ROOT}/.env.local" | cut -d'=' -f2-)
+  CRON_SECRET=$(extract_secret "${APP_ROOT}/.env.local")
 elif [ -f "${APP_ROOT}/.env" ]; then
-  CRON_SECRET=$(grep -E '^CRON_SECRET=' "${APP_ROOT}/.env" | cut -d'=' -f2-)
+  CRON_SECRET=$(extract_secret "${APP_ROOT}/.env")
 fi
 
 if [ -z "${CRON_SECRET:-}" ]; then
