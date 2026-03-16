@@ -60,6 +60,7 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
   --resolve "${APP_HOST}:443:51.81.186.244" \
   -H "Content-Type: application/json" \
   -H "x-cron-secret: ${CRON_SECRET}" \
+  -d '{}' \
   "https://${APP_HOST}/api/cron/charge-subscriptions" \
   --max-time 120 2>>"$LOG") || true
 
