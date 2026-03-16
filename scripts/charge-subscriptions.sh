@@ -10,7 +10,7 @@
 # Adjust the SCRIPT_DIR / APP_PORT / LOG path as needed.
 # ──────────────────────────────────────────────────────────
 
-set -euo pipefail
+set -u  # warn on unset vars, but don't abort on errors
 
 # Resolve the directory this script lives in
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -48,12 +48,13 @@ fi
 # ── Run ──────────────────────────────────────────────────
 echo "========================================" >> "$LOG"
 echo "[$(date -u)] 🔄 Starting subscription charges" >> "$LOG"
+echo "[$(date -u)] DEBUG: Calling http://localhost:${APP_PORT}/api/cron/charge-subscriptions" >> "$LOG"
 
 RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
   -H "Content-Type: application/json" \
   -H "x-cron-secret: ${CRON_SECRET}" \
   "http://localhost:${APP_PORT}/api/cron/charge-subscriptions" \
-  --max-time 120 2>>"$LOG")
+  --max-time 120 2>>"$LOG") || true
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
 BODY=$(echo "$RESPONSE" | sed '$d')
