@@ -23,11 +23,13 @@ APP_PORT="${APP_PORT:-3000}"
 LOG="${APP_ROOT}/logs/charge-subscriptions.log"
 mkdir -p "$(dirname "$LOG")"
 
-# Load CRON_SECRET from the app's .env file so it stays in sync
-if [ -f "${APP_ROOT}/.env" ]; then
-  CRON_SECRET=$(grep -E '^CRON_SECRET=' "${APP_ROOT}/.env" | cut -d'=' -f2-)
+# Load CRON_SECRET from the app's env file (production → local → default)
+if [ -f "${APP_ROOT}/.env.production" ]; then
+  CRON_SECRET=$(grep -E '^CRON_SECRET=' "${APP_ROOT}/.env.production" | cut -d'=' -f2-)
 elif [ -f "${APP_ROOT}/.env.local" ]; then
   CRON_SECRET=$(grep -E '^CRON_SECRET=' "${APP_ROOT}/.env.local" | cut -d'=' -f2-)
+elif [ -f "${APP_ROOT}/.env" ]; then
+  CRON_SECRET=$(grep -E '^CRON_SECRET=' "${APP_ROOT}/.env" | cut -d'=' -f2-)
 fi
 
 if [ -z "${CRON_SECRET:-}" ]; then
