@@ -18,7 +18,7 @@ jobs:
               run: |
                   echo "🔄 Triggering subscription charges at $(date -u)"
 
-                  RESPONSE=$(curl -sf -w "\n%{http_code}" -X POST \
+                  RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
                     -H "Content-Type: application/json" \
                     -H "x-cron-secret: ${CRON_SECRET}" \
                     "${APP_URL}/api/cron/charge-subscriptions" \
