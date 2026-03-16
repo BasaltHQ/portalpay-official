@@ -687,6 +687,9 @@ export default async function RootLayout({
       <head>
         <link rel="stylesheet" href="https://use.typekit.net/eur3bvn.css" />
         <meta name="base:app_id" content="69614c80b8395f034ac21fe2" />
+        <noscript>
+          <img height="1" width="1" style={{ display: 'none' }} alt="" src="https://px.ads.linkedin.com/collect/?pid=8943644&fmt=gif" />
+        </noscript>
       </head>
       <body
         suppressHydrationWarning
@@ -694,6 +697,20 @@ export default async function RootLayout({
         style={{ overflowX: 'hidden' }}
       >
         <DeviceStyleInjector />
+        <Script id="linkedin-insight-tag" strategy="afterInteractive">{`
+          _linkedin_partner_id = "8943644";
+          window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
+          window._linkedin_data_partner_ids.push(_linkedin_partner_id);
+          (function(l) {
+            if (!l){window.lintrk = function(a,b){window.lintrk.q.push([a,b])};
+            window.lintrk.q=[]}
+            var s = document.getElementsByTagName("script")[0];
+            var b = document.createElement("script");
+            b.type = "text/javascript";b.async = true;
+            b.src = "https://snap.licdn.com/li.lms-analytics/insight.min.js";
+            s.parentNode.insertBefore(b, s);
+          })(window.lintrk);
+        `}</Script>
         {!isDebug() && <Script id="pp-silence-console" strategy="beforeInteractive">{`try{var _l=console.log.bind(console);console.log=function(){};console._log=_l}catch(e){}`}</Script>}
         <ConsoleBanner />
         <Script id="pp-preset-vars" strategy="beforeInteractive">{`try {
