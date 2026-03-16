@@ -40,6 +40,7 @@ export const EXCLUDE_PREFIXES = new Set<string>([
     "crypto-payments", // industry landing pages
     "locations", // location landing pages
     "pms", // PMS routes
+    "nodes", // Node operators landing page
     "favicon.ico",
     "globals.css",
     "robots.txt",
