@@ -14,11 +14,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
         const { id } = await ctx.params;
         const wallet = id.toLowerCase();
 
-        // We must update the shop_config document because that's what the Kiosk/Terminal pages read.
-        // The ID format for shop_config is typically "site:config:portalpay:<wallet>" (default) 
-        // or we need to query for it.
-
-        const q = "SELECT * FROM c WHERE c.type='shop_config' AND c.wallet=@wallet";
+        // We must update the shop_config document (and site_config for backwards compat)
+        // because that's what the Kiosk/Terminal pages and admin panel might read.
+        const q = "SELECT * FROM c WHERE (c.type='shop_config' OR c.type='site_config') AND c.wallet=@wallet";
         const { resources } = await container.items.query({
             query: q,
             parameters: [{ name: "@wallet", value: wallet }]
@@ -28,22 +26,21 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
             return NextResponse.json({ error: "Merchant config not found" }, { status: 404 });
         }
 
-        const doc = resources[0];
+        // Update all relevant configuration documents to ensure sync
+        for (const doc of resources) {
+            if (kioskEnabled !== undefined) doc.kioskEnabled = kioskEnabled;
+            if (terminalEnabled !== undefined) doc.terminalEnabled = terminalEnabled;
 
-        // Update fields
-        if (kioskEnabled !== undefined) doc.kioskEnabled = kioskEnabled;
-        if (terminalEnabled !== undefined) doc.terminalEnabled = terminalEnabled;
+            // Surgical migration: Ensure brandKey is set to basaltsurge if missing or legacy
+            if (!doc.brandKey || doc.brandKey === 'portalpay') {
+                doc.brandKey = 'basaltsurge';
+            }
 
-        // Surgical migration: Ensure brandKey is set to basaltsurge if missing or legacy
-        if (!doc.brandKey || doc.brandKey === 'portalpay') {
-            doc.brandKey = 'basaltsurge';
+            doc.updatedAt = Constants.now();
+            await container.items.upsert(doc);
         }
 
-        doc.updatedAt = Constants.now();
-
-        await container.items.upsert(doc);
-
-        return NextResponse.json({ success: true, settings: { kioskEnabled: doc.kioskEnabled, terminalEnabled: doc.terminalEnabled } });
+        return NextResponse.json({ success: true, settings: { kioskEnabled, terminalEnabled } });
 
     } catch (e: any) {
         console.error("Failed to update merchant features", e);

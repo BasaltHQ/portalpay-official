@@ -968,14 +968,22 @@ export default function PortalReceiptPage() {
         const t = j?.config?.theme;
         console.log('[PORTAL THEME DEBUG] API response received', { hasTheme: !!t, theme: t });
         if (!cancelled && t) {
+          // Check if API returned generic platform defaults that should be overridden by partner branding
+          const isGenericName = (name: string) => !name || /^(ledger\d*|partner\d*|default|portalpay|basaltsurge)$/i.test(name.trim());
+          const isGenericLogo = (url: string) => !url || (!url.startsWith('http') && (url.includes("ppsymbol") || url.includes("BasaltSurge") || url.includes("cblogod") || url.includes("placeholder")));
+
+          const apiBrandName = typeof t.brandName === "string" ? t.brandName : "";
+          const apiBrandLogo = typeof t.brandLogoUrl === "string" ? t.brandLogoUrl : "";
+          const apiSymbolLogo = typeof t.symbolLogoUrl === "string" ? t.symbolLogoUrl : (typeof (t as any)?.logos?.symbol === "string" ? (t as any).logos.symbol : "");
+
           // Build complete theme object with Partner Fallbacks
           const merchantTheme = {
             primaryColor: (typeof t.primaryColor === "string" ? t.primaryColor : undefined) || partnerBrandColors?.primary || "#10b981",
             secondaryColor: (typeof t.secondaryColor === "string" ? t.secondaryColor : undefined) || partnerBrandColors?.accent || "#2dd4bf",
-            brandLogoUrl: (typeof t.brandLogoUrl === "string" ? t.brandLogoUrl : undefined) || partnerLogoApp || getDefaultBrandSymbol(t.brandKey),
+            brandLogoUrl: (!isGenericLogo(apiBrandLogo) ? apiBrandLogo : undefined) || partnerLogoApp || getDefaultBrandSymbol(t.brandKey),
             brandFaviconUrl: (typeof t.brandFaviconUrl === "string" ? t.brandFaviconUrl : undefined) || partnerLogoFavicon || "/favicon-32x32.png",
-            symbolLogoUrl: (typeof t.symbolLogoUrl === "string" ? t.symbolLogoUrl : undefined) || (typeof (t as any)?.logos?.symbol === "string" ? (t as any).logos.symbol : undefined) || partnerLogoSymbol,
-            brandName: (typeof t.brandName === "string" ? t.brandName : undefined) || partnerBrandName || "BasaltSurge",
+            symbolLogoUrl: (!isGenericLogo(apiSymbolLogo) ? apiSymbolLogo : undefined) || partnerLogoSymbol,
+            brandName: (!isGenericName(apiBrandName) ? apiBrandName : undefined) || partnerBrandName || "BasaltSurge",
             fontFamily: typeof t.fontFamily === "string" ? t.fontFamily : "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
             receiptBackgroundUrl: typeof t.receiptBackgroundUrl === "string" ? t.receiptBackgroundUrl : "/watermark.png",
             brandLogoShape: t.brandLogoShape === "round" ? "round" : "square" as "round" | "square",
