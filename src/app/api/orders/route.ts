@@ -985,12 +985,6 @@ export async function POST(req: NextRequest) {
       const theme = cfg?.theme || {};
       const tParams = new URLSearchParams();
       tParams.set("recipient", wallet);
-      tParams.set("t_text", String(theme.textColor || "#ffffff"));
-      if (theme.primaryColor) tParams.set("t_primary", theme.primaryColor);
-      if (theme.secondaryColor) tParams.set("t_secondary", theme.secondaryColor);
-      if (theme.fontFamily) tParams.set("t_font", theme.fontFamily);
-      if (theme.brandName) tParams.set("t_brand", theme.brandName);
-      if (theme.brandLogoUrl) tParams.set("t_logo", theme.brandLogoUrl);
 
       const portalLink = `${orderOrigin}/portal/${receiptId}?${tParams.toString()}`;
 
@@ -1002,7 +996,7 @@ export async function POST(req: NextRequest) {
     } catch (e: any) {
       // Graceful degrade when Cosmos isn't configured/available
       pushReceipts([{ ...receipt, wallet, brandKey } as any]);
-      const portalLink = `${orderOrigin}/portal/${receiptId}?recipient=${wallet}&t_text=%23ffffff`;
+      const portalLink = `${orderOrigin}/portal/${receiptId}?recipient=${wallet}`;
       return NextResponse.json(
         { ok: true, degraded: true, reason: e?.message || "cosmos_unavailable", receipt, portalLink },
         { status: 200, headers: { "x-correlation-id": correlationId } }

@@ -234,7 +234,7 @@ function TerminalPanel() {
     const envRecipient = getEnvRecipient();
     const portalRecipient = /^0x[a-fA-F0-9]{40}$/.test(recipientParam) ? recipientParam : envRecipient;
     const portalUrl = selected
-        ? `${origin}/portal/${encodeURIComponent(selected.receiptId)}?recipient=${encodeURIComponent((operatorWallet || portalRecipient || "").toString())}&t_text=%23ffffff`
+        ? `${origin}/portal/${encodeURIComponent(selected.receiptId)}?recipient=${encodeURIComponent((operatorWallet || portalRecipient || "").toString())}`
         : "";
 
     async function generateTerminalReceipt() {
