@@ -491,8 +491,69 @@ export default function CannabisLandingClient() {
         </div>
       </section>
 
-      {/* ═══ HOW IT WORKS ═══ */}
+      {/* ═══ HARDWARE ═══ */}
       <section className="py-16 md:py-24 bg-white/[0.01]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Image */}
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="absolute -inset-8 rounded-full bg-emerald-500/[0.04] blur-3xl" />
+                <img
+                  src="/handheld.png"
+                  alt="BasaltSurge Handheld POS Terminal"
+                  className="relative w-full max-w-md md:max-w-lg drop-shadow-2xl rounded-2xl"
+                />
+              </div>
+            </div>
+
+            {/* Content */}
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-3">
+                Purpose-Built <span className="text-emerald-400">Hardware</span>
+              </h2>
+              <p className="text-white/40 mb-8 max-w-lg leading-relaxed">
+                Run your dispensary on hardware designed for cannabis retail. Handheld terminals for budtenders on the floor, 
+                kiosks for self-service check-in, and inventory displays for your back-of-house — all running the BasaltSurge compliance stack.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { name: 'Terminal / Handheld', price: '$245', icon: '📱', tag: 'Popular', desc: 'Android smart POS with dual screens, NFC, and receipt printer' },
+                  { name: 'Inventory Room Display 22″', price: '$375', icon: '🖥️', tag: null, desc: 'Wall-mount display for real-time inventory & compliance status' },
+                  { name: 'Self-Service Kiosk 22″', price: '$650', icon: '🏪', tag: null, desc: 'Customer-facing check-in and menu kiosk with touchscreen' },
+                  { name: 'Dual-Screen Desktop POS', price: 'Coming Soon', icon: '🖥️', tag: 'Soon', desc: 'Full desktop POS with merchant and customer displays' },
+                ].map(hw => (
+                  <div key={hw.name} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 hover:border-emerald-500/15 transition-colors">
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-xl">{hw.icon}</span>
+                      {hw.tag && (
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                          hw.tag === 'Popular' 
+                            ? 'bg-emerald-500/15 text-emerald-400' 
+                            : 'bg-violet-500/15 text-violet-400'
+                        }`}>{hw.tag}</span>
+                      )}
+                    </div>
+                    <h3 className="text-sm font-bold text-white mb-1">{hw.name}</h3>
+                    <p className="text-[11px] text-white/30 mb-3 leading-relaxed">{hw.desc}</p>
+                    <p className={`text-lg font-black ${hw.price === 'Coming Soon' ? 'text-violet-400' : 'text-emerald-400'}`}>
+                      {hw.price}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <p className="mt-6 text-xs text-white/20">
+                All devices ship pre-configured with BasaltSurge. Plug in, connect to Wi-Fi, and start selling. Additional peripherals (barcode scanners, cash drawers, label printers) available upon request.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ HOW IT WORKS ═══ */}
+      <section className="py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-3">Up and Running in 5 Minutes</h2>
