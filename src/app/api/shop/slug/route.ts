@@ -48,6 +48,7 @@ const RESERVED_SLUGS = new Set<string>([
   "vs",
   "locations",
   "crypto-payments",
+  "cannabis",
   "get-started",
   "faq",
   "u",

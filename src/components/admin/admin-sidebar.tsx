@@ -77,7 +77,8 @@ type AdminTabKey =
   | 'shopifyPlatform'
   | 'nodeOperators'
   | 'nodeDashboard'
-  | 'modules';
+  | 'modules'
+  | 'cannabisCompliance';
 
 interface AdminSidebarProps {
   activeTab: AdminTabKey;
@@ -355,6 +356,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
 
         ...(industryPack === 'hotel' ? [{ title: 'PMS', key: 'pms' as AdminTabKey }] : []),
         ...(industryPack === 'publishing' ? [{ title: "Writer's Workshop", key: 'writersWorkshop' as AdminTabKey }] : []),
+        ...(industryPack === 'cannabis' ? [{ title: 'Compliance', key: 'cannabisCompliance' as AdminTabKey }] : []),
       ],
     },
     ...(canBranding || isSuperadmin || canAdmins

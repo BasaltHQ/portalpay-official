@@ -22,6 +22,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import GeometricAnimation from "@/components/landing/GeometricAnimation";
 import { cachedFetch } from "@/lib/client-api-cache";
 import BrandText from "@/components/brand-text";
+import ContactFormSection from "@/components/landing/ContactFormSection";
 
 export default function GetStartedPage() {
   const brand = useBrand();
@@ -391,6 +392,13 @@ export default function GetStartedPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Merchant Onboarding Contact Form */}
+        <section className="py-24 md:py-32 px-6 bg-black relative border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <ContactFormSection />
           </div>
         </section>
 

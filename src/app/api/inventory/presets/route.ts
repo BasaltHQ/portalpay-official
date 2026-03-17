@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     const packType = String(body.packType || "").toLowerCase() as IndustryPackType;
-    if (!["restaurant", "retail", "hotel", "freelancer", "publishing"].includes(packType)) {
+    if (!["restaurant", "retail", "hotel", "freelancer", "publishing", "cannabis"].includes(packType)) {
       return NextResponse.json({ error: "invalid_pack_type" }, { status: 400 });
     }
 
@@ -138,6 +138,21 @@ export async function POST(req: NextRequest) {
           }
           // Default approval status for sample items
           inventoryItem.approvalStatus = 'APPROVED';
+          break;
+
+        case "cannabis":
+          if (sampleItem.strain) inventoryItem.strain = sampleItem.strain;
+          if (sampleItem.strainType) inventoryItem.strainType = sampleItem.strainType;
+          if (typeof sampleItem.thcPercent === "number") inventoryItem.thcPercent = sampleItem.thcPercent;
+          if (typeof sampleItem.cbdPercent === "number") inventoryItem.cbdPercent = sampleItem.cbdPercent;
+          if (sampleItem.terpenes) inventoryItem.terpenes = sampleItem.terpenes;
+          if (sampleItem.metrcTag) inventoryItem.metrcTag = sampleItem.metrcTag;
+          if (sampleItem.biotrackId) inventoryItem.biotrackId = sampleItem.biotrackId;
+          if (sampleItem.batchNumber) inventoryItem.batchNumber = sampleItem.batchNumber;
+          if (sampleItem.weight) inventoryItem.weight = sampleItem.weight;
+          if (sampleItem.weightUnit) inventoryItem.weightUnit = sampleItem.weightUnit;
+          if (sampleItem.growMethod) inventoryItem.growMethod = sampleItem.growMethod;
+          if (sampleItem.complianceNotes) inventoryItem.complianceNotes = sampleItem.complianceNotes;
           break;
       }
 

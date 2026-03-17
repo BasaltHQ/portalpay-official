@@ -22,7 +22,8 @@ import PublisherOsirisSection from "@/components/landing/PublisherOsirisSection"
 import PluginsSection from "@/components/landing/PluginsSection";
 import TrustlessPermissionlessSection from "@/components/landing/TrustlessPermissionlessSection";
 import { AgenticPaymentsSection } from "@/components/landing/AgenticPaymentsSection";
-<AgenticPaymentsSection />
+import ContactFormSection from "@/components/landing/ContactFormSection";
+import CannabisComplianceSection from "@/components/landing/CannabisComplianceSection";
 
 type Metrics = {
   totalUsers: number;
@@ -679,11 +680,19 @@ export default function HomeContent() {
         {/* Plugins & Integrations */}
         <PluginsSection />
 
+        {/* Cannabis Compliance — First Free + Fully Compliant POS */}
+        <CannabisComplianceSection />
+
         {/* Agentic Payments (x402) */}
         <AgenticPaymentsSection />
 
         {/* Philosophy: Trustless & Permissionless */}
         <TrustlessPermissionlessSection />
+
+        {/* Merchant Onboarding Contact Form */}
+        <section className="mt-8">
+          <ContactFormSection />
+        </section>
 
         {/* About / Story */}
         <section className="mt-8">

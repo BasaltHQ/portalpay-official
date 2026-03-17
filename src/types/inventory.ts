@@ -5,7 +5,7 @@
  * Each industry has specialized attributes that extend the base inventory item.
  */
 
-import type { IndustryPackType } from "@/lib/industry-packs";
+import type { IndustryPackType, CannabisStrainType, CannabisCategoryTag, CannabisLabTest } from "@/lib/industry-packs";
 
 // Re-export for convenience
 export type { IndustryPackType };
@@ -553,6 +553,65 @@ export interface PublishingItemAttributes {
 }
 
 // =============================================================================
+// CANNABIS INDUSTRY (Dispensary POS + Compliance)
+// =============================================================================
+
+/**
+ * Cannabis Item Attributes - Full seed-to-sale inventory tracking
+ * Supports METRC and BioTrack compliance integration
+ */
+export interface CannabisItemAttributes {
+  /** Strain name (e.g., 'Blue Dream', 'OG Kush') */
+  strain?: string;
+  /** Strain classification */
+  strainType?: CannabisStrainType;
+  /** THC percentage (0-100) */
+  thcPercent?: number;
+  /** CBD percentage (0-100) */
+  cbdPercent?: number;
+  /** Terpene profile — key: terpene name, value: percentage */
+  terpeneProfile?: Record<string, number>;
+  /** Internal batch identifier */
+  batchId?: string;
+  /** Harvest date (ISO string) */
+  harvestDate?: string;
+  /** Package date (ISO string) */
+  packageDate?: string;
+  /** Expiration / use-by date (ISO string) */
+  expirationDate?: string;
+  /** Lab test results history */
+  testResults?: CannabisLabTest[];
+  /** METRC package tag (24-char alphanumeric, e.g., '1A4060300000001000000001') */
+  metrcTag?: string;
+  /** BioTrack 16-digit inventory identifier */
+  biotrackId?: string;
+  /** Product category for compliance classification */
+  categoryTag?: CannabisCategoryTag;
+  /** Net weight of product */
+  weight?: number;
+  /** Weight unit */
+  weightUnit?: 'g' | 'oz' | 'lb' | 'kg' | 'mg' | 'ea';
+  /** Compliance notes or flags */
+  complianceNotes?: string;
+  /** Cultivation method */
+  growMethod?: 'indoor' | 'outdoor' | 'greenhouse' | 'hydroponic';
+  /** Plant count (for clones/seeds) */
+  plantCount?: number;
+  /** Source package METRC tag for chain of custody */
+  sourcePackageTag?: string;
+  /** Processing job type (for concentrates, edibles) */
+  processingType?: string;
+  /** Whether this package has been remediated */
+  remediated?: boolean;
+  /** Trade sample flag */
+  isTradeSample?: boolean;
+  /** Donation flag */
+  isDonation?: boolean;
+  /** Finished good flag */
+  isFinishedGood?: boolean;
+}
+
+// =============================================================================
 // UNION TYPES
 // =============================================================================
 
@@ -566,6 +625,7 @@ export type IndustryAttributes =
   | { type: 'hotel'; data: HotelRoomTypeAttributes }
   | { type: 'freelancer'; data: FreelancerServiceAttributes }
   | { type: 'publishing'; data: PublishingItemAttributes }
+  | { type: 'cannabis'; data: CannabisItemAttributes }
   | { type: 'general'; data: Record<string, unknown> };
 
 /**
@@ -655,6 +715,10 @@ export function isFreelancerAttributes(attrs: IndustryAttributes | undefined): a
 
 export function isPublishingAttributes(attrs: IndustryAttributes | undefined): attrs is { type: 'publishing'; data: PublishingItemAttributes } {
   return attrs?.type === 'publishing';
+}
+
+export function isCannabisAttributes(attrs: IndustryAttributes | undefined): attrs is { type: 'cannabis'; data: CannabisItemAttributes } {
+  return attrs?.type === 'cannabis';
 }
 
 /**
