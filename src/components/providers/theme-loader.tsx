@@ -409,26 +409,8 @@ export function ThemeLoader() {
           // Always advertise the dynamic favicon endpoint so browsers pick partner icon consistently
           upsertLink('link[rel="icon"]:not([sizes])', { rel: "icon", href: "/api/favicon" });
           upsertLink('link[rel="shortcut icon"]', { rel: "shortcut icon", href: "/api/favicon" });
-          // Remove any portal default icon links that may have been inserted by defaults
-          // Use requestAnimationFrame to ensure this runs after React hydration completes
-          try {
-            requestAnimationFrame(() => {
-              try {
-                const defaults = Array.from(document.head.querySelectorAll('link[rel="icon"][sizes="32x32"], link[rel="icon"][sizes="16x16"]')) as HTMLLinkElement[];
-                defaults.forEach(el => {
-                  try {
-                    const href = (el.getAttribute("href") || "").toLowerCase();
-                    if (href.endsWith("/favicon-32x32.png") || href.endsWith("/favicon-16x16.png")) {
-                      // Guard against null parentNode to prevent hydration errors
-                      if (el && el.parentNode) {
-                        el.parentNode.removeChild(el);
-                      }
-                    }
-                  } catch { }
-                });
-              } catch { }
-            });
-          } catch { }
+          // The portal defaults are now safely overwritten in-place by the upsertLink calls below.
+          // We no longer manually remove them using removeChild, as that crashes React's App Router during navigation.
           // Add sizes-specific icons to aid platforms that prefer sized links
           if (typeof icon32 === "string" && icon32) {
             upsertLink('link[rel="icon"][sizes="32x32"]', { rel: "icon", type: "image/png", sizes: "32x32", href: icon32 });
@@ -585,26 +567,7 @@ export function ThemeLoader() {
           // Re-assert dynamic endpoint
           upsertLink('link[rel="icon"]:not([sizes])', { rel: "icon", href: "/api/favicon" });
           upsertLink('link[rel="shortcut icon"]', { rel: "shortcut icon", href: "/api/favicon" });
-          // Remove portal defaults
-          // Use requestAnimationFrame to ensure this runs after React hydration completes
-          try {
-            requestAnimationFrame(() => {
-              try {
-                const defaults = Array.from(document.head.querySelectorAll('link[rel="icon"][sizes="32x32"], link[rel="icon"][sizes="16x16"]')) as HTMLLinkElement[];
-                defaults.forEach(el => {
-                  try {
-                    const href = (el.getAttribute("href") || "").toLowerCase();
-                    if (href.endsWith("/favicon-32x32.png") || href.endsWith("/favicon-16x16.png")) {
-                      // Guard against null parentNode to prevent hydration errors
-                      if (el && el.parentNode) {
-                        el.parentNode.removeChild(el);
-                      }
-                    }
-                  } catch { }
-                });
-              } catch { }
-            });
-          } catch { }
+          // The portal defaults are safely overwritten in-place by the upsertLink calls below.
           // Add/update sized icons
           if (typeof icon32 === "string" && icon32) {
             upsertLink('link[rel="icon"][sizes="32x32"]', { rel: "icon", type: "image/png", sizes: "32x32", href: icon32 });

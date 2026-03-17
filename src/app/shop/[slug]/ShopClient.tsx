@@ -1451,12 +1451,6 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
 
         const q = new URLSearchParams();
         if (merchantWallet) q.set("recipient", merchantWallet);
-        if (primary) q.set("t_primary", primary);
-        if (secondary) q.set("t_secondary", secondary);
-        if (text) q.set("t_text", text);
-        if (font) q.set("t_font", font);
-        if (brandName) q.set("t_brand", brandName);
-        if (logo) q.set("t_logo", logo);
         if (cleanSlug) q.set("shop", cleanSlug);
 
         // Pass preferred token if set in shop/site config

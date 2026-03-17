@@ -8723,7 +8723,7 @@ function TerminalPanel() {
   }, []);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const portalUrl = selected ? `${origin}/portal/${encodeURIComponent(selected.receiptId)}?recipient=${encodeURIComponent(operatorWallet)}&t_text=%23ffffff` : "";
+  const portalUrl = selected ? `${origin}/portal/${encodeURIComponent(selected.receiptId)}?recipient=${encodeURIComponent(operatorWallet)}` : "";
 
   // Completion modal
   const [completeOpen, setCompleteOpen] = useState(false);
