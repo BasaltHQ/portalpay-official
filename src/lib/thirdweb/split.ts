@@ -82,7 +82,7 @@ export async function ensureSplitForWallet(
     }
 
     // Resolve platform recipient from env
-    const platform = String(getRecipientAddress() || "").toLowerCase();
+    let platform = String(getRecipientAddress() || "").toLowerCase();
     if (!isValidHexAddress(platform)) {
       try {
         await fetch(buildApiUrl("/api/split/deploy"), {
@@ -118,6 +118,15 @@ export async function ensureSplitForWallet(
     const partner = partnerWalletOverride && isValidHexAddress(partnerWalletOverride)
       ? partnerWalletOverride.toLowerCase()
       : String(brand?.partnerWallet || "").toLowerCase();
+
+    // Guard: On partner containers, NEXT_PUBLIC_RECIPIENT_ADDRESS may be set
+    // to the partner wallet. If platform === partner, fall back to the
+    // canonical platform treasury to prevent duplicate-payee reverts.
+    const CANONICAL_PLATFORM_WALLET = "0xaCDAa0314000a1d10f3e9EF1B88e986A72AA3f6e";
+    if (platform === partner && String(partner) !== "") {
+      console.warn("[ensureSplitForWallet] Platform wallet collides with partner wallet, using canonical platform:", CANONICAL_PLATFORM_WALLET);
+      platform = CANONICAL_PLATFORM_WALLET.toLowerCase();
+    }
 
     const platformBps = typeof platformFeeBpsOverride === "number"
       ? Math.max(0, Math.min(10000, platformFeeBpsOverride))
@@ -175,10 +184,17 @@ export async function ensureSplitForWallet(
     }
 
     // Persist deployed address + recipients idempotently
+    // Pass both merchant wallet (x-wallet) for data targeting and caller wallet (x-caller-wallet) for auth
+    const callerAddr = String(callerWallet || "").toLowerCase();
     try {
       const r2 = await fetch(buildApiUrl("/api/split/deploy"), {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-wallet": merchant, "x-csrf": "1" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-wallet": merchant,
+          "x-caller-wallet": callerAddr,
+          "x-csrf": "1",
+        },
         credentials: "include",
         body: JSON.stringify({
           wallet: merchant,
@@ -189,8 +205,10 @@ export async function ensureSplitForWallet(
           platformFeeBps: Math.floor(platformBps) // Persist the actual platform bps used in contract
         }),
       });
-      // If POST failed (e.g., CSRF or auth), keep modal open by returning undefined
+      // If POST failed (e.g., CSRF or auth), log and keep modal open
       if (!r2.ok) {
+        const errBody = await r2.text().catch(() => "");
+        console.error("[ensureSplitForWallet] Persist failed:", r2.status, errBody, { callerAddr, merchant, brandKey });
         return undefined;
       }
       await r2.json().catch(() => ({}));
@@ -209,8 +227,9 @@ export async function ensureSplitForWallet(
     } catch { }
 
     return addr;
-  } catch {
-    return undefined;
+  } catch (err) {
+    console.error("[ensureSplitForWallet] Deployment error:", err);
+    throw err; // Propagate so callers see the actual error (e.g. ProxyDeploymentFailed)
   }
 }
 

@@ -6,7 +6,7 @@ import { requireThirdwebAuth } from "@/lib/auth";
 import { requireCsrf } from "@/lib/security";
 import { getBrandKey, applyBrandDefaults } from "@/config/brands";
 import { isPartnerContext, getSanitizedSplitBps } from "@/lib/env";
-import { getPlatformAdminWallets } from "@/lib/authz-server";
+import { getPlatformAdminWallets, resolveAdminRole } from "@/lib/authz-server";
 
 /**
  * Per-merchant Split configuration API.
@@ -130,7 +130,7 @@ function resolvePlatformBpsFromBrand(bKey: string | undefined, brand: any, overr
 function cors(res: NextResponse) {
   res.headers.set("Access-Control-Allow-Origin", "*");
   res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, x-wallet, x-forwarded-host, x-forwarded-proto");
+  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, x-wallet, x-caller-wallet, x-forwarded-host, x-forwarded-proto");
   return res;
 }
 
@@ -473,24 +473,44 @@ export async function POST(req: NextRequest) {
 
     // Use authenticated wallet or x-wallet header as the merchant deploying the split
     const walletHeader = String(req.headers.get("x-wallet") || "").toLowerCase();
+    // x-caller-wallet: when an admin deploys on behalf of a merchant, this carries the admin's wallet
+    const callerWalletHeader = String(req.headers.get("x-caller-wallet") || "").toLowerCase();
 
     // Authorization Check:
     // 1. If caller matches x-wallet, allow (Self-Deploy)
     // 2. If caller matches brand.partnerWallet, allow (Partner-Deploy)
-    // 3. If caller has JWT claim, allow (Admin)
-    // 4. If caller is the platform wallet, allow (Platform Admin)
+    // 3. If x-caller-wallet matches brand.partnerWallet, allow (Delegated Partner-Deploy)
+    // 4. If caller has JWT claim, allow (Admin)
+    // 5. If caller is the platform wallet, allow (Platform Admin)
+    // 6. If x-caller-wallet is a platform admin, allow (Delegated Platform Admin)
     const callerWallet = String(caller.wallet || "").toLowerCase();
     const isOwner = callerWallet === walletHeader;
-    const isPartnerAdmin = isHexAddress(brand?.partnerWallet) && callerWallet === String(brand.partnerWallet).toLowerCase();
+    const isPartnerAdmin = isHexAddress(brand?.partnerWallet) && (
+      callerWallet === String(brand.partnerWallet).toLowerCase() ||
+      (isHexAddress(callerWalletHeader) && callerWalletHeader === String(brand.partnerWallet).toLowerCase())
+    );
     const isAdmin = caller.role === "admin" || (caller.permissions && caller.permissions.includes("split:write"));
 
     // Platform admin check: allow if caller is in the DB-backed admin list (or env fallback)
     const platformWallet = String(process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0xaCDAa0314000a1d10f3e9EF1B88e986A72AA3f6e").toLowerCase();
     const platformAdminWallets = await getPlatformAdminWallets();
-    const isPlatformAdmin = platformAdminWallets.includes(callerWallet);
+    const isPlatformAdmin = platformAdminWallets.includes(callerWallet) ||
+      (isHexAddress(callerWalletHeader) && platformAdminWallets.includes(callerWalletHeader));
+
+    // Partner-scoped admin role check from DB (covers partner admins not listed as brand.partnerWallet)
+    // Checks both the JWT caller wallet and the x-caller-wallet header
+    let isPartnerScopedAdmin = false;
+    if (!isOwner && !isPartnerAdmin && !isAdmin && !isPlatformAdmin) {
+      try {
+        const effectiveCaller = isHexAddress(callerWalletHeader) ? callerWalletHeader : callerWallet;
+        const role = await resolveAdminRole(effectiveCaller, brandKey);
+        if (role) isPartnerScopedAdmin = true;
+      } catch { /* best-effort */ }
+    }
 
     console.log("[SPLIT_DEPLOY_AUTH_DEBUG]", {
       callerWallet,
+      callerWalletHeader,
       walletHeader,
       platformWallet,
       platformAdminWallets,
@@ -502,7 +522,7 @@ export async function POST(req: NextRequest) {
       brandKey
     });
 
-    if (!isOwner && !isPartnerAdmin && !isAdmin && !isPlatformAdmin) {
+    if (!isOwner && !isPartnerAdmin && !isAdmin && !isPlatformAdmin && !isPartnerScopedAdmin) {
       // Special case: Deployment Pipeline (no signer, just valid x-wallet + idempotency check could go here if needed)
       // But for standard flow, we require auth.
       // If we fell back to x-wallet in 'caller' block above (no auth), then isOwner is true by definition.
