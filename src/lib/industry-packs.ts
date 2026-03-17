@@ -3,7 +3,7 @@
  * Defines templates, sample inventory, and configurations for each industry type
  */
 
-export type IndustryPackType = 'general' | 'restaurant' | 'retail' | 'hotel' | 'freelancer' | 'publishing';
+export type IndustryPackType = 'general' | 'restaurant' | 'retail' | 'hotel' | 'freelancer' | 'publishing' | 'cannabis';
 
 // Restaurant-specific types
 export type ModifierGroup = {
@@ -125,6 +125,44 @@ export type BookItem = {
     violence?: boolean;
     aiGenerated?: boolean;
   };
+};
+
+// Cannabis-specific types
+export type CannabisStrainType = 'indica' | 'sativa' | 'hybrid' | 'ruderalis' | 'cbd-dominant';
+export type CannabisCategoryTag = 'flower' | 'concentrate' | 'edible' | 'topical' | 'pre-roll' | 'tincture' | 'vape' | 'accessory' | 'seeds' | 'clones';
+
+export type CannabisLabTest = {
+  labName: string;
+  testDate: string;
+  passed: boolean;
+  thcPercent?: number;
+  cbdPercent?: number;
+  terpeneProfile?: Record<string, number>;
+  contaminants?: { type: string; result: 'pass' | 'fail'; value?: number }[];
+  documentUrl?: string;
+  batchId?: string;
+};
+
+export type CannabisItem = {
+  strain?: string;
+  strainType?: CannabisStrainType;
+  thcPercent?: number;
+  cbdPercent?: number;
+  terpeneProfile?: Record<string, number>;
+  batchId?: string;
+  harvestDate?: string;
+  packageDate?: string;
+  expirationDate?: string;
+  testResults?: CannabisLabTest[];
+  metrcTag?: string;
+  biotrackId?: string;
+  categoryTag?: CannabisCategoryTag;
+  weight?: number;
+  weightUnit?: 'g' | 'oz' | 'lb' | 'kg' | 'mg' | 'ea';
+  complianceNotes?: string;
+  growMethod?: 'indoor' | 'outdoor' | 'greenhouse' | 'hydroponic';
+  plantCount?: number;
+  sourcePackageTag?: string;
 };
 
 // Industry Pack definition
@@ -628,6 +666,95 @@ export const INDUSTRY_PACKS: Record<IndustryPackType, IndustryPack> = {
     analyticsConfig: {
       kpis: ['Total Readers', 'Books Sold', 'Series Completion Rate', 'Avg Reading Time'],
       metrics: ['Genre Popularity', 'Pre-order Conversions', 'Reader Retention', 'Review Sentiment'],
+    },
+  },
+
+  cannabis: {
+    id: 'cannabis',
+    name: 'Cannabis Dispensary',
+    description: 'Seed-to-sale compliance with METRC & BioTrack integration, manifest management, and lab test tracking',
+    appDescription: 'Cannabis Dispensary POS with BioTrack & METRC Compliance, Manifest Management, Inventory Sync, and Seed-to-Sale Tracking.',
+    icon: '🌿',
+    theme: {
+      primaryColor: '#16A34A',
+      secondaryColor: '#065F46',
+      accentColor: '#A3E635',
+      fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+      arrangement: 'groups',
+    },
+    categories: ['Flower', 'Concentrates', 'Edibles', 'Topicals', 'Pre-Rolls', 'Tinctures', 'Vapes', 'Accessories', 'Seeds & Clones'],
+    sampleItems: [
+      {
+        name: 'Blue Dream (3.5g)',
+        description: 'Sativa-dominant hybrid with sweet berry aroma. Lab-tested, METRC-tagged.',
+        basePrice: 35.00,
+        category: 'Flower',
+        strain: 'Blue Dream',
+        strainType: 'hybrid',
+        thcPercent: 21.3,
+        cbdPercent: 0.4,
+        weight: 3.5,
+        weightUnit: 'g',
+        categoryTag: 'flower',
+        batchId: 'BD-2026-0315',
+        metrcTag: '1A4060300000001000000001',
+        growMethod: 'indoor',
+      },
+      {
+        name: 'OG Kush Live Resin (1g)',
+        description: 'Full-spectrum live resin concentrate. Premium extraction.',
+        basePrice: 55.00,
+        category: 'Concentrates',
+        strain: 'OG Kush',
+        strainType: 'indica',
+        thcPercent: 78.5,
+        cbdPercent: 0.2,
+        weight: 1,
+        weightUnit: 'g',
+        categoryTag: 'concentrate',
+        batchId: 'OGK-LR-2026-0310',
+      },
+      {
+        name: 'Chill Gummies (10pk)',
+        description: 'Assorted fruit gummies, 10mg THC each. Lab-verified dosage.',
+        basePrice: 25.00,
+        category: 'Edibles',
+        thcPercent: 0,
+        cbdPercent: 0,
+        weight: 100,
+        weightUnit: 'mg',
+        categoryTag: 'edible',
+        batchId: 'CG-2026-0312',
+      },
+      {
+        name: 'Relief Balm (2oz)',
+        description: 'THC-infused topical balm for targeted relief. Non-psychoactive.',
+        basePrice: 40.00,
+        category: 'Topicals',
+        strainType: 'cbd-dominant',
+        thcPercent: 5.0,
+        cbdPercent: 15.0,
+        weight: 2,
+        weightUnit: 'oz',
+        categoryTag: 'topical',
+      },
+      {
+        name: 'Sour Diesel Pre-Roll (1g)',
+        description: 'Hand-rolled premium flower pre-roll. Sativa-dominant.',
+        basePrice: 12.00,
+        category: 'Pre-Rolls',
+        strain: 'Sour Diesel',
+        strainType: 'sativa',
+        thcPercent: 19.8,
+        cbdPercent: 0.3,
+        weight: 1,
+        weightUnit: 'g',
+        categoryTag: 'pre-roll',
+      },
+    ],
+    analyticsConfig: {
+      kpis: ['Total Sales', 'METRC Sync Status', 'Inventory Compliance %', 'Failed Lab Tests'],
+      metrics: ['Strain Popularity', 'Category Revenue', 'Manifest Accuracy', 'Tag Coverage', 'Patient Visits', 'Avg THC %'],
     },
   },
 };

@@ -38,6 +38,7 @@ export const EXCLUDE_PREFIXES = new Set<string>([
     "iso-demo", // ISO demo terminal with bps + fixed fee display
     "vs", // comparison landing pages
     "crypto-payments", // industry landing pages
+    "cannabis", // cannabis compliance landing page
     "locations", // location landing pages
     "pms", // PMS routes
     "nodes", // Node operators landing page

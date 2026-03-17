@@ -8,7 +8,7 @@ const ConnectButton = dynamic(() => import("thirdweb/react").then((m) => m.Conne
 import { usePortalThirdwebTheme, getConnectButtonStyle, connectButtonClass } from "@/lib/thirdweb/theme";
 import { ShopThemeAuditor } from "@/components/providers/shop-theme-auditor";
 import { getAllIndustryPacks, IndustryPack, IndustryPackType } from "@/lib/industry-packs";
-import { Utensils, ShoppingBag, Hotel, Briefcase, BookOpen } from "lucide-react";
+import { Utensils, ShoppingBag, Hotel, Briefcase, BookOpen, Leaf } from "lucide-react";
 import ImageUploadField from "@/components/forms/ImageUploadField";
 import ShopWizard from "@/components/shop/ShopWizard";
 import ShopClient from "@/app/shop/[slug]/ShopClient";
@@ -87,6 +87,8 @@ function IndustryPackIcon({ packId, primaryColor }: { packId: IndustryPackType; 
       return <Briefcase {...iconProps} />;
     case 'publishing':
       return <BookOpen {...iconProps} />;
+    case 'cannabis':
+      return <Leaf {...iconProps} />;
     default:
       return null;
   }
@@ -349,7 +351,7 @@ export default function ShopBuilderPage() {
 
   const RESERVED_SLUGS = new Set<string>([
     "admin", "console", "developers", "developer", "docs", "doc", "shop", "portal", "terminal",
-    "vs", "locations", "crypto-payments", "get-started", "faq", "u", "api", "og-image", "robots",
+    "vs", "locations", "crypto-payments", "cannabis", "get-started", "faq", "u", "api", "og-image", "robots",
     "sitemap", "favicon", "team", "industry-packs", "analytics", "leaderboard", "inventory",
     "orders", "receipts", "reviews", "site", "platform", "billing", "merchants", "users", "auth", "test"
   ]);
@@ -1298,6 +1300,15 @@ export default function ShopBuilderPage() {
                           <div className="text-xs font-medium text-pink-600 mb-1">📖 Includes Writer's Workshop</div>
                           <div className="text-xs text-muted-foreground">
                             Complete publishing workflow with manuscript management, reader app integration, and series tracking
+                          </div>
+                        </div>
+                      )}
+
+                      {pack.id === 'cannabis' && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <div className="text-xs font-medium text-emerald-600 mb-1">🌿 METRC & BioTrack Compliance</div>
+                          <div className="text-xs text-muted-foreground">
+                            Seed-to-sale compliance panel with full METRC v2 & BioTrack integration, manifest management, lab test tracking, and inventory sync
                           </div>
                         </div>
                       )}

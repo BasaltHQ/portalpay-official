@@ -55,6 +55,7 @@ import LoyaltyPanelPlatform from "@/app/admin/panels/LoyaltyPanelPlatform";
 import ContractsPanel from "@/app/admin/panels/ContractsPanel";
 import DeliveryPanel from "@/app/admin/panels/DeliveryPanel";
 import WritersWorkshopPanelExt from "@/app/admin/panels/WritersWorkshopPanel";
+import CannabisCompliancePanel from "@/app/admin/panels/CannabisCompliancePanel";
 import PublicationsPanelExt from "@/app/admin/panels/PublicationsPanel";
 // Placeholder to avoid errors - I will read file first
 import ReportsPanel from "@/app/admin/panels/ReportsPanel";
@@ -5770,7 +5771,7 @@ type InventoryItem = {
   costUsd?: number;
   taxable?: boolean;
   jurisdictionCode?: string;
-  industryPack?: 'general' | 'restaurant' | 'retail' | 'hotel' | 'freelancer';
+  industryPack?: 'general' | 'restaurant' | 'retail' | 'hotel' | 'freelancer' | 'publishing' | 'cannabis';
   isSubscription?: boolean;
   createdAt: number;
   updatedAt: number;
@@ -6018,7 +6019,7 @@ function InventoryPanel() {
   const [editIsBook, setEditIsBook] = useState(false);
 
   // Edit modal: industry pack override
-  const [editIndustryPack, setEditIndustryPack] = useState<'general' | 'restaurant' | 'retail' | 'hotel' | 'freelancer' | 'publishing'>('general');
+  const [editIndustryPack, setEditIndustryPack] = useState<'general' | 'restaurant' | 'retail' | 'hotel' | 'freelancer' | 'publishing' | 'cannabis'>('general');
 
   // Inventory query/search/filter/sort/pagination state
   const [q, setQ] = useState("");
@@ -9697,6 +9698,7 @@ export default function AdminPage() {
     | "modules"
     | "nodeOperators"
     | "nodeDashboard"
+    | "cannabisCompliance"
   >("reserve");
   const [industryPack, setIndustryPack] = useState<string | null>(null);
   const containerType = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || "platform").toLowerCase();
@@ -10083,6 +10085,10 @@ export default function AdminPage() {
 
       {activeTab === "pms" && industryPack === 'hotel' && (
         <PMSPanel />
+      )}
+
+      {activeTab === "cannabisCompliance" && industryPack === 'cannabis' && (
+        <CannabisCompliancePanel />
       )}
 
       {activeTab === "admins" && canAdmins && (

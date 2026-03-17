@@ -256,7 +256,7 @@ function normalize(raw?: any, brandKey?: string): Omit<ShopConfig, "wallet" | "i
 
     // Industry Pack
     if (typeof raw.industryPack === "string") {
-      const validPacks: IndustryPackType[] = ["restaurant", "retail", "hotel", "freelancer", "publishing"];
+      const validPacks: IndustryPackType[] = ["restaurant", "retail", "hotel", "freelancer", "publishing", "cannabis"];
       const packType = String(raw.industryPack).toLowerCase();
       if (validPacks.includes(packType as IndustryPackType)) {
         out.industryPack = packType as IndustryPackType;
@@ -316,6 +316,7 @@ const RESERVED_SLUGS = new Set<string>([
   "vs",
   "locations",
   "crypto-payments",
+  "cannabis",
   "get-started",
   "faq",
   "u",
@@ -736,7 +737,7 @@ export async function POST(req: NextRequest) {
     let industryPack = base.industryPack;
     let industryPackActivatedAt = base.industryPackActivatedAt;
     if (typeof body.industryPack === "string") {
-      const validPacks: IndustryPackType[] = ["restaurant", "retail", "hotel", "freelancer", "publishing"];
+      const validPacks: IndustryPackType[] = ["restaurant", "retail", "hotel", "freelancer", "publishing", "cannabis"];
       const packType = String(body.industryPack).toLowerCase();
       if (validPacks.includes(packType as IndustryPackType)) {
         industryPack = packType as IndustryPackType;

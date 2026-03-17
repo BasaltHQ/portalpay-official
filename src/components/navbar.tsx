@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useActiveAccount, useActiveWallet, useDisconnect, darkTheme } from "thirdweb/react";
@@ -13,6 +13,7 @@ import { ChevronDown, Dot, Ellipsis } from "lucide-react";
 import { AuthModal } from "./auth-modal";
 import { AccessPendingModal } from "./access-pending-modal";
 import { SignupWizard } from "./signup-wizard";
+import { ContactFormModal } from "@/components/landing/ContactFormSection";
 import { useTranslations } from "next-intl";
 import { cachedContainerIdentity } from "@/lib/client-api-cache";
 import { useBrand } from "@/contexts/BrandContext";
@@ -60,6 +61,7 @@ export function Navbar() {
     const [pendingAdminNav, setPendingAdminNav] = useState(false);
     const router = useRouter();
     const brand = useBrand();
+    const [showContactModal, setShowContactModal] = useState(false);
     // Container identity (platform vs partner) to control branding load behavior
     const [container, setContainer] = useState<{ containerType: string; brandKey: string }>(() => {
         try {
@@ -999,6 +1001,15 @@ export function Navbar() {
 
                         {/* CTA / Login & Signup */}
                         <div className="hidden md:flex items-center gap-3 mr-4">
+                            {/* Contact Button */}
+                            {!account?.address && (
+                                <button
+                                    onClick={() => setShowContactModal(true)}
+                                    className="px-5 py-2.5 rounded-[10px] border border-white/20 hover:border-white/40 text-white text-xs font-mono tracking-wider font-bold transition-all hover:bg-white/5"
+                                >
+                                    CONTACT
+                                </button>
+                            )}
                             {/* Signup Button */}
                             {!account?.address && (
                                 <button
@@ -1183,6 +1194,21 @@ export function Navbar() {
                                         <button
                                             onClick={() => {
                                                 setMobileOpen(false);
+                                                setShowContactModal(true);
+                                            }}
+                                            className="w-full py-3 rounded-lg text-white text-xs font-mono tracking-wider font-bold transition-all hover:opacity-90 text-center"
+                                            style={{
+                                                border: `1px solid ${themeColor}50`,
+                                                backgroundColor: `${themeColor}10`,
+                                            }}
+                                        >
+                                            CONTACT US
+                                        </button>
+                                    )}
+                                    {!account?.address && (
+                                        <button
+                                            onClick={() => {
+                                                setMobileOpen(false);
                                                 setShowSignupWizard(true);
                                             }}
                                             className="w-full py-3 rounded-lg text-white text-xs font-mono tracking-wider font-bold transition-all hover:opacity-90"
@@ -1270,6 +1296,12 @@ export function Navbar() {
                     setShowSignupWizard(true);
                 }}
                 hasPendingApplication={hasPendingApplication}
+            />
+
+            {/* Contact Form Modal */}
+            <ContactFormModal
+                isOpen={showContactModal}
+                onClose={() => setShowContactModal(false)}
             />
 
         </>
