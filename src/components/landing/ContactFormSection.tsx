@@ -263,7 +263,7 @@ export function ContactFormModal({ isOpen, onClose }: { isOpen: boolean; onClose
           </button>
 
           {/* Header */}
-          <div className="mb-8 pr-8">
+          <div className="mb-6 pr-8">
             <span
               className="inline-block text-xs font-mono tracking-widest uppercase mb-3"
               style={{ color: secondaryColor }}
@@ -275,6 +275,18 @@ export function ContactFormModal({ isOpen, onClose }: { isOpen: boolean; onClose
             </h2>
             <p className="text-gray-400 text-sm leading-relaxed">
               Fill out the form and our team will help you get onboarded onto the BasaltSurge network.
+            </p>
+          </div>
+
+          {/* Free Tier Banner */}
+          <div className="relative p-4 rounded-xl bg-gradient-to-br from-emerald-500/15 via-emerald-600/10 to-cyan-500/10 border border-emerald-500/30 overflow-hidden mb-6">
+            <div className="absolute top-2 right-3 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono">FOREVER FREE</div>
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="text-2xl font-black text-white">$0</span>
+              <span className="text-sm text-gray-400">/mo — No subscription, no setup fees</span>
+            </div>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              All industry packs included free. Platform funded through a small processing fee on transactions, <span className="text-emerald-400 font-medium">paid by the customer</span>.
             </p>
           </div>
 
@@ -315,7 +327,7 @@ export default function ContactFormSection({ id = "contact" }: { id?: string }) 
 
           <div className="p-8 md:p-12">
             {/* Header */}
-            <div className="max-w-2xl mb-10">
+            <div className="max-w-2xl mx-auto mb-10">
               <span
                 className="inline-block text-xs font-mono tracking-widest uppercase mb-3"
                 style={{ color: secondaryColor }}
@@ -331,7 +343,7 @@ export default function ContactFormSection({ id = "contact" }: { id?: string }) 
               </p>
             </div>
 
-            <div className="max-w-2xl">
+            <div className="max-w-2xl mx-auto">
               <ContactFormInner
                 accentColor={secondaryColor}
                 onSuccess={() => setShowSuccess(true)}

@@ -37,7 +37,7 @@ export function SignupButton({ className, children, variant = "simple" }: Signup
                         animation: "bg-pan 15s ease infinite alternate",
                     }}
                 />
-                <span className="relative z-10 flex items-center gap-2">
+                <span className="relative z-10 flex items-center justify-center gap-2">
                     {children || "Sign Up Now"}
                 </span>
             </button>

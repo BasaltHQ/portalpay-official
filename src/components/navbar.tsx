@@ -1002,7 +1002,7 @@ export function Navbar() {
                         {/* CTA / Login & Signup */}
                         <div className="hidden md:flex items-center gap-3 mr-4">
                             {/* Contact Button */}
-                            {!account?.address && (
+                            {!account?.address && !isPartnerContainer && (
                                 <button
                                     onClick={() => setShowContactModal(true)}
                                     className="px-5 py-2.5 rounded-[10px] border border-white/20 hover:border-white/40 text-white text-xs font-mono tracking-wider font-bold transition-all hover:bg-white/5"
@@ -1014,9 +1014,10 @@ export function Navbar() {
                             {!account?.address && (
                                 <button
                                     onClick={() => setShowSignupWizard(true)}
-                                    className="px-5 py-2.5 rounded-[10px] border border-white/20 hover:border-white/40 text-white text-xs font-mono tracking-wider font-bold transition-all hover:bg-white/5"
+                                    className="relative px-5 py-2.5 rounded-[10px] border border-white/20 hover:border-white/40 text-white text-xs font-mono tracking-wider font-bold transition-all hover:bg-white/5"
                                 >
                                     SIGNUP
+                                    {!isPartnerContainer && <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-sm">FREE</span>}
                                 </button>
                             )}
                             {/* Login / Account Button */}
@@ -1190,7 +1191,7 @@ export function Navbar() {
                                 ))}
 
                                 <div className="mt-4 pt-4 flex flex-col gap-3" style={{ borderTop: `1px solid ${themeColor}20` }}>
-                                    {!account?.address && (
+                                    {!account?.address && !isPartnerContainer && (
                                         <button
                                             onClick={() => {
                                                 setMobileOpen(false);
@@ -1211,13 +1212,14 @@ export function Navbar() {
                                                 setMobileOpen(false);
                                                 setShowSignupWizard(true);
                                             }}
-                                            className="w-full py-3 rounded-lg text-white text-xs font-mono tracking-wider font-bold transition-all hover:opacity-90"
+                                            className="relative w-full py-3 rounded-lg text-white text-xs font-mono tracking-wider font-bold transition-all hover:opacity-90"
                                             style={{
                                                 border: `1px solid ${themeColor}50`,
                                                 backgroundColor: `${themeColor}10`,
                                             }}
                                         >
                                             SIGNUP
+                                            {!isPartnerContainer && <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-sm">FREE</span>}
                                         </button>
                                     )}
                                     <ConnectButton
@@ -1299,10 +1301,12 @@ export function Navbar() {
             />
 
             {/* Contact Form Modal */}
-            <ContactFormModal
-                isOpen={showContactModal}
-                onClose={() => setShowContactModal(false)}
-            />
+            {!isPartnerContainer && (
+                <ContactFormModal
+                    isOpen={showContactModal}
+                    onClose={() => setShowContactModal(false)}
+                />
+            )}
 
         </>
     );

@@ -416,6 +416,22 @@ export default function HomeContent() {
             0% { background-position: 0% 50%; }
             100% { background-position: 100% 50%; }
           }
+          @keyframes free-shimmer-sweep {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+          }
+          @keyframes free-banner-shimmer {
+            0%, 100% { border-color: rgba(16,185,129,0.3); }
+            50% { border-color: rgba(6,182,212,0.4); }
+          }
+          @keyframes signup-pulse {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.03); filter: brightness(1.15); }
+          }
+          @keyframes surge-line {
+            0% { left: -100%; }
+            100% { left: 200%; }
+          }
         `}} />
 
         {/* Hero: Value Prop + Live Preview */}
@@ -470,12 +486,61 @@ export default function HomeContent() {
               </li>
             </ul>
 
-            <div className="mt-auto pt-2 flex flex-wrap items-center gap-3">
+            {/* Animated Free Tier Banner — Platform Only */}
+            {!isPartnerContainer && (
+              <div className="relative overflow-hidden rounded-xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-500/15 via-cyan-500/10 to-emerald-600/15 p-6"
+                style={{ animation: 'free-banner-shimmer 3s ease-in-out infinite' }}
+              >
+                {/* Shimmer overlay */}
+                <div className="absolute inset-0 pointer-events-none" style={{
+                  background: 'linear-gradient(110deg, transparent 20%, rgba(16,185,129,0.1) 40%, rgba(6,182,212,0.15) 50%, rgba(16,185,129,0.1) 60%, transparent 80%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'free-shimmer-sweep 3s ease-in-out infinite',
+                }} />
+                <div className="relative">
+                  {/* Top row: Price + Badge */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-6xl font-black text-white leading-none">$0</span>
+                      <span className="text-xl text-gray-400 font-normal">/mo</span>
+                      <span className="text-gray-500 ml-1">— forever</span>
+                    </div>
+                    <span className="px-3 py-1 rounded-md text-[10px] font-bold tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono">FOREVER FREE</span>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-sm text-gray-300 leading-relaxed mb-4">
+                    No monthly subscription. No setup fees. No contracts. The full platform with <span className="text-white font-semibold">all industry packs</span> is completely free — funded entirely through a small processing fee on transactions, <span className="text-emerald-400 font-semibold">paid by the customer</span>.
+                  </p>
+
+                  {/* Industry Pack Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {[
+                      { emoji: "🍽️", label: "Restaurant" },
+                      { emoji: "🛍️", label: "Retail" },
+                      { emoji: "🌿", label: "Cannabis" },
+                      { emoji: "🏨", label: "Hotel" },
+                      { emoji: "💼", label: "Freelancer" },
+                      { emoji: "🛒", label: "E-Commerce" },
+                    ].map((p) => (
+                      <div key={p.label} className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-white/5 border border-white/10 whitespace-nowrap">
+                        <span className="text-emerald-400 text-[10px] font-bold">✓</span>
+                        <span className="text-[10px] text-gray-300 font-medium">{p.emoji} {p.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-auto pt-2">
               <SignupButton
                 variant="shiny"
-                className="group relative overflow-hidden px-8 py-4 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-bold text-lg transition-all hover:opacity-100 shadow-lg hover:shadow-xl"
+                className="group relative overflow-hidden w-full px-8 py-4 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-bold text-lg transition-all hover:opacity-100 shadow-lg hover:shadow-xl"
               >
-                Sign Up Now
+                <span className="relative z-10 flex items-center justify-center gap-2" style={{ animation: !isPartnerContainer ? 'signup-pulse 2s ease-in-out infinite' : undefined }}>
+                  Sign Up Now{!isPartnerContainer && <> — It&apos;s Free</>}
+                </span>
               </SignupButton>
             </div>
           </div>

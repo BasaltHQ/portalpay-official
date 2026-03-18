@@ -71,6 +71,7 @@ export default function ClientRequestsPanel() {
 
     // Split Config State
     const [approvingId, setApprovingId] = useState<string | null>(null);
+    const [feeExplainerAcked, setFeeExplainerAcked] = useState(false);
     const [platformBps, setPlatformBps] = useState(50); // Default platform fee
     const [historyViewerId, setHistoryViewerId] = useState<string | null>(null);
     const [activeTabs, setActiveTabs] = useState<Record<string, string>>({});
@@ -255,6 +256,7 @@ export default function ClientRequestsPanel() {
 
     const openApprovalModal = (id: string, existingSplit?: { partnerBps: number, agents?: { wallet: string, bps: number }[] }) => {
         setApprovingId(id);
+        setFeeExplainerAcked(false);
         setDeployResult("");
         const envPartner = process.env.NEXT_PUBLIC_PARTNER_WALLET_ADDRESS || "";
         const brandPartner = (brand as any)?.partnerWallet || "";
@@ -936,6 +938,38 @@ export default function ClientRequestsPanel() {
                             </div>
 
                             <div className="p-4 sm:p-6 overflow-y-auto">
+                                {/* Fee Explainer Gate — must acknowledge before configuring */}
+                                {!feeExplainerAcked ? (
+                                    <div className="flex items-center justify-center min-h-[300px]">
+                                        <div className="w-full max-w-lg p-6 rounded-xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-600/10 border border-amber-500/25 animate-in fade-in zoom-in-95 duration-300">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <span className="text-2xl">💡</span>
+                                                <h3 className="text-lg font-bold text-amber-200">How Fee-on-Top Works</h3>
+                                            </div>
+                                            <p className="text-sm text-gray-300 leading-relaxed mb-4">
+                                                Our fee model is different. The processing fee is <span className="text-amber-300 font-semibold">added on top</span> of the merchant&apos;s subtotal to create the customer&apos;s total. The split contract then distributes the <span className="text-white font-semibold">full total</span> — the merchant receives their base price, and the fee portion flows to the partner &amp; platform.
+                                            </p>
+                                            <div className="bg-black/30 rounded-lg p-4 border border-white/5 text-sm font-mono space-y-1.5 mb-5">
+                                                <div className="text-zinc-500 uppercase tracking-wider text-[10px] mb-2">Example — 10% processing fee</div>
+                                                <div className="flex justify-between"><span className="text-zinc-400">Item Price (Subtotal)</span><span className="text-white">$10.00</span></div>
+                                                <div className="flex justify-between"><span className="text-zinc-400">+ Processing Fee (10%)</span><span className="text-amber-400">$1.00</span></div>
+                                                <div className="h-px bg-white/10 my-1.5" />
+                                                <div className="flex justify-between font-semibold"><span className="text-zinc-300">Customer Pays (Total)</span><span className="text-white">$11.00</span></div>
+                                                <div className="h-px bg-white/10 my-1.5" />
+                                                <div className="text-zinc-500 uppercase tracking-wider text-[10px] mt-2 mb-1.5">Split Distribution on $11.00</div>
+                                                <div className="flex justify-between"><span className="text-zinc-400">→ Merchant (90%)</span><span className="text-emerald-400">$9.90</span></div>
+                                                <div className="flex justify-between"><span className="text-zinc-400">→ Partner (9.75%)</span><span className="text-blue-400">$1.0725</span></div>
+                                                <div className="flex justify-between"><span className="text-zinc-400">→ Platform (0.25%)</span><span className="text-zinc-300">$0.0275</span></div>
+                                            </div>
+                                            <button
+                                                onClick={() => setFeeExplainerAcked(true)}
+                                                className="w-full py-3 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 font-semibold text-sm transition-colors"
+                                            >
+                                                I Understand — Continue to Split Configuration
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                                     {/* LEFT COLUMN: Configuration */}
                                     <div className="space-y-6">
@@ -1233,6 +1267,7 @@ export default function ClientRequestsPanel() {
                                         </div>
                                     </div>
                                 </div>
+                                )}
                             </div>
 
                             <div className="p-4 bg-black/20 border-t border-white/5 flex gap-3 justify-end flex-shrink-0">
