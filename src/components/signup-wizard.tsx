@@ -25,14 +25,34 @@ const WIZARD_STEPS = [
     {
         id: "welcome",
         title: "Welcome to BasaltSurge",
-        subtitle: "The Future of Web3 Commerce",
+        subtitle: "The Future of Web3 Commerce — 100% Free",
         content: (
             <div className="space-y-4">
-                <p className="text-sm text-gray-300 leading-relaxed">
-                    BasaltSurge is a <span className="text-emerald-400 font-semibold">trustless, permissionless</span> payment infrastructure
-                    that enables businesses to accept cryptocurrency and card payments with instant settlement.
-                </p>
-                <div className="grid grid-cols-3 gap-2 mt-6">
+                {/* FREE Banner — front and center */}
+                <div className="relative p-5 rounded-xl bg-gradient-to-br from-emerald-500/15 via-emerald-600/10 to-cyan-500/10 border border-emerald-500/30 overflow-hidden">
+                    <div className="absolute top-2 right-3 px-2 py-0.5 rounded text-[10px] font-bold tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono">FOREVER FREE</div>
+                    <div className="text-3xl font-black text-white mb-1">$0<span className="text-lg text-gray-400 font-normal">/mo</span></div>
+                    <p className="text-sm text-gray-300 leading-relaxed">
+                        No monthly subscription. No setup fees. No contracts.
+                        <span className="text-emerald-400 font-semibold"> The full platform is free</span> — funded entirely through a small processing fee on transactions, paid by the customer.
+                    </p>
+                </div>
+
+                {/* All Industry Packs Included */}
+                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
+                    <div className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 mb-2.5">ALL INDUSTRY PACKS INCLUDED</div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                        {["Restaurant", "Retail", "Cannabis", "Hotel", "Freelancer", "E-Commerce"].map((pack) => (
+                            <div key={pack} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-white/5 border border-white/5">
+                                <span className="text-emerald-400 text-[10px]">✓</span>
+                                <span className="text-[10px] text-gray-300 font-medium">{pack}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Feature pills */}
+                <div className="grid grid-cols-3 gap-2">
                     <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
                         <div className="text-xl mb-1">⚡</div>
                         <div className="text-[10px] font-mono text-gray-400 uppercase">Instant</div>
@@ -108,40 +128,6 @@ const WIZARD_STEPS = [
         ),
     },
     {
-        id: "pricing",
-        title: "Simple, Transparent Pricing",
-        subtitle: "Fees Paid by the Customer",
-        content: (
-            <div className="space-y-4">
-                <p className="text-sm text-gray-300 leading-relaxed">
-                    Transaction fees are <span className="text-emerald-400 font-semibold">added to the transaction</span> and
-                    paid by the customer—you keep 100% of your listed price.
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
-                        <div className="text-2xl font-bold text-emerald-400 mb-1">✓</div>
-                        <div className="text-xs font-semibold text-white mb-0.5">Crypto Payments</div>
-                        <div className="text-[10px] text-gray-400">USDC, ETH, and more</div>
-                    </div>
-                    <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border border-cyan-500/20">
-                        <div className="text-2xl font-bold text-cyan-400 mb-1">✓</div>
-                        <div className="text-xs font-semibold text-white mb-0.5">Card Payments</div>
-                        <div className="text-[10px] text-gray-400">Credit & Debit cards</div>
-                    </div>
-                </div>
-                <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                    <div className="flex items-center gap-2">
-                        <div className="text-lg">🚀</div>
-                        <div>
-                            <div className="text-xs font-semibold text-white">No Monthly Fees</div>
-                            <div className="text-[10px] text-gray-400">Full platform access included</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        ),
-    },
-    {
         id: "connect",
         title: "Ready to Begin",
         subtitle: "Connect Your Wallet",
@@ -173,13 +159,55 @@ function formatSSN(value: string) { // XXX-XX-XXXX
 }
 
 // Generate wizard steps dynamically based on brand
-function getWizardSteps(brandName: string) {
+function getWizardSteps(brandName: string, isPlatform: boolean) {
     return WIZARD_STEPS.map(step => {
         if (step.id === "welcome") {
             return {
                 ...step,
                 title: `Welcome to ${brandName}`,
-                content: (
+                subtitle: isPlatform ? "The Future of Web3 Commerce — 100% Free" : "The Future of Web3 Commerce",
+                content: isPlatform ? (
+                    <div className="space-y-4">
+                        {/* FREE Banner — front and center */}
+                        <div className="relative p-5 rounded-xl bg-gradient-to-br from-emerald-500/15 via-emerald-600/10 to-cyan-500/10 border border-emerald-500/30 overflow-hidden">
+                            <div className="absolute top-2 right-3 px-2 py-0.5 rounded text-[10px] font-bold tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono">FOREVER FREE</div>
+                            <div className="text-3xl font-black text-white mb-1">$0<span className="text-lg text-gray-400 font-normal">/mo</span></div>
+                            <p className="text-sm text-gray-300 leading-relaxed">
+                                No monthly subscription. No setup fees. No contracts.
+                                <span className="text-emerald-400 font-semibold"> The full platform is free</span> — funded entirely through a small processing fee on transactions, paid by the customer.
+                            </p>
+                        </div>
+
+                        {/* All Industry Packs Included */}
+                        <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
+                            <div className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 mb-2.5">ALL INDUSTRY PACKS INCLUDED</div>
+                            <div className="grid grid-cols-3 gap-1.5">
+                                {["Restaurant", "Retail", "Cannabis", "Hotel", "Freelancer", "E-Commerce"].map((pack) => (
+                                    <div key={pack} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-white/5 border border-white/5">
+                                        <span className="text-emerald-400 text-[10px]">✓</span>
+                                        <span className="text-[10px] text-gray-300 font-medium">{pack}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Feature pills */}
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                                <div className="text-xl mb-1">⚡</div>
+                                <div className="text-[10px] font-mono text-gray-400 uppercase">Instant</div>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                                <div className="text-xl mb-1">🔒</div>
+                                <div className="text-[10px] font-mono text-gray-400 uppercase">Secure</div>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                                <div className="text-xl mb-1">💎</div>
+                                <div className="text-[10px] font-mono text-gray-400 uppercase">Trustless</div>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
                     <div className="space-y-4">
                         <p className="text-sm text-gray-300 leading-relaxed">
                             {brandName} is a <span className="text-emerald-400 font-semibold">trustless, permissionless</span> payment infrastructure
@@ -324,7 +352,7 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
 
     // Generate wizard steps dynamically based on brand
     const wizardSteps = useMemo(() => {
-        const base = getWizardSteps(brandName);
+        const base = getWizardSteps(brandName, isPlatform);
         if (isPrivate && applicationStatus !== "success") {
             // In private mode, we might need an extra step if not approved
             // We'll handle this by dynamically rendering the "Connect" step transformation
