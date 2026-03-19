@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { ExitIntentModal } from "@/components/landing/ExitIntentModal";
 import ImageUploadField from "@/components/forms/ImageUploadField";
 import {
   CheckCircle,
@@ -527,6 +528,9 @@ export default function PartnersPage() {
           </div>
         </div>
       </section>
+
+      {/* Exit-Intent Email Capture */}
+      <ExitIntentModal accentColor={theme?.primaryColor} />
     </div>
   );
 }

@@ -18,6 +18,7 @@ import { resolveBrandSymbol, resolveBrandAppLogo, getEffectiveBrandKey } from "@
 
 import { cachedFetch } from "@/lib/client-api-cache";
 import RebrandingHero from "@/components/landing/RebrandingHero";
+import { ExitIntentModal } from "@/components/landing/ExitIntentModal";
 import PublisherOsirisSection from "@/components/landing/PublisherOsirisSection";
 import PluginsSection from "@/components/landing/PluginsSection";
 import TrustlessPermissionlessSection from "@/components/landing/TrustlessPermissionlessSection";
@@ -816,6 +817,9 @@ export default function HomeContent() {
 
         <SiteFooter />
       </div>
+
+      {/* Exit-Intent Email Capture — Platform Only */}
+      {!isPartnerContainer && <ExitIntentModal accentColor={siteTheme.secondaryColor} />}
     </div>
   );
 }
