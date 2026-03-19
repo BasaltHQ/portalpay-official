@@ -23,6 +23,7 @@ import GeometricAnimation from "@/components/landing/GeometricAnimation";
 import { cachedFetch } from "@/lib/client-api-cache";
 import BrandText from "@/components/brand-text";
 import ContactFormSection from "@/components/landing/ContactFormSection";
+import { ExitIntentModal } from "@/components/landing/ExitIntentModal";
 
 export default function GetStartedPage() {
   const brand = useBrand();
@@ -430,6 +431,9 @@ export default function GetStartedPage() {
         </section>
 
       </div>
+
+      {/* Exit-Intent Email Capture — Platform Only */}
+      {!isPartnerContainer && <ExitIntentModal accentColor={siteTheme?.secondaryColor} />}
     </div>
   );
 }

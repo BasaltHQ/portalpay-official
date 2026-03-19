@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import ContactFormSection from '@/components/landing/ContactFormSection';
+import { ExitIntentModal } from '@/components/landing/ExitIntentModal';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Cannabis POS — Dedicated Landing Page
@@ -635,6 +636,8 @@ export default function CannabisLandingClient() {
         </div>
       </section>
 
+      {/* Exit-Intent Email Capture */}
+      <ExitIntentModal accentColor="#10b981" />
     </div>
   );
 }
