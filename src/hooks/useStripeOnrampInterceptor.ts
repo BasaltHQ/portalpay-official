@@ -428,55 +428,107 @@ export function useStripeOnrampInterceptor({
     };
   }, [enabled, quote]);
 
-  // ─── Main effect: Patch window.open to intercept crypto.link.com redirects ───
-  // Uses launchRef so this effect only runs once (stable deps) and never re-runs
-  // to kill the overlay on re-render.
+  // ─── Main effect: Patch window.open + location to intercept crypto.link.com ───
+  // CRITICAL: Only gated on `enabled` — NOT on walletAddress or publishableKey.
+  // Those are checked inside launchRef.current() when actually launching the modal.
+  // This ensures the patch is active even if wallet/key haven't resolved yet.
   useEffect(() => {
-    if (!enabled || !walletAddress || !publishableKey) return;
+    if (!enabled) return;
 
+    const isCryptoLinkUrl = (url: string) => {
+      const lower = (url || "").toLowerCase();
+      return lower.includes("crypto.link.com") || lower.includes("link.com/crypto");
+    };
+
+    // 1. Patch window.open (desktop browsers)
     const originalOpen = window.open;
-
     window.open = function patchedOpen(
       url?: string | URL,
       target?: string,
       features?: string
     ): WindowProxy | null {
-      const urlStr = String(url || "").toLowerCase();
-
-      if (urlStr.includes("crypto.link.com") || urlStr.includes("link.com/crypto")) {
+      const urlStr = String(url || "");
+      if (isCryptoLinkUrl(urlStr)) {
         console.log("[STRIPE INTERCEPTOR] 🎯 Intercepted window.open to:", urlStr);
         launchRef.current();
         return null;
       }
-
       return originalOpen.call(window, url, target, features);
     };
 
-    console.log("[STRIPE INTERCEPTOR] ✓ window.open patched — watching for crypto.link.com redirects");
+    // 2. Patch window.location.assign (mobile browsers often use this instead of window.open)
+    const originalAssign = window.location.assign.bind(window.location);
+    window.location.assign = function patchedAssign(url: string | URL) {
+      const urlStr = String(url || "");
+      if (isCryptoLinkUrl(urlStr)) {
+        console.log("[STRIPE INTERCEPTOR] 🎯 Intercepted location.assign to:", urlStr);
+        launchRef.current();
+        return;
+      }
+      return originalAssign(urlStr);
+    };
 
+    // 3. Patch window.location.replace (another mobile navigation path)
+    const originalReplace = window.location.replace.bind(window.location);
+    window.location.replace = function patchedReplace(url: string | URL) {
+      const urlStr = String(url || "");
+      if (isCryptoLinkUrl(urlStr)) {
+        console.log("[STRIPE INTERCEPTOR] 🎯 Intercepted location.replace to:", urlStr);
+        launchRef.current();
+        return;
+      }
+      return originalReplace(urlStr);
+    };
+
+    // 4. Capture-phase click handler for <a> tags
     const handleClick = (e: MouseEvent) => {
       const anchor = (e.target as HTMLElement)?.closest?.("a") as HTMLAnchorElement | null;
       if (anchor) {
         const href = (anchor.href || "").toLowerCase();
-        if (href.includes("crypto.link.com") || href.includes("link.com/crypto")) {
+        if (isCryptoLinkUrl(href)) {
           e.preventDefault();
           e.stopPropagation();
+          e.stopImmediatePropagation();
+          console.log("[STRIPE INTERCEPTOR] 🎯 Intercepted anchor click to:", href);
           launchRef.current();
         }
       }
     };
     document.addEventListener("click", handleClick, true);
 
+    // 5. MutationObserver to neuter any dynamically-added crypto.link.com anchors
+    const linkObserver = new MutationObserver(() => {
+      try {
+        const anchors = document.querySelectorAll('a[href*="crypto.link.com"], a[href*="link.com/crypto"]');
+        anchors.forEach((a) => {
+          const el = a as HTMLAnchorElement;
+          if (el.dataset.ppIntercepted) return;
+          el.dataset.ppIntercepted = "1";
+          el.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            console.log("[STRIPE INTERCEPTOR] 🎯 Intercepted neutered anchor:", el.href);
+            launchRef.current();
+          }, true);
+        });
+      } catch {}
+    });
+    linkObserver.observe(document.body, { childList: true, subtree: true });
+
+    console.log("[STRIPE INTERCEPTOR] ✓ All interception layers active (window.open + location + click + DOM)");
+
     return () => {
       window.open = originalOpen;
+      window.location.assign = originalAssign;
+      window.location.replace = originalReplace;
       document.removeEventListener("click", handleClick, true);
-      // Do NOT remove the overlay here — this cleanup runs on dep changes,
-      // not just unmount. The overlay has its own close button.
+      try { linkObserver.disconnect(); } catch {}
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-      console.log("[STRIPE INTERCEPTOR] ✓ Cleaned up, window.open restored");
+      console.log("[STRIPE INTERCEPTOR] ✓ Cleaned up, all patches restored");
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, walletAddress, publishableKey]);
+  }, [enabled]);
 
   // ─── Unmount-only cleanup: remove overlay if component truly unmounts ───
   useEffect(() => {
