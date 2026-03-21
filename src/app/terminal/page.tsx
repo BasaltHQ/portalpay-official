@@ -689,6 +689,19 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
         } else if (typeof (cfg as any).basePlatformFeePct === "number") {
           setBasePlatformFeePct((cfg as any).basePlatformFeePct);
         }
+
+        // tipConfig (merchant tip presets)
+        const tc = (cfg as any)?.tipConfig;
+        if (tc && typeof tc === "object") {
+          if (Array.isArray(tc.presets) && tc.presets.length > 0) {
+            const p = tc.presets.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v >= 0 && v <= 100);
+            if (p.length > 0) setTipPresets(p);
+          }
+          if (typeof tc.allowCustom === "boolean") setMerchantAllowCustom(tc.allowCustom);
+          if (typeof tc.defaultTip === "number" && Number.isFinite(tc.defaultTip)) {
+            setSelectedTip(tc.defaultTip);
+          }
+        }
       })
       .catch(() => { });
   }, [account?.address, previewMode, searchParams]);
@@ -697,7 +710,8 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
   const taxUsd = 1.0;
   const baseWithoutTipUsd = itemsSubtotalUsd + taxUsd;
 
-  const TIP_PRESETS = [0, 10, 15, 20] as const;
+  const [tipPresets, setTipPresets] = useState<number[]>([0, 10, 15, 20]);
+  const [merchantAllowCustom, setMerchantAllowCustom] = useState(true);
   const [selectedTip, setSelectedTip] = useState<number | "custom">(20);
   const [customTipPercent, setCustomTipPercent] = useState<string>("18");
   const effectiveTipPercent = useMemo(() => {
@@ -787,6 +801,19 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
           if (!cancelled) setAvailableTokens(runtimeTokens);
         }
         if (!cancelled && typeof t === "string") setToken(t as any);
+
+        // tipConfig (merchant tip presets) from wallet-scoped config
+        const tc2 = (j as any)?.config?.tipConfig;
+        if (tc2 && typeof tc2 === "object") {
+          if (Array.isArray(tc2.presets) && tc2.presets.length > 0) {
+            const p = tc2.presets.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v >= 0 && v <= 100);
+            if (p.length > 0 && !cancelled) setTipPresets(p);
+          }
+          if (typeof tc2.allowCustom === "boolean" && !cancelled) setMerchantAllowCustom(tc2.allowCustom);
+          if (typeof tc2.defaultTip === "number" && Number.isFinite(tc2.defaultTip) && !cancelled) {
+            setSelectedTip(tc2.defaultTip);
+          }
+        }
       } catch { }
     })();
     return () => { cancelled = true; };
@@ -1027,10 +1054,12 @@ function PreviewContent({ forcedMode }: { forcedMode: PreviewMode }) {
       <div className="text-sm font-semibold">Add a tip</div>
       <div className="microtext text-muted-foreground">Thank you for your support</div>
       <div className="mt-3 grid grid-cols-4 gap-2">
-        {TIP_PRESETS.map((p) => (
+        {tipPresets.map((p) => (
           <button key={p} type="button" onClick={() => setSelectedTip(p)} className={`h-9 rounded-md border text-sm transition-colors ${selectedTip !== "custom" && selectedTip === p ? "bg-[var(--pp-secondary)] text-white border-transparent" : "bg-background hover:bg-foreground/5"}`}>{p}%</button>
         ))}
-        <button type="button" onClick={() => setSelectedTip("custom")} className={`h-9 rounded-md border text-sm transition-colors ${selectedTip === "custom" ? "bg-[var(--pp-secondary)] text-white border-transparent" : "bg-background hover:bg-foreground/5"}`}>Custom</button>
+        {merchantAllowCustom && (
+          <button type="button" onClick={() => setSelectedTip("custom")} className={`h-9 rounded-md border text-sm transition-colors ${selectedTip === "custom" ? "bg-[var(--pp-secondary)] text-white border-transparent" : "bg-background hover:bg-foreground/5"}`}>Custom</button>
+        )}
       </div>
       {selectedTip === "custom" && (
         <div className="mt-3 flex items-center gap-2">

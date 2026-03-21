@@ -1257,9 +1257,12 @@ export default function PortalReceiptPage() {
     }
   }, [items]);
 
-  const [tipChoice, setTipChoice] = useState<"0" | "10" | "15" | "20" | "custom">("0");
+  const [tipChoice, setTipChoice] = useState<string>("0");
   const [tipCustomPct, setTipCustomPct] = useState<number>(0);
   const [updatingTip, setUpdatingTip] = useState(false);
+  const [merchantTipPresets, setMerchantTipPresets] = useState<number[]>([0, 10, 15, 20]);
+  const [merchantAllowCustom, setMerchantAllowCustom] = useState(true);
+  const [pendingDefaultTip, setPendingDefaultTip] = useState<number | null>(null);
 
   const tipUsd = Number(receipt?.tipAmount || 0);
 
@@ -1301,6 +1304,43 @@ export default function PortalReceiptPage() {
       handleTipUpdate(tipChoice);
     }
   }, [tipChoice, tipCustomPct]);
+
+  // Auto-apply merchant default tip once receipt is loaded
+  useEffect(() => {
+    if (pendingDefaultTip === null || !receiptId || !receipt) return;
+    // Only apply if no tip has been set yet
+    if (Number(receipt?.tipAmount || 0) > 0) {
+      setPendingDefaultTip(null);
+      return;
+    }
+    const pct = pendingDefaultTip;
+    const subtotal = items
+      .filter((it) => !/processing fee|portal fee|tax|gratuity|tip|^shipping/i.test(it.label || ""))
+      .reduce((s, it) => s + Number(it.priceUsd || 0), 0);
+    if (subtotal <= 0) return;
+    const amount = Number(((pct / 100) * subtotal).toFixed(2));
+    if (amount <= 0) { setPendingDefaultTip(null); return; }
+
+    setTipChoice(String(pct));
+    setPendingDefaultTip(null);
+    // Directly POST the default tip
+    (async () => {
+      setUpdatingTip(true);
+      try {
+        const res = await fetch(`/api/receipts/${receiptId}/tip`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tipAmount: amount }),
+        });
+        if (res.ok) {
+          const j = await res.json();
+          if (j.receipt) setReceipt(j.receipt);
+        }
+      } finally {
+        setUpdatingTip(false);
+      }
+    })();
+  }, [pendingDefaultTip, receiptId, receipt]);
 
   const baseWithoutFeeNoTipUsd = useMemo(
     () => +(itemsSubtotalUsd + taxUsd).toFixed(2),
@@ -1707,6 +1747,20 @@ export default function PortalReceiptPage() {
           setSellerAddress(splitAddr as `0x${string}`);
         } else {
           setSellerAddress(merchantWallet as `0x${string}`);
+        }
+
+        // tipConfig (merchant tip presets)
+        const tc = (cfg as any)?.tipConfig;
+        if (tc && typeof tc === "object") {
+          if (Array.isArray(tc.presets) && tc.presets.length > 0) {
+            const p = tc.presets.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v >= 0 && v <= 100);
+            if (p.length > 0) setMerchantTipPresets(p);
+          }
+          if (typeof tc.allowCustom === "boolean") setMerchantAllowCustom(tc.allowCustom);
+          if (typeof tc.defaultTip === "number" && Number.isFinite(tc.defaultTip) && tc.defaultTip > 0) {
+            // Queue the default tip — it will be applied once the receipt is loaded
+            setPendingDefaultTip(tc.defaultTip);
+          }
         }
       })
       .catch(() => {
@@ -3217,7 +3271,7 @@ export default function PortalReceiptPage() {
                       <span className="ml-auto opacity-70">▾</span>
                     </button>
                     {currencyOpen && (
-                      <div className="absolute z-[20005] mt-1 w-full rounded-md border bg-background shadow-md p-1 max-h-64 overflow-hidden">
+                      <div className="absolute z-[20005] mt-1 w-full rounded-md border bg-background shadow-md p-1 max-h-64 overflow-y-auto">
                         {availableFiatCurrencies.map((c) => (
                           <button
                             key={c.code}
@@ -3246,37 +3300,22 @@ export default function PortalReceiptPage() {
 
               {/* Receipt */}
               <div className={`mt-4 ${isEmbedded ? "" : "rounded-2xl border p-3 bg-background/70"}`}>
-                <div className="flex items-center gap-3">
-                  <div className={`${theme.brandLogoShape === "round" ? "rounded-full" : "rounded-lg"} w-10 h-10 bg-foreground/5 overflow-hidden grid place-items-center`}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={getSymbolLogo()}
-                      alt="Logo"
-                      className="w-10 h-10 object-contain"
-                    />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold">{effectiveBrandName || getDefaultBrandName(theme.brandKey)}</div>
-                    <div className="microtext text-muted-foreground">Digital Receipt</div>
-                  </div>
-                  <div className="ml-auto microtext text-muted-foreground">
-                    {loadingReceipt ? "Loading…" : "Live"}
-                  </div>
-                </div>
-
-                <div className="mt-3 space-y-2">
+                <div className="space-y-1.5">
                   {(() => {
                     const displayItems = (items || []).filter((it) => {
                       const label = String(it.label || "");
                       return !/processing fee/i.test(label) && !/portal fee/i.test(label) && !/tax/i.test(label);
                     });
                     return displayItems.map((it, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-sm">
-                        <span className="opacity-80">
-                          {it.label}
-                          {typeof it.qty === "number" && it.qty > 1 ? ` × ${it.qty}` : ""}
-                        </span>
-                        <span>{(() => {
+                      <div key={idx} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-foreground/[0.03] hover:bg-foreground/[0.06] transition-colors">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-[10px] font-bold w-5 h-5 rounded-full bg-foreground/10 text-muted-foreground flex items-center justify-center shrink-0 tabular-nums">{idx + 1}</span>
+                          <div className="min-w-0">
+                            <span className="text-sm font-medium truncate block">{it.label}</span>
+                            <span className="microtext text-muted-foreground/60 tabular-nums">Qty: {typeof it.qty === "number" && it.qty > 0 ? it.qty : 1}</span>
+                          </div>
+                        </div>
+                        <span className="text-sm font-semibold tabular-nums shrink-0 ml-3">{(() => {
                           const usdVal = Number(it.priceUsd || 0);
                           if (currency === "USD") {
                             return formatCurrency(usdVal, "USD");
@@ -3289,13 +3328,13 @@ export default function PortalReceiptPage() {
                     ));
                   })()}
 
-                  <div className="mt-2">
-                    <div className="text-xs font-medium flex items-center gap-2">
+                  <div className="mt-3 pt-3 flex flex-col items-center">
+                    <div className="text-sm font-semibold flex items-center gap-2">
                       Add a tip
-                      {updatingTip && <span className="animate-spin text-xs">⏳</span>}
+                      {updatingTip && <span className="animate-spin text-sm">⏳</span>}
                     </div>
-                    <div className="mt-1 flex gap-2 flex-wrap">
-                      {(["0", "10", "15", "20", "custom"] as const).map((v) => (
+                    <div className="mt-2 flex gap-2 flex-wrap justify-center">
+                      {[...merchantTipPresets.map(String), ...(merchantAllowCustom ? ["custom"] : [])].map((v) => (
                         <button
                           key={v}
                           type="button"
@@ -3304,7 +3343,7 @@ export default function PortalReceiptPage() {
                             setTipChoice(v);
                             if (v !== "custom") handleTipUpdate(v);
                           }}
-                          className={`px-2 py-1 rounded-md border text-xs hover:bg-foreground/5 transition-colors ${tipChoice === v ? "bg-foreground/10 border-foreground/20" : ""} ${updatingTip ? "opacity-50 cursor-not-allowed" : ""}`}
+                          className={`px-4 py-2 rounded-lg border text-sm font-medium hover:bg-foreground/5 transition-colors ${tipChoice === v ? "bg-foreground/10 border-foreground/20" : ""} ${updatingTip ? "opacity-50 cursor-not-allowed" : ""}`}
                           title={v === "custom" ? "Custom tip amount" : `Tip ${v}%`}
                         >
                           {v === "custom" ? "Custom" : `${v}%`}
@@ -3321,12 +3360,12 @@ export default function PortalReceiptPage() {
                           onChange={(e) => setTipCustomPct(Number(e.target.value))}
                           onBlur={() => handleTipUpdate(tipCustomPct)}
                           placeholder="%"
-                          className="h-7 px-2 rounded-md border bg-background text-xs w-20"
+                          className="h-9 px-3 rounded-lg border bg-background text-sm w-24"
                           title="Enter tip percentage"
                         />
                       )}
                     </div>
-                    <div className="microtext text-muted-foreground mt-1">
+                    <div className="microtext text-muted-foreground mt-2">
                       Tip applies to subtotal before tax and fees.
                     </div>
                   </div>
