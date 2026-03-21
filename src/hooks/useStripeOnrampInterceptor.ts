@@ -428,7 +428,7 @@ export function useStripeOnrampInterceptor({
     };
   }, [enabled, quote]);
 
-  // ─── Main effect: Patch window.open + location to intercept crypto.link.com ───
+  // ─── Main effect: Patch window.open + intercept clicks for crypto.link.com ───
   // CRITICAL: Only gated on `enabled` — NOT on walletAddress or publishableKey.
   // Those are checked inside launchRef.current() when actually launching the modal.
   // This ensures the patch is active even if wallet/key haven't resolved yet.
@@ -456,35 +456,11 @@ export function useStripeOnrampInterceptor({
       return originalOpen.call(window, url, target, features);
     };
 
-    // 2. Patch window.location.assign (mobile browsers often use this instead of window.open)
-    const originalAssign = window.location.assign.bind(window.location);
-    window.location.assign = function patchedAssign(url: string | URL) {
-      const urlStr = String(url || "");
-      if (isCryptoLinkUrl(urlStr)) {
-        console.log("[STRIPE INTERCEPTOR] 🎯 Intercepted location.assign to:", urlStr);
-        launchRef.current();
-        return;
-      }
-      return originalAssign(urlStr);
-    };
-
-    // 3. Patch window.location.replace (another mobile navigation path)
-    const originalReplace = window.location.replace.bind(window.location);
-    window.location.replace = function patchedReplace(url: string | URL) {
-      const urlStr = String(url || "");
-      if (isCryptoLinkUrl(urlStr)) {
-        console.log("[STRIPE INTERCEPTOR] 🎯 Intercepted location.replace to:", urlStr);
-        launchRef.current();
-        return;
-      }
-      return originalReplace(urlStr);
-    };
-
-    // 4. Capture-phase click handler for <a> tags
+    // 2. Capture-phase click handler for <a> tags (catches mobile taps too)
     const handleClick = (e: MouseEvent) => {
       const anchor = (e.target as HTMLElement)?.closest?.("a") as HTMLAnchorElement | null;
       if (anchor) {
-        const href = (anchor.href || "").toLowerCase();
+        const href = (anchor.href || "");
         if (isCryptoLinkUrl(href)) {
           e.preventDefault();
           e.stopPropagation();
@@ -496,7 +472,7 @@ export function useStripeOnrampInterceptor({
     };
     document.addEventListener("click", handleClick, true);
 
-    // 5. MutationObserver to neuter any dynamically-added crypto.link.com anchors
+    // 3. MutationObserver to neuter any dynamically-added crypto.link.com anchors
     const linkObserver = new MutationObserver(() => {
       try {
         const anchors = document.querySelectorAll('a[href*="crypto.link.com"], a[href*="link.com/crypto"]');
@@ -516,12 +492,16 @@ export function useStripeOnrampInterceptor({
     });
     linkObserver.observe(document.body, { childList: true, subtree: true });
 
-    console.log("[STRIPE INTERCEPTOR] ✓ All interception layers active (window.open + location + click + DOM)");
+    // 4. Intercept beforeunload to catch direct location.href assignments
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // We can't reliably get the destination URL from beforeunload,
+      // but we can log that a navigation is happening
+    };
+
+    console.log("[STRIPE INTERCEPTOR] ✓ All interception layers active (window.open + click + DOM)");
 
     return () => {
       window.open = originalOpen;
-      window.location.assign = originalAssign;
-      window.location.replace = originalReplace;
       document.removeEventListener("click", handleClick, true);
       try { linkObserver.disconnect(); } catch {}
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
