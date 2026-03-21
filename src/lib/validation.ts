@@ -113,6 +113,15 @@ export const ReserveRatiosSchema = z.record(
 );
 
 /**
+ * Tip configuration for portal tip presets.
+ */
+export const TipConfigSchema = z.object({
+  presets: z.array(z.number().min(0).max(100)).max(6).optional(),
+  defaultTip: z.number().min(0).max(100).nullable().optional(),
+  allowCustom: z.boolean().optional(),
+});
+
+/**
  * Site config update payload schema.
  * All fields are optional and normalized later.
  */
@@ -136,6 +145,8 @@ export const SiteConfigUpdateSchema = z.object({
   accumulationMode: z.enum(["fixed", "dynamic"]).optional(),
 
   taxConfig: TaxConfigSchema.optional(),
+
+  tipConfig: TipConfigSchema.optional(),
 
   industryParams: z.record(z.string(), z.any()).optional(),
 

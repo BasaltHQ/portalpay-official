@@ -880,6 +880,26 @@ function normalizeSiteConfig(raw?: any, targetWallet?: string) {
     config.taxConfig = out;
   })();
 
+  // Tip config normalization: preserve tipConfig through normalization
+  ;(() => {
+    const tc = config.tipConfig;
+    if (!tc || typeof tc !== "object") return;
+    const out: any = {};
+    if (Array.isArray(tc.presets)) {
+      out.presets = tc.presets
+        .map((v: any) => Number(v))
+        .filter((v: number) => Number.isFinite(v) && v >= 0 && v <= 100)
+        .slice(0, 6);
+    }
+    if (tc.defaultTip === null) {
+      out.defaultTip = null;
+    } else if (typeof tc.defaultTip === "number" && Number.isFinite(tc.defaultTip)) {
+      out.defaultTip = Math.max(0, Math.min(100, tc.defaultTip));
+    }
+    out.allowCustom = tc.allowCustom !== false;
+    config.tipConfig = out;
+  })();
+
   // Do not apply environment defaults; rely solely on live brand config or persisted config
   try { /* no-op */ } catch { }
   try { /* no-op */ } catch { }
@@ -1531,6 +1551,28 @@ export async function POST(req: NextRequest) {
       const mergedProv = { ...(prevTax as any).provider, ...(incomingTax as any).provider };
       const merged = { ...prevTax, ...incomingTax, provider: mergedProv };
       candidate.taxConfig = merged;
+    }
+
+    // Optional tip config update
+    if (body && typeof body.tipConfig === "object" && body.tipConfig) {
+      const prevTip = (prevConfig as any).tipConfig && typeof (prevConfig as any).tipConfig === "object" ? (prevConfig as any).tipConfig : {};
+      const incoming = body.tipConfig;
+      const merged: any = { ...prevTip };
+      if (Array.isArray(incoming.presets)) {
+        merged.presets = incoming.presets
+          .map((v: any) => Number(v))
+          .filter((v: number) => Number.isFinite(v) && v >= 0 && v <= 100)
+          .slice(0, 6);
+      }
+      if (incoming.defaultTip === null) {
+        merged.defaultTip = null;
+      } else if (typeof incoming.defaultTip === "number" && Number.isFinite(incoming.defaultTip)) {
+        merged.defaultTip = Math.max(0, Math.min(100, incoming.defaultTip));
+      }
+      if (typeof incoming.allowCustom === "boolean") {
+        merged.allowCustom = incoming.allowCustom;
+      }
+      candidate.tipConfig = merged;
     }
 
     // Optional split config update

@@ -746,8 +746,8 @@ export default function HomeContent() {
         {/* Plugins & Integrations */}
         <PluginsSection />
 
-        {/* Cannabis Compliance — First Free + Fully Compliant POS */}
-        <CannabisComplianceSection />
+        {/* Cannabis Compliance — First Free + Fully Compliant POS — Platform Only */}
+        {!isPartnerContainer && <CannabisComplianceSection />}
 
         {/* Agentic Payments (x402) */}
         <AgenticPaymentsSection />
@@ -755,10 +755,12 @@ export default function HomeContent() {
         {/* Philosophy: Trustless & Permissionless */}
         <TrustlessPermissionlessSection />
 
-        {/* Merchant Onboarding Contact Form */}
-        <section className="mt-8">
-          <ContactFormSection />
-        </section>
+        {/* Merchant Onboarding Contact Form — Platform Only */}
+        {!isPartnerContainer && (
+          <section className="mt-8">
+            <ContactFormSection />
+          </section>
+        )}
 
         {/* About / Story */}
         <section className="mt-8">

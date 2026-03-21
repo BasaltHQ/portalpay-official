@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ContactFormSection from '@/components/landing/ContactFormSection';
 import { ExitIntentModal } from '@/components/landing/ExitIntentModal';
+import { cachedFetch } from '@/lib/client-api-cache';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Cannabis POS — Dedicated Landing Page
    "The first free, fully compliant Cannabis POS"
+   Platform-only: partner containers are redirected away.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 // ─── State Data ───
@@ -148,6 +151,36 @@ const FAQS = [
 export default function CannabisLandingClient() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [expandedFeature, setExpandedFeature] = useState<number | null>(null);
+  const router = useRouter();
+  const [containerType, setContainerType] = useState<string>('');
+
+  // Fetch container identity to detect partner containers
+  useEffect(() => {
+    let cancelled = false;
+    cachedFetch('/api/site/container', { cache: 'no-store' })
+      .then((ci: any) => {
+        if (cancelled) return;
+        setContainerType(String(ci?.containerType || '').trim());
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Detect partner container
+  const isPartnerContainer = React.useMemo(() => {
+    const ctFromState = containerType.toLowerCase();
+    const ctFromAttr = typeof document !== 'undefined'
+      ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase()
+      : '';
+    return ctFromState === 'partner' || ctFromAttr === 'partner';
+  }, [containerType]);
+
+  // Redirect partner containers away from cannabis page
+  useEffect(() => {
+    if (isPartnerContainer) {
+      router.replace('/');
+    }
+  }, [isPartnerContainer, router]);
 
   return (
     <div className="min-h-screen bg-[#050805] text-white">
@@ -625,19 +658,21 @@ export default function CannabisLandingClient() {
               <Link href="/apply" className="px-10 py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-lg font-bold hover:from-emerald-500 hover:to-emerald-400 transition-all shadow-2xl shadow-emerald-500/25 hover:scale-[1.02]">
                 Get Started — Free
               </Link>
-              <a href="#cannabis-contact" className="px-10 py-4 rounded-xl border-2 border-white/15 text-lg font-semibold hover:bg-white/5 transition">
-                Talk to Us About Migration
-              </a>
+              {!isPartnerContainer && (
+                <a href="#cannabis-contact" className="px-10 py-4 rounded-xl border-2 border-white/15 text-lg font-semibold hover:bg-white/5 transition">
+                  Talk to Us About Migration
+                </a>
+              )}
             </div>
           </div>
 
-          {/* Contact Form */}
-          <ContactFormSection id="cannabis-contact" />
+          {/* Contact Form — Platform Only */}
+          {!isPartnerContainer && <ContactFormSection id="cannabis-contact" />}
         </div>
       </section>
 
-      {/* Exit-Intent Email Capture */}
-      <ExitIntentModal accentColor="#10b981" />
+      {/* Exit-Intent Email Capture — Platform Only */}
+      {!isPartnerContainer && <ExitIntentModal accentColor="#10b981" />}
     </div>
   );
 }

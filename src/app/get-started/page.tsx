@@ -396,12 +396,14 @@ export default function GetStartedPage() {
           </div>
         </section>
 
-        {/* Merchant Onboarding Contact Form */}
-        <section className="py-24 md:py-32 px-6 bg-black relative border-t border-white/10">
-          <div className="max-w-7xl mx-auto">
-            <ContactFormSection />
-          </div>
-        </section>
+        {/* Merchant Onboarding Contact Form — Platform Only */}
+        {!isPartnerContainer && (
+          <section className="py-24 md:py-32 px-6 bg-black relative border-t border-white/10">
+            <div className="max-w-7xl mx-auto">
+              <ContactFormSection />
+            </div>
+          </section>
+        )}
 
         {/* FINAL CTA */}
         <section className="py-32 px-6 text-center border-t border-white/10 bg-neutral-950">
