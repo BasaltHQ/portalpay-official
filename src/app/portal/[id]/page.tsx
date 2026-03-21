@@ -16,6 +16,7 @@ import { useActiveAccount } from "thirdweb/react";
 import { getDefaultBrandName, getDefaultBrandSymbol, resolveBrandAppLogo, resolveBrandSymbol } from "@/lib/branding";
 import { fetchEthRates, fetchUsdRates, fetchBtcUsd, fetchXrpUsd, type EthRates } from "@/lib/eth";
 import { SUPPORTED_CURRENCIES, convertFromUsd, formatCurrency, getCurrencyFlag, roundForCurrency } from "@/lib/fx";
+import { useStripeOnrampInterceptor } from "@/hooks/useStripeOnrampInterceptor";
 
 // Live QR Payment Portal: supports compact (default) and wide layout variants.
 // Embedded mode (embedded=1 or iframe) removes page background to fit seamlessly in host modals.
@@ -2165,6 +2166,28 @@ export default function PortalReceiptPage() {
     const t3 = setTimeout(tryReorder, 1200);
     return () => { try { mo.disconnect(); } catch { }; clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [effectiveSecondaryColor, theme.secondaryColor]);
+
+  // ── Stripe Onramp Interceptor ──
+  // Detects thirdweb's Stripe onramp in the DOM and replaces it with our direct Stripe Crypto Onramp
+  useStripeOnrampInterceptor({
+    walletAddress: (resolvedRecipient || merchantWallet || recipient) as string,
+    amount: totalUsd,
+    receiptId,
+    merchantWallet: (merchantWallet || resolvedRecipient || recipient) as string,
+    brandKey: theme.brandKey || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge",
+    onSuccess: (result) => {
+      console.log("[STRIPE ONRAMP] Completed:", result);
+      // Update receipt status via PostMessage for embedded contexts
+      try {
+        if (isEmbedded && window.parent !== window) {
+          window.parent.postMessage({ type: "portal_payment_complete", receiptId, ...result }, "*");
+        }
+      } catch {}
+    },
+    onError: (error) => {
+      console.error("[STRIPE ONRAMP] Error:", error);
+    },
+  });
 
   const payLabel = useMemo(() => {
     return currency === "USD"

@@ -1,0 +1,100 @@
+import { NextRequest, NextResponse } from "next/server";
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * POST /api/stripe/onramp-session
+ * Mints a Stripe Crypto Onramp session for the embedded onramp widget.
+ * 
+ * Body: { walletAddress, amount?, receiptId?, brandKey? }
+ * Returns: { clientSecret, sessionId }
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const stripeKey = process.env.STRIPE_API_KEY;
+    if (!stripeKey) {
+      return NextResponse.json(
+        { ok: false, error: "stripe_not_configured" },
+        { status: 500 }
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const walletAddress = String(body.walletAddress || "").trim();
+    const amount = body.amount ? String(body.amount) : undefined;
+    const receiptId = String(body.receiptId || "").trim();
+    const brandKey = String(body.brandKey || "").trim();
+    const merchantWallet = String(body.merchantWallet || "").trim();
+
+    if (!walletAddress || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+      return NextResponse.json(
+        { ok: false, error: "invalid_wallet_address" },
+        { status: 400 }
+      );
+    }
+
+    // Build form-encoded body for Stripe API
+    const params = new URLSearchParams();
+
+    // Lock destination to USDC on Base network
+    // Stripe wallet_addresses key for Base is "base_network" (from API docs)
+    // destination_networks supports "base" as a valid enum value
+    params.append("wallet_addresses[base_network]", walletAddress);
+    params.append("destination_currencies[]", "usdc");
+    params.append("destination_networks[]", "base");
+    params.append("destination_currency", "usdc");
+    params.append("destination_network", "base");
+    params.append("lock_wallet_address", "true");
+
+    // Pre-populate source amount if provided (USD)
+    if (amount && Number(amount) > 0) {
+      params.append("source_amount", amount);
+      params.append("source_currency", "usd");
+    }
+
+    // Attach metadata for reconciliation
+    if (receiptId) params.append("metadata[receiptId]", receiptId);
+    if (brandKey) params.append("metadata[brandKey]", brandKey);
+    if (merchantWallet) params.append("metadata[merchantWallet]", merchantWallet);
+
+    // NOTE: We intentionally do NOT send customer_ip_address here.
+    // Stripe does an early geo-check that can reject the entire session creation.
+    // The onramp UI handles geographic restrictions more gracefully later in the flow.
+
+    console.log("[STRIPE ONRAMP] Creating session for wallet:", walletAddress.slice(0, 10) + "...");
+
+    const response = await fetch("https://api.stripe.com/v1/crypto/onramp_sessions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${stripeKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("[STRIPE ONRAMP] Session creation failed:", data);
+      return NextResponse.json(
+        { ok: false, error: data.error?.message || "session_creation_failed", code: data.error?.code },
+        { status: response.status }
+      );
+    }
+
+    console.log("[STRIPE ONRAMP] Session created:", data.id, "status:", data.status);
+
+    return NextResponse.json({
+      ok: true,
+      clientSecret: data.client_secret,
+      sessionId: data.id,
+      status: data.status,
+    });
+  } catch (e: any) {
+    console.error("[STRIPE ONRAMP] Error:", e);
+    return NextResponse.json(
+      { ok: false, error: e?.message || "internal_error" },
+      { status: 500 }
+    );
+  }
+}

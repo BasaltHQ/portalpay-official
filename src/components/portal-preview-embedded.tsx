@@ -10,6 +10,7 @@ import { fetchEthRates, fetchUsdRates, fetchBtcUsd, fetchXrpUsd, fetchSolUsd, ty
 import { SUPPORTED_CURRENCIES, convertFromUsd, formatCurrency, getCurrencyFlag, roundForCurrency } from "@/lib/fx";
 import { useBrand } from "@/contexts/BrandContext";
 import { cachedFetch } from "@/lib/client-api-cache";
+import { useStripeOnrampInterceptor } from "@/hooks/useStripeOnrampInterceptor";
 import { getDefaultBrandSymbol, resolveBrandAppLogo, resolveBrandSymbol, getDefaultBrandName } from "@/lib/branding";
 
 type SiteTheme = {
@@ -775,6 +776,22 @@ export function PortalPreviewEmbedded({
     const t3 = setTimeout(tryReorder, 1200);
     return () => { try { mo.disconnect(); } catch { }; clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [effectiveSecondaryColor, theme.secondaryColor]);
+
+  // ── Stripe Onramp Interceptor ──
+  // Detects thirdweb's Stripe onramp in the DOM and replaces it with our direct Stripe Crypto Onramp
+  useStripeOnrampInterceptor({
+    walletAddress: (sellerAddress || recipient) as string,
+    amount: totalUsd,
+    receiptId: demoReceipt?.receiptId,
+    merchantWallet: (recipient || sellerAddress) as string,
+    brandKey: (brandCtx as any)?.brandKey || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge",
+    onSuccess: (result) => {
+      console.log("[STRIPE ONRAMP] Completed:", result);
+    },
+    onError: (error) => {
+      console.error("[STRIPE ONRAMP] Error:", error);
+    },
+  });
 
   // Compute navbar mode (Symbol+Text vs Full Width) - respect brand config
   const isPartnerContainer =
