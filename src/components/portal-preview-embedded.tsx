@@ -140,6 +140,7 @@ export function PortalPreviewEmbedded({
   sellerAddress,
   className,
   style,
+  onSuccess,
 }: {
   theme: SiteTheme;
   demoReceipt: DemoReceipt;
@@ -147,6 +148,7 @@ export function PortalPreviewEmbedded({
   sellerAddress?: `0x${string}` | string;
   className?: string;
   style?: React.CSSProperties;
+  onSuccess?: () => void;
 }) {
   const account = useActiveAccount();
   const brandCtx = useBrand();
@@ -1170,6 +1172,9 @@ export function PortalPreviewEmbedded({
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify(payload)
                     }).catch(e => console.error("[CHECKOUT] Failed to update status:", e));
+                  }
+                  if (onSuccess) {
+                    onSuccess();
                   }
                 }}
                 theme={darkTheme({

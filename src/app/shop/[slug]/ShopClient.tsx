@@ -15,6 +15,7 @@ import { installShopAgentDispatcher } from "@/agent/dispatcher/shopAgentDispatch
 import { useBrand } from "@/contexts/BrandContext";
 import { getEffectiveBrandKey, resolveBrandSymbol } from "@/lib/branding";
 import ShopLanguageDropdown from "@/components/ShopLanguageDropdown";
+import PortalReceiptPage from "@/app/portal/[id]/page";
 import dynamic from "next/dynamic";
 const ConnectButton = dynamic(() => import("thirdweb/react").then((m) => m.ConnectButton), { ssr: false });
 import { RestaurantModifierSelector, getDefaultModifierSelections } from "@/components/shop/industry/RestaurantModifierSelector";
@@ -35,6 +36,7 @@ type ShopTheme = {
     textColor?: string;
     accentColor?: string;
     brandLogoUrl?: string;
+    brandFaviconUrl?: string;
     coverPhotoUrl?: string;
     fontFamily?: string;
     logoShape?: "square" | "circle";
@@ -473,6 +475,25 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             html.style.background = prevHtmlBg;
         };
     }, [embeddedCheckout]);
+
+    // Listen for portal close event (native embedding — X button dispatches this)
+    useEffect(() => {
+        const onPortalClose = () => {
+            setEmbeddedCheckout(null);
+            // Defer style reset to next frame so it runs AFTER React's useEffect cleanup
+            requestAnimationFrame(() => {
+                try {
+                    document.body.style.overflow = "";
+                    document.body.style.height = "";
+                    document.body.style.background = "";
+                    document.documentElement.style.overflow = "";
+                    document.documentElement.style.background = "";
+                } catch { }
+            });
+        };
+        window.addEventListener("portalpay:close", onPortalClose);
+        return () => window.removeEventListener("portalpay:close", onPortalClose);
+    }, []);
 
     // User receipts (for context)
     const [myReceipts, setMyReceipts] = useState<any[]>([]);
@@ -3213,19 +3234,13 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                     }}
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    {/* <button
-                                    className="absolute top-4 right-4 md:-top-10 md:right-0 h-10 w-10 rounded-md bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10 text-2xl"
-                                    onClick={closeEmbeddedCheckout}
-                                    aria-label="Close checkout"
-                                >
-                                    ×
-                                </button> */}
-                                    <iframe
-                                        src={`/portal/${encodeURIComponent(embeddedCheckout.receiptId)}?${portalQuery}`}
-                                        className="w-full h-full border-0 block"
-                                        title="Payment Portal"
-                                        allow="payment; clipboard-write"
-                                    />
+                                    <div className="w-full h-full border-0 block overflow-hidden rounded-xl bg-background">
+                                        <PortalReceiptPage 
+                                            propId={embeddedCheckout.receiptId} 
+                                            propEmbedded={true} 
+                                            propRecipient={merchantWallet}
+                                        />
+                                    </div>
                                 </div>
                             </div>,
                             document.body

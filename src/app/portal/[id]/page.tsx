@@ -42,6 +42,7 @@ type SiteConfigResponse = {
   config?: {
     theme?: SiteTheme;
     defaultPaymentToken?: "ETH" | "USDC" | "USDT" | "cbBTC" | "cbXRP" | "SOL";
+    acceptCredit?: boolean;
     processingFeePct?: number;
     tokens?: TokenDef[];
     touchpointThemes?: Record<string, string>;
@@ -209,12 +210,19 @@ function selectTokenFromRatios(ratios: Record<string, number> | undefined, avail
   return candidates[0].symbol;
 }
 
-export default function PortalReceiptPage() {
+interface PortalProps {
+  propId?: string;
+  propEmbedded?: boolean;
+  propRecipient?: string;
+}
+
+export default function PortalReceiptPage({ propId, propEmbedded, propRecipient }: PortalProps = {}) {
   // ... (hooks)
 
   const twTheme = usePortalThirdwebTheme();
-  const { id } = useParams() as { id?: string };
-  const receiptId = String(id || "");
+  const params = useParams() as { id?: string } | null;
+  const idToUse = propId || params?.id;
+  const receiptId = String(idToUse || "");
   const account = useActiveAccount();
   const [wallets, setWallets] = useState<any[]>([]);
   useEffect(() => {
@@ -273,7 +281,7 @@ export default function PortalReceiptPage() {
   const embeddedParam = String(searchParams?.get("embedded") || "");
   const isEmbeddedParam = embeddedParam === "1";
   const [isIframe, setIsIframe] = useState(false);
-  const isEmbedded = isEmbeddedParam || isIframe;
+  const isEmbedded = propEmbedded !== undefined ? propEmbedded : (isEmbeddedParam || isIframe);
 
   // Touchpoint ID from URL (0=kiosk, 1=terminal, 2=handheld, 3=kds)
   const tidParam = searchParams?.get("tid");
@@ -325,7 +333,7 @@ export default function PortalReceiptPage() {
 
 
   // Resolve recipient from QR/link param or ?wallet if present; fallback to default
-  const recipientParam = String(searchParams?.get("recipient") || "").toLowerCase();
+  const recipientParam = (propRecipient || String(searchParams?.get("recipient") || "")).toLowerCase();
   const walletParam = String(searchParams?.get("wallet") || "").toLowerCase();
   const recipient = (isValidHexAddress(recipientParam) ? (recipientParam as `0x${string}`) : (isValidHexAddress(walletParam) ? (walletParam as `0x${string}`) : ("" as any)));
   const hasRecipient = isValidHexAddress(recipient);
@@ -1516,7 +1524,7 @@ export default function PortalReceiptPage() {
 
   // Post preferred height for host to size iframe nicely ("smidge taller" auto-adjust) with clamp and change detection
   useEffect(() => {
-    if (!isIframe) return;
+    if (!isEmbedded) return;
     const sendPreferredHeight = () => {
       try {
         const el = contentRef.current || containerRef.current;
@@ -1729,7 +1737,12 @@ export default function PortalReceiptPage() {
           else if (ok && tParam.toUpperCase() === "ETH") urlOverride = "ETH";
         }
 
-        if (urlOverride) {
+        // acceptCredit enforcement: if merchant enabled credit cards, lock to USDC unconditionally
+        const isAcceptCredit = (cfg as any)?.acceptCredit === true;
+        if (isAcceptCredit) {
+          selected = "USDC";
+          console.log("[PORTAL] acceptCredit enabled — locking token to USDC for Stripe compatibility.");
+        } else if (urlOverride) {
           selected = urlOverride;
         } else if (dynamicToken) {
           selected = dynamicToken;
@@ -2170,19 +2183,18 @@ export default function PortalReceiptPage() {
   // ── Stripe Onramp Interceptor ──
   // Detects thirdweb's Stripe onramp in the DOM and replaces it with our direct Stripe Crypto Onramp
   useStripeOnrampInterceptor({
-    walletAddress: (resolvedRecipient || merchantWallet || recipient) as string,
+    // Direct-to-split: Stripe deposits USDC straight into the deployed split contract.
+    // No fallback — acceptCredit requires a split to be deployed for the merchant.
+    walletAddress: sellerAddress as string,
     amount: totalUsd,
     receiptId,
     merchantWallet: (merchantWallet || resolvedRecipient || recipient) as string,
     brandKey: theme.brandKey || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge",
     onSuccess: (result) => {
       console.log("[STRIPE ONRAMP] Completed:", result);
-      // Update receipt status via PostMessage for embedded contexts
-      try {
-        if (isEmbedded && window.parent !== window) {
-          window.parent.postMessage({ type: "portal_payment_complete", receiptId, ...result }, "*");
-        }
-      } catch {}
+      // Yield control back to Thirdweb's CheckoutWidget.
+      // Thirdweb is listening to the buyer's wallet balance. 
+      // When the USDC arrives, Thirdweb's UI will naturally proceed to the executing Step 2 (Swap + Transfer).
     },
     onError: (error) => {
       console.error("[STRIPE ONRAMP] Error:", error);
@@ -2478,11 +2490,12 @@ export default function PortalReceiptPage() {
               onClick={() => {
                 try {
                   if (typeof window !== "undefined" && window.parent && window.parent !== window) {
-                    // New event name (primary)
+                    // Iframe embedding: postMessage to parent
                     window.parent.postMessage({ type: "gateway-card-cancel", correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
-                    // DEPRECATED: Remove after 2026-04-30 - kept for backwards compatibility
                     window.parent.postMessage({ type: "portalpay-card-cancel", correlationId, receiptId, recipient: merchantWallet || recipient }, targetOrigin);
                   }
+                  // Native embedding: dispatch event on window so host page can close the portal
+                  window.dispatchEvent(new CustomEvent("portalpay:close", { detail: { correlationId, receiptId } }));
                 } catch { }
               }}
             >

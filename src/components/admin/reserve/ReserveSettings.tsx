@@ -9,6 +9,7 @@ type SiteConfig = {
   processingFeePct?: number;
   reserveRatios?: Record<string, number>;
   defaultPaymentToken?: "ETH" | "USDC" | "USDT" | "cbBTC" | "cbXRP" | "SOL";
+  acceptCredit?: boolean;
   accumulationMode?: "fixed" | "dynamic";
   taxConfig?: {
     jurisdictions?: { code: string; name: string; rate: number; country?: string; type?: string }[];
@@ -38,6 +39,8 @@ export function ReserveSettings({ walletOverride, brandKey }: ReserveSettingsPro
   const [defaultPaymentToken, setDefaultPaymentToken] = useState<
     "ETH" | "USDC" | "USDT" | "cbBTC" | "cbXRP" | "SOL"
   >("USDC");
+  const [acceptCredit, setAcceptCredit] = useState<boolean>(false);
+  const [lastSavedAcceptCredit, setLastSavedAcceptCredit] = useState<boolean>(false);
   const [accumulationMode, setAccumulationMode] = useState<"fixed" | "dynamic">("fixed");
   const accModeUserChangedRef = useRef<boolean>(false);
   // Baselines to highlight unsaved changes
@@ -135,6 +138,10 @@ export function ReserveSettings({ walletOverride, brandKey }: ReserveSettingsPro
             } catch { }
           }
         }
+        if (typeof (cfg as any).acceptCredit === "boolean") {
+          setAcceptCredit((cfg as any).acceptCredit);
+          setLastSavedAcceptCredit((cfg as any).acceptCredit);
+        }
       })
       .catch(() => { })
       .finally(() => setLoading(false));
@@ -209,6 +216,7 @@ export function ReserveSettings({ walletOverride, brandKey }: ReserveSettingsPro
           reserveRatios: ratios,
           defaultPaymentToken,
           accumulationMode,
+          acceptCredit,
         }),
       });
       const j = await r.json().catch(() => ({}));
@@ -238,6 +246,10 @@ export function ReserveSettings({ walletOverride, brandKey }: ReserveSettingsPro
         setAccumulationMode(savedCfg.accumulationMode);
         setLastSavedAccumulationMode(savedCfg.accumulationMode);
       }
+      if (typeof savedCfg.acceptCredit === "boolean") {
+        setAcceptCredit(savedCfg.acceptCredit);
+        setLastSavedAcceptCredit(savedCfg.acceptCredit);
+      }
       setSavedPulse(true);
       try { setTimeout(() => setSavedPulse(false), 1500); } catch { }
     } catch (e: any) {
@@ -266,6 +278,75 @@ export function ReserveSettings({ walletOverride, brandKey }: ReserveSettingsPro
           <CheckCircle className="h-3 w-3" /> Saved
         </div>
       )}</div>
+
+      {/* Accept Credit Cards (Stripe) Toggle */}
+      <div className={`rounded-lg border p-4 ${acceptCredit ? 'border-indigo-500/40 bg-indigo-500/5' : 'border-white/10 bg-white/[0.02]'} transition-colors`}>
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-sm font-medium">Accept Credit Cards (Stripe)</label>
+            <div className="microtext text-muted-foreground mt-0.5">
+              When enabled, the checkout portal locks to <strong>USDC</strong> so Stripe can provision fiat deposits directly without a two-step on-chain swap.
+            </div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={acceptCredit}
+            onClick={() => {
+              const next = !acceptCredit;
+              setAcceptCredit(next);
+              if (next) {
+                // Force USDC + Fixed mode when enabling credit
+                setDefaultPaymentToken("USDC");
+                setAccumulationMode("fixed");
+                accModeUserChangedRef.current = true;
+                try {
+                  window.dispatchEvent(new CustomEvent("pp:accumulationModeChanged", { detail: { mode: "fixed" } }));
+                } catch { }
+              }
+              // Auto-save
+              (async () => {
+                try {
+                  const payload: any = { acceptCredit: next };
+                  if (next) {
+                    payload.defaultPaymentToken = "USDC";
+                    payload.accumulationMode = "fixed";
+                  }
+                  const r = await fetch("/api/site/config", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "x-wallet": effectiveWallet },
+                    body: JSON.stringify(payload),
+                  });
+                  if (r.ok) {
+                    setLastSavedAcceptCredit(next);
+                    if (next) {
+                      setLastSavedDefaultPaymentToken("USDC");
+                      setLastSavedAccumulationMode("fixed");
+                    }
+                    setSavedPulse(true);
+                    try { setTimeout(() => setSavedPulse(false), 1200); } catch { }
+                  }
+                } catch { }
+              })();
+            }}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+              acceptCredit ? 'bg-indigo-600' : 'bg-white/20'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                acceptCredit ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+        {acceptCredit && (
+          <div className="mt-3 flex gap-2">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/15 text-indigo-400 tracking-wide">CREDIT</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-400 tracking-wide">USDC</span>
+          </div>
+        )}
+      </div>
 
       <div>
         <label className="text-sm font-medium">Store Currency</label>

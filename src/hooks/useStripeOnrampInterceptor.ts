@@ -19,6 +19,7 @@ type InterceptorProps = {
   brandKey?: string;
   onSuccess?: (result: { sessionId: string; status: string }) => void;
   onError?: (error: Error) => void;
+  onIntercept?: () => void;
   enabled?: boolean;
 };
 
@@ -78,12 +79,14 @@ export function useStripeOnrampInterceptor({
   brandKey,
   onSuccess,
   onError,
+  onIntercept,
   enabled = true,
 }: InterceptorProps) {
   const activeSessionRef = useRef<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
-  const launchRef = useRef<() => void>(() => {});
+  const detectedCurrencyRef = useRef<string>("usdc");
+  const launchRef = useRef<(cur?: string) => void>(() => {});
   const [quote, setQuote] = useState<StripeQuote | null>(null);
 
   useEffect(() => {
@@ -120,13 +123,19 @@ export function useStripeOnrampInterceptor({
 
   // ─── Launch our Stripe onramp in a modal overlay ───
   const launchStripeOnramp = useCallback(async () => {
+    const destinationCurrency = "usdc";
+
+    if (onIntercept) {
+      onIntercept();
+    }
+
     if (!walletAddress || !publishableKey) {
       console.warn("[STRIPE INTERCEPTOR] Missing wallet or publishable key");
       return;
     }
 
     document.getElementById("pp-stripe-onramp-overlay")?.remove();
-    console.log("[STRIPE INTERCEPTOR] 🚀 Launching direct Stripe Crypto Onramp...");
+    console.log("[STRIPE INTERCEPTOR] 🚀 Launching direct Stripe Crypto Onramp for", destinationCurrency, "→ wallet:", walletAddress);
 
     if (!document.getElementById("pp-stripe-anim-style")) {
       const animStyle = document.createElement("style");
@@ -142,7 +151,7 @@ export function useStripeOnrampInterceptor({
     overlay.id = "pp-stripe-onramp-overlay";
     overlay.style.cssText = `
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 999999; display: flex; align-items: center; justify-content: center;
+      z-index: 2147483647; display: flex; align-items: center; justify-content: center;
       background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
       animation: ppFadeIn 0.2s ease-out;
     `;
@@ -211,6 +220,7 @@ export function useStripeOnrampInterceptor({
           receiptId,
           merchantWallet,
           brandKey,
+          destinationCurrency,
         }),
       });
 
@@ -245,16 +255,10 @@ export function useStripeOnrampInterceptor({
 
         if (status === "fulfillment_complete") {
           console.log("[STRIPE INTERCEPTOR] ✓ Onramp completed!");
-          if (receiptId && merchantWallet) {
-            fetch("/api/receipts/status", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                receiptId, wallet: merchantWallet, status: "paid",
-                txHash: session?.transaction_details?.transaction_id,
-              }),
-            }).catch(() => {});
-          }
+          // Yield control back to host via onSuccess. 
+          // CRITICAL: We DO NOT mark the receipt as "paid" here because the funds are in the BUYER's wallet.
+          // The host's Thirdweb CheckoutWidget must complete the multi-step Phase 2 (Swap + Transfer) via Smart Contract.
+          // The receipt will be marked paid inside the CheckoutWidget's native onSuccess handler.
           onSuccess?.({ sessionId, status });
           setTimeout(() => overlay.remove(), 2000);
         }
@@ -310,7 +314,7 @@ export function useStripeOnrampInterceptor({
           const el = allElements[i] as HTMLElement;
           // Skip our own elements
           if (el.closest("#pp-stripe-onramp-overlay")) continue;
-          if (el.closest("[data-pp-stripe-modified]")) continue;
+          if (el.closest(`[${MODIFIED_ATTR}]`)) continue;
 
           const text = el.textContent?.trim() || "";
 
@@ -355,27 +359,26 @@ export function useStripeOnrampInterceptor({
               priceEl = span;
             }
 
-            // Crypto amount match (e.g., "0.0001 cbBTC")
-            if (/^\d+(\.\d+)?\s+\w+/.test(spanText) && spanText.includes("BTC") && !cryptoEl) {
+            // Crypto amount match (e.g., "0.0001 cbBTC" or "26.72 USDT")
+            if (/^\d+(\.\d+)?\s+\w+/.test(spanText) && (spanText.includes("BTC") || spanText.includes("USDT") || spanText.includes("USDC") || spanText.includes("ETH")) && !cryptoEl) {
               cryptoEl = span;
             }
           }
 
-          // Replace quote values with our Stripe quote
           if (quote && priceEl) {
             priceEl.textContent = `$${parseFloat(quote.sourceTotal).toFixed(2)}`;
             console.log("[STRIPE INTERCEPTOR] Updated price to:", priceEl.textContent);
           }
 
           if (cryptoEl) {
-            if (quote) {
+            if (quote && quote.destinationAmount) {
               cryptoEl.textContent = `${parseFloat(quote.destinationAmount).toFixed(2)} USDC`;
             } else {
-              cryptoEl.textContent = "USDC";
+              cryptoEl.textContent = cryptoEl.textContent?.replace(/\b(cbBTC|BTC|USDT|USDC|ETH)\b/gi, "USDC") || "USDC";
             }
           }
 
-          // Add USDC and CREDIT tags
+          // Add CREDIT / USDC tags to highlight the fiat payment rails
           const tagContainer = document.createElement("div");
           tagContainer.style.cssText = `
             display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap;
@@ -394,15 +397,14 @@ export function useStripeOnrampInterceptor({
             return tag;
           };
 
-          tagContainer.appendChild(createTag("USDC", "rgba(38, 132, 255, 0.15)", "#2684FF"));
           tagContainer.appendChild(createTag("CREDIT", "rgba(99, 102, 241, 0.15)", "#818CF8"));
+          tagContainer.appendChild(createTag("USDC", "rgba(38, 132, 255, 0.15)", "#2684FF"));
 
           // Find the best place to insert tags — after the crypto amount or price
           const insertAfter = cryptoEl || priceEl;
           if (insertAfter && insertAfter.parentElement) {
             insertAfter.parentElement.appendChild(tagContainer);
           } else {
-            // Fallback: append to the card's rightmost area
             card.appendChild(tagContainer);
           }
         }
