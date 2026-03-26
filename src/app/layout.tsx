@@ -711,6 +711,15 @@ export default async function RootLayout({
             s.parentNode.insertBefore(b, s);
           })(window.lintrk);
         `}</Script>
+        {containerIdentity.containerType === 'platform' && (
+          <Script id="microsoft-clarity-platform" strategy="afterInteractive">{`
+            (function(c,l,a,r,i,t,y){
+              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window,document,"clarity","script","w0lt4j6fw3");
+          `}</Script>
+        )}
         {!isDebug() && <Script id="pp-silence-console" strategy="beforeInteractive">{`try{var _l=console.log.bind(console);console.log=function(){};console._log=_l}catch(e){}`}</Script>}
         <ConsoleBanner />
         <Script id="pp-preset-vars" strategy="beforeInteractive">{`try {
