@@ -134,6 +134,63 @@ export function useStripeOnrampInterceptor({
       return;
     }
 
+    // ─── Iframe detection: open Stripe in a new tab instead of embedding ───
+    const isIframe = typeof window !== "undefined" && window.parent !== window;
+    if (isIframe) {
+      console.log("[STRIPE INTERCEPTOR] Iframe detected — opening Stripe onramp in new tab. Wallet:", walletAddress);
+      try {
+        const res = await fetch("/api/stripe/onramp-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            walletAddress,
+            amount: amount ? String(amount) : undefined,
+            receiptId,
+            merchantWallet,
+            brandKey,
+            destinationCurrency,
+          }),
+        });
+        const data = await res.json();
+        if (!data.ok || !data.clientSecret) {
+          console.error("[STRIPE INTERCEPTOR] Session creation failed:", data);
+          onError?.(new Error(data.error || "Session creation failed"));
+          return;
+        }
+
+        const { clientSecret, sessionId } = data;
+        activeSessionRef.current = sessionId;
+
+        // Open Stripe's hosted onramp page in a new tab
+        const stripeUrl = `https://crypto-onramp.stripe.com/crypto-onramp?client_secret=${encodeURIComponent(clientSecret)}`;
+        window.open(stripeUrl, "_blank", "noopener,noreferrer");
+        console.log("[STRIPE INTERCEPTOR] Opened Stripe onramp in new tab:", sessionId);
+
+        // Poll for completion so we can still trigger onSuccess
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        pollingRef.current = setInterval(async () => {
+          if (!mountedRef.current || !activeSessionRef.current) {
+            if (pollingRef.current) clearInterval(pollingRef.current);
+            return;
+          }
+          try {
+            const statusRes = await fetch(
+              `/api/stripe/onramp-status?sessionId=${encodeURIComponent(activeSessionRef.current)}`
+            );
+            const statusData = await statusRes.json();
+            if (statusData.status === "fulfillment_complete") {
+              if (pollingRef.current) clearInterval(pollingRef.current);
+              onSuccess?.({ sessionId: activeSessionRef.current!, status: "fulfillment_complete" });
+            }
+          } catch { }
+        }, 5000);
+      } catch (err: any) {
+        console.error("[STRIPE INTERCEPTOR] Error (iframe path):", err);
+        onError?.(err);
+      }
+      return;
+    }
+
     document.getElementById("pp-stripe-onramp-overlay")?.remove();
     console.log("[STRIPE INTERCEPTOR] 🚀 Launching direct Stripe Crypto Onramp for", destinationCurrency, "→ wallet:", walletAddress);
 
