@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     const receiptId = String(body.receiptId || "").trim();
     const brandKey = String(body.brandKey || "").trim();
     const merchantWallet = String(body.merchantWallet || "").trim();
+    const destinationCurrency = String(body.destinationCurrency || "usdc").trim().toLowerCase();
 
     if (!walletAddress || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
       return NextResponse.json(
@@ -36,13 +37,13 @@ export async function POST(req: NextRequest) {
     // Build form-encoded body for Stripe API
     const params = new URLSearchParams();
 
-    // Lock destination to USDC on Base network
+    // Map destination currency correctly based on Thirdweb's SDK request parameters
     // Stripe wallet_addresses key for Base is "base_network" (from API docs)
     // destination_networks supports "base" as a valid enum value
     params.append("wallet_addresses[base_network]", walletAddress);
-    params.append("destination_currencies[]", "usdc");
+    params.append("destination_currencies[]", destinationCurrency);
     params.append("destination_networks[]", "base");
-    params.append("destination_currency", "usdc");
+    params.append("destination_currency", destinationCurrency);
     params.append("destination_network", "base");
     params.append("lock_wallet_address", "true");
 

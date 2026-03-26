@@ -38,6 +38,7 @@ export type SiteConfig = {
   processingFeePct?: number;
   reserveRatios?: Record<string, number>;
   defaultPaymentToken?: "ETH" | "USDC" | "USDT" | "cbBTC" | "cbXRP" | "SOL";
+  acceptCredit?: boolean;
   accumulationMode?: "fixed" | "dynamic";
   taxConfig?: {
     jurisdictions?: { code: string; name: string; rate: number; country?: string; type?: string }[];

@@ -34,6 +34,7 @@ export type SiteConfig = {
   processingFeePct?: number; // optional checkout processing fee percentage (e.g., 2.9)
   reserveRatios?: Record<string, number>; // optional reserve ratios by symbol: { USDC: 0.4, USDT: 0.2, cbBTC: 0.2, cbXRP: 0.1, ETH: 0.1, SOL: 0.1 }
   defaultPaymentToken?: "ETH" | "USDC" | "USDT" | "cbBTC" | "cbXRP" | "SOL"; // default payment token for portal page
+  acceptCredit?: boolean; // when true, portal locks to USDC for Stripe fiat credit card support
 
   // Per-merchant split routing (PaymentSplitter/Split) for on-chain revenue share
   splitAddress?: string; // if set, checkout will route to this instead of the merchant EOA
