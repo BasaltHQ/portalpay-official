@@ -70,12 +70,12 @@ const nextConfig = {
               "default-src 'self'",
               "img-src 'self' data: blob: https:",
               "media-src 'self' data: blob: https:",
-              // connect-src: Allow API calls to wallets, onramps, and payment providers
-              "connect-src 'self' https: wss: https://explorer-api.walletconnect.com wss://*.walletconnect.com https://*.walletconnect.com https://auth.privy.io https://*.rpc.privy.systems https://*.thirdweb.com https://*.coinbase.com https://*.stripe.com https://*.ramp.network https://*.transak.com https://*.moonpay.com",
-              // frame-src: Allow checkout widget iframes from onramp providers
-              "frame-src 'self' http: https: https://*.thirdweb.com https://*.coinbase.com https://*.stripe.com https://*.ramp.network https://*.transak.com https://*.moonpay.com",
-              "child-src 'self' http: https:",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+              // connect-src: Allow API calls to wallets, onramps, payment providers, and tracking (Clarity)
+              "connect-src 'self' https: wss: https://explorer-api.walletconnect.com wss://*.walletconnect.com https://*.walletconnect.com https://auth.privy.io https://*.rpc.privy.systems https://*.thirdweb.com https://*.coinbase.com https://*.stripe.com https://*.ramp.network https://*.transak.com https://*.moonpay.com https://*.clarity.ms https://c.bing.com",
+              // frame-src: Allow checkout widget iframes from onramp providers and Clarity
+              "frame-src 'self' http: https: https://*.thirdweb.com https://*.coinbase.com https://*.stripe.com https://*.ramp.network https://*.transak.com https://*.moonpay.com https://*.clarity.ms",
+              "child-src 'self' http: https: https://*.clarity.ms",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: https://*.clarity.ms https://c.bing.com",
               "style-src 'self' 'unsafe-inline' https: https://use.typekit.net https://p.typekit.net",
               "font-src 'self' https: data: https://use.typekit.net https://p.typekit.net",
               "frame-ancestors *",
