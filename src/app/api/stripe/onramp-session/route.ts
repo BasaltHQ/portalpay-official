@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
       clientSecret: data.client_secret,
       sessionId: data.id,
       status: data.status,
+      redirectUrl: data.redirect_url || null,
     });
   } catch (e: any) {
     console.error("[STRIPE ONRAMP] Error:", e);
