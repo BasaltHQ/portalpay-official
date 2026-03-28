@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useActiveAccount } from "thirdweb/react";
+import { Capacitor } from "@capacitor/core";
+import { networkPrint, buildExpoTicketText } from "@/lib/hardware/network-print";
 import { useApplyTheme, resolveThemeId } from "@/lib/themes";
 import {
     DndContext,
@@ -235,6 +237,36 @@ function KitchenTicket({ order, isOverlay, onClear }: { order: KitchenOrder; isO
                 <div className="absolute top-2 right-2 opacity-5 font-black text-6xl pointer-events-none uppercase tracking-tighter">
                     {order.orderType === 'takeout' ? 'TO' : order.orderType === 'delivery' ? 'DL' : ''}
                 </div>
+            )}
+
+            {/* Print Expo Ticket */}
+            {order.kitchenStatus !== 'completed' && (
+                <button
+                    onClick={async (e) => {
+                        e.stopPropagation();
+                        const ticketText = buildExpoTicketText(order);
+                        // Tier 1: Try native printer (Capacitor)
+                        try {
+                            if (Capacitor.isNativePlatform()) {
+                                const printer = (Capacitor as any).Plugins?.ExternalPrinter;
+                                if (printer?.printText) {
+                                    await printer.printText({ text: ticketText });
+                                    return;
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('[KDS] Native print failed:', err);
+                        }
+                        // Tier 2: DeviceHub network print
+                        const netResult = await networkPrint({ text: ticketText });
+                        if (netResult.ok) return;
+                        // Tier 3: Browser print
+                        window.print();
+                    }}
+                    className="mt-3 w-full h-9 rounded-lg bg-neutral-800 dark:bg-neutral-700 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-neutral-700 dark:hover:bg-neutral-600 active:scale-95 transition-all"
+                >
+                    🖨 Print Expo Ticket
+                </button>
             )}
         </div>
     );
