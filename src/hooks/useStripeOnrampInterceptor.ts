@@ -161,13 +161,12 @@ export function useStripeOnrampInterceptor({
           return;
         }
 
-        const { clientSecret, sessionId } = data;
+        const { clientSecret, sessionId, redirectUrl } = data;
         activeSessionRef.current = sessionId;
 
-        // Open the original crypto.link.com URL in a new tab
-        // Use a programmatic anchor click to bypass our own window.open patch
-        // (which would re-intercept the crypto.link.com URL and loop)
-        const targetUrl = interceptedUrl || `https://crypto.link.com`;
+        // Use Stripe's session-bound redirect URL (contains correct amount/wallet/currency)
+        // Falls back to intercepted URL or bare crypto.link.com
+        const targetUrl = redirectUrl || interceptedUrl || `https://crypto.link.com`;
         _bypassInterceptor = true;
         const a = document.createElement("a");
         a.href = targetUrl;
@@ -178,7 +177,7 @@ export function useStripeOnrampInterceptor({
         a.click();
         document.body.removeChild(a);
         setTimeout(() => { _bypassInterceptor = false; }, 500);
-        console.log("[STRIPE INTERCEPTOR] Opened crypto.link.com in new tab:", sessionId);
+        console.log("[STRIPE INTERCEPTOR] Opened session redirect URL in new tab:", sessionId, targetUrl);
 
         // Poll for completion so we can still trigger onSuccess
         if (pollingRef.current) clearInterval(pollingRef.current);
