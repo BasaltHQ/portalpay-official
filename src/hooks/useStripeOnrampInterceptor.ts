@@ -162,8 +162,17 @@ export function useStripeOnrampInterceptor({
         activeSessionRef.current = sessionId;
 
         // Open the original crypto.link.com URL in a new tab
+        // Use a programmatic anchor click to bypass our own window.open patch
+        // (which would re-intercept the crypto.link.com URL and loop)
         const targetUrl = interceptedUrl || `https://crypto.link.com`;
-        window.open(targetUrl, "_blank", "noopener,noreferrer");
+        const a = document.createElement("a");
+        a.href = targetUrl;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         console.log("[STRIPE INTERCEPTOR] Opened crypto.link.com in new tab:", sessionId);
 
         // Poll for completion so we can still trigger onSuccess
