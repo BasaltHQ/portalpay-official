@@ -4,6 +4,7 @@ import { encrypt, decrypt } from "@/lib/encryption";
 import { getContainer } from "@/lib/cosmos";
 import { requireThirdwebAuth, getAuthenticatedWallet } from "@/lib/auth";
 import { getPlatformAdminWallets } from "@/lib/authz-server";
+import { isPartnerContext } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -112,6 +113,7 @@ export async function GET(req: NextRequest) {
 
         const requestsMap = new Map<string, any>();
         const configMap = new Map<string, any>();
+        const shopConfigMap = new Map<string, any>(); // Separate map for shop_config (holds shop name, slug, etc.)
         const allWallets = new Set<string>();
 
         resources.forEach((r: any) => {
@@ -121,6 +123,11 @@ export async function GET(req: NextRequest) {
                 if (r.type === "client_request" && (!statusFilter || statusFilter === r.status)) {
                     requestsMap.set(w, r);
                 } else if (r.type === "site_config" || r.type === "shop_config") {
+                    // Keep shop_config separately so we can merge the shop name later
+                    if (r.type === "shop_config") {
+                        const existingShop = shopConfigMap.get(w);
+                        if (!existingShop) shopConfigMap.set(w, r);
+                    }
                     const existing = configMap.get(w);
                     // Prioritize site_config over shop_config
                     // And since we sort by DESC, the first site_config we see is the newest.
@@ -139,10 +146,10 @@ export async function GET(req: NextRequest) {
         const result = Array.from(allWallets).map((wallet) => {
             const req = requestsMap.get(wallet);
             const conf = configMap.get(wallet);
+            const shopConf = shopConfigMap.get(wallet); // shop_config has the actual shop name
 
             if (!req && !conf) return null; // Should not happen
-            // If filtering by status and we have no request (orphan), orphan implies 'active' or specific status.
-            // If statusFilter is set to 'pending', we skip orphans.
+            // If filtering by status 'pending' and we have no request, skip (config-only merchants are auto-approved).
             if (statusFilter && statusFilter === "pending" && !req) return null;
 
             // Parse any date format (BSON {$date: ...}, ISO string, or number) to ms epoch
@@ -174,7 +181,7 @@ export async function GET(req: NextRequest) {
                     deployedSplitAddress: deployedAddress,
                     splitHistory: conf?.splitHistory || [],
                     splitConfig: conf?.splitConfig || req.splitConfig, // Prefer deployed config
-                    shopName: conf?.shopName || req.shopName, // Prefer deployed name,
+                    shopName: shopConf?.name || conf?.shopName || conf?.name || req.shopName, // shop_config name > site_config name > request name
                     // Merge Shop Config Theme Data (Live Source of Truth)
                     shopLogoUrl: conf?.theme?.brandLogoUrl || req.shopLogoUrl || req.logoUrl,
                     logoUrl: conf?.theme?.brandLogoUrl || req.logoUrl, // Ensure compatibility
@@ -212,24 +219,92 @@ export async function GET(req: NextRequest) {
                 return enriched;
             }
 
-            // Orphan handling: No request but has config
-            // Synthesize a request object so it appears in the list and can be deleted
-            return {
-                id: conf.id || `orphan-${wallet.slice(0, 8)}`,
+            // Partner containers: preserve original orphaned behavior untouched.
+            // Platform container: synthesize a full "approved" record from the config.
+            if (isPartnerContext()) {
+                return {
+                    id: conf.id || `orphan-${wallet.slice(0, 8)}`,
+                    wallet: wallet,
+                    brandKey: conf.brandKey || brandKey,
+                    shopName: conf.shopName || conf.name || conf.displayName || "Orphaned Merchant",
+                    legalBusinessName: "Data Missing (Orphaned)",
+                    businessType: "unknown",
+                    contactEmail: "",
+                    status: "orphaned",
+                    createdAt: toMs(conf.createdAt) || ((conf._ts || 0) * 1000) || Date.now(),
+                    updatedAt: toMs(conf.updatedAt) || ((conf._ts || 0) * 1000) || Date.now(),
+                    splitConfig: conf.splitConfig,
+                    deployedSplitAddress: conf.splitAddress || conf.split?.address,
+                    splitHistory: conf.splitHistory || [],
+                    note: "This merchant has a configuration but no request record.",
+                };
+            }
+
+            // Platform container: Auto-approved merchant with no formal client_request.
+            // Synthesize a full record from the config so admins can manage them.
+            const theme = conf.theme || {};
+            const shopTheme = shopConf?.theme || {};
+            // Filter out platform default branding so merchant-specific values show through
+            const isDefaultLogo = (v: any) => !v || v === "/BasaltSurgeWideD.png" || v === "/Surge.png";
+            const isDefaultColor = (v: any) => !v || v === "#35ff7c" || v === "#16A34A";
+            const isDefaultName = (v: any) => !v || v === "BasaltSurge";
+            const synthesized: any = {
+                id: conf.id || `site:${wallet.slice(0, 10)}`,
                 wallet: wallet,
+                type: "client_request",
                 brandKey: conf.brandKey || brandKey,
-                shopName: conf.shopName || conf.displayName || "Orphaned Merchant",
-                legalBusinessName: "Data Missing (Orphaned)",
-                businessType: "unknown",
-                contactEmail: "",
-                status: "orphaned", // Distinct status
+                shopName: shopConf?.name || conf.shopName || conf.name || (!isDefaultName(theme.brandName) ? theme.brandName : null) || conf.displayName || "Unnamed Merchant",
+                legalBusinessName: shopConf?.name || conf.legalBusinessName || conf.name || (!isDefaultName(theme.brandName) ? theme.brandName : null) || conf.shopName || "—",
+                businessType: conf.businessType || conf.serviceCategory || "retail",
+                email: conf.email || conf.contactEmail || "",
+                phone: conf.phone || "",
+                website: conf.website || "",
+                businessAddress: conf.businessAddress || undefined,
+                slug: shopConf?.slug || conf.slug || "",
+                description: shopConf?.description || conf.description || "",
+                layoutMode: shopTheme.layoutMode || theme.layoutMode || conf.layoutMode || "balanced",
+                // Brand assets: prefer shop_config (merchant-customized) over site_config (may have platform defaults)
+                shopLogoUrl: shopTheme.brandLogoUrl || (!isDefaultLogo(theme.brandLogoUrl) ? theme.brandLogoUrl : "") || conf.logoUrl || "",
+                logoUrl: shopTheme.brandLogoUrl || (!isDefaultLogo(theme.brandLogoUrl) ? theme.brandLogoUrl : "") || conf.logoUrl || "",
+                faviconUrl: shopTheme.brandFaviconUrl || (!isDefaultLogo(theme.brandFaviconUrl) ? theme.brandFaviconUrl : "") || conf.faviconUrl || "",
+                primaryColor: shopTheme.primaryColor || (!isDefaultColor(theme.primaryColor) ? theme.primaryColor : "") || conf.primaryColor || "",
+                secondaryColor: shopTheme.secondaryColor || (!isDefaultColor(theme.secondaryColor) ? theme.secondaryColor : "") || conf.secondaryColor || "",
+                // Status: treat as approved since they are already operating
+                status: "approved",
                 createdAt: toMs(conf.createdAt) || ((conf._ts || 0) * 1000) || Date.now(),
                 updatedAt: toMs(conf.updatedAt) || ((conf._ts || 0) * 1000) || Date.now(),
+                // Financial config
                 splitConfig: conf.splitConfig,
                 deployedSplitAddress: conf.splitAddress || conf.split?.address,
                 splitHistory: conf.splitHistory || [],
-                note: "This merchant has a configuration but no request record. Delete to effectively remove access.",
+                // Touchpoint themes
+                touchpointThemes: conf.touchpointThemes || undefined,
+                // Flag so the UI knows this was synthesized (no formal application on file)
+                _synthesized: true,
             };
+
+            // Force-inject Shop Colors into Touchpoint Themes (same as enriched path above)
+            if (synthesized.touchpointThemes) {
+                const shopP = synthesized.primaryColor;
+                const shopS = synthesized.secondaryColor;
+                const injectedThemes: any = {};
+                for (const key of Object.keys(synthesized.touchpointThemes)) {
+                    let current = synthesized.touchpointThemes[key];
+                    if (typeof current === 'string') {
+                        current = { themeId: current };
+                    } else if (typeof current !== 'object' || current === null) {
+                        current = {};
+                    }
+                    injectedThemes[key] = {
+                        ...current,
+                        primaryColor: shopP,
+                        secondaryColor: shopS || current.secondaryColor
+                    };
+                }
+                synthesized.touchpointThemes = injectedThemes;
+            }
+
+            return synthesized;
         }).filter(Boolean); // Remove nulls
 
         return json({ ok: true, requests: result, brandKey });
@@ -410,8 +485,38 @@ export async function PATCH(req: NextRequest) {
             ]
         };
         const { resources: requests } = await container.items.query<ClientRequestDoc>(findQuery).fetchAll();
-        const request = requests[0];
+        let request = requests[0] as any;
+        let isSynthesized = false;
 
+        // If no client_request found, this may be a synthesized (permissionless) merchant.
+        // Only applies to platform container — partner containers always have client_request docs.
+        if (!request && !isPartnerContext()) {
+            const configFallbackQuery = {
+                query: `SELECT * FROM c WHERE (c.type = 'site_config' OR c.type = 'shop_config') AND c.id = @id AND StringEquals(c.brandKey, @brand, true)`,
+                parameters: [
+                    { name: "@id", value: requestId },
+                    { name: "@brand", value: brandKey }
+                ]
+            };
+            const { resources: configFallback } = await container.items.query(configFallbackQuery).fetchAll();
+            if (!configFallback[0]) {
+                return json({ error: "request_not_found" }, { status: 404 });
+            }
+            // Build minimal virtual request from the config so existing merge logic works
+            const cfg = configFallback[0] as any;
+            request = {
+                id: cfg.id,
+                wallet: cfg.wallet,
+                brandKey: cfg.brandKey || brandKey,
+                shopName: cfg.shopName || cfg.name || "",
+                slug: cfg.slug || "",
+                status: "approved",
+                createdAt: cfg.createdAt || Date.now(),
+            };
+            isSynthesized = true;
+        }
+
+        // Final guard: if still no request (partner container, or platform with no matching docs)
         if (!request) {
             return json({ error: "request_not_found" }, { status: 404 });
         }
@@ -608,7 +713,10 @@ export async function PATCH(req: NextRequest) {
         }
 
         // Update the Client Request itself (Status change / Notes / etc)
-        await container.item(request.id, request.wallet).replace(updatedDoc);
+        // Skip for synthesized merchants — they have no client_request doc, only config docs.
+        if (!isSynthesized) {
+            await container.item(request.id, request.wallet).replace(updatedDoc);
+        }
 
         return json({ ok: true, requestId, status: newStatus || request.status });
     } catch (e: any) {

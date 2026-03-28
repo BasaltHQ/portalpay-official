@@ -151,9 +151,6 @@ export default function ClientRequestsPanel() {
         let finalRes = res;
         if (statusFilter !== "all") {
             finalRes = finalRes.filter(i => i.status === statusFilter);
-        } else {
-            // Default "All" view should exclude orphaned items (soft deleted)
-            finalRes = finalRes.filter(i => i.status !== "orphaned");
         }
 
         // 4. Sort
@@ -548,7 +545,7 @@ export default function ClientRequestsPanel() {
                 {/* Status Tabs */}
                 <div className="flex flex-wrap gap-1 border-b border-white/5">
                     {[
-                        { id: "all", label: "All Requests" },
+                        { id: "all", label: "All Merchants" },
                         { id: "pending", label: "Pending" },
                         { id: "approved", label: "Approved" },
                         { id: "rejected", label: "Rejected" },
