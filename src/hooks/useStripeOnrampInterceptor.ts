@@ -34,6 +34,9 @@ type StripeQuote = {
 // Stripe SDK loading (singleton)
 let stripeOnrampPromise: Promise<any> | null = null;
 
+// Bypass flag: prevents re-interception when we intentionally open crypto.link.com
+let _bypassInterceptor = false;
+
 function loadStripeOnrampSdk(): Promise<any> {
   if (stripeOnrampPromise) return stripeOnrampPromise;
 
@@ -165,6 +168,7 @@ export function useStripeOnrampInterceptor({
         // Use a programmatic anchor click to bypass our own window.open patch
         // (which would re-intercept the crypto.link.com URL and loop)
         const targetUrl = interceptedUrl || `https://crypto.link.com`;
+        _bypassInterceptor = true;
         const a = document.createElement("a");
         a.href = targetUrl;
         a.target = "_blank";
@@ -173,6 +177,7 @@ export function useStripeOnrampInterceptor({
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+        setTimeout(() => { _bypassInterceptor = false; }, 500);
         console.log("[STRIPE INTERCEPTOR] Opened crypto.link.com in new tab:", sessionId);
 
         // Poll for completion so we can still trigger onSuccess
@@ -516,7 +521,7 @@ export function useStripeOnrampInterceptor({
       features?: string
     ): WindowProxy | null {
       const urlStr = String(url || "");
-      if (isCryptoLinkUrl(urlStr)) {
+      if (isCryptoLinkUrl(urlStr) && !_bypassInterceptor) {
         console.log("[STRIPE INTERCEPTOR] 🎯 Intercepted window.open to:", urlStr);
         launchRef.current(undefined, urlStr);
         return null;
@@ -529,7 +534,7 @@ export function useStripeOnrampInterceptor({
       const anchor = (e.target as HTMLElement)?.closest?.("a") as HTMLAnchorElement | null;
       if (anchor) {
         const href = (anchor.href || "");
-        if (isCryptoLinkUrl(href)) {
+        if (isCryptoLinkUrl(href) && !_bypassInterceptor) {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
