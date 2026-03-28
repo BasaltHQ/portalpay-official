@@ -54,7 +54,7 @@ function loadStripeOnrampSdk(): Promise<any> {
         document.head.appendChild(s);
       });
 
-    loadScript("https://js.stripe.com/clover/stripe.js")
+    loadScript("https://js.stripe.com/dahlia/stripe.js")
       .then(() => loadScript("https://crypto-js.stripe.com/crypto-onramp-outer.js"))
       .then(() => {
         setTimeout(() => {
