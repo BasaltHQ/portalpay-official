@@ -25,6 +25,19 @@ export function FaviconUpdater() {
             faviconUrl = BLOCKED_FAVICON_REPLACEMENT;
         }
 
+        // Guard: Don't overwrite partner favicons with platform defaults
+        const PLATFORM_FAVICONS = ["/Surge.png", "/favicon-32x32.png", "/ppsymbol.png"];
+        const isPartner = typeof document !== "undefined" &&
+            document.documentElement.getAttribute("data-pp-container-type") === "partner";
+        if (isPartner && faviconUrl && PLATFORM_FAVICONS.includes(faviconUrl)) {
+            // Check if there's already a non-platform favicon set in the DOM — preserve it
+            const existingLink = document.querySelector("link[rel*='icon']") as HTMLLinkElement | null;
+            if (existingLink?.href && !PLATFORM_FAVICONS.some(p => existingLink.href.endsWith(p))) {
+                console.log("[FaviconUpdater] Skipping platform favicon override for partner:", faviconUrl);
+                return;
+            }
+        }
+
         if (faviconUrl) {
             // Update ALL instances of favicon links (rel="icon", rel="shortcut icon", etc.)
             const links = document.querySelectorAll("link[rel*='icon']");
