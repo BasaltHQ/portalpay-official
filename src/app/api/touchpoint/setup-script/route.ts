@@ -101,13 +101,14 @@ echo.
 echo Brand: ${brandKey}
 echo Downloading from server...
 set "TEMP_APK=%TEMP%\\${brandKey}-touchpoint.apk"
+if exist "%TEMP_APK%" del /f /q "%TEMP_APK%"
 
 REM Try curl first, fall back to PowerShell
 where curl >nul 2>nul
 if %ERRORLEVEL%==0 (
-    curl -f -L -o "%TEMP_APK%" "${apkUrl}"
+    curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" -f -L -o "%TEMP_APK%" "${apkUrl}"
 ) else (
-    powershell -Command "Invoke-WebRequest -Uri '${apkUrl}' -OutFile '%TEMP_APK%'"
+    powershell -Command "Invoke-WebRequest -UserAgent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36' -Uri '${apkUrl}' -OutFile '%TEMP_APK%'"
 )
 
 if not exist "%TEMP_APK%" (
@@ -251,11 +252,12 @@ echo ""
 echo "Brand: ${brandKey}"
 echo "Downloading from server..."
 TEMP_APK="/tmp/${brandKey}-touchpoint.apk"
+rm -f "$` + `TEMP_APK"
 
 if command -v curl &> /dev/null; then
-    curl -f -L -o "$` + `TEMP_APK" "${apkUrl}"
+    curl -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" -f -L -o "$` + `TEMP_APK" "${apkUrl}"
 elif command -v wget &> /dev/null; then
-    wget -O "$` + `TEMP_APK" "${apkUrl}"
+    wget -U "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" -O "$` + `TEMP_APK" "${apkUrl}"
 else
     echo "[ERROR] Neither curl nor wget found. Please install one."
     exit 1
