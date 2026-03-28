@@ -11,6 +11,9 @@ function json(obj: any, init?: { status?: number; headers?: Record<string, strin
         const len = new TextEncoder().encode(s).length;
         const headers: Record<string, string> = {
             "Content-Type": "application/json",
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
             ...(init?.headers || {}),
         };
         headers["Content-Length"] = String(len);
@@ -103,7 +106,8 @@ export async function GET(req: NextRequest) {
                 clearDeviceOwner: resource.clearDeviceOwner || false,
                 wipeDevice: resource.wipeDevice || false,
             });
-        } catch {
+        } catch (fetchErr: any) {
+            console.error("[touchpoint/config] Failed to fetch document:", fetchErr);
             // Document doesn't exist = not configured
             return json({
                 configured: false,
