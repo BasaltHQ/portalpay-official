@@ -268,7 +268,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const effectiveDefaultSecondary = (brand as any)?.colors?.accent || (isPartnerBrand ? '#F54029' : defaultTheme.secondaryColor);
         const effectiveDefaultLogo = (brand as any)?.logos?.app || (isPartnerBrand ? '' : defaultTheme.brandLogoUrl);
         const effectiveDefaultSymbol = (brand as any)?.logos?.symbol || effectiveDefaultLogo || (isPartnerBrand ? '' : defaultTheme.symbolLogoUrl);
-        const effectiveDefaultFavicon = (brand as any)?.logos?.favicon || defaultTheme.brandFaviconUrl;
+        const effectiveDefaultFavicon = (brand as any)?.logos?.favicon || (isPartnerBrand ? '' : defaultTheme.brandFaviconUrl);
         const effectiveDefaultName = (brand as any)?.name || (isPartnerBrand ? brandKeyCheck.charAt(0).toUpperCase() + brandKeyCheck.slice(1) : defaultTheme.brandName);
 
         // Client-side sanitization using merged theme (shop takes priority)
@@ -368,7 +368,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
           x.brandLogoUrl = resolveBrandAppLogo(x.brandLogoUrl || effectiveDefaultLogo, brandKeyFinal);
           x.symbolLogoUrl = resolveBrandSymbol(x.symbolLogoUrl || x.brandLogoUrl || effectiveDefaultSymbol, brandKeyFinal);
-          x.brandFaviconUrl = x.brandFaviconUrl || effectiveDefaultFavicon;
+          x.brandFaviconUrl = x.brandFaviconUrl || effectiveDefaultFavicon || theme.brandFaviconUrl;
 
 
           // Ensure favicon is sanitized against malicious URLs
