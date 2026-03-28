@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -16,6 +16,8 @@ import { QRCode } from "react-qrcode-logo";
 import { getTheme } from "@/lib/themes";
 import { isRuntimePlatformBrand } from "@/lib/branding";
 import { useQRCodeDisplay, useReceiptPrinter } from "@/lib/hardware/useHardwareHooks";
+import { networkPrint } from "@/lib/hardware/network-print";
+import { useToastOrderPush } from "@/lib/hooks/use-toast-order-push";
 import {
     Activity, ArrowLeft, ChevronLeft, ChevronRight, CreditCard,
     DollarSign, Grid, History, LogOut, Menu, Mic,
@@ -114,6 +116,7 @@ export default function HandheldInterface({
     // -- HARDWARE INTEGRATION --
     const { pushQRToCustomerScreen, clearCustomerScreen } = useQRCodeDisplay();
     const { printDocument, hasPrinter } = useReceiptPrinter();
+    const { pushToToast } = useToastOrderPush();
 
     // Modifier State
     const [selectedItemForModifiers, setSelectedItemForModifiers] = useState<InventoryItem | null>(null);
@@ -164,7 +167,7 @@ export default function HandheldInterface({
             const portalUrl = `${origin}/portal/${encodeURIComponent(rawReceiptId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
 
             timer = setTimeout(() => {
-                // Send the URL data string to the native plugin — it will generate
+                // Send the URL data string to the native plugin â€” it will generate
                 // the QR bitmap natively at the exact screen resolution (282x240).
                 // Sending a pre-rendered JS canvas bitmap was causing density issues:
                 // the 200px QR was being stretched to fill the 282x240 screen, blurring modules.
@@ -256,7 +259,7 @@ export default function HandheldInterface({
                                 <div key={o.id} className="px-4 py-3 flex items-center justify-between text-sm">
                                     <div className="flex flex-col gap-0.5">
                                         <div className="font-mono font-bold text-white">#{o.receiptId.slice(-4)}</div>
-                                        <div className="text-xs text-neutral-500">{new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Table {o.tableNumber || 'N/A'}</div>
+                                        <div className="text-xs text-neutral-500">{new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} â€¢ Table {o.tableNumber || 'N/A'}</div>
                                     </div>
                                     <div className="text-right">
                                         <div className="font-bold text-neutral-200">{formatCurrency(o.totalUsd)}</div>
@@ -495,7 +498,7 @@ export default function HandheldInterface({
             // General mode: skip kitchen routing and table assignment
             if (isGeneralMode) {
                 payload.tableNumber = "counter";
-                // No kitchenStatus — order goes straight to receipt, no KDS routing
+                // No kitchenStatus â€” order goes straight to receipt, no KDS routing
             } else {
                 payload.tableNumber = tableNum;
                 payload.kitchenStatus = "new";
@@ -517,7 +520,7 @@ export default function HandheldInterface({
             setCart([]);
             setIsCartOpen(false);
             if (isGeneralMode) {
-                // Go directly to payment — skip KDS
+                // Go directly to payment â€” skip KDS
                 const receiptId = orderData?.receipt?.receiptId || orderData?.receiptId;
                 if (receiptId) {
                     setSelectedOrderForPayment({ id: `receipt:${receiptId}`, total: cartTotal, items: cart });
@@ -789,18 +792,20 @@ export default function HandheldInterface({
                                             if (canvas && canvas.width > 0) {
                                                 qrBase64 = canvas.toDataURL("image/png").split(',')[1] || canvas.toDataURL("image/png");
                                             }
-                                            // Always try native printer first — same as Terminal
+                                            // Always try native printer first â€” same as Terminal
                                             try {
                                                 const result = await printDocument({ text: receiptText, base64Image: qrBase64 });
-                                                if (!result) {
-                                                    // Native printer returned false — fall back to system print
-                                                    console.warn('[PRINTER] Native print returned false, falling back to window.print()');
-                                                    window.print();
-                                                }
+                                                if (result) return; // Native print succeeded
                                             } catch (e: any) {
-                                                console.error('[PRINTER] Native print threw:', e);
-                                                window.print();
+                                                console.warn('[PRINTER] Native print failed:', e);
                                             }
+
+                                            // Try DeviceHub network printer
+                                            const netResult = await networkPrint({ text: receiptText, qrBase64 });
+                                            if (netResult.ok) return; // Network print job submitted
+
+                                            // Last resort: browser print
+                                            window.print();
                                         }
                                     }}
                                     className="w-full h-12 bg-black text-white rounded-xl font-bold active:scale-95 transition-all text-sm flex items-center justify-center space-x-2 shadow-lg"
@@ -989,17 +994,20 @@ export default function HandheldInterface({
                                             if (canvas && canvas.width > 0) {
                                                 qrBase64 = canvas.toDataURL("image/png").split(',')[1] || canvas.toDataURL("image/png");
                                             }
-                                            // Always try native printer first — same as Terminal
+                                            // Always try native printer first â€” same as Terminal
                                             try {
                                                 const result = await printDocument({ text: receiptText, base64Image: qrBase64 });
-                                                if (!result) {
-                                                    console.warn('[PRINTER] Native print returned false, falling back to window.print()');
-                                                    window.print();
-                                                }
+                                                if (result) return; // Native print succeeded
                                             } catch (e: any) {
-                                                console.error('[PRINTER] Native print threw:', e);
-                                                window.print();
+                                                console.warn('[PRINTER] Native print failed:', e);
                                             }
+
+                                            // Try DeviceHub network printer
+                                            const netResult = await networkPrint({ text: receiptText, qrBase64 });
+                                            if (netResult.ok) return; // Network print job submitted
+
+                                            // Last resort: browser print
+                                            window.print();
                                         }
                                     }}
                                     className="h-16 bg-white/10 text-white rounded-2xl font-bold text-lg active:scale-95 transition-all flex items-center justify-center space-x-2 border border-white/5"
@@ -1336,7 +1344,7 @@ export default function HandheldInterface({
                                     <div className="flex flex-col items-center mb-4">
                                         {logoUrl && <img src={logoUrl} className="w-12 h-12 object-contain grayscale mb-2" alt="Logo" />}
                                         <h2 className="font-bold text-center text-lg">{brandName || "Receipt"}</h2>
-                                        <div className="text-xs mt-1">Server: {employeeName?.split('•')[0].trim() || "Staff"}</div>
+                                        <div className="text-xs mt-1">Server: {employeeName?.split('â€¢')[0].trim() || "Staff"}</div>
                                         <div className="text-xs">Table: {selectedTable}</div>
                                     </div>
 
@@ -1654,6 +1662,36 @@ export default function HandheldInterface({
                     // Immediate refresh from server to ensure DB sync
                     fetchOrders().catch(console.error);
 
+                    // Push to Toast POS if integration is configured (fire-and-forget, only when paid)
+                    const toastRestaurantGuid = typeof window !== 'undefined'
+                        ? localStorage.getItem('ledgerone-selected-shop') || localStorage.getItem('toast-selected-restaurant')
+                        : null;
+                    if (toastRestaurantGuid && selectedOrderForPayment.lineItems) {
+                        pushToToast({
+                            receiptId: String(selectedOrderForPayment.id || selectedOrderForPayment.receiptId || '').replace('receipt:', ''),
+                            restaurantGuid: toastRestaurantGuid,
+                            lineItems: (selectedOrderForPayment.lineItems || []).map((li: any) => ({
+                                label: li.label || li.name || '',
+                                sku: li.sku || '',
+                                qty: li.qty || li.quantity || 1,
+                                priceUsd: li.priceUsd || li.price || 0,
+                                modifiers: li.selectedModifiers?.map((m: any) => ({
+                                    groupId: m.groupId,
+                                    id: m.modifierId || m.id,
+                                    name: m.name,
+                                    priceAdjustment: m.priceAdjustment || 0,
+                                })),
+                            })),
+                            totalUsd: total,
+                            tipUsd: tip,
+                            paymentMethod: 'cash',
+                            amountTendered: tendered,
+                            orderType: selectedOrderForPayment.orderType || 'dine-in',
+                            serverName: employeeName || undefined,
+                            tableNumber: selectedOrderForPayment.tableNumber || undefined,
+                        }).catch(() => {}); // Fire-and-forget
+                    }
+
                     // If we are in a split result (Carousel), we need to update the specific receipt in the array
                     if (splitResult) {
                         const updatedReceipt = {
@@ -1787,7 +1825,7 @@ export default function HandheldInterface({
                             onClick={handleConfirmPay}
                             className="w-full h-16 bg-emerald-500 text-black rounded-2xl font-bold text-xl active:scale-95 transition-all shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)] disabled:opacity-50 disabled:scale-100 disabled:shadow-none mt-8 flex items-center justify-center space-x-2"
                         >
-                            <span className="text-2xl">💵</span>
+                            <span className="text-2xl">ðŸ’µ</span>
                             Complete Payment
                         </button>
 
@@ -1820,7 +1858,7 @@ export default function HandheldInterface({
                         <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between">
                             <div>
                                 <div className="text-emerald-400 font-bold text-sm uppercase tracking-wide">Ready to Submit</div>
-                                <div className="text-white font-mono text-xl font-bold">{cartCount} items • {formatCurrency(cartTotal)}</div>
+                                <div className="text-white font-mono text-xl font-bold">{cartCount} items â€¢ {formatCurrency(cartTotal)}</div>
                             </div>
                         </div>
                     )}
@@ -1945,7 +1983,7 @@ export default function HandheldInterface({
                     </div>
                 </div>
                 <div className="flex space-x-2">
-                    {/* Tables toggle — only in restaurant mode */}
+                    {/* Tables toggle â€” only in restaurant mode */}
                     {!isGeneralMode && (
                         <button
                             onClick={() => setView(view === "tables" ? "menu" : "tables")}
@@ -2121,7 +2159,7 @@ export default function HandheldInterface({
                     <span className="font-mono text-xl tracking-tight">{formatCurrency(cartTotal)}</span>
                 </button>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex space-x-2 z-40">
-                    {/* Tables shortcut — only in restaurant mode */}
+                    {/* Tables shortcut â€” only in restaurant mode */}
                     {!isGeneralMode && (
                         <button
                             onClick={(e) => { e.stopPropagation(); setView("tables"); }}

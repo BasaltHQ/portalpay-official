@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import { getTheme } from "@/lib/themes";
 import { isRuntimePlatformBrand } from "@/lib/branding";
 import { useQRCodeDisplay, useReceiptPrinter } from "@/lib/hardware/useHardwareHooks";
+import { networkPrint } from "@/lib/hardware/network-print";
 
 // Shared Logic extracted from TerminalPage
 // Props allow overriding the "Operator" (Merchant) vs the Connected Wallet
@@ -491,7 +492,17 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                             // You can pass externalIp: "192.168.x.x" in the second argument if stored in local settings
                                             await printDocument({ text: bodyText, base64Image: qrBase64 });
                                         } else {
-                                            window.print();
+                                            // No native printer — try DeviceHub network printer
+                                            const fallbackText = selected ? (
+                                                `${brandName || "Terminal"}\n` +
+                                                `Rcpt: ${selected.receiptId.slice(0, 8)}\n` +
+                                                `${itemLabel || "Sale"}    ${formatCurrency(totalConverted, terminalCurrency)}\n`
+                                            ) : "";
+                                            const netResult = await networkPrint({ text: fallbackText });
+                                            if (!netResult.ok) {
+                                                // Last resort: browser print
+                                                window.print();
+                                            }
                                         }
                                     }}
                                     className="px-4 py-3 tp-btn font-semibold transition-colors"

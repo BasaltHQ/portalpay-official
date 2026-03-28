@@ -86,7 +86,7 @@ export function useStripeOnrampInterceptor({
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
   const detectedCurrencyRef = useRef<string>("usdc");
-  const launchRef = useRef<(cur?: string) => void>(() => {});
+  const launchRef = useRef<(cur?: string, interceptedUrl?: string) => void>(() => {});
   const [quote, setQuote] = useState<StripeQuote | null>(null);
 
   useEffect(() => {
@@ -122,7 +122,7 @@ export function useStripeOnrampInterceptor({
   }, [enabled, amount]);
 
   // ─── Launch our Stripe onramp in a modal overlay ───
-  const launchStripeOnramp = useCallback(async () => {
+  const launchStripeOnramp = useCallback(async (interceptedUrl?: string) => {
     const destinationCurrency = "usdc";
 
     if (onIntercept) {
@@ -161,10 +161,10 @@ export function useStripeOnrampInterceptor({
         const { clientSecret, sessionId } = data;
         activeSessionRef.current = sessionId;
 
-        // Open Stripe's hosted onramp page in a new tab
-        const stripeUrl = `https://crypto-onramp.stripe.com/crypto-onramp?client_secret=${encodeURIComponent(clientSecret)}`;
-        window.open(stripeUrl, "_blank", "noopener,noreferrer");
-        console.log("[STRIPE INTERCEPTOR] Opened Stripe onramp in new tab:", sessionId);
+        // Open the original crypto.link.com URL in a new tab
+        const targetUrl = interceptedUrl || `https://crypto.link.com`;
+        window.open(targetUrl, "_blank", "noopener,noreferrer");
+        console.log("[STRIPE INTERCEPTOR] Opened crypto.link.com in new tab:", sessionId);
 
         // Poll for completion so we can still trigger onSuccess
         if (pollingRef.current) clearInterval(pollingRef.current);
@@ -509,7 +509,7 @@ export function useStripeOnrampInterceptor({
       const urlStr = String(url || "");
       if (isCryptoLinkUrl(urlStr)) {
         console.log("[STRIPE INTERCEPTOR] 🎯 Intercepted window.open to:", urlStr);
-        launchRef.current();
+        launchRef.current(undefined, urlStr);
         return null;
       }
       return originalOpen.call(window, url, target, features);
@@ -525,7 +525,7 @@ export function useStripeOnrampInterceptor({
           e.stopPropagation();
           e.stopImmediatePropagation();
           console.log("[STRIPE INTERCEPTOR] 🎯 Intercepted anchor click to:", href);
-          launchRef.current();
+          launchRef.current(undefined, href);
         }
       }
     };
@@ -544,7 +544,7 @@ export function useStripeOnrampInterceptor({
             e.stopPropagation();
             e.stopImmediatePropagation();
             console.log("[STRIPE INTERCEPTOR] 🎯 Intercepted neutered anchor:", el.href);
-            launchRef.current();
+            launchRef.current(undefined, el.href);
           }, true);
         });
       } catch {}
