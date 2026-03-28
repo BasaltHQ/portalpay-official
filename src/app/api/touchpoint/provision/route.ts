@@ -56,7 +56,7 @@ function hashUnlockCode(code: string): string {
  * Body:
  * {
  *   "installationId": "uuid-v4",           // Unique device ID from APK
- *   "mode": "terminal" | "kiosk" | "handheld",
+ *   "mode": "terminal" | "kiosk" | "handheld" | "kds",
  *   "merchantWallet": "0x...",
  *   "brandKey"?: string,                    // Optional override (platform only)
  *   "lockdownMode"?: "none" | "standard" | "device_owner",  // Default: "none"
@@ -83,8 +83,8 @@ export async function POST(req: NextRequest) {
         }
 
         const mode = String(body?.mode || "").toLowerCase();
-        if (mode !== "terminal" && mode !== "kiosk" && mode !== "handheld") {
-            return json({ error: "invalid_mode", message: "mode must be 'terminal', 'kiosk', or 'handheld'" }, { status: 400 });
+        if (mode !== "terminal" && mode !== "kiosk" && mode !== "handheld" && mode !== "kds") {
+            return json({ error: "invalid_mode", message: "mode must be 'terminal', 'kiosk', 'handheld', or 'kds'" }, { status: 400 });
         }
 
         const merchantWallet = String(body?.merchantWallet || "").trim();
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
             wallet, // partition key for Cosmos
             roles: [] as string[],
             installationId,
-            mode: mode as "terminal" | "kiosk" | "handheld",
+            mode: mode as "terminal" | "kiosk" | "handheld" | "kds",
             merchantWallet,
             brandKey,
             locked: true,
