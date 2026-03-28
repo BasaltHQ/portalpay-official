@@ -331,15 +331,31 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           // If we identified this as a partner, we MUST NOT allow the API (which might have returned default PortalPay config)
           // to overwrite the basic brand identity functions. 
           if (isPartner) {
+            // Helper: detect any platform asset in a URL
+            const isPlatformAsset = (url: string) => {
+              if (!url) return false;
+              const lower = url.toLowerCase();
+              return lower.includes('basaltsurge') || lower.includes('portalpay') ||
+                     lower.includes('ppsymbol') || lower.includes('cblogod') ||
+                     lower === '/surge.png' || lower === '/favicon-32x32.png' ||
+                     lower === '/watermark.png';
+            };
+
             // If the API says "BasaltSurge" or "PortalPay", but we have a real partner name in explicit defaults, REVERT to defaults.
             const isApiGeneric = !x.brandName || /^(portal\s*pay|basalt\s*surge)$/i.test(x.brandName);
             if (isApiGeneric && effectiveDefaultName && !/^(portal\s*pay|basalt\s*surge)$/i.test(effectiveDefaultName)) {
               x.brandName = effectiveDefaultName;
             }
-            // Same for logos
-            const isApiLogoPlatform = x.brandLogoUrl && (x.brandLogoUrl.includes('BasaltSurge') || x.brandLogoUrl.includes('PortalPay') || x.brandLogoUrl.includes('ppsymbol'));
-            if (isApiLogoPlatform && effectiveDefaultLogo && !effectiveDefaultLogo.includes('BasaltSurge')) {
-              x.brandLogoUrl = effectiveDefaultLogo;
+
+            // Strip ALL platform assets from logos/favicon — replace with partner defaults or empty
+            if (isPlatformAsset(x.brandLogoUrl)) {
+              x.brandLogoUrl = effectiveDefaultLogo && !isPlatformAsset(effectiveDefaultLogo) ? effectiveDefaultLogo : '';
+            }
+            if (isPlatformAsset(x.symbolLogoUrl)) {
+              x.symbolLogoUrl = effectiveDefaultSymbol && !isPlatformAsset(effectiveDefaultSymbol) ? effectiveDefaultSymbol : '';
+            }
+            if (isPlatformAsset(x.brandFaviconUrl)) {
+              x.brandFaviconUrl = effectiveDefaultFavicon && !isPlatformAsset(effectiveDefaultFavicon) ? effectiveDefaultFavicon : '';
             }
           }
 
