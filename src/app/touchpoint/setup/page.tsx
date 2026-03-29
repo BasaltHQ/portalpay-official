@@ -79,10 +79,12 @@ export default function TouchpointSetupPage() {
         } else if (cfg.mode === "kds") {
             // Kitchen Display System mode
             router.replace(`/kitchen/${cfg.merchantWallet}${queryStr}`);
+        } else if (cfg.mode === "kiosk") {
+            // Kiosk mode uses dedicated kiosk interface
+            router.replace(`/kiosk/${cfg.merchantWallet}${queryStr}`);
         } else {
-            // Kiosk mode uses shop with wallet as path and kiosk flag
-            queryParams.set("kiosk", "1");
-            router.replace(`/shop/${cfg.merchantWallet}?${queryParams.toString()}`);
+            // Fallback
+            router.replace(`/shop/${cfg.merchantWallet}${queryStr}`);
         }
     }
 
