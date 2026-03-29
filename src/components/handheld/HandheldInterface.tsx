@@ -24,7 +24,7 @@ import {
     MoreHorizontal, Printer, RefreshCw, Search, Settings,
     Smartphone, User, Wifi, X, Zap, Trash2, CheckCircle2,
     Minus, Plus, RotateCcw, LayoutGrid, ShoppingBag, MicOff,
-    Volume2, VolumeX, Receipt, Clock, Loader2, AlertCircle, Edit2, XCircle
+    Volume2, VolumeX, Receipt, Clock, Loader2, AlertCircle, Edit2, XCircle, Gift, Shield, ShieldCheck
 } from "lucide-react";
 
 // Helper for currency
@@ -89,6 +89,7 @@ export default function HandheldInterface({
     merchantWallet,
     employeeId,
     employeeName,
+    employeeRole,
     sessionId,
     onLogout,
     brandName,
@@ -131,6 +132,13 @@ export default function HandheldInterface({
     const [splitSelection, setSplitSelection] = useState<Record<string, number>>({}); // items to split: index -> qty
     // Cash Modal State
     const [showCashModal, setShowCashModal] = useState(false);
+
+    // Comp Ticket State
+    const [showCompModal, setShowCompModal] = useState(false);
+    const [compReasonPreset, setCompReasonPreset] = useState("Employee Meal");
+    const [compReasonCustom, setCompReasonCustom] = useState("");
+    const [compPin, setCompPin] = useState("");
+    const [isComping, setIsComping] = useState(false);
 
     // -- EDIT MODE STATE --
     const [editMode, setEditMode] = useState<{
@@ -323,7 +331,7 @@ export default function HandheldInterface({
                         statusMap[o.tableNumber].push({
                             id: o.receiptId,
                             status: o.kitchenStatus,
-                            paymentStatus: o.status, // Map actual receipt/payment status
+                            paymentStatus: o.paymentStatus || o.status, // Map actual receipt/payment status
                             total: o.totalUsd,
                             tipAmount: o.tipAmount, // Map tip amount
                             items: o.lineItems || [],
@@ -1081,6 +1089,24 @@ export default function HandheldInterface({
                 <div className="flex-1 flex flex-col items-center p-8 space-y-6 overflow-y-auto">
 
                     {!isSplitting ? (
+                        selectedOrderForPayment.paymentStatus === 'comped' ? (
+                            <div className="bg-amber-500/5 py-12 px-6 rounded-3xl flex flex-col items-center justify-center border border-amber-500/20 w-full max-w-sm mx-auto my-auto shadow-[0_0_40px_-10px_rgba(245,158,11,0.1)] text-center animate-in zoom-in-95 duration-300">
+                                <div className="w-20 h-20 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-6">
+                                    <Gift className="w-10 h-10 text-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.8)]" />
+                                </div>
+                                <h3 className="text-amber-500 font-bold text-3xl mb-3 tracking-tight">Comped Ticket</h3>
+                                <p className="text-neutral-400 text-sm max-w-[240px] leading-relaxed mt-2 font-mono">
+                                    Ticket resolved without payment. It will clear when the kitchen completes the order.
+                                </p>
+                                
+                                <button
+                                    onClick={() => setView('tables')}
+                                    className="mt-10 h-14 w-full bg-neutral-800 text-white rounded-2xl font-bold shadow-md hover:bg-neutral-700 transition-all border border-white/5 active:scale-95 text-lg flex items-center justify-center"
+                                >
+                                    Dismiss
+                                </button>
+                            </div>
+                        ) : (
                         <>
                             <div className="bg-white p-4 rounded-xl shadow-2xl">
                                 <QRCode
@@ -1106,7 +1132,7 @@ export default function HandheldInterface({
                                 <div className="text-[10px] text-neutral-500 mt-2 font-mono">{selectedOrderForPayment.id}</div>
                             </div>
 
-                            <div className="grid grid-cols-2 space-x-4 w-full">
+                            <div className="grid grid-cols-2 gap-4 w-full">
                                 <button
                                     onClick={async () => {
                                         if (selectedOrderForPayment) {
@@ -1146,6 +1172,13 @@ export default function HandheldInterface({
                                 >
                                     Split Bill
                                 </button>
+                                <button
+                                    onClick={() => setShowCompModal(true)}
+                                    className="h-16 col-span-2 bg-amber-500/10 text-amber-500 border border-amber-500/50 rounded-2xl font-bold text-lg active:scale-95 transition-all flex items-center justify-center space-x-2 shadow-[0_4px_10px_rgba(245,158,11,0.1)] hover:bg-amber-500/20"
+                                >
+                                    <Gift className="w-6 h-6 mr-1" />
+                                    Comp Ticket
+                                </button>
                             </div>
 
                             <button
@@ -1163,6 +1196,7 @@ export default function HandheldInterface({
                                 Scan with guest's phone to pay with Apple Pay / Card.
                             </p>
                         </>
+                        )
                     ) : (
                         <div className="w-full h-full flex flex-col">
                             {/* Tabs */}
@@ -1727,6 +1761,11 @@ export default function HandheldInterface({
                                                     <span className="text-emerald-500">+ {formatCurrency(aggregatedTip)} Tip</span>
                                                 )}
                                             </div>
+                                        ) : order.paymentStatus === 'comped' ? (
+                                            <div className="flex-1 h-10 bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded-lg font-bold text-sm flex items-center justify-center space-x-1 shadow-inner cursor-not-allowed">
+                                                <Gift className="w-4 h-4" />
+                                                <span>Comped Ticket</span>
+                                            </div>
                                         ) : (
                                             <button
                                                 onClick={() => handlePaymentClick(order)}
@@ -1767,8 +1806,8 @@ export default function HandheldInterface({
                                     </div>
                                 )}
 
-                                {/* EDIT AND CANCEL BUTTONS (if not paid or cancelled) */}
-                                {order.paymentStatus !== 'paid' && order.paymentStatus !== 'checkout_success' && order.paymentStatus !== 'cancelled' && (
+                                {/* EDIT AND CANCEL BUTTONS (if not finalized) */}
+                                {order.paymentStatus !== 'paid' && order.paymentStatus !== 'checkout_success' && order.paymentStatus !== 'cancelled' && order.paymentStatus !== 'comped' && (
                                     <div className="mt-4 grid grid-cols-2 gap-2">
                                         <button
                                             onClick={(e) => {
@@ -2023,6 +2062,188 @@ export default function HandheldInterface({
         );
     };
 
+    // Comp Ticket Modal
+    const renderCompModal = () => {
+        if (!showCompModal || !selectedOrderForPayment) return null;
+
+        const presets = ["Employee Meal", "Customer Dissatisfaction", "Misfire / Kitchen Error", "Marketing / Promo", "Other (Custom)"];
+        const isManager = employeeRole?.toLowerCase() === "manager" || employeeRole?.toLowerCase() === "admin" || employeeRole?.toLowerCase() === "owner";
+
+        const handleCompTicket = async () => {
+            let compedBy = employeeName;
+            setIsComping(true);
+            try {
+                if (!isManager) {
+                    if (!compPin || compPin.length < 4) {
+                        setIsComping(false);
+                        return alert("Valid Manager PIN Required");
+                    }
+                    // 1. Authenticate PIN
+                    const authRes = await fetch("/api/terminal/auth", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ wallet: merchantWallet, pin: compPin })
+                    });
+
+                    if (!authRes.ok) throw new Error("Authentication failed");
+                    const authData = await authRes.json();
+                    
+                    if (!authData.success) throw new Error("Invalid PIN");
+                    compedBy = authData.staff?.name || "Manager";
+                }
+
+                // 2. Resolve final comp reason
+                const finalReason = compReasonPreset === "Other (Custom)" ? compReasonCustom : compReasonPreset;
+                if (!finalReason) {
+                    setIsComping(false);
+                    return alert("Please provide a comp reason");
+                }
+
+                // 3. Mark as Comped
+                const res = await fetch(`/api/orders/${selectedOrderForPayment.id.replace('receipt:', '')}/edit`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json", "x-wallet": merchantWallet },
+                    body: JSON.stringify({
+                        action: "comp_order",
+                        compReason: finalReason,
+                        compedBy: compedBy
+                    })
+                });
+
+                if (res.ok) {
+                    // Try printing comp ticket Automatically
+                    try {
+                        const origin = typeof window !== "undefined" ? window.location.origin : "";
+                        const rawId = selectedOrderForPayment.id.replace("receipt:", "");
+                        const receiptText = `\nRECEIPT\nID: ${rawId}\nTOTAL: ${formatCurrency(selectedOrderForPayment.total)}\nSTATUS: COMPED\nREASON: ${finalReason}\nAUTH: ${compedBy}\n\n`;
+                        
+                        await printDocument({ text: receiptText }).catch(async () => {
+                             await networkPrint({ text: receiptText });
+                        });
+                    } catch(e) { console.warn("Auto-print failed on comp", e); }
+
+                    alert("Ticket successfully comped!");
+                    setShowCompModal(false);
+                    setCompPin("");
+                    setView(isGeneralMode ? "menu" : "tables");
+                    setSelectedOrderForPayment(null);
+                    setShowTableDetails(false);
+                } else {
+                    const errorJson = await res.json();
+                    alert("Comp failed: " + (errorJson.error || "Unknown error"));
+                }
+            } catch (err: any) {
+                console.error(err);
+                alert(err.message || "Failed to comp ticket. Please check PIN.");
+            } finally {
+                setIsComping(false);
+            }
+        };
+
+        return (
+            <div className="absolute inset-0 z-[80] bg-black/95 backdrop-blur-xl flex flex-col animate-in fade-in duration-200">
+                <div className="h-16 border-b border-amber-500/20 flex items-center justify-between px-4 shrink-0 bg-amber-950/20 backdrop-blur-md">
+                    <button
+                        onClick={() => { setShowCompModal(false); setCompPin(""); }}
+                        className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-white/10 text-white"
+                    >
+                        <ChevronLeft className="w-6 h-6" />
+                    </button>
+                    <h2 className="font-bold text-xl text-amber-500 flex items-center"><Gift className="w-6 h-6 mr-2" /> Comp Ticket</h2>
+                    <div className="w-10" />
+                </div>
+
+                <div className="flex-1 p-6 overflow-y-auto w-full max-w-sm mx-auto">
+                    <div className="space-y-6">
+                        {/* Summary Display */}
+                        <div className="w-full bg-white/5 rounded-2xl p-6 border border-white/10 flex flex-col items-center">
+                            <span className="text-neutral-400 text-sm font-bold uppercase tracking-wider mb-2">Comp Amount</span>
+                            <span className="text-4xl font-mono font-bold text-amber-500">{formatCurrency(selectedOrderForPayment.total)}</span>
+                        </div>
+
+                        {/* Reason Selection */}
+                        <div className="space-y-3">
+                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider ml-1">Reason for Comping</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {presets.map(p => (
+                                    <button 
+                                        key={p} 
+                                        onClick={() => setCompReasonPreset(p)}
+                                        className={`p-3 rounded-xl border text-xs font-bold transition-all ${compReasonPreset === p ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 select-none' : 'bg-white/5 border-white/10 text-neutral-400 hover:bg-white/10'}`}
+                                        style={{ gridColumn: p === "Other (Custom)" ? "span 2" : "span 1" }}
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            {compReasonPreset === "Other (Custom)" && (
+                                <input
+                                    type="text"
+                                    value={compReasonCustom}
+                                    onChange={e => setCompReasonCustom(e.target.value)}
+                                    placeholder="Enter custom reason..."
+                                    className="w-full bg-neutral-900 border border-amber-500/30 rounded-xl h-12 px-4 font-bold text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all placeholder:text-neutral-600 shadow-inner mt-2"
+                                />
+                            )}
+                        </div>
+
+                        {/* Manager PIN section */}
+                        {!isManager && (
+                            <div className="space-y-3 pt-4 border-t border-white/10">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider ml-1 flex items-center">
+                                    <Shield className="w-4 h-4 mr-1.5" /> Manager PIN Required
+                                </label>
+                                
+                                {/* Visual PIN Dots */}
+                                <div className="flex justify-center space-x-4 mb-4">
+                                    {[0, 1, 2, 3].map((idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`w-4 h-4 rounded-full transition-all duration-300 ${compPin.length > idx ? 'bg-amber-400 shadow-[0_0_10px_#fbbf24]' : 'bg-neutral-800'}`}
+                                        />
+                                    ))}
+                                </div>
+
+                                {/* PIN Pad Config */}
+                                <div className="grid grid-cols-3 gap-2 w-full max-w-xs mx-auto">
+                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, '←'].map((key) => (
+                                        <button
+                                            key={key}
+                                            onClick={() => {
+                                                if (key === 'C') setCompPin("");
+                                                else if (key === '←') setCompPin(prev => prev.slice(0, -1));
+                                                else if (compPin.length < 4) setCompPin(prev => prev + key);
+                                            }}
+                                            className="h-16 bg-neutral-800/80 rounded-2xl flex items-center justify-center text-xl font-bold font-mono active:bg-neutral-700 active:scale-95 transition-all text-white hover:bg-neutral-800"
+                                        >
+                                            {key}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <button
+                            disabled={isComping || (!isManager && compPin.length < 4) || (compReasonPreset === "Other (Custom)" && !compReasonCustom)}
+                            onClick={handleCompTicket}
+                            className="w-full h-16 bg-amber-500 text-black rounded-2xl font-bold text-xl active:scale-95 transition-all shadow-[0_0_30px_-5px_rgba(245,158,11,0.4)] disabled:opacity-50 disabled:scale-100 disabled:shadow-none mt-6 flex items-center justify-center space-x-2"
+                        >
+                            {isComping ? (
+                                <Loader2 className="w-6 h-6 animate-spin" />
+                            ) : (
+                                <>
+                                    <ShieldCheck className="w-6 h-6 mr-1" />
+                                    <span>Authorize Comp</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     // 3. Tables Grid
     const renderTablesView = () => {
         return (
@@ -2046,7 +2267,7 @@ export default function HandheldInterface({
                         <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between">
                             <div>
                                 <div className="text-emerald-400 font-bold text-sm uppercase tracking-wide">Ready to Submit</div>
-                                <div className="text-white font-mono text-xl font-bold">{cartCount} items â€¢ {formatCurrency(cartTotal)}</div>
+                                <div className="text-white font-mono text-xl font-bold">{cartCount} items &bull; {formatCurrency(cartTotal)}</div>
                             </div>
                         </div>
                     )}
@@ -2094,6 +2315,8 @@ export default function HandheldInterface({
                                                         if (o.status === "preparing") dotColor = "bg-yellow-500";
                                                         if (o.status === "ready") dotColor = "bg-emerald-500 animate-bounce";
                                                         if (o.status === "completed") dotColor = "bg-transparent border-2 border-emerald-500 box-border";
+                                                        if (o.paymentStatus === "comped") dotColor = "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.6)] animate-pulse";
+
 
                                                         return (
                                                             <div key={idx} className={`w-3 h-3 rounded-full ${dotColor}`} />
@@ -2495,6 +2718,9 @@ export default function HandheldInterface({
             {/* TABLES VIEW LAYER */}
             {/* TABLES VIEW LAYER */}
             {view === "tables" && renderTablesView()}
+
+            {/* COMP TICKET MODAL */}
+            {renderCompModal()}
 
             {/* REPORT VIEW LAYER */}
             {view === "report" && renderReportView()}

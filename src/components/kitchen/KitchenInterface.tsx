@@ -5,6 +5,7 @@ import { useActiveAccount } from "thirdweb/react";
 import { Capacitor } from "@capacitor/core";
 import { networkPrint, buildExpoTicketText } from "@/lib/hardware/network-print";
 import { WebUSBPrinter } from "@/lib/hardware/WebUSBPrinter";
+import { UsbPrinter } from "@/lib/hardware/useHardwareHooks";
 import { buildRawEscPosTicket } from "@/lib/hardware/escpos";
 import { useApplyTheme, resolveThemeId } from "@/lib/themes";
 import { useBrand } from "@/contexts/BrandContext";
@@ -276,55 +277,80 @@ function KitchenTicket({ order, isOverlay, onClear, onMarkItemReady }: { order: 
 
             {/* Print Expo Ticket */}
             {order.kitchenStatus !== 'completed' && (
-                <button
-                    onClick={async (e) => {
-                        e.stopPropagation();
+                <>
+                    <button
+                        onClick={async (e) => {
+                            e.stopPropagation();
 
-                        // Tier 0: Direct WebUSB (OTG) to Generic Thermal Printer Mode
-                        if (WebUSBPrinter.isSupported()) {
+                            // Tier 0: Direct WebUSB (OTG) to Generic Thermal Printer Mode
+                            if (WebUSBPrinter.isSupported()) {
+                                try {
+                                    const rawBuffer = buildRawEscPosTicket(order);
+                                    const success = await WebUSBPrinter.print(rawBuffer);
+                                    if (success) {
+                                        console.log('[KDS] WebUSB OTG Direct Printer Job dispatched.');
+                                        return;
+                                    }
+                                } catch(err) {
+                                    console.warn('[KDS] WebUSB Print Overridden or failed:', err);
+                                }
+                            }
+
+                            const ticketText = buildExpoTicketText(order);
+                            // Tier 1: Try native printer (Capacitor)
                             try {
-                                const rawBuffer = buildRawEscPosTicket(order);
-                                const success = await WebUSBPrinter.print(rawBuffer);
-                                if (success) {
-                                    console.log('[KDS] WebUSB OTG Direct Printer Job dispatched.');
-                                    return;
+                                if (Capacitor.isNativePlatform()) {
+                                    // Attempt true native plugin print
+                                    try {
+                                        await UsbPrinter.printText({ text: ticketText });
+                                        return;
+                                    } catch (e) {
+                                      console.warn("Native UsbPrinter rejected:", e);
+                                    }
                                 }
-                            } catch(err) {
-                                console.warn('[KDS] WebUSB Print Overridden or failed:', err);
+                            } catch (err) {
+                                console.warn('[KDS] Native print failed:', err);
                             }
-                        }
-
-                        const ticketText = buildExpoTicketText(order);
-                        // Tier 1: Try native printer (Capacitor)
-                        try {
-                            if (Capacitor.isNativePlatform()) {
-                                const plugins = (Capacitor as any).Plugins;
-                                
-                                // First attempt: Direct USB Peripheral Printer
-                                if (plugins?.UsbPrinter?.printText) {
-                                    await plugins.UsbPrinter.printText({ text: ticketText });
-                                    return;
+                            // Tier 2: DeviceHub network print
+                            const netResult = await networkPrint({ text: ticketText });
+                            if (netResult.ok) return;
+                            // Tier 3: Browser print
+                            window.print();
+                        }}
+                        className="mt-3 w-full h-9 rounded-lg bg-neutral-800 dark:bg-neutral-700 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-neutral-700 dark:hover:bg-neutral-600 active:scale-95 transition-all"
+                    >
+                        🖨 Print Expo Ticket
+                    </button>
+                    <div className="flex gap-2 w-full mt-2">
+                        <button
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                if (WebUSBPrinter.isSupported()) {
+                                    const { status } = await WebUSBPrinter.requestStatus(1);
+                                    alert(`[WebUSB] Hardware Status Code Formatted (n=1): ${status}`);
+                                } else if (Capacitor.isNativePlatform() && UsbPrinter.requestStatus) {
+                                    try {
+                                        const { status } = await UsbPrinter.requestStatus({ n: 1 });
+                                        alert(`[Native] Hardware Status Code: ${status}`);
+                                    } catch (err: any) {
+                                        alert(`Status Fetch Error: ${err.message || err}`);
+                                    }
+                                } else {
+                                    alert("Bidirectional polling is not supported natively in this environment.");
                                 }
-                                
-                                // Second attempt: Configured External Printer plugin
-                                if (plugins?.ExternalPrinter?.printText) {
-                                    await plugins.ExternalPrinter.printText({ text: ticketText });
-                                    return;
-                                }
-                            }
-                        } catch (err) {
-                            console.warn('[KDS] Native print failed:', err);
-                        }
-                        // Tier 2: DeviceHub network print
-                        const netResult = await networkPrint({ text: ticketText });
-                        if (netResult.ok) return;
-                        // Tier 3: Browser print
-                        window.print();
-                    }}
-                    className="mt-3 w-full h-9 rounded-lg bg-neutral-800 dark:bg-neutral-700 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-neutral-700 dark:hover:bg-neutral-600 active:scale-95 transition-all"
-                >
-                    🖨 Print Expo Ticket
-                </button>
+                            }}
+                            className="flex-1 h-8 rounded-lg bg-neutral-800/50 border border-neutral-700 text-neutral-400 hover:text-white text-[10px] font-bold uppercase tracking-wider flex items-center justify-center transition-all"
+                        >
+                            Poll Status
+                        </button>
+                        <button
+                            className="flex-1 h-8 rounded-lg bg-neutral-800/50 border border-neutral-700 text-neutral-400 hover:text-white text-[10px] font-bold uppercase tracking-wider flex items-center justify-center transition-all"
+                            onClick={(e) => { e.stopPropagation(); window.print(); }}
+                        >
+                            Force OS Print
+                        </button>
+                    </div>
+                </>
             )}
         </div>
     );

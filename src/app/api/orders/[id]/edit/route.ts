@@ -81,6 +81,19 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
             return NextResponse.json({ ok: true, receipt });
         }
 
+        if (body.action === "comp_order") {
+            receipt.status = "completed";
+            receipt.paymentStatus = "comped";
+            receipt.metadata = receipt.metadata || {};
+            receipt.metadata.compReason = body.compReason || "No reason provided";
+            receipt.metadata.compedBy = body.compedBy || "Manager";
+            receipt.metadata.compedAt = Date.now();
+            
+            await container.items.upsert(receipt);
+            
+            return NextResponse.json({ ok: true, receipt });
+        }
+
         if (body.action === "mark_item_ready") {
             const idx = body.itemIndex;
             if (Array.isArray(receipt.lineItems) && idx >= 0 && idx < receipt.lineItems.length) {
