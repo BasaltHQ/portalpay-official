@@ -4,7 +4,10 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import { Capacitor } from "@capacitor/core";
 import { networkPrint, buildExpoTicketText } from "@/lib/hardware/network-print";
+import { WebUSBPrinter } from "@/lib/hardware/WebUSBPrinter";
+import { buildRawEscPosTicket } from "@/lib/hardware/escpos";
 import { useApplyTheme, resolveThemeId } from "@/lib/themes";
+import { useBrand } from "@/contexts/BrandContext";
 import {
     DndContext,
     DragOverlay,
@@ -38,6 +41,9 @@ type KitchenOrder = {
         qty?: number;
         attributes?: Record<string, any>;
         modifiers?: any[];
+        addedAt?: number;
+        cancelled?: boolean;
+        readyAt?: number;
     }>;
     brandName?: string;
     kitchenMetadata?: {
@@ -70,9 +76,9 @@ function formatElapsedTime(startTimestamp: number): string {
 }
 
 // -- TICKET COMPONENT (Draggable) --
-function KitchenTicket({ order, isOverlay, onClear }: { order: KitchenOrder; isOverlay?: boolean; onClear?: (id: string, uberId?: string) => void }) {
+function KitchenTicket({ order, isOverlay, onClear, onMarkItemReady }: { order: KitchenOrder; isOverlay?: boolean; onClear?: (id: string, uberId?: string) => void; onMarkItemReady?: (id: string, idx: number) => void; }) {
     // 1. Filter out Processing Fees
-    const filteredItems = order.lineItems.filter(i =>
+    const filteredItems = order.lineItems.map((item, idx) => ({ ...item, originalIndex: idx })).filter(i =>
         !i.label.toLowerCase().includes("processing fee") &&
         !i.label.toLowerCase().includes("service fee")
     );
@@ -85,7 +91,10 @@ function KitchenTicket({ order, isOverlay, onClear }: { order: KitchenOrder; isO
     let colorClass = "border-l-4 border-l-emerald-500 bg-neutral-50 dark:bg-[#1a1a1a]"; // Default / Fresh
     let timeTextColor = "text-emerald-600 dark:text-emerald-400";
 
-    if (order.kitchenStatus === 'completed') {
+    if (order.status === 'cancelled') {
+        colorClass = "border-l-4 border-l-red-600 bg-red-950/20";
+        timeTextColor = "text-red-500 animate-pulse";
+    } else if (order.kitchenStatus === 'completed') {
         // Completed orders - grayed out
         colorClass = "border-l-4 border-l-neutral-500 bg-neutral-50 dark:bg-neutral-900/40 opacity-70";
         timeTextColor = "text-neutral-500";
@@ -118,8 +127,8 @@ function KitchenTicket({ order, isOverlay, onClear }: { order: KitchenOrder; isO
     return (
         <div className={`relative rounded-r-lg border-y border-r border-neutral-200 dark:border-neutral-800 p-4 shadow-sm select-none touch-manipulation transition-all ${colorClass} ${isOverlay ? 'shadow-2xl scale-105 rotate-1 z-50' : 'hover:shadow-md'}`}>
 
-            {/* Clear Button (Only for Completed) */}
-            {onClear && order.kitchenStatus === 'completed' && (
+            {/* Clear Button (Only for Completed or Cancelled) */}
+            {onClear && (order.kitchenStatus === 'completed' || order.status === 'cancelled') && (
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
@@ -137,6 +146,11 @@ function KitchenTicket({ order, isOverlay, onClear }: { order: KitchenOrder; isO
                 <div>
                     <div className="flex items-center gap-2">
                         <span className="font-mono font-bold text-xl tracking-wide text-neutral-900 dark:text-white">#{order.receiptId.slice(-6)}</span>
+                        {order.status === "cancelled" && (
+                            <span className="px-1.5 py-0.5 text-[10px] uppercase font-bold bg-red-600 text-white rounded flex items-center gap-1 shadow-[0_0_10px_rgba(220,38,38,0.5)]">
+                                Cancelled
+                            </span>
+                        )}
                         {order.source === "ubereats" && (
                             <span className="px-1.5 py-0.5 text-[10px] uppercase font-bold bg-green-600 text-white rounded flex items-center gap-1">
                                 Uber
@@ -186,10 +200,12 @@ function KitchenTicket({ order, isOverlay, onClear }: { order: KitchenOrder; isO
                     }
                     const hasModifiers = Array.isArray(modGroups) && modGroups.length > 0;
 
+                    const isNew = item.addedAt && item.addedAt > order.createdAt;
+
                     return (
-                        <div key={idx} className="text-sm">
+                        <div key={idx} className={`text-sm ${item.cancelled ? 'opacity-50 grayscale' : ''}`}>
                             <div className="font-bold flex justify-between items-start text-base text-neutral-800 dark:text-neutral-100">
-                                <span className="leading-snug">
+                                <span className={`leading-snug ${item.cancelled ? 'line-through text-neutral-500' : ''}`}>
                                     {item.qty && item.qty > 1 && (
                                         <span className="inline-flex items-center justify-center bg-neutral-900 text-white dark:bg-white dark:text-black rounded px-1.5 py-0.5 text-xs font-bold mr-2 align-middle">
                                             {item.qty}x
@@ -197,6 +213,25 @@ function KitchenTicket({ order, isOverlay, onClear }: { order: KitchenOrder; isO
                                     )}
                                     {item.label}
                                 </span>
+                                {isNew && !item.cancelled && (
+                                    <div className="flex items-center">
+                                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1 py-0.5 rounded ml-2">NEW</span>
+                                        {!item.readyAt ? (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (onMarkItemReady) onMarkItemReady(order.receiptId, item.originalIndex);
+                                                }}
+                                                className="ml-2 px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] uppercase font-bold tracking-wider rounded shadow-sm active:scale-95 transition-all"
+                                                title="Mark Item Ready"
+                                            >
+                                                Ready?
+                                            </button>
+                                        ) : (
+                                            <span className="ml-2 text-emerald-500 font-bold" title="Item Ready">✓</span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Modifiers */}
@@ -244,13 +279,36 @@ function KitchenTicket({ order, isOverlay, onClear }: { order: KitchenOrder; isO
                 <button
                     onClick={async (e) => {
                         e.stopPropagation();
+
+                        // Tier 0: Direct WebUSB (OTG) to Generic Thermal Printer Mode
+                        if (WebUSBPrinter.isSupported()) {
+                            try {
+                                const rawBuffer = buildRawEscPosTicket(order);
+                                const success = await WebUSBPrinter.print(rawBuffer);
+                                if (success) {
+                                    console.log('[KDS] WebUSB OTG Direct Printer Job dispatched.');
+                                    return;
+                                }
+                            } catch(err) {
+                                console.warn('[KDS] WebUSB Print Overridden or failed:', err);
+                            }
+                        }
+
                         const ticketText = buildExpoTicketText(order);
                         // Tier 1: Try native printer (Capacitor)
                         try {
                             if (Capacitor.isNativePlatform()) {
-                                const printer = (Capacitor as any).Plugins?.ExternalPrinter;
-                                if (printer?.printText) {
-                                    await printer.printText({ text: ticketText });
+                                const plugins = (Capacitor as any).Plugins;
+                                
+                                // First attempt: Direct USB Peripheral Printer
+                                if (plugins?.UsbPrinter?.printText) {
+                                    await plugins.UsbPrinter.printText({ text: ticketText });
+                                    return;
+                                }
+                                
+                                // Second attempt: Configured External Printer plugin
+                                if (plugins?.ExternalPrinter?.printText) {
+                                    await plugins.ExternalPrinter.printText({ text: ticketText });
                                     return;
                                 }
                             }
@@ -272,7 +330,7 @@ function KitchenTicket({ order, isOverlay, onClear }: { order: KitchenOrder; isO
     );
 }
 
-function SortableTicket({ order, onClear }: { order: KitchenOrder; onClear?: (id: string, uberId?: string) => void }) {
+function SortableTicket({ order, onClear, onMarkItemReady }: { order: KitchenOrder; onClear?: (id: string, uberId?: string) => void; onMarkItemReady?: (id: string, idx: number) => void; }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: order.receiptId, data: { order } });
 
     const style = {
@@ -286,12 +344,12 @@ function SortableTicket({ order, onClear }: { order: KitchenOrder; onClear?: (id
 
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="mb-3">
-            <KitchenTicket order={order} onClear={onClear} />
+            <KitchenTicket order={order} onClear={onClear} onMarkItemReady={onMarkItemReady} />
         </div>
     );
 }
 
-function KitchenColumn({ id, title, orders, colorClass, onArchive }: { id: string, title: string, orders: KitchenOrder[], colorClass: string, onArchive?: (id: string, uberId?: string) => void }) {
+function KitchenColumn({ id, title, orders, colorClass, onArchive, onMarkItemReady }: { id: string, title: string, orders: KitchenOrder[], colorClass: string, onArchive?: (id: string, uberId?: string) => void; onMarkItemReady?: (id: string, idx: number) => void; }) {
     const { setNodeRef, isOver } = useDroppable({ id });
 
     return (
@@ -308,7 +366,7 @@ function KitchenColumn({ id, title, orders, colorClass, onArchive }: { id: strin
             <SortableContext items={orders.map(o => o.receiptId)} strategy={verticalListSortingStrategy}>
                 <div ref={setNodeRef} className={`flex-1 bg-neutral-100/50 dark:bg-[#111]/50 rounded-xl p-2 border-2 border-dashed transition-all overflow-y-auto no-scrollbar max-h-[calc(100vh-180px)] ${isOver ? 'border-emerald-500/50 bg-emerald-500/10 shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]' : 'border-transparent hover:border-neutral-200 dark:hover:border-neutral-800'}`}>
                     {orders.map(order => (
-                        <SortableTicket key={order.receiptId} order={order} onClear={onArchive} />
+                        <SortableTicket key={order.receiptId} order={order} onClear={onArchive} onMarkItemReady={onMarkItemReady} />
                     ))}
                     {orders.length === 0 && (
                         <div className="h-full min-h-[100px] flex flex-col items-center justify-center text-neutral-400 dark:text-neutral-600 text-sm italic opacity-50">
@@ -321,9 +379,10 @@ function KitchenColumn({ id, title, orders, colorClass, onArchive }: { id: strin
     );
 }
 
-export function KitchenInterface({ wallet }: { wallet?: string }) {
+export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogout?: () => void; }) {
     const account = useActiveAccount();
     const activeWallet = wallet || account?.address;
+    const brand = useBrand();
 
     const [orders, setOrders] = useState<KitchenOrder[]>([]);
 
@@ -335,6 +394,7 @@ export function KitchenInterface({ wallet }: { wallet?: string }) {
     const pollIntervalRef = useRef<number | null>(null);
     const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [shopConfig, setShopConfig] = useState<any>(null);
 
     // Ref to track drag state immediately for polling logic
     const isDraggingRef = useRef(false);
@@ -348,7 +408,7 @@ export function KitchenInterface({ wallet }: { wallet?: string }) {
             setLoading(true);
             setError("");
 
-            const response = await fetch(`/api/kitchen/orders?wallet=${activeWallet}&status=new,preparing,ready,completed`, {
+            const response = await fetch(`/api/kitchen/orders?wallet=${activeWallet}&status=new,preparing,ready,completed,cancelled`, {
                 headers: { "x-wallet": activeWallet },
                 cache: "no-store",
             });
@@ -359,10 +419,17 @@ export function KitchenInterface({ wallet }: { wallet?: string }) {
                 return;
             }
 
-            const newOrders = data.orders || [];
+            const newOrders = (data.orders || []).filter((o: any) => {
+                if (o.status === "cancelled") {
+                    const cancelTime = o.cancelledAt || o.createdAt;
+                    if (Date.now() - cancelTime > 5 * 60 * 1000) return false;
+                }
+                return true;
+            });
+
             if (orders.length > 0) {
                 const existingIds = new Set(orders.map(o => o.receiptId));
-                const hasIncoming = newOrders.some((o: KitchenOrder) => !existingIds.has(o.receiptId) && o.kitchenStatus === 'new');
+                const hasIncoming = newOrders.some((o: KitchenOrder) => !existingIds.has(o.receiptId) && o.kitchenStatus === 'new' && o.status !== 'cancelled');
                 if (hasIncoming) {
                     try {
                         const audio = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZQQ0PVqzn77JfGAg+ltrzxnMpBSp+zPLaizsIGGS57OihUhELTKXh8bllHAU2jtX0zn8uBSh1xPDek0ELElyx5/CrWBgIOZrb88l3LQUme8rx2o08CBlpvO7mnkwPCFWr5O+0YxoGPJfY88yAMgYeb8Tv45xEDQ9XrujwsmEaCT6W2vTIdjAFKn/M8dqLPQgZZbzs6aJRDwpLpODyuWQdBTSL0/XPgTEFKXXE8N+UQgwQV6/n8LFdGgg7mtv1y3oxBSl+zPPaizsIG2m97OmiUQ8KTKXh8bllHAU2j9X0z4ExBil1xe/flkEMElez5/GsWhgJO5na88h1MAUoesy+fkLPg==");
@@ -373,6 +440,7 @@ export function KitchenInterface({ wallet }: { wallet?: string }) {
             }
 
             setOrders(newOrders);
+            setShopConfig(data.shop || null);
             setLastUpdate(Date.now());
         } catch (e: any) {
             setError(e?.message || "Failed to fetch orders");
@@ -444,6 +512,28 @@ export function KitchenInterface({ wallet }: { wallet?: string }) {
         updateOrderStatus(id, 'archived', uberOrderId);
     };
 
+    const handleMarkItemReady = async (receiptId: string, itemIndex: number) => {
+        if (!activeWallet) return;
+        setOrders(prev => prev.map(o => {
+            if (o.receiptId === receiptId) {
+                const newItems = [...o.lineItems];
+                newItems[itemIndex] = { ...newItems[itemIndex], readyAt: Date.now() };
+                return { ...o, lineItems: newItems };
+            }
+            return o;
+        }));
+        try {
+            const response = await fetch(`/api/orders/${receiptId}/edit`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json", "x-wallet": activeWallet },
+                body: JSON.stringify({ action: "mark_item_ready", itemIndex })
+            });
+            if (response.ok) fetchOrders();
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
     const activeOrder = activeId ? orders.find(o => o.receiptId === activeId) : null;
 
     const cols = {
@@ -468,13 +558,28 @@ export function KitchenInterface({ wallet }: { wallet?: string }) {
                 <div className="flex items-center justify-between px-2 mb-4">
                     <div>
                         <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-                            <span className="text-emerald-500">◆</span> Kitchen Display
+                            {shopConfig?.theme?.brandLogoUrl ? (
+                                <img src={shopConfig.theme.brandLogoUrl} alt="Logo" className="h-8 object-contain rounded" />
+                            ) : brand?.logos?.symbol || brand?.logos?.app ? (
+                                <img src={brand.logos.symbol || brand.logos.app} alt="KDS" className="h-8 object-contain rounded" />
+                            ) : (
+                                <span className="text-emerald-500">◆</span>
+                            )}
+                            {shopConfig?.name ? `${shopConfig.name} Kitchen Display` : "Kitchen Display"}
                         </h2>
                         <div className="text-sm text-neutral-400 font-medium mt-1">
                             Live • {orders.length} Orders • Last Sync: {new Date(lastUpdate).toLocaleTimeString()}
                         </div>
                     </div>
                     <div className="flex gap-2">
+                        {onLogout && (
+                            <button
+                                onClick={onLogout}
+                                className="px-6 py-3 text-sm font-bold uppercase tracking-wider border border-red-900/40 bg-red-900/20 hover:bg-red-900/40 text-red-400 rounded-xl transition-colors"
+                            >
+                                Lock KDS
+                            </button>
+                        )}
                         <button onClick={fetchOrders} className="px-6 py-3 text-sm font-bold uppercase tracking-wider border border-white/10 rounded-xl hover:bg-white/5 transition-colors text-white">
                             Sync
                         </button>
@@ -483,14 +588,14 @@ export function KitchenInterface({ wallet }: { wallet?: string }) {
 
                 {/* 4-Column Grid */}
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-x-auto pb-4">
-                    <KitchenColumn id="new" title="New" orders={cols.new} colorClass="bg-orange-500 text-orange-500" />
-                    <KitchenColumn id="preparing" title="Prep" orders={cols.preparing} colorClass="bg-yellow-500 text-yellow-500" />
-                    <KitchenColumn id="ready" title="Ready" orders={cols.ready} colorClass="bg-green-500 text-green-500" />
-                    <KitchenColumn id="completed" title="Served" orders={cols.completed} colorClass="bg-neutral-500 text-neutral-500" onArchive={handleArchive} />
+                    <KitchenColumn id="new" title="New" orders={cols.new} colorClass="bg-orange-500 text-orange-500" onMarkItemReady={handleMarkItemReady} />
+                    <KitchenColumn id="preparing" title="Prep" orders={cols.preparing} colorClass="bg-yellow-500 text-yellow-500" onMarkItemReady={handleMarkItemReady} />
+                    <KitchenColumn id="ready" title="Ready" orders={cols.ready} colorClass="bg-green-500 text-green-500" onMarkItemReady={handleMarkItemReady} />
+                    <KitchenColumn id="completed" title="Served" orders={cols.completed} colorClass="bg-neutral-500 text-neutral-500" onArchive={handleArchive} onMarkItemReady={handleMarkItemReady} />
                 </div>
 
                 <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
-                    {activeOrder ? <KitchenTicket order={activeOrder} isOverlay /> : null}
+                    {activeOrder ? <KitchenTicket order={activeOrder} isOverlay onMarkItemReady={handleMarkItemReady} /> : null}
                 </DragOverlay>
             </div>
         </DndContext>

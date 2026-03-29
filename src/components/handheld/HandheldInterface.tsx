@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -24,7 +24,7 @@ import {
     MoreHorizontal, Printer, RefreshCw, Search, Settings,
     Smartphone, User, Wifi, X, Zap, Trash2, CheckCircle2,
     Minus, Plus, RotateCcw, LayoutGrid, ShoppingBag, MicOff,
-    Volume2, VolumeX, Receipt, Clock, Loader2, AlertCircle
+    Volume2, VolumeX, Receipt, Clock, Loader2, AlertCircle, Edit2, XCircle
 } from "lucide-react";
 
 // Helper for currency
@@ -124,13 +124,22 @@ export default function HandheldInterface({
 
     // -- TABLE STATE --
     const [selectedTable, setSelectedTable] = useState<string | null>(null);
-    const [activeOrders, setActiveOrders] = useState<Record<string, Array<{ id: string; status: string; paymentStatus: string; total: number; tipAmount?: number; items: any[]; createdAt: number }>>>({});
+    const [activeOrders, setActiveOrders] = useState<Record<string, Array<{ id: string; status: string; paymentStatus: string; total: number; tipAmount?: number; items: any[]; createdAt: number; metadata?: any }>>>({});
     const [showTableDetails, setShowTableDetails] = useState(false);
     const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<any | null>(null);
     const [isSplitting, setIsSplitting] = useState(false);
     const [splitSelection, setSplitSelection] = useState<Record<string, number>>({}); // items to split: index -> qty
     // Cash Modal State
     const [showCashModal, setShowCashModal] = useState(false);
+
+    // -- EDIT MODE STATE --
+    const [editMode, setEditMode] = useState<{
+        receiptId: string;
+        table: string;
+        originalItems: any[];
+        cancelledIndices: number[];
+    } | null>(null);
+    const [isEditCartOpen, setIsEditCartOpen] = useState(false);
     const [cashTendered, setCashTendered] = useState("");
     const [cashTip, setCashTip] = useState("");
 
@@ -298,9 +307,15 @@ export default function HandheldInterface({
             }
             if (data.orders && Array.isArray(data.orders)) {
                 // Map orders to tables - GROUPING them
-                const statusMap: Record<string, Array<{ id: string; status: string; paymentStatus: string; total: number; tipAmount?: number; items: any[]; createdAt: number }>> = {};
+                const statusMap: Record<string, Array<{ id: string; status: string; paymentStatus: string; total: number; tipAmount?: number; items: any[]; createdAt: number; metadata?: any }>> = {};
 
                 data.orders.forEach((o: any) => {
+                    // Filter out cancelled orders older than 5 minutes (matching KDS logic)
+                    if (o.status === "cancelled") {
+                        const cancelTime = o.cancelledAt || o.createdAt;
+                        if (Date.now() - cancelTime > 5 * 60 * 1000) return;
+                    }
+
                     if (o.tableNumber && (o.kitchenStatus || o.lineItems?.some((i: any) => i.label?.includes("Transfer In")))) {
                         if (!statusMap[o.tableNumber]) {
                             statusMap[o.tableNumber] = [];
@@ -312,7 +327,8 @@ export default function HandheldInterface({
                             total: o.totalUsd,
                             tipAmount: o.tipAmount, // Map tip amount
                             items: o.lineItems || [],
-                            createdAt: o.createdAt
+                            createdAt: o.createdAt,
+                            metadata: o.metadata
                         });
                     }
                 });
@@ -438,6 +454,32 @@ export default function HandheldInterface({
     const cartTotal = cart.reduce((sum, line) => sum + getLineTotal(line), 0);
     const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
 
+    const editOriginalTotal = useMemo(() => {
+        if (!editMode) return 0;
+        let sum = 0;
+        editMode.originalItems.forEach((item, idx) => {
+            if (editMode.cancelledIndices.includes(idx)) return;
+            const price = Number(item.priceUsd) || 0;
+            const qty = item.qty || 1;
+            sum += price * qty;
+            if (item.attributes?.modifierGroups) {
+                item.attributes.modifierGroups.forEach((mg: any) => {
+                    mg.modifiers?.forEach((m: any) => {
+                        if (m.selected && m.priceAdjustment) sum += Number(m.priceAdjustment) * qty;
+                    });
+                });
+            } else if (item.modifiers) {
+                item.modifiers.forEach((m: any) => {
+                    if (m.priceAdjustment) sum += Number(m.priceAdjustment) * qty;
+                });
+            }
+        });
+        return sum;
+    }, [editMode]);
+
+    const displayTotal = editMode ? (editOriginalTotal + cartTotal) : cartTotal;
+    const displayCount = editMode ? (editMode.originalItems.length - editMode.cancelledIndices.length + cartCount) : cartCount;
+
     const [isCartOpen, setIsCartOpen] = useState(false);
 
     // -- VOICE --
@@ -535,6 +577,90 @@ export default function HandheldInterface({
         } catch (e) {
             console.error("Order submit failed", e);
             alert("Failed to submit order. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const submitEditedOrder = async () => {
+        if (!editMode) return;
+        setIsSubmitting(true);
+        try {
+            const addedItems = cart.map(c => ({
+                id: c.item.id,
+                qty: c.quantity,
+                label: c.item.name,
+                priceUsd: c.item.priceUsd,
+                modifiers: c.modifiers.map(m => ({
+                    modifierId: m.id,
+                    name: m.name,
+                    priceAdjustment: m.priceAdjustment,
+                    quantity: 1
+                }))
+            }));
+
+            const cancelledIndices = editMode.cancelledIndices.map(idx => ({
+                index: idx,
+                reason: "Cancelled by staff"
+            }));
+
+            const payload: any = {
+                wallet: merchantWallet,
+                action: "edit_items",
+                addedItems,
+                cancelledItemIndices: cancelledIndices
+            };
+
+            const res = await fetch(`/api/orders/${editMode.receiptId}/edit`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-wallet": merchantWallet
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error("Failed to edit order");
+
+            setCart([]);
+            setEditMode(null);
+            setIsCartOpen(false);
+            setView("tables");
+            fetchOrders();
+            setActiveCategory("All");
+        } catch (e) {
+            console.error("Order edit failed", e);
+            alert("Failed to save changes. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const cancelEntireOrder = async (receiptId: string) => {
+        const reason = prompt("Reason for cancelling order?");
+        if (!reason) return;
+
+        setIsSubmitting(true);
+        try {
+            const res = await fetch(`/api/orders/${receiptId}/edit`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-wallet": merchantWallet
+                },
+                body: JSON.stringify({
+                    wallet: merchantWallet,
+                    action: "cancel_order",
+                    reason
+                })
+            });
+
+            if (!res.ok) throw new Error("Failed to cancel order");
+            fetchOrders(); 
+            setShowTableDetails(false);
+        } catch (e) {
+            console.error("Order cancellation failed", e);
+            alert("Failed to cancel order.");
         } finally {
             setIsSubmitting(false);
         }
@@ -1441,6 +1567,10 @@ export default function HandheldInterface({
                         else if (order.status === 'preparing') statusColor = "text-yellow-400 border-yellow-500/30 bg-yellow-950/20";
                         else if (order.status === 'ready') statusColor = "text-emerald-400 border-green-500/30 bg-green-950/20";
                         else if (order.status === 'completed') statusColor = "text-neutral-400 border-neutral-700/30 bg-neutral-900";
+                        
+                        if (order.paymentStatus === 'cancelled') {
+                            statusColor = "text-red-400 border-red-500/30 bg-red-950/20";
+                        }
 
                         // Helper to find linked split receipt
                         const findLinkedSplit = (label: string) => {
@@ -1476,8 +1606,8 @@ export default function HandheldInterface({
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center space-x-2">
                                         <span className="font-mono font-bold text-lg">#{order.id.slice(-6)}</span>
-                                        <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-black/20">
-                                            {order.status}
+                                        <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${order.paymentStatus === 'cancelled' ? 'bg-red-500/20 text-red-500' : 'bg-black/20'}`}>
+                                            {order.paymentStatus === 'cancelled' ? 'CANCELLED' : order.status}
                                         </span>
                                     </div>
                                     <div className="flex flex-col items-end">
@@ -1512,10 +1642,26 @@ export default function HandheldInterface({
                                         return (
                                             <div key={idx} className="flex justify-between text-sm items-center">
                                                 <div className="flex flex-col">
-                                                    <span className="text-neutral-200">
-                                                        {item.qty > 1 && <span className="font-bold mr-1">{item.qty}x</span>}
-                                                        {item.label || item.name}
-                                                    </span>
+                                                    <div className={`flex items-center flex-wrap gap-2 ${item.cancelled ? 'text-neutral-500' : 'text-neutral-200'}`}>
+                                                        <span className={item.cancelled ? 'line-through' : ''}>
+                                                            {item.qty > 1 && <span className="font-bold mr-1">{item.qty}x</span>}
+                                                            {item.label || item.name}
+                                                        </span>
+                                                        {item.cancelled ? (
+                                                            <span className="text-[10px] text-red-500 font-bold uppercase tracking-widest bg-red-500/10 px-1.5 py-0.5 rounded no-underline">
+                                                                Cancelled
+                                                            </span>
+                                                        ) : item.readyAt ? (
+                                                            <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center space-x-1">
+                                                                <CheckCircle2 className="w-3 h-3" />
+                                                                <span>Ready</span>
+                                                            </span>
+                                                        ) : (item.addedAt && item.addedAt > new Date(order.createdAt).getTime()) ? (
+                                                            <span className="text-[10px] text-orange-400 font-bold uppercase tracking-widest bg-orange-500/10 px-1.5 py-0.5 rounded">
+                                                                Prep
+                                                            </span>
+                                                        ) : null}
+                                                    </div>
                                                     {/* Show Status/Tip for Linked Split Row */}
                                                     {isLinkedPaid && (
                                                         <span className="text-[10px] text-emerald-400 font-bold">
@@ -1528,7 +1674,9 @@ export default function HandheldInterface({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span className="font-mono opacity-60">{formatCurrency(item.priceUsd * (item.qty || 1))}</span>
+                                                <span className={`font-mono opacity-60 ${item.cancelled ? 'line-through text-neutral-500' : ''}`}>
+                                                    {formatCurrency(item.priceUsd * (item.qty || 1))}
+                                                </span>
                                             </div>
                                         );
                                     })}
@@ -1538,32 +1686,40 @@ export default function HandheldInterface({
                                     <span>{new Date(order.createdAt).toLocaleDateString()}</span>
                                 </div>
 
-                                {order.status === 'completed' && (
+                                {order.paymentStatus === 'cancelled' && (
+                                    <div className="mt-4 flex-1 h-10 bg-red-900/20 text-red-400 border border-red-500/30 rounded-lg font-bold text-[11px] uppercase tracking-wide flex items-center justify-center px-4">
+                                        Cancelled: {order.metadata?.cancelReason || "No Reason"}
+                                    </div>
+                                )}
+
+                                {order.status === 'completed' && order.paymentStatus !== 'cancelled' && (
                                     <div className="mt-4 flex space-x-2">
-                                        <button
-                                            onClick={async (e) => {
-                                                e.stopPropagation();
-                                                if (!confirm("Reset this receipt to its original state? This will clear all splits.")) return;
-                                                try {
-                                                    const res = await fetch(`/api/receipts/${order.id}/split`, {
-                                                        method: "POST",
-                                                        headers: { "Content-Type": "application/json", "x-wallet": merchantWallet },
-                                                        body: JSON.stringify({ mode: "reset" })
-                                                    });
-                                                    if (res.ok) {
-                                                        alert("Receipt has been reset.");
-                                                    } else {
-                                                        alert("Failed to reset receipt.");
+                                        {(order.paymentStatus !== 'paid' && order.paymentStatus !== 'checkout_success') && (
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    if (!confirm("Reset this receipt to its original state? This will clear all splits.")) return;
+                                                    try {
+                                                        const res = await fetch(`/api/receipts/${order.id}/split`, {
+                                                            method: "POST",
+                                                            headers: { "Content-Type": "application/json", "x-wallet": merchantWallet },
+                                                            body: JSON.stringify({ mode: "reset" })
+                                                        });
+                                                        if (res.ok) {
+                                                            alert("Receipt has been reset.");
+                                                        } else {
+                                                            alert("Failed to reset receipt.");
+                                                        }
+                                                    } catch (err) {
+                                                        console.error(err);
+                                                        alert("Error resetting receipt.");
                                                     }
-                                                } catch (err) {
-                                                    console.error(err);
-                                                    alert("Error resetting receipt.");
-                                                }
-                                            }}
-                                            className="h-10 w-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg flex items-center justify-center hover:bg-red-500/20 active:scale-95 transition-all"
-                                        >
-                                            <RotateCcw className="w-4 h-4" />
-                                        </button>
+                                                }}
+                                                className="h-10 w-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg flex items-center justify-center hover:bg-red-500/20 active:scale-95 transition-all"
+                                            >
+                                                <RotateCcw className="w-4 h-4" />
+                                            </button>
+                                        )}
                                         {(order.paymentStatus === 'paid' || order.paymentStatus === 'checkout_success') ? (
                                             <div className="flex-1 h-10 bg-neutral-800 text-neutral-400 border border-neutral-700 rounded-lg font-bold text-sm flex items-center justify-center space-x-2">
                                                 <span>Paid</span>
@@ -1584,7 +1740,7 @@ export default function HandheldInterface({
                                 )}
 
                                 {/* MARK AS SERVED for Ready Orders */}
-                                {order.status === 'ready' && (
+                                {order.status === 'ready' && order.paymentStatus !== 'cancelled' && (
                                     <div className="mt-4">
                                         <button
                                             onClick={async (e) => {
@@ -1611,7 +1767,39 @@ export default function HandheldInterface({
                                     </div>
                                 )}
 
-
+                                {/* EDIT AND CANCEL BUTTONS (if not paid or cancelled) */}
+                                {order.paymentStatus !== 'paid' && order.paymentStatus !== 'checkout_success' && order.paymentStatus !== 'cancelled' && (
+                                    <div className="mt-4 grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditMode({
+                                                    receiptId: order.id.replace('receipt:', ''),
+                                                    table: selectedTable!,
+                                                    originalItems: order.items || [],
+                                                    cancelledIndices: []
+                                                });
+                                                setCart([]);
+                                                setIsCartOpen(true);
+                                                setShowTableDetails(false);
+                                            }}
+                                            className="h-10 bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 rounded-lg font-bold text-sm flex items-center justify-center transition-all"
+                                        >
+                                            <Edit2 className="w-4 h-4 mr-2" />
+                                            Edit Ticket
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                cancelEntireOrder(order.id.replace('receipt:', ''));
+                                            }}
+                                            className="h-10 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg font-bold text-sm flex items-center justify-center transition-all"
+                                        >
+                                            <XCircle className="w-4 h-4 mr-2" />
+                                            Cancel Ticket
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
@@ -2148,22 +2336,24 @@ export default function HandheldInterface({
             <div className="h-auto bg-neutral-900 border-t border-white/10 p-3 z-30 shrink-0 pb-6 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
                 <button
                     onClick={() => setIsCartOpen(true)}
-                    className="w-full bg-white text-black h-14 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform flex items-center justify-between px-6"
+                    className={`w-full text-black h-14 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform flex items-center justify-between px-6 ${editMode ? 'bg-amber-400' : 'bg-white'}`}
                 >
                     <div className="flex items-center space-x-3">
                         <div className="bg-black/10 rounded-full w-8 h-8 flex items-center justify-center text-xs font-mono font-bold">
-                            {cartCount}
+                            {displayCount}
                         </div>
-                        <span className="text-sm uppercase tracking-wide">Current Order</span>
+                        <span className="text-sm uppercase tracking-wide">
+                            {editMode ? `Editing Table ${editMode.table}` : "Current Order"}
+                        </span>
                     </div>
-                    <span className="font-mono text-xl tracking-tight">{formatCurrency(cartTotal)}</span>
+                    <span className="font-mono text-xl tracking-tight">{formatCurrency(displayTotal)}</span>
                 </button>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex space-x-2 z-40">
-                    {/* Tables shortcut â€” only in restaurant mode */}
-                    {!isGeneralMode && (
+                    {/* Tables shortcut */}
+                    {!isGeneralMode && !editMode && (
                         <button
                             onClick={(e) => { e.stopPropagation(); setView("tables"); }}
-                            className="h-10 w-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all border border-white/5"
+                            className="h-10 w-10 bg-black/10 text-black/50 rounded-full flex items-center justify-center hover:bg-black/20 active:scale-95 transition-all"
                         >
                             <LayoutGrid className="w-5 h-5" />
                         </button>
@@ -2173,58 +2363,127 @@ export default function HandheldInterface({
 
             {/* CART MODAL (Full Screen Overlay) */}
             {isCartOpen && (
-                <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col animate-in fade-in">
+                <div className="absolute inset-0 z-[60] bg-black/80 backdrop-blur-md flex flex-col animate-in fade-in">
                     <div className="h-16 flex items-center justify-between px-6 border-b border-white/10">
-                        <h2 className="text-xl font-bold text-white">Current Order</h2>
-                        <button onClick={() => setIsCartOpen(false)} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20">
-                            <X className="w-5 h-5" />
-                        </button>
+                        <h2 className="text-xl font-bold text-white">
+                            {editMode ? `Edit Order #${editMode.receiptId.slice(-6)}` : "Current Order"}
+                        </h2>
+                        <div className="flex space-x-2">
+                            {editMode && (
+                                <button onClick={() => { setIsCartOpen(false); setView("menu"); }} className="px-4 py-2 bg-white/10 rounded-full font-bold text-sm hover:bg-white/20 flex items-center space-x-2">
+                                    <Plus className="w-4 h-4" />
+                                    <span>Add Item</span>
+                                </button>
+                            )}
+                            <button onClick={() => setIsCartOpen(false)} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-1">
-                        {cart.length === 0 ? (
+                        {cart.length === 0 && (!editMode || editMode.originalItems.length === 0) ? (
                             <div className="flex flex-col items-center justify-center h-full text-neutral-500 space-x-4">
                                 <ShoppingBag className="w-12 h-12 opacity-20" />
                                 <p>Cart is empty</p>
                             </div>
                         ) : (
-                            cart.map(line => (
-                                <div key={line.instanceId} className="flex justify-between items-start p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors rounded-xl">
-                                    <div className="flex items-start space-x-4">
-                                        <div className="w-8 h-8 rounded bg-white/10 flex items-center justify-center font-bold text-xs text-neutral-300 mt-1">
-                                            {line.quantity}
-                                        </div>
-                                        <div>
-                                            <div className="font-bold text-neutral-200">{line.item.name}</div>
-                                            <div className="text-xs font-mono text-neutral-500">{formatCurrency(line.item.priceUsd)}</div>
-                                            {line.modifiers.map(m => (
-                                                <div key={m.id} className="text-xs text-neutral-300 mt-1 flex items-center space-x-2 font-medium">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
-                                                    {m.name}
+                            <>
+                                {/* Render Original Items if in Edit Mode */}
+                                {editMode?.originalItems.map((item, idx) => {
+                                    const isCancelled = editMode.cancelledIndices.includes(idx);
+                                    let price = Number(item.priceUsd) || 0;
+                                    const qty = item.qty || 1;
+                                    let modsTotal = 0;
+                                    if (item.attributes?.modifierGroups) {
+                                        item.attributes.modifierGroups.forEach((mg: any) => mg.modifiers?.forEach((m: any) => { if (m.selected && m.priceAdjustment) modsTotal += Number(m.priceAdjustment); }));
+                                    } else if (item.modifiers) {
+                                        item.modifiers.forEach((m: any) => { if (m.priceAdjustment) modsTotal += Number(m.priceAdjustment); });
+                                    }
+                                    const lineTotal = (price + modsTotal) * qty;
+
+                                    return (
+                                        <div key={`orig-${idx}`} className={`flex justify-between items-start p-4 border-b border-white/5 last:border-0 transition-colors rounded-xl ${isCancelled ? 'opacity-50 grayscale' : 'hover:bg-white/5'}`}>
+                                            <div className="flex items-start space-x-4">
+                                                <div className="w-8 h-8 rounded bg-white/10 flex items-center justify-center font-bold text-xs text-neutral-300 mt-1">
+                                                    {qty}
                                                 </div>
-                                            ))}
+                                                <div>
+                                                    <div className={`font-bold ${isCancelled ? 'text-red-400 line-through' : 'text-neutral-200'}`}>{item.label || item.name}</div>
+                                                    <div className="text-xs font-mono text-neutral-500">{formatCurrency(price)}</div>
+                                                    {item.attributes?.modifierGroups?.map((mg: any, gi: number) => mg.modifiers?.map((m: any, mi: number) => m.selected && (
+                                                        <div key={`mod-${gi}-${mi}`} className="text-xs text-neutral-300 mt-1 flex items-center space-x-2 font-medium">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
+                                                            {m.name}
+                                                        </div>
+                                                    )))}
+                                                    {isCancelled && <div className="text-[10px] text-red-500 uppercase font-bold tracking-widest mt-1 text-center bg-red-500/10 px-2 py-0.5 rounded">Cancelled</div>}
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-end space-x-2">
+                                                <div className="font-mono font-bold text-neutral-200">{formatCurrency(lineTotal)}</div>
+                                                {isCancelled ? (
+                                                    <button onClick={() => setEditMode(prev => prev ? { ...prev, cancelledIndices: prev.cancelledIndices.filter(i => i !== idx) } : prev)} className="text-emerald-400 p-2 hover:bg-emerald-500/10 rounded-lg text-[10px] uppercase font-bold tracking-wide mt-1">
+                                                        Restore
+                                                    </button>
+                                                ) : (
+                                                    <button onClick={() => confirm("Cancel this item?") && setEditMode(prev => prev ? { ...prev, cancelledIndices: [...prev.cancelledIndices, idx] } : prev)} className="text-red-400 p-2 hover:bg-red-500/10 rounded-lg">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+
+                                {editMode && cart.length > 0 && (
+                                    <div className="py-4 flex items-center space-x-4">
+                                        <div className="h-px bg-white/10 flex-1" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">New Items</span>
+                                        <div className="h-px bg-white/10 flex-1" />
+                                    </div>
+                                )}
+
+                                {/* Render Normal Cart Items */}
+                                {cart.map(line => (
+                                    <div key={line.instanceId} className="flex justify-between items-start p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors rounded-xl bg-emerald-950/20 border border-emerald-500/20">
+                                        <div className="flex items-start space-x-4">
+                                            <div className="w-8 h-8 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs mt-1">
+                                                {line.quantity}
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-neutral-200">{line.item.name} <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1 py-0.5 rounded ml-1">NEW</span></div>
+                                                <div className="text-xs font-mono text-neutral-500">{formatCurrency(line.item.priceUsd)}</div>
+                                                {line.modifiers.map(m => (
+                                                    <div key={m.id} className="text-xs text-neutral-300 mt-1 flex items-center space-x-2 font-medium">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
+                                                        {m.name}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end space-x-2">
+                                            <div className="font-mono font-bold text-neutral-200">{formatCurrency(getLineTotal(line))}</div>
+                                            <button onClick={() => handleRemoveFromCart(line.instanceId)} className="text-red-400 p-2 hover:bg-red-500/10 rounded-lg">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-end space-x-2">
-                                        <div className="font-mono font-bold text-neutral-200">{formatCurrency(getLineTotal(line))}</div>
-                                        <button onClick={() => handleRemoveFromCart(line.instanceId)} className="text-red-400 p-2 hover:bg-red-500/10 rounded-lg">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))
+                                ))}
+                            </>
                         )}
                     </div>
                     <div className="p-4 border-t border-white/10 bg-neutral-900">
                         <div className="flex justify-between items-center mb-6 px-2">
                             <span className="text-neutral-400 uppercase text-xs font-bold tracking-widest">Total Due</span>
-                            <span className="text-3xl font-bold font-mono text-white">{formatCurrency(cartTotal)}</span>
+                            <span className="text-3xl font-bold font-mono text-white">{formatCurrency(displayTotal)}</span>
                         </div>
                         <button
-                            onClick={handleCheckoutClick}
-                            className="w-full h-16 bg-emerald-500 text-black rounded-2xl font-bold text-xl shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)] active:scale-95 transition-all flex items-center justify-center space-x-3"
+                            onClick={editMode ? submitEditedOrder : handleCheckoutClick}
+                            disabled={isSubmitting}
+                            className={`w-full h-16 text-black rounded-2xl font-bold text-xl active:scale-95 transition-all flex items-center justify-center space-x-3 ${editMode ? 'bg-amber-400 shadow-[0_0_30px_-5px_rgba(251,191,36,0.4)]' : 'bg-emerald-500 shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)]'} disabled:opacity-50`}
                         >
-                            <span>{isGeneralMode ? "Submit Order" : "Select Table"}</span>
-                            <ChevronLeft className="w-5 h-5 rotate-180" />
+                            <span>{isSubmitting ? "Saving..." : editMode ? "Save Changes" : isGeneralMode ? "Submit Order" : "Select Table"}</span>
+                            {!editMode && <ChevronLeft className="w-5 h-5 rotate-180" />}
                         </button>
                     </div>
                 </div>
