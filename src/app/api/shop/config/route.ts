@@ -102,6 +102,8 @@ export type ShopConfig = {
   customDomain?: string; // Custom domain (e.g. shop.example.com)
   customDomainVerified?: boolean; // Whether the custom domain has been verified via DNS
   setupComplete?: boolean;
+  keywords?: string[]; // Up to 5
+  categories?: string[]; // Up to 3
   createdAt: number;
   updatedAt: number;
 };
@@ -146,6 +148,8 @@ function defaults(brandKey?: string): Required<Omit<ShopConfig, "wallet" | "id" 
     customDomain: "",
     customDomainVerified: false,
     setupComplete: false,
+    keywords: [],
+    categories: [],
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
@@ -179,6 +183,8 @@ function normalize(raw?: any, brandKey?: string): Omit<ShopConfig, "wallet" | "i
     customDomain: "",
     customDomainVerified: false,
     setupComplete: false,
+    keywords: [],
+    categories: [],
     createdAt: d.createdAt,
     updatedAt: d.updatedAt,
     slug: undefined as string | undefined,
@@ -278,6 +284,20 @@ function normalize(raw?: any, brandKey?: string): Omit<ShopConfig, "wallet" | "i
       out.customDomainVerified = raw.customDomainVerified;
     }
 
+    if (Array.isArray(raw.keywords)) {
+      out.keywords = raw.keywords
+        .filter((x: any) => typeof x === "string")
+        .map((x: string) => x.trim().slice(0, 32))
+        .filter((x: string) => x.length > 0)
+        .slice(0, 5);
+    }
+    if (Array.isArray(raw.categories)) {
+      out.categories = raw.categories
+        .filter((x: any) => typeof x === "string")
+        .map((x: string) => x.trim().slice(0, 32))
+        .filter((x: string) => x.length > 0)
+        .slice(0, 3);
+    }
 
   }
 
@@ -794,6 +814,8 @@ export async function POST(req: NextRequest) {
       customDomain,
       customDomainVerified,
       setupComplete,
+      keywords: Array.isArray(body.keywords) ? normalize(body).keywords : base.keywords,
+      categories: Array.isArray(body.categories) ? normalize(body).categories : base.categories,
       createdAt: prev?.createdAt || now,
       updatedAt: now,
     };

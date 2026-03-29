@@ -402,6 +402,39 @@ function parsePredicate(expr: string, params: Record<string, any>): Filter<Docum
         return { [cosmosFieldToMongo(lowerEq[1])]: { $regex: `^${escapeRegex(String(val))}$`, $options: "i" } };
     }
 
+    // CONTAINS(LOWER(c.field), @param)
+    const containsLower = /^CONTAINS\s*\(\s*LOWER\s*\(\s*c\.([.\w]+)\s*\)\s*,\s*(.+?)\s*\)/i.exec(e);
+    if (containsLower) {
+        const field = cosmosFieldToMongo(containsLower[1]);
+        const val = resolveRhs(containsLower[2].trim(), params);
+        return { [field]: { $regex: escapeRegex(String(val)), $options: "i" } };
+    }
+
+    // CONTAINS(c.field, @param)
+    const containsExpr = /^CONTAINS\s*\(\s*c\.([.\w]+)\s*,\s*(.+?)\s*\)/i.exec(e);
+    if (containsExpr) {
+        const field = cosmosFieldToMongo(containsExpr[1]);
+        const val = resolveRhs(containsExpr[2].trim(), params);
+        return { [field]: { $regex: escapeRegex(String(val)) } };
+    }
+
+    // EXISTS(SELECT VALUE kw FROM kw IN c.field WHERE CONTAINS(LOWER(kw), @param))
+    const existsContains = /^EXISTS\s*\(\s*SELECT\s+VALUE\s+\w+\s+FROM\s+\w+\s+IN\s+c\.([.\w]+)\s+WHERE\s+CONTAINS\s*\(\s*LOWER\s*\(\s*\w+\s*\)\s*,\s*(.+?)\s*\)\s*\)/i.exec(e);
+    if (existsContains) {
+        const field = cosmosFieldToMongo(existsContains[1]);
+        const val = resolveRhs(existsContains[2].trim(), params);
+        // MongoDB natively applies regex element-wise to string arrays!
+        return { [field]: { $regex: escapeRegex(String(val)), $options: "i" } };
+    }
+
+    // EXISTS(SELECT VALUE kw FROM kw IN c.field WHERE LOWER(kw) = @param)
+    const existsLowerEq = /^EXISTS\s*\(\s*SELECT\s+VALUE\s+\w+\s+FROM\s+\w+\s+IN\s+c\.([.\w]+)\s+WHERE\s+LOWER\s*\(\s*\w+\s*\)\s*=\s*(.+?)\s*\)/i.exec(e);
+    if (existsLowerEq) {
+        const field = cosmosFieldToMongo(existsLowerEq[1]);
+        const val = resolveRhs(existsLowerEq[2].trim(), params);
+        return { [field]: { $regex: `^${escapeRegex(String(val))}$`, $options: "i" } };
+    }
+
     // LOWER(c.field) IN ('a', 'b', ...)
     const lowerIn = /^LOWER\s*\(\s*c\.([.\w]+)\s*\)\s+IN\s*\(([^)]+)\)/i.exec(e);
     if (lowerIn) {

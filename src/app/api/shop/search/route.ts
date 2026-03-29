@@ -35,9 +35,12 @@ export async function GET(req: NextRequest) {
         AND (
           (IS_DEFINED(c.slug) AND CONTAINS(LOWER(c.slug), @q))
           OR (IS_DEFINED(c.name) AND CONTAINS(LOWER(c.name), @q))
+          OR (IS_DEFINED(c.keywords) AND IS_ARRAY(c.keywords) AND EXISTS(SELECT VALUE kw FROM kw IN c.keywords WHERE CONTAINS(LOWER(kw), @q)))
+          OR (IS_DEFINED(c.categories) AND IS_ARRAY(c.categories) AND EXISTS(SELECT VALUE cat FROM cat IN c.categories WHERE CONTAINS(LOWER(cat), @q)))
         )
     `;
     const parameters: { name: string; value: any }[] = [{ name: "@q", value: q }];
+    console.log("[ShopSearch] Query:", query, parameters);
 
     if (setupOnly) {
       query += " AND c.setupComplete = true";
@@ -60,17 +63,24 @@ export async function GET(req: NextRequest) {
     }
 
     const { resources } = await c.items.query<any>({ query, parameters }, { maxItemCount: scanLimit }).fetchAll();
-    const take = (resources || []).slice(0, scanLimit);
+    
+    // Deduplicate by wallet to handle any legacy/duplicate documents
+    const uniqueMap = new Map<string, ShopSearchResult>();
+    for (const s of resources || []) {
+      const wallet = String(s.wallet || "");
+      if (wallet && !uniqueMap.has(wallet)) {
+        uniqueMap.set(wallet, {
+          wallet,
+          slug: typeof s.slug === "string" ? s.slug : undefined,
+          name: typeof s.name === "string" ? s.name : undefined,
+          brandLogoUrl: typeof s?.theme?.brandLogoUrl === "string" ? s.theme.brandLogoUrl : undefined,
+          coverPhotoUrl: typeof s?.theme?.coverPhotoUrl === "string" ? s.theme.coverPhotoUrl : undefined,
+          updatedAt: typeof s.updatedAt === "number" ? s.updatedAt : undefined,
+        });
+      }
+    }
 
-    const results: ShopSearchResult[] = take.slice(0, limit).map((s: any) => ({
-      wallet: String(s.wallet || ""),
-      slug: typeof s.slug === "string" ? s.slug : undefined,
-      name: typeof s.name === "string" ? s.name : undefined,
-      brandLogoUrl: typeof s?.theme?.brandLogoUrl === "string" ? s.theme.brandLogoUrl : undefined,
-      coverPhotoUrl: typeof s?.theme?.coverPhotoUrl === "string" ? s.theme.coverPhotoUrl : undefined,
-      updatedAt: typeof s.updatedAt === "number" ? s.updatedAt : undefined,
-    }));
-
+    const results = Array.from(uniqueMap.values()).slice(0, limit);
     return NextResponse.json({ shops: results, total: results.length });
   } catch (e: any) {
     return NextResponse.json(
