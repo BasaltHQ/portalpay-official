@@ -29,6 +29,7 @@ const IcodScanner = registerPlugin<ScannerPlugin>('IcodScanner');
 const TopWisePrinter = registerPlugin<PrinterPlugin>('TopWisePrinter');
 const KioskPrinter = registerPlugin<PrinterPlugin>('KioskPrinter');
 const ExternalPrinter = registerPlugin<PrinterPlugin>('ExternalPrinter');
+const UsbPrinter = registerPlugin<PrinterPlugin>('UsbPrinter');
 const ValorPrinter = registerPlugin<PrinterPlugin>('ValorPrinter');
 
 const TopWiseFeedback = registerPlugin<FeedbackPlugin>('TopWiseFeedback');

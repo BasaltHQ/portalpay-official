@@ -138,9 +138,11 @@ export async function GET(request: NextRequest) {
               customerName: receipt.customerName || (receipt.tableNumber ? `Table ${receipt.tableNumber}` : "Guest"),
               serverName,
               specialInstructions,
-              tipAmount: receipt.tipAmount || 0, // Pass tip amount for UI
+              tipAmount: receipt.tipAmount || 0,
               source: "pos",
-              sessionId: receipt.sessionId // Include sessionId for debugging/attribution checking
+              sessionId: receipt.sessionId,
+              metadata: receipt.metadata,
+              cancelledAt: receipt.cancelledAt
             });
           }
         }
@@ -233,10 +235,26 @@ export async function GET(request: NextRequest) {
       return aTime - bTime;
     });
 
+    // Fetch the merchant's real shop name and logo from shop:config
+    const container = await getContainer();
+    let shopData: any = null;
+    try {
+        const { resources } = await container.items.query({
+            query: "SELECT c.name, c.theme FROM c WHERE c.id='shop:config' AND c.wallet=@w",
+            parameters: [{ name: "@w", value: wallet.toLowerCase() }]
+        }).fetchAll();
+        if (resources.length > 0) {
+            shopData = resources[0];
+            // Override the platform brandName with the literal shop name for the tickets
+            kitchenOrders.forEach(o => { o.shopName = shopData.name; });
+        }
+    } catch(e) { console.warn('Failed to fetch shop config for KDS', e); }
+
     return NextResponse.json({
       ok: true,
       orders: kitchenOrders,
       count: kitchenOrders.length,
+      shop: shopData,
       sources: {
         pos: kitchenOrders.filter(o => o.source === "pos").length,
         ubereats: kitchenOrders.filter(o => o.source === "ubereats").length,

@@ -60,12 +60,22 @@ export function buildExpoTicketText(order: {
     createdAt?: string | number;
     employeeName?: string;
     guestCount?: number;
+    orderType?: string;
+    customerName?: string;
+    brandName?: string;
+    shopName?: string;
 }): string {
     const lines: string[] = [];
     const sep = '--------------------------------';
 
     lines.push(sep);
     lines.push('       *** EXPO TICKET ***');
+    const displayBrand = order.shopName || order.brandName;
+    if (displayBrand) {
+        // Pad brand name to center it roughly
+        const pad = Math.max(0, Math.floor((32 - displayBrand.length) / 2));
+        lines.push(' '.repeat(pad) + displayBrand.toUpperCase());
+    }
     lines.push(sep);
 
     if (order.tableNumber) lines.push(`Table: ${order.tableNumber}`);
