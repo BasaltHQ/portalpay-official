@@ -23,17 +23,68 @@ export async function POST(req: NextRequest) {
     const bodyText = await req.text();
     const body = bodyText ? JSON.parse(bodyText) : {};
 
-    const shopSlug = String(body.shopSlug || "").trim();
-    const items = Array.isArray(body.items) ? body.items : [];
+    let shopSlug = String(body.shopSlug || "").trim();
+    let items = Array.isArray(body.items) ? body.items : [];
 
     if (!shopSlug || items.length === 0) {
-      return NextResponse.json(
-        {
-          error: "invalid_request",
-          message: "Body must include shopSlug and items[]. Example: { shopSlug: 'genrevo', items: [{ sku: 'COFFEE-001', qty: 1 }] }",
-        },
-        { status: 400, headers: { "x-correlation-id": correlationId } }
-      );
+      if (!req.headers.has("x-payment")) {
+        // Mock a quote challenge immediately for the crawler, skipping DB hooks
+        const { settlePayment, facilitator } = await import("thirdweb/x402");
+        const { createThirdwebClient } = await import("thirdweb");
+        const { defineChain } = await import("thirdweb/chains");
+
+        const secretKey = process.env.THIRDWEB_SECRET_KEY || "";
+        const serviceWallet = process.env.THIRDWEB_SERVER_WALLET_ADDRESS || process.env.NEXT_PUBLIC_OWNER_WALLET || "";
+        const chainId = Number(process.env.CHAIN_ID || process.env.NEXT_PUBLIC_CHAIN_ID || 8453);
+
+        if (!secretKey || !serviceWallet) {
+          return NextResponse.json(
+            { error: "x402_not_configured", message: "Server x402 payment infrastructure is not configured." },
+            { status: 503, headers: { "x-correlation-id": correlationId } }
+          );
+        }
+
+        const client = createThirdwebClient({ secretKey });
+        const network = defineChain(chainId);
+
+        const thirdwebFacilitator = facilitator({
+          client,
+          serverWalletAddress: serviceWallet as `0x${string}`,
+          waitUntil: "confirmed",
+        });
+
+        const result = await settlePayment({
+          resourceUrl: req.nextUrl.toString(),
+          method: "POST",
+          paymentData: null,
+          payTo: serviceWallet as `0x${string}`,
+          network,
+          price: "$0.10",
+          routeConfig: {
+            description: "Dummy quote for x402scan crawler verification",
+            mimeType: "application/json" as const,
+            outputSchema: {},
+          },
+          facilitator: thirdwebFacilitator,
+        });
+
+        return new NextResponse(JSON.stringify((result as any).responseBody || {}), {
+          status: 402,
+          headers: {
+            ...((result as any).responseHeaders || {}),
+            "x-correlation-id": correlationId,
+            "Content-Type": "application/json",
+          },
+        });
+      } else {
+        return NextResponse.json(
+          {
+            error: "invalid_request",
+            message: "Body must include shopSlug and items[]. Example: { shopSlug: 'genrevo', items: [{ sku: 'COFFEE-001', qty: 1 }] }",
+          },
+          { status: 400, headers: { "x-correlation-id": correlationId } }
+        );
+      }
     }
 
     // Resolve the merchant wallet for this shop
