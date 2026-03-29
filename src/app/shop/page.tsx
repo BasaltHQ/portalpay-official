@@ -14,6 +14,7 @@ import ShopWizard from "@/components/shop/ShopWizard";
 import ShopClient from "@/app/shop/[slug]/ShopClient";
 import { useBrand } from "@/contexts/BrandContext";
 import AdvancedShopTab from "@/components/admin/AdvancedShopTab";
+import ShopDiscoveryEditor from "@/components/shop/ShopDiscoveryEditor";
 
 export type ShopTheme = {
   primaryColor?: string;
@@ -51,6 +52,8 @@ export type ShopConfig = {
   customDomain?: string;
   customDomainVerified?: boolean;
   setupComplete?: boolean;
+  keywords?: string[];
+  categories?: string[];
 };
 
 function Input({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
@@ -177,6 +180,8 @@ export default function ShopBuilderPage() {
     customDomain: "",
     customDomainVerified: false,
     setupComplete: false,
+    keywords: [],
+    categories: [],
   });
 
   // Update browser tab title and favicon with merchant's shop info when loaded
@@ -289,6 +294,8 @@ export default function ShopBuilderPage() {
       },
       arrangement: c.arrangement || "grid",
       slug: c.slug || "",
+      keywords: c.keywords || [],
+      categories: c.categories || [],
       links: Array.isArray(c.links) ? c.links.map((x) => ({ label: x.label || "", url: x.url || "" })) : [],
     };
   }
@@ -476,6 +483,8 @@ export default function ShopBuilderPage() {
           customDomain: conf.customDomain || "",
           customDomainVerified: !!conf.customDomainVerified,
           setupComplete: conf.setupComplete === true || (!!conf.name && !!conf.slug),
+          keywords: Array.isArray(conf.keywords) ? conf.keywords : [],
+          categories: Array.isArray(conf.categories) ? conf.categories : [],
         }));
         setSnapshot(conf as ShopConfig);
       }
@@ -663,6 +672,8 @@ export default function ShopBuilderPage() {
         theme: cfg.theme,
         arrangement: cfg.arrangement,
         slug: cfg.slug,
+        keywords: cfg.keywords,
+        categories: cfg.categories,
         links: Array.isArray(cfg.links) ? cfg.links : [],
         customDomain: cfg.customDomain,
         setupComplete: !!(cfg.name && cfg.slug),
@@ -1672,6 +1683,15 @@ export default function ShopBuilderPage() {
 
               <TextArea label="Short Description" value={cfg.description || ""} onChange={(e) => setCfg((prev) => ({ ...prev, description: e.target.value }))} />
               <TextArea label="Bio (Longer)" value={cfg.bio || ""} onChange={(e) => setCfg((prev) => ({ ...prev, bio: e.target.value }))} />
+
+              <div className="md:col-span-2 pt-4 pb-2 border-t mt-4">
+                <ShopDiscoveryEditor
+                  keywords={cfg.keywords || []}
+                  categories={cfg.categories || []}
+                  onKeywordsChange={(k) => setCfg((prev) => ({ ...prev, keywords: k }))}
+                  onCategoriesChange={(c) => setCfg((prev) => ({ ...prev, categories: c }))}
+                />
+              </div>
 
               <div>
                 <div className="flex items-center justify-between">

@@ -123,6 +123,62 @@ paths:
                       limit: { type: integer }
                       offset: { type: integer }
                       brandContext: { type: string }
+  /api/orders:
+    post:
+      summary: Create Order (Agentic Payment Target)
+      operationId: createOrder
+      tags: [Orders]
+      description: Generate an order block containing line items sourced from the active merchant's inventory. Returns a payable ticket compatible with L402. Requires x402 SIWX auth or valid merchant state.
+      security: []
+      x-payment-info:
+        protocols: ["x402"]
+        pricingMode: "quote"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  description: Array of line items (inventory IDs and requested quantities)
+                  items:
+                    type: object
+                    required: [qty]
+                    properties:
+                      id: { type: string }
+                      sku: { type: string }
+                      qty: { type: integer }
+                      selectedModifiers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            groupId: { type: string }
+                            modifierId: { type: string }
+                            priceAdjustment: { type: number }
+                jurisdictionCode:
+                  type: string
+                  description: Two-letter or regional code dictating tax jurisdiction mapping.
+                taxRate:
+                  type: number
+                  description: Optional ad-hoc tax rate overriding jurisdiction configs.
+      responses:
+        "200":
+          description: Order receipt generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  receipt:
+                    type: object
+                  status: { type: string }
+        "402":
+          description: Payment Required
   /api/apim-management/subscriptions:
     post:
       summary: API Product Subscription (x402 Developer)

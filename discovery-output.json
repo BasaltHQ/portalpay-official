@@ -1,0 +1,447 @@
+﻿{
+  "ok": true,
+  "selectedStage": "openapi",
+  "resources": [
+    {
+      "resourceKey": "GET /api/directory/shops",
+      "method": "GET",
+      "path": "/api/directory/shops",
+      "summary": "Discover active shops",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "POST /api/apim-management/subscriptions",
+      "method": "POST",
+      "path": "/api/apim-management/subscriptions",
+      "summary": "API Product Subscription (x402 Developer)",
+      "authHint": "apiKey+paid",
+      "priceHint": "$10.00",
+      "protocols": [
+        "x402"
+      ]
+    },
+    {
+      "resourceKey": "GET /api/inventory",
+      "method": "GET",
+      "path": "/api/inventory",
+      "summary": "List inventory items",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "POST /api/inventory",
+      "method": "POST",
+      "path": "/api/inventory",
+      "summary": "Create or update an inventory item",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "DELETE /api/inventory",
+      "method": "DELETE",
+      "path": "/api/inventory",
+      "summary": "Delete an inventory item",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "POST /api/orders",
+      "method": "POST",
+      "path": "/api/orders",
+      "summary": "Generate an order/receipt from inventory",
+      "authHint": "apiKey+paid",
+      "priceHint": "quote",
+      "protocols": [
+        "x402"
+      ]
+    },
+    {
+      "resourceKey": "GET /api/shop/config",
+      "method": "GET",
+      "path": "/api/shop/config",
+      "summary": "Get merchant shop configuration",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "GET /api/receipts",
+      "method": "GET",
+      "path": "/api/receipts",
+      "summary": "List receipts",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "POST /api/receipts",
+      "method": "POST",
+      "path": "/api/receipts",
+      "summary": "Create a receipt payload for a QR-code payment portal",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "GET /api/receipts/{id}",
+      "method": "GET",
+      "path": "/api/receipts/{id}",
+      "summary": "Get a receipt by ID",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "GET /api/receipts/status",
+      "method": "GET",
+      "path": "/api/receipts/status",
+      "summary": "Get receipt/payment status",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "POST /api/receipts/status",
+      "method": "POST",
+      "path": "/api/receipts/status",
+      "summary": "Update receipt status (tracking and sensitive events)",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "GET /api/site/config",
+      "method": "GET",
+      "path": "/api/site/config",
+      "summary": "Get site configuration (branding and defaults)",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "GET /api/split/transactions",
+      "method": "GET",
+      "path": "/api/split/transactions",
+      "summary": "List split transactions (if configured)",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "GET /healthz",
+      "method": "GET",
+      "path": "/healthz",
+      "summary": "Health check",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "GET /api/billing/balance",
+      "method": "GET",
+      "path": "/api/billing/balance",
+      "summary": "Get user balance (time credits)",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "POST /api/billing/purchase",
+      "method": "POST",
+      "path": "/api/billing/purchase",
+      "summary": "Record a purchase/payment event",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "GET /api/pricing/config",
+      "method": "GET",
+      "path": "/api/pricing/config",
+      "summary": "Get pricing configuration",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "POST /api/pricing/config",
+      "method": "POST",
+      "path": "/api/pricing/config",
+      "summary": "Update pricing configuration (owner-only JWT; APIM writes not permitted)",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "GET /api/split/deploy",
+      "method": "GET",
+      "path": "/api/split/deploy",
+      "summary": "Get split configuration for merchant",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "POST /api/split/deploy",
+      "method": "POST",
+      "path": "/api/split/deploy",
+      "summary": "Configure split (admin-only JWT; APIM writes not permitted)",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "GET /api/tax/catalog",
+      "method": "GET",
+      "path": "/api/tax/catalog",
+      "summary": "Get tax catalog (illustrative jurisdictions and rates)",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "POST /api/receipts/refund",
+      "method": "POST",
+      "path": "/api/receipts/refund",
+      "summary": "Log a refund for a receipt (merchant/admin via portal)",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "POST /api/receipts/terminal",
+      "method": "POST",
+      "path": "/api/receipts/terminal",
+      "summary": "Generate a terminal receipt (single item + tax/fees)",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "GET /api/reserve/balances",
+      "method": "GET",
+      "path": "/api/reserve/balances",
+      "summary": "Get reserve balances for merchant or owner wallet",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "GET /api/reserve/recommend",
+      "method": "GET",
+      "path": "/api/reserve/recommend",
+      "summary": "Recommend settlement token and frequency",
+      "authHint": "apiKey"
+    },
+    {
+      "resourceKey": "POST /api/split/withdraw",
+      "method": "POST",
+      "path": "/api/split/withdraw",
+      "summary": "Deprecated: server-side split withdraw",
+      "authHint": "apiKey"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    },
+    {
+      "code": "L3_AUTH_MODE_MISSING",
+      "severity": "warn",
+      "message": "Endpoint has no auth mode in the spec.",
+      "hint": "Declare auth mode via security schemes or x-payment-info so agents can plan payment."
+    }
+  ],
+  "trace": [],
+  "meta": {
+    "origin": "http://localhost:3001",
+    "specUrl": "http://localhost:3001/openapi.json",
+    "title": "PortalPay API",
+    "description": "Public API surface for PortalPay under a hardened posture: Azure Front Door Premium (AFD) gateway ΓåÆ Azure API Management (APIM).\nAll developer-facing endpoints require an APIM subscription key header `Ocp-Apim-Subscription-Key` and use the APIM custom domain. AFD is optional as a fallback.\nAPIM policy permits requests with a valid subscription key and may also accept AFD-originated requests carrying `x-edge-secret` if AFD is configured. Direct backend origins are not supported.\nWallet identity is resolved at the gateway based on subscription; client-supplied `x-wallet` header and `wallet` parameters are ignored.\nHealth endpoint: `GET /portalpay/healthz` returns 200 JSON for probes; does not require a subscription.\nNote: Some endpoints are read-only or environment-gated in production. Admin/sensitive routes (JWT-only) are not part of this spec.\n",
+    "guidanceTokens": 208
+  }
+}

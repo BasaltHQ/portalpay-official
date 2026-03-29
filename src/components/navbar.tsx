@@ -970,8 +970,8 @@ export function Navbar() {
                                             <div className="py-8 text-center text-gray-600 text-xs font-mono">NO DATA FOUND</div>
                                         ) : (
                                             <>
-                                                {shopResults.map((s: any) => (
-                                                    <Link key={`shop-${s.slug}`} href={`/shop/${s.slug}`} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg group transition-colors">
+                                                {shopResults.map((s: any, i: number) => (
+                                                    <Link key={`shop-${s.wallet || s.slug}-${i}`} href={`/shop/${s.slug}`} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg group transition-colors">
                                                         <div className="w-8 h-8 rounded bg-white/10 overflow-hidden relative">
                                                             {s.brandLogoUrl && <img src={s.brandLogoUrl} alt="" className="w-full h-full object-cover" />}
                                                         </div>
@@ -981,8 +981,8 @@ export function Navbar() {
                                                         </div>
                                                     </Link>
                                                 ))}
-                                                {userResults.map((u: any) => (
-                                                    <Link key={u.wallet} href={`/u/${u.wallet}`} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg group transition-colors">
+                                                {userResults.map((u: any, i: number) => (
+                                                    <Link key={`user-${u.wallet}-${i}`} href={`/u/${u.wallet}`} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg group transition-colors">
                                                         <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden relative">
                                                             {u.pfpUrl && <img src={u.pfpUrl} alt="" className="w-full h-full object-cover" />}
                                                         </div>
