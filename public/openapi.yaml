@@ -406,9 +406,6 @@ paths:
         Split contract must be configured for the merchant.
       x-required-scopes:
         - orders:create
-      x-payment-info:
-        protocols: ["x402"]
-        pricingMode: "quote"
       requestBody:
         required: true
         content:
@@ -440,8 +437,6 @@ paths:
           description: items_required or inventory_item_not_found
         "401":
           $ref: "#/components/responses/UnauthorizedError"
-        "402":
-          description: "Payment Required"
         "403":
           description: split_required or forbidden
           content:

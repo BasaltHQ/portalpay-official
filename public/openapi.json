@@ -729,12 +729,6 @@
         "x-required-scopes": [
           "orders:create"
         ],
-        "x-payment-info": {
-          "protocols": [
-            "x402"
-          ],
-          "pricingMode": "quote"
-        },
         "requestBody": {
           "required": true,
           "content": {
@@ -790,9 +784,6 @@
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
           },
-          "402": {
-            "description": "Payment Required"
-          },
           "403": {
             "description": "split_required or forbidden",
             "content": {
@@ -820,7 +811,7 @@
             "apimKey": []
           }
         ],
-        "x-auth-mode": "x402"
+        "x-auth-mode": "apiKey"
       }
     },
     "/api/shop/config": {
