@@ -204,7 +204,9 @@ export default function ClientRequestsPanel() {
     // Split Config State
     const [approvingId, setApprovingId] = useState<string | null>(null);
     const [feeExplainerAcked, setFeeExplainerAcked] = useState(false);
-    const [platformBps, setPlatformBps] = useState(50); // Default platform fee
+    
+    const isPlatformContainer = process.env.NEXT_PUBLIC_CONTAINER_TYPE !== "partner" && (!brandKey || brandKey === "portalpay" || brandKey === "basaltsurge");
+    const [platformBps, setPlatformBps] = useState(isPlatformContainer ? 100 : 50); // Default platform fee
     const [historyViewerId, setHistoryViewerId] = useState<string | null>(null);
     const [activeTabs, setActiveTabs] = useState<Record<string, string>>({});
 
@@ -230,12 +232,14 @@ export default function ClientRequestsPanel() {
                 // on error fallback to context
                 if (typeof (brand as any)?.platformFeeBps === "number") {
                     setPlatformBps((brand as any).platformFeeBps);
+                } else if (isPlatformContainer) {
+                    setPlatformBps(100);
                 }
             }
         })();
-    }, [brandKey, brand]);
+    }, [brandKey, brand, isPlatformContainer]);
 
-    const [partnerBps, setPartnerBps] = useState(50); // Default partner fee (0.5%)
+    const [partnerBps, setPartnerBps] = useState(isPlatformContainer ? 0 : 50); // Default partner fee (0.5%)
     const [partnerWallet, setPartnerWallet] = useState("");
     const [agents, setAgents] = useState<{ wallet: string; bps: number }[]>([]);
     const [approvedAgents, setApprovedAgents] = useState<{ wallet: string; name: string; email: string }[]>([]);
@@ -383,7 +387,7 @@ export default function ClientRequestsPanel() {
 
 
 
-    const openApprovalModal = (id: string, existingSplit?: { partnerBps: number, agents?: { wallet: string, bps: number }[] }) => {
+    const openApprovalModal = (id: string, existingSplit?: { platformBps?: number, partnerBps: number, agents?: { wallet: string, bps: number }[] }) => {
         setApprovingId(id);
         setFeeExplainerAcked(false);
         setDeployResult("");
@@ -391,10 +395,12 @@ export default function ClientRequestsPanel() {
         const brandPartner = (brand as any)?.partnerWallet || "";
         setPartnerWallet(brandPartner || envPartner || "");
         if (existingSplit) {
-            setPartnerBps(existingSplit.partnerBps);
+            setPartnerBps(existingSplit.partnerBps ?? (isPlatformContainer ? 0 : 50));
+            if (existingSplit.platformBps !== undefined) setPlatformBps(existingSplit.platformBps);
             setAgents(existingSplit.agents || []);
         } else {
-            setPartnerBps(50); // Reset to default
+            setPartnerBps(isPlatformContainer ? 0 : 50); // Reset to default
+            if (isPlatformContainer) setPlatformBps(100);
             setAgents([]);
             setLastVerifiedConfig(null); // No verified config for new splits
         }
@@ -806,7 +812,7 @@ export default function ClientRequestsPanel() {
                                                     <>
                                                         <button
                                                             className="px-3 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20 text-xs font-semibold transition-colors"
-                                                            onClick={() => openApprovalModal(req.id)}
+                                                            onClick={() => openApprovalModal(req.id, req.splitConfig)}
                                                         >
                                                             Approve
                                                         </button>
@@ -953,6 +959,14 @@ export default function ClientRequestsPanel() {
                                                                         <span className="text-muted-foreground">Wallet</span>
                                                                         <div className="font-mono text-xs break-all select-all opacity-80">{req.wallet}</div>
                                                                     </div>
+                                                                    {req.splitConfig?.agents && req.splitConfig.agents.length > 0 && (
+                                                                        <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
+                                                                            <span className="text-muted-foreground">Agent</span>
+                                                                            <div className="font-mono text-xs break-all select-all opacity-80 text-amber-400">
+                                                                                {req.splitConfig.agents.map((a: any) => `${a.wallet} (${a.bps} bps)`).join(", ")}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                     <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
                                                                         <span className="text-muted-foreground">Notes</span>
                                                                         <div className="text-xs italic bg-black/20 p-2 rounded border border-white/5 max-h-[80px] overflow-y-auto">
@@ -1115,30 +1129,61 @@ export default function ClientRequestsPanel() {
                                         </div>
 
                                         {/* Partner Wallet Input */}
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between text-xs uppercase tracking-wider font-mono text-zinc-500">
-                                                <span>Partner Wallet</span>
+                                        {!isPlatformContainer && (
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between text-xs uppercase tracking-wider font-mono text-zinc-500">
+                                                    <span>Partner Wallet</span>
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={partnerWallet}
+                                                    onChange={(e) => setPartnerWallet(e.target.value)}
+                                                    placeholder="0x..."
+                                                    className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none font-mono"
+                                                />
+                                                <p className="text-[10px] text-zinc-500">Destination wallet for partner fees.</p>
                                             </div>
-                                            <input
-                                                type="text"
-                                                value={partnerWallet}
-                                                onChange={(e) => setPartnerWallet(e.target.value)}
-                                                placeholder="0x..."
-                                                className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none font-mono"
-                                            />
-                                            <p className="text-[10px] text-zinc-500">Destination wallet for partner fees.</p>
-                                        </div>
+                                        )}
 
-                                        {/* Platform Fee (Locked) */}
+                                        {/* Platform Fee */}
                                         <div className="space-y-2">
                                             <div className="flex justify-between text-xs uppercase tracking-wider font-mono text-zinc-500">
                                                 <span>Platform Fee</span>
-                                                <span>Locked</span>
+                                                <span>{isPlatformContainer ? "adjustable" : "Locked"}</span>
                                             </div>
-                                            <div className="p-3 rounded-lg bg-black/20 border border-white/5 flex justify-between items-center opacity-70">
-                                                <span className="text-zinc-400 text-sm">Platform</span>
-                                                <span className="font-mono text-emerald-500">{(platformBps / 100).toFixed(2)}%</span>
-                                            </div>
+                                            {isPlatformContainer ? (
+                                                <div className="p-4 rounded-lg bg-zinc-800/50 border border-white/10 space-y-4">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-white text-sm font-medium">Platform</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="number"
+                                                                value={platformBps}
+                                                                onChange={(e) => setPlatformBps(Math.min(9900, Math.max(0, parseInt(e.target.value) || 0)))}
+                                                                className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-right font-mono text-sm text-white focus:border-emerald-500 outline-none"
+                                                            />
+                                                            <span className="text-zinc-500 text-xs">bps</span>
+                                                        </div>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="1000" // Max 10%
+                                                        step="5"
+                                                        value={platformBps}
+                                                        onChange={(e) => setPlatformBps(parseInt(e.target.value))}
+                                                        className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                                                    />
+                                                    <div className="text-right text-xs text-emerald-400 font-mono">
+                                                        {(platformBps / 100).toFixed(2)}%
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="p-3 rounded-lg bg-black/20 border border-white/5 flex justify-between items-center opacity-70">
+                                                    <span className="text-zinc-400 text-sm">Platform</span>
+                                                    <span className="font-mono text-emerald-500">{(platformBps / 100).toFixed(2)}%</span>
+                                                </div>
+                                            )}
                                             <div className="text-[10px] text-zinc-500 font-mono flex justify-between">
                                                 <span>Wallet</span>
                                                 <span className="select-all" title={process.env.NEXT_PUBLIC_PLATFORM_WALLET || process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS}>
@@ -1147,39 +1192,41 @@ export default function ClientRequestsPanel() {
                                             </div>
                                         </div>
 
-                                        {/* Partner Fee (Slider) */}
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between text-xs uppercase tracking-wider font-mono text-zinc-500">
-                                                <span>Partner Fee</span>
-                                                <span>adjustable</span>
-                                            </div>
-                                            <div className="p-4 rounded-lg bg-zinc-800/50 border border-white/10 space-y-4">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-white text-sm font-medium">Your Revenue</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <input
-                                                            type="number"
-                                                            value={partnerBps}
-                                                            onChange={(e) => setPartnerBps(Math.min(9900, Math.max(0, parseInt(e.target.value) || 0)))}
-                                                            className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-right font-mono text-sm text-white focus:border-emerald-500 outline-none"
-                                                        />
-                                                        <span className="text-zinc-500 text-xs">bps</span>
+                                        {/* Partner Fee (Slider) - Hidden for platform containers */}
+                                        {!isPlatformContainer && (
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between text-xs uppercase tracking-wider font-mono text-zinc-500">
+                                                    <span>Partner Fee</span>
+                                                    <span>adjustable</span>
+                                                </div>
+                                                <div className="p-4 rounded-lg bg-zinc-800/50 border border-white/10 space-y-4">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-white text-sm font-medium">Your Revenue</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="number"
+                                                                value={partnerBps}
+                                                                onChange={(e) => setPartnerBps(Math.min(9900, Math.max(0, parseInt(e.target.value) || 0)))}
+                                                                className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-right font-mono text-sm text-white focus:border-emerald-500 outline-none"
+                                                            />
+                                                            <span className="text-zinc-500 text-xs">bps</span>
+                                                        </div>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="1000" // Max 10%
+                                                        step="5"
+                                                        value={partnerBps}
+                                                        onChange={(e) => setPartnerBps(parseInt(e.target.value))}
+                                                        className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                                                    />
+                                                    <div className="text-right text-xs text-emerald-400 font-mono">
+                                                        {(partnerBps / 100).toFixed(2)}%
                                                     </div>
                                                 </div>
-                                                <input
-                                                    type="range"
-                                                    min="0"
-                                                    max="1000" // Max 10%
-                                                    step="5"
-                                                    value={partnerBps}
-                                                    onChange={(e) => setPartnerBps(parseInt(e.target.value))}
-                                                    className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                                                />
-                                                <div className="text-right text-xs text-emerald-400 font-mono">
-                                                    {(partnerBps / 100).toFixed(2)}%
-                                                </div>
                                             </div>
-                                        </div>
+                                        )}
 
                                         {/* Agent Shares (Dynamic) */}
                                         <div className="space-y-3">
@@ -1285,10 +1332,12 @@ export default function ClientRequestsPanel() {
                                                     <span className="text-zinc-400">Platform</span>
                                                     <span className="font-mono text-zinc-300">{(platformBps / 100).toFixed(2)}%</span>
                                                 </div>
-                                                <div className="flex justify-between text-xs">
-                                                    <span className="text-zinc-400">Partner</span>
-                                                    <span className="font-mono text-zinc-300">{(partnerBps / 100).toFixed(2)}%</span>
-                                                </div>
+                                                {!isPlatformContainer && (
+                                                    <div className="flex justify-between text-xs">
+                                                        <span className="text-zinc-400">Partner</span>
+                                                        <span className="font-mono text-zinc-300">{(partnerBps / 100).toFixed(2)}%</span>
+                                                    </div>
+                                                )}
                                                 {agents.length > 0 && (
                                                     <div className="flex justify-between text-xs">
                                                         <span className="text-zinc-400">Agents ({agents.length})</span>

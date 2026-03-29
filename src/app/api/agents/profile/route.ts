@@ -26,13 +26,12 @@ export async function GET(req: NextRequest) {
 
         const container = await getContainer();
 
-        // Check for approved agent_request first (formal agents)
+        // Check for agent_request first (formal agents)
         const { resources: requests } = await container.items.query({
             query: `SELECT * FROM c
                     WHERE c.type = 'agent_request'
                       AND c.wallet = @wallet
-                      AND c.brandKey = @brandKey
-                      AND c.status = 'approved'`,
+                      AND c.brandKey = @brandKey`,
             parameters: [
                 { name: "@wallet", value: wallet },
                 { name: "@brandKey", value: brandKey },
@@ -43,6 +42,7 @@ export async function GET(req: NextRequest) {
             const r = requests[0];
             return NextResponse.json({
                 hasProfile: true,
+                status: r.status || "approved",
                 source: "agent_request",
                 name: r.name,
                 email: r.email,
@@ -68,6 +68,7 @@ export async function GET(req: NextRequest) {
             const p = profiles[0];
             return NextResponse.json({
                 hasProfile: true,
+                status: "approved", // Legacy "informal" agents default to approved
                 source: "agent_profile",
                 name: p.name,
                 email: p.email,

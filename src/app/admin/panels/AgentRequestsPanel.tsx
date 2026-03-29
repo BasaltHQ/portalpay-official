@@ -196,7 +196,7 @@ export default function AgentRequestsPanel() {
                                 <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
                                     <Users className="h-10 w-10 mx-auto mb-3 opacity-20" />
                                     <p className="font-medium">No agent requests found</p>
-                                    <p className="text-xs mt-1">Share your sign-up link: <code className="bg-muted/50 px-1 rounded">/agents/sign-up</code></p>
+                                    <p className="text-xs mt-1">Share your application link: <code className="bg-muted/50 px-1 rounded">/agents/apply</code></p>
                                 </td>
                             </tr>
                         ) : filtered.map((req) => {

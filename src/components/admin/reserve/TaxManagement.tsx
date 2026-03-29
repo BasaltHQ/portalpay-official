@@ -28,6 +28,8 @@ export function TaxManagement() {
   const [zipLoading, setZipLoading] = useState(false);
   const [zipMeta, setZipMeta] = useState<{ state?: string; region_name?: string } | null>(null);
   const [defaultJurisdictionCode, setDefaultJurisdictionCode] = useState<string>("");
+  const [activeIndustryPack, setActiveIndustryPack] = useState<string>('general');
+  const [cannabisState, setCannabisState] = useState<string | null>(null);
 
   const [customOpen, setCustomOpen] = useState(false);
   const [customName, setCustomName] = useState("");
@@ -59,6 +61,15 @@ export function TaxManagement() {
       setConfigJurisdictions(Array.isArray(tc.jurisdictions) ? tc.jurisdictions : []);
       setProvider(tc.provider || {});
       setDefaultJurisdictionCode(typeof (tc as any)?.defaultJurisdictionCode === "string" ? (tc as any).defaultJurisdictionCode : "");
+      
+      setActiveIndustryPack(cfg?.config?.industryPack || 'general');
+      const ip = (cfg?.config as any)?.industryParams?.cannabisCompliance;
+      if (ip?.activeProvider) {
+          const sc = ip.activeProvider === 'metrc' ? ip.metrc?.stateCode : ip.activeProvider === 'biotrack' ? ip.biotrack?.stateCode : null;
+          setCannabisState(sc);
+      } else {
+          setCannabisState(null);
+      }
 
       const catRes = await fetch("/api/tax/catalog");
       const cat = await catRes.json().catch(() => ({}));
@@ -404,9 +415,54 @@ export function TaxManagement() {
         </div>
       </div>
 
-      <div className="microtext text-muted-foreground">
-        Rates auto‑update via provider when configured. Catalog is a bootstrap reference; integrate a certified tax engine for production.
-      </div>
+      {activeIndustryPack === 'cannabis' && (
+        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-4 mt-2">
+          <label className="text-[15px] font-bold text-emerald-400 block mb-1">Cannabis Compliance Taxation</label>
+          <div className="microtext text-emerald-500/80 mb-3">
+            Your store is operating under the Cannabis Industry Pack. Tax policies are automatically configured to comply with state requirements. 
+            Do NOT add excise taxes manually to your regular tax catalog.
+          </div>
+          {cannabisState === 'IL' ? (
+            <div className="bg-black/30 p-3 rounded-md">
+              <h4 className="text-sm font-semibold text-emerald-300 mb-2 border-b border-emerald-500/20 pb-1 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400" /> State Active: Illinois
+              </h4>
+              <p className="text-xs text-white/70 mb-2">Automated item-level THC potency excise tracking is initialized.</p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex justify-between items-center"><span className="text-emerald-300/80">&lt; 35% THC Flower &amp; Extracts</span><span className="font-mono">10% Excise</span></div>
+                <div className="flex justify-between items-center"><span className="text-emerald-300/80">&ge; 35% THC Extracts</span><span className="font-mono">25% Excise</span></div>
+                <div className="flex justify-between items-center"><span className="text-emerald-300/80">Infused Edibles/Liquids</span><span className="font-mono">20% Excise</span></div>
+              </div>
+            </div>
+          ) : cannabisState ? (
+            <div className="bg-black/30 p-3 rounded-md">
+              <h4 className="text-sm font-semibold text-emerald-300 mb-2 border-b border-emerald-500/20 pb-1 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400" /> State Active: {cannabisState}
+              </h4>
+              <p className="text-xs text-white/70 mb-2">
+                Configure standard state-level cannabis excise taxes inside your jurisdictions catalog below. 
+                They will automatically apply uniformly at checkout for any items marked 'Cannabis'. 
+                Additional POS dynamic rate overrides are not strictly required for {cannabisState} standard operations.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-md mt-2">
+              <h4 className="text-sm font-semibold text-amber-500 mb-1 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-amber-500" /> Compliance Link Required
+              </h4>
+              <p className="text-xs text-amber-500/80">
+                No active compliance provider is configured. Go to Cannabis Integrations in your site config and link METRC or BioTrack to designate your active state and initialize automated taxation.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeIndustryPack !== 'cannabis' && (
+        <div className="microtext text-muted-foreground mt-3 border-t border-white/10 pt-3">
+          Looking for automated compliant taxation? Switch your store to the Cannabis Industry Pack in Advanced Settings to activate METRC/BioTrack native tax routing.
+        </div>
+      )}
 
       {error && <div className="microtext text-red-500">{error}</div>}
 

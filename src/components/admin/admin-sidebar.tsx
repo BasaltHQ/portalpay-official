@@ -372,9 +372,9 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
             { title: 'Merchants', key: 'users' as AdminTabKey },
             { title: 'SEO Pages', key: 'seoPages' as AdminTabKey },
             { title: 'Plugins', key: 'plugins' as AdminTabKey },
-            // Client Requests: Show only in REQUEST mode (private) or superadmin
-            ...((canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) ? [{ title: 'Client Requests', key: 'clientRequests' as AdminTabKey }] : []),
-            ...((canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) ? [{ title: 'Agent Requests', key: 'agentRequests' as AdminTabKey }] : []),
+            // Client Requests & Agent Requests: Show for all admins now that platform requires approval
+            ...((canBranding || isSuperadmin) ? [{ title: 'Client Requests', key: 'clientRequests' as AdminTabKey }] : []),
+            ...((canBranding || isSuperadmin) ? [{ title: 'Agent Requests', key: 'agentRequests' as AdminTabKey }] : []),
             ...(canAdmins ? [
               { title: 'Admin Users', key: 'admins' as AdminTabKey },
             ] : []),

@@ -776,7 +776,46 @@ export async function POST(req: NextRequest) {
     }
 
     const taxBaseCents = Math.max(0, taxableSubtotalCents);
-    const taxCents = Math.round(taxBaseCents * Math.max(0, Math.min(1, taxRate)));
+    let taxCents = Math.round(taxBaseCents * Math.max(0, Math.min(1, taxRate)));
+
+    // --- Cannabis Compliance Excise Tax Injection ---
+    const industryPack = (cfg as any)?.industryPack || 'general';
+    const ip = (cfg as any)?.industryParams?.cannabisCompliance;
+    const cannabisState = industryPack === 'cannabis' && ip?.activeProvider 
+        ? (ip.activeProvider === 'metrc' ? ip.metrc?.stateCode : ip.activeProvider === 'biotrack' ? ip.biotrack?.stateCode : null) 
+        : null;
+    
+    if (industryPack === 'cannabis' && cannabisState === 'IL') {
+       // Illinois specific THC-tiered excise dynamically computed per item
+       let exciseCents = 0;
+       for (let i = 0; i < itemsBody.length; i++) {
+         const it = itemsBody[i];
+         const keyId = String(it.id || "").replace(/^inventory:/i, "");
+         const keySku = it.sku ? `sku:${String(it.sku)}` : "";
+         const inv = invIndex[keyId] || (keySku ? invIndex[keySku] : undefined);
+         
+         const isCannabis = (inv as any)?.attributes?.isCannabis === true || (inv as any)?.attributes?.isCannabis === "true";
+         if (inv && isCannabis) {
+           const qty = Math.max(1, Number(it.qty || 1));
+           let unitCents = toCents(Number(inv.priceUsd || 0));
+           const isEdible = String((inv as any).category || '').toLowerCase().includes('edible') || String((inv as any).category || '').toLowerCase().includes('liquid');
+           const thcLevel = Number((inv as any).attributes.thcLevel || 0);
+           
+           let rate = 0;
+           if (isEdible) rate = 0.20;
+           else if (thcLevel >= 35) rate = 0.25;
+           else rate = 0.10; // Base < 35% flower
+
+           exciseCents += Math.round(unitCents * qty * rate);
+         }
+       }
+       // Apply discount ratio to excise tax if applicable
+       if (discountAmountCents > 0 && subtotalCents > 0) {
+          exciseCents = Math.round(exciseCents * (discountedSubtotalCents / subtotalCents));
+       }
+       taxCents += exciseCents;
+    }
+
     const baseWithoutFeeCents = discountedSubtotalCents + taxCents;
 
     // Total processing fee = basePlatformFeePct (platform + partner + agent fee) + merchant add-on from site config

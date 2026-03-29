@@ -780,6 +780,28 @@ export const DEFAULT_COMPLIANCE_CONFIG: ComplianceConfig = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// STATE DEFAULT TAX MAPPINGS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const DEFAULT_STATE_TAXES: Record<string, { code: string; name: string; rate: number; type: string }[]> = {
+  CA: [
+    { code: 'CA-EX', name: 'Cannabis Excise Tax', rate: 15, type: 'excise' },
+    { code: 'CA-ST', name: 'State Sales Tax', rate: 7.25, type: 'sales' }
+  ],
+  MI: [
+    { code: 'MI-MRET', name: 'Marihuana Retailers Excise', rate: 10, type: 'excise' },
+    { code: 'MI-ST', name: 'Sales Tax', rate: 6, type: 'sales' }
+  ],
+  IL: [
+    { code: 'IL-THC-L', name: 'Basic THC Tax (<35%)', rate: 10, type: 'excise' },
+    { code: 'IL-ST', name: 'State Sales Tax', rate: 6.25, type: 'sales' }
+  ],
+  CO: [
+    { code: 'CO-RMST', name: 'Retail Marijuana Sales Tax', rate: 15, type: 'excise' }
+  ]
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // COMPLIANCE TAB DEFINITIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -792,7 +814,8 @@ export type ComplianceTabKey =
   | 'transfers'
   | 'sales'
   | 'labTests'
-  | 'audit';
+  | 'audit'
+  | 'reports';
 
 export interface ComplianceTab {
   key: ComplianceTabKey;
@@ -808,7 +831,7 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
   {
     key: 'integrations',
     label: 'Integrations',
-    icon: '🔗',
+    icon: 'link',
     description: 'Connect METRC & BioTrack credentials, test connections, configure sync',
     metrcCategories: ['facilities', 'employees'],
     biotrackCategories: ['employees'],
@@ -816,7 +839,7 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
   {
     key: 'plants',
     label: 'Plants & Batches',
-    icon: '🌱',
+    icon: 'leaf',
     description: 'Manage plant lifecycle, batches, growth phases, strains, locations, additives',
     metrcCategories: ['plants', 'plantBatches', 'strains', 'locations', 'sublocations', 'additivesTemplates'],
     biotrackCategories: ['plants', 'rooms'],
@@ -825,7 +848,7 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
   {
     key: 'packages',
     label: 'Packages & Inventory',
-    icon: '📦',
+    icon: 'package',
     description: 'Track packages, items, tags, adjustments, remediation, trade samples',
     metrcCategories: ['packages', 'items', 'tags', 'unitsOfMeasure'],
     biotrackCategories: ['inventory'],
@@ -834,7 +857,7 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
   {
     key: 'harvests',
     label: 'Harvests & Processing',
-    icon: '🌾',
+    icon: 'scissors',
     description: 'Manage harvests, processing jobs, waste tracking, package creation',
     metrcCategories: ['harvests', 'processingJobs', 'wasteMethods'],
     biotrackCategories: ['inventory'],
@@ -843,7 +866,7 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
   {
     key: 'transfers',
     label: 'Transfers & Manifests',
-    icon: '🚚',
+    icon: 'truck',
     description: 'Create/track transfers, manifest PDFs, hub operations, drivers, vehicles',
     metrcCategories: ['transfers', 'transporters'],
     biotrackCategories: ['manifests', 'vendors'],
@@ -852,7 +875,7 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
   {
     key: 'sales',
     label: 'Sales & Patients',
-    icon: '💰',
+    icon: 'banknote',
     description: 'Sales receipts, deliveries, patient management, check-ins, caregivers, retail ID',
     metrcCategories: ['sales', 'patients', 'patientCheckIns', 'caregivers', 'retailId'],
     biotrackCategories: ['dispensing', 'patients'],
@@ -861,7 +884,7 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
   {
     key: 'labTests',
     label: 'Lab Tests & Dashboard',
-    icon: '🧪',
+    icon: 'flask-conical',
     description: 'Lab test results, compliance dashboard, audit exports, waste methods',
     metrcCategories: ['labTests'],
     biotrackCategories: ['labResults'],
@@ -870,9 +893,17 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
   {
     key: 'audit',
     label: 'Audit & Reconciliation',
-    icon: '📊',
+    icon: 'bar-chart',
     description: 'Track inventory discrepancies between POS and compliance provider, sync or bypass adjustments',
     metrcCategories: ['packages', 'items'],
     biotrackCategories: ['inventory'],
+  },
+  {
+    key: 'reports',
+    label: 'Compliance Reports',
+    icon: 'file-text',
+    description: 'Cannabis sales and tax breakdown reports, ready for jurisdiction filing',
+    metrcCategories: ['sales'],
+    biotrackCategories: ['dispensing'],
   },
 ];

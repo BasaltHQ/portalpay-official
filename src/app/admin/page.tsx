@@ -5851,6 +5851,7 @@ function InventoryPanel() {
   const [attributesJson, setAttributesJson] = useState("{}");
   const [costUsd, setCostUsd] = useState<number | undefined>(undefined);
   const [taxable, setTaxable] = useState<boolean>(true);
+  const [isCannabis, setIsCannabis] = useState<boolean>(true);
   const [jurisdictionCode, setJurisdictionCode] = useState("");
   const [siteMeta, setSiteMeta] = useState<{ processingFeePct: number; basePlatformFeePct: number; taxRate: number; hasDefault: boolean }>({ processingFeePct: 0, basePlatformFeePct: 0.5, taxRate: 0, hasDefault: false });
   const [images, setImages] = useState<string[]>([]);
@@ -6827,7 +6828,7 @@ function InventoryPanel() {
       }
       setSku(""); setName(""); setPriceUsd(0); setCurrency("USD"); setStockQty(0);
       setCategory(""); setDescription(""); setTags(""); setAttributesJson("{}");
-      setCostUsd(undefined); setTaxable(true); setJurisdictionCode(""); setImages([]);
+      setCostUsd(undefined); setTaxable(true); setIsCannabis(true); setJurisdictionCode(""); setImages([]);
       setAddOpen(false);
       await refresh();
     } catch (e: any) {
@@ -7022,11 +7023,22 @@ function InventoryPanel() {
             <label className="microtext text-muted-foreground">Taxable</label>
             <div className="mt-1">
               <label className="inline-flex items-center gap-2 text-sm">
-                <input type="checkbox" role="switch" aria-checked={taxable} checked={taxable} onChange={(e) => setTaxable(e.target.checked)} />
-                <span>{taxable ? "Taxable" : "Non-taxable"}</span>
+                <input type="checkbox" role="switch" aria-checked={activeIndustryPack === "cannabis" && isCannabis ? true : taxable} checked={activeIndustryPack === "cannabis" && isCannabis ? true : taxable} disabled={activeIndustryPack === "cannabis" && isCannabis} onChange={(e) => setTaxable(e.target.checked)} />
+                <span>{activeIndustryPack === "cannabis" && isCannabis ? "Taxable (Forced by Cannabis Pack)" : taxable ? "Taxable" : "Non-taxable"}</span>
               </label>
             </div>
           </div>
+          {activeIndustryPack === "cannabis" && (
+            <div>
+              <label className="microtext text-emerald-500 font-bold">Cannabis Rules</label>
+              <div className="mt-1">
+                <label className="inline-flex items-center gap-2 text-sm text-emerald-400">
+                  <input type="checkbox" role="switch" checked={isCannabis} onChange={(e) => { setIsCannabis(e.target.checked); if (e.target.checked) setTaxable(true); }} />
+                  <span>Is Cannabis Item? (Auto-Taxes Apply)</span>
+                </label>
+              </div>
+            </div>
+          )}
         </div>
         {error && <div className="microtext text-red-500">{error}</div>}
         <div className="flex items-center justify-end">

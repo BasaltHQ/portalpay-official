@@ -101,7 +101,8 @@ export default function GlobalSplitGuard() {
       const path = window.location.pathname || "";
       const isShopPage = /^\/shop\//.test(path) || !!(window as any).__pp_shopContext;
       const isTerminalPage = /^\/terminal/.test(path);
-      if (isShopPage || isTerminalPage) {
+      const isSuppressedRoute = /^\/agents/.test(path) || /^\/legal/.test(path) || /^\/apply/.test(path);
+      if (isShopPage || isTerminalPage || isSuppressedRoute) {
         return null;
       }
     } catch { }
