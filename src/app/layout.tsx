@@ -550,6 +550,7 @@ export async function generateMetadata(): Promise<Metadata> {
       follow: true,
     },
     other: {
+      "talentapp:project_verification": "4fcbdd3d1a22b3bbdb9b60465f2559a71c1e54cb0b5c770a107ca32bae1d012e44c9348820c266379ed6ffd8dd3a468e973d61fba686fcf26330a46ac88d5171",
       ...(iosAppId ? { "apple-itunes-app": `app-id=${iosAppId}` } : {}),
       "fc:miniapp": JSON.stringify({
         version: "next",
