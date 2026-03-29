@@ -217,21 +217,127 @@
         "x-auth-mode": "none"
       }
     },
-    "/api/apim-management/subscriptions": {
+    "/api/x402/orders": {
       "post": {
-        "summary": "API Product Subscription (x402 Developer)",
-        "operationId": "apimSubscribe",
+        "summary": "Create Order via x402 Payment",
+        "operationId": "x402CreateOrder",
         "tags": [
-          "Subscriptions"
+          "Orders"
         ],
-        "description": "Upgrades a developer profile to a paid API Management tier using an x402 payment challenge.",
+        "description": "x402-gated order endpoint for AI agents. Always returns 402 with payment challenge when no x-payment proof is attached. Agents discover shops via GET /api/directory/shops, resolve inventory, then POST here with shopSlug and items to receive a payment challenge. Once paid, a receipt is returned.\n",
         "security": [],
         "x-payment-info": {
           "protocols": [
             "x402"
           ],
-          "pricingMode": "fixed",
-          "price": "10.00"
+          "pricingMode": "quote"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "shopSlug",
+                  "items"
+                ],
+                "properties": {
+                  "shopSlug": {
+                    "type": "string",
+                    "description": "The shop's unique slug (from /api/directory/shops)"
+                  },
+                  "items": {
+                    "type": "array",
+                    "description": "Items to order with SKU and quantity",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "sku",
+                        "qty"
+                      ],
+                      "properties": {
+                        "sku": {
+                          "type": "string"
+                        },
+                        "qty": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      }
+                    }
+                  },
+                  "jurisdictionCode": {
+                    "type": "string",
+                    "description": "Optional tax jurisdiction code (e.g. US-CA)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order receipt (payment settled)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "receipt": {
+                      "type": "object",
+                      "properties": {
+                        "receiptId": {
+                          "type": "string"
+                        },
+                        "totalUsd": {
+                          "type": "number"
+                        },
+                        "lineItems": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "paid"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required – x402 challenge issued"
+          }
+        },
+        "x-auth-mode": "x402"
+      }
+    },
+    "/api/x402/subscribe": {
+      "post": {
+        "summary": "Subscribe to API Tier via x402 Payment",
+        "operationId": "x402Subscribe",
+        "tags": [
+          "Subscriptions"
+        ],
+        "description": "x402-gated developer subscription endpoint. Returns 402 with payment challenge for paid tiers (pro=$399, enterprise=$500). Starter tier is free and does not require payment. Once paid, returns an API key.\n",
+        "security": [],
+        "x-payment-info": {
+          "protocols": [
+            "x402"
+          ],
+          "pricingMode": "range",
+          "minPrice": "0.00",
+          "maxPrice": "500.00"
         },
         "requestBody": {
           "required": true,
@@ -249,7 +355,8 @@
                       "starter",
                       "pro",
                       "enterprise"
-                    ]
+                    ],
+                    "description": "Pricing: starter=$0, pro=$399, enterprise=$500"
                   }
                 }
               }
@@ -258,10 +365,37 @@
         },
         "responses": {
           "200": {
-            "description": "Subscription updated successfully"
+            "description": "Subscription activated (API key issued)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "plan": {
+                      "type": "string"
+                    },
+                    "priceUsd": {
+                      "type": "number"
+                    },
+                    "subscriptionId": {
+                      "type": "string"
+                    },
+                    "apiKey": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           },
           "402": {
-            "description": "Payment Required"
+            "description": "Payment Required – x402 challenge issued"
           }
         },
         "x-auth-mode": "x402"

@@ -1,0 +1,203 @@
+import { NextRequest, NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * POST /api/x402/orders
+ *
+ * x402-only order endpoint. Always returns 402 when no payment proof
+ * is attached (via x-payment header). This is the agentic entrypoint
+ * — the standard /api/orders remains untouched for POS/browser flows.
+ *
+ * Body: { shopSlug: string, items: [{ sku: string, qty: number }], jurisdictionCode?: string }
+ *
+ * The x402 challenge tells the agent exactly how much to pay and where.
+ * Once the agent attaches a valid x-payment header, the order is created
+ * by proxying into the standard orders handler.
+ */
+export async function POST(req: NextRequest) {
+  const correlationId = crypto.randomUUID();
+
+  try {
+    // Clone and parse body so we can read it AND forward it
+    const bodyText = await req.text();
+    const body = bodyText ? JSON.parse(bodyText) : {};
+
+    const shopSlug = String(body.shopSlug || "").trim();
+    const items = Array.isArray(body.items) ? body.items : [];
+
+    if (!shopSlug || items.length === 0) {
+      return NextResponse.json(
+        {
+          error: "invalid_request",
+          message: "Body must include shopSlug and items[]. Example: { shopSlug: 'genrevo', items: [{ sku: 'COFFEE-001', qty: 1 }] }",
+        },
+        { status: 400, headers: { "x-correlation-id": correlationId } }
+      );
+    }
+
+    // Resolve the merchant wallet for this shop
+    const { getContainer } = await import("@/lib/cosmos");
+    const container = await getContainer();
+    const { resources: shopDocs } = await container.items
+      .query({
+        query: "SELECT c.wallet FROM c WHERE c.type = 'shop_config' AND c.slug = @slug",
+        parameters: [{ name: "@slug", value: shopSlug }],
+      })
+      .fetchAll();
+
+    if (!shopDocs.length || !shopDocs[0].wallet) {
+      return NextResponse.json(
+        { error: "shop_not_found", message: `No shop with slug '${shopSlug}' found.` },
+        { status: 404, headers: { "x-correlation-id": correlationId } }
+      );
+    }
+
+    const merchantWallet = String(shopDocs[0].wallet).toLowerCase();
+
+    // Resolve merchant inventory to compute the total
+    const { getInventoryItems } = await import("@/lib/inventory-mem");
+    const allItems = await getInventoryItems(merchantWallet);
+
+    let totalCents = 0;
+    const resolvedLineItems: { label: string; priceUsd: number; qty: number; sku: string }[] = [];
+
+    for (const reqItem of items) {
+      const sku = String(reqItem.sku || "").trim();
+      const qty = Math.max(1, Number(reqItem.qty) || 1);
+
+      const found = allItems.find(
+        (inv) => inv.sku?.toLowerCase() === sku.toLowerCase() || inv.id === reqItem.id
+      );
+
+      if (!found) {
+        return NextResponse.json(
+          { error: "item_not_found", message: `SKU '${sku}' not found in shop '${shopSlug}'.` },
+          { status: 400, headers: { "x-correlation-id": correlationId } }
+        );
+      }
+
+      const unitPrice = Number(found.priceUsd) || 0;
+      totalCents += Math.round(unitPrice * 100) * qty;
+      resolvedLineItems.push({
+        label: found.name || sku,
+        priceUsd: unitPrice,
+        qty,
+        sku: found.sku || sku,
+      });
+    }
+
+    const totalUsd = totalCents / 100;
+
+    // ── x402 challenge / settlement ──────────────────────────────────
+    const { settlePayment, facilitator } = await import("thirdweb/x402");
+    const { createThirdwebClient } = await import("thirdweb");
+    const { defineChain } = await import("thirdweb/chains");
+
+    const secretKey = process.env.THIRDWEB_SECRET_KEY || "";
+    const serviceWallet = process.env.THIRDWEB_SERVER_WALLET_ADDRESS || process.env.NEXT_PUBLIC_OWNER_WALLET || "";
+    const chainId = Number(process.env.CHAIN_ID || process.env.NEXT_PUBLIC_CHAIN_ID || 8453);
+
+    if (!secretKey || !serviceWallet) {
+      return NextResponse.json(
+        { error: "x402_not_configured", message: "Server x402 payment infrastructure is not configured." },
+        { status: 503, headers: { "x-correlation-id": correlationId } }
+      );
+    }
+
+    const client = createThirdwebClient({ secretKey });
+    const network = defineChain(chainId);
+
+    const thirdwebFacilitator = facilitator({
+      client,
+      serverWalletAddress: serviceWallet as `0x${string}`,
+      waitUntil: "confirmed",
+    });
+
+    // Resolve split address for the merchant (pay the split if available, else merchant directly)
+    const { getSiteConfigForWallet } = await import("@/lib/site-config");
+    const cfg = await getSiteConfigForWallet(merchantWallet).catch(() => null as any);
+    const splitAddr = (cfg as any)?.splitAddress || (cfg as any)?.split?.address || "";
+    const payTo = (/^0x[a-f0-9]{40}$/i.test(splitAddr) ? splitAddr : merchantWallet) as `0x${string}`;
+    const brandName = cfg?.theme?.brandName || "PortalPay";
+
+    const paymentData = req.headers.get("x-payment");
+    const resourceUrl = req.nextUrl.toString();
+
+    const result = await settlePayment({
+      resourceUrl,
+      method: "POST",
+      paymentData,
+      payTo,
+      network,
+      price: `$${totalUsd}`,
+      routeConfig: {
+        description: `Order from ${brandName} (${shopSlug}): ${resolvedLineItems.map((li) => `${li.qty}x ${li.label}`).join(", ")}`,
+        mimeType: "application/json" as const,
+        outputSchema: {},
+      },
+      facilitator: thirdwebFacilitator,
+    });
+
+    // If settlePayment returns non-200, it means payment is required (402)
+    if (result.status !== 200) {
+      return new NextResponse(JSON.stringify({
+        ...((result as any).responseBody || {}),
+        order: {
+          shopSlug,
+          merchant: merchantWallet,
+          lineItems: resolvedLineItems,
+          totalUsd,
+          currency: "USD",
+        },
+      }), {
+        status: 402,
+        headers: {
+          ...((result as any).responseHeaders || {}),
+          "x-correlation-id": correlationId,
+          "Content-Type": "application/json",
+        },
+      });
+    }
+
+    // ── Payment settled – create the receipt ──────────────────────────
+    const receiptId = `R-${Math.floor(Math.random() * 1_000_000).toString().padStart(6, "0")}`;
+    const ts = Date.now();
+
+    const receipt = {
+      receiptId,
+      totalUsd,
+      currency: "USD",
+      lineItems: resolvedLineItems,
+      createdAt: ts,
+      brandName,
+      status: "paid",
+      source: "x402",
+    };
+
+    const doc = {
+      id: `receipt:${receiptId}`,
+      type: "receipt",
+      wallet: merchantWallet,
+      ...receipt,
+      statusHistory: [{ status: "paid", ts }],
+    };
+
+    try {
+      await container.items.upsert(doc as any);
+    } catch {
+      // Graceful degrade
+    }
+
+    return NextResponse.json(
+      { ok: true, receipt },
+      { status: 200, headers: { "x-correlation-id": correlationId } }
+    );
+  } catch (e: any) {
+    console.error("[x402/orders] Error:", e);
+    return NextResponse.json(
+      { error: e?.message || "internal_error" },
+      { status: 500, headers: { "x-correlation-id": correlationId } }
+    );
+  }
+}
