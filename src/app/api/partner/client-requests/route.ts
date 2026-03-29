@@ -91,9 +91,8 @@ export async function GET(req: NextRequest) {
             return json({ error: "missing_brand_key" }, { status: 500 });
         }
 
-        const container = await getContainer();
+            const container = await getContainer();
 
-        // Fetch requests AND their corresponding site configs (for split persistence)
         // Fetch requests AND their corresponding site configs (for split persistence)
         // Use StringEquals for case-insensitive brand matching to handle XOINPAY vs xoinpay discrepancies
         let query = `SELECT * FROM c WHERE (c.type = 'client_request' OR c.type = 'site_config' OR c.type = 'shop_config') AND StringEquals(c.brandKey, @brand, true) ORDER BY c.createdAt DESC`;
@@ -189,6 +188,9 @@ export async function GET(req: NextRequest) {
                     primaryColor: conf?.theme?.primaryColor || req.primaryColor,
                     secondaryColor: conf?.theme?.secondaryColor || req.secondaryColor,
                     slug: conf?.slug || req.slug,
+                    // Industry pack data (for restaurant tables, hotel PMS, etc.)
+                    industryPack: shopConf?.config?.industryPack || conf?.config?.industryPack || shopConf?.industryPack || conf?.industryPack || null,
+                    industryParams: shopConf?.config?.industryParams || conf?.config?.industryParams || shopConf?.industryParams || conf?.industryParams || null,
                 };
 
                 // Force-inject Shop Colors into Touchpoint Themes for Admin Panel consistency
@@ -279,6 +281,9 @@ export async function GET(req: NextRequest) {
                 splitHistory: conf.splitHistory || [],
                 // Touchpoint themes
                 touchpointThemes: conf.touchpointThemes || undefined,
+                // Industry pack data
+                industryPack: shopConf?.config?.industryPack || conf?.config?.industryPack || shopConf?.industryPack || conf?.industryPack || null,
+                industryParams: shopConf?.config?.industryParams || conf?.config?.industryParams || shopConf?.industryParams || conf?.industryParams || null,
                 // Flag so the UI knows this was synthesized (no formal application on file)
                 _synthesized: true,
             };

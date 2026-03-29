@@ -57,7 +57,139 @@ type ClientRequest = {
         recipients?: string[];
     }>;
     deployedSplitAddress?: string;
+    industryPack?: string | null;
+    industryParams?: { restaurant?: { tables?: string[] }; [key: string]: any } | null;
 };
+
+// Inline Tables Editor for restaurant industry pack merchants
+function InlineTablesEditor({ merchantWallet, adminWallet, brandKey, initialTables, initialParams }: { merchantWallet: string; adminWallet: string; brandKey: string; initialTables: string[]; initialParams: any }) {
+    const [tables, setTables] = React.useState<string[]>(initialTables);
+    const [newTable, setNewTable] = React.useState("");
+    const [saving, setSaving] = React.useState(false);
+    const [error, setError] = React.useState("");
+    const [success, setSuccess] = React.useState("");
+
+    async function saveTables(newTables: string[]) {
+        try {
+            setSaving(true);
+            setError("");
+            setSuccess("");
+
+            // Fetch current to merge safely
+            const fetchHeaders: any = { "x-wallet": merchantWallet };
+            if (brandKey) fetchHeaders["x-brand-key"] = brandKey;
+            
+            const fetchRes = await fetch(`/api/site/config?wallet=${merchantWallet}`, { headers: fetchHeaders });
+            const fetchData = await fetchRes.json();
+            const currentConfig = fetchData.config || {};
+
+            const newIndustryParams = {
+                ...(currentConfig.industryParams || {}),
+                restaurant: {
+                    ...(currentConfig.industryParams?.restaurant || {}),
+                    tables: newTables
+                }
+            };
+
+            // POST uses x-wallet for target wallet; auth validates admin access. 
+            // Crucially, pass x-brand-key so the API route correctly places this in the merchant's partner partition.
+            const postHeaders: any = {
+                "Content-Type": "application/json",
+                "x-wallet": merchantWallet,
+            };
+            if (brandKey) postHeaders["x-brand-key"] = brandKey;
+
+            const res = await fetch(`/api/site/config?wallet=${merchantWallet}`, {
+                method: "POST",
+                headers: postHeaders,
+                body: JSON.stringify({ industryParams: newIndustryParams }),
+            });
+
+            if (!res.ok) throw new Error("Failed to save tables");
+
+            setTables(newTables);
+            setSuccess(`Saved ${newTables.length} table(s)`);
+            setTimeout(() => setSuccess(""), 3000);
+        } catch (e: any) {
+            setError(e?.message || "Failed to save tables");
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    const addTable = async () => {
+        if (!newTable.trim()) return;
+        if (tables.includes(newTable.trim())) {
+            setError("Table identifier already exists");
+            return;
+        }
+        const updated = [...tables, newTable.trim()].sort((a, b) => {
+            const numA = parseInt(a);
+            const numB = parseInt(b);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return a.localeCompare(b);
+        });
+        await saveTables(updated);
+        setNewTable("");
+    };
+
+    const removeTable = async (table: string) => {
+        await saveTables(tables.filter(t => t !== table));
+    };
+
+    return (
+        <div className="animate-in fade-in slide-in-from-top-1 duration-200 space-y-4">
+            <div>
+                <h4 className="text-sm font-medium">Restaurant Tables</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                    Manage table identifiers for this merchant. Available for selection on Handheld devices.
+                </p>
+            </div>
+
+            <div className="flex gap-2 max-w-md">
+                <input
+                    type="text"
+                    value={newTable}
+                    onChange={(e) => { setNewTable(e.target.value); setError(""); }}
+                    onKeyDown={(e) => e.key === "Enter" && addTable()}
+                    placeholder="Table number or name (e.g. '1', 'Patio 2')"
+                    className="flex-1 px-3 py-2 rounded-md bg-transparent border border-white/10 focus:outline-none focus:border-emerald-500/50 text-sm"
+                    disabled={saving}
+                />
+                <button
+                    onClick={addTable}
+                    disabled={!newTable.trim() || saving}
+                    className="px-4 py-2 bg-emerald-500 text-black font-medium rounded-md hover:bg-emerald-400 disabled:opacity-50 flex items-center gap-2 text-sm"
+                >
+                    + Add
+                </button>
+            </div>
+
+            {error && <div className="text-red-400 text-xs">{error}</div>}
+            {success && <div className="text-emerald-400 text-xs">{success}</div>}
+
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                {tables.map(table => (
+                    <div key={table} className="flex items-center justify-between p-2.5 rounded-lg border border-white/10 bg-white/5 group">
+                        <span className="font-mono font-medium text-sm">{table}</span>
+                        <button
+                            onClick={() => removeTable(table)}
+                            className="text-white/30 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 ml-2"
+                            title="Remove table"
+                        >
+                            ×
+                        </button>
+                    </div>
+                ))}
+                {tables.length === 0 && (
+                    <div className="col-span-full py-6 text-center text-muted-foreground border border-dashed border-white/10 rounded-lg text-sm">
+                        No tables configured. Add one above.
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
 
 export default function ClientRequestsPanel() {
     const account = useActiveAccount();
@@ -746,7 +878,7 @@ export default function ClientRequestsPanel() {
                                             <tr className="bg-foreground/[0.02]">
                                                 <td colSpan={5} className="px-4 py-4 border-t border-foreground/5">
                                                     <div className="flex items-center gap-4 mb-4 border-b border-white/5 pb-2">
-                                                        {["details", "config", "team", "reserve", "themes"].map(tab => (
+                                                        {["details", "config", "team", "reserve", "themes", ...(req.industryPack === "restaurant" ? ["tables"] : [])].map(tab => (
                                                             <button
                                                                 key={tab}
                                                                 onClick={() => setActiveTabs(prev => ({ ...prev, [req.id]: tab }))}
@@ -755,7 +887,7 @@ export default function ClientRequestsPanel() {
                                                                     : "border-transparent text-muted-foreground hover:text-zinc-300"
                                                                     }`}
                                                             >
-                                                                {tab === "details" ? "Details" : tab === "config" ? "Shop Config" : tab === "team" ? "Team" : tab === "reserve" ? "Reserve" : "Themes"}
+                                                                {tab === "details" ? "Details" : tab === "config" ? "Shop Config" : tab === "team" ? "Team" : tab === "reserve" ? "Reserve" : tab === "tables" ? "Tables" : "Themes"}
                                                             </button>
                                                         ))}
                                                     </div>
@@ -852,6 +984,14 @@ export default function ClientRequestsPanel() {
                                                             merchantWallet={req.wallet}
                                                             adminWallet={account?.address || ""}
                                                             brandKey={brandKey}
+                                                        />
+                                                    ) : (activeTabs[req.id] === "tables" && req.industryPack === "restaurant") ? (
+                                                        <InlineTablesEditor
+                                                            merchantWallet={req.wallet}
+                                                            adminWallet={account?.address || ""}
+                                                            brandKey={brandKey}
+                                                            initialTables={req.industryParams?.restaurant?.tables || []}
+                                                            initialParams={req.industryParams}
                                                         />
                                                     ) : (
                                                         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
