@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useActiveAccount, ConnectButton } from "thirdweb/react";
 import { sendTransaction, getContract, prepareContractCall } from "thirdweb";
 import { client, chain } from "@/lib/thirdweb/client";
+import { usePortalThirdwebTheme } from "@/lib/thirdweb/theme";
 import { useBrand } from "@/contexts/BrandContext";
 import TruncatedAddress from "@/components/truncated-address";
 import { formatCurrency } from "@/lib/fx";
@@ -34,6 +35,7 @@ import {
     Mail,
     Phone,
     Save,
+    Link,
 } from "lucide-react";
 
 /* ─── Types ─── */
@@ -155,6 +157,7 @@ function CommissionRateChart({ merchants }: { merchants: MerchantRow[] }) {
 export default function AgentDashboard() {
     const account = useActiveAccount();
     const brand = useBrand();
+    const twTheme = usePortalThirdwebTheme();
     const agentWallet = (account?.address || "").toLowerCase();
 
     const [range, setRange] = useState("month");
@@ -168,10 +171,15 @@ export default function AgentDashboard() {
     const [sortColumn, setSortColumn] = useState<"earnings" | "volume" | "txns" | "bps">("earnings");
     const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
     const [copiedAddress, setCopiedAddress] = useState("");
+    
+    /* ── Referral Link State ── */
+    const [referralBps, setReferralBps] = useState<number>(50);
+    const [copiedLink, setCopiedLink] = useState("");
 
     /* ── Profile gate state ── */
     const [profileLoading, setProfileLoading] = useState(true);
     const [hasProfile, setHasProfile] = useState(false);
+    const [profileStatus, setProfileStatus] = useState("approved");
     const [profileName, setProfileName] = useState("");
     const [profileEmail, setProfileEmail] = useState("");
     const [profilePhone, setProfilePhone] = useState("");
@@ -188,6 +196,7 @@ export default function AgentDashboard() {
                 const data = await res.json();
                 if (data.hasProfile) {
                     setHasProfile(true);
+                    setProfileStatus(data.status || "approved");
                     setProfileName(data.name || "");
                     setProfileEmail(data.email || "");
                     setProfilePhone(data.phone || "");
@@ -506,7 +515,16 @@ export default function AgentDashboard() {
                         Connect the wallet associated with your agent role to view commission reports, earnings analytics, and withdraw funds across all your assigned merchants.
                     </p>
                     <div className="flex justify-center">
-                        <ConnectButton client={client} chain={chain} />
+                        <ConnectButton 
+                            client={client} 
+                            chain={chain} 
+                            theme={twTheme}
+                            connectModal={{
+                                size: "compact",
+                                title: "Agent Console",
+                                showThirdwebBranding: false
+                            }}
+                        />
                     </div>
                     <div className="pt-4 border-t border-border/50 space-y-2 text-xs text-muted-foreground">
                         <p>Your agent wallet was set by the partner when configuring merchant splits.</p>
@@ -522,6 +540,29 @@ export default function AgentDashboard() {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    /* Pending gate */
+    if (hasProfile && profileStatus === "pending") {
+        return (
+            <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 pt-16">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-orange-500/5 pointer-events-none" />
+                <div className="relative max-w-lg w-full space-y-6 text-center z-10">
+                    <div className="h-16 w-16 mx-auto rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 grid place-items-center shadow-lg shadow-amber-500/10 border border-amber-500/20">
+                        <User className="h-8 w-8 text-amber-500" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-white">Pending Approval</h1>
+                    <p className="text-sm text-gray-400">
+                        Your agent application has been submitted and is currently under review. 
+                        You will be able to access the dashboard once approved.
+                    </p>
+                    <div className="p-4 bg-white/5 border border-white/10 rounded-xl max-w-xs mx-auto">
+                        <div className="text-[10px] uppercase font-mono tracking-wider text-amber-500 mb-1">Application Wallet</div>
+                        <div className="font-mono text-xs text-white truncate px-2">{agentWallet}</div>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -771,6 +812,61 @@ export default function AgentDashboard() {
                     </div>
                 ) : data && agg ? (
                     <>
+                        {/* ─── Agent Referral Link Generator ─── */}
+                        <div className="rounded-xl border bg-card p-5">
+                            <h3 className="font-semibold text-sm flex items-center gap-2 mb-2">
+                                <Link className="h-4 w-4 text-primary" />
+                                Custom Referral Link Generator
+                            </h3>
+                            <p className="text-xs text-muted-foreground mb-4">
+                                Generate a unique link to onboard merchants. When a merchant signs up using this link, they will be automatically assigned to you with the commission rate you specify below. <strong className="text-foreground">Note:</strong> The final transaction fee is 1% (platform cost) <span className="text-primary font-bold">PLUS</span> your negotiated BPS.
+                            </p>
+                            <div className="flex flex-col sm:flex-row items-end gap-4">
+                                <div className="space-y-1.5 w-full sm:w-48 flex-shrink-0">
+                                    <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground flex justify-between">
+                                        <span>Your Commission (BPS)</span>
+                                        <span className="text-primary">{(referralBps / 100).toFixed(2)}%</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="500"
+                                        value={referralBps}
+                                        onChange={(e) => setReferralBps(Math.max(0, parseInt(e.target.value) || 0))}
+                                        className="w-full px-3 py-2 rounded-lg bg-background border text-sm font-mono focus:ring-1 focus:ring-primary/50 outline-none"
+                                        placeholder="e.g. 50"
+                                    />
+                                </div>
+                                <div className="space-y-1.5 flex-1 w-full min-w-0">
+                                    <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                                        Your Unique Link
+                                    </label>
+                                    <div className="flex bg-background border rounded-lg overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition">
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            value={typeof window !== "undefined" ? `${window.location.origin}/apply?agent=${agentWallet}&bps=${referralBps}` : ""}
+                                            className="flex-1 w-full min-w-0 px-3 py-2 bg-transparent text-sm font-mono text-muted-foreground outline-none text-ellipsis"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                const link = typeof window !== "undefined" ? `${window.location.origin}/apply?agent=${agentWallet}&bps=${referralBps}` : "";
+                                                try {
+                                                    navigator.clipboard.writeText(link);
+                                                    setCopiedLink(link);
+                                                    setTimeout(() => setCopiedLink(""), 2000);
+                                                } catch {}
+                                            }}
+                                            className="px-4 py-2 border-l bg-muted/50 hover:bg-muted text-sm font-semibold transition flex items-center gap-1.5 shrink-0"
+                                        >
+                                            {copiedLink ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                                            {copiedLink ? "Copied" : "Copy Link"}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* ─── KPI Cards ─── */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                             <EnhancedStatCard

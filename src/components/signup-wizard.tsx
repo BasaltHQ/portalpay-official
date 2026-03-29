@@ -260,6 +260,10 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
     const [applicationStatus, setApplicationStatus] = useState<"none" | "pending" | "success" | "blocked" | "awaiting_approval">("none");
     const [showSensitive, setShowSensitive] = useState(false);
 
+    // Referral State
+    const [referralAgent, setReferralAgent] = useState("");
+    const [referralBps, setReferralBps] = useState(0);
+
     // Shop Configuration State (Step 2 of Application Form)
     const [formStep, setFormStep] = useState<1 | 2>(1);
     const [shopSlug, setShopSlug] = useState("");
@@ -381,6 +385,17 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
             // forcing re-check will be handled by handleWalletConnected
             setApplicationStatus("none");
 
+            // Extract referral parameters
+            if (typeof window !== "undefined") {
+                const urlParams = new URLSearchParams(window.location.search);
+                const agentId = urlParams.get("agent") || urlParams.get("ref");
+                const bpsParam = urlParams.get("bps");
+                if (agentId && bpsParam && !isNaN(Number(bpsParam))) {
+                    setReferralAgent(agentId);
+                    setReferralBps(Number(bpsParam));
+                }
+            }
+
             // Prevent scroll on body/html to avoid background scrolling
             const originalStyle = window.getComputedStyle(document.body).overflow;
             document.body.style.overflow = 'hidden';
@@ -397,14 +412,7 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
     async function handleWalletConnected(wallet: string) {
         setConnectedWallet(wallet);
 
-        // Strict Check: Platform and Public Partners skip application
-        if (!isPrivate) {
-            // Just close the wizard, Navbar will handle the rest (auth prompt if needed)
-            onComplete();
-            return;
-        }
-
-        // Private Mode Logic
+        // All merchants must go through the application and approval process
         try {
             // Check if user is already approved or blocked
             const res = await fetch("/api/auth/me", {
@@ -459,6 +467,22 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
                 },
                 credentials: "include", // Send auth cookies
                 body: JSON.stringify({
+                    ...(() => {
+                        // Capture agent referral details if present
+                        if (typeof window !== "undefined") {
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const agentId = urlParams.get("agent") || urlParams.get("ref");
+                            const agentBps = urlParams.get("bps");
+                            if (agentId && agentBps && !isNaN(Number(agentBps))) {
+                                return {
+                                    splitConfig: {
+                                        agents: [{ wallet: agentId.toLowerCase(), bps: Number(agentBps) }]
+                                    }
+                                };
+                            }
+                        }
+                        return {};
+                    })(),
                     shopName,
                     legalBusinessName: legalName,
                     businessType,
@@ -541,10 +565,10 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
 
     const step = wizardSteps[currentStep];
     // If in application flow, override step content
-    const isApplicationForm = isPrivate && applicationStatus === "pending" && connectedWallet;
-    const isApplicationSuccess = isPrivate && applicationStatus === "success";
-    const isBlocked = isPrivate && applicationStatus === "blocked" && connectedWallet;
-    const isAwaitingApproval = isPrivate && applicationStatus === "awaiting_approval" && connectedWallet;
+    const isApplicationForm = applicationStatus === "pending" && connectedWallet;
+    const isApplicationSuccess = applicationStatus === "success";
+    const isBlocked = applicationStatus === "blocked" && connectedWallet;
+    const isAwaitingApproval = applicationStatus === "awaiting_approval" && connectedWallet;
 
     if (!isOpen) return null;
 
@@ -703,6 +727,20 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
                                         <div className={`h-1 flex-1 rounded-full transition-all duration-300 ${formStep >= 1 ? 'bg-emerald-500' : 'bg-white/10'}`} />
                                         <div className={`h-1 flex-1 rounded-full transition-all duration-300 ${formStep >= 2 ? 'bg-emerald-500' : 'bg-white/10'}`} />
                                     </div>
+
+                                    {/* Agent Referral Banner */}
+                                    {referralAgent && referralBps > 0 && (
+                                        <div className="mb-6 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center justify-between">
+                                            <div>
+                                                <span className="font-semibold block mb-0.5">Agent Referral Active</span>
+                                                <span className="opacity-80 font-mono">Referred by: {referralAgent.slice(0, 6)}...{referralAgent.slice(-4)}</span>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="font-mono font-bold text-sm text-emerald-300">{referralBps} BPS</div>
+                                                <div className="opacity-80 text-[10px] uppercase tracking-wider">Total Est. Fee: {(1 + (referralBps / 100)).toFixed(2)}%</div>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {formStep === 1 && (
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">

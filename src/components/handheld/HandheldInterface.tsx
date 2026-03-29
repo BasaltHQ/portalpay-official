@@ -18,6 +18,7 @@ import { isRuntimePlatformBrand } from "@/lib/branding";
 import { useQRCodeDisplay, useReceiptPrinter } from "@/lib/hardware/useHardwareHooks";
 import { networkPrint } from "@/lib/hardware/network-print";
 import { useToastOrderPush } from "@/lib/hooks/use-toast-order-push";
+import { useCompliancePush } from "@/lib/hooks/use-compliance-push";
 import {
     Activity, ArrowLeft, ChevronLeft, ChevronRight, CreditCard,
     DollarSign, Grid, History, LogOut, Menu, Mic,
@@ -118,6 +119,7 @@ export default function HandheldInterface({
     const { pushQRToCustomerScreen, clearCustomerScreen } = useQRCodeDisplay();
     const { printDocument, hasPrinter } = useReceiptPrinter();
     const { pushToToast } = useToastOrderPush();
+    const { pushToCompliance } = useCompliancePush();
 
     // Modifier State
     const [selectedItemForModifiers, setSelectedItemForModifiers] = useState<InventoryItem | null>(null);
@@ -1917,6 +1919,26 @@ export default function HandheldInterface({
                             serverName: employeeName || undefined,
                             tableNumber: selectedOrderForPayment.tableNumber || undefined,
                         }).catch(() => {}); // Fire-and-forget
+                    }
+
+                    // Push to Cannabis Compliance (METRC/BioTrack)
+                    const itemsToPush = selectedOrderForPayment.items || selectedOrderForPayment.lineItems || [];
+                    if (itemsToPush.length > 0) {
+                        pushToCompliance({
+                            receiptId: String(selectedOrderForPayment.id || selectedOrderForPayment.receiptId || '').replace('receipt:', ''),
+                            lineItems: itemsToPush.map((li: any) => ({
+                                label: li.label || li.name || '',
+                                sku: li.sku || '',
+                                qty: li.qty || li.quantity || 1,
+                                priceUsd: li.priceUsd || li.price || 0,
+                                metrcTag: li.metrcTag,
+                                biotrackId: li.biotrackId,
+                                complianceBatchNumber: li.complianceBatchNumber
+                            })),
+                            totalUsd: total,
+                            paymentMethod: 'cash',
+                            serverName: employeeName || undefined,
+                        }, merchantWallet).catch(() => {});
                     }
 
                     // If we are in a split result (Carousel), we need to update the specific receipt in the array

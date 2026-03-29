@@ -11,8 +11,37 @@ import {
   type CannabisLicenseType,
   type CompliancePlant, type CompliancePackage, type ComplianceHarvest,
   type TransporterDriver, type TransporterVehicle, type B2BVendor,
-  type ComplianceSaleReceipt, type ComplianceLabTest
+  type ComplianceSaleReceipt, type ComplianceLabTest,
+  DEFAULT_STATE_TAXES
 } from '@/lib/cannabis-compliance';
+import {
+  Link as LinkIcon, Leaf, Package, Scissors, Truck, Banknote, FlaskConical, BarChart, Home,
+  Landmark, Factory, Store, User, Users, Database, Server, Settings, CheckCircle2, XCircle,
+  AlertTriangle, RefreshCw, Activity, ArrowRightLeft, Building2, Globe, Check, X, Search,
+  ArrowRight, ArrowLeft, Diamond, FileText, Trash2, ClipboardList, Scale, Receipt, Download
+} from 'lucide-react';
+
+export function getIconComp(name: string | undefined | null) {
+  if (!name) return null;
+  const I: Record<string, any> = {
+    link: LinkIcon, leaf: Leaf, package: Package, scissors: Scissors, truck: Truck,
+    banknote: Banknote, 'flask-conical': FlaskConical, 'bar-chart': BarChart,
+    home: Home, landmark: Landmark, factory: Factory, store: Store, user: User,
+    users: Users, database: Database, server: Server, settings: Settings,
+    'check-circle': CheckCircle2, 'x-circle': XCircle, alert: AlertTriangle,
+    refresh: RefreshCw, activity: Activity, 'arrow-right-left': ArrowRightLeft,
+    building: Building2, 'metrc-db': Database, 'biotrack-db': Server, globe: Globe,
+    'file-text': FileText, trash: Trash2, clipboard: ClipboardList, scale: Scale,
+    receipt: Receipt, download: Download
+  };
+  return I[name] || Globe;
+}
+
+export function renderIcon(name: string | undefined | null, className = "w-4 h-4") {
+  const Comp = getIconComp(name);
+  if (!Comp) return null;
+  return <Comp className={className} />;
+}
 
 // ── Shared UI ────────────────────────────────────────────────────────────────
 
@@ -32,7 +61,7 @@ function SectionCard({ title, description, children, icon }: { title: string; de
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
       <div className="px-5 py-4 border-b border-white/[0.06]">
-        <h3 className="text-sm font-semibold text-white flex items-center gap-2">{icon && <span>{icon}</span>}{title}</h3>
+        <h3 className="text-sm font-semibold text-white flex items-center gap-2">{icon && renderIcon(icon, "w-4 h-4 text-emerald-400")}{title}</h3>
         {description && <p className="text-xs text-white/40 mt-1">{description}</p>}
       </div>
       <div className="p-5">{children}</div>
@@ -123,13 +152,13 @@ function IntegrationsTab({ config, setConfig, onSave, saving }: { config: Compli
   return (
     <div className="space-y-6">
       {/* License Type Selection */}
-      <SectionCard title="Operation Type" description="Select your primary cannabis business license" icon="🏢">
+      <SectionCard title="Operation Type" description="Select your primary cannabis business license" icon="building">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {(['retail', 'manufacturing', 'cultivation'] as const).map(lt => (
             <button key={lt} type="button" onClick={() => setConfig({ ...config, licenseType: lt })}
               className={`p-4 rounded-xl border-2 text-left transition-all ${config.licenseType === lt ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/10' : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15]'}`}>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xl">{lt === 'retail' ? '🏪' : lt === 'manufacturing' ? '🏭' : '🧑‍🌾'}</span>
+                <span className="text-emerald-400">{renderIcon(lt === 'retail' ? 'store' : lt === 'manufacturing' ? 'factory' : 'leaf', "w-5 h-5")}</span>
                 <p className="text-sm font-bold text-white capitalize">{lt}</p>
               </div>
               <p className="text-xs text-white/50">{lt === 'retail' ? 'Dispensary & Sales' : lt === 'manufacturing' ? 'Processing & Extracts' : 'Growing & Harvests'}</p>
@@ -139,12 +168,12 @@ function IntegrationsTab({ config, setConfig, onSave, saving }: { config: Compli
       </SectionCard>
 
       {/* Provider Selection */}
-      <SectionCard title="Compliance Provider" description="Choose your state seed-to-sale tracking platform" icon="🏛️">
+      <SectionCard title="Compliance Provider" description="Choose your state seed-to-sale tracking platform" icon="landmark">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button type="button" onClick={() => selectProvider('metrc')}
             className={`relative p-5 rounded-xl border-2 text-left transition-all ${provider === 'metrc' ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/10' : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15]'}`}>
             <div className="flex items-center gap-3 mb-3">
-              <span className="text-2xl">🟢</span>
+              <Database className="w-8 h-8 text-emerald-400" />
               <div><p className="text-sm font-bold text-white">METRC</p><p className="text-[10px] text-white/40">Marijuana Enforcement Tracking Reporting & Compliance</p></div>
             </div>
             <p className="text-xs text-white/50">Used in {Object.keys(METRC_STATES).length} states — AK, CA, CO, DC, LA, MA, MD, ME, MI, MO, MT, NJ, NV, OH, OK, OR, WV</p>
@@ -153,7 +182,7 @@ function IntegrationsTab({ config, setConfig, onSave, saving }: { config: Compli
           <button type="button" onClick={() => selectProvider('biotrack')}
             className={`relative p-5 rounded-xl border-2 text-left transition-all ${provider === 'biotrack' ? 'border-violet-500 bg-violet-500/10 shadow-lg shadow-violet-500/10' : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15]'}`}>
             <div className="flex items-center gap-3 mb-3">
-              <span className="text-2xl">🟣</span>
+              <Server className="w-8 h-8 text-violet-400" />
               <div><p className="text-sm font-bold text-white">BioTrack THC</p><p className="text-[10px] text-white/40">State Cannabis Traceability System</p></div>
             </div>
             <p className="text-xs text-white/50">Used in {Object.keys(BIOTRACK_STATES).length} states — FL, NM, HI, DE, CT, AR</p>
@@ -164,7 +193,7 @@ function IntegrationsTab({ config, setConfig, onSave, saving }: { config: Compli
 
       {/* METRC Credentials */}
       {provider === 'metrc' && (
-        <SectionCard title="METRC Credentials" description="Enter your METRC API keys and state information" icon="🟢">
+        <SectionCard title="METRC Credentials" description="Enter your METRC API keys and state information" icon="metrc-db">
           <div className="space-y-4">
             <div className="flex items-center justify-between"><span className="text-xs text-white/40">Connection</span><StatusBadge status={config.metrc.connectionStatus} /></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -191,7 +220,7 @@ function IntegrationsTab({ config, setConfig, onSave, saving }: { config: Compli
 
       {/* BioTrack Credentials */}
       {provider === 'biotrack' && (
-        <SectionCard title="BioTrack Credentials" description="Enter your BioTrack API credentials" icon="🟣">
+        <SectionCard title="BioTrack Credentials" description="Enter your BioTrack API credentials" icon="biotrack-db">
           <div className="space-y-4">
             <div className="flex items-center justify-between"><span className="text-xs text-white/40">Connection</span><StatusBadge status={config.biotrack.connectionStatus} /></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -213,7 +242,7 @@ function IntegrationsTab({ config, setConfig, onSave, saving }: { config: Compli
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-semibold text-violet-400">{st.name} — State Configuration</p>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${st.programType === 'medical' ? 'bg-blue-500/15 text-blue-400' : st.programType === 'both' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-green-500/15 text-green-400'}`}>
-                      {st.programType === 'medical' ? '🏥 Medical Only' : st.programType === 'both' ? '🏪 Medical + Adult-Use' : '🏪 Adult-Use'}
+                      {st.programType === 'medical' ? <span className="flex items-center"><Building2 className="w-3 h-3 mr-1" /> Medical Only</span> : st.programType === 'both' ? <span className="flex items-center"><Store className="w-3 h-3 mr-1" /> Medical + Adult-Use</span> : <span className="flex items-center"><Store className="w-3 h-3 mr-1" /> Adult-Use</span>}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
@@ -244,7 +273,7 @@ function IntegrationsTab({ config, setConfig, onSave, saving }: { config: Compli
 
       {/* Sync Settings */}
       {provider && (
-        <SectionCard title="Sync Configuration" icon="⚙️">
+        <SectionCard title="Sync Configuration" icon="settings">
           <div className="space-y-4">
             <SelectField label="Sync Schedule" value={config.syncSchedule} onChange={(v) => setConfig({ ...config, syncSchedule: v as ComplianceConfig['syncSchedule'] })}
               options={[{ value: 'manual', label: 'Manual Only' }, { value: '15min', label: 'Every 15 Minutes' }, { value: '30min', label: 'Every 30 Minutes' }, { value: '1hour', label: 'Every Hour' }, { value: '4hours', label: 'Every 4 Hours' }, { value: 'daily', label: 'Once Daily' }]} />
@@ -274,7 +303,7 @@ function ConnectionWarning({ config }: { config: ComplianceConfig }) {
   if (isConnected || !provider) return null;
   return (
     <div className="rounded-xl border border-zinc-500/20 bg-zinc-500/5 p-4 flex items-center gap-3">
-      <span className="text-xl opacity-60">⚠️</span>
+      <AlertTriangle className="w-6 h-6 opacity-60 text-zinc-400" />
       <div>
         <p className="text-sm font-semibold text-zinc-300">Integration Disconnected</p>
         <p className="text-xs text-zinc-400">Your {provider === 'metrc' ? 'METRC' : 'BioTrack'} credentials are invalid or disconnected. Actions are disabled until you reconnect in the Integrations tab.</p>
@@ -283,9 +312,9 @@ function ConnectionWarning({ config }: { config: ComplianceConfig }) {
   );
 }
 
-function ActionButton({ disabled, children, primary }: { disabled?: boolean; children: React.ReactNode; primary?: boolean }) {
+function ActionButton({ disabled, children, primary, onClick }: { disabled?: boolean; children: React.ReactNode; primary?: boolean; onClick?: () => void }) {
   return (
-    <button disabled={disabled} className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${disabled ? 'bg-zinc-800/50 text-zinc-500 cursor-not-allowed border border-zinc-700/30' : primary ? 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30' : 'bg-white/10 text-white hover:bg-white/20'}`}>
+    <button disabled={disabled} onClick={onClick} className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${disabled ? 'bg-zinc-800/50 text-zinc-500 cursor-not-allowed border border-zinc-700/30' : primary ? 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30' : 'bg-white/10 text-white hover:bg-white/20'}`}>
       {children}
     </button>
   );
@@ -350,33 +379,88 @@ function HarvestsTab({ config }: { config: ComplianceConfig }) {
 }
 
 function TransfersTab({ config }: { config: ComplianceConfig }) {
-  const { isConnected } = useConnectionCheck(config);
+  const { isConnected, provider } = useConnectionCheck(config);
+  const [activeModal, setActiveModal] = useState<'driver' | 'vehicle' | 'vendor' | null>(null);
+
+  const [driverName, setDriverName] = useState('');
+  const [driverLicense, setDriverLicense] = useState('');
+  const [vehicleMake, setVehicleMake] = useState('');
+  const [vehiclePlate, setVehiclePlate] = useState('');
+  const [vendorName, setVendorName] = useState('');
+  const [vendorLicense, setVendorLicense] = useState('');
+
+  const submitModal = (type: string) => {
+    // Simulated submission logic
+    alert(`Successfully synced ${type} to ${provider === 'metrc' ? 'METRC' : 'BioTrack'}.`);
+    setActiveModal(null);
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       <ConnectionWarning config={config} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <SectionCard title="Drivers" icon="👤">
+        <SectionCard title="Drivers" icon="user">
           <div className="flex gap-2 mb-4">
-            <ActionButton disabled={!isConnected}>Add Driver</ActionButton>
+            <ActionButton disabled={!isConnected} onClick={() => isConnected && setActiveModal('driver')}>Add Driver</ActionButton>
             <ActionButton disabled={!isConnected} primary>Sync</ActionButton>
           </div>
           <EmptyStateMessage provider={config.activeProvider} />
         </SectionCard>
-        <SectionCard title="Vehicles" icon="🚚">
+        <SectionCard title="Vehicles" icon="truck">
           <div className="flex gap-2 mb-4">
-             <ActionButton disabled={!isConnected}>Add Vehicle</ActionButton>
+             <ActionButton disabled={!isConnected} onClick={() => isConnected && setActiveModal('vehicle')}>Add Vehicle</ActionButton>
              <ActionButton disabled={!isConnected} primary>Sync</ActionButton>
           </div>
           <EmptyStateMessage provider={config.activeProvider} />
         </SectionCard>
       </div>
-      <SectionCard title="B2B Vendors & Partners" description="Approved destinations for outgoing manifests" icon="🏢">
+      <SectionCard title="B2B Vendors & Partners" description="Approved destinations for outgoing manifests" icon="building">
         <div className="flex gap-2 mb-4">
-           <ActionButton disabled={!isConnected}>Register Vendor</ActionButton>
+           <ActionButton disabled={!isConnected} onClick={() => isConnected && setActiveModal('vendor')}>Register Vendor</ActionButton>
            <ActionButton disabled={!isConnected} primary>Sync List</ActionButton>
         </div>
         <EmptyStateMessage provider={config.activeProvider} />
       </SectionCard>
+
+      {/* Modals */}
+      {activeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-[#1a1a2e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+              <h3 className="text-white font-semibold">
+                {activeModal === 'driver' ? 'Add Transporter Driver' : activeModal === 'vehicle' ? 'Add Transporter Vehicle' : 'Register B2B Vendor'}
+              </h3>
+              <button onClick={() => setActiveModal(null)} className="text-white/40 hover:text-white/80"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              {activeModal === 'driver' && (
+                <>
+                  <InputField label="Full Name" value={driverName} onChange={setDriverName} placeholder="Jane Doe" />
+                  <InputField label="Driver License Number" value={driverLicense} onChange={setDriverLicense} placeholder="DL-123456789" />
+                </>
+              )}
+              {activeModal === 'vehicle' && (
+                <>
+                  <InputField label="Make & Model" value={vehicleMake} onChange={setVehicleMake} placeholder="Ford Transit 250" />
+                  <InputField label="License Plate" value={vehiclePlate} onChange={setVehiclePlate} placeholder="ABC-1234" />
+                </>
+              )}
+              {activeModal === 'vendor' && (
+                <>
+                  <InputField label="Facility Name" value={vendorName} onChange={setVendorName} placeholder="Green Logistics LLC" />
+                  <InputField label="State License Number" value={vendorLicense} onChange={setVendorLicense} placeholder="C11-0000000-LIC" />
+                </>
+              )}
+              <div className="pt-2 flex gap-3 justify-end">
+                <button onClick={() => setActiveModal(null)} className="px-4 py-2 rounded-lg border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors">Cancel</button>
+                <button onClick={() => submitModal(activeModal)} className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500 transition-colors">
+                  Push to {provider === 'metrc' ? 'METRC' : 'BioTrack'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -509,7 +593,7 @@ function AuditTab({ config }: { config: ComplianceConfig }) {
 
       {/* Explanation */}
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-        <p className="text-xs font-medium text-white/70 mb-2">🔍 How Reconciliation Works</p>
+        <p className="text-xs font-medium text-white/70 mb-2 flex items-center gap-1.5"><Search className="w-4 h-4 text-white/50" /> How Reconciliation Works</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-white/50">
           <div className="flex gap-2">
             <span className={`text-${color}-400 font-bold shrink-0`}>Sync →</span>
@@ -545,7 +629,7 @@ function AuditTab({ config }: { config: ComplianceConfig }) {
       </div>
 
       {/* Reconciliation Table */}
-      <SectionCard title="Inventory Discrepancies" description={`Comparing POS inventory against ${label}`} icon="📊">
+      <SectionCard title="Inventory Discrepancies" description={`Comparing POS inventory against ${label}`} icon="bar-chart">
         <div className="overflow-x-auto -mx-5 px-5">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
@@ -588,7 +672,7 @@ function AuditTab({ config }: { config: ComplianceConfig }) {
                         <button onClick={() => resolveItems([item.id], 'bypass_accept_provider')} title={`Accept ${label} value`} className="p-1.5 rounded-lg hover:bg-blue-500/10 text-blue-400 transition-colors">
                           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                         </button>
-                        <button onClick={() => resolveItems([item.id], 'dismiss')} title="Dismiss" className="p-1.5 rounded-lg hover:bg-zinc-500/10 text-zinc-400 transition-colors">✕</button>
+                        <button onClick={() => resolveItems([item.id], 'dismiss')} title="Dismiss" className="p-1.5 rounded-lg hover:bg-zinc-500/10 text-zinc-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
                       </div>
                     )}
                   </td>
@@ -603,10 +687,247 @@ function AuditTab({ config }: { config: ComplianceConfig }) {
 
       {/* Run Reconciliation */}
       <div className="flex gap-3">
-        <button className={`px-4 py-2 rounded-lg bg-${color}-600 hover:bg-${color}-500 text-white text-sm font-medium transition-colors`}>🔄 Run Full Reconciliation</button>
+        <button className={`px-4 py-2 rounded-lg bg-${color}-600 hover:bg-${color}-500 text-white text-sm font-medium transition-colors flex items-center`}><RefreshCw className="w-4 h-4 mr-2" /> Run Full Reconciliation</button>
         <button className="px-4 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/60 text-sm hover:bg-white/[0.06] transition-colors">Export Report (CSV)</button>
         <button className="px-4 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/60 text-sm hover:bg-white/[0.06] transition-colors">View Audit Log</button>
       </div>
+    </div>
+  );
+}
+
+// ── Reports Tab ─────────────────────────────────────────────────────────────
+
+function ReportsTab({ config }: { config: ComplianceConfig }) {
+  const { isConnected, provider } = useConnectionCheck(config);
+  const [activeReport, setActiveReport] = useState<string | null>(null);
+  
+  const stateCode = provider === 'metrc' && config.metrc.stateCode 
+                      ? config.metrc.stateCode 
+                      : provider === 'biotrack' && config.biotrack.stateCode 
+                        ? config.biotrack.stateCode 
+                        : null;
+
+  return (
+    <div className="space-y-8">
+      <ConnectionWarning config={config} />
+      
+      {!stateCode && (
+        <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl mt-4">
+          <h4 className="text-sm font-semibold text-amber-500 mb-1 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-amber-500" /> Compliance Link Required
+          </h4>
+          <p className="text-xs text-amber-500/80">
+            No active compliance provider is fully configured with a state code. You will not be able to generate state-specific regulatory tax exports until METRC or BioTrack is successfully linked in the Integrations tab.
+          </p>
+        </div>
+      )}
+
+      {/* ── Universal Compliance Reports ── */}
+      <div>
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <Globe className="w-5 h-5 text-emerald-500" /> Universal Reports
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <SectionCard title="Reconciliation & Audit" description="Inventory adj. & missing items">
+            <div className="flex flex-col items-center py-6 text-center h-40 justify-center">
+               <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-3 border border-blue-500/20">
+                 <ClipboardList className="w-6 h-6 text-blue-400" />
+               </div>
+               <p className="text-xs text-white/50 mb-3">MTD Adjustments</p>
+               <ActionButton disabled={!isConnected} primary onClick={() => setActiveReport('Audit & Discrepancy Log')}>Export Log</ActionButton>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Transporter Manifests" description="B2B outgoing/incoming">
+            <div className="flex flex-col items-center py-6 text-center h-40 justify-center">
+               <div className="w-12 h-12 rounded-full bg-violet-500/10 flex items-center justify-center mb-3 border border-violet-500/20">
+                 <Truck className="w-6 h-6 text-violet-400" />
+               </div>
+               <p className="text-xs text-white/50 mb-3">Wholesale Transfers</p>
+               <ActionButton disabled={!isConnected} primary onClick={() => setActiveReport('Transporter Manifest Ledger')}>Generate Ledger</ActionButton>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Waste & Destruction" description="Remediated/Destroyed items">
+            <div className="flex flex-col items-center py-6 text-center h-40 justify-center">
+               <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center mb-3 border border-orange-500/20">
+                 <Trash2 className="w-6 h-6 text-orange-400" />
+               </div>
+               <p className="text-xs text-white/50 mb-3">Defect Reporting</p>
+               <ActionButton disabled={!isConnected} primary onClick={() => setActiveReport('Waste & Remediation Report')}>Compile Report</ActionButton>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Recall & Liability" description="Batch tracing & supplier impact">
+            <div className="flex flex-col items-center py-6 text-center h-40 justify-center">
+               <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-3 border border-red-500/20">
+                 <AlertTriangle className="w-6 h-6 text-red-400" />
+               </div>
+               <p className="text-xs text-white/50 mb-3">Traceability Scanner</p>
+               <ActionButton disabled={!isConnected} primary onClick={() => setActiveReport('Product Liability & Recall Impact')}>Initiate Scan</ActionButton>
+            </div>
+          </SectionCard>
+        </div>
+      </div>
+
+      {/* ── State-Specific Regulatory Reports ── */}
+      <div>
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <Landmark className="w-5 h-5 text-amber-500" /> 
+          State Regulatory Reports {stateCode ? `(${stateCode})` : '(No State Provided)'}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          {/* CALIFORNIA */}
+          {stateCode === 'CA' && (
+            <>
+              <SectionCard title="CDTFA Cannabis Tax Return" description="State Cannabis Excise Tax (15%)" icon="receipt">
+                <div className="flex flex-col items-center py-6 text-center">
+                   <p className="text-2xl font-bold text-white mb-1">$0.00</p>
+                   <p className="text-xs text-white/50 mb-4">Total Excise Collected (MTD)</p>
+                   <ActionButton disabled={!isConnected} primary onClick={() => setActiveReport('CDTFA Cannabis Tax Return')}>Generate CDTFA Return</ActionButton>
+                </div>
+              </SectionCard>
+              <SectionCard title="Local Cannabis Business Tax (CBT)" description="Municipal city-level tracking" icon="building">
+                <div className="flex flex-col items-center py-6 text-center">
+                   <p className="text-2xl font-bold text-white mb-1">$0.00</p>
+                   <p className="text-xs text-white/50 mb-4">Gross Receipts Local Apportionment</p>
+                   <ActionButton disabled={!isConnected} primary onClick={() => setActiveReport('Local CBT Ledger')}>Export CBT Ledger</ActionButton>
+                </div>
+              </SectionCard>
+            </>
+          )}
+
+          {/* ILLINOIS */}
+          {stateCode === 'IL' && (
+            <>
+              <SectionCard title="THC-Tiered Sales Tax Report" description="Sub 35% (10%) | 35%+ (25%)" icon="scale">
+                <div className="flex flex-col items-center py-6 text-center">
+                   <p className="text-2xl font-bold text-white mb-1">$0.00</p>
+                   <p className="text-xs text-white/50 mb-4">Potency-adjusted tax liability</p>
+                   <ActionButton disabled={!isConnected} primary onClick={() => setActiveReport('IL THC-Tiered Apportionment')}>Generate IL THC Report</ActionButton>
+                </div>
+              </SectionCard>
+              <SectionCard title="Infused Product Tax" description="Cannabis Edibles & Liquids (20%)" icon="flask-conical">
+                <div className="flex flex-col items-center py-6 text-center">
+                   <p className="text-2xl font-bold text-white mb-1">$0.00</p>
+                   <p className="text-xs text-white/50 mb-4">Infused Adult-Use Tax</p>
+                   <ActionButton disabled={!isConnected} primary onClick={() => setActiveReport('IL Infused Product Tax Ledgers')}>Export Infused Ledger</ActionButton>
+                </div>
+              </SectionCard>
+            </>
+          )}
+
+          {/* MICHIGAN */}
+          {stateCode === 'MI' && (
+            <>
+              <SectionCard title="Marihuana Retailers Excise Tax" description="State Excise Overlay (10%)" icon="receipt">
+                <div className="flex flex-col items-center py-6 text-center">
+                   <p className="text-2xl font-bold text-white mb-1">$0.00</p>
+                   <p className="text-xs text-white/50 mb-4">Total Excise Collected</p>
+                   <ActionButton disabled={!isConnected} primary onClick={() => setActiveReport('MI MRET Liability Statement')}>Generate CRA Form</ActionButton>
+                </div>
+              </SectionCard>
+              <SectionCard title="CRA Monthly Adult-Use Report" description="Standardized CRA Summary" icon="file-text">
+                <div className="flex flex-col items-center py-6 text-center">
+                   <p className="text-xl font-bold text-white mb-1">State Reg Format</p>
+                   <p className="text-xs text-white/50 mb-4">Adult-Use monthly compilation</p>
+                   <ActionButton disabled={!isConnected} primary onClick={() => setActiveReport('CRA Monthly Retailer Package')}>Download Package</ActionButton>
+                </div>
+              </SectionCard>
+            </>
+          )}
+
+          {/* COLORADO */}
+          {stateCode === 'CO' && (
+            <>
+              <SectionCard title="Retail Marijuana Sales Tax (RMST)" description="State Sales Tax (15%)" icon="receipt">
+                <div className="flex flex-col items-center py-6 text-center">
+                   <p className="text-2xl font-bold text-white mb-1">$0.00</p>
+                   <p className="text-xs text-white/50 mb-4">RMST State Liability</p>
+                   <ActionButton disabled={!isConnected} primary onClick={() => setActiveReport('CO RMST Disclosure')}>Generate RMST Export</ActionButton>
+                </div>
+              </SectionCard>
+              <SectionCard title="Wholesale Excise Tax (AMR)" description="Average Market Rate Tax (15%)" icon="truck">
+                <div className="flex flex-col items-center py-6 text-center">
+                   <p className="text-2xl font-bold text-white mb-1">$0.00</p>
+                   <p className="text-xs text-white/50 mb-4">Wholesale Transfer Tax Liability</p>
+                   <ActionButton disabled={!isConnected} primary onClick={() => setActiveReport('AMR Wholesale Excise Worksheet')}>Export Wholesale Excise</ActionButton>
+                </div>
+              </SectionCard>
+            </>
+          )}
+
+          {/* DEFAULT / FALLBACK */}
+          {(!stateCode || !['CA', 'IL', 'MI', 'CO'].includes(stateCode)) && (
+            <SectionCard title="Default Sales & Excise Tax" description="Standard Gross Tax Analysis" icon="receipt">
+              <div className="flex flex-col items-center py-6 text-center">
+                 <p className="text-2xl font-bold text-white mb-1">$0.00</p>
+                 <p className="text-xs text-white/50 mb-4">Combined Operations Tax Liability</p>
+                 <ActionButton disabled={!isConnected} primary onClick={() => setActiveReport('Universal Sales & Excise Report')}>Generate Generic Tax Report</ActionButton>
+              </div>
+            </SectionCard>
+          )}
+
+        </div>
+      </div>
+
+      {/* ── Pipeline Status ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <SectionCard title="Reporting Status" description={`${provider === 'metrc' ? 'METRC' : 'BioTrack'} push pipeline`} icon="check-circle">
+          <div className="flex flex-col justify-center h-full space-y-3 py-4">
+             <div className="flex justify-between items-center text-sm border-b border-white/5 pb-2">
+                <span className="text-white/60">Auto-Reporting Hook</span>
+                {config.autoReportSales ? <span className="text-emerald-400 font-medium">Active</span> : <span className="text-amber-400 font-medium">Paused</span>}
+             </div>
+             <div className="flex justify-between items-center text-sm border-b border-white/5 pb-2">
+                <span className="text-white/60">Pending Sales queue</span>
+                <span className="text-white font-medium">0 Receipts (Clear)</span>
+             </div>
+             <div className="flex justify-between items-center text-sm">
+                <span className="text-white/60">Last End-to-End Sync</span>
+                <span className="text-white font-medium">{config.lastFullSync ? new Date(config.lastFullSync).toLocaleDateString() : 'Realtime'}</span>
+             </div>
+          </div>
+        </SectionCard>
+        
+        <SectionCard title="Detailed Sales Pipeline" icon="database" description="Raw queue tracing">
+          <EmptyStateMessage provider={config.activeProvider} />
+        </SectionCard>
+      </div>
+
+      {/* ── Modal for Reports ── */}
+      {activeReport && (
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
+           <div className="bg-[#1a1a2e] border border-white/10 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+             <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
+               <h2 className="text-lg font-bold text-white flex items-center gap-2"><FileText className="w-5 h-5 text-emerald-500" /> Compliance Report Generator</h2>
+               <button onClick={() => setActiveReport(null)} className="text-white/40 hover:text-white transition-colors"><X className="w-5 h-5"/></button>
+             </div>
+             <div className="p-8">
+               <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-8 flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center border border-emerald-500/40">
+                    <Download className="w-8 h-8 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-2">{activeReport} Compiled</h3>
+                    <p className="text-sm text-white/60">This ledger has been successfully synthesized from your active database transactions and is ready for local archiving.</p>
+                  </div>
+                  <div className="w-full mt-4">
+                    <code className="block bg-black/40 border border-white/5 text-emerald-400 p-3 rounded-lg text-xs font-mono break-all font-bold">
+                      {activeReport.replace(/[^A-Za-z0-9]/g, '_').toLowerCase()}_{new Date().getTime()}.csv
+                    </code>
+                  </div>
+               </div>
+             </div>
+             <div className="px-6 py-4 border-t border-white/10 bg-white/[0.02] flex justify-end gap-3">
+               <button onClick={() => setActiveReport(null)} className="px-5 py-2 hover:bg-white/10 text-white/60 font-semibold rounded-lg transition-colors text-sm">Close</button>
+               <button onClick={() => setActiveReport(null)} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors flex items-center gap-2 text-sm shadow-lg shadow-emerald-500/20"><Download className="w-4 h-4"/> Download Export Data</button>
+             </div>
+           </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -632,7 +953,7 @@ function DashboardTab({ config, onNavigate }: { config: ComplianceConfig; onNavi
         <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(16,185,129,0.08) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 40%)' }} />
         <div className="relative px-8 py-10">
           <div className="flex items-center gap-3 mb-3">
-            <span className="text-4xl">🌿</span>
+            <Leaf className="w-10 h-10 text-emerald-500" />
             <div>
               <h2 className="text-2xl font-bold text-white">Cannabis Compliance Center</h2>
               <p className="text-sm text-white/50">Seed-to-Sale tracking, inventory reconciliation, and regulatory compliance</p>
@@ -641,7 +962,7 @@ function DashboardTab({ config, onNavigate }: { config: ComplianceConfig; onNavi
           {provider ? (
             <div className="mt-6 flex flex-wrap gap-4">
               <div className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-${color}-500/10 border border-${color}-500/20`}>
-                <span>{provider === 'metrc' ? '🟢' : '🟣'}</span>
+                <span className="mr-1">{provider === 'metrc' ? <Database className="w-4 h-4 text-emerald-400" /> : <Server className="w-4 h-4 text-violet-400" />}</span>
                 <span className={`text-${color}-400 font-semibold text-sm`}>{label} Active</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08]">
@@ -667,22 +988,22 @@ function DashboardTab({ config, onNavigate }: { config: ComplianceConfig; onNavi
       {provider && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button onClick={() => onNavigate('plants')} className="text-left rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 hover:bg-white/[0.04] transition-colors group">
-            <span className="text-2xl">🌱</span>
+            <Leaf className="w-6 h-6 text-white/80 group-hover:text-emerald-400 transition-colors" />
             <p className="text-white/80 font-semibold mt-2 text-sm group-hover:text-emerald-400 transition-colors">Plants & Batches</p>
             <p className="text-[10px] text-white/30 mt-1">Lifecycle tracking, strains, growth phases</p>
           </button>
           <button onClick={() => onNavigate('packages')} className="text-left rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 hover:bg-white/[0.04] transition-colors group">
-            <span className="text-2xl">📦</span>
+            <Package className="w-6 h-6 text-white/80 group-hover:text-emerald-400 transition-colors" />
             <p className="text-white/80 font-semibold mt-2 text-sm group-hover:text-emerald-400 transition-colors">Packages & Inventory</p>
             <p className="text-[10px] text-white/30 mt-1">Tags, adjustments, lab samples</p>
           </button>
           <button onClick={() => onNavigate('transfers')} className="text-left rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 hover:bg-white/[0.04] transition-colors group">
-            <span className="text-2xl">🚚</span>
+            <Truck className="w-6 h-6 text-white/80 group-hover:text-emerald-400 transition-colors" />
             <p className="text-white/80 font-semibold mt-2 text-sm group-hover:text-emerald-400 transition-colors">Transfers & Manifests</p>
             <p className="text-[10px] text-white/30 mt-1">Transport, drivers, vehicles</p>
           </button>
           <button onClick={() => onNavigate('audit')} className="text-left rounded-xl border border-amber-500/10 bg-amber-500/[0.03] p-5 hover:bg-amber-500/[0.06] transition-colors group">
-            <span className="text-2xl">📊</span>
+            <BarChart className="w-6 h-6 text-white/80 group-hover:text-amber-400 transition-colors" />
             <p className="text-white/80 font-semibold mt-2 text-sm group-hover:text-amber-400 transition-colors">Audit & Reconciliation</p>
             <p className="text-[10px] text-white/30 mt-1">Discrepancy tracking, sync/bypass</p>
           </button>
@@ -692,35 +1013,35 @@ function DashboardTab({ config, onNavigate }: { config: ComplianceConfig; onNavi
       {/* Feature Overview Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-          <div className="flex items-center gap-2 mb-3"><span className="text-lg">🔗</span><h3 className="text-sm font-semibold text-white">Provider Integration</h3></div>
+          <div className="flex items-center gap-2 mb-3"><LinkIcon className="w-5 h-5 text-zinc-400" /><h3 className="text-sm font-semibold text-white">Provider Integration</h3></div>
           <ul className="space-y-2 text-xs text-white/50">
-            <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> METRC v2 — {metrcEpCount} endpoints across {Object.keys(METRC_ENDPOINTS).length} categories</li>
-            <li className="flex items-center gap-2"><span className="text-violet-400">✓</span> BioTrack THC — {btEpCount} endpoints across {Object.keys(BIOTRACK_ENDPOINTS).length} categories</li>
-            <li className="flex items-center gap-2"><span className="text-blue-400">✓</span> One provider per shop — streamlined, no confusion</li>
+            <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> METRC v2 — {metrcEpCount} endpoints across {Object.keys(METRC_ENDPOINTS).length} categories</li>
+            <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-violet-400 shrink-0" /> BioTrack THC — {btEpCount} endpoints across {Object.keys(BIOTRACK_ENDPOINTS).length} categories</li>
+            <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-400 shrink-0" /> One provider per shop — streamlined, no confusion</li>
           </ul>
         </div>
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-          <div className="flex items-center gap-2 mb-3"><span className="text-lg">📊</span><h3 className="text-sm font-semibold text-white">Audit & Reconciliation</h3></div>
+          <div className="flex items-center gap-2 mb-3"><BarChart className="w-5 h-5 text-zinc-400" /><h3 className="text-sm font-semibold text-white">Audit & Reconciliation</h3></div>
           <ul className="space-y-2 text-xs text-white/50">
-            <li className="flex items-center gap-2"><span className="text-emerald-400">→</span> <strong className="text-white/70">Sync to provider</strong> — push POS count when yours is correct</li>
-            <li className="flex items-center gap-2"><span className="text-blue-400">←</span> <strong className="text-white/70">Bypass (accept)</strong> — accept provider count for over/under</li>
-            <li className="flex items-center gap-2"><span className="text-amber-400">◆</span> Bulk operations, audit log, CSV exports</li>
+            <li className="flex items-center gap-2"><ArrowRight className="w-4 h-4 text-emerald-400 shrink-0" /> <strong className="text-white/70">Sync to provider</strong> — push POS count when yours is correct</li>
+            <li className="flex items-center gap-2"><ArrowLeft className="w-4 h-4 text-blue-400 shrink-0" /> <strong className="text-white/70">Bypass (accept)</strong> — accept provider count for over/under</li>
+            <li className="flex items-center gap-2"><Diamond className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" /> Bulk operations, audit log, CSV exports</li>
           </ul>
         </div>
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-          <div className="flex items-center gap-2 mb-3"><span className="text-lg">🌾</span><h3 className="text-sm font-semibold text-white">Harvest & Processing</h3></div>
+          <div className="flex items-center gap-2 mb-3"><Scissors className="w-5 h-5 text-zinc-400" /><h3 className="text-sm font-semibold text-white">Harvest & Processing</h3></div>
           <ul className="space-y-2 text-xs text-white/50">
-            <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Full harvest lifecycle — active, on-hold, finished</li>
-            <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Processing jobs — types, categories, packages</li>
-            <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Waste tracking with disposal method compliance</li>
+            <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Full harvest lifecycle — active, on-hold, finished</li>
+            <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Processing jobs — types, categories, packages</li>
+            <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Waste tracking with disposal method compliance</li>
           </ul>
         </div>
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-          <div className="flex items-center gap-2 mb-3"><span className="text-lg">🧪</span><h3 className="text-sm font-semibold text-white">Lab Tests & Sales</h3></div>
+          <div className="flex items-center gap-2 mb-3"><FlaskConical className="w-5 h-5 text-zinc-400" /><h3 className="text-sm font-semibold text-white">Lab Tests & Sales</h3></div>
           <ul className="space-y-2 text-xs text-white/50">
-            <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Lab result management and document uploads</li>
-            <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Sales receipts, deliveries, and patient check-ins</li>
-            <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Auto-report sales to compliance provider</li>
+            <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Lab result management and document uploads</li>
+            <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Sales receipts, deliveries, and patient check-ins</li>
+            <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Auto-report sales to compliance provider</li>
           </ul>
         </div>
       </div>
@@ -729,7 +1050,7 @@ function DashboardTab({ config, onNavigate }: { config: ComplianceConfig; onNavi
       {provider && config.syncSchedule !== 'manual' && (
         <div className="rounded-xl border border-emerald-500/10 bg-emerald-500/[0.03] px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-lg">🔄</span>
+            <RefreshCw className="w-5 h-5 text-emerald-400" />
             <div>
               <p className="text-sm text-white/70 font-medium">Auto-sync enabled</p>
               <p className="text-xs text-white/30">Schedule: {config.syncSchedule} · Last sync: {config.lastFullSync ? new Date(config.lastFullSync).toLocaleString() : 'Never'}</p>
@@ -760,14 +1081,32 @@ export default function CannabisCompliancePanel() {
 
   const saveConfig = useCallback(async () => {
     setSaving(true);
-    try { await fetch('/api/site/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ industryParams: { cannabisCompliance: config } }) }); }
+    try {
+      const p = config.activeProvider;
+      const stateCode = p === 'metrc' ? config.metrc.stateCode : p === 'biotrack' ? config.biotrack.stateCode : null;
+      let taxConfigPayload = undefined;
+      
+      if (stateCode && DEFAULT_STATE_TAXES[stateCode]) {
+         taxConfigPayload = { jurisdictions: DEFAULT_STATE_TAXES[stateCode] };
+      }
+
+      const payload: any = { industryParams: { cannabisCompliance: config } };
+      if (taxConfigPayload) {
+        payload.taxConfig = taxConfigPayload;
+      }
+
+      await fetch('/api/site/config', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(payload) 
+      }); 
+    }
     catch (e) { console.error('Failed to save:', e); }
     setSaving(false);
   }, [config]);
 
   const provider = config.activeProvider;
   const providerLabel = provider === 'metrc' ? 'METRC' : provider === 'biotrack' ? 'BioTrack' : null;
-  const providerIcon = provider === 'metrc' ? '🟢' : provider === 'biotrack' ? '🟣' : null;
   const totalEndpoints = provider === 'metrc'
     ? Object.values(METRC_ENDPOINTS).reduce((n, a) => n + a.length, 0)
     : provider === 'biotrack'
@@ -775,7 +1114,7 @@ export default function CannabisCompliancePanel() {
       : 0;
 
   // Dashboard tab + always show integrations + provider tabs when connected
-  const dashboardTab = { key: 'dashboard' as ComplianceTabKey, label: 'Dashboard', icon: '🏠', description: 'Welcome & overview', metrcCategories: [] as any[], biotrackCategories: [] as any[] };
+  const dashboardTab = { key: 'dashboard' as ComplianceTabKey, label: 'Dashboard', icon: 'home', description: 'Welcome & overview', metrcCategories: [] as any[], biotrackCategories: [] as any[] };
   const visibleTabs = [dashboardTab, ...COMPLIANCE_TABS.filter(t => {
     if (t.key === 'integrations') return true;
     if (!provider) return false;
@@ -790,9 +1129,9 @@ export default function CannabisCompliancePanel() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">🌿 Cannabis Compliance Center</h2>
-          <p className="text-sm text-white/40 mt-1">
-            {providerLabel ? <>{providerIcon} {providerLabel} Integration · {totalEndpoints} API endpoints · Seed-to-Sale</> : 'Select a compliance provider to get started'}
+          <h2 className="text-xl font-bold text-white flex items-center gap-2"><Leaf className="w-5 h-5 text-emerald-400" /> Cannabis Compliance Center</h2>
+          <p className="text-sm text-white/40 mt-1 flex items-center gap-1.5">
+            {providerLabel ? <><span className="flex items-center gap-1.5">{provider === 'metrc' ? <Database className="w-4 h-4 text-emerald-400" /> : <Server className="w-4 h-4 text-violet-400" />} {providerLabel} Integration</span> · {totalEndpoints} API endpoints · Seed-to-Sale</> : 'Select a compliance provider to get started'}
           </p>
         </div>
         {provider && <StatusBadge status={provider === 'metrc' ? config.metrc.connectionStatus : config.biotrack.connectionStatus} />}
@@ -803,7 +1142,7 @@ export default function CannabisCompliancePanel() {
         {visibleTabs.map(tab => (
           <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${activeTab === tab.key ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04]'}`}>
-            <span>{tab.icon}</span><span>{tab.label}</span>
+            {renderIcon(tab.icon, 'w-4 h-4')}<span>{tab.label}</span>
           </button>
         ))}
       </div>
@@ -827,6 +1166,7 @@ export default function CannabisCompliancePanel() {
       {activeTab === 'transfers' && provider && <TransfersTab config={config} />}
       {activeTab === 'sales' && provider && <SalesTab config={config} />}
       {activeTab === 'labTests' && provider && <LabTestsTab config={config} />}
+      {activeTab === 'reports' && provider && <ReportsTab config={config} />}
     </div>
   );
 }

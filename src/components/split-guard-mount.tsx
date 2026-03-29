@@ -12,8 +12,8 @@ import GlobalSplitGuard from "@/components/global-split-guard";
 function shouldSuppressForPath(path: string): boolean {
   try {
     const p = (path || "/").toLowerCase();
-    // Suppress on buyer receipt portal pages (QR scan opens /portal/[id])
-    if (p.startsWith("/portal")) return true;
+    // Suppress on buyer receipt portal pages, agent pages, apply page, and legal documents
+    if (p.startsWith("/portal") || p.startsWith("/agents") || p.startsWith("/legal") || p.startsWith("/apply")) return true;
     return false;
   } catch {
     return false;

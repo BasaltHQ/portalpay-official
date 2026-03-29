@@ -286,7 +286,13 @@ export function Navbar() {
         // If wizard is open, DO NOT run this auth check. The wizard handles its own flow.
         // Also suppress auth modal on legal review pages (?track=1) opened from the auth modal
         const isLegalReviewTab = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('track') === '1';
-        if (!w || checkingAuth.current || showSignupWizard || isLegalReviewTab) {
+        // Suppress on agent pages, apply page, and legal documents
+        const isSuppressedRoute = typeof window !== 'undefined' && (
+            window.location.pathname.startsWith('/agents') ||
+            window.location.pathname.startsWith('/legal') ||
+            window.location.pathname.startsWith('/apply')
+        );
+        if (!w || checkingAuth.current || showSignupWizard || isLegalReviewTab || isSuppressedRoute) {
             return;
         }
 

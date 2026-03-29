@@ -56,6 +56,7 @@ type ClientRequestDoc = {
     notes?: string;
     reviewedBy?: string;
     reviewedAt?: number;
+    splitConfig?: any;
     createdAt: number;
 };
 
@@ -413,6 +414,7 @@ export async function POST(req: NextRequest) {
             layoutMode: ["minimalist", "balanced", "maximalist"].includes(body?.layoutMode) ? body.layoutMode : undefined,
             description: typeof body?.description === "string" ? body.description.slice(0, 500) : undefined,
             notes: typeof body?.notes === "string" ? body.notes.slice(0, 500) : undefined,
+            splitConfig: typeof body?.splitConfig === "object" ? body.splitConfig : undefined,
             createdAt: Date.now()
         };
 

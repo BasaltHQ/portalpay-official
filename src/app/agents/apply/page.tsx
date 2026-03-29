@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useActiveAccount, ConnectButton } from "thirdweb/react";
 import { client, chain } from "@/lib/thirdweb/client";
+import { usePortalThirdwebTheme } from "@/lib/thirdweb/theme";
 import { useBrand } from "@/contexts/BrandContext";
 import {
     Wallet,
@@ -23,6 +24,7 @@ import {
 export default function AgentSignUp() {
     const account = useActiveAccount();
     const brand = useBrand();
+    const twTheme = usePortalThirdwebTheme();
     const wallet = (account?.address || "").toLowerCase();
 
     const [name, setName] = useState("");
@@ -124,7 +126,17 @@ export default function AgentSignUp() {
                         Connect your wallet to apply as a referral agent{brandName ? ` for ${brandName}` : ""}. Earn commissions on merchants you bring to the platform.
                     </p>
                     <div className="flex justify-center">
-                        <ConnectButton client={client} chain={chain} />
+                        <ConnectButton 
+                            client={client} 
+                            chain={chain} 
+                            theme={twTheme}
+                            connectModal={{
+                                size: "compact",
+                                title: "Agent Sign In",
+                                titleIcon: brandLogo,
+                                showThirdwebBranding: false
+                            }}
+                        />
                     </div>
                     <div className="pt-4 border-t border-border/50 space-y-2 text-xs text-muted-foreground">
                         <p className="flex items-center justify-center gap-1.5">
