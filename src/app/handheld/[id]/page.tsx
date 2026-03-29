@@ -91,7 +91,7 @@ export default async function HandheldModePage({ params }: { params: Promise<{ i
     // Or we can add a specific check later. Defaults to allowing if provisioned.
 
     // 4. Fetch Inventory (Server-Side)
-    const merchantWallet = mergedConfig.wallet || initialConfig.wallet;
+    const merchantWallet = mergedConfig.wallet || cleanSlug;
     let items: any[] = [];
     try {
         const { resources } = await container.items
