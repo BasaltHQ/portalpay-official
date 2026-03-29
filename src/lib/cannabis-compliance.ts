@@ -693,10 +693,21 @@ export interface BioTrackConfig {
 }
 
 export type ComplianceProvider = 'metrc' | 'biotrack' | null;
+export type CannabisLicenseType = 'retail' | 'manufacturing' | 'cultivation';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // AUDIT / RECONCILIATION TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
+
+export interface TransporterDriver { id: string; name: string; licenseNumber: string; }
+export interface TransporterVehicle { id: string; make: string; model: string; licensePlate: string; }
+export interface B2BVendor { id: string; name: string; licenseNumber: string; facilityType: string; }
+export interface CompliancePlant { id: string; strain: string; phase: 'vegetative' | 'flowering' | 'harvested'; room: string; plantedDate: string; }
+export interface CompliancePackage { id: string; tag: string; item: string; quantity: number; unit: string; labStatus: 'passed' | 'failed' | 'testing' | 'none'; }
+export interface ComplianceHarvest { id: string; name: string; wetWeight: number; unit: string; status: 'active' | 'finished'; }
+export interface ComplianceSaleReceipt { id: string; receiptNumber: string; totalAmount: number; date: string; patientId?: string; }
+export interface ComplianceLabTest { id: string; batchId: string; status: 'passed' | 'failed'; testedDate: string; }
+
 
 export type DiscrepancyStatus = 'unresolved' | 'synced_to_provider' | 'bypassed' | 'dismissed';
 
@@ -732,6 +743,7 @@ export interface AuditLogEntry {
 
 export interface ComplianceConfig {
   activeProvider: ComplianceProvider;
+  licenseType: CannabisLicenseType | null;
   metrc: MetrcConfig;
   biotrack: BioTrackConfig;
   syncSchedule: 'manual' | '15min' | '30min' | '1hour' | '4hours' | 'daily';
@@ -742,6 +754,7 @@ export interface ComplianceConfig {
 
 export const DEFAULT_COMPLIANCE_CONFIG: ComplianceConfig = {
   activeProvider: null,
+  licenseType: null,
   metrc: {
     enabled: false,
     integratorApiKey: '',
@@ -788,6 +801,7 @@ export interface ComplianceTab {
   description: string;
   metrcCategories: MetrcEndpointCategory[];
   biotrackCategories: BioTrackEndpointCategory[];
+  licenseTypes?: CannabisLicenseType[];
 }
 
 export const COMPLIANCE_TABS: ComplianceTab[] = [
@@ -806,6 +820,7 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
     description: 'Manage plant lifecycle, batches, growth phases, strains, locations, additives',
     metrcCategories: ['plants', 'plantBatches', 'strains', 'locations', 'sublocations', 'additivesTemplates'],
     biotrackCategories: ['plants', 'rooms'],
+    licenseTypes: ['cultivation'],
   },
   {
     key: 'packages',
@@ -814,6 +829,7 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
     description: 'Track packages, items, tags, adjustments, remediation, trade samples',
     metrcCategories: ['packages', 'items', 'tags', 'unitsOfMeasure'],
     biotrackCategories: ['inventory'],
+    // All licenses use packages
   },
   {
     key: 'harvests',
@@ -822,6 +838,7 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
     description: 'Manage harvests, processing jobs, waste tracking, package creation',
     metrcCategories: ['harvests', 'processingJobs', 'wasteMethods'],
     biotrackCategories: ['inventory'],
+    licenseTypes: ['cultivation', 'manufacturing'],
   },
   {
     key: 'transfers',
@@ -830,6 +847,7 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
     description: 'Create/track transfers, manifest PDFs, hub operations, drivers, vehicles',
     metrcCategories: ['transfers', 'transporters'],
     biotrackCategories: ['manifests', 'vendors'],
+    // All licenses transfer bounds
   },
   {
     key: 'sales',
@@ -838,6 +856,7 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
     description: 'Sales receipts, deliveries, patient management, check-ins, caregivers, retail ID',
     metrcCategories: ['sales', 'patients', 'patientCheckIns', 'caregivers', 'retailId'],
     biotrackCategories: ['dispensing', 'patients'],
+    licenseTypes: ['retail'],
   },
   {
     key: 'labTests',
@@ -846,6 +865,7 @@ export const COMPLIANCE_TABS: ComplianceTab[] = [
     description: 'Lab test results, compliance dashboard, audit exports, waste methods',
     metrcCategories: ['labTests'],
     biotrackCategories: ['labResults'],
+    licenseTypes: ['retail', 'manufacturing'],
   },
   {
     key: 'audit',
