@@ -12,6 +12,7 @@ export interface PrinterPlugin {
     printText(options: { text: string; ipAddress?: string; port?: number }): Promise<{ success: boolean }>;
     printImage(options: { base64: string }): Promise<{ success: boolean }>;
     printDocument(options: { text?: string; base64?: string }): Promise<{ success: boolean }>;
+    requestStatus?(options: { n?: number }): Promise<{ status: number }>; // ESC SP n Hardware Polling
 }
 export interface FeedbackPlugin {
     successFeedback(): Promise<void>;
@@ -29,7 +30,7 @@ const IcodScanner = registerPlugin<ScannerPlugin>('IcodScanner');
 const TopWisePrinter = registerPlugin<PrinterPlugin>('TopWisePrinter');
 const KioskPrinter = registerPlugin<PrinterPlugin>('KioskPrinter');
 const ExternalPrinter = registerPlugin<PrinterPlugin>('ExternalPrinter');
-const UsbPrinter = registerPlugin<PrinterPlugin>('UsbPrinter');
+export const UsbPrinter = registerPlugin<PrinterPlugin>('UsbPrinter');
 const ValorPrinter = registerPlugin<PrinterPlugin>('ValorPrinter');
 
 const TopWiseFeedback = registerPlugin<FeedbackPlugin>('TopWiseFeedback');

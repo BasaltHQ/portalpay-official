@@ -26,9 +26,14 @@ export class WebUSBPrinter {
             if (!navUsb) return false;
 
             // Open dialog for user to select device.
-            // Leaving filters empty allows generic Chinese 80mm generic POS printers to appear 
-            // even if they spoof vendor IDs or use custom classes.
-            this.device = await navUsb.requestDevice({ filters: [] });
+            // Using classCode 7 explicitly targets standard USB Printers.
+            // classCode 255 (0xFF) targets generic "Vendor Specific" thermal POS printers.
+            this.device = await navUsb.requestDevice({ 
+                filters: [
+                    { classCode: 7 },
+                    { classCode: 255 }
+                ] 
+            });
 
             await this.device.open();
             
@@ -42,9 +47,75 @@ export class WebUSBPrinter {
             await this.device.claimInterface(0);
 
             return true;
-        } catch (err) {
-            console.error('[WebUSB] Connection interrupted or denied by user:', err);
+        } catch (err: any) {
+            if (err.name !== 'NotFoundError') {
+                console.warn('[WebUSB] Connection interrupted or denied by user:', err);
+            }
             return false;
+        }
+    }
+
+    private static async getEndpoints(): Promise<{ outEP: number | null; inEP: number | null; }> {
+        if (!this.device || !this.device.opened) {
+            const connected = await this.connect();
+            if (!connected) return { outEP: null, inEP: null };
+        }
+
+        let outEP: number | null = null;
+        let inEP: number | null = null;
+        let targetIface = 0;
+
+        if (this.device.configuration) {
+            for (const iface of this.device.configuration.interfaces) {
+                for (const alt of iface.alternates) {
+                    for (const ep of alt.endpoints) {
+                        if (ep.direction === 'out' && outEP === null) outEP = ep.endpointNumber;
+                        if (ep.direction === 'in' && inEP === null) inEP = ep.endpointNumber;
+                    }
+                    if (outEP !== null || inEP !== null) {
+                        targetIface = iface.interfaceNumber;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (targetIface !== 0) {
+            try {
+                await this.device.claimInterface(targetIface);
+            } catch(e) { /* Already claimed or error */ }
+        }
+
+        return { outEP, inEP };
+    }
+
+    /**
+     * Sends `ESC SP n` (1B 20 n) to query printer status and reads the byte response.
+     */
+    static async requestStatus(n: number = 1): Promise<{ status: number }> {
+        try {
+            const { outEP, inEP } = await this.getEndpoints();
+            if (outEP === null || inEP === null) {
+                console.warn("[WebUSB] Missing endpoints for bidirectional communication.");
+                return { status: -1 };
+            }
+
+            // 1. Send ESC SP n
+            const req = new Uint8Array([0x1B, 0x20, n]);
+            await this.device.transferOut(outEP, req);
+
+            // 2. Read response (up to 64 bytes is normally the packet size)
+            const result = await this.device.transferIn(inEP, 64);
+            if (result.status === 'ok' && result.data) {
+                const dataView = result.data as DataView;
+                if (dataView.byteLength > 0) {
+                    return { status: dataView.getUint8(0) }; // Return the first byte
+                }
+            }
+            return { status: -1 };
+        } catch (e) {
+            console.error('[WebUSB] Status fetch failed:', e);
+            return { status: -1 };
         }
     }
 
@@ -53,43 +124,15 @@ export class WebUSBPrinter {
      */
     static async print(data: Uint8Array): Promise<boolean> {
         try {
-            if (!this.device || !this.device.opened) {
-                const connected = await this.connect();
-                if (!connected) return false;
-            }
-
-            // Dynamically scan for the OUT endpoint (usually 0x01, 0x02, or 0x81/82 depending on direction)
-            let outEndpointNumber: number | null = null;
-            let targetInterfaceNumber = 0;
-
-            if (this.device.configuration) {
-                for (const iface of this.device.configuration.interfaces) {
-                    for (const alt of iface.alternates) {
-                        for (const ep of alt.endpoints) {
-                            if (ep.direction === 'out') {
-                                outEndpointNumber = ep.endpointNumber;
-                                targetInterfaceNumber = iface.interfaceNumber;
-                                break;
-                            }
-                        }
-                        if (outEndpointNumber !== null) break;
-                    }
-                    if (outEndpointNumber !== null) break;
-                }
-            }
-
-            if (outEndpointNumber === null) {
-                console.error("[WebUSB] No OUT endpoint discovered on USB device!");
+            const { outEP } = await this.getEndpoints();
+            
+            if (outEP === null) {
+                console.warn("[WebUSB] No OUT endpoint discovered on USB device!");
                 return false;
             }
 
-            // Make sure we claimed the correct interface for the OUT endpoint
-            if (targetInterfaceNumber !== 0) {
-                await this.device.claimInterface(targetInterfaceNumber);
-            }
-
             // Fire bytes to printer!
-            const result = await this.device.transferOut(outEndpointNumber, data);
+            const result = await this.device.transferOut(outEP, data);
             
             if (result.status === 'ok') {
                 return true;
@@ -98,7 +141,7 @@ export class WebUSBPrinter {
                 return false;
             }
         } catch (e) {
-            console.error('[WebUSB] Data transfer error:', e);
+            console.warn('[WebUSB] Data transfer error:', e);
             // Nullify device on catastrophic transfer fail so we reconnect next attempt
             this.device = null;
             return false;

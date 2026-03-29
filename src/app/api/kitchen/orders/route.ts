@@ -127,6 +127,7 @@ export async function GET(request: NextRequest) {
               currency: receipt.currency || "USD",
               createdAt: receipt.createdAt,
               status: receipt.status,
+              paymentStatus: receipt.paymentStatus,
               kitchenStatus: receipt.kitchenStatus,
               lineItems: restaurantItems,
               brandName: receipt.brandName,
