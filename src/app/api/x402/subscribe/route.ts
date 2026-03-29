@@ -32,25 +32,26 @@ export async function POST(req: NextRequest) {
     const bodyText = await req.text();
     const body = bodyText ? JSON.parse(bodyText) : {};
 
-    const planKey = String(body.planKey || "").toLowerCase().trim();
+    let planKey = String(body.planKey || "").toLowerCase().trim();
 
     if (!planKey || !(planKey in PLAN_PRICES)) {
-      return NextResponse.json(
-        {
-          error: "invalid_plan",
-          message: `planKey must be one of: ${Object.keys(PLAN_PRICES).join(", ")}`,
-          availablePlans: Object.entries(PLAN_PRICES).map(([key, price]) => ({
-            planKey: key,
-            priceUsd: price,
-            description: key === "starter"
-              ? "Free tier – 1,000 requests/month"
-              : key === "pro"
-                ? "Pro tier – 50,000 requests/month, priority support"
-                : "Enterprise tier – unlimited requests, dedicated support",
-          })),
-        },
-        { status: 400, headers: { "x-correlation-id": correlationId } }
-      );
+      // If payment is absent, crawler probes often send empty bodies to check 402 behavior.
+      // Default to "pro" to generate a valid 402 challenge for the crawler.
+      if (!req.headers.has("x-payment")) {
+        planKey = "pro";
+      } else {
+        return NextResponse.json(
+          {
+            error: "invalid_plan",
+            message: `planKey must be one of: ${Object.keys(PLAN_PRICES).join(", ")}`,
+            availablePlans: Object.entries(PLAN_PRICES).map(([key, price]) => ({
+              planKey: key,
+              priceUsd: price,
+            })),
+          },
+          { status: 400, headers: { "x-correlation-id": correlationId } }
+        );
+      }
     }
 
     const priceUsd = PLAN_PRICES[planKey];

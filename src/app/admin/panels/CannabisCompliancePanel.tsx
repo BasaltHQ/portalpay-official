@@ -8,6 +8,10 @@ import {
   type ComplianceConfig, type ComplianceTabKey, type ComplianceProvider,
   type MetrcEndpointCategory, type BioTrackEndpointCategory,
   type MetrcEndpoint, type ReconciliationItem, type DiscrepancyStatus,
+  type CannabisLicenseType,
+  type CompliancePlant, type CompliancePackage, type ComplianceHarvest,
+  type TransporterDriver, type TransporterVehicle, type B2BVendor,
+  type ComplianceSaleReceipt, type ComplianceLabTest
 } from '@/lib/cannabis-compliance';
 
 // ── Shared UI ────────────────────────────────────────────────────────────────
@@ -118,6 +122,22 @@ function IntegrationsTab({ config, setConfig, onSave, saving }: { config: Compli
 
   return (
     <div className="space-y-6">
+      {/* License Type Selection */}
+      <SectionCard title="Operation Type" description="Select your primary cannabis business license" icon="🏢">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {(['retail', 'manufacturing', 'cultivation'] as const).map(lt => (
+            <button key={lt} type="button" onClick={() => setConfig({ ...config, licenseType: lt })}
+              className={`p-4 rounded-xl border-2 text-left transition-all ${config.licenseType === lt ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/10' : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15]'}`}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xl">{lt === 'retail' ? '🏪' : lt === 'manufacturing' ? '🏭' : '🧑‍🌾'}</span>
+                <p className="text-sm font-bold text-white capitalize">{lt}</p>
+              </div>
+              <p className="text-xs text-white/50">{lt === 'retail' ? 'Dispensary & Sales' : lt === 'manufacturing' ? 'Processing & Extracts' : 'Growing & Harvests'}</p>
+            </button>
+          ))}
+        </div>
+      </SectionCard>
+
       {/* Provider Selection */}
       <SectionCard title="Compliance Provider" description="Choose your state seed-to-sale tracking platform" icon="🏛️">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -241,43 +261,153 @@ function IntegrationsTab({ config, setConfig, onSave, saving }: { config: Compli
   );
 }
 
-// ── API Module Tab (provider-filtered) ───────────────────────────────────────
+// ── Operational Tabs ─────────────────────────────────────────────────────────
 
-function ApiModuleTab({ metrcCategories, biotrackCategories, config }: { metrcCategories: MetrcEndpointCategory[]; biotrackCategories: BioTrackEndpointCategory[]; config: ComplianceConfig }) {
+function useConnectionCheck(config: ComplianceConfig) {
   const provider = config.activeProvider;
-  const providerLabel = provider === 'metrc' ? 'METRC' : 'BioTrack';
-  const providerColor = provider === 'metrc' ? 'emerald' : 'violet';
-  const categories = provider === 'metrc' ? metrcCategories : biotrackCategories;
-  const endpoints = provider === 'metrc' ? METRC_ENDPOINTS : BIOTRACK_ENDPOINTS;
-  const epCount = categories.reduce((n, k) => n + ((endpoints as any)[k]?.length || 0), 0);
-  const fmt = (key: string) => key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
-  const status = provider === 'metrc' ? config.metrc.connectionStatus : config.biotrack.connectionStatus;
+  const isConnected = provider === 'metrc' ? config.metrc.connectionStatus === 'connected' : provider === 'biotrack' ? config.biotrack.connectionStatus === 'connected' : false;
+  return { provider, isConnected };
+}
 
+function ConnectionWarning({ config }: { config: ComplianceConfig }) {
+  const { provider, isConnected } = useConnectionCheck(config);
+  if (isConnected || !provider) return null;
+  return (
+    <div className="rounded-xl border border-zinc-500/20 bg-zinc-500/5 p-4 flex items-center gap-3">
+      <span className="text-xl opacity-60">⚠️</span>
+      <div>
+        <p className="text-sm font-semibold text-zinc-300">Integration Disconnected</p>
+        <p className="text-xs text-zinc-400">Your {provider === 'metrc' ? 'METRC' : 'BioTrack'} credentials are invalid or disconnected. Actions are disabled until you reconnect in the Integrations tab.</p>
+      </div>
+    </div>
+  );
+}
+
+function ActionButton({ disabled, children, primary }: { disabled?: boolean; children: React.ReactNode; primary?: boolean }) {
+  return (
+    <button disabled={disabled} className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${disabled ? 'bg-zinc-800/50 text-zinc-500 cursor-not-allowed border border-zinc-700/30' : primary ? 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30' : 'bg-white/10 text-white hover:bg-white/20'}`}>
+      {children}
+    </button>
+  );
+}
+
+function EmptyStateMessage({ provider }: { provider?: string | null }) {
+  return <div className="py-8 text-center text-white/30 text-sm">No items found. Click 'Sync from {provider === 'metrc' ? 'METRC' : 'BioTrack'}' to fetch actual data.</div>;
+}
+
+function PlantsTab({ config }: { config: ComplianceConfig }) {
+  const { isConnected } = useConnectionCheck(config);
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-          <p className="text-[10px] uppercase tracking-wider text-white/30 mb-1">Provider</p>
-          <p className={`text-lg font-bold text-${providerColor}-400`}>{providerLabel}</p>
-        </div>
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-          <p className="text-[10px] uppercase tracking-wider text-white/30 mb-1">Endpoints</p>
-          <p className={`text-2xl font-bold text-${providerColor}-400`}>{epCount}</p>
-        </div>
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-          <p className="text-[10px] uppercase tracking-wider text-white/30 mb-1">Status</p>
-          <p className="text-2xl font-bold">{status === 'connected' ? '🟢' : '🔴'}</p>
-        </div>
+      <ConnectionWarning config={config} />
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-center"><p className="text-2xl font-bold text-emerald-400">0</p><p className="text-[10px] uppercase text-white/30">Total Live</p></div>
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-center"><p className="text-2xl font-bold text-white/70">0</p><p className="text-[10px] uppercase text-white/30">Vegetative</p></div>
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-center"><p className="text-2xl font-bold text-white/70">0</p><p className="text-[10px] uppercase text-white/30">Flowering</p></div>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <button className={`px-3 py-1.5 rounded-lg bg-${providerColor}-600/20 border border-${providerColor}-500/20 text-${providerColor}-400 text-xs font-medium hover:bg-${providerColor}-600/30 transition-colors`}>↓ Pull from {providerLabel}</button>
-        <button className={`px-3 py-1.5 rounded-lg bg-${providerColor}-600/20 border border-${providerColor}-500/20 text-${providerColor}-400 text-xs font-medium hover:bg-${providerColor}-600/30 transition-colors`}>↑ Push to {providerLabel}</button>
-        <button className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/50 text-xs font-medium hover:bg-white/[0.06] transition-colors">Export Audit Log</button>
-      </div>
-      <SectionCard title={`${providerLabel} API Coverage`} description={`${categories.length} categories, ${epCount} endpoints`} icon={provider === 'metrc' ? '🟢' : '🟣'}>
-        <div className="space-y-2">
-          {categories.map(cat => <EndpointExplorer key={cat} title={fmt(cat)} endpoints={(endpoints as any)[cat] || []} provider={provider === 'metrc' ? 'METRC' : 'BioTrack'} />)}
+      <SectionCard title="Plant Batches & Tracking" description="Lifecycle management">
+        <div className="flex gap-2 mb-4">
+          <ActionButton disabled={!isConnected} primary>Sync from Provider</ActionButton>
+          <ActionButton disabled={!isConnected}>Create Batch</ActionButton>
         </div>
+        <EmptyStateMessage provider={config.activeProvider} />
+      </SectionCard>
+    </div>
+  );
+}
+
+function PackagesTab({ config }: { config: ComplianceConfig }) {
+  const { isConnected } = useConnectionCheck(config);
+  return (
+    <div className="space-y-6">
+      <ConnectionWarning config={config} />
+      <SectionCard title="Active Packages" description="Current inventory tags">
+        <div className="flex gap-2 mb-4">
+          <ActionButton disabled={!isConnected} primary>Sync from Provider</ActionButton>
+          <ActionButton disabled={!isConnected}>Create Package</ActionButton>
+          <ActionButton disabled={!isConnected}>Adjust Quantities</ActionButton>
+        </div>
+        <EmptyStateMessage provider={config.activeProvider} />
+      </SectionCard>
+    </div>
+  );
+}
+
+function HarvestsTab({ config }: { config: ComplianceConfig }) {
+  const { isConnected } = useConnectionCheck(config);
+  return (
+    <div className="space-y-6">
+      <ConnectionWarning config={config} />
+      <SectionCard title="Harvest Operations" description="Active and finished harvests">
+        <div className="flex gap-2 mb-4">
+          <ActionButton disabled={!isConnected} primary>Sync from Provider</ActionButton>
+          <ActionButton disabled={!isConnected}>Log New Harvest</ActionButton>
+        </div>
+        <EmptyStateMessage provider={config.activeProvider} />
+      </SectionCard>
+    </div>
+  );
+}
+
+function TransfersTab({ config }: { config: ComplianceConfig }) {
+  const { isConnected } = useConnectionCheck(config);
+  return (
+    <div className="space-y-6">
+      <ConnectionWarning config={config} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <SectionCard title="Drivers" icon="👤">
+          <div className="flex gap-2 mb-4">
+            <ActionButton disabled={!isConnected}>Add Driver</ActionButton>
+            <ActionButton disabled={!isConnected} primary>Sync</ActionButton>
+          </div>
+          <EmptyStateMessage provider={config.activeProvider} />
+        </SectionCard>
+        <SectionCard title="Vehicles" icon="🚚">
+          <div className="flex gap-2 mb-4">
+             <ActionButton disabled={!isConnected}>Add Vehicle</ActionButton>
+             <ActionButton disabled={!isConnected} primary>Sync</ActionButton>
+          </div>
+          <EmptyStateMessage provider={config.activeProvider} />
+        </SectionCard>
+      </div>
+      <SectionCard title="B2B Vendors & Partners" description="Approved destinations for outgoing manifests" icon="🏢">
+        <div className="flex gap-2 mb-4">
+           <ActionButton disabled={!isConnected}>Register Vendor</ActionButton>
+           <ActionButton disabled={!isConnected} primary>Sync List</ActionButton>
+        </div>
+        <EmptyStateMessage provider={config.activeProvider} />
+      </SectionCard>
+    </div>
+  );
+}
+
+function SalesTab({ config }: { config: ComplianceConfig }) {
+  const { isConnected } = useConnectionCheck(config);
+  return (
+    <div className="space-y-6">
+      <ConnectionWarning config={config} />
+      <SectionCard title="Sales Receipts & Deliveries" description="Transactions reported to the state">
+        <div className="flex gap-2 mb-4">
+          <ActionButton disabled={!isConnected} primary>Push Pending Sales</ActionButton>
+          <ActionButton disabled={!isConnected}>Check Patient Limits</ActionButton>
+        </div>
+        <EmptyStateMessage provider={config.activeProvider} />
+      </SectionCard>
+    </div>
+  );
+}
+
+function LabTestsTab({ config }: { config: ComplianceConfig }) {
+  const { isConnected } = useConnectionCheck(config);
+  return (
+    <div className="space-y-6">
+      <ConnectionWarning config={config} />
+      <SectionCard title="Lab Results" description="Status of currently staging packages">
+        <div className="flex gap-2 mb-4">
+          <ActionButton disabled={!isConnected} primary>Sync Lab Results</ActionButton>
+          <ActionButton disabled={!isConnected}>Upload COA</ActionButton>
+        </div>
+        <EmptyStateMessage provider={config.activeProvider} />
       </SectionCard>
     </div>
   );
@@ -292,14 +422,40 @@ function AuditTab({ config }: { config: ComplianceConfig }) {
   const [filter, setFilter] = useState<DiscrepancyStatus | 'all'>('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  // Demo reconciliation data
-  const [items, setItems] = useState<ReconciliationItem[]>([
-    { id: '1', sku: 'FLW-OGK-3.5', productName: 'OG Kush 3.5g', category: 'Flower', posQuantity: 48, providerQuantity: 45, discrepancy: 3, unit: 'units', providerTag: provider === 'metrc' ? '1A4060300003B01000001234' : '1234567890123456', batchNumber: 'B-2026-0312', status: 'unresolved' },
-    { id: '2', sku: 'EDI-GUM-10', productName: 'THC Gummies 10pk', category: 'Edibles', posQuantity: 22, providerQuantity: 25, discrepancy: -3, unit: 'units', providerTag: provider === 'metrc' ? '1A4060300003B01000005678' : '6543210987654321', batchNumber: 'B-2026-0308', status: 'unresolved' },
-    { id: '3', sku: 'CON-LIVE-1G', productName: 'Live Resin 1g', category: 'Concentrates', posQuantity: 15, providerQuantity: 15, discrepancy: 0, unit: 'units', providerTag: provider === 'metrc' ? '1A4060300003B01000009012' : '1122334455667788', status: 'synced_to_provider', resolvedAt: '2026-03-16T10:30:00Z' },
-    { id: '4', sku: 'PRE-SAT-1G', productName: 'Sativa Pre-Roll 1g', category: 'Pre-Rolls', posQuantity: 100, providerQuantity: 97, discrepancy: 3, unit: 'units', status: 'unresolved' },
-    { id: '5', sku: 'TIN-CBD-30', productName: 'CBD Tincture 30ml', category: 'Tinctures', posQuantity: 8, providerQuantity: 10, discrepancy: -2, unit: 'units', status: 'bypassed', resolvedAt: '2026-03-15T16:00:00Z', resolution: 'bypass_accept_provider' },
-  ]);
+  // Operational reconciliation data fetched from POS
+  const [items, setItems] = useState<ReconciliationItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/inventory?limit=500');
+        if (res.ok) {
+          const data = await res.json();
+          const posItems: ReconciliationItem[] = (data.items || [])
+            .filter((item: any) => item.industryPack === 'cannabis')
+            .map((item: any) => ({
+              id: item.id,
+              sku: item.sku || item.id,
+              productName: item.name,
+              category: item.category || 'Uncategorized',
+              posQuantity: item.stockQty > 0 ? item.stockQty : 0,
+              providerQuantity: 0, // Awaiting real provider hook
+              discrepancy: item.stockQty > 0 ? item.stockQty : 0,
+              unit: item.weightUnit || 'units',
+              providerTag: item.metrcTag || item.biotrackId,
+              batchNumber: item.batchNumber,
+              status: 'unresolved' as DiscrepancyStatus,
+            }));
+          setItems(posItems);
+        }
+      } catch (e) {
+        console.error('Failed to load inventory for audit:', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const filtered = filter === 'all' ? items : items.filter(i => i.status === filter);
   const unresolvedCount = items.filter(i => i.status === 'unresolved').length;
@@ -391,8 +547,14 @@ function AuditTab({ config }: { config: ComplianceConfig }) {
       {/* Reconciliation Table */}
       <SectionCard title="Inventory Discrepancies" description={`Comparing POS inventory against ${label}`} icon="📊">
         <div className="overflow-x-auto -mx-5 px-5">
-          <table className="w-full text-sm">
-            <thead>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3" />
+              <p className="text-sm text-white/50">Fetching live internal inventory...</p>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
               <tr className="border-b border-white/[0.06]">
                 <th className="text-left py-2 pr-2 w-8"><input type="checkbox" checked={selected.size === items.filter(i => i.status === 'unresolved').length && selected.size > 0} onChange={() => selected.size > 0 ? setSelected(new Set()) : selectAllUnresolved()} className="rounded accent-emerald-500" /></th>
                 <th className="text-left py-2 text-[10px] uppercase tracking-wider text-white/30 font-medium">Product</th>
@@ -434,7 +596,8 @@ function AuditTab({ config }: { config: ComplianceConfig }) {
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && <p className="text-center py-6 text-white/20 text-sm">No discrepancies found for this filter</p>}
+          )}
+          {!loading && filtered.length === 0 && <p className="text-center py-6 text-white/20 text-sm">No discrepancies found for this filter</p>}
         </div>
       </SectionCard>
 
@@ -616,6 +779,7 @@ export default function CannabisCompliancePanel() {
   const visibleTabs = [dashboardTab, ...COMPLIANCE_TABS.filter(t => {
     if (t.key === 'integrations') return true;
     if (!provider) return false;
+    if (t.licenseTypes && config.licenseType && !t.licenseTypes.includes(config.licenseType)) return false;
     return true;
   })];
 
@@ -657,11 +821,12 @@ export default function CannabisCompliancePanel() {
       {activeTab === 'dashboard' && <DashboardTab config={config} onNavigate={setActiveTab} />}
       {activeTab === 'integrations' && <IntegrationsTab config={config} setConfig={setConfig} onSave={saveConfig} saving={saving} />}
       {activeTab === 'audit' && provider && <AuditTab config={config} />}
-      {activeTab !== 'dashboard' && activeTab !== 'integrations' && activeTab !== 'audit' && provider && (() => {
-        const tabDef = COMPLIANCE_TABS.find(t => t.key === activeTab);
-        if (!tabDef) return null;
-        return <ApiModuleTab metrcCategories={tabDef.metrcCategories} biotrackCategories={tabDef.biotrackCategories} config={config} />;
-      })()}
+      {activeTab === 'plants' && provider && <PlantsTab config={config} />}
+      {activeTab === 'packages' && provider && <PackagesTab config={config} />}
+      {activeTab === 'harvests' && provider && <HarvestsTab config={config} />}
+      {activeTab === 'transfers' && provider && <TransfersTab config={config} />}
+      {activeTab === 'sales' && provider && <SalesTab config={config} />}
+      {activeTab === 'labTests' && provider && <LabTestsTab config={config} />}
     </div>
   );
 }
