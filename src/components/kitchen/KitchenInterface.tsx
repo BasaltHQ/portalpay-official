@@ -5,7 +5,7 @@ import { useActiveAccount } from "thirdweb/react";
 import { Capacitor } from "@capacitor/core";
 import { networkPrint, buildExpoTicketText } from "@/lib/hardware/network-print";
 import { WebUSBPrinter } from "@/lib/hardware/WebUSBPrinter";
-import { UsbPrinter } from "@/lib/hardware/useHardwareHooks";
+import { UsbPrinter, ExternalPrinter } from "@/lib/hardware/useHardwareHooks";
 import { buildRawEscPosTicket } from "@/lib/hardware/escpos";
 import { useApplyTheme, resolveThemeId } from "@/lib/themes";
 import { useBrand } from "@/contexts/BrandContext";
@@ -300,12 +300,26 @@ function KitchenTicket({ order, isOverlay, onClear, onMarkItemReady }: { order: 
                             // Tier 1: Try native printer (Capacitor)
                             try {
                                 if (Capacitor.isNativePlatform()) {
-                                    // Attempt true native plugin print
-                                    try {
-                                        await UsbPrinter.printText({ text: ticketText });
-                                        return;
-                                    } catch (e) {
-                                      console.warn("Native UsbPrinter rejected:", e);
+                                    const localWifiIp = localStorage.getItem("kds_wifi_printer_ip");
+                                    if (localWifiIp) {
+                                        try {
+                                            await ExternalPrinter.printText({ 
+                                                text: ticketText, 
+                                                ipAddress: localWifiIp, 
+                                                port: 9100 
+                                            });
+                                            return;
+                                        } catch (e) {
+                                            console.warn("Native ExternalPrinter rejected:", e);
+                                        }
+                                    } else {
+                                        // Attempt true native USB plugin print
+                                        try {
+                                            await UsbPrinter.printText({ text: ticketText });
+                                            return;
+                                        } catch (e) {
+                                          console.warn("Native UsbPrinter rejected:", e);
+                                        }
                                     }
                                 }
                             } catch (err) {
@@ -421,6 +435,14 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
     const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
     const [activeId, setActiveId] = useState<string | null>(null);
     const [shopConfig, setShopConfig] = useState<any>(null);
+    
+    // Settings Modal State
+    const [showSettings, setShowSettings] = useState(false);
+    const [wifiIpInput, setWifiIpInput] = useState("");
+
+    useEffect(() => {
+        setWifiIpInput(localStorage.getItem("kds_wifi_printer_ip") || "");
+    }, []);
 
     // Ref to track drag state immediately for polling logic
     const isDraggingRef = useRef(false);
@@ -598,6 +620,12 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
                         </div>
                     </div>
                     <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowSettings(true)}
+                            className="px-4 py-3 text-sm font-bold uppercase tracking-wider border border-white/10 hover:bg-white/5 text-neutral-300 rounded-xl transition-colors hidden sm:block"
+                        >
+                            ⚙️ Settings
+                        </button>
                         {onLogout && (
                             <button
                                 onClick={onLogout}
@@ -623,6 +651,48 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
                 <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
                     {activeOrder ? <KitchenTicket order={activeOrder} isOverlay onMarkItemReady={handleMarkItemReady} /> : null}
                 </DragOverlay>
+
+                {/* Local Hardware Settings Modal */}
+                {showSettings && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                        <div className="bg-[#1a1a1a] border border-neutral-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                ⚙️ Local Hardware Settings
+                            </h3>
+                            <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white">✕</button>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-neutral-400 mb-1.5 uppercase tracking-wider">Wi-Fi Printer IP Address</label>
+                                    <input 
+                                        type="text" 
+                                        value={wifiIpInput}
+                                        onChange={e => setWifiIpInput(e.target.value)}
+                                        placeholder="e.g. 192.168.1.100"
+                                        className="w-full bg-black border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
+                                    />
+                                    <p className="text-xs text-neutral-500 mt-2 leading-relaxed">
+                                        If provided, the KDS will attempt to send expo tickets directly to this Wi-Fi IP address over the local network via Port 9100. If left blank, it will attempt to use a direct USB-connected printer.
+                                    </p>
+                                </div>
+
+                                <button 
+                                    onClick={() => {
+                                        if (wifiIpInput.trim()) {
+                                            localStorage.setItem("kds_wifi_printer_ip", wifiIpInput.trim());
+                                        } else {
+                                            localStorage.removeItem("kds_wifi_printer_ip");
+                                        }
+                                        setShowSettings(false);
+                                    }}
+                                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold uppercase tracking-wider rounded-xl transition-all"
+                                >
+                                    Save Config
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </DndContext>
     );
