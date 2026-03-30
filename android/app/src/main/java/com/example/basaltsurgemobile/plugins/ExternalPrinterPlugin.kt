@@ -37,7 +37,9 @@ class ExternalPrinterPlugin : Plugin() {
                 
                 // Print text
                 out.write(text.toByteArray())
-                
+                // Feed paper before cut so the ticket clears the print head
+                out.write("\n\n\n\n\n".toByteArray())
+
                 // Cut paper
                 out.write(byteArrayOf(0x1D, 0x56, 0x41, 0x10))
                 

@@ -79,6 +79,7 @@ class MainActivity : BridgeActivity() {
         registerPlugin(com.example.basaltsurgemobile.plugins.KioskPrinterPlugin::class.java)
         registerPlugin(com.example.basaltsurgemobile.plugins.ValorPrinterPlugin::class.java)
         registerPlugin(com.example.basaltsurgemobile.plugins.ExternalPrinterPlugin::class.java)
+        registerPlugin(com.example.basaltsurgemobile.plugins.UsbPrinterPlugin::class.java)
         
         // Scanners
         registerPlugin(com.example.basaltsurgemobile.plugins.TopWiseScannerPlugin::class.java)
