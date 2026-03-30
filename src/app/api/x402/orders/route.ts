@@ -68,10 +68,21 @@ export async function POST(req: NextRequest) {
           facilitator: thirdwebFacilitator,
         });
 
-        return new NextResponse(JSON.stringify((result as any).responseBody || {}), {
+        // settlePayment puts the challenge in a base64 `payment-required` header.
+        // x402scan expects the challenge in the response body, so decode and serve it.
+        const rawHeaders = (result as any).responseHeaders || {};
+        const paymentRequiredB64 = rawHeaders["PAYMENT-REQUIRED"] || rawHeaders["payment-required"] || rawHeaders["Payment-Required"] || "";
+        let challengeBody: any = {};
+        if (paymentRequiredB64) {
+          try {
+            challengeBody = JSON.parse(Buffer.from(paymentRequiredB64, "base64").toString("utf-8"));
+          } catch { challengeBody = { raw: paymentRequiredB64 }; }
+        }
+
+        return new NextResponse(JSON.stringify(challengeBody), {
           status: 402,
           headers: {
-            ...((result as any).responseHeaders || {}),
+            ...rawHeaders,
             "x-correlation-id": correlationId,
             "Content-Type": "application/json",
           },
@@ -192,8 +203,17 @@ export async function POST(req: NextRequest) {
 
     // If settlePayment returns non-200, it means payment is required (402)
     if (result.status !== 200) {
+      const rawHeaders = (result as any).responseHeaders || {};
+      const paymentRequiredB64 = rawHeaders["PAYMENT-REQUIRED"] || rawHeaders["payment-required"] || rawHeaders["Payment-Required"] || "";
+      let challengeBody: any = {};
+      if (paymentRequiredB64) {
+        try {
+          challengeBody = JSON.parse(Buffer.from(paymentRequiredB64, "base64").toString("utf-8"));
+        } catch { challengeBody = { raw: paymentRequiredB64 }; }
+      }
+
       return new NextResponse(JSON.stringify({
-        ...((result as any).responseBody || {}),
+        ...challengeBody,
         order: {
           shopSlug,
           merchant: merchantWallet,
@@ -204,7 +224,7 @@ export async function POST(req: NextRequest) {
       }), {
         status: 402,
         headers: {
-          ...((result as any).responseHeaders || {}),
+          ...rawHeaders,
           "x-correlation-id": correlationId,
           "Content-Type": "application/json",
         },
