@@ -186,6 +186,8 @@ export async function POST(req: NextRequest) {
           ...rawHeaders,
           "x-correlation-id": correlationId,
           "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Expose-Headers": "payment-required, Payment-Required, PAYMENT-REQUIRED",
         },
       });
     }
@@ -265,4 +267,14 @@ export async function PUT(req: NextRequest) { return POST(req); }
 export async function PATCH(req: NextRequest) { return POST(req); }
 export async function DELETE(req: NextRequest) { return POST(req); }
 export async function HEAD(req: NextRequest) { return POST(req); }
-export async function OPTIONS(req: NextRequest) { return POST(req); }
+export async function OPTIONS(req: NextRequest) { 
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "Access-Control-Allow-Headers": "*",
+      "Access-Control-Expose-Headers": "payment-required, Payment-Required, PAYMENT-REQUIRED",
+    }
+  });
+}
