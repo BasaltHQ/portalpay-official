@@ -1,0 +1,153 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "PortalPay x402 Commerce API",
+    "version": "1.0.0",
+    "contact": {
+      "name": "PortalPay Support",
+      "url": "https://ledger1.ai",
+      "email": "support@ledger1.ai"
+    },
+    "description": "x402-gated agentic commerce endpoints for PortalPay. These endpoints enforce the x402 payment challenge protocol: POST without an x-payment header to receive a 402 challenge, then re-POST with the fulfilled payment proof to complete the transaction.",
+    "x-guidance": "Welcome to PortalPay's Agentic Commerce API.\n\nThis spec contains ONLY the x402 payment-gated endpoints.\n\n## Place an Order\n1. Discover shops via GET /api/directory/shops (free, not in this spec).\n2. POST /api/x402/orders with { shopSlug, items: [{ sku, qty }] }.\n3. Server replies 402 with payment challenge headers.\n4. Fulfill the on-chain payment and re-POST with x-payment header.\n5. Server returns a paid receipt.\n\n## Subscribe to API Tier\n1. POST /api/x402/subscribe with { planKey: 'pro' | 'enterprise' }.\n2. Server replies 402 with payment challenge ($399 pro, $500 enterprise).\n3. Fulfill payment, re-POST with x-payment header.\n4. Server returns API key.\n\nStarter tier ($0) does not require payment."
+  },
+  "servers": [
+    {
+      "url": "https://surge.basalthq.com",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/api/x402/orders": {
+      "post": {
+        "summary": "Create Order via x402 Payment",
+        "operationId": "x402CreateOrder",
+        "tags": ["Orders"],
+        "description": "x402-gated order endpoint for AI agents. Always returns 402 with payment challenge when no x-payment proof is attached. Agents discover shops via GET /api/directory/shops, resolve inventory, then POST here with shopSlug and items to receive a payment challenge. Once paid, a receipt is returned.",
+        "security": [],
+        "x-auth-mode": "x402",
+        "x-payment-info": {
+          "protocols": ["x402"],
+          "pricingMode": "quote"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["shopSlug", "items"],
+                "properties": {
+                  "shopSlug": {
+                    "type": "string",
+                    "description": "The shop's unique slug (from /api/directory/shops)"
+                  },
+                  "items": {
+                    "type": "array",
+                    "description": "Items to order with SKU and quantity",
+                    "items": {
+                      "type": "object",
+                      "required": ["sku", "qty"],
+                      "properties": {
+                        "sku": { "type": "string" },
+                        "qty": { "type": "integer", "minimum": 1 }
+                      }
+                    }
+                  },
+                  "jurisdictionCode": {
+                    "type": "string",
+                    "description": "Optional tax jurisdiction code (e.g. US-CA)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order receipt (payment settled)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "receipt": {
+                      "type": "object",
+                      "properties": {
+                        "receiptId": { "type": "string" },
+                        "totalUsd": { "type": "number" },
+                        "lineItems": { "type": "array", "items": { "type": "object" } },
+                        "status": { "type": "string", "enum": ["paid"] }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required – x402 challenge issued"
+          }
+        }
+      }
+    },
+    "/api/x402/subscribe": {
+      "post": {
+        "summary": "Subscribe to API Tier via x402 Payment",
+        "operationId": "x402Subscribe",
+        "tags": ["Subscriptions"],
+        "description": "x402-gated developer subscription endpoint. Returns 402 with payment challenge for paid tiers (pro=$399, enterprise=$500). Starter tier is free and does not require payment. Once paid, returns an API key.",
+        "security": [],
+        "x-auth-mode": "x402",
+        "x-payment-info": {
+          "protocols": ["x402"],
+          "pricingMode": "range",
+          "minPrice": "0.00",
+          "maxPrice": "500.00"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["planKey"],
+                "properties": {
+                  "planKey": {
+                    "type": "string",
+                    "enum": ["starter", "pro", "enterprise"],
+                    "description": "Pricing: starter=$0, pro=$399, enterprise=$500"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Subscription activated (API key issued)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "plan": { "type": "string" },
+                    "priceUsd": { "type": "number" },
+                    "subscriptionId": { "type": "string" },
+                    "apiKey": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required – x402 challenge issued"
+          }
+        }
+      }
+    }
+  }
+}

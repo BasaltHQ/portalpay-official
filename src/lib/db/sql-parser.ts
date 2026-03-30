@@ -357,6 +357,27 @@ function parsePredicate(expr: string, params: Record<string, any>): Filter<Docum
         return { $expr: { [mongoOp]: [{ $abs: { $subtract: [`$${field}`, subtractVal] } }, threshold] } };
     }
 
+    // ARRAY_CONTAINS with 3 args: ARRAY_CONTAINS(c.field, {"key": @param}, true) → partial object matching
+    // Must be checked BEFORE the 2-arg form since the 2-arg regex would mis-capture the 3rd arg
+    const arrContains3 = /ARRAY_CONTAINS\s*\(\s*(c\.[.\w]+)\s*,\s*(\{[^}]+\})\s*,\s*true\s*\)/i.exec(e);
+    if (arrContains3) {
+        const field = cosmosFieldToMongo(arrContains3[1].slice(2));
+        let objLiteral = arrContains3[2].trim();
+        // Parse the JSON object literal, resolving @params
+        // e.g. {"wallet": @agentWallet} → { wallet: "0x..." }
+        const elemMatch: Record<string, any> = {};
+        const kvRegex = /"(\w+)"\s*:\s*(@\w+|"[^"]*"|'[^']*'|\d+|true|false|null)/g;
+        let kvMatch;
+        while ((kvMatch = kvRegex.exec(objLiteral)) !== null) {
+            const key = kvMatch[1];
+            const rawVal = kvMatch[2].trim();
+            elemMatch[key] = resolveRhs(rawVal, params);
+        }
+        if (Object.keys(elemMatch).length > 0) {
+            return { [field]: { $elemMatch: elemMatch } };
+        }
+    }
+
     // ARRAY_CONTAINS(@param, c.field) OR ARRAY_CONTAINS(["a","b"], c.field) OR ARRAY_CONTAINS(c.field, @param)
     const arrContains = /ARRAY_CONTAINS\s*\(\s*(.*?)\s*,\s*(.*?)\s*\)/i.exec(e);
     if (arrContains) {
