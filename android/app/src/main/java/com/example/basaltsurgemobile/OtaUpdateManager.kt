@@ -154,24 +154,31 @@ class OtaUpdateManager(private val context: Context) {
     /**
      * Install an APK file
      */
-    /**
-     * Install an APK file
-     */
     private fun installApk(apkUri: Uri) {
-        try {
-            // Check if we are Device Owner
-            val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as android.app.admin.DevicePolicyManager
-            val isDeviceOwner = dpm.isDeviceOwnerApp(context.packageName)
-            
-            if (isDeviceOwner) {
-                Log.d(TAG, "Device Owner detected - attempting silent install")
-                installPackageSilently(apkUri)
-            } else {
-                Log.d(TAG, "Not Device Owner - attempting interactive install")
-                installPackageInteractively(apkUri)
+        @Suppress("OPT_IN_USAGE")
+        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                // Check if we are Device Owner
+                val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as android.app.admin.DevicePolicyManager
+                val isDeviceOwner = dpm.isDeviceOwnerApp(context.packageName)
+                
+                // CRITICAL: We must delay slightly to ensure MainActivity's stopLockTask() 
+                // has been fully processed by the Android UI / ActivityManager. 
+                // If we commit an update while LockTaskMode is still strictly active, Android rejects it.
+                kotlinx.coroutines.delay(1500)
+                
+                if (isDeviceOwner) {
+                    Log.d(TAG, "Device Owner detected - attempting silent install")
+                    installPackageSilently(apkUri)
+                } else {
+                    Log.d(TAG, "Not Device Owner - attempting interactive install")
+                    withContext(Dispatchers.Main) {
+                        installPackageInteractively(apkUri)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error preparing installation: ${e.message}")
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error preparing installation: ${e.message}")
         }
     }
 
