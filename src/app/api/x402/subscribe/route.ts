@@ -29,6 +29,11 @@ export async function POST(req: NextRequest) {
   const correlationId = crypto.randomUUID();
 
   try {
+    // Resolve the public-facing URL (req.nextUrl resolves to internal container address)
+    const forwardedHost = req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.host;
+    const proto = req.headers.get("x-forwarded-proto") || "https";
+    const publicUrl = `${proto}://${forwardedHost}${req.nextUrl.pathname}`;
+
     const bodyText = await req.text();
     const body = bodyText ? JSON.parse(bodyText) : {};
 
@@ -120,10 +125,9 @@ export async function POST(req: NextRequest) {
     });
 
     const paymentData = req.headers.get("x-payment");
-    const resourceUrl = req.nextUrl.toString();
 
     const result = await settlePayment({
-      resourceUrl,
+      resourceUrl: publicUrl,
       method: "POST",
       paymentData,
       payTo: ownerWallet as `0x${string}`,
