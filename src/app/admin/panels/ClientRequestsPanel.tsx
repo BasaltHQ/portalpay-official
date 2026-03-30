@@ -47,6 +47,7 @@ type ClientRequest = {
     reviewedAt?: number;
     createdAt: number;
     splitConfig?: {
+        platformBps?: number;
         partnerBps: number;
         merchantBps: number;
         agents?: { wallet: string; bps: number }[];
@@ -833,7 +834,16 @@ export default function ClientRequestsPanel() {
                                                         >
                                                             <span>
                                                                 {req.splitConfig
-                                                                    ? `${(req.splitConfig.partnerBps / 100).toFixed(2)}% Split${(req.splitConfig.agents?.length || 0) > 0 ? ` (+${req.splitConfig.agents?.length} Agents)` : ''}`
+                                                                    ? (() => {
+                                                                        const agentCount = req.splitConfig.agents?.length || 0;
+                                                                        if (isPlatformContainer) {
+                                                                            const pBps = req.splitConfig.platformBps ?? platformBps;
+                                                                            const aBps = (req.splitConfig.agents || []).reduce((s: number, a: any) => s + (Number(a.bps) || 0), 0);
+                                                                            const totalBps = pBps + aBps;
+                                                                            return `${(totalBps / 100).toFixed(2)}% Fee${agentCount > 0 ? ` (${agentCount} Agent${agentCount > 1 ? 's' : ''})` : ''}`;
+                                                                        }
+                                                                        return `${(req.splitConfig.partnerBps / 100).toFixed(2)}% Split${agentCount > 0 ? ` (+${agentCount} Agents)` : ''}`;
+                                                                    })()
                                                                     : "Set Split"}
                                                             </span>
                                                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

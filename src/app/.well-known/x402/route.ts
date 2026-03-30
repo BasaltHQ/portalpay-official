@@ -10,7 +10,7 @@ export async function GET() {
     resources: ["POST /api/x402/orders", "POST /api/x402/subscribe"]
   }, {
     headers: {
-      "Link": "</openapi.json>; rel=\"service-desc\"",
+      "Link": "</openapi-x402.json>; rel=\"service-desc\"",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET"
     }

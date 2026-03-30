@@ -593,7 +593,7 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     transition={{ type: "spring", damping: 25, stiffness: 300 }}
                     // WIDER LAYOUT: Changed max-w-[480px] to max-w-3xl
-                    className={`relative w-full ${inline ? 'h-auto max-w-3xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden bg-black/80 backdrop-blur-xl' : 'h-full sm:h-auto sm:max-h-[85vh] sm:max-w-3xl sm:rounded-2xl border-0 sm:border border-white/10 shadow-2xl overflow-hidden pointer-events-auto flex flex-col bg-black/95 sm:bg-black/90'}`}
+                    className={`relative w-full ${inline ? 'max-h-[90dvh] max-w-3xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden bg-black/80 backdrop-blur-xl flex flex-col' : 'h-full sm:h-auto sm:max-h-[85vh] sm:max-w-3xl sm:rounded-2xl border-0 sm:border border-white/10 shadow-2xl overflow-hidden pointer-events-auto flex flex-col bg-black/95 sm:bg-black/90'}`}
                     style={{
                         background: inline ? 'rgba(0,0,0,0.6)' : 'linear-gradient(180deg, rgba(10,10,10,1) 0%, rgba(5,5,5,1) 100%)',
                         backdropFilter: inline ? 'blur(20px)' : undefined

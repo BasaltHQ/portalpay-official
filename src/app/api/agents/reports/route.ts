@@ -62,6 +62,18 @@ export async function GET(req: NextRequest) {
             parameters: [{ name: "@agentWallet", value: agentWallet }],
         }).fetchAll();
 
+        // Also check client_request docs (agent referral attribution from the application)
+        const { resources: clientRequests } = await container.items.query({
+            query: `SELECT c.wallet, c.shopName, c.brandKey, c.splitConfig, c.slug,
+                           c.deployedSplitAddress, c.status
+                    FROM c
+                    WHERE c.type = 'client_request'
+                      AND c.status = 'approved'
+                      AND IS_DEFINED(c.splitConfig.agents)
+                      AND ARRAY_CONTAINS(c.splitConfig.agents, {"wallet": @agentWallet}, true)`,
+            parameters: [{ name: "@agentWallet", value: agentWallet }],
+        }).fetchAll();
+
         // Merge: site_config takes priority for split config, shop_config for display name
         const merchantMap = new Map<
             string,
@@ -75,7 +87,24 @@ export async function GET(req: NextRequest) {
             }
         >();
 
-        // Index shop_config first (lower priority)
+        // Index client_request first (lowest priority — discovery fallback)
+        for (const cr of clientRequests || []) {
+            const mw = String(cr.wallet || "").toLowerCase();
+            if (!hex(mw)) continue;
+            const agents: { wallet: string; bps: number }[] = cr.splitConfig?.agents || [];
+            const agentEntry = agents.find((a) => String(a.wallet || "").toLowerCase() === agentWallet);
+            if (!agentEntry) continue;
+            merchantMap.set(mw, {
+                wallet: mw,
+                shopName: cr.shopName || "Unknown Merchant",
+                slug: cr.slug,
+                splitAddress: cr.deployedSplitAddress,
+                agentBps: Number(agentEntry.bps || 0),
+                brandKey: String(cr.brandKey || "").toLowerCase() || undefined,
+            });
+        }
+
+        // Index shop_config (lower priority, overrides client_request)
         for (const sc of shopConfigs || []) {
             const mw = String(sc.wallet || "").toLowerCase();
             if (!hex(mw)) continue;
