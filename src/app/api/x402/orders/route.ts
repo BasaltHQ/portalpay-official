@@ -20,9 +20,8 @@ export async function POST(req: NextRequest) {
 
   try {
     // Resolve the public-facing URL (req.nextUrl resolves to internal container address)
-    const forwardedHost = req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.host;
-    const proto = req.headers.get("x-forwarded-proto") || "https";
-    const publicUrl = `${proto}://${forwardedHost}${req.nextUrl.pathname}`;
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || `https://${req.headers.get("host") || "surge.basalthq.com"}`).replace(/\/$/, "");
+    const publicUrl = `${baseUrl}${req.nextUrl.pathname}`;
 
     // Clone and parse body so we can read it AND forward it
     const bodyText = await req.text();
