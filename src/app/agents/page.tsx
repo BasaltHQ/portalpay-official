@@ -36,6 +36,8 @@ import {
     Phone,
     Save,
     Link,
+    Clock,
+    UserPlus,
 } from "lucide-react";
 
 /* ─── Types ─── */
@@ -50,6 +52,19 @@ type MerchantRow = {
     transactionCount: number;
     estimatedEarnings: number;
     estimatedTipShare: number;
+};
+
+type ReferralRow = {
+    id: string;
+    merchantWallet: string;
+    shopName: string;
+    legalBusinessName?: string;
+    businessType?: string;
+    status: "pending" | "approved" | "rejected" | "blocked";
+    agentBps: number;
+    slug?: string;
+    createdAt: number;
+    reviewedAt?: number;
 };
 
 type AgentReport = {
@@ -176,6 +191,11 @@ export default function AgentDashboard() {
     const [referralBps, setReferralBps] = useState<number>(50);
     const [copiedLink, setCopiedLink] = useState("");
 
+    /* ── My Referrals State ── */
+    const [referrals, setReferrals] = useState<ReferralRow[]>([]);
+    const [referralsLoading, setReferralsLoading] = useState(false);
+    const [referralsSummary, setReferralsSummary] = useState<{ total: number; pending: number; approved: number; rejected: number }>({ total: 0, pending: 0, approved: 0, rejected: 0 });
+
     /* ── Profile gate state ── */
     const [profileLoading, setProfileLoading] = useState(true);
     const [hasProfile, setHasProfile] = useState(false);
@@ -247,9 +267,27 @@ export default function AgentDashboard() {
         }
     }, [agentWallet, range, customStart, customEnd]);
 
+    /* ── Fetch Referrals ── */
+    const fetchReferrals = useCallback(async () => {
+        if (!agentWallet) return;
+        setReferralsLoading(true);
+        try {
+            const res = await fetch("/api/agents/referrals", { headers: { "x-wallet": agentWallet } });
+            const json = await res.json();
+            if (json.ok) {
+                setReferrals(json.referrals || []);
+                setReferralsSummary(json.summary || { total: 0, pending: 0, approved: 0, rejected: 0 });
+            }
+        } catch { }
+        setReferralsLoading(false);
+    }, [agentWallet]);
+
     useEffect(() => {
-        if (agentWallet) fetchReport();
-    }, [fetchReport, agentWallet]);
+        if (agentWallet) {
+            fetchReport();
+            fetchReferrals();
+        }
+    }, [fetchReport, fetchReferrals, agentWallet]);
 
     /* ── Sorted merchants ── */
     const sortedMerchants = useMemo(() => {
@@ -865,6 +903,112 @@ export default function AgentDashboard() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* ─── My Referrals Pipeline ─── */}
+                        <div className="rounded-xl border bg-card overflow-hidden">
+                            <div className="p-4 border-b flex items-center justify-between flex-wrap gap-2">
+                                <h3 className="font-semibold flex items-center gap-2">
+                                    <UserPlus className="h-4 w-4 text-primary" />
+                                    My Referrals
+                                </h3>
+                                <div className="flex items-center gap-3 text-xs">
+                                    {referralsSummary.pending > 0 && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 font-semibold">
+                                            <Clock className="h-3 w-3" /> {referralsSummary.pending} Pending
+                                        </span>
+                                    )}
+                                    {referralsSummary.approved > 0 && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 border border-green-500/20 font-semibold">
+                                            <CheckCircle className="h-3 w-3" /> {referralsSummary.approved} Approved
+                                        </span>
+                                    )}
+                                    {referralsSummary.rejected > 0 && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 border border-red-500/20 font-semibold">
+                                            <AlertCircle className="h-3 w-3" /> {referralsSummary.rejected} Rejected
+                                        </span>
+                                    )}
+                                    <button
+                                        onClick={fetchReferrals}
+                                        disabled={referralsLoading}
+                                        className="h-7 w-7 rounded-md border grid place-items-center hover:bg-muted/50 transition disabled:opacity-50"
+                                        title="Refresh referrals"
+                                    >
+                                        <RefreshCcw className={`h-3 w-3 ${referralsLoading ? "animate-spin" : ""}`} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {referralsLoading && referrals.length === 0 ? (
+                                <div className="p-8 text-center text-muted-foreground">
+                                    <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                                    <span className="text-sm">Loading referrals…</span>
+                                </div>
+                            ) : referrals.length === 0 ? (
+                                <div className="p-12 text-center text-muted-foreground">
+                                    <UserPlus className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                                    <p className="font-medium">No referrals yet</p>
+                                    <p className="text-xs mt-1.5 max-w-sm mx-auto">
+                                        Share your referral link above to onboard merchants. Their application status will appear here in real time.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-[10px] uppercase text-muted-foreground border-b tracking-wider">
+                                            <tr>
+                                                <th className="py-3 px-4 font-bold">Merchant</th>
+                                                <th className="py-3 px-4 font-bold">Type</th>
+                                                <th className="py-3 px-4 text-center font-bold">Status</th>
+                                                <th className="py-3 px-4 text-right font-bold">Your Rate</th>
+                                                <th className="py-3 px-4 text-right font-bold">Applied</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {referrals.map((r) => (
+                                                <tr key={r.id} className="hover:bg-muted/10 transition-colors">
+                                                    <td className="py-3 px-4">
+                                                        <div className="font-medium">{r.shopName}</div>
+                                                        {r.legalBusinessName && r.legalBusinessName !== r.shopName && (
+                                                            <div className="text-xs text-muted-foreground">{r.legalBusinessName}</div>
+                                                        )}
+                                                        <div className="text-xs text-muted-foreground font-mono mt-0.5">
+                                                            {r.merchantWallet.slice(0, 6)}…{r.merchantWallet.slice(-4)}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-xs text-muted-foreground uppercase">
+                                                        {r.businessType || "—"}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-center">
+                                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                                            r.status === "approved"
+                                                                ? "bg-green-500/10 text-green-500 border border-green-500/20"
+                                                                : r.status === "pending"
+                                                                ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                                                                : r.status === "rejected"
+                                                                ? "bg-red-500/10 text-red-500 border border-red-500/20"
+                                                                : "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20"
+                                                        }`}>
+                                                            {r.status === "approved" && <CheckCircle className="h-3 w-3" />}
+                                                            {r.status === "pending" && <Clock className="h-3 w-3" />}
+                                                            {r.status === "rejected" && <AlertCircle className="h-3 w-3" />}
+                                                            {r.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right">
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                                                            {(r.agentBps / 100).toFixed(2)}%
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right text-xs text-muted-foreground tabular-nums">
+                                                        {new Date(r.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
 
                         {/* ─── KPI Cards ─── */}

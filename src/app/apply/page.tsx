@@ -23,7 +23,7 @@ export default function ApplyPage() {
     const tertiary = primary;
 
     return (
-        <div className="min-h-[100dvh] w-full bg-black relative overflow-hidden flex items-center justify-center p-4">
+        <div className="min-h-[100dvh] w-full bg-black relative overflow-y-auto flex items-center justify-center p-4">
             {/* Animated Gradient Orbs */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <motion.div
