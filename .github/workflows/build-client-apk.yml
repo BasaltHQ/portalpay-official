@@ -106,36 +106,31 @@ jobs:
             -PVERSION_CODE="${{ github.event.inputs.versionCode }}" \
             -PVERSION_NAME="${{ github.event.inputs.versionName }}"
 
-      - name: Upload to Azure Blob Storage
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            # Upload the built APK to Azure Blob Storage
-            # Must match the location expected by the ZIP download route:
-            # Container: portalpay (from PP_APK_CONTAINER)
-            # Prefix: brands (from PP_APK_BLOB_PREFIX)
-            # Blob name: brands/{brandKey}-touchpoint-signed.apk
+      - name: Upload to OVHCloud S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}
+          AWS_REGION: ${{ secrets.S3_REGION }}
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
+        run: |
+          # Upload the built APK to OVHCloud S3 Bucket
+          # The app's APK download route expects it under 'brands/...'
 
-            BRAND_KEY="${{ github.event.inputs.brandKey }}"
-            APK_FILE="android/app/build/outputs/apk/release/app-release.apk"
+          BRAND_KEY="${{ github.event.inputs.brandKey }}"
+          APK_FILE="android/app/build/outputs/apk/release/app-release.apk"
 
-            # Storage configuration (must match existing infrastructure)
-            CONTAINER="portalpay"
-            PREFIX="brands"
-            BLOB_NAME="${PREFIX}/${BRAND_KEY}-touchpoint-signed.apk"
+          # Storage configuration
+          PREFIX="brands"
+          S3_KEY="${PREFIX}/${BRAND_KEY}-touchpoint-signed.apk"
 
-            echo "Uploading APK to Azure Blob Storage..."
-            echo "  Account: ${{ secrets.AZURE_STORAGE_ACCOUNT }}"
-            echo "  Container: ${CONTAINER}"
-            echo "  Blob Name: ${BLOB_NAME}"
+          echo "Uploading APK to OVHCloud S3..."
+          echo "  Bucket: ${S3_BUCKET}"
+          echo "  Key: ${S3_KEY}"
+          echo "  Endpoint: ${S3_ENDPOINT}"
 
-            az storage blob upload \
-              --account-name ${{ secrets.AZURE_STORAGE_ACCOUNT }} \
-              --container-name "${CONTAINER}" \
-              --name "${BLOB_NAME}" \
-              --file "${APK_FILE}" \
-              --account-key ${{ secrets.AZURE_STORAGE_KEY }} \
-              --overwrite
+          aws s3 cp "${APK_FILE}" "s3://${S3_BUCKET}/${S3_KEY}" \
+            --endpoint-url "${S3_ENDPOINT}" \
+            --region "${AWS_REGION:-us-east-1}"
 
-            echo "✅ APK uploaded successfully!"
-            echo "Download URL: https://${{ secrets.AZURE_STORAGE_ACCOUNT }}.blob.core.windows.net/${CONTAINER}/${BLOB_NAME}"
+          echo "✅ APK uploaded to S3 successfully!"
