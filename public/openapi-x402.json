@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.3",
+  "openapi": "3.1.0",
   "info": {
     "title": "PortalPay x402 Commerce API",
     "version": "1.0.0",
@@ -22,12 +22,20 @@
       "post": {
         "summary": "Create Order via x402 Payment",
         "operationId": "x402CreateOrder",
-        "tags": ["Orders"],
+        "tags": [
+          "Orders"
+        ],
         "description": "x402-gated order endpoint for AI agents. Always returns 402 with payment challenge when no x-payment proof is attached. Agents discover shops via GET /api/directory/shops, resolve inventory, then POST here with shopSlug and items to receive a payment challenge. Once paid, a receipt is returned.",
-        "security": [],
+        "security": [
+          {
+            "x402": []
+          }
+        ],
         "x-auth-mode": "x402",
         "x-payment-info": {
-          "protocols": ["x402"],
+          "protocols": [
+            "x402"
+          ],
           "pricingMode": "quote"
         },
         "requestBody": {
@@ -36,7 +44,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["shopSlug", "items"],
+                "required": [
+                  "shopSlug",
+                  "items"
+                ],
                 "properties": {
                   "shopSlug": {
                     "type": "string",
@@ -47,10 +58,18 @@
                     "description": "Items to order with SKU and quantity",
                     "items": {
                       "type": "object",
-                      "required": ["sku", "qty"],
+                      "required": [
+                        "sku",
+                        "qty"
+                      ],
                       "properties": {
-                        "sku": { "type": "string" },
-                        "qty": { "type": "integer", "minimum": 1 }
+                        "sku": {
+                          "type": "string"
+                        },
+                        "qty": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
                       }
                     }
                   },
@@ -71,14 +90,30 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "ok": { "type": "boolean" },
+                    "ok": {
+                      "type": "boolean"
+                    },
                     "receipt": {
                       "type": "object",
                       "properties": {
-                        "receiptId": { "type": "string" },
-                        "totalUsd": { "type": "number" },
-                        "lineItems": { "type": "array", "items": { "type": "object" } },
-                        "status": { "type": "string", "enum": ["paid"] }
+                        "receiptId": {
+                          "type": "string"
+                        },
+                        "totalUsd": {
+                          "type": "number"
+                        },
+                        "lineItems": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "paid"
+                          ]
+                        }
                       }
                     }
                   }
@@ -96,12 +131,20 @@
       "post": {
         "summary": "Subscribe to API Tier via x402 Payment",
         "operationId": "x402Subscribe",
-        "tags": ["Subscriptions"],
+        "tags": [
+          "Subscriptions"
+        ],
         "description": "x402-gated developer subscription endpoint. Returns 402 with payment challenge for paid tiers (pro=$399, enterprise=$500). Starter tier is free and does not require payment. Once paid, returns an API key.",
-        "security": [],
+        "security": [
+          {
+            "x402": []
+          }
+        ],
         "x-auth-mode": "x402",
         "x-payment-info": {
-          "protocols": ["x402"],
+          "protocols": [
+            "x402"
+          ],
           "pricingMode": "range",
           "minPrice": "0.00",
           "maxPrice": "500.00"
@@ -112,11 +155,17 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["planKey"],
+                "required": [
+                  "planKey"
+                ],
                 "properties": {
                   "planKey": {
                     "type": "string",
-                    "enum": ["starter", "pro", "enterprise"],
+                    "enum": [
+                      "starter",
+                      "pro",
+                      "enterprise"
+                    ],
                     "description": "Pricing: starter=$0, pro=$399, enterprise=$500"
                   }
                 }
@@ -132,12 +181,24 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "ok": { "type": "boolean" },
-                    "plan": { "type": "string" },
-                    "priceUsd": { "type": "number" },
-                    "subscriptionId": { "type": "string" },
-                    "apiKey": { "type": "string" },
-                    "message": { "type": "string" }
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "plan": {
+                      "type": "string"
+                    },
+                    "priceUsd": {
+                      "type": "number"
+                    },
+                    "subscriptionId": {
+                      "type": "string"
+                    },
+                    "apiKey": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -147,6 +208,15 @@
             "description": "Payment Required – x402 challenge issued"
           }
         }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "x402": {
+        "type": "http",
+        "scheme": "x402",
+        "description": "x402 payment protocol"
       }
     }
   }

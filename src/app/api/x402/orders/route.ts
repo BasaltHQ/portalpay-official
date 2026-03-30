@@ -80,6 +80,36 @@ export async function POST(req: NextRequest) {
         if (paymentRequiredB64) {
           try {
             challengeBody = JSON.parse(Buffer.from(paymentRequiredB64, "base64").toString("utf-8"));
+            
+            // Inject input schema so strict crawler parsers don't fail discovery
+            if (challengeBody.accepts && Array.isArray(challengeBody.accepts)) {
+              challengeBody.accepts.forEach((a: any) => {
+                if (!a.outputSchema) a.outputSchema = {};
+                if (!a.outputSchema.input) a.outputSchema.input = { type: "http", method: "POST" };
+                a.outputSchema.input.schema = {
+                  type: "object",
+                  required: ["shopSlug", "items"],
+                  properties: {
+                    shopSlug: { type: "string" },
+                    items: { 
+                      type: "array", 
+                      items: { 
+                        type: "object", 
+                        required: ["sku", "qty"], 
+                        properties: { sku: { type: "string" }, qty: { type: "number" } } 
+                      } 
+                    }
+                  }
+                };
+              });
+            }
+            
+            // Re-encode header to ensure it matches the body
+            const newHeaderB64 = Buffer.from(JSON.stringify(challengeBody)).toString("base64");
+            if (rawHeaders["PAYMENT-REQUIRED"]) rawHeaders["PAYMENT-REQUIRED"] = newHeaderB64;
+            else if (rawHeaders["payment-required"]) rawHeaders["payment-required"] = newHeaderB64;
+            else if (rawHeaders["Payment-Required"]) rawHeaders["Payment-Required"] = newHeaderB64;
+            
           } catch { challengeBody = { raw: paymentRequiredB64 }; }
         }
 

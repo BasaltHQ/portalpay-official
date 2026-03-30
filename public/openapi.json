@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.3",
+  "openapi": "3.1.0",
   "info": {
     "title": "PortalPay API",
     "version": "1.0.0",
@@ -225,7 +225,11 @@
           "Orders"
         ],
         "description": "x402-gated order endpoint for AI agents. Always returns 402 with payment challenge when no x-payment proof is attached. Agents discover shops via GET /api/directory/shops, resolve inventory, then POST here with shopSlug and items to receive a payment challenge. Once paid, a receipt is returned.\n",
-        "security": [],
+        "security": [
+          {
+            "x402": []
+          }
+        ],
         "x-payment-info": {
           "protocols": [
             "x402"
@@ -330,7 +334,11 @@
           "Subscriptions"
         ],
         "description": "x402-gated developer subscription endpoint. Returns 402 with payment challenge for paid tiers (pro=$399, enterprise=$500). Starter tier is free and does not require payment. Once paid, returns an API key.\n",
-        "security": [],
+        "security": [
+          {
+            "x402": []
+          }
+        ],
         "x-payment-info": {
           "protocols": [
             "x402"
@@ -2063,6 +2071,11 @@
         "in": "header",
         "name": "Ocp-Apim-Subscription-Key",
         "description": "Azure API Management subscription key. Required for developer-facing endpoints.\nObtain your key via PortalPay Admin → API Subscriptions (or directly in APIM).\n"
+      },
+      "x402": {
+        "type": "http",
+        "scheme": "x402",
+        "description": "x402 payment protocol"
       }
     },
     "headers": {
