@@ -118,7 +118,7 @@ jobs:
           # The app's APK download route expects it under 'brands/...'
 
           BRAND_KEY="${{ github.event.inputs.brandKey }}"
-          APK_FILE="android/app/build/outputs/apk/release/app-release.apk"
+          APK_FILE="app/build/outputs/apk/release/app-release.apk"
 
           # Storage configuration
           PREFIX="brands"
