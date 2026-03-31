@@ -57,6 +57,7 @@ import DeliveryPanel from "@/app/admin/panels/DeliveryPanel";
 import WritersWorkshopPanelExt from "@/app/admin/panels/WritersWorkshopPanel";
 import CannabisCompliancePanel from "@/app/admin/panels/CannabisCompliancePanel";
 import PublicationsPanelExt from "@/app/admin/panels/PublicationsPanel";
+import AgentUniversityPanelExt from "@/app/admin/panels/AgentUniversityPanel";
 // Placeholder to avoid errors - I will read file first
 import ReportsPanel from "@/app/admin/panels/ReportsPanel";
 import ReportsPanelMerchant from "@/app/admin/panels/ReportsPanelMerchant";
@@ -9710,6 +9711,7 @@ export default function AdminPage() {
     | "modules"
     | "nodeOperators"
     | "nodeDashboard"
+    | "agentUniversity"
     | "cannabisCompliance"
   >("reserve");
   const [industryPack, setIndustryPack] = useState<string | null>(null);
@@ -10192,6 +10194,11 @@ export default function AdminPage() {
       {activeTab === "nodeDashboard" && isSuperadmin && (
         <div className="glass-pane rounded-xl border p-6">
           <NodeDashboardPanel />
+        </div>
+      )}
+      {activeTab === "agentUniversity" && isPlatform && isSuperadmin && (
+        <div className="animate-in fade-in zoom-in-95 duration-300">
+           <AgentUniversityPanelExt />
         </div>
       )}
     </div>

@@ -78,7 +78,8 @@ type AdminTabKey =
   | 'nodeOperators'
   | 'nodeDashboard'
   | 'modules'
-  | 'cannabisCompliance';
+  | 'cannabisCompliance'
+  | 'agentUniversity';
 
 interface AdminSidebarProps {
   activeTab: AdminTabKey;
@@ -399,6 +400,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
                 { title: 'Contracts', key: 'contracts' as AdminTabKey },
                 { title: 'Plugin Studio', key: 'pluginStudio' as AdminTabKey },
                 { title: 'Support Admin', key: 'supportAdmin' as AdminTabKey },
+                { title: 'Agent University', key: 'agentUniversity' as AdminTabKey },
                 { title: 'Reports', key: 'reportsPlatform' as AdminTabKey },
                 ...(process.env.NEXT_PUBLIC_DECENTRALIZATION?.toUpperCase() === 'TRUE' ? [{ title: 'Node Operators', key: 'nodeOperators' as AdminTabKey }] : []),
               ]
