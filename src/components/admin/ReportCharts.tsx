@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { formatCurrency } from "@/lib/fx";
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -369,6 +369,163 @@ export function RevenueBreakdown({ earned, fees, tips, volume }: { earned: numbe
                     </div>
                 );
             })}
+        </div>
+    );
+}
+
+/* ────────── Custom Multi-Line Time Series ────────── */
+export function MultiLineChart({ data, lines, height = 280, currency = true }: {
+    data: { label: string; [key: string]: any }[];
+    lines: { key: string; name: string; color: string }[];
+    height?: number;
+    currency?: boolean;
+}) {
+    const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
+    if (!data?.length || !lines?.length) return null;
+    
+    let maxVal = 1;
+    data.forEach(d => {
+        lines.forEach(l => {
+            const v = d[l.key] || 0;
+            if (v > maxVal) maxVal = v;
+        });
+    });
+
+    const plotMax = maxVal * 1.2;
+
+    return (
+        <div className="relative w-full select-none" style={{ height }}>
+            {/* Horizontal Grid lines */}
+            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-[28px] pt-4">
+                {[0, 1, 2, 3].map(i => (
+                    <div key={i} className="border-t border-border/30 relative w-full">
+                         <span className="absolute -top-[10px] left-0 text-[10px] text-muted-foreground/60 font-mono tracking-tight bg-card pr-1 z-0">
+                             {currency ? formatCurrency(plotMax * (1 - i / 3), "USD") : Math.round(plotMax * (1 - i / 3))}
+                         </span>
+                    </div>
+                ))}
+            </div>
+
+            {/* Lines Layer (SVG absolute coordinates) */}
+            <svg viewBox="0 0 1000 1000" className="absolute top-4 bottom-[28px] left-0 right-0 w-full h-[calc(100%-44px)] overflow-visible pointer-events-none z-10" preserveAspectRatio="none">
+                {lines.map((line) => {
+                    const pts = data.map((d, i) => {
+                        const x = (i / Math.max(1, data.length - 1)) * 1000;
+                        const val = d[line.key] || 0;
+                        const y = 1000 - ((val / plotMax) * 1000);
+                        return `${x},${y}`;
+                    });
+                    
+                    return (
+                        <g key={line.key}>
+                            {/* Ambient Glow Track */}
+                            <polyline
+                                fill="none"
+                                stroke={line.color}
+                                strokeWidth="8"
+                                vectorEffect="non-scaling-stroke"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                points={pts.join(' ')}
+                                style={{
+                                    filter: 'blur(6px)',
+                                    opacity: 0.4
+                                }}
+                                className="transition-all duration-700"
+                            />
+                            {/* Sharp Bright Core */}
+                            <polyline
+                                fill="none"
+                                stroke={line.color}
+                                strokeWidth="2.5"
+                                vectorEffect="non-scaling-stroke"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                points={pts.join(' ')}
+                                style={{
+                                    filter: `drop-shadow(0 0 6px ${line.color})`
+                                }}
+                                className="transition-all duration-700 opacity-100"
+                            />
+                        </g>
+                    );
+                })}
+            </svg>
+
+            {/* HTML Based Hover Overlay Grid */}
+            <div className="absolute inset-0 z-20 flex">
+                {data.map((d, i) => {
+                    // Reduce label clutter on X axis: Only show ~6 labels
+                    const skipRatio = Math.max(1, Math.floor(data.length / 6));
+                    const showLabel = i === 0 || i === data.length - 1 || i % skipRatio === 0;
+
+                    return (
+                        <div 
+                            key={i} 
+                            className="flex-1 h-full group relative cursor-crosshair flex flex-col justify-end"
+                            onMouseEnter={() => setHoverIndex(i)}
+                            onMouseLeave={() => setHoverIndex(null)}
+                        >
+                            {/* Selected Line Guide */}
+                            {hoverIndex === i && <div className="absolute top-4 bottom-[25px] left-1/2 w-px bg-white/20 pointer-events-none" />}
+                            
+                            {/* X-axis label */}
+                            <div className="relative w-full">
+                                {showLabel && (
+                                    <div className={`absolute -bottom-1 text-[10px] text-muted-foreground whitespace-nowrap pointer-events-none ${i === 0 ? 'left-0' : i === data.length - 1 ? 'right-0' : 'left-1/2 -translate-x-1/2'}`}>
+                                        {d.label}
+                                    </div>
+                                )}
+                            </div>
+                             
+                            {/* Hover Status Dots for each line */}
+                            {hoverIndex === i && lines.map(line => {
+                                 const val = d[line.key] || 0;
+                                 if (val === 0) return null;
+                                 const yPct = ((plotMax - val) / plotMax) * 100;
+                                 
+                                 return (
+                                     <div 
+                                         key={line.key}
+                                         className="absolute left-1/2 -translate-x-1/2 -mt-1.5 h-3 w-3 rounded-full border-2 border-background shadow-[0_0_10px_rgba(0,0,0,0.5)] z-20 pointer-events-none transition-all"
+                                         style={{ top: `calc(${yPct}% + 16px)`, backgroundColor: line.color }}
+                                     />
+                                 );
+                             })}
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Central Absolute Tooltip to avoid Edge Clipping */}
+            {hoverIndex !== null && data[hoverIndex] && (
+                <div 
+                    className={`absolute top-4 z-50 bg-black/95 backdrop-blur-md border border-white/10 shadow-2xl rounded-xl p-4 min-w-[200px] pointer-events-none transition-transform duration-100 hidden sm:block`}
+                    style={{
+                        left: `${(hoverIndex / Math.max(1, data.length - 1)) * 100}%`,
+                        transform: `translateX(${hoverIndex > data.length / 2 ? '-110%' : '10%'})`
+                    }}
+                >
+                    <div className="text-xs font-bold text-foreground border-b border-border/50 pb-2 mb-2">{data[hoverIndex].label}</div>
+                    <div className="space-y-2">
+                        {lines.map(l => {
+                            const val = data[hoverIndex][l.key] || 0;
+                            return (
+                                <div key={l.key} className={`flex justify-between items-center text-xs ${val === 0 ? 'opacity-30' : 'opacity-100'}`}>
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2.5 h-2.5 rounded-full ring-1 ring-white/20" style={{ backgroundColor: l.color }} />
+                                        <span className="text-muted-foreground truncate max-w-[120px] font-medium">{l.name}</span>
+                                    </div>
+                                    <span className="font-mono font-semibold tabular-nums text-right pl-3 text-white">
+                                        {currency ? formatCurrency(val, "USD") : val}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

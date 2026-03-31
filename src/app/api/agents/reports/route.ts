@@ -192,13 +192,23 @@ export async function GET(req: NextRequest) {
             ],
         }).fetchAll();
 
-        // ── 4. Aggregate per merchant ──
+        // ── 4. Aggregate per merchant and build Time Series ──
         const statsMap = new Map<string, { volume: number; tips: number; txCount: number }>();
+        
+        // Time series storage: Date String -> Merchant Wallet -> Earnings
+        const timeSeriesMap = new Map<string, Record<string, number>>();
+        const isHourly = (endMs - startMs) <= 86400000 * 2; // 2 days or less = hourly
+
         for (const r of receipts || []) {
             const w = String(r.wallet || "").toLowerCase();
-            if (!merchantMap.has(w)) continue;
+            const info = merchantMap.get(w);
+            if (!info) continue;
+            
             const usd = Number(r.totalUsd || 0);
             const tip = Number(r.tipAmount || 0);
+            const ts = Number(r.createdAt || 0);
+            
+            // Raw Stats Update
             const existing = statsMap.get(w);
             if (existing) {
                 existing.volume += usd;
@@ -207,6 +217,24 @@ export async function GET(req: NextRequest) {
             } else {
                 statsMap.set(w, { volume: usd, tips: tip, txCount: 1 });
             }
+
+            // Time Series Update
+            let bucketKey = "";
+            const d = new Date(ts);
+            if (isHourly) {
+                bucketKey = d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', hour12: true });
+            } else {
+                bucketKey = d.toLocaleString('en-US', { month: 'short', day: 'numeric' });
+            }
+
+            if (!timeSeriesMap.has(bucketKey)) {
+                timeSeriesMap.set(bucketKey, {});
+            }
+            const bucket = timeSeriesMap.get(bucketKey)!;
+            
+            // Agent's cut in dollars for this specific receipt
+            const agentCut = usd * (info.agentBps / 10000);
+            bucket[w] = (bucket[w] || 0) + agentCut;
         }
 
         // ── 5. Build response ──
@@ -245,8 +273,31 @@ export async function GET(req: NextRequest) {
         // Sort by earnings descending
         merchants.sort((a, b) => b.estimatedEarnings - a.estimatedEarnings);
 
+        // Sort Time Series chronologically (by parsing the bucket keys or just using standard Map insertion order which is naturally skewed if not prefilled. 
+        // We will sort keys by converting them back to approximate dates if possible, but the best way is to pre-fill the buckets.)
+        
+        // Actually, let's just create an array mapped from the map and sort it by tracking raw timestamp mapping if we needed, 
+        // but since we only care about presentation, sequential ordering can be achieved by sorting the keys based on a parsed Date. 
+        const tsArray = Array.from(timeSeriesMap.entries()).map(([label, merchData]) => {
+            const sum = Object.values(merchData).reduce((a, b) => a + b, 0);
+            return {
+                label,
+                merchants: merchData,
+                total: sum,
+                // Add a parseable date for sorting
+                _sortTs: isHourly ? new Date(label).getTime() : new Date(label + ", " + new Date().getFullYear()).getTime()
+            };
+        }).sort((a, b) => a._sortTs - b._sortTs);
+
+        // Remove the temporary _sortTs variable
+        const timeSeries = tsArray.map(t => {
+            const { _sortTs, ...rest } = t;
+            return rest;
+        });
+
         return NextResponse.json({
             merchants,
+            timeSeries,
             aggregate: {
                 totalVolume: Math.round(totalVolume * 100) / 100,
                 estimatedEarnings: Math.round(totalEstimated * 100) / 100,

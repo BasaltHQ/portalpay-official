@@ -44,9 +44,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "rate_limited" }, { status: 429 });
         }
 
-        const form = await req.formData().catch(() => null);
+        const form = await req.formData().catch((err) => {
+            console.error("[UploadsPOST] FormData parsing failed:", err);
+            return null;
+        });
         if (!form) {
-            return NextResponse.json({ error: "invalid_form_data" }, { status: 400 });
+            return NextResponse.json({ error: "invalid_form_data", details: "Failed to parse stream (likely hit 10MB size limit)" }, { status: 400 });
         }
 
         const inputs = form.getAll("file").filter(Boolean) as File[];
@@ -58,6 +61,9 @@ export async function POST(req: NextRequest) {
         const toProcess = inputs.slice(0, 3);
         const containerName = process.env.AZURE_BLOB_CONTAINER || "uploads";
         const storage = StorageFactory.getProvider();
+
+        const out: any[] = [];
+        const errors: any[] = [];
 
         for (const file of toProcess) {
             try {
