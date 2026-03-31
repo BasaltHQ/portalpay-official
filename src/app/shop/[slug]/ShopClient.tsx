@@ -111,6 +111,17 @@ function getRestaurantDataFromAttributes(attrs: any): RestaurantItemAttributes |
     }
 }
 
+/** Check if an item has any required modifier groups that must be selected before adding to cart */
+function hasRequiredModifiers(it: any): boolean {
+    try {
+        const data = getRestaurantDataFromAttributes(it?.attributes);
+        if (!data?.modifierGroups) return false;
+        return data.modifierGroups.some(g => g.required);
+    } catch {
+        return false;
+    }
+}
+
 function Icon({ name }: { name: string }) {
     const common = { size: 14, strokeWidth: 2 };
     switch (name) {
@@ -409,10 +420,18 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             setModalTab("details");
             setGalleryIndex(0);
             setFullscreenImage(null);
+            // Only reset modifiers when NOT editing from cart (editingCartIndex pre-populates them)
+            if (editingCartIndex === null) {
+                setSelectedModifiers([]);
+            }
+        } else {
+            setEditingCartIndex(null);
         }
     }, [selectedItem]);
 
     const [selectedModifiers, setSelectedModifiers] = useState<SelectedModifier[]>([]);
+    /** When non-null, the item detail modal is in "edit cart line" mode */
+    const [editingCartIndex, setEditingCartIndex] = useState<number | null>(null);
     const [heroCollapsed, setHeroCollapsed] = useState(false);
 
     // Force collapsed state for minimalist mode
@@ -1593,7 +1612,11 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                 style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    addToCart(it.id, 1);
+                                    if (hasRequiredModifiers(it)) {
+                                        setSelectedItem(it);
+                                    } else {
+                                        addToCart(it.id, 1);
+                                    }
                                 }}
                                 disabled={disabled}
                             >
@@ -1698,7 +1721,11 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                         style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
                         onClick={(e) => {
                             e.stopPropagation();
-                            addToCart(it.id, 1);
+                            if (hasRequiredModifiers(it)) {
+                                setSelectedItem(it);
+                            } else {
+                                addToCart(it.id, 1);
+                            }
                         }}
                         disabled={disabled}
                     >
@@ -1807,7 +1834,11 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                         style={{ background: categoryColor, color: "#fff", borderColor: categoryColor }}
                         onClick={(e) => {
                             e.stopPropagation();
-                            addToCart(it.id, 1);
+                            if (hasRequiredModifiers(it)) {
+                                setSelectedItem(it);
+                            } else {
+                                addToCart(it.id, 1);
+                            }
                         }}
                         disabled={disabled}
                     >
@@ -1873,57 +1904,104 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                         const { appliedDiscount, savings, originalUnitPrice, unitPrice } = it;
 
                         return (
-                            <div key={`${it.id}-${idx}`} className="flex items-center gap-2 rounded-md border p-2 bg-background/50">
-                                <div className="w-14 h-14 rounded-md overflow-hidden flex-shrink-0">
-                                    <Thumbnail
-                                        src={Array.isArray(it.images) && it.images.length ? it.images[0] : undefined}
-                                        fill
-                                        itemId={it.id}
-                                        primaryColor={cfg?.theme?.primaryColor}
-                                        secondaryColor={cfg?.theme?.secondaryColor}
-                                        logoUrl={cfg?.theme?.brandLogoUrl}
-                                    />
+                            <div key={`${it.id}-${idx}`} className="relative rounded-md border p-2 bg-background/50 group space-y-1.5">
+                                {/* Remove line button */}
+                                <button
+                                    className="absolute top-1 right-1 z-10 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                    onClick={(e) => { e.stopPropagation(); updateQtyAt(idx, 0); }}
+                                    aria-label="Remove from cart"
+                                    title="Remove from cart"
+                                >
+                                    ✕
+                                </button>
+                                {/* Row 1: thumbnail + name/price */}
+                                <div
+                                    className="flex items-center gap-2 cursor-pointer"
+                                    onClick={() => {
+                                        const item = itemsById[it.id];
+                                        if (item) {
+                                            setEditingCartIndex(idx);
+                                            setSelectedModifiers(it.selectedModifiers ? [...it.selectedModifiers] : []);
+                                            setSelectedItem(item);
+                                        }
+                                    }}
+                                >
+                                    <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
+                                        <Thumbnail
+                                            src={Array.isArray(it.images) && it.images.length ? it.images[0] : undefined}
+                                            fill
+                                            itemId={it.id}
+                                            primaryColor={cfg?.theme?.primaryColor}
+                                            secondaryColor={cfg?.theme?.secondaryColor}
+                                            logoUrl={cfg?.theme?.brandLogoUrl}
+                                        />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-semibold truncate">{it.name}</div>
+                                    </div>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-semibold truncate">{it.name}</div>
-                                    <div className="text-xs text-muted-foreground">
+                                {/* Row 2: price (left) + qty controls (right) */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            className="h-7 w-7 rounded-md border text-sm"
+                                            onClick={() => updateQtyAt(idx, Math.max(0, it.qty - 1))}
+                                            aria-label="Decrease quantity"
+                                        >
+                                            −
+                                        </button>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            step={1}
+                                            className="h-7 w-10 px-1 border rounded-md bg-background text-xs text-center"
+                                            value={it.qty}
+                                            onChange={(e) => updateQtyAt(idx, Math.max(0, Math.floor(Number(e.target.value || 0))))}
+                                        />
+                                        <button className="h-7 w-7 rounded-md border text-sm" onClick={() => updateQtyAt(idx, it.qty + 1)} aria-label="Increase quantity">
+                                            +
+                                        </button>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground flex items-center gap-1">
                                         {savings > 0 ? (
                                             <>
-                                                <span className="line-through mr-1 text-[10px]">${originalUnitPrice.toFixed(2)}</span>
+                                                <span className="line-through text-[10px]">${originalUnitPrice.toFixed(2)}</span>
                                                 <span className="text-green-600 font-medium text-[10px]">${unitPrice.toFixed(2)}</span>
+                                                <span className="text-green-600 font-medium text-[10px] flex items-center gap-0.5 ml-1">
+                                                    <Sparkles className="w-2.5 h-2.5" />-${savings.toFixed(2)}
+                                                </span>
                                             </>
                                         ) : (
-                                            <>${unitPrice.toFixed(2)}</>
+                                            <span className="text-sm font-medium">${unitPrice.toFixed(2)}</span>
                                         )}
-                                        {it.selectedModifiers && it.selectedModifiers.length ? " • with modifiers" : ""}
                                     </div>
-                                    {savings > 0 && (
-                                        <div className="text-[0.65rem] text-green-600 font-medium flex items-center gap-0.5 whitespace-nowrap">
-                                            <Sparkles className="w-2.5 h-2.5 flex-shrink-0" />
-                                            Save ${savings.toFixed(2)}
-                                        </div>
-                                    )}
                                 </div>
-                                <div className="flex items-center gap-1 ml-2">
-                                    <button
-                                        className="h-7 w-7 rounded-md border text-sm"
-                                        onClick={() => updateQtyAt(idx, Math.max(0, it.qty - 1))}
-                                        aria-label="Decrease quantity"
+                                {/* Row 3: modifier chips */}
+                                {it.selectedModifiers && it.selectedModifiers.length > 0 && (
+                                    <div
+                                        className="flex flex-wrap gap-1 cursor-pointer"
+                                        onClick={() => {
+                                            const item = itemsById[it.id];
+                                            if (item) {
+                                                setEditingCartIndex(idx);
+                                                setSelectedModifiers(it.selectedModifiers ? [...it.selectedModifiers] : []);
+                                                setSelectedItem(item);
+                                            }
+                                        }}
                                     >
-                                        −
-                                    </button>
-                                    <input
-                                        type="number"
-                                        min={0}
-                                        step={1}
-                                        className="h-7 w-12 px-1 border rounded-md bg-background text-xs text-center"
-                                        value={it.qty}
-                                        onChange={(e) => updateQtyAt(idx, Math.max(0, Math.floor(Number(e.target.value || 0))))}
-                                    />
-                                    <button className="h-7 w-7 rounded-md border text-sm" onClick={() => updateQtyAt(idx, it.qty + 1)} aria-label="Increase quantity">
-                                        +
-                                    </button>
-                                </div>
+                                        {it.selectedModifiers.map((mod, mi) => (
+                                            <span
+                                                key={mi}
+                                                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-foreground/5 border border-foreground/10 text-[10px] text-muted-foreground leading-tight max-w-[160px]"
+                                            >
+                                                <span className="truncate">{mod.name}</span>
+                                                {mod.priceAdjustment > 0 && (
+                                                    <span className="text-green-600 font-medium flex-shrink-0">+${mod.priceAdjustment.toFixed(2)}</span>
+                                                )}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )
                     })}
@@ -2915,11 +2993,16 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                             className="w-full px-4 py-3 rounded-lg text-base font-semibold flex items-center justify-center gap-2 shadow-lg transform transition-all active:scale-[0.98]"
                                                             style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
                                                             onClick={() => {
-                                                                addToCart(selectedItem.id, 1);
+                                                                if (editingCartIndex !== null) {
+                                                                    setCart(prev => prev.map((line, i) => i === editingCartIndex ? { ...line, selectedModifiers: undefined } : line));
+                                                                } else {
+                                                                    addToCart(selectedItem.id, 1);
+                                                                }
+                                                                setEditingCartIndex(null);
                                                                 setSelectedItem(null);
                                                             }}
                                                         >
-                                                            <span>Add to Cart</span>
+                                                            <span>{editingCartIndex !== null ? "Update Cart" : "Add to Cart"}</span>
                                                             <span className="opacity-90">•</span>
                                                             <span className="font-bold">${(Number(selectedItem.priceUsd || 0)).toFixed(2)}</span>
                                                         </button>
@@ -3065,12 +3148,17 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                         style={{ background: "var(--shop-secondary)", color: "#fff", borderColor: "var(--shop-secondary)" }}
                                                         onClick={() => {
                                                             if (!modifiersValid) return;
-                                                            addToCart(selectedItem.id, 1, selectedModifiers);
+                                                            if (editingCartIndex !== null) {
+                                                                setCart(prev => prev.map((line, i) => i === editingCartIndex ? { ...line, selectedModifiers: selectedModifiers.length ? [...selectedModifiers] : undefined } : line));
+                                                                setEditingCartIndex(null);
+                                                            } else {
+                                                                addToCart(selectedItem.id, 1, selectedModifiers);
+                                                            }
                                                             setSelectedItem(null);
                                                         }}
                                                         disabled={!modifiersValid}
                                                     >
-                                                        <span>Add to Cart</span>
+                                                        <span>{editingCartIndex !== null ? "Update Cart" : "Add to Cart"}</span>
                                                         <span className="opacity-90">•</span>
                                                         <span className="font-bold">
                                                             ${(Number(selectedItem.priceUsd || 0) + selectedModifiers.reduce((sum, m) => sum + (m.priceAdjustment || 0) * (m.quantity || 1), 0)).toFixed(2)}

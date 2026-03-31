@@ -308,6 +308,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   const EMBEDDED_WIDGET_HEIGHT = Number(searchParams?.get("e_h") || 320);
   const mobileTextColor = isMobileViewport ? "#ffffff" : undefined;
   const forceEmbedTextColor = isEmbedded ? "#ffffff" : undefined;
+  // Portal always renders on a dark background — force light text regardless of shop theme
+  const portalTextColor = "#ffffff";
+  const portalBodyTextColor = "#e5e7eb";
   // Move wallet theme readiness earlier so effects can safely depend on it
   const [walletThemeLoaded, setWalletThemeLoaded] = useState(false);
   const [useMerchantThemeLock, setUseMerchantThemeLock] = useState(false);
@@ -773,9 +776,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         };
         setVar("--pp-primary", theme.primaryColor);
         setVar("--pp-secondary", theme.secondaryColor);
-        setVar("--pp-text", forceEmbedTextColor || mobileTextColor || (theme.headerTextColor || (theme as any).textColor));
-        setVar("--pp-text-header", forceEmbedTextColor || mobileTextColor || (theme.headerTextColor || (theme as any).textColor));
-        setVar("--pp-text-body", forceEmbedTextColor || mobileTextColor || theme.bodyTextColor);
+        setVar("--pp-text", portalTextColor);
+        setVar("--pp-text-header", portalTextColor);
+        setVar("--pp-text-body", portalBodyTextColor);
         setVar("--primary", theme.primaryColor);
         setVar("--pp-font", theme.fontFamily);
       } catch { }
@@ -821,9 +824,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         const root = document.documentElement;
         root.style.setProperty("--pp-primary", cachedTheme.primaryColor);
         root.style.setProperty("--pp-secondary", cachedTheme.secondaryColor);
-        root.style.setProperty("--pp-text", mobileTextColor || (cachedTheme.headerTextColor || cachedTheme.textColor || "#ffffff"));
-        root.style.setProperty("--pp-text-header", mobileTextColor || (cachedTheme.headerTextColor || cachedTheme.textColor || "#ffffff"));
-        root.style.setProperty("--pp-text-body", mobileTextColor || (cachedTheme.bodyTextColor || "#e5e7eb"));
+        root.style.setProperty("--pp-text", portalTextColor);
+        root.style.setProperty("--pp-text-header", portalTextColor);
+        root.style.setProperty("--pp-text-body", portalBodyTextColor);
         root.style.setProperty("--primary", cachedTheme.primaryColor);
         if (cachedTheme.fontFamily) {
           root.style.setProperty("--pp-font", cachedTheme.fontFamily);
@@ -888,12 +891,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           root.style.setProperty("--pp-secondary", tSecondary);
         }
         {
-          const effectiveText = forceEmbedTextColor || mobileTextColor || tText;
-          if (effectiveText) {
-            root.style.setProperty("--pp-text", effectiveText);
-            root.style.setProperty("--pp-text-header", effectiveText);
-            root.style.setProperty("--pp-text-body", effectiveText);
-          }
+          root.style.setProperty("--pp-text", portalTextColor);
+          root.style.setProperty("--pp-text-header", portalTextColor);
+          root.style.setProperty("--pp-text-body", portalBodyTextColor);
         }
         if (tFont) {
           root.style.setProperty("--pp-font", tFont);
@@ -1006,9 +1006,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             const root = document.documentElement;
             root.style.setProperty("--pp-primary", merchantTheme.primaryColor);
             root.style.setProperty("--pp-secondary", merchantTheme.secondaryColor);
-            root.style.setProperty("--pp-text", forceEmbedTextColor || mobileTextColor || merchantTheme.headerTextColor);
-            root.style.setProperty("--pp-text-header", forceEmbedTextColor || mobileTextColor || merchantTheme.headerTextColor);
-            root.style.setProperty("--pp-text-body", forceEmbedTextColor || mobileTextColor || merchantTheme.bodyTextColor);
+            root.style.setProperty("--pp-text", portalTextColor);
+            root.style.setProperty("--pp-text-header", portalTextColor);
+            root.style.setProperty("--pp-text-body", portalBodyTextColor);
             root.style.setProperty("--primary", merchantTheme.primaryColor);
             if (merchantTheme.fontFamily) {
               root.style.setProperty("--pp-font", merchantTheme.fontFamily);
