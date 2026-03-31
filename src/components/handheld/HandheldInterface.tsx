@@ -142,6 +142,13 @@ export default function HandheldInterface({
     const [compPin, setCompPin] = useState("");
     const [isComping, setIsComping] = useState(false);
 
+    // Cancel Order Modal State
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [cancelReceiptId, setCancelReceiptId] = useState<string | null>(null);
+    const [cancelReasonPreset, setCancelReasonPreset] = useState("Customer Changed Mind");
+    const [cancelReasonCustom, setCancelReasonCustom] = useState("");
+    const [isCancelling, setIsCancelling] = useState(false);
+
     // -- EDIT MODE STATE --
     const [editMode, setEditMode] = useState<{
         receiptId: string;
@@ -320,6 +327,9 @@ export default function HandheldInterface({
                 const statusMap: Record<string, Array<{ id: string; status: string; paymentStatus: string; total: number; tipAmount?: number; items: any[]; createdAt: number; metadata?: any }>> = {};
 
                 data.orders.forEach((o: any) => {
+                    // Filter out archived orders entirely — these are glitched/stale entries
+                    if (o.status === "archived" || o.kitchenStatus === "archived") return;
+
                     // Filter out cancelled orders older than 5 minutes (matching KDS logic)
                     if (o.status === "cancelled") {
                         const cancelTime = o.cancelledAt || o.createdAt;
@@ -646,13 +656,21 @@ export default function HandheldInterface({
         }
     };
 
-    const cancelEntireOrder = async (receiptId: string) => {
-        const reason = prompt("Reason for cancelling order?");
+    const cancelEntireOrder = (receiptId: string) => {
+        setCancelReceiptId(receiptId);
+        setCancelReasonPreset("Customer Changed Mind");
+        setCancelReasonCustom("");
+        setShowCancelModal(true);
+    };
+
+    const confirmCancelOrder = async () => {
+        if (!cancelReceiptId) return;
+        const reason = cancelReasonPreset === "Other (Custom)" ? cancelReasonCustom : cancelReasonPreset;
         if (!reason) return;
 
-        setIsSubmitting(true);
+        setIsCancelling(true);
         try {
-            const res = await fetch(`/api/orders/${receiptId}/edit`, {
+            const res = await fetch(`/api/orders/${cancelReceiptId}/edit`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
@@ -666,13 +684,14 @@ export default function HandheldInterface({
             });
 
             if (!res.ok) throw new Error("Failed to cancel order");
-            fetchOrders(); 
+            setShowCancelModal(false);
+            setCancelReceiptId(null);
+            fetchOrders();
             setShowTableDetails(false);
         } catch (e) {
             console.error("Order cancellation failed", e);
-            alert("Failed to cancel order.");
         } finally {
-            setIsSubmitting(false);
+            setIsCancelling(false);
         }
     };
 
@@ -1728,6 +1747,36 @@ export default function HandheldInterface({
                                     </div>
                                 )}
 
+                                {/* CLEAR ARCHIVED ORDER */}
+                                {(order.status === 'archived' || order.paymentStatus === 'archived') && (
+                                    <div className="mt-4">
+                                        <div className="mb-2 h-8 bg-neutral-800 text-neutral-500 border border-neutral-700 rounded-lg font-bold text-[10px] uppercase tracking-widest flex items-center justify-center">
+                                            Archived Order
+                                        </div>
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                try {
+                                                    const res = await fetch("/api/kitchen/orders", {
+                                                        method: "PATCH",
+                                                        headers: { "Content-Type": "application/json", "x-wallet": merchantWallet },
+                                                        body: JSON.stringify({ receiptId: order.id, kitchenStatus: "archived" })
+                                                    });
+                                                    if (res.ok) {
+                                                        fetchOrders();
+                                                    }
+                                                } catch (err) {
+                                                    console.error("Failed to archive order", err);
+                                                }
+                                            }}
+                                            className="w-full h-10 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-white/10 rounded-lg font-bold text-sm active:scale-95 transition-all flex items-center justify-center space-x-2"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                            <span>Clear from Tables</span>
+                                        </button>
+                                    </div>
+                                )}
+
                                 {order.status === 'completed' && order.paymentStatus !== 'cancelled' && (
                                     <div className="mt-4 flex space-x-2">
                                         {(order.paymentStatus !== 'paid' && order.paymentStatus !== 'checkout_success') && (
@@ -2266,6 +2315,84 @@ export default function HandheldInterface({
         );
     };
 
+    // Cancel Order Modal
+    const renderCancelModal = () => {
+        if (!showCancelModal || !cancelReceiptId) return null;
+
+        const presets = ["Customer Changed Mind", "Incorrect Order", "Kitchen Error", "Long Wait Time", "Out of Stock", "Duplicate Order", "Other (Custom)"];
+        const finalReason = cancelReasonPreset === "Other (Custom)" ? cancelReasonCustom : cancelReasonPreset;
+
+        return (
+            <div className="absolute inset-0 z-[80] bg-black/95 backdrop-blur-xl flex flex-col animate-in fade-in duration-200">
+                <div className="h-16 border-b border-red-500/20 flex items-center justify-between px-4 shrink-0 bg-red-950/20 backdrop-blur-md">
+                    <button
+                        onClick={() => { setShowCancelModal(false); setCancelReceiptId(null); }}
+                        className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-white/10 text-white"
+                    >
+                        <ChevronLeft className="w-6 h-6" />
+                    </button>
+                    <h2 className="font-bold text-xl text-red-400 flex items-center"><XCircle className="w-6 h-6 mr-2" /> Cancel Order</h2>
+                    <div className="w-10" />
+                </div>
+
+                <div className="flex-1 p-6 overflow-y-auto w-full max-w-sm mx-auto">
+                    <div className="space-y-6">
+                        {/* Order ID Display */}
+                        <div className="w-full bg-red-500/5 rounded-2xl p-6 border border-red-500/20 flex flex-col items-center">
+                            <span className="text-neutral-400 text-sm font-bold uppercase tracking-wider mb-2">Cancelling Order</span>
+                            <span className="text-lg font-mono font-bold text-red-400">#{cancelReceiptId.slice(-6)}</span>
+                        </div>
+
+                        {/* Reason Selection */}
+                        <div className="space-y-3">
+                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider ml-1">Reason for Cancellation</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {presets.map(p => (
+                                    <button
+                                        key={p}
+                                        onClick={() => setCancelReasonPreset(p)}
+                                        className={`p-3 rounded-xl border text-xs font-bold transition-all active:scale-95 ${cancelReasonPreset === p ? 'bg-red-500/20 border-red-500/50 text-red-400 select-none' : 'bg-white/5 border-white/10 text-neutral-400 hover:bg-white/10'}`}
+                                        style={{ gridColumn: p === "Other (Custom)" ? "span 2" : "span 1" }}
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {cancelReasonPreset === "Other (Custom)" && (
+                                <input
+                                    type="text"
+                                    value={cancelReasonCustom}
+                                    onChange={e => setCancelReasonCustom(e.target.value)}
+                                    placeholder="Enter cancellation reason..."
+                                    autoFocus
+                                    enterKeyHint="done"
+                                    className="w-full bg-neutral-900 border border-red-500/30 rounded-xl h-12 px-4 font-bold text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all placeholder:text-neutral-600 shadow-inner mt-2"
+                                />
+                            )}
+                        </div>
+
+                        {/* Confirm Button */}
+                        <button
+                            disabled={isCancelling || !finalReason}
+                            onClick={confirmCancelOrder}
+                            className="w-full h-16 bg-red-500 text-white rounded-2xl font-bold text-xl active:scale-95 transition-all shadow-[0_0_30px_-5px_rgba(239,68,68,0.4)] disabled:opacity-50 disabled:scale-100 disabled:shadow-none mt-6 flex items-center justify-center space-x-2"
+                        >
+                            {isCancelling ? (
+                                <Loader2 className="w-6 h-6 animate-spin" />
+                            ) : (
+                                <>
+                                    <XCircle className="w-6 h-6 mr-1" />
+                                    <span>Confirm Cancellation</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     // 3. Tables Grid
     const renderTablesView = () => {
         return (
@@ -2338,6 +2465,7 @@ export default function HandheldInterface({
                                                         if (o.status === "ready") dotColor = "bg-emerald-500 animate-bounce";
                                                         if (o.status === "completed") dotColor = "bg-transparent border-2 border-emerald-500 box-border";
                                                         if (o.paymentStatus === "comped") dotColor = "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.6)] animate-pulse";
+                                                        if (o.paymentStatus === "cancelled") dotColor = "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]";
 
 
                                                         return (
@@ -2743,6 +2871,9 @@ export default function HandheldInterface({
 
             {/* COMP TICKET MODAL */}
             {renderCompModal()}
+
+            {/* CANCEL ORDER MODAL */}
+            {renderCancelModal()}
 
             {/* REPORT VIEW LAYER */}
             {view === "report" && renderReportView()}

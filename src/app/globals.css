@@ -846,18 +846,15 @@ html[data-pp-theme-ready="0"] body::before {
   max-width: 100%;
 }
 
-/* Mobile-only color enforcement for portal embed: ensure white text for visibility */
-@media (max-width: 768px) {
+/* Color enforcement for portal: ensure white text for visibility on dark backgrounds */
+.pp-embed-white-text,
+.pp-embed-white-text * {
+  color: #ffffff !important;
+}
 
-  .pp-embed-white-text,
-  .pp-embed-white-text * {
-    color: #ffffff !important;
-  }
-
-  .pp-embed-white-text .text-muted-foreground,
-  .pp-embed-white-text .microtext {
-    color: rgba(255, 255, 255, 0.78) !important;
-  }
+.pp-embed-white-text .text-muted-foreground,
+.pp-embed-white-text .microtext {
+  color: rgba(255, 255, 255, 0.78) !important;
 }
 
 /* ========================================
