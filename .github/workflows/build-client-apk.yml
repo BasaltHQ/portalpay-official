@@ -131,6 +131,7 @@ jobs:
 
           aws s3 cp "${APK_FILE}" "s3://${S3_BUCKET}/${S3_KEY}" \
             --endpoint-url "${S3_ENDPOINT}" \
-            --region "${AWS_REGION:-us-east-1}"
+            --region "${AWS_REGION:-us-east-1}" \
+            --acl public-read
 
           echo "✅ APK uploaded to S3 successfully!"
