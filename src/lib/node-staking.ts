@@ -29,16 +29,28 @@ export async function checkStakingCompliance(
     const rpcUrl = (process.env.BSURGE_RPC_URL || process.env.RPC_URL || '').trim();
 
     if (tokenAddress && rpcUrl) {
-      // Use ethers to read ERC-20 balance
-      const { ethers } = await import('ethers');
-      const provider = new ethers.JsonRpcProvider(rpcUrl);
-      const erc20Abi = ['function balanceOf(address) view returns (uint256)'];
-      const contract = new ethers.Contract(tokenAddress, erc20Abi, provider);
-
-      const rawBalance = await contract.balanceOf(walletAddress);
-      // BSURGE has 18 decimals
-      balance = Number(ethers.formatUnits(rawBalance, 18));
-      blockNumber = await provider.getBlockNumber();
+      // Direct JSON-RPC proxy to avoid heavy ethers dependency
+      const data = "0x70a08231" + walletAddress.toLowerCase().replace("0x", "").padStart(64, "0");
+      
+      const res = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([
+          { jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: tokenAddress, data }, "latest"] },
+          { jsonrpc: "2.0", id: 2, method: "eth_blockNumber", params: [] }
+        ])
+      });
+      
+      const json = await res.json();
+      const balResult = json.find((r: any) => r.id === 1)?.result;
+      const blockResult = json.find((r: any) => r.id === 2)?.result;
+      
+      if (balResult && balResult !== "0x") {
+        balance = Number(BigInt(balResult)) / 1e18; // 18 decimals
+      }
+      if (blockResult) {
+        blockNumber = parseInt(blockResult, 16);
+      }
     }
   } catch (err) {
     console.error('[NodeStaking] Failed to check balance:', err);
