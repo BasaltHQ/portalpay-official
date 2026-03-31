@@ -184,18 +184,18 @@ export async function POST(req: NextRequest) {
         const runId = workflowRun?.id;
 
         // 8. Build expected download URL
-        // The workflow uploads to: portalpay container with brands/ prefix
+        // The workflow uploads to: OVHCloud S3 Bucket under brands/ prefix
         // Path: brands/{brandKey}-touchpoint-signed.apk
-        const storageAccount = process.env.AZURE_BLOB_ACCOUNT_NAME || "engram1";
-        const container = process.env.PP_APK_CONTAINER || "portalpay";
         const prefix = process.env.PP_APK_BLOB_PREFIX || "brands";
         const blobName = `${prefix}/${brandKey}-touchpoint-signed.apk`;
 
-        // Use CDN URL if available, otherwise direct blob URL
-        const publicBaseUrl = process.env.AZURE_BLOB_PUBLIC_BASE_URL;
-        const downloadUrl = publicBaseUrl
-            ? `${publicBaseUrl}/${container}/${blobName}`
-            : `https://${storageAccount}.blob.core.windows.net/${container}/${blobName}`;
+        // Use the OVHCloud S3 public virtual link
+        // Example: https://basaltsurge.s3.us-west-or.io.cloud.ovh.us
+        const s3Endpoint = process.env.S3_PUBLIC_URL || "https://basaltsurge.s3.us-west-or.io.cloud.ovh.us";
+        
+        // Ensure endpoint doesn't end with slash
+        const cleanEndpoint = s3Endpoint.replace(/\/+$/, "");
+        const downloadUrl = `${cleanEndpoint}/${blobName}`;
 
         console.log(`[/api/build] Workflow triggered successfully. Run ID: ${runId}, Expected APK at: ${downloadUrl}`);
 
