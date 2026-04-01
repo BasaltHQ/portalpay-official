@@ -12,6 +12,7 @@ import com.getcapacitor.annotation.CapacitorPlugin
 
 // ICOD SDK namespace
 import com.szsicod.print.escpos.PrinterAPI
+import com.szsicod.print.io.USBAPI
 
 @CapacitorPlugin(name = "KioskPrinter")
 class KioskPrinterPlugin : Plugin() {
@@ -26,8 +27,14 @@ class KioskPrinterPlugin : Plugin() {
         super.load()
         try {
             api = PrinterAPI.getInstance()
+            
+            // Actively bind to the internal USB printer node physically installed in the Kiosk shell
+            val io = USBAPI(context)
+            val connectResult = api?.connect(io)
+            Log.d(TAG, "ICOD Printer Hardware Connect: $connectResult")
+            
             val ret = api?.init()
-            Log.d(TAG, "ICOD Printer Init: $ret")
+            Log.d(TAG, "ICOD Printer Settings Init: $ret")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize ICOD PrinterAPI: ${e.message}")
         }

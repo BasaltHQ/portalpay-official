@@ -11,6 +11,7 @@ import android.util.Log
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
+import android.content.pm.ActivityInfo
 import androidx.activity.OnBackPressedCallback
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -469,8 +470,18 @@ class MainActivity : BridgeActivity() {
                 val componentName = ComponentName(this, AppDeviceAdminReceiver::class.java)
                 
                 if (dpm.isDeviceOwnerApp(packageName)) {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                        dpm.setLockTaskFeatures(
+                            componentName,
+                            DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO
+                        )
+                    }
                     dpm.setLockTaskPackages(componentName, arrayOf(packageName))
                     startLockTask()
+                    
+                    // Override custom ROM freeze by forcing hardware sensor polling
+                    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                    
                     Log.d(TAG, "Started Lock Task Mode (Device Owner)")
                 } else if (lockdownConfig.value.lockdownMode == "standard") {
                     // CRITICAL FIX: The NDroid OS on the VP550 completely hides the ScreenPinningConfirmation 
