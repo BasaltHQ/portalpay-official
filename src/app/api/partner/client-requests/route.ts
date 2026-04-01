@@ -134,6 +134,28 @@ export async function GET(req: NextRequest) {
                     if (!existing || (r.type === "site_config" && existing.type !== "site_config")) {
                         configMap.set(w, r);
                         debugLogs.push({ msg: "Set Config", wallet: w, type: r.type, id: r.id, split: r.splitAddress || r.split?.address });
+                    } else if (r.type === "site_config" && existing.type === "site_config") {
+                        // MERGE: Global split deploy writes splitAddress/splitHistory to a brand-scoped
+                        // doc (site:config:basaltsurge) while the legacy mirror or other site_config
+                        // may have won the slot without that data. Merge split-relevant fields from
+                        // subsequent site_config docs so the Version History modal can find them.
+                        const existingSplitAddr = existing.splitAddress || existing.split?.address;
+                        const incomingSplitAddr = r.splitAddress || r.split?.address;
+                        const existingHistory = Array.isArray(existing.splitHistory) ? existing.splitHistory : [];
+                        const incomingHistory = Array.isArray(r.splitHistory) ? r.splitHistory : [];
+
+                        if (!existingSplitAddr && incomingSplitAddr) {
+                            existing.splitAddress = r.splitAddress;
+                            existing.split = r.split || existing.split;
+                            debugLogs.push({ msg: "Merge splitAddress from secondary", wallet: w, fromId: r.id, addr: incomingSplitAddr });
+                        }
+                        if (existingHistory.length === 0 && incomingHistory.length > 0) {
+                            existing.splitHistory = r.splitHistory;
+                            debugLogs.push({ msg: "Merge splitHistory from secondary", wallet: w, fromId: r.id, count: incomingHistory.length });
+                        }
+                        if (!existing.splitConfig && r.splitConfig) {
+                            existing.splitConfig = r.splitConfig;
+                        }
                     } else {
                         debugLogs.push({ msg: "Skip Config (Existing preferred)", wallet: w, type: r.type, id: r.id, existingType: existing.type });
                     }
@@ -143,7 +165,69 @@ export async function GET(req: NextRequest) {
 
         if (debugLogs.length > 0) console.log("[client-requests] Config Resolution:", JSON.stringify(debugLogs));
 
-        const result = Array.from(allWallets).map((wallet) => {
+        // ── AUTHORITATIVE POINT-READS for split data ──
+        // The cross-partition query can return stale or wrong split data (e.g., from a global
+        // site:config singleton or a legacy mirror with outdated splitAddress). To guarantee
+        // correctness, do per-wallet point-reads of the authoritative brand-scoped doc
+        // (site:config:<brandKey>) which is where /api/split/deploy writes canonical split data.
+        // This OVERRIDES whatever the cross-partition query found for split-related fields.
+        const isBasalt = brandKey === "basaltsurge" || brandKey === "portalpay";
+        const brandDocId = isBasalt ? `site:config:basaltsurge` : `site:config:${brandKey}`;
+
+        // Filter allWallets to only valid hex addresses — prevents phantom entries
+        // from global singletons (e.g., wallet="site:config") appearing as merchants
+        const validWallets = Array.from(allWallets).filter(w => /^0x[a-f0-9]{40}$/i.test(w));
+
+        const supplementPromises: Promise<void>[] = [];
+        for (const wallet of validWallets) {
+            supplementPromises.push(
+                (async () => {
+                    try {
+                        // Try brand-scoped doc first (authoritative source of truth for split data)
+                        const { resource } = await container.item(brandDocId, wallet).read<any>();
+                        if (resource) {
+                            const addr = resource.splitAddress || resource.split?.address;
+                            if (addr && /^0x[a-f0-9]{40}$/i.test(addr)) {
+                                const conf = configMap.get(wallet);
+                                if (conf) {
+                                    // OVERRIDE split fields with authoritative values
+                                    conf.splitAddress = resource.splitAddress || addr;
+                                    conf.split = resource.split || conf.split;
+                                    conf.splitHistory = resource.splitHistory || conf.splitHistory;
+                                    conf.splitConfig = resource.splitConfig || conf.splitConfig;
+                                } else {
+                                    configMap.set(wallet, resource);
+                                }
+                            }
+                        }
+                    } catch {
+                        // Brand-scoped doc not found — try legacy doc as fallback
+                        try {
+                            const { resource: legacyDoc } = await container.item("site:config", wallet).read<any>();
+                            if (legacyDoc) {
+                                const addr = legacyDoc.splitAddress || legacyDoc.split?.address;
+                                if (addr && /^0x[a-f0-9]{40}$/i.test(addr)) {
+                                    const conf = configMap.get(wallet);
+                                    if (conf) {
+                                        conf.splitAddress = legacyDoc.splitAddress || addr;
+                                        conf.split = legacyDoc.split || conf.split;
+                                        conf.splitHistory = legacyDoc.splitHistory || conf.splitHistory;
+                                        conf.splitConfig = legacyDoc.splitConfig || conf.splitConfig;
+                                    } else {
+                                        configMap.set(wallet, legacyDoc);
+                                    }
+                                }
+                            }
+                        } catch { /* no legacy doc either */ }
+                    }
+                })()
+            );
+        }
+        if (supplementPromises.length > 0) {
+            await Promise.all(supplementPromises);
+        }
+
+        const result = validWallets.map((wallet) => {
             const req = requestsMap.get(wallet);
             const conf = configMap.get(wallet);
             const shopConf = shopConfigMap.get(wallet); // shop_config has the actual shop name
