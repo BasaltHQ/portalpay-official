@@ -433,7 +433,8 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
     const tpTheme = useApplyTheme(kdsThemeId);
     
     // KDS Physical Screen Orientation Hook
-    const { orientation, toggleRotation, isNative } = useKDSOrientation();
+    const { orientation, setSoftRotation, setHardRotation, isNative } = useKDSOrientation();
+    const [showRotationSettings, setShowRotationSettings] = useState(false);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -682,7 +683,7 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
                         </div>
                         {isNative && (
                             <button
-                                onClick={toggleRotation}
+                                onClick={() => setShowRotationSettings(true)}
                                 className="px-4 py-3 text-sm font-bold uppercase tracking-wider border border-white/10 hover:bg-white/5 text-neutral-300 rounded-xl transition-colors hidden sm:flex items-center gap-2"
                                 title={`Screen is currently: ${orientation}`}
                             >
@@ -766,6 +767,46 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
                                 >
                                     Save Config
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Local Hardware Screen Orientation Modal */}
+                {showRotationSettings && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                        <div className="bg-[#1a1a1a] border border-neutral-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
+                                Screen Orientation Settings
+                            </h3>
+                            <button onClick={() => setShowRotationSettings(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors">✕</button>
+
+                            <div className="space-y-6">
+                                {/* Soft API for Standard Tablets */}
+                                <div>
+                                    <h4 className="text-xs font-bold text-neutral-400 mb-3 uppercase tracking-wider">Standard Devices (Instant)</h4>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button onClick={() => setSoftRotation('auto')} className={`py-3 rounded-xl border text-sm font-semibold transition-colors ${orientation === 'auto' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-black border-neutral-800 text-neutral-300 hover:bg-neutral-900'}`}>Auto</button>
+                                        <button onClick={() => setSoftRotation('portrait')} className={`py-3 rounded-xl border text-sm font-semibold transition-colors ${orientation === 'portrait' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-black border-neutral-800 text-neutral-300 hover:bg-neutral-900'}`}>Portrait</button>
+                                        <button onClick={() => setSoftRotation('landscape')} className={`py-3 rounded-xl border text-sm font-semibold transition-colors ${orientation === 'landscape' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-black border-neutral-800 text-neutral-300 hover:bg-neutral-900'}`}>Landscape</button>
+                                    </div>
+                                </div>
+
+                                <hr className="border-neutral-800" />
+
+                                {/* Hard API for KDS & Firmware Locks */}
+                                <div>
+                                    <h4 className="text-xs font-bold text-neutral-400 mb-1 uppercase tracking-wider flex items-center gap-2">
+                                        Fixed Hardware Support
+                                    </h4>
+                                    <p className="text-[10px] text-amber-500/80 mb-3 font-semibold uppercase tracking-wider">⚠️ Requires OS Reboot</p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button onClick={() => { if(window.confirm("This will physically reboot the operating system to commit the new orientation. Continue?")) { setHardRotation(0); setShowRotationSettings(false); } }} className="py-3 bg-black border border-neutral-800 hover:border-amber-500/50 hover:bg-amber-900/10 text-neutral-300 rounded-xl text-sm font-semibold transition-all">Force 0°</button>
+                                        <button onClick={() => { if(window.confirm("This will physically reboot the operating system to commit the new orientation. Continue?")) { setHardRotation(1); setShowRotationSettings(false); } }} className="py-3 bg-black border border-neutral-800 hover:border-amber-500/50 hover:bg-amber-900/10 text-neutral-300 rounded-xl text-sm font-semibold transition-all">Force 90°</button>
+                                        <button onClick={() => { if(window.confirm("This will physically reboot the operating system to commit the new orientation. Continue?")) { setHardRotation(2); setShowRotationSettings(false); } }} className="py-3 bg-black border border-neutral-800 hover:border-amber-500/50 hover:bg-amber-900/10 text-neutral-300 rounded-xl text-sm font-semibold transition-all">Force 180°</button>
+                                        <button onClick={() => { if(window.confirm("This will physically reboot the operating system to commit the new orientation. Continue?")) { setHardRotation(3); setShowRotationSettings(false); } }} className="py-3 bg-black border border-neutral-800 hover:border-amber-500/50 hover:bg-amber-900/10 text-neutral-300 rounded-xl text-sm font-semibold transition-all">Force 270°</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

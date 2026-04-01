@@ -10,7 +10,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '250mb',
     },
-    middlewareClientMaxBodySize: "250mb",
+    proxyClientMaxBodySize: "250mb",
   },
   // Externalize problematic deep deps so Turbopack doesn't crawl their tests
   serverExternalPackages: ['pino', '@walletconnect/logger', 'thread-stream', 'mongodb'],

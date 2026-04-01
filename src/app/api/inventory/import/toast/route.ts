@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "node:crypto";
+import { StorageFactory } from "@/lib/storage";
+import sharp from "sharp";
 import type {
   RestaurantModifier,
   RestaurantModifierGroup,
@@ -123,7 +126,8 @@ function collectItemsFromMenu(
         price: Number(item?.price || 0),
         category: String(item?.salesCategory?.name || groupName || menuName),
         industryAttributes: { restaurant: attrs },
-      });
+        imageToastUrl: item?.image || item?.imageUrl || undefined,
+      } as any);
     }
 
     // Recurse nested groups if any
@@ -217,12 +221,63 @@ export async function POST(request: NextRequest) {
       collectItemsFromMenu(menu, refs, importedItems);
     }
 
+    const storage = StorageFactory.getProvider();
+    const processedItems: any[] = [];
+    const CHUNK_SIZE = 10;
+    
+    // Chunking to prevent serverless execution timeouts and OOM errors on massive menus
+    for (let i = 0; i < importedItems.length; i += CHUNK_SIZE) {
+      const chunk = importedItems.slice(i, i + CHUNK_SIZE);
+      const chunkResults = await Promise.all(
+        chunk.map(async (item: any) => {
+          if (item.imageToastUrl) {
+            try {
+              const res = await fetch(item.imageToastUrl);
+              if (res.ok) {
+                const ab = await res.arrayBuffer();
+                let buffer = Buffer.from(ab);
+                let finalExt = "jpg";
+                let finalMime = "image/jpeg";
+                
+                try {
+                  const sharpRes = await sharp(buffer)
+                    .rotate()
+                    .resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
+                    .webp({ quality: 82 })
+                    .toBuffer({ resolveWithObject: true });
+                  buffer = Buffer.from(sharpRes.data);
+                  finalExt = "webp";
+                  finalMime = "image/webp";
+                } catch (sharpErr) {
+                  const rawType = res.headers.get("content-type") || "image/jpeg";
+                  finalExt = rawType.includes("png") ? "png" : rawType.includes("webp") ? "webp" : "jpg";
+                  finalMime = rawType;
+                  console.warn("Toast image sharp optimization failed, falling back to raw buffer:", sharpErr);
+                }
+
+                const id = crypto.randomUUID().replace(/-/g, "");
+                const container = process.env.AZURE_BLOB_CONTAINER || "uploads";
+                const blobName = `files/toast_${id}.${finalExt}`;
+                const finalUrl = await storage.upload(`${container}/${blobName}`, buffer, finalMime);
+                item.images = [finalUrl];
+              }
+            } catch (e) {
+              console.warn("Toast image upload failed for", item.name, e);
+            }
+            delete item.imageToastUrl;
+          }
+          return item;
+        })
+      );
+      processedItems.push(...chunkResults);
+    }
+
     const menuNames = (Array.isArray(data?.menus) ? data!.menus! : []).map((m: any) => String(m?.name || ""));
 
     return NextResponse.json({
       success: true,
-      itemCount: importedItems.length,
-      items: importedItems,
+      itemCount: processedItems.length,
+      items: processedItems,
       menus: menuNames,
     });
   } catch (error) {

@@ -479,9 +479,6 @@ class MainActivity : BridgeActivity() {
                     dpm.setLockTaskPackages(componentName, arrayOf(packageName))
                     startLockTask()
                     
-                    // Override custom ROM freeze by forcing hardware sensor polling
-                    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
-                    
                     Log.d(TAG, "Started Lock Task Mode (Device Owner)")
                 } else if (lockdownConfig.value.lockdownMode == "standard") {
                     // CRITICAL FIX: The NDroid OS on the VP550 completely hides the ScreenPinningConfirmation 
