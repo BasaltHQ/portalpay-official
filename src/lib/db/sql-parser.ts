@@ -448,6 +448,16 @@ function parsePredicate(expr: string, params: Record<string, any>): Filter<Docum
         return { [field]: { $regex: escapeRegex(String(val)), $options: "i" } };
     }
 
+    // EXISTS(SELECT VALUE t FROM t IN c.arrayField WHERE CONTAINS(t.subprop, 'value'))
+    const existsContainsObj = /^EXISTS\s*\(\s*SELECT\s+VALUE\s+(\w+)\s+FROM\s+\1\s+IN\s+c\.([.\w]+)\s+WHERE\s+CONTAINS\s*\(\s*\1\.([.\w]+)\s*,\s*(.+?)\s*\)\s*\)/i.exec(e);
+    if (existsContainsObj) {
+        const fieldCol = cosmosFieldToMongo(existsContainsObj[2]);
+        const subProp = existsContainsObj[3];
+        const val = resolveRhs(existsContainsObj[4].trim(), params);
+        // MongoDB dot notation searches arrays of objects 
+        return { [`${fieldCol}.${subProp}`]: { $regex: escapeRegex(String(val)), $options: "i" } };
+    }
+
     // EXISTS(SELECT VALUE kw FROM kw IN c.field WHERE LOWER(kw) = @param)
     const existsLowerEq = /^EXISTS\s*\(\s*SELECT\s+VALUE\s+\w+\s+FROM\s+\w+\s+IN\s+c\.([.\w]+)\s+WHERE\s+LOWER\s*\(\s*\w+\s*\)\s*=\s*(.+?)\s*\)/i.exec(e);
     if (existsLowerEq) {
