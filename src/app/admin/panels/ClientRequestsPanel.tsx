@@ -445,7 +445,7 @@ export default function ClientRequestsPanel() {
 
     const handleVerify = async () => {
         if (!approvingId) return;
-        const req = items.find(i => i.id === approvingId);
+        const req = items.find(i => i.wallet === approvingId);
         if (!req) return;
 
         setDeploying(true);
@@ -524,7 +524,7 @@ export default function ClientRequestsPanel() {
 
     const handleDeploy = async (force = false) => {
         if (!approvingId || !account) return;
-        const req = items.find(i => i.id === approvingId);
+        const req = items.find(i => i.wallet === approvingId);
         if (!req) return;
 
         // Auto-save config before deploying
@@ -564,7 +564,9 @@ export default function ClientRequestsPanel() {
 
     const confirmApproval = () => {
         if (!approvingId) return;
-        updateStatus(approvingId, "approved", { partnerBps, merchantBps, platformBps, agents });
+        const req = items.find(i => i.wallet === approvingId);
+        if (!req) return;
+        updateStatus(req.id, "approved", { partnerBps, merchantBps, platformBps, agents });
     };
 
     async function deleteRequest(id: string) {
@@ -787,7 +789,7 @@ export default function ClientRequestsPanel() {
                                                             </a>
                                                         </div>
                                                         <button
-                                                            onClick={() => setHistoryViewerId(req.id)}
+                                                            onClick={() => setHistoryViewerId(req.wallet)}
                                                             className="p-1 rounded hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
                                                             title="View Version History"
                                                         >
@@ -813,7 +815,7 @@ export default function ClientRequestsPanel() {
                                                     <>
                                                         <button
                                                             className="px-3 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20 text-xs font-semibold transition-colors"
-                                                            onClick={() => openApprovalModal(req.id, req.splitConfig)}
+                                                            onClick={() => openApprovalModal(req.wallet, req.splitConfig)}
                                                         >
                                                             Approve
                                                         </button>
@@ -829,7 +831,7 @@ export default function ClientRequestsPanel() {
                                                     <>
                                                         <button
                                                             className="px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-xs font-semibold transition-colors flex items-center gap-1"
-                                                            onClick={() => openApprovalModal(req.id, req.splitConfig)}
+                                                            onClick={() => openApprovalModal(req.wallet, req.splitConfig)}
                                                             title="Update Revenue Split"
                                                         >
                                                             <span>
@@ -1391,7 +1393,7 @@ export default function ClientRequestsPanel() {
                                                 <div className="flex flex-col">
                                                     <span className="text-xs uppercase tracking-wider font-mono text-zinc-500">Split Contract</span>
                                                     {(() => {
-                                                        const _req = items.find(r => r.id === approvingId);
+                                                        const _req = items.find(r => r.wallet === approvingId);
                                                         const count = (_req?.splitHistory?.length || 0);
                                                         if (count > 0 || _req?.deployedSplitAddress) {
                                                             return <span className="text-[10px] text-zinc-600 font-mono">Version {count + 1}</span>
@@ -1403,7 +1405,7 @@ export default function ClientRequestsPanel() {
                                                     <span className="text-xs font-mono text-emerald-400">{deployResult.startsWith("Deployed") ? "Active" : "Error"}</span>
                                                 ) : (
                                                     (() => {
-                                                        const _req = items.find(r => r.id === approvingId);
+                                                        const _req = items.find(r => r.wallet === approvingId);
                                                         const addr = _req?.deployedSplitAddress || (_req?.splitHistory && _req.splitHistory.length > 0 ? _req.splitHistory[0].address : "");
                                                         if (addr) {
                                                             return (
@@ -1418,10 +1420,10 @@ export default function ClientRequestsPanel() {
                                             </div>
 
                                             {/* History List */}
-                                            {items.find(r => r.id === approvingId)?.splitHistory && (items.find(r => r.id === approvingId)?.splitHistory?.length || 0) > 0 && (
+                                            {items.find(r => r.wallet === approvingId)?.splitHistory && (items.find(r => r.wallet === approvingId)?.splitHistory?.length || 0) > 0 && (
                                                 <div className="bg-black/20 rounded border border-white/5 p-2 space-y-1 mb-2 max-h-[100px] overflow-y-auto">
                                                     <div className="text-[10px] text-zinc-500 uppercase font-mono mb-1">Version History</div>
-                                                    {(items.find(r => r.id === approvingId)?.splitHistory || []).map((h: any, i: number) => (
+                                                    {(items.find(r => r.wallet === approvingId)?.splitHistory || []).map((h: any, i: number) => (
                                                         <div key={i} className="flex justify-between items-center text-xs font-mono">
                                                             <span className="text-zinc-400">{h.address.slice(0, 6)}...{h.address.slice(-4)}</span>
                                                             <span className="text-zinc-600">{new Date(h.deployedAt).toLocaleDateString()}</span>
@@ -1477,7 +1479,7 @@ export default function ClientRequestsPanel() {
                                     onClick={confirmApproval}
                                     className="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-sm shadow-lg shadow-emerald-500/10 transition-colors"
                                 >
-                                    {items.find(r => r.id === approvingId)?.status === "approved" ? "Save Configuration" : "Confirm Approval"}
+                                    {items.find(r => r.wallet === approvingId)?.status === "approved" ? "Save Configuration" : "Confirm Approval"}
                                 </button>
                             </div>
                         </div>
@@ -1493,7 +1495,7 @@ export default function ClientRequestsPanel() {
                                 <div>
                                     <h3 className="text-lg font-semibold text-white">Split Version History</h3>
                                     <p className="text-xs text-zinc-400 mt-1">
-                                        Review deployment history for <span className="text-emerald-400 font-mono">{items.find(r => r.id === historyViewerId)?.shopName}</span>
+                                        Review deployment history for <span className="text-emerald-400 font-mono">{items.find(r => r.wallet === historyViewerId)?.shopName}</span>
                                     </p>
                                 </div>
                                 <button onClick={() => setHistoryViewerId(null)} className="text-zinc-500 hover:text-white">
@@ -1513,7 +1515,7 @@ export default function ClientRequestsPanel() {
                                     <tbody className="divide-y divide-white/5">
                                         {/* Current Version */}
                                         {(() => {
-                                            const req = items.find(r => r.id === historyViewerId);
+                                            const req = items.find(r => r.wallet === historyViewerId);
                                             if (!req) return null;
                                             const currentAddr = req.deployedSplitAddress;
                                             // Combine with history for a full view, but highlight current
