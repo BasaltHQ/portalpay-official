@@ -83,7 +83,7 @@ async function getApkStream(appKey: string): Promise<{ stream: Readable; length?
     if (!rel) return null;
 
     try {
-        const filePath = path.join(process.cwd(), rel);
+        const filePath = path.join(/*turbopackIgnore: true*/ process.cwd(), rel);
         if (fs.existsSync(filePath)) {
             const stats = fs.statSync(filePath);
             console.log(`[APK ZIP] Found ${appKey} in local filesystem`);

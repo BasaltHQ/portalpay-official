@@ -126,7 +126,7 @@ export async function GET(
       return NextResponse.json({ error: "unknown app" }, { status: 404 });
     }
 
-    const filePath = path.join(process.cwd(), rel);
+    const filePath = path.join(/*turbopackIgnore: true*/ process.cwd(), rel);
     const data = await fs.readFile(filePath);
     // Convert Buffer to Uint8Array to satisfy NextResponse BodyInit (BufferSource)
     const body = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);

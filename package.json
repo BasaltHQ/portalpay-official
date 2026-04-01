@@ -30,6 +30,7 @@
     "@capacitor/android": "^8.1.0",
     "@capacitor/cli": "^8.1.0",
     "@capacitor/core": "^8.1.0",
+    "@capacitor/screen-orientation": "^8.0.1",
     "@coinbase/onchainkit": "^1.1.2",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",

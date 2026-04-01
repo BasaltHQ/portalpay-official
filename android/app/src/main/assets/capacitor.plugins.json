@@ -1,0 +1,6 @@
+[
+	{
+		"pkg": "@capacitor/screen-orientation",
+		"classpath": "com.capacitorjs.plugins.screenorientation.ScreenOrientationPlugin"
+	}
+]
