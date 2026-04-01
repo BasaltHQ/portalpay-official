@@ -9,6 +9,7 @@ import { UsbPrinter, ExternalPrinter } from "@/lib/hardware/useHardwareHooks";
 import { buildRawEscPosTicket } from "@/lib/hardware/escpos";
 import { useApplyTheme, resolveThemeId } from "@/lib/themes";
 import { useBrand } from "@/contexts/BrandContext";
+import { ExpoView } from "@/components/kitchen/ExpoView";
 import {
     DndContext,
     DragOverlay,
@@ -435,6 +436,24 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
     const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
     const [activeId, setActiveId] = useState<string | null>(null);
     const [shopConfig, setShopConfig] = useState<any>(null);
+
+    // View Mode: "board" (Kanban) or "expo" (Expeditor cards)
+    const [viewMode, setViewMode] = useState<"board" | "expo">(() => {
+        if (typeof window !== "undefined") {
+            return (localStorage.getItem("kds_view_mode") as any) || "board";
+        }
+        return "board";
+    });
+    useEffect(() => { localStorage.setItem("kds_view_mode", viewMode); }, [viewMode]);
+
+    // Expo Rotation State (lifted here so the entire interface rotates, including the header)
+    const [expoRotated, setExpoRotated] = useState<boolean>(() => {
+        if (typeof window !== "undefined") {
+            return localStorage.getItem("expo_rotated") === "true";
+        }
+        return false;
+    });
+    useEffect(() => { localStorage.setItem("expo_rotated", String(expoRotated)); }, [expoRotated]);
     
     // Settings Modal State
     const [showSettings, setShowSettings] = useState(false);
@@ -560,6 +579,11 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
         updateOrderStatus(id, 'archived', uberOrderId);
     };
 
+    // Bump handler for Expo view — advances order to next status
+    const handleBump = (id: string, nextStatus: string, uberOrderId?: string) => {
+        updateOrderStatus(id, nextStatus, uberOrderId);
+    };
+
     const handleMarkItemReady = async (receiptId: string, itemIndex: number) => {
         if (!activeWallet) return;
         setOrders(prev => prev.map(o => {
@@ -601,7 +625,23 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
 
     return (
         <DndContext sensors={sensors} collisionDetection={rectIntersection} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="h-screen w-full flex flex-col p-4 text-white" style={{ backgroundColor: tpTheme.primaryBg, fontFamily: tpTheme.fontFamily || undefined }}>
+            <div
+                className="h-screen w-full flex flex-col p-4 text-white"
+                style={{
+                    backgroundColor: tpTheme.primaryBg,
+                    fontFamily: tpTheme.fontFamily || undefined,
+                    ...(viewMode === "expo" && expoRotated ? {
+                        transform: "rotate(90deg)",
+                        transformOrigin: "top left",
+                        position: "fixed" as const,
+                        top: 0,
+                        left: "100vw",
+                        width: "100vh",
+                        height: "100vw",
+                        zIndex: 90,
+                    } : {}),
+                }}
+            >
                 {/* Header Bar */}
                 <div className="flex items-center justify-between px-2 mb-4">
                     <div>
@@ -620,6 +660,39 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
                         </div>
                     </div>
                     <div className="flex gap-2">
+                        {/* View Mode Toggle */}
+                        <div className="flex rounded-xl border border-white/10 overflow-hidden">
+                            <button
+                                onClick={() => setViewMode("board")}
+                                className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-all ${
+                                    viewMode === "board"
+                                        ? "bg-white/10 text-white"
+                                        : "text-neutral-500 hover:text-neutral-300 hover:bg-white/5"
+                                }`}
+                            >
+                                <span className="flex items-center gap-1.5">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+                                    </svg>
+                                    Board
+                                </span>
+                            </button>
+                            <button
+                                onClick={() => setViewMode("expo")}
+                                className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-all border-l border-white/10 ${
+                                    viewMode === "expo"
+                                        ? "bg-white/10 text-white"
+                                        : "text-neutral-500 hover:text-neutral-300 hover:bg-white/5"
+                                }`}
+                            >
+                                <span className="flex items-center gap-1.5">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                    </svg>
+                                    Expo
+                                </span>
+                            </button>
+                        </div>
                         <button
                             onClick={() => setShowSettings(true)}
                             className="px-4 py-3 text-sm font-bold uppercase tracking-wider border border-white/10 hover:bg-white/5 text-neutral-300 rounded-xl transition-colors hidden sm:block"
@@ -640,13 +713,23 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
                     </div>
                 </div>
 
-                {/* 4-Column Grid */}
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-x-auto pb-4">
-                    <KitchenColumn id="new" title="New" orders={cols.new} colorClass="bg-orange-500 text-orange-500" onMarkItemReady={handleMarkItemReady} />
-                    <KitchenColumn id="preparing" title="Prep" orders={cols.preparing} colorClass="bg-yellow-500 text-yellow-500" onMarkItemReady={handleMarkItemReady} />
-                    <KitchenColumn id="ready" title="Ready" orders={cols.ready} colorClass="bg-green-500 text-green-500" onMarkItemReady={handleMarkItemReady} />
-                    <KitchenColumn id="completed" title="Served" orders={cols.completed} colorClass="bg-neutral-500 text-neutral-500" onArchive={handleArchive} onMarkItemReady={handleMarkItemReady} />
-                </div>
+                {/* Conditional View: Kanban Board or Expo View */}
+                {viewMode === "expo" ? (
+                    <ExpoView
+                        orders={orders}
+                        onBump={handleBump}
+                        onArchive={handleArchive}
+                        rotated={expoRotated}
+                        onToggleRotate={() => setExpoRotated(r => !r)}
+                    />
+                ) : (
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-x-auto pb-4">
+                        <KitchenColumn id="new" title="New" orders={cols.new} colorClass="bg-orange-500 text-orange-500" onMarkItemReady={handleMarkItemReady} />
+                        <KitchenColumn id="preparing" title="Prep" orders={cols.preparing} colorClass="bg-yellow-500 text-yellow-500" onMarkItemReady={handleMarkItemReady} />
+                        <KitchenColumn id="ready" title="Ready" orders={cols.ready} colorClass="bg-green-500 text-green-500" onMarkItemReady={handleMarkItemReady} />
+                        <KitchenColumn id="completed" title="Served" orders={cols.completed} colorClass="bg-neutral-500 text-neutral-500" onArchive={handleArchive} onMarkItemReady={handleMarkItemReady} />
+                    </div>
+                )}
 
                 <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
                     {activeOrder ? <KitchenTicket order={activeOrder} isOverlay onMarkItemReady={handleMarkItemReady} /> : null}
