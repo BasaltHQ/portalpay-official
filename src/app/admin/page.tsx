@@ -7936,7 +7936,7 @@ function InventoryPanel() {
                       category: it?.category || undefined,
                       description: it?.description || undefined,
                       tags: [],
-                      images: [],
+                      images: Array.isArray(it?.images) ? it.images : [],
                       attributes: attrs,
                       taxable: true,
                       industryPack: "restaurant" as const,
