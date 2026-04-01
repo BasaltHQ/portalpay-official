@@ -1695,43 +1695,72 @@ export default function HandheldInterface({
                                         const isLinkedPaid = linkedReceipt && (linkedReceipt.paymentStatus === 'paid' || linkedReceipt.paymentStatus === 'checkout_success');
 
                                         return (
-                                            <div key={idx} className="flex justify-between text-sm items-center">
-                                                <div className="flex flex-col">
-                                                    <div className={`flex items-center flex-wrap gap-2 ${item.cancelled ? 'text-neutral-500' : 'text-neutral-200'}`}>
-                                                        <span className={item.cancelled ? 'line-through' : ''}>
-                                                            {item.qty > 1 && <span className="font-bold mr-1">{item.qty}x</span>}
-                                                            {item.label || item.name}
-                                                        </span>
-                                                        {item.cancelled ? (
-                                                            <span className="text-[10px] text-red-500 font-bold uppercase tracking-widest bg-red-500/10 px-1.5 py-0.5 rounded no-underline">
-                                                                Cancelled
+                                            <div key={idx} className="flex flex-col text-sm">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex flex-col">
+                                                        <div className={`flex items-center flex-wrap gap-2 ${item.cancelled ? 'text-neutral-500' : 'text-neutral-200'}`}>
+                                                            <span className={item.cancelled ? 'line-through' : ''}>
+                                                                {item.qty > 1 && <span className="font-bold mr-1">{item.qty}x</span>}
+                                                                {item.label || item.name}
                                                             </span>
-                                                        ) : item.readyAt ? (
-                                                            <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center space-x-1">
-                                                                <CheckCircle2 className="w-3 h-3" />
-                                                                <span>Ready</span>
+                                                            {item.cancelled ? (
+                                                                <span className="text-[10px] text-red-500 font-bold uppercase tracking-widest bg-red-500/10 px-1.5 py-0.5 rounded no-underline">
+                                                                    Cancelled
+                                                                </span>
+                                                            ) : item.readyAt ? (
+                                                                <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center space-x-1">
+                                                                    <CheckCircle2 className="w-3 h-3" />
+                                                                    <span>Ready</span>
+                                                                </span>
+                                                            ) : (item.addedAt && item.addedAt > new Date(order.createdAt).getTime()) ? (
+                                                                <span className="text-[10px] text-orange-400 font-bold uppercase tracking-widest bg-orange-500/10 px-1.5 py-0.5 rounded">
+                                                                    Prep
+                                                                </span>
+                                                            ) : null}
+                                                        </div>
+                                                        {/* Show Status/Tip for Linked Split Row */}
+                                                        {isLinkedPaid && (
+                                                            <span className="text-[10px] text-emerald-400 font-bold">
+                                                                Paid {(linkedReceipt?.tipAmount || 0) > 0 ? `(+${formatCurrency(linkedReceipt?.tipAmount || 0)} Tip)` : ''}
                                                             </span>
-                                                        ) : (item.addedAt && item.addedAt > new Date(order.createdAt).getTime()) ? (
-                                                            <span className="text-[10px] text-orange-400 font-bold uppercase tracking-widest bg-orange-500/10 px-1.5 py-0.5 rounded">
-                                                                Prep
+                                                        )}
+                                                        {isTransferOut && !isLinkedPaid && linkedReceipt && (
+                                                            <span className="text-[10px] text-orange-400">
+                                                                Unpaid
                                                             </span>
-                                                        ) : null}
+                                                        )}
                                                     </div>
-                                                    {/* Show Status/Tip for Linked Split Row */}
-                                                    {isLinkedPaid && (
-                                                        <span className="text-[10px] text-emerald-400 font-bold">
-                                                            Paid {(linkedReceipt?.tipAmount || 0) > 0 ? `(+${formatCurrency(linkedReceipt?.tipAmount || 0)} Tip)` : ''}
-                                                        </span>
-                                                    )}
-                                                    {isTransferOut && !isLinkedPaid && linkedReceipt && (
-                                                        <span className="text-[10px] text-orange-400">
-                                                            Unpaid
-                                                        </span>
-                                                    )}
+                                                    <span className={`font-mono opacity-60 ${item.cancelled ? 'line-through text-neutral-500' : ''}`}>
+                                                        {formatCurrency(item.priceUsd * (item.qty || 1))}
+                                                    </span>
                                                 </div>
-                                                <span className={`font-mono opacity-60 ${item.cancelled ? 'line-through text-neutral-500' : ''}`}>
-                                                    {formatCurrency(item.priceUsd * (item.qty || 1))}
-                                                </span>
+
+                                                {/* Modifiers */}
+                                                {(() => {
+                                                    let modGroups = item.attributes?.modifierGroups || [];
+                                                    if ((!modGroups || modGroups.length === 0) && Array.isArray(item.modifiers) && item.modifiers.length > 0) {
+                                                        modGroups = [{ name: "Modifiers", modifiers: item.modifiers }];
+                                                    }
+                                                    if (!Array.isArray(modGroups) || modGroups.length === 0) return null;
+
+                                                    return (
+                                                        <div className="mt-1 ml-2 pl-3 border-l-2 border-white/10 space-y-0.5 text-xs text-neutral-500 mb-1">
+                                                            {modGroups.map((group: any, gidx: number) => {
+                                                                const selectedMods = Array.isArray(group.modifiers)
+                                                                    ? group.modifiers.filter((m: any) => m.selected || m.default || (m.quantity && m.quantity > 0))
+                                                                    : [];
+                                                                return selectedMods.map((mod: any, midx: number) => (
+                                                                    <div key={`${gidx}-${midx}`} className="flex items-center gap-1 font-medium">
+                                                                        <span className="w-1 h-1 rounded-full bg-current opacity-50" />
+                                                                        {mod.quantity > 1 ? `${mod.quantity}× ` : ""}
+                                                                        {mod.priceAdjustment > 0 ? "+ " : ""}
+                                                                        {mod.name}
+                                                                    </div>
+                                                                ));
+                                                            })}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
                                         );
                                     })}
