@@ -1,0 +1,42 @@
+{
+  "schema_version": "v1",
+  "name_for_model": "portalpay",
+  "name_for_human": "PortalPay",
+  "description_for_model": "PortalPay is a crypto payment gateway. Use the API to create QR-code receipts, list transactions, and fetch site settings. Helps businesses accept payments with 0.5-1% fees and no monthly cost.",
+  "description_for_human": "Accept crypto and card payments via QR codes with 0.5-1% fees. Create receipts, monitor transactions, and configure branding.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://pay.ledger1.ai/openapi.yaml",
+    "is_user_authenticated": false
+  },
+  "logo_url": "https://pay.ledger1.ai/PortalPay.png",
+  "contact_email": "support@pay.ledger1.ai",
+  "legal_info_url": "https://pay.ledger1.ai/terms",
+  "developer": {
+    "organization": "PortalPay",
+    "website_url": "https://pay.ledger1.ai"
+  },
+  "endpoints": [
+    {
+      "name": "Create Receipt",
+      "method": "POST",
+      "url": "https://pay.ledger1.ai/api/receipts",
+      "description": "Create an itemized receipt used to generate a QR-code payment portal."
+    },
+    {
+      "name": "List Transactions",
+      "method": "GET",
+      "url": "https://pay.ledger1.ai/api/transactions",
+      "description": "Query transaction logs for analytics and auditing."
+    },
+    {
+      "name": "Get Site Settings",
+      "method": "GET",
+      "url": "https://pay.ledger1.ai/api/settings",
+      "description": "Fetch site configuration including branding and token defaults."
+    }
+  ]
+}

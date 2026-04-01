@@ -7,6 +7,7 @@ import { networkPrint, buildExpoTicketText } from "@/lib/hardware/network-print"
 import { WebUSBPrinter } from "@/lib/hardware/WebUSBPrinter";
 import { UsbPrinter, ExternalPrinter } from "@/lib/hardware/useHardwareHooks";
 import { buildRawEscPosTicket } from "@/lib/hardware/escpos";
+import { useKDSOrientation } from "@/lib/hardware/useKDSOrientation";
 import { useApplyTheme, resolveThemeId } from "@/lib/themes";
 import { useBrand } from "@/contexts/BrandContext";
 import { ExpoView } from "@/components/kitchen/ExpoView";
@@ -430,6 +431,10 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
     // Resolve and apply touchpoint theme for KDS
     const kdsThemeId = resolveThemeId("kds");
     const tpTheme = useApplyTheme(kdsThemeId);
+    
+    // KDS Physical Screen Orientation Hook
+    const { orientation, toggleRotation, isNative } = useKDSOrientation();
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const pollIntervalRef = useRef<number | null>(null);
@@ -446,14 +451,6 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
     });
     useEffect(() => { localStorage.setItem("kds_view_mode", viewMode); }, [viewMode]);
 
-    // Expo Rotation State (lifted here so the entire interface rotates, including the header)
-    const [expoRotated, setExpoRotated] = useState<boolean>(() => {
-        if (typeof window !== "undefined") {
-            return localStorage.getItem("expo_rotated") === "true";
-        }
-        return false;
-    });
-    useEffect(() => { localStorage.setItem("expo_rotated", String(expoRotated)); }, [expoRotated]);
     
     // Settings Modal State
     const [showSettings, setShowSettings] = useState(false);
@@ -630,16 +627,6 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
                 style={{
                     backgroundColor: tpTheme.primaryBg,
                     fontFamily: tpTheme.fontFamily || undefined,
-                    ...(viewMode === "expo" && expoRotated ? {
-                        transform: "rotate(90deg)",
-                        transformOrigin: "top left",
-                        position: "fixed" as const,
-                        top: 0,
-                        left: "100vw",
-                        width: "100vh",
-                        height: "100vw",
-                        zIndex: 90,
-                    } : {}),
                 }}
             >
                 {/* Header Bar */}
@@ -693,6 +680,15 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
                                 </span>
                             </button>
                         </div>
+                        {isNative && (
+                            <button
+                                onClick={toggleRotation}
+                                className="px-4 py-3 text-sm font-bold uppercase tracking-wider border border-white/10 hover:bg-white/5 text-neutral-300 rounded-xl transition-colors hidden sm:flex items-center gap-2"
+                                title={`Screen is currently: ${orientation}`}
+                            >
+                                🔄 Rotate
+                            </button>
+                        )}
                         <button
                             onClick={() => setShowSettings(true)}
                             className="px-4 py-3 text-sm font-bold uppercase tracking-wider border border-white/10 hover:bg-white/5 text-neutral-300 rounded-xl transition-colors hidden sm:block"
@@ -719,8 +715,6 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
                         orders={orders}
                         onBump={handleBump}
                         onArchive={handleArchive}
-                        rotated={expoRotated}
-                        onToggleRotate={() => setExpoRotated(r => !r)}
                     />
                 ) : (
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-x-auto pb-4">

@@ -921,7 +921,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ brandKey: 
             };
             const policyPath = map[p.id];
             try {
-              const policyBody = await fs.readFile(path.join(process.cwd(), policyPath), "utf8");
+              const policyBody = await fs.readFile(path.join(/*turbopackIgnore: true*/ process.cwd(), policyPath), "utf8");
               await apim.productPolicy.createOrUpdate(apimRg, apimName, p.id, "policy", { format: "rawxml", value: policyBody } as any);
             } catch { }
           }

@@ -119,7 +119,7 @@ async function getApkBytes(brandKey: string): Promise<{ bytes: Uint8Array; sourc
   if (!rel) return null;
 
   try {
-    const filePath = path.join(process.cwd(), rel);
+    const filePath = path.join(/*turbopackIgnore: true*/ process.cwd(), rel);
     const data = await fs.readFile(filePath);
     const isBase = brandKey !== "portalpay" && brandKey !== "paynex";
     return {
