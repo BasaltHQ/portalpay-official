@@ -16,7 +16,7 @@ import { QRCode } from "react-qrcode-logo";
 import { getTheme } from "@/lib/themes";
 import { isRuntimePlatformBrand } from "@/lib/branding";
 import { useQRCodeDisplay, useReceiptPrinter } from "@/lib/hardware/useHardwareHooks";
-import { networkPrint } from "@/lib/hardware/network-print";
+import { networkPrint, buildHandheldReceiptText } from "@/lib/hardware/network-print";
 import { useToastOrderPush } from "@/lib/hooks/use-toast-order-push";
 import { useCompliancePush } from "@/lib/hooks/use-compliance-push";
 import {
@@ -940,8 +940,7 @@ export default function HandheldInterface({
                                             const origin = typeof window !== "undefined" ? window.location.origin : "";
                                             const rawId = String(currentReceipt.receiptId || currentReceipt.id || "").replace("receipt:", "");
                                             const pUrl = `${origin}/portal/${encodeURIComponent(rawId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
-                                            const paymentLinkSection = isRuntimePlatformBrand() ? `\n\nPay online at:\n${pUrl}` : "";
-                                            const receiptText = `\nRECEIPT\nID: ${rawId}\nTOTAL: ${formatCurrency(currentReceipt.total || currentReceipt.totalUsd)}\nSTATUS: ${currentReceipt.status.toUpperCase()}${paymentLinkSection}\n\n`;
+                                            const receiptText = buildHandheldReceiptText(currentReceipt, brandName);
                                             let qrBase64 = undefined;
                                             const canvas = document.getElementById('handheld-qr-canvas-hist') as HTMLCanvasElement;
                                             if (canvas && canvas.width > 0) {
@@ -1160,8 +1159,7 @@ export default function HandheldInterface({
                                             const origin = typeof window !== "undefined" ? window.location.origin : "";
                                             const rawId = String(selectedOrderForPayment.receiptId || selectedOrderForPayment.id || "").replace("receipt:", "");
                                             const pUrl = `${origin}/portal/${encodeURIComponent(rawId)}?recipient=${encodeURIComponent(merchantWallet)}&tid=2`;
-                                            const paymentLinkSection = isRuntimePlatformBrand() ? `\n\nPay online at:\n${pUrl}` : "";
-                                            const receiptText = `\nRECEIPT\nID: ${rawId}\nTOTAL: ${formatCurrency(selectedOrderForPayment.total)}\nSTATUS: ${selectedOrderForPayment.status.toUpperCase()}${paymentLinkSection}\n\n`;
+                                            const receiptText = buildHandheldReceiptText(selectedOrderForPayment, brandName);
                                             let qrBase64 = undefined;
                                             const canvas = document.getElementById('handheld-qr-canvas-pay') as HTMLCanvasElement;
                                             if (canvas && canvas.width > 0) {
@@ -2215,7 +2213,7 @@ export default function HandheldInterface({
                     try {
                         const origin = typeof window !== "undefined" ? window.location.origin : "";
                         const rawId = selectedOrderForPayment.id.replace("receipt:", "");
-                        const receiptText = `\nRECEIPT\nID: ${rawId}\nTOTAL: ${formatCurrency(selectedOrderForPayment.total)}\nSTATUS: COMPED\nREASON: ${finalReason}\nAUTH: ${compedBy}\n\n`;
+                        const receiptText = buildHandheldReceiptText({ ...selectedOrderForPayment, status: `COMPED (${finalReason})` }, brandName);
                         
                         await printDocument({ text: receiptText }).catch(async () => {
                              await networkPrint({ text: receiptText });

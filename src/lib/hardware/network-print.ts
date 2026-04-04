@@ -181,3 +181,103 @@ export function buildExpoTicketText(order: {
 
     return lines.join('\n');
 }
+
+/**
+ * Build a formatted plain-text guest receipt for the Handheld POS (32-column layout).
+ */
+export function buildHandheldReceiptText(order: any, brandName: string): string {
+    const COL_WIDTH = 32;
+
+    const centerText = (text: string) => {
+        let trimmed = text.substring(0, COL_WIDTH).trim();
+        let spaces = Math.max(0, Math.floor((COL_WIDTH - trimmed.length) / 2));
+        return ' '.repeat(spaces) + trimmed;
+    };
+
+    const centerDoubleText = (text: string) => {
+        const DOUBLE_COL_WIDTH = Math.floor(COL_WIDTH / 2);
+        let trimmed = text.substring(0, DOUBLE_COL_WIDTH).trim();
+        let spaces = Math.max(0, Math.floor((DOUBLE_COL_WIDTH - trimmed.length) / 2));
+        return '[MAGNIFY 2 2]\n' + ' '.repeat(spaces) + trimmed + '\n[MAGNIFY 1 1]';
+    };
+
+    const leftRightText = (left: string, right: string) => {
+        let leftTrimmed = left.substring(0, COL_WIDTH - right.length - 1).trim();
+        let spaces = Math.max(1, COL_WIDTH - leftTrimmed.length - right.length);
+        return leftTrimmed + ' '.repeat(spaces) + right;
+    };
+
+    const wrapText = (text: string, indent: number, maxLen: number) => {
+        const words = text.split(' ');
+        let lines: string[] = [];
+        let currentLine = '';
+
+        for (const word of words) {
+            if ((currentLine + word).length > maxLen) {
+                if (currentLine) lines.push(' '.repeat(indent) + currentLine.trim());
+                currentLine = word + ' ';
+            } else {
+                currentLine += word + ' ';
+            }
+        }
+        if (currentLine) lines.push(' '.repeat(indent) + currentLine.trim());
+        return lines;
+    };
+
+    const lines: string[] = [];
+
+    // Header section
+    lines.push(centerDoubleText(brandName.toUpperCase()));
+    lines.push('');
+    
+    lines.push(centerText('GUEST RECEIPT'));
+    lines.push(centerText(new Date().toLocaleString()));
+    lines.push('-'.repeat(COL_WIDTH));
+    lines.push(leftRightText(`Order: #${String(order.receiptId || order.id || "").replace("receipt:", "").slice(-4)}`, `Type: POS`));
+    lines.push('-'.repeat(COL_WIDTH));
+    lines.push('');
+
+    // Itemized lines
+    if (order.items && Array.isArray(order.items)) {
+        order.items.forEach((itemLine: any) => {
+            if (itemLine.label && itemLine.label.toLowerCase().includes("processing fee")) return;
+            
+            const qty = itemLine.quantity || itemLine.qty || 1;
+            const name = itemLine.item?.name || itemLine.name || itemLine.label || 'Item';
+            const price = Number((itemLine.item?.priceUsd || itemLine.priceUsd || 0)) * qty;
+            
+            lines.push(leftRightText(`${qty}x ${name}`, `$${price.toFixed(2)}`));
+
+            const mods = itemLine.modifiers || itemLine.selectedModifiers || [];
+            if (mods.length > 0) {
+                mods.forEach((mod: any) => {
+                    const mName = mod.name || 'Modifier';
+                    const mPrice = Number(mod.priceAdjustment || 0) * qty;
+                    const priceStr = mPrice > 0 ? `+$${mPrice.toFixed(2)}` : '';
+                    if (priceStr) {
+                         lines.push(leftRightText(`   > ${mName}`, priceStr));
+                    } else {
+                         lines.push(...wrapText(`   > ${mName}`, 0, COL_WIDTH));
+                    }
+                });
+            }
+        });
+    }
+
+    lines.push('');
+    lines.push('-'.repeat(COL_WIDTH));
+    const finalTotal = Number(order.total || order.totalUsd || 0);
+    lines.push(leftRightText('TOTAL', `$${finalTotal.toFixed(2)}`));
+    lines.push(leftRightText('STATUS', (order.status || 'PAID').toUpperCase()));
+    lines.push('-'.repeat(COL_WIDTH));
+
+    lines.push('');
+    lines.push(centerText('Scan QR below to pay online'));
+    lines.push(centerText('or view receipt details.'));
+    
+    // Add 2 padding block lines to help feed QR fully prior to native print feed
+    lines.push('');
+    lines.push('');
+
+    return lines.join('\n');
+}
