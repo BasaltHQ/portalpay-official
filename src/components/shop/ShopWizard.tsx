@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback, memo } from "react";
 import { createPortal } from "react-dom";
 import { ShopConfig, ShopTheme, InventoryArrangement } from "@/app/shop/page";
 import ImageUploadField from "@/components/forms/ImageUploadField";
@@ -16,6 +16,15 @@ type Props = {
 
 type WizardStep = "essentials" | "branding" | "layout" | "content" | "review";
 
+// Memoized preview to prevent re-renders during color picker drag
+const MemoizedShopClient = memo(ShopClient, (prev, next) => {
+    // Only re-render when config JSON actually changes (prevents thrashing)
+    return JSON.stringify(prev.config) === JSON.stringify(next.config)
+        && prev.merchantWallet === next.merchantWallet
+        && prev.cleanSlug === next.cleanSlug
+        && prev.items === next.items;
+});
+
 export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
     const [step, setStep] = useState<WizardStep>("essentials");
     const [config, setConfig] = useState<ShopConfig>(initialConfig);
@@ -27,8 +36,10 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
     const onUploadStart = () => setActiveUploads(prev => prev + 1);
     const onUploadEnd = () => setActiveUploads(prev => Math.max(0, prev - 1));
 
-    // Debounced color refs to prevent live-preview thrashing during picker drag
-    const colorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Color picker drag isolation:
+    // - localPrimary/localSecondary update instantly on every drag tick (onInput) for swatch feedback
+    // - config only updates on picker close (onChange fires on mouseup/close in native pickers)
+    // This completely prevents ShopClient re-renders during drag.
     const [localPrimary, setLocalPrimary] = useState(config.theme.primaryColor || "#0ea5e9");
     const [localSecondary, setLocalSecondary] = useState(config.theme.secondaryColor || "#22c55e");
 
@@ -36,12 +47,14 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
     useEffect(() => { setLocalPrimary(config.theme.primaryColor || "#0ea5e9"); }, [config.theme.primaryColor]);
     useEffect(() => { setLocalSecondary(config.theme.secondaryColor || "#22c55e"); }, [config.theme.secondaryColor]);
 
-    const commitColor = useCallback((field: 'primaryColor' | 'secondaryColor', value: string) => {
-        if (colorDebounceRef.current) clearTimeout(colorDebounceRef.current);
-        colorDebounceRef.current = setTimeout(() => {
-            setConfig(prev => ({ ...prev, theme: { ...prev.theme, [field]: value } }));
-        }, 150);
-    }, []);
+    // Debounced config snapshot for the preview panel — prevents re-renders faster than 500ms
+    const [previewConfig, setPreviewConfig] = useState<ShopConfig>(config);
+    const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
+        previewTimerRef.current = setTimeout(() => setPreviewConfig(config), 500);
+        return () => { if (previewTimerRef.current) clearTimeout(previewTimerRef.current); };
+    }, [config]);
 
     // Mock data for preview
     const mockItems = useMemo(() => {
@@ -193,7 +206,8 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
                                             type="color"
                                             className="w-10 h-10 p-0 shrink-0 aspect-square rounded border cursor-pointer"
                                             value={clampColor(localPrimary, "#0ea5e9")}
-                                            onChange={(e) => { setLocalPrimary(e.target.value); commitColor('primaryColor', e.target.value); }}
+                                            onInput={(e) => setLocalPrimary((e.target as HTMLInputElement).value)}
+                                            onChange={(e) => { setLocalPrimary(e.target.value); setConfig(prev => ({ ...prev, theme: { ...prev.theme, primaryColor: e.target.value } })); }}
                                         />
                                         <input
                                             className="flex-1 h-10 px-2 border rounded text-xs font-mono"
@@ -209,7 +223,8 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
                                             type="color"
                                             className="w-10 h-10 p-0 shrink-0 aspect-square rounded border cursor-pointer"
                                             value={clampColor(localSecondary, "#22c55e")}
-                                            onChange={(e) => { setLocalSecondary(e.target.value); commitColor('secondaryColor', e.target.value); }}
+                                            onInput={(e) => setLocalSecondary((e.target as HTMLInputElement).value)}
+                                            onChange={(e) => { setLocalSecondary(e.target.value); setConfig(prev => ({ ...prev, theme: { ...prev.theme, secondaryColor: e.target.value } })); }}
                                         />
                                         <input
                                             className="flex-1 h-10 px-2 border rounded text-xs font-mono"
@@ -424,12 +439,12 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
                     {/* The Actual Shop Client - Containment Enforced! */}
                     <div className="flex-1 w-full bg-black isolate transform-gpu overflow-y-auto flex flex-col min-h-0">
                         <div className="flex-1 min-h-0">
-                            <ShopClient
-                                config={config}
+                            <MemoizedShopClient
+                                config={previewConfig}
                                 items={mockItems}
                                 reviews={mockReviews}
                                 merchantWallet={account?.address || ""}
-                                cleanSlug={config.slug || "preview"}
+                                cleanSlug={previewConfig.slug || "preview"}
                                 isPreview={true}
                             />
                         </div>
