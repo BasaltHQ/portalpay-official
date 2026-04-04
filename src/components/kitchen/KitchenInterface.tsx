@@ -80,6 +80,8 @@ function formatElapsedTime(startTimestamp: number): string {
 
 // -- TICKET COMPONENT (Draggable) --
 function KitchenTicket({ order, isOverlay, onClear, onMarkItemReady }: { order: KitchenOrder; isOverlay?: boolean; onClear?: (id: string, uberId?: string) => void; onMarkItemReady?: (id: string, idx: number) => void; }) {
+    const [isPrinting, setIsPrinting] = useState(false);
+
     // 1. Filter out Processing Fees
     const filteredItems = order.lineItems.map((item, idx) => ({ ...item, originalIndex: idx })).filter(i =>
         !i.label.toLowerCase().includes("processing fee") &&
@@ -281,61 +283,68 @@ function KitchenTicket({ order, isOverlay, onClear, onMarkItemReady }: { order: 
             {order.kitchenStatus !== 'completed' && (
                 <>
                     <button
+                        disabled={isPrinting}
                         onClick={async (e) => {
                             e.stopPropagation();
+                            if (isPrinting) return;
+                            setIsPrinting(true);
 
-                            // Tier 0: Direct WebUSB (OTG) to Generic Thermal Printer Mode
-                            if (WebUSBPrinter.isSupported()) {
-                                try {
-                                    const rawBuffer = buildRawEscPosTicket(order);
-                                    const success = await WebUSBPrinter.print(rawBuffer);
-                                    if (success) {
-                                        console.log('[KDS] WebUSB OTG Direct Printer Job dispatched.');
-                                        return;
-                                    }
-                                } catch(err) {
-                                    console.warn('[KDS] WebUSB Print Overridden or failed:', err);
-                                }
-                            }
-
-                            const ticketText = buildExpoTicketText(order);
-                            // Tier 1: Try native printer (Capacitor)
                             try {
-                                if (Capacitor.isNativePlatform()) {
-                                    const localWifiIp = localStorage.getItem("kds_wifi_printer_ip");
-                                    if (localWifiIp) {
-                                        try {
-                                            await ExternalPrinter.printText({ 
-                                                text: ticketText, 
-                                                ipAddress: localWifiIp, 
-                                                port: 9100 
-                                            });
+                                // Tier 0: Direct WebUSB (OTG) to Generic Thermal Printer Mode
+                                if (WebUSBPrinter.isSupported()) {
+                                    try {
+                                        const rawBuffer = buildRawEscPosTicket(order);
+                                        const success = await WebUSBPrinter.print(rawBuffer);
+                                        if (success) {
+                                            console.log('[KDS] WebUSB OTG Direct Printer Job dispatched.');
                                             return;
-                                        } catch (e) {
-                                            console.warn("Native ExternalPrinter rejected:", e);
                                         }
-                                    } else {
-                                        // Attempt true native USB plugin print
-                                        try {
-                                            await UsbPrinter.printText({ text: ticketText });
-                                            return;
-                                        } catch (e) {
-                                          console.warn("Native UsbPrinter rejected:", e);
-                                        }
+                                    } catch(err) {
+                                        console.warn('[KDS] WebUSB Print Overridden or failed:', err);
                                     }
                                 }
-                            } catch (err) {
-                                console.warn('[KDS] Native print failed:', err);
+
+                                const ticketText = buildExpoTicketText(order);
+                                // Tier 1: Try native printer (Capacitor)
+                                try {
+                                    if (Capacitor.isNativePlatform()) {
+                                        const localWifiIp = localStorage.getItem("kds_wifi_printer_ip");
+                                        if (localWifiIp) {
+                                            try {
+                                                await ExternalPrinter.printText({ 
+                                                    text: ticketText, 
+                                                    ipAddress: localWifiIp, 
+                                                    port: 9100 
+                                                });
+                                                return;
+                                            } catch (e) {
+                                                console.warn("Native ExternalPrinter rejected:", e);
+                                            }
+                                        } else {
+                                            // Attempt true native USB plugin print
+                                            try {
+                                                await UsbPrinter.printText({ text: ticketText });
+                                                return;
+                                            } catch (e) {
+                                              console.warn("Native UsbPrinter rejected:", e);
+                                            }
+                                        }
+                                    }
+                                } catch (err) {
+                                    console.warn('[KDS] Native print failed:', err);
+                                }
+                                // Tier 2: DeviceHub network print
+                                const netResult = await networkPrint({ text: ticketText });
+                                if (netResult.ok) return;
+                                // Tier 3: Browser print
+                                window.print();
+                            } finally {
+                                setTimeout(() => setIsPrinting(false), 2000);
                             }
-                            // Tier 2: DeviceHub network print
-                            const netResult = await networkPrint({ text: ticketText });
-                            if (netResult.ok) return;
-                            // Tier 3: Browser print
-                            window.print();
                         }}
-                        className="mt-3 w-full h-9 rounded-lg bg-neutral-800 dark:bg-neutral-700 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-neutral-700 dark:hover:bg-neutral-600 active:scale-95 transition-all"
+                        className={`mt-3 w-full h-9 rounded-lg ${isPrinting ? 'bg-neutral-600 opacity-70 cursor-not-allowed' : 'bg-neutral-800 dark:bg-neutral-700 hover:bg-neutral-700 dark:hover:bg-neutral-600 active:scale-95'} text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all`}
                     >
-                        🖨 Print Expo Ticket
+                        {isPrinting ? '🖨 Printing...' : '🖨 Print Expo Ticket'}
                     </button>
                     <div className="flex gap-2 w-full mt-2">
                         <button
@@ -540,15 +549,6 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
         pollIntervalRef.current = window.setInterval(fetchOrders, 5000);
         return () => { if (pollIntervalRef.current) clearInterval(pollIntervalRef.current); };
     }, [activeWallet]);
-
-    useEffect(() => {
-        if (!shopConfig || !activeWallet) return;
-        if (shopConfig.theme?.brandLogoUrl && !shopConfig.thermalLogoPayload) {
-            fetch(`/api/shop/compile-thermal-logo?wallet=${activeWallet}`).then(res => {
-                if (res.ok) console.log("[KDS] Thermal logo compiled successfully.");
-            }).catch(e => console.warn("Background compile failed", e));
-        }
-    }, [shopConfig?.thermalLogoPayload, shopConfig?.theme?.brandLogoUrl, activeWallet]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
