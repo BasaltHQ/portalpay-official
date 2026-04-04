@@ -202,6 +202,24 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
                                 previewSize={64}
                             />
 
+                            <div>
+                                <label className="text-sm font-medium block mb-2">Logo Shape</label>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setConfig(prev => ({ ...prev, theme: { ...prev.theme, logoShape: "square" } }))}
+                                        className={`h-9 px-4 rounded-md border text-sm font-medium transition-all ${(config.theme.logoShape || "square") === "square" ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground"}`}
+                                    >
+                                        Rounded Square
+                                    </button>
+                                    <button
+                                        onClick={() => setConfig(prev => ({ ...prev, theme: { ...prev.theme, logoShape: "circle" } }))}
+                                        className={`h-9 px-4 rounded-md border text-sm font-medium transition-all ${config.theme.logoShape === "circle" ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground"}`}
+                                    >
+                                        Circle
+                                    </button>
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 gap-4">
                                 <div>
                                     <label className="text-sm font-medium">Primary</label>
@@ -256,7 +274,7 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
                             <div>
                                 <label className="text-sm font-medium">Font Family</label>
                                 <select
-                                    className="w-full h-10 px-3 mt-1 border rounded-md bg-background"
+                                    className="w-full h-10 px-3 mt-1 border rounded-md bg-background focus:ring-2 focus:ring-primary/20 transition-all"
                                     value={config.theme.fontFamily || "Inter, sans-serif"}
                                     onChange={(e) => setConfig(prev => ({ ...prev, theme: { ...prev.theme, fontFamily: e.target.value } }))}
                                 >
@@ -264,6 +282,21 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
                                     <option value="Roboto, sans-serif">Roboto</option>
                                     <option value="Poppins, sans-serif">Poppins</option>
                                     <option value="Merriweather, serif">Merriweather</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium">Hero Text Size</label>
+                                <select
+                                    className="w-full h-10 px-3 mt-1 border rounded-md bg-background focus:ring-2 focus:ring-primary/20 transition-all"
+                                    value={config.theme.heroFontSize || "medium"}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, theme: { ...prev.theme, heroFontSize: e.target.value as any } }))}
+                                >
+                                    <option value="microtext">Microtext (Original)</option>
+                                    <option value="small">Small</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="large">Large</option>
+                                    <option value="xlarge">Extra Large</option>
                                 </select>
                             </div>
                         </div>

@@ -1006,7 +1006,7 @@ export default function ShopBuilderPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Logo Upload */}
+          {/* Logo Upload & Shape */}
           <div>
             <ImageUploadField
               label="Brand Logo"
@@ -1016,6 +1016,26 @@ export default function ShopBuilderPage() {
               guidance="Square PNG/WebP recommended. 256x256."
               previewSize={80}
             />
+            
+            <div className="mt-4">
+              <label className="microtext text-muted-foreground">Logo Shape</label>
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  type="button"
+                  onClick={() => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, logoShape: "square" } }))}
+                  className={`h-9 px-3 rounded-md border text-sm transition-colors ${(cfg.theme.logoShape || "square") === "square" ? "bg-foreground/10 border-foreground/30 font-medium" : "hover:bg-foreground/5"}`}
+                >
+                  Rounded Square
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, logoShape: "circle" } }))}
+                  className={`h-9 px-3 rounded-md border text-sm transition-colors ${cfg.theme.logoShape === "circle" ? "bg-foreground/10 border-foreground/30 font-medium" : "hover:bg-foreground/5"}`}
+                >
+                  Circle
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Cover Photo Upload */}
@@ -1125,7 +1145,7 @@ export default function ShopBuilderPage() {
               />
             </div>
           </div>
-          <div className="sm:col-span-2">
+          <div className="sm:col-span-1">
             <label className="microtext text-muted-foreground">Font Family</label>
             <select
               className="w-full mt-1 px-3 py-2 border rounded-md text-sm bg-background"
@@ -1136,6 +1156,22 @@ export default function ShopBuilderPage() {
                 <option key={f.value} value={f.value}>{f.label}</option>
               ))}
             </select>
+          </div>
+          
+          <div className="sm:col-span-1">
+            <label className="microtext text-muted-foreground">Hero Text Size</label>
+            <select
+              className="w-full mt-1 px-3 py-2 border rounded-md text-sm bg-background"
+              value={cfg.theme.heroFontSize || "medium"}
+              onChange={(e) => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, heroFontSize: e.target.value as any } }))}
+            >
+              <option value="microtext">Microtext (Original)</option>
+              <option value="small">Small</option>
+              <option value="medium">Medium</option>
+              <option value="large">Large</option>
+              <option value="xlarge">Extra Large</option>
+            </select>
+            <p className="text-[10px] text-muted-foreground/70 mt-1">Controls the text size in your shop's hero section</p>
           </div>
         </div>
       </div>
@@ -1749,268 +1785,7 @@ export default function ShopBuilderPage() {
                 </div>
               </div>
 
-              {/* Theme */}
-              <div className="rounded-md border p-3 md:col-span-2">
-                <div className="text-sm font-medium mb-2">Theme</div>
 
-                {/* Color input mode (HEX/RGB) */}
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="microtext text-muted-foreground">Color input</span>
-                  <div className="inline-flex rounded-md border overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => setColorMode("hex")}
-                      className={`px-2 py-1 text-xs ${colorMode === "hex" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-                      title="Use HEX format"
-                    >
-                      HEX
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setColorMode("rgb")}
-                      className={`px-2 py-1 text-xs ${colorMode === "rgb" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-                      title="Use RGB format"
-                    >
-                      RGB
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Primary Color */}
-                  <div>
-                    <label className="text-sm font-medium">Primary Color</label>
-                    <div className="flex items-start gap-3 mt-1 min-w-0">
-                      <input
-                        type="color"
-                        className="w-10 h-10 rounded-md border shadow-sm shrink-0"
-                        value={cfg.theme.primaryColor || "#0ea5e9"}
-                        onChange={(e) => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, primaryColor: e.target.value } }))}
-                        title="Pick primary color"
-                      />
-                      <input
-                        className="h-9 px-3 py-1 border rounded-md bg-background"
-                        style={{ width: colorMode === "hex" ? "104px" : "160px" }}
-                        value={colorMode === "hex" ? (cfg.theme.primaryColor || "#0ea5e9") : hexToRgbString(cfg.theme.primaryColor || "#0ea5e9")}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          const hex = colorMode === "hex"
-                            ? clampColor(v, "#0ea5e9")
-                            : (rgbStringToHex(v) || "#0ea5e9");
-                          setCfg((prev) => ({ ...prev, theme: { ...prev.theme, primaryColor: hex } }));
-                        }}
-                        placeholder={colorMode === "hex" ? "#0ea5e9" : "rgb(14, 165, 233)"}
-                        maxLength={colorMode === "hex" ? 7 : 18}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">Used for header accents and borders.</p>
-                  </div>
-
-                  {/* Secondary Color */}
-                  <div>
-                    <label className="text-sm font-medium">Secondary Color</label>
-                    <div className="flex items-start gap-3 mt-1 min-w-0">
-                      <input
-                        type="color"
-                        className="w-10 h-10 rounded-md border shadow-sm shrink-0"
-                        value={cfg.theme.secondaryColor || "#22c55e"}
-                        onChange={(e) => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, secondaryColor: e.target.value } }))}
-                        title="Pick secondary color"
-                      />
-                      <input
-                        className="h-9 px-3 py-1 border rounded-md bg-background"
-                        style={{ width: colorMode === "hex" ? "104px" : "160px" }}
-                        value={colorMode === "hex" ? (cfg.theme.secondaryColor || "#22c55e") : hexToRgbString(cfg.theme.secondaryColor || "#22c55e")}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          const hex = colorMode === "hex"
-                            ? clampColor(v, "#22c55e")
-                            : (rgbStringToHex(v) || "#22c55e");
-                          setCfg((prev) => ({ ...prev, theme: { ...prev.theme, secondaryColor: hex } }));
-                        }}
-                        placeholder={colorMode === "hex" ? "#22c55e" : "rgb(34, 197, 94)"}
-                        maxLength={colorMode === "hex" ? 7 : 18}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">Used for buttons and highlights.</p>
-                  </div>
-
-                  {/* Text Color */}
-                  <div>
-                    <label className="text-sm font-medium">Text Color</label>
-                    <div className="flex items-start gap-3 mt-1 min-w-0">
-                      <input
-                        type="color"
-                        className="w-10 h-10 rounded-md border shadow-sm shrink-0"
-                        value={cfg.theme.textColor || "#0b1020"}
-                        onChange={(e) => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, textColor: clampColor(e.target.value, "#0b1020") } }))}
-                        title="Pick text color"
-                      />
-                      <input
-                        className="h-9 px-3 py-1 border rounded-md bg-background"
-                        style={{ width: colorMode === "hex" ? "104px" : "160px" }}
-                        value={colorMode === "hex" ? (cfg.theme.textColor || "#0b1020") : hexToRgbString(cfg.theme.textColor || "#0b1020")}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          const hex = colorMode === "hex"
-                            ? clampColor(v, "#0b1020")
-                            : (rgbStringToHex(v) || "#0b1020");
-                          setCfg((prev) => ({ ...prev, theme: { ...prev.theme, textColor: hex } }));
-                        }}
-                        placeholder={colorMode === "hex" ? "#0b1020" : "rgb(11, 16, 32)"}
-                        maxLength={colorMode === "hex" ? 7 : 18}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">Used for text on banners and details.</p>
-                  </div>
-
-                  {/* Accent Color (optional) */}
-                  <div>
-                    <label className="text-sm font-medium">Accent Color (optional)</label>
-                    <div className="flex items-start gap-3 mt-1 min-w-0">
-                      <input
-                        type="color"
-                        className="w-10 h-10 rounded-md border shadow-sm shrink-0"
-                        value={cfg.theme.accentColor || "#f59e0b"}
-                        onChange={(e) => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, accentColor: e.target.value } }))}
-                        title="Pick accent color"
-                      />
-                      <input
-                        className="h-9 px-3 py-1 border rounded-md bg-background"
-                        style={{ width: colorMode === "hex" ? "104px" : "160px" }}
-                        value={colorMode === "hex" ? (cfg.theme.accentColor || "#f59e0b") : hexToRgbString(cfg.theme.accentColor || "#f59e0b")}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          const hex = colorMode === "hex"
-                            ? clampColor(v, "#f59e0b")
-                            : (rgbStringToHex(v) || "#f59e0b");
-                          setCfg((prev) => ({ ...prev, theme: { ...prev.theme, accentColor: hex } }));
-                        }}
-                        placeholder={colorMode === "hex" ? "#f59e0b" : "rgb(245, 158, 11)"}
-                        maxLength={colorMode === "hex" ? 7 : 18}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Font Family */}
-                  <div className="md:col-span-2">
-                    <label className="text-sm font-medium">Font Family</label>
-                    <select
-                      className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
-                      value={cfg.theme.fontFamily || FONT_PRESETS[0].value}
-                      onChange={(e) => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, fontFamily: e.target.value } }))}
-                    >
-                      {FONT_PRESETS.map((f) => (
-                        <option key={f.label} value={f.value}>
-                          {f.label}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-muted-foreground mt-1">Applied to all shop text.</p>
-                  </div>
-                </div>
-
-                {/* Contrast Preview */}
-                <div className="mt-3">
-                  <div className="text-xs font-medium mb-1">Contrast Preview</div>
-                  <div className="flex gap-3">
-                    <div className="rounded-md px-3 py-2 text-xs" style={{ background: cfg.theme.primaryColor || "#0ea5e9", color: "#ffffff" }}>
-                      Text on Primary
-                    </div>
-                    <div className="rounded-md px-3 py-2 text-xs" style={{ background: cfg.theme.secondaryColor || "#22c55e", color: "#ffffff" }}>
-                      Text on Secondary
-                    </div>
-                  </div>
-                </div>
-
-                {/* Logo & Cover unchanged */}
-                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="microtext text-muted-foreground">Logo</label>
-                    <div className="mt-1 flex items-center gap-2">
-                      <input
-                        ref={fileLogoRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const f = e.target.files?.[0];
-                          if (f) {
-                            const url = await uploadImage(f);
-                            if (url) setCfg((prev) => ({ ...prev, theme: { ...prev.theme, brandLogoUrl: url } }));
-                          }
-                        }}
-                      />
-                      <button className="h-9 px-2 rounded-md border text-sm" onClick={() => fileLogoRef.current?.click()}>Upload Logo</button>
-                      <input
-                        className="h-9 flex-1 px-3 py-1 border rounded-md bg-background"
-                        placeholder="or paste image URL"
-                        value={cfg.theme.brandLogoUrl || ""}
-                        onChange={(e) => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, brandLogoUrl: e.target.value } }))}
-                      />
-                    </div>
-                    <div className="mt-2">
-                      <label className="text-xs font-medium text-muted-foreground">Logo Shape</label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <button
-                          type="button"
-                          onClick={() => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, logoShape: "square" } }))}
-                          className={`h-9 px-3 rounded-md border text-sm ${(cfg.theme.logoShape || "square") === "square" ? "bg-foreground/10 border-foreground/30" : ""}`}
-                        >
-                          Rounded Square
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, logoShape: "circle" } }))}
-                          className={`h-9 px-3 rounded-md border text-sm ${cfg.theme.logoShape === "circle" ? "bg-foreground/10 border-foreground/30" : ""}`}
-                        >
-                          Circle
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <label className="text-xs font-medium text-muted-foreground">Hero Text Size</label>
-                      <select
-                        className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
-                        value={cfg.theme.heroFontSize || "medium"}
-                        onChange={(e) => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, heroFontSize: e.target.value as ShopTheme["heroFontSize"] } }))}
-                      >
-                        <option value="microtext">Microtext (Original)</option>
-                        <option value="small">Small</option>
-                        <option value="medium">Medium</option>
-                        <option value="large">Large</option>
-                        <option value="xlarge">Extra Large</option>
-                      </select>
-                      <p className="text-xs text-muted-foreground mt-1">Controls the text size in your shop's hero section</p>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="microtext text-muted-foreground">Cover Photo</label>
-                    <div className="mt-1 flex items-center gap-2">
-                      <input
-                        ref={fileCoverRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const f = e.target.files?.[0];
-                          if (f) {
-                            const url = await uploadImage(f);
-                            if (url !== null) setCfg((prev) => ({ ...prev, theme: { ...prev.theme, coverPhotoUrl: url } }));
-                          }
-                        }}
-                      />
-                      <button className="h-9 px-2 rounded-md border text-sm" onClick={() => fileCoverRef.current?.click()}>Upload Cover</button>
-                      <input
-                        className="h-9 flex-1 px-3 py-1 border rounded-md bg-background"
-                        placeholder="or paste image URL"
-                        value={cfg.theme.coverPhotoUrl || ""}
-                        onChange={(e) => setCfg((prev) => ({ ...prev, theme: { ...prev.theme, coverPhotoUrl: e.target.value } }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               {/* Inventory Arrangement */}
               <div className="md:col-span-2">
