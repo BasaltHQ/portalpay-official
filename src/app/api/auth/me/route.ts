@@ -84,19 +84,26 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        // LEGACY FALLBACK: If no client_request exists, check if shop_config exists with setupComplete=true
-        // This supports merchants who were approved before the client_request system existed
+        // LEGACY FALLBACK (PLATFORM ONLY): If no client_request exists, check if ANY
+        // shop_config or site_config exists for this wallet. This matches the
+        // ClientRequestsPanel synthesis logic which auto-approves any merchant with a
+        // config document. Only applies to the platform container where merchants existed
+        // before the client_request signup system was introduced.
+        // Partner containers have always required client_request — no fallback needed.
         if (shopStatus === "none" && !blocked) {
-          const legacyShopQuery = "SELECT top 1 c.setupComplete FROM c WHERE (c.type = 'shop_config' OR c.type = 'site_config') AND c.wallet = @w AND c.brandKey = @b AND c.setupComplete = true";
-          const { resources: legacyResources } = await container.items.query({
-            query: legacyShopQuery,
-            parameters: [{ name: "@w", value: wallet }, { name: "@b", value: brandKey }]
-          }).fetchAll();
-          console.log("[AuthMe] Legacy Shop Result:", legacyResources);
+          const { isPlatformContext } = await import("@/lib/env");
+          if (isPlatformContext()) {
+            const legacyShopQuery = "SELECT top 1 c.id FROM c WHERE (c.type = 'shop_config' OR c.type = 'site_config') AND c.wallet = @w AND (c.brandKey = @b OR NOT IS_DEFINED(c.brandKey) OR c.brandKey = '' OR c.brandKey = null)";
+            const { resources: legacyResources } = await container.items.query({
+              query: legacyShopQuery,
+              parameters: [{ name: "@w", value: wallet }, { name: "@b", value: brandKey }]
+            }).fetchAll();
+            console.log("[AuthMe] Legacy Shop Result:", legacyResources);
 
-          if (legacyResources.length > 0) {
-            // Legacy approved merchant - has a completed shop config but no client_request
-            shopStatus = "approved";
+            if (legacyResources.length > 0) {
+              // Legacy approved merchant - has a config but no client_request
+              shopStatus = "approved";
+            }
           }
         }
       } catch (e) {

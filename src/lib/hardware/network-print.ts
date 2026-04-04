@@ -190,7 +190,7 @@ export function buildExpoTicketText(order: {
  * Build a formatted plain-text guest receipt for the Handheld POS (32-column layout).
  */
 export function buildHandheldReceiptText(order: any, brandName: string): string {
-    const COL_WIDTH = 42;
+    const COL_WIDTH = 32;
 
     const centerText = (text: string) => {
         let trimmed = text.substring(0, COL_WIDTH).trim();

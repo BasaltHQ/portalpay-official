@@ -54,6 +54,15 @@ class TopWisePrinterPlugin : Plugin() {
             
             printer.start(object : AidlPrinterListener.Stub() {
                 override fun onError(error: Int) {
+                    // PRINTER_STATE_NORMAL (0x00) is not a real error — treat as success
+                    if (error == 0) {
+                        Log.w(TAG, "printText: onError(0) received — PRINTER_STATE_NORMAL, treating as success")
+                        val res = JSObject()
+                        res.put("success", true)
+                        call.resolve(res)
+                        return
+                    }
+                    Log.e(TAG, "printText: onError reported code $error")
                     call.reject("Print error: $error")
                 }
                 override fun onPrintFinish() {
@@ -92,6 +101,14 @@ class TopWisePrinterPlugin : Plugin() {
             
             printer.start(object : AidlPrinterListener.Stub() {
                 override fun onError(error: Int) {
+                    if (error == 0) {
+                        Log.w(TAG, "printImage: onError(0) received — PRINTER_STATE_NORMAL, treating as success")
+                        val res = JSObject()
+                        res.put("success", true)
+                        call.resolve(res)
+                        return
+                    }
+                    Log.e(TAG, "printImage: onError reported code $error")
                     call.reject("Image print error: $error")
                 }
                 override fun onPrintFinish() {
@@ -109,6 +126,14 @@ class TopWisePrinterPlugin : Plugin() {
     fun printDocument(call: PluginCall) {
         val text = call.getString("text")
         val base64Data = call.getString("base64")
+
+        // Guard: reject immediately if there is nothing to print — prevents sending an
+        // empty buffer to the SDK which causes it to fire onError(0) (PRINTER_STATE_NORMAL)
+        if (text.isNullOrEmpty() && base64Data.isNullOrEmpty()) {
+            Log.w(TAG, "printDocument: Both text and base64 are empty — nothing to print")
+            call.reject("Nothing to print: both text and image are empty")
+            return
+        }
 
         val printer = getPrinter()
         if (printer == null) {
@@ -144,6 +169,15 @@ class TopWisePrinterPlugin : Plugin() {
             Log.d(TAG, "printDocument: Sending start command to printer mechanism...")
             printer.start(object : AidlPrinterListener.Stub() {
                 override fun onError(error: Int) {
+                    // PRINTER_STATE_NORMAL (0x00) is not a real error — the SDK fires this
+                    // when the print buffer was trivially consumed. Treat as success.
+                    if (error == 0) {
+                        Log.w(TAG, "printDocument: onError(0) received — PRINTER_STATE_NORMAL, treating as success")
+                        val res = JSObject()
+                        res.put("success", true)
+                        call.resolve(res)
+                        return
+                    }
                     Log.e(TAG, "printDocument: AidlPrinterListener.onError reported code $error")
                     call.reject("Print error: $error")
                 }

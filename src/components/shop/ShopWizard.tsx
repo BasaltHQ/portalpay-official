@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { ShopConfig, ShopTheme, InventoryArrangement } from "@/app/shop/page";
 import ImageUploadField from "@/components/forms/ImageUploadField";
@@ -26,6 +26,22 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
 
     const onUploadStart = () => setActiveUploads(prev => prev + 1);
     const onUploadEnd = () => setActiveUploads(prev => Math.max(0, prev - 1));
+
+    // Debounced color refs to prevent live-preview thrashing during picker drag
+    const colorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [localPrimary, setLocalPrimary] = useState(config.theme.primaryColor || "#0ea5e9");
+    const [localSecondary, setLocalSecondary] = useState(config.theme.secondaryColor || "#22c55e");
+
+    // Sync local colors back up when config changes externally (e.g. text input)
+    useEffect(() => { setLocalPrimary(config.theme.primaryColor || "#0ea5e9"); }, [config.theme.primaryColor]);
+    useEffect(() => { setLocalSecondary(config.theme.secondaryColor || "#22c55e"); }, [config.theme.secondaryColor]);
+
+    const commitColor = useCallback((field: 'primaryColor' | 'secondaryColor', value: string) => {
+        if (colorDebounceRef.current) clearTimeout(colorDebounceRef.current);
+        colorDebounceRef.current = setTimeout(() => {
+            setConfig(prev => ({ ...prev, theme: { ...prev.theme, [field]: value } }));
+        }, 150);
+    }, []);
 
     // Mock data for preview
     const mockItems = useMemo(() => {
@@ -103,7 +119,7 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
                         >
                             Preview
                         </button>
-                        <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-2">✕</button>
+                        <button onClick={onClose} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground px-2 py-1.5 rounded-md hover:bg-muted transition-colors"><span className="text-xs font-medium">Close</span><span>✕</span></button>
                     </div>
                 </div>
 
@@ -176,8 +192,8 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
                                         <input
                                             type="color"
                                             className="w-10 h-10 p-0 shrink-0 aspect-square rounded border cursor-pointer"
-                                            value={clampColor(config.theme.primaryColor || "#0ea5e9", "#0ea5e9")}
-                                            onChange={(e) => setConfig(prev => ({ ...prev, theme: { ...prev.theme, primaryColor: e.target.value } }))}
+                                            value={clampColor(localPrimary, "#0ea5e9")}
+                                            onChange={(e) => { setLocalPrimary(e.target.value); commitColor('primaryColor', e.target.value); }}
                                         />
                                         <input
                                             className="flex-1 h-10 px-2 border rounded text-xs font-mono"
@@ -192,8 +208,8 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
                                         <input
                                             type="color"
                                             className="w-10 h-10 p-0 shrink-0 aspect-square rounded border cursor-pointer"
-                                            value={clampColor(config.theme.secondaryColor || "#22c55e", "#22c55e")}
-                                            onChange={(e) => setConfig(prev => ({ ...prev, theme: { ...prev.theme, secondaryColor: e.target.value } }))}
+                                            value={clampColor(localSecondary, "#22c55e")}
+                                            onChange={(e) => { setLocalSecondary(e.target.value); commitColor('secondaryColor', e.target.value); }}
                                         />
                                         <input
                                             className="flex-1 h-10 px-2 border rounded text-xs font-mono"
