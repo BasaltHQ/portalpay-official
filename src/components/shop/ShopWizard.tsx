@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef, useCallback, memo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback, memo, startTransition } from "react";
 import { createPortal } from "react-dom";
 import { ShopConfig, ShopTheme, InventoryArrangement } from "@/app/shop/page";
 import ImageUploadField from "@/components/forms/ImageUploadField";
@@ -52,7 +52,11 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
     const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
         if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
-        previewTimerRef.current = setTimeout(() => setPreviewConfig(config), 500);
+        previewTimerRef.current = setTimeout(() => {
+            startTransition(() => {
+                setPreviewConfig(config);
+            });
+        }, 500);
         return () => { if (previewTimerRef.current) clearTimeout(previewTimerRef.current); };
     }, [config]);
 
