@@ -192,7 +192,7 @@ function Thumbnail({ src, size = 56, alt = "", fill = false, itemId = "", primar
 
     const colors = generateColors(itemId || alt || "default", primaryColor || "#0ea5e9", secondaryColor || "#22c55e");
     const gradientStyle: React.CSSProperties = {
-        background: `
+        backgroundImage: `
       radial-gradient(at 0% 0%, ${colors[0]} 0px, transparent 50%),
       radial-gradient(at 100% 0%, ${colors[1]} 0px, transparent 50%),
       radial-gradient(at 100% 100%, ${colors[2]} 0px, transparent 50%),
@@ -783,6 +783,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
     }, [cleanSlug, merchantWallet]);
 
     useEffect(() => {
+        if (isPreview) return; // Prevent global theme hijacking and massive reflows in Shop Wizard
         const root = document.documentElement;
         const prevPrimary = getComputedStyle(root).getPropertyValue("--pp-primary");
         const prevSecondary = getComputedStyle(root).getPropertyValue("--pp-secondary");
@@ -793,7 +794,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             root.style.setProperty("--pp-primary", prevPrimary.trim());
             root.style.setProperty("--pp-secondary", prevSecondary.trim());
         };
-    }, [cfg?.theme?.primaryColor]);
+    }, [cfg?.theme?.primaryColor, isPreview]);
 
     useEffect(() => {
         if (account?.address) {
@@ -2117,7 +2118,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
         <VoiceAgentProvider>
             <AutoTranslateProvider>
                 <div style={varStyle}>
-                    <ShopThemeAuditor expected={cfg?.theme || {}} />
+                    {!isPreview && <ShopThemeAuditor expected={cfg?.theme || {}} />}
 
                     {/* Sticky Header */}
                     <div className={`fixed top-0 left-0 right-0 z-[100] bg-background/90 backdrop-blur-md border-b shadow-sm transition-transform duration-300 ${isSticky ? "translate-y-0" : "-translate-y-full"}`} style={{ borderColor: shopPrimary }}>

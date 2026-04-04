@@ -231,13 +231,13 @@ export function useRealtimeVoiceAgent(): UseRealtimeVoiceAgent {
   }, []);
 
   // ─── ElevenLabs useConversation ───
-  const conversation = useConversation({
+  const conversationOptions = useMemo(() => ({
     clientTools: clientTools,
     workletPaths: {
       rawAudioProcessor: "/elevenlabs/rawAudioProcessor.js",
       audioConcatProcessor: "/elevenlabs/audioConcatProcessor.js",
     },
-    format: "pcm",
+    format: "pcm" as const,
     onConnect: ({ conversationId }: { conversationId: string }) => {
       console.info("[ElevenLabs] Connected:", conversationId);
       setToolsReady(true);
@@ -254,14 +254,14 @@ export function useRealtimeVoiceAgent(): UseRealtimeVoiceAgent {
       setError(typeof message === "string" ? message : "Voice agent error");
     },
     onModeChange: ({ mode }: { mode: string }) => {
-      // mode is "speaking" or "listening"
       console.info("[ElevenLabs] Mode:", mode);
     },
     onAudio: (audio: string) => {
-      // Log length to verify data flow
       if (Math.random() < 0.05) console.log("[ElevenLabs] Audio chunk received (base64 length):", audio.length);
     },
-  });
+  }), [clientTools]);
+
+  const conversation = useConversation(conversationOptions);
 
   // ─── Audio Level Polling ───
   useEffect(() => {
