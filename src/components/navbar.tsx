@@ -354,6 +354,7 @@ export function Navbar() {
                         // Check if user has a pending application
                         setHasPendingApplication(me?.shopStatus === "pending");
                         if (!showSignupWizard) {
+                            setShowAuthModal(false); // FORCE CLOSE signing modal if it was opened by a button click
                             setShowAccessPending(true);
                         }
                         // Do NOT show AuthModal - that asks for signature/login which we don't want yet

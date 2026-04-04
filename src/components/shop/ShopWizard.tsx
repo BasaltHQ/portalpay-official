@@ -207,13 +207,20 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
                                             className="w-10 h-10 p-0 shrink-0 aspect-square rounded border cursor-pointer"
                                             value={clampColor(localPrimary, "#0ea5e9")}
                                             onInput={(e) => setLocalPrimary((e.target as HTMLInputElement).value)}
-                                            onChange={(e) => { setLocalPrimary(e.target.value); setConfig(prev => ({ ...prev, theme: { ...prev.theme, primaryColor: e.target.value } })); }}
+                                            onChange={(e) => setLocalPrimary(e.target.value)}
                                         />
                                         <input
                                             className="flex-1 h-10 px-2 border rounded text-xs font-mono"
-                                            value={config.theme.primaryColor || "#0ea5e9"}
-                                            onChange={(e) => setConfig(prev => ({ ...prev, theme: { ...prev.theme, primaryColor: e.target.value } }))}
+                                            value={localPrimary}
+                                            onChange={(e) => setLocalPrimary(e.target.value)}
                                         />
+                                        <button 
+                                            onClick={() => setConfig(prev => ({ ...prev, theme: { ...prev.theme, primaryColor: localPrimary } }))}
+                                            disabled={localPrimary === (config.theme.primaryColor || "#0ea5e9")}
+                                            className={`px-3 h-10 rounded text-xs font-medium transition-all ${localPrimary !== (config.theme.primaryColor || "#0ea5e9") ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-muted text-muted-foreground'}`}
+                                        >
+                                            Apply
+                                        </button>
                                     </div>
                                 </div>
                                 <div>
@@ -224,13 +231,20 @@ export default function ShopWizard({ initialConfig, onSave, onClose }: Props) {
                                             className="w-10 h-10 p-0 shrink-0 aspect-square rounded border cursor-pointer"
                                             value={clampColor(localSecondary, "#22c55e")}
                                             onInput={(e) => setLocalSecondary((e.target as HTMLInputElement).value)}
-                                            onChange={(e) => { setLocalSecondary(e.target.value); setConfig(prev => ({ ...prev, theme: { ...prev.theme, secondaryColor: e.target.value } })); }}
+                                            onChange={(e) => setLocalSecondary(e.target.value)}
                                         />
                                         <input
                                             className="flex-1 h-10 px-2 border rounded text-xs font-mono"
-                                            value={config.theme.secondaryColor || "#22c55e"}
-                                            onChange={(e) => setConfig(prev => ({ ...prev, theme: { ...prev.theme, secondaryColor: e.target.value } }))}
+                                            value={localSecondary}
+                                            onChange={(e) => setLocalSecondary(e.target.value)}
                                         />
+                                        <button 
+                                            onClick={() => setConfig(prev => ({ ...prev, theme: { ...prev.theme, secondaryColor: localSecondary } }))}
+                                            disabled={localSecondary === (config.theme.secondaryColor || "#22c55e")}
+                                            className={`px-3 h-10 rounded text-xs font-medium transition-all ${localSecondary !== (config.theme.secondaryColor || "#22c55e") ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-muted text-muted-foreground'}`}
+                                        >
+                                            Apply
+                                        </button>
                                     </div>
                                 </div>
                             </div>

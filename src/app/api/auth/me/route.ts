@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
         if (shopStatus === "none" && !blocked) {
           const { isPlatformContext } = await import("@/lib/env");
           if (isPlatformContext()) {
-            const legacyShopQuery = "SELECT top 1 c.id FROM c WHERE (c.type = 'shop_config' OR c.type = 'site_config') AND c.wallet = @w AND (c.brandKey = @b OR NOT IS_DEFINED(c.brandKey) OR c.brandKey = '' OR c.brandKey = null)";
+            const legacyShopQuery = "SELECT top 1 c.id FROM c WHERE (c.type = 'shop_config' OR (c.type = 'site_config' AND IS_DEFINED(c.name))) AND c.wallet = @w AND (c.brandKey = @b OR NOT IS_DEFINED(c.brandKey) OR c.brandKey = '' OR c.brandKey = null)";
             const { resources: legacyResources } = await container.items.query({
               query: legacyShopQuery,
               parameters: [{ name: "@w", value: wallet }, { name: "@b", value: brandKey }]
