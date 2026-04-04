@@ -64,6 +64,7 @@ export function buildExpoTicketText(order: {
     customerName?: string;
     brandName?: string;
     shopName?: string;
+    thermalLogoPayload?: string;
 }): string {
     const ESC = '\x1B';
     const GS = '\x1D';
@@ -80,7 +81,7 @@ export function buildExpoTicketText(order: {
 
     lines.push(INIT);
 
-    // Manual space centering for double-sized headers (1 char = 2 columns)
+    // 1 char of Double Size = 2 columns
     const centerDoubleText = (text: string) => {
         const doubleLen = text.length * 2;
         const pad = Math.max(0, Math.floor((COL_WIDTH - doubleLen) / 2));
@@ -88,7 +89,18 @@ export function buildExpoTicketText(order: {
     };
 
     const displayBrand = order.shopName || order.brandName;
-    if (displayBrand) {
+    if (order.thermalLogoPayload) {
+        try {
+            // Injects raw 0-255 ESC/POS bit-sequence via Latin1 string mapping
+            if (typeof window !== "undefined") {
+                lines.push(window.atob(order.thermalLogoPayload));
+            } else {
+                lines.push(Buffer.from(order.thermalLogoPayload, 'base64').toString('binary'));
+            }
+        } catch (e) {
+            console.error('Failed to parse thermal payload', e);
+        }
+    } else if (displayBrand) {
         lines.push(centerDoubleText(displayBrand.toUpperCase()));
         lines.push('');
     }
@@ -177,9 +189,6 @@ export function buildExpoTicketText(order: {
     lines.push(sep);
     if (order.kitchenStatus) lines.push(BOLD_ON + `Status: ${order.kitchenStatus.toUpperCase()}` + BOLD_OFF);
     lines.push('');
-    
-    // Feed and cut
-    lines.push('\n\n\n' + CUT);
 
     return lines.join('\n');
 }

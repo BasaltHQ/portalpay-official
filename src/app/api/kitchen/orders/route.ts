@@ -241,13 +241,16 @@ export async function GET(request: NextRequest) {
     let shopData: any = null;
     try {
         const { resources } = await container.items.query({
-            query: "SELECT c.name, c.theme FROM c WHERE c.id='shop:config' AND c.wallet=@w",
+            query: "SELECT c.name, c.theme, c.thermalLogoPayload FROM c WHERE c.id='shop:config' AND c.wallet=@w",
             parameters: [{ name: "@w", value: wallet.toLowerCase() }]
         }).fetchAll();
         if (resources.length > 0) {
             shopData = resources[0];
             // Override the platform brandName with the literal shop name for the tickets
-            kitchenOrders.forEach(o => { o.shopName = shopData.name; });
+            kitchenOrders.forEach(o => { 
+                o.shopName = shopData.name; 
+                o.thermalLogoPayload = shopData.thermalLogoPayload;
+            });
         }
     } catch(e) { console.warn('Failed to fetch shop config for KDS', e); }
 

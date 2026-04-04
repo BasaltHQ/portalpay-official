@@ -541,6 +541,15 @@ export function KitchenInterface({ wallet, onLogout }: { wallet?: string; onLogo
         return () => { if (pollIntervalRef.current) clearInterval(pollIntervalRef.current); };
     }, [activeWallet]);
 
+    useEffect(() => {
+        if (!shopConfig || !activeWallet) return;
+        if (shopConfig.theme?.brandLogoUrl && !shopConfig.thermalLogoPayload) {
+            fetch(`/api/shop/compile-thermal-logo?wallet=${activeWallet}`).then(res => {
+                if (res.ok) console.log("[KDS] Thermal logo compiled successfully.");
+            }).catch(e => console.warn("Background compile failed", e));
+        }
+    }, [shopConfig?.thermalLogoPayload, shopConfig?.theme?.brandLogoUrl, activeWallet]);
+
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
