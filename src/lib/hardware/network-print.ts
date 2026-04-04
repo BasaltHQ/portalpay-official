@@ -190,7 +190,7 @@ export function buildExpoTicketText(order: {
  * Build a formatted plain-text guest receipt for the Handheld POS (32-column layout).
  */
 export function buildHandheldReceiptText(order: any, brandName: string): string {
-    const COL_WIDTH = 48;
+    const COL_WIDTH = 32;
 
     const centerText = (text: string) => {
         let trimmed = text.substring(0, COL_WIDTH).trim();
@@ -208,20 +208,20 @@ export function buildHandheldReceiptText(order: any, brandName: string): string 
         return leftTrimmed + ' '.repeat(spaces) + right;
     };
 
-    const wrapText = (text: string, indent: number, maxLen: number) => {
+    const wrapText = (text: string, maxLen: number) => {
         const words = text.split(' ');
         let lines: string[] = [];
         let currentLine = '';
 
         for (const word of words) {
             if ((currentLine + word).length > maxLen) {
-                if (currentLine) lines.push(' '.repeat(indent) + currentLine.trim());
+                if (currentLine) lines.push(currentLine.trim());
                 currentLine = word + ' ';
             } else {
                 currentLine += word + ' ';
             }
         }
-        if (currentLine) lines.push(' '.repeat(indent) + currentLine.trim());
+        if (currentLine) lines.push(currentLine.trim());
         return lines;
     };
 
@@ -239,15 +239,34 @@ export function buildHandheldReceiptText(order: any, brandName: string): string 
     lines.push('');
 
     // Itemized lines
+    let feeInItems = false;
+    let taxInItems = false;
+    let tipInItems = false;
+
     if (order.items && Array.isArray(order.items)) {
         order.items.forEach((itemLine: any) => {
-            if (itemLine.label && itemLine.label.toLowerCase().includes("processing fee")) return;
-            
             const qty = itemLine.quantity || itemLine.qty || 1;
             const name = itemLine.item?.name || itemLine.name || itemLine.label || 'Item';
             const price = Number((itemLine.item?.priceUsd || itemLine.priceUsd || 0)) * qty;
             
-            lines.push(leftRightText(`${qty}x ${name}`, `$${price.toFixed(2)}`));
+            const lowerLabel = name.toLowerCase();
+            if (lowerLabel.includes('fee')) feeInItems = true;
+            if (lowerLabel.includes('tax')) taxInItems = true;
+            if (lowerLabel.includes('tip')) tipInItems = true;
+
+            const qtyStr = `${qty}x `;
+            const priceStr = `$${price.toFixed(2)}`;
+            const maxNameLen = COL_WIDTH - qtyStr.length - priceStr.length - 1;
+
+            const nameLines = wrapText(name, maxNameLen > 0 ? maxNameLen : COL_WIDTH);
+            if (nameLines.length > 0) {
+                 lines.push(leftRightText(`${qtyStr}${nameLines[0]}`, priceStr));
+                 for (let i = 1; i < nameLines.length; i++) {
+                      lines.push(`${' '.repeat(qtyStr.length)}${nameLines[i]}`);
+                 }
+            } else {
+                 lines.push(leftRightText(`${qtyStr}${name}`, priceStr));
+            }
 
             const mods = itemLine.modifiers || itemLine.selectedModifiers || [];
             if (mods.length > 0) {
@@ -255,10 +274,16 @@ export function buildHandheldReceiptText(order: any, brandName: string): string 
                     const mName = mod.name || 'Modifier';
                     const mPrice = Number(mod.priceAdjustment || 0) * qty;
                     const priceStr = mPrice > 0 ? `+$${mPrice.toFixed(2)}` : '';
-                    if (priceStr) {
-                         lines.push(leftRightText(`   > ${mName}`, priceStr));
-                    } else {
-                         lines.push(...wrapText(`   > ${mName}`, 0, COL_WIDTH));
+                    
+                    const prefix = `   > `;
+                    const mMaxNameLen = COL_WIDTH - prefix.length - priceStr.length - 1;
+                    const mLines = wrapText(mName, mMaxNameLen > 0 ? mMaxNameLen : COL_WIDTH);
+                    
+                    if (mLines.length > 0) {
+                         lines.push(leftRightText(`${prefix}${mLines[0]}`, priceStr));
+                         for (let i = 1; i < mLines.length; i++) {
+                              lines.push(`${' '.repeat(prefix.length)}${mLines[i]}`);
+                         }
                     }
                 });
             }
@@ -267,6 +292,16 @@ export function buildHandheldReceiptText(order: any, brandName: string): string 
 
     lines.push('');
     lines.push('-'.repeat(COL_WIDTH));
+    
+    // Merge dynamically in-case fees/taxes are standalone totals rather than row items
+    const taxVal = Number(order.taxUsd || order.taxAmount || order.tax || order.metadata?.tax || 0);
+    const feeVal = Number(order.processingFeeUsd || order.processingFee || order.fee || order.metadata?.fee || 0);
+    const tipVal = Number(order.tipUsd || order.tipAmount || order.tip || order.metadata?.tip || 0);
+
+    if (taxVal > 0 && !taxInItems) lines.push(leftRightText('Sales Tax', `$${taxVal.toFixed(2)}`));
+    if (feeVal > 0 && !feeInItems) lines.push(leftRightText('Processing Fee', `$${feeVal.toFixed(2)}`));
+    if (tipVal > 0 && !tipInItems) lines.push(leftRightText('Tip', `$${tipVal.toFixed(2)}`));
+
     const finalTotal = Number(order.total || order.totalUsd || 0);
     lines.push(leftRightText('TOTAL', `$${finalTotal.toFixed(2)}`));
     lines.push(leftRightText('STATUS', (order.status || 'PAID').toUpperCase()));
@@ -276,7 +311,7 @@ export function buildHandheldReceiptText(order: any, brandName: string): string 
     lines.push(centerText('Scan QR below to pay online'));
     lines.push(centerText('or view receipt details.'));
     
-    // Add 2 padding block lines to help feed QR fully prior to native print feed
+    // Add padding block lines
     lines.push('');
     lines.push('');
 
