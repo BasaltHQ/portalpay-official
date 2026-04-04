@@ -89,18 +89,7 @@ export function buildExpoTicketText(order: {
     };
 
     const displayBrand = order.shopName || order.brandName;
-    if (order.thermalLogoPayload) {
-        try {
-            // Injects raw 0-255 ESC/POS bit-sequence via Latin1 string mapping
-            if (typeof window !== "undefined") {
-                lines.push(window.atob(order.thermalLogoPayload));
-            } else {
-                lines.push(Buffer.from(order.thermalLogoPayload, 'base64').toString('binary'));
-            }
-        } catch (e) {
-            console.error('Failed to parse thermal payload', e);
-        }
-    } else if (displayBrand) {
+    if (displayBrand) {
         lines.push(centerDoubleText(displayBrand.toUpperCase()));
         lines.push('');
     }
