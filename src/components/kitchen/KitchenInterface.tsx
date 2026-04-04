@@ -81,6 +81,7 @@ function formatElapsedTime(startTimestamp: number): string {
 // -- TICKET COMPONENT (Draggable) --
 function KitchenTicket({ order, isOverlay, onClear, onMarkItemReady }: { order: KitchenOrder; isOverlay?: boolean; onClear?: (id: string, uberId?: string) => void; onMarkItemReady?: (id: string, idx: number) => void; }) {
     const [isPrinting, setIsPrinting] = useState(false);
+    const printLock = useRef(false);
 
     // 1. Filter out Processing Fees
     const filteredItems = order.lineItems.map((item, idx) => ({ ...item, originalIndex: idx })).filter(i =>
@@ -286,7 +287,8 @@ function KitchenTicket({ order, isOverlay, onClear, onMarkItemReady }: { order: 
                         disabled={isPrinting}
                         onClick={async (e) => {
                             e.stopPropagation();
-                            if (isPrinting) return;
+                            if (printLock.current) return;
+                            printLock.current = true;
                             setIsPrinting(true);
 
                             try {
@@ -339,7 +341,10 @@ function KitchenTicket({ order, isOverlay, onClear, onMarkItemReady }: { order: 
                                 // Tier 3: Browser print
                                 window.print();
                             } finally {
-                                setTimeout(() => setIsPrinting(false), 2000);
+                                setTimeout(() => {
+                                    printLock.current = false;
+                                    setIsPrinting(false);
+                                }, 3000);
                             }
                         }}
                         className={`mt-3 w-full h-9 rounded-lg ${isPrinting ? 'bg-neutral-600 opacity-70 cursor-not-allowed' : 'bg-neutral-800 dark:bg-neutral-700 hover:bg-neutral-700 dark:hover:bg-neutral-600 active:scale-95'} text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all`}
