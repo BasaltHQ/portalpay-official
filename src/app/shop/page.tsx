@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useActiveAccount } from "thirdweb/react";
 import { client, chain, getWallets } from "@/lib/thirdweb/client";
 import dynamic from "next/dynamic";
@@ -124,6 +125,7 @@ export default function ShopBuilderPage() {
   const twTheme = usePortalThirdwebTheme();
   const account = useActiveAccount();
   const brand = useBrand();
+  const router = useRouter();
   // Use the partner container's logo as default, fallback to BasaltSurge logo if not available
   const defaultLogo = brand?.logos?.app || "/BasaltSurgeWideD.png";
   const isConnected = !!account?.address;
@@ -451,6 +453,26 @@ export default function ShopBuilderPage() {
     try {
       setLoading(true);
       setError("");
+
+      // ── APPROVAL GATE ──
+      // Check the user's approval status via /api/auth/me BEFORE loading the shop config.
+      // Unapproved users (no client_request or pending/rejected) get redirected to /apply.
+      try {
+        const meRes = await fetch("/api/auth/me", {
+          cache: "no-store",
+          headers: { "x-wallet": account?.address || "" },
+        });
+        const me = await meRes.json().catch(() => ({}));
+        const status = String(me?.shopStatus || "none").toLowerCase();
+        // Allow only "approved" users and platform admins through
+        if (status !== "approved" && !me?.isPlatformAdmin) {
+          router.replace("/apply");
+          return;
+        }
+      } catch {
+        // If auth check fails, continue to shop config load (non-fatal)
+      }
+
       const r = await fetch("/api/shop/config", { headers: { "x-wallet": account?.address || "" }, cache: "no-store" });
       const j = await r.json().catch(() => ({}));
       const conf: ShopConfig = j?.config || {};
