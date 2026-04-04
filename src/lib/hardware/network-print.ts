@@ -118,11 +118,12 @@ export function buildExpoTicketText(order: {
 
         if (label.toLowerCase().includes('processing fee') || label.toLowerCase().includes('service fee')) continue;
 
+        const DOUBLE_COL = Math.floor(COL_WIDTH / 2);
         const qtyPrefix = `${qty}x  `;
         const indent = ' '.repeat(qtyPrefix.length);
-        const maxLineLen = COL_WIDTH - qtyPrefix.length;
+        const maxLineLen = Math.max(1, DOUBLE_COL - qtyPrefix.length); // Prevent negative lengths
 
-        // Word wrap long items strictly to prevent ugly horizontal bleed
+        // Word wrap long items strictly based on the DOUBLE_COL limit
         const words = label.split(' ');
         let currentLine = '';
         const wrappedLines: string[] = [];
@@ -137,10 +138,13 @@ export function buildExpoTicketText(order: {
         }
         if (currentLine) wrappedLines.push(currentLine);
 
-        // First line keeps the quantity, subsequent lines get padded indent
-        lines.push(BOLD_ON + qtyPrefix + (wrappedLines[0] || '') + BOLD_OFF);
-        for (let i = 1; i < wrappedLines.length; i++) {
-            lines.push(BOLD_ON + indent + wrappedLines[i] + BOLD_OFF);
+        if (wrappedLines.length > 0) {
+            lines.push('[MAGNIFY 2 2]');
+            lines.push(BOLD_ON + qtyPrefix + (wrappedLines[0] || '') + BOLD_OFF);
+            for (let i = 1; i < wrappedLines.length; i++) {
+                lines.push(BOLD_ON + indent + wrappedLines[i] + BOLD_OFF);
+            }
+            lines.push('[MAGNIFY 1 1]');
         }
 
         // Modifiers
@@ -186,7 +190,7 @@ export function buildExpoTicketText(order: {
  * Build a formatted plain-text guest receipt for the Handheld POS (32-column layout).
  */
 export function buildHandheldReceiptText(order: any, brandName: string): string {
-    const COL_WIDTH = 32;
+    const COL_WIDTH = 48;
 
     const centerText = (text: string) => {
         let trimmed = text.substring(0, COL_WIDTH).trim();
@@ -195,10 +199,7 @@ export function buildHandheldReceiptText(order: any, brandName: string): string 
     };
 
     const centerDoubleText = (text: string) => {
-        const DOUBLE_COL_WIDTH = Math.floor(COL_WIDTH / 2);
-        let trimmed = text.substring(0, DOUBLE_COL_WIDTH).trim();
-        let spaces = Math.max(0, Math.floor((DOUBLE_COL_WIDTH - trimmed.length) / 2));
-        return '[MAGNIFY 2 2]\n' + ' '.repeat(spaces) + trimmed + '\n[MAGNIFY 1 1]';
+        return centerText(`*** ${text} ***`);
     };
 
     const leftRightText = (left: string, right: string) => {
