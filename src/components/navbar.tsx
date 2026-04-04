@@ -316,14 +316,10 @@ export function Navbar() {
                 const platformWallet = (process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
                 const isPlatformAdmin = me?.isPlatformAdmin || (!!platformWallet && w === platformWallet);
 
-                // Access Control Gating
-                const accessMode = (brand as any)?.accessMode || "open";
-                const isPrivate = accessMode === "request";
+                // Access Control Gating — Approval is now mandatory on ALL containers.
+                // The signup/application process is universal; accessMode no longer bypasses this.
                 const isApproved = String(me?.shopStatus || "").toLowerCase() === "approved" || isPlatformAdmin;
-
-                // If Private Mode and Not Approved (and not Platform/Owner bypass), block login
-                const isPlatformContainer = container.containerType === "platform";
-                const blocked = isPrivate && !isPlatformContainer && !isApproved;
+                const blocked = !isApproved;
 
                 if (me?.authed && !blocked) {
                     setAuthed(true);
@@ -353,13 +349,8 @@ export function Navbar() {
                         return;
                     }
 
-                    if (blocked && isApproved) {
-                        // User has valid JWT but is explicitly blocked via admin/RBAC? (Edge case)
-                        // Actually, 'blocked' variable usually comes from 403 Forbidden on auth check
-                        // For now, if private and NOT approved, we treat as pending.
-                        setShowAccessPending(true);
-                    } else if (isPrivate && !isApproved) {
-                        // Private mode + Not Approved -> SHOW PENDING, DO NOT SHOW AUTH (SIGNING)
+                    if (!isApproved) {
+                        // Not Approved -> SHOW PENDING/APPLICATION MODAL
                         // Check if user has a pending application
                         setHasPendingApplication(me?.shopStatus === "pending");
                         if (!showSignupWizard) {
@@ -367,7 +358,7 @@ export function Navbar() {
                         }
                         // Do NOT show AuthModal - that asks for signature/login which we don't want yet
                     } else if (!me?.authed) {
-                        // Public mode or Approved Private User -> PROCEED TO LOGIN
+                        // Approved User -> PROCEED TO LOGIN/SIGNING
                         setIsSocialLogin(isEmbeddedWallet);
                         setShowAuthModal(true);
                     }
