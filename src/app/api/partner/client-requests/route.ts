@@ -233,6 +233,8 @@ export async function GET(req: NextRequest) {
             const shopConf = shopConfigMap.get(wallet); // shop_config has the actual shop name
 
             if (!req && !conf) return null; // Should not happen
+            // Ignore placeholder site_configs (created during registration) that have no real merchant data
+            if (!req && conf && !conf.name && !shopConf) return null;
             // If filtering by status 'pending' and we have no request, skip (config-only merchants are auto-approved).
             if (statusFilter && statusFilter === "pending" && !req) return null;
 

@@ -300,8 +300,9 @@ export default function GlobalSplitGuard() {
           setIsAdmin(userIsAdmin);
         } catch { }
 
-        // SUPPRESSION: If private mode and not approved, do NOT show split modal.
-        if (isPrivate && !authCheck.authed && !authCheck.approved) {
+        // Universal Approval Gate: Suppress split modal if user is not approved
+        const isApprovedStatus = String(authCheck?.shopStatus || "").toLowerCase() === "approved" || authCheck?.isPlatformAdmin;
+        if (!isApprovedStatus) {
           setOpen(false);
           setChecking(false);
           return;

@@ -9729,15 +9729,24 @@ export default function AdminPage() {
       .catch(() => { });
   }, [wallet]);
 
-  // When user lands on /admin without a valid auth session but with a connected wallet,
-  // proactively prompt authentication to avoid “dead clicks” or silent failures.
+  // When user lands on /admin check both their auth session and approval status
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         if (!wallet) return;
-        const me = await fetch('/api/auth/me', { cache: 'no-store' }).then(r => r.ok ? r.json() : { authed: false }).catch(() => ({ authed: false }));
-        if (!cancelled && !me?.authed) {
+        const me = await fetch('/api/auth/me', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+        if (cancelled || !me) return;
+
+        // 1. Approval Gate
+        const isApproved = String(me.shopStatus || "").toLowerCase() === "approved" || me.isPlatformAdmin;
+        if (!isApproved) {
+            window.location.href = "/apply";
+            return;
+        }
+
+        // 2. Authentication Gate (prompt signature if needed)
+        if (!me.authed) {
           try {
             // Signal Navbar/AuthModal to open
             window.dispatchEvent(new CustomEvent("pp:auth:prompt", { detail: { preferSocial: false } }));
