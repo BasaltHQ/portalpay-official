@@ -65,20 +65,38 @@ export function buildExpoTicketText(order: {
     brandName?: string;
     shopName?: string;
 }): string {
-    const lines: string[] = [];
-    const sep = '--------------------------------';
+    const ESC = '\x1B';
+    const GS = '\x1D';
+    const INIT = `${ESC}@`;
+    const BOLD_ON = `${ESC}E\x01`;
+    const BOLD_OFF = `${ESC}E\x00`;
+    const DOUBLE_Size = `${GS}!\x11`;
+    const NORMAL_Size = `${GS}!\x00`;
+    const CUT = `${GS}V\x42\x00`;
 
-    lines.push(sep);
-    lines.push('       *** EXPO TICKET ***');
+    const lines: string[] = [];
+    const COL_WIDTH = 48; // Standard Font A for 80mm generic printers
+    const sep = '-'.repeat(COL_WIDTH);
+
+    lines.push(INIT);
+
+    // Manual space centering for double-sized headers (1 char = 2 columns)
+    const centerDoubleText = (text: string) => {
+        const doubleLen = text.length * 2;
+        const pad = Math.max(0, Math.floor((COL_WIDTH - doubleLen) / 2));
+        return ' '.repeat(pad) + BOLD_ON + DOUBLE_Size + text + NORMAL_Size + BOLD_OFF;
+    };
+
     const displayBrand = order.shopName || order.brandName;
     if (displayBrand) {
-        // Pad brand name to center it roughly
-        const pad = Math.max(0, Math.floor((32 - displayBrand.length) / 2));
-        lines.push(' '.repeat(pad) + displayBrand.toUpperCase());
+        lines.push(centerDoubleText(displayBrand.toUpperCase()));
+        lines.push('');
     }
+
+    lines.push(centerDoubleText('*** EXPO TICKET ***'));
     lines.push(sep);
 
-    if (order.tableNumber) lines.push(`Table: ${order.tableNumber}`);
+    if (order.tableNumber) lines.push(BOLD_ON + `Table: ${order.tableNumber}` + BOLD_OFF);
     if (order.employeeName) lines.push(`Server: ${order.employeeName}`);
     if (order.guestCount) lines.push(`Guests: ${order.guestCount}`);
 
@@ -97,25 +115,71 @@ export function buildExpoTicketText(order: {
         const label = item.label || item.name || 'Item';
         const qty = item.qty || item.quantity || 1;
 
-        // Skip processing/service fee lines
         if (label.toLowerCase().includes('processing fee') || label.toLowerCase().includes('service fee')) continue;
 
-        lines.push(`${qty}x  ${label}`);
+        const qtyPrefix = `${qty}x  `;
+        const indent = ' '.repeat(qtyPrefix.length);
+        const maxLineLen = COL_WIDTH - qtyPrefix.length;
+
+        // Word wrap long items strictly to prevent ugly horizontal bleed
+        const words = label.split(' ');
+        let currentLine = '';
+        const wrappedLines: string[] = [];
+        
+        for (const word of words) {
+            if (currentLine.length + word.length + (currentLine ? 1 : 0) > maxLineLen) {
+                if (currentLine) wrappedLines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine += (currentLine ? ' ' : '') + word;
+            }
+        }
+        if (currentLine) wrappedLines.push(currentLine);
+
+        // First line keeps the quantity, subsequent lines get padded indent
+        lines.push(BOLD_ON + qtyPrefix + (wrappedLines[0] || '') + BOLD_OFF);
+        for (let i = 1; i < wrappedLines.length; i++) {
+            lines.push(BOLD_ON + indent + wrappedLines[i] + BOLD_OFF);
+        }
 
         // Modifiers
         const mods = item.modifiers || item.selectedModifiers?.map(m => m.name) || [];
         for (const mod of mods) {
-            lines.push(`     + ${typeof mod === 'string' ? mod : (mod as any).name || mod}`);
+            const modName = typeof mod === 'string' ? mod : (mod as any).name || mod;
+            lines.push(`     + ${modName}`);
         }
 
         if (item.specialInstructions) {
-            lines.push(`     NOTE: ${item.specialInstructions}`);
+            const notePrefix = `     NOTE: `;
+            const noteIndent = ' '.repeat(notePrefix.length);
+            const maxNoteLen = COL_WIDTH - notePrefix.length;
+            const noteWords = item.specialInstructions.split(' ');
+            let nLine = '';
+            const nLines: string[] = [];
+            for (const word of noteWords) {
+                if (nLine.length + word.length + (nLine ? 1 : 0) > maxNoteLen) {
+                    if (nLine) nLines.push(nLine);
+                    nLine = word;
+                } else {
+                    nLine += (nLine ? ' ' : '') + word;
+                }
+            }
+            if (nLine) nLines.push(nLine);
+            
+            lines.push(BOLD_ON + notePrefix + (nLines[0] || '') + BOLD_OFF);
+            for (let i = 1; i < nLines.length; i++) {
+                lines.push(BOLD_ON + noteIndent + nLines[i] + BOLD_OFF);
+            }
         }
+        lines.push(''); // Space between items for readability
     }
 
     lines.push(sep);
-    if (order.kitchenStatus) lines.push(`Status: ${order.kitchenStatus.toUpperCase()}`);
+    if (order.kitchenStatus) lines.push(BOLD_ON + `Status: ${order.kitchenStatus.toUpperCase()}` + BOLD_OFF);
     lines.push('');
+    
+    // Feed and cut
+    lines.push('\n\n\n' + CUT);
 
     return lines.join('\n');
 }
