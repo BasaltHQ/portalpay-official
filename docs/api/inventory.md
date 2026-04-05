@@ -135,7 +135,12 @@ Success (200 OK):
       "shippingConfig": {
         "enabled": true,
         "weightLbs": 1.5,
-        "shippingClass": "standard"
+        "shippingClass": "standard",
+        "allowedMethods": ["standard", "express"],
+        "methodPricing": {
+          "standard": 5.99,
+          "express": 14.99
+        }
       },
       "createdAt": 1698765432000,
       "updatedAt": 1698765432000
@@ -222,7 +227,26 @@ Body Parameters:
 | `jurisdictionCode` | string | No | Tax jurisdiction |
 | `industryPack` | string | No | Industry pack (default: "general") |
 | `shippingEnabled` | boolean | No | Whether the item requires physical shipping |
-| `shippingConfig` | object | No | Settings for physical fulfillment (weight, class, etc.) |
+| `shippingConfig` | object | No | Settings for physical fulfillment (weight, class, etc.). See **Shipping Configuration** below. |
+
+### Shipping Configuration (`shippingConfig`)
+
+When `shippingEnabled` is true, you can optionally provide a `shippingConfig` object to define detailed parameters for checkout calculation:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `enabled` | boolean | Must be true if providing shipping details |
+| `weightLbs` | number | Item weight in pounds |
+| `dimensions` | object | `{ length, width, height, unit: 'in'|'cm' }` |
+| `shippingClass` | string | `standard`, `oversized`, `fragile`, or `hazardous` |
+| `allowedMethods` | string[] | Array of supported methods: `standard`, `express`, `overnight`, `freight` |
+| `methodPricing` | object | Hardcoded flat rates per method, e.g. `{"standard": 5.0, "express": 15.0}` |
+| `freeShippingThreshold` | number | Minimum cart total to waive shipping fees for this item |
+| `handlingTimeDays` | number | Days required before the item ships |
+| `originCountry` | string | 2-letter country code (e.g., `US`) |
+| `domesticOnly` | boolean | If true, item cannot be shipped internationally |
+| `requiresSignature` | boolean | If true, delivery requires a signature |
+| `insuranceRequired` | boolean | If true, forces insured shipping methods |
 
 Example Requests:
 
@@ -247,7 +271,12 @@ curl -X POST "https://api.pay.ledger1.ai/portalpay/api/inventory" \
     "shippingConfig": {
       "enabled": true,
       "weightLbs": 1.5,
-      "shippingClass": "standard"
+      "shippingClass": "standard",
+      "allowedMethods": ["standard", "express"],
+      "methodPricing": {
+        "standard": 5.99,
+        "express": 14.99
+      }
     }
   }'
 ```
@@ -274,7 +303,12 @@ const res = await fetch('https://api.pay.ledger1.ai/portalpay/api/inventory', {
     shippingConfig: {
       enabled: true,
       weightLbs: 1.5,
-      shippingClass: 'standard'
+      shippingClass: 'standard',
+      allowedMethods: ['standard', 'express'],
+      methodPricing: {
+        standard: 5.99,
+        express: 14.99
+      }
     }
   })
 });
@@ -306,7 +340,12 @@ r = requests.post(
     'shippingConfig': {
       'enabled': True,
       'weightLbs': 1.5,
-      'shippingClass': 'standard'
+      'shippingClass': 'standard',
+      'allowedMethods': ['standard', 'express'],
+      'methodPricing': {
+        'standard': 5.99,
+        'express': 14.99
+      }
     }
   }
 )
@@ -339,7 +378,12 @@ Success (200 OK):
     "shippingConfig": {
       "enabled": true,
       "weightLbs": 1.5,
-      "shippingClass": "standard"
+      "shippingClass": "standard",
+      "allowedMethods": ["standard", "express"],
+      "methodPricing": {
+        "standard": 5.99,
+        "express": 14.99
+      }
     },
     "createdAt": 1698765432000,
     "updatedAt": 1698765432000
