@@ -316,9 +316,14 @@ export function Navbar() {
                 const platformWallet = (process.env.NEXT_PUBLIC_PLATFORM_WALLET || "").toLowerCase();
                 const isPlatformAdmin = me?.isPlatformAdmin || (!!platformWallet && w === platformWallet);
 
-                // Access Control Gating — Approval is now mandatory on ALL containers.
-                // The signup/application process is universal; accessMode no longer bypasses this.
-                const isApproved = String(me?.shopStatus || "").toLowerCase() === "approved" || isPlatformAdmin;
+                const domContainerType = typeof document !== 'undefined' ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase() : '';
+                const ct = (container?.containerType || "").toLowerCase();
+                const isPartner = domContainerType === "partner" || ct === "partner";
+                const isRegistrationRegime = process.env.NEXT_PUBLIC_PLATFORM_REGISTRATION_REGIME === "true";
+
+                // Access Control Gating — Approval is only mandatory on partner containers for now
+                // The platform container uses the registration regime only if the env var is set.
+                const isApproved = (!isPartner && !isRegistrationRegime) || String(me?.shopStatus || "").toLowerCase() === "approved" || isPlatformAdmin;
                 const blocked = !isApproved;
 
                 if (me?.authed && !blocked) {
