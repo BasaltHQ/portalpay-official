@@ -301,7 +301,14 @@ export default function GlobalSplitGuard() {
         } catch { }
 
         // Universal Approval Gate: Suppress split modal if user is not approved
-        const isApprovedStatus = String(authCheck?.shopStatus || "").toLowerCase() === "approved" || authCheck?.isPlatformAdmin;
+        // The modal uses the same registration regime bypass as the navbar and shop routing.
+        const domContainerType = typeof document !== 'undefined' ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase() : '';
+        const ct = (brand as any)?.containerType || "";
+        const isPartnerFlag = domContainerType === "partner" || ct === "partner";
+        const isRegistrationRegime = process.env.NEXT_PUBLIC_PLATFORM_REGISTRATION_REGIME === "true";
+        
+        const isApprovedStatus = (!isPartnerFlag && !isRegistrationRegime) || String(authCheck?.shopStatus || "").toLowerCase() === "approved" || authCheck?.isPlatformAdmin;
+        
         if (!isApprovedStatus) {
           setOpen(false);
           setChecking(false);
