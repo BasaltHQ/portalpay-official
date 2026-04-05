@@ -1193,6 +1193,12 @@ export async function GET(req: NextRequest) {
               finalConfig = mergeConfigs(finalConfig, shopConfig);
             }
 
+            // Explicitly enforce the merchant wallet so fallback configs don't get misidentified as globals
+            if (wallet) {
+              finalConfig.wallet = wallet;
+              finalConfig.id = `site:config:${wallet}`;
+            }
+
             // Normalize to ensure accumulationMode, reserveRatios, etc. have correct defaults
             finalConfig = normalizeSiteConfig(finalConfig, wallet);
 
@@ -1218,12 +1224,22 @@ export async function GET(req: NextRequest) {
       // This is safe because we're reading from the requesting wallet's partition,
       // which maintains tenant isolation regardless of document ID format.
       try {
-        const { resource } = await c.item(DOC_ID, wallet).read<any>();
+        let resource: any = null;
+        try {
+          const { resource: legacyDoc } = await c.item(DOC_ID, wallet).read<any>();
+          resource = legacyDoc || null;
+        } catch { }
         // Use site_config if found, otherwise if we have shopConfig, use that as base
         const base = resource || (shopConfig ? { ...shopConfig, type: 'site_config' } : null);
 
         if (base) {
           const merged = mergeConfigs(base, shopConfig);
+          
+          if (wallet) {
+            merged.wallet = wallet;
+            merged.id = DOC_ID;
+          }
+
           const cfg = normalizeSiteConfig(merged, wallet);
           // Apply Theme Overrides (Normalization + Color Injection)
           const final = applyThemeOverrides(cfg);
