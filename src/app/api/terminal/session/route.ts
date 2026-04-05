@@ -100,10 +100,10 @@ export async function GET(req: NextRequest) {
         // Aggregate stats from receipts for ALL sessions of this staff today
         // We MUST include wallet to target partition for aggregation, otherwise SUM over cross-partition might fail or be slow
         const statsQuery = {
-            query: `SELECT VALUE { totalSales: SUM(c.totalUsd), totalTips: SUM(c.tipAmount), count: COUNT(1) } FROM c WHERE c.type = 'receipt' AND c.wallet = @wallet AND (c.staffId = @staffId OR ARRAY_CONTAINS(@sessionIds, c.sessionId)) AND c.createdAt >= @startOfDay AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed')`,
+            query: `SELECT VALUE { totalSales: SUM(c.totalUsd), totalTips: SUM(c.tipAmount), count: COUNT(1) } FROM c WHERE c.type = 'receipt' AND c.wallet = @wallet AND (c.staffId = @staffId OR ARRAY_CONTAINS(@sessionIds, c.sessionId)) AND c.createdAt >= @startDate AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed')`,
             parameters: [
                 { name: "@staffId", value: staffId },
-                { name: "@startOfDay", value: startOfDay },
+                { name: "@startDate", value: new Date(startOfDay) },
                 { name: "@wallet", value: merchantWallet?.toLowerCase() || session.wallet || "" },
                 { name: "@sessionIds", value: dailySessionIds }
             ]
@@ -118,10 +118,10 @@ export async function GET(req: NextRequest) {
         let orders: any[] = [];
         if (searchParams.get("includeOrders") === "true") {
             const detailQuery = {
-                query: `SELECT c.id, c.receiptId, c.createdAt, c.totalUsd, c.tipAmount, c.status, c.tableNumber FROM c WHERE c.type = 'receipt' AND c.wallet = @wallet AND (c.staffId = @staffId OR ARRAY_CONTAINS(@sessionIds, c.sessionId)) AND c.createdAt >= @startOfDay AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed') ORDER BY c.createdAt DESC`,
+                query: `SELECT c.id, c.receiptId, c.createdAt, c.totalUsd, c.tipAmount, c.status, c.tableNumber FROM c WHERE c.type = 'receipt' AND c.wallet = @wallet AND (c.staffId = @staffId OR ARRAY_CONTAINS(@sessionIds, c.sessionId)) AND c.createdAt >= @startDate AND LOWER(c.status) IN ('paid', 'checkout_success', 'confirmed', 'tx_mined', 'reconciled', 'settled', 'completed') ORDER BY c.createdAt DESC`,
                 parameters: [
                     { name: "@staffId", value: staffId },
-                    { name: "@startOfDay", value: startOfDay },
+                    { name: "@startDate", value: new Date(startOfDay) },
                     { name: "@wallet", value: merchantWallet?.toLowerCase() || session.wallet || "" },
                     { name: "@sessionIds", value: dailySessionIds }
                 ]

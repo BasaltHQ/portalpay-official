@@ -207,10 +207,10 @@ export async function GET(req: NextRequest) {
 
         // Only apply time bounds for non-all-time queries
         if (!isAllTime) {
-            receiptsQueryString += ` AND c._ts >= @start AND c._ts <= @end`;
+            receiptsQueryString += ` AND c.createdAt >= @startDate AND c.createdAt <= @endDate`;
             receiptsParams.push(
-                { name: "@start", value: startTs },
-                { name: "@end", value: endTs }
+                { name: "@startDate", value: new Date(startTs * 1000) },
+                { name: "@endDate", value: new Date(endTs * 1000) }
             );
         }
 

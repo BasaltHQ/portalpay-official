@@ -136,14 +136,13 @@ export async function POST(req: NextRequest) {
                     SELECT * FROM c 
                     WHERE c.type = 'receipt' 
                     AND c.recipientWallet = @w 
-                    AND c.createdAt >= @start 
-                    AND c.createdAt <= @end
+                    AND c.createdAt >= @startDate AND c.createdAt <= @endDate
                     ORDER BY c.createdAt DESC
                 `,
                 parameters: [
                     { name: "@w", value: merchantWallet },
-                    { name: "@start", value: startTs },
-                    { name: "@end", value: endTs }
+                    { name: "@startDate", value: new Date(startTs * 1000) },
+                    { name: "@endDate", value: new Date(endTs * 1000) }
                 ]
             };
             const result = await container.items.query(q).fetchAll();

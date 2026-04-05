@@ -184,7 +184,7 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
     const config = (
       // 1. Exact match for current brand environment
       configs.find((c: any) => (c.brandKey || "").toLowerCase() === envBrandKey) ||
-      // 2. Fallback for platform: baslatsurge, portalpay, or legacy (no brandKey)
+      // 2. Fallback for platform: basaltsurge, portalpay, or legacy (no brandKey)
       ((envBrandKey === "basaltsurge" || envBrandKey === "portalpay")
         ? configs.find((c: any) => !c.brandKey || c.brandKey === "portalpay" || c.brandKey === "basaltsurge")
         : undefined) ||
