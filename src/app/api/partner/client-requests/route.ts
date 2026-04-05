@@ -320,8 +320,8 @@ export async function GET(req: NextRequest) {
                     businessType: "unknown",
                     contactEmail: "",
                     status: "orphaned",
-                    createdAt: toMs(conf.createdAt) || ((conf._ts || 0) * 1000) || Date.now(),
-                    updatedAt: toMs(conf.updatedAt) || ((conf._ts || 0) * 1000) || Date.now(),
+                    createdAt: toMs(conf.createdAt) || toMs(shopConf?.createdAt) || ((conf._ts || 0) * 1000) || ((shopConf?._ts || 0) * 1000) || Date.now(),
+                    updatedAt: toMs(conf.updatedAt) || toMs(shopConf?.updatedAt) || ((conf._ts || 0) * 1000) || ((shopConf?._ts || 0) * 1000) || Date.now(),
                     splitConfig: conf.splitConfig,
                     deployedSplitAddress: conf.splitAddress || conf.split?.address,
                     splitHistory: conf.splitHistory || [],
@@ -360,8 +360,8 @@ export async function GET(req: NextRequest) {
                 secondaryColor: shopTheme.secondaryColor || (!isDefaultColor(theme.secondaryColor) ? theme.secondaryColor : "") || conf.secondaryColor || "",
                 // Status: treat as approved since they are already operating
                 status: "approved",
-                createdAt: toMs(conf.createdAt) || ((conf._ts || 0) * 1000) || Date.now(),
-                updatedAt: toMs(conf.updatedAt) || ((conf._ts || 0) * 1000) || Date.now(),
+                createdAt: toMs(conf.createdAt) || toMs(shopConf?.createdAt) || ((conf._ts || 0) * 1000) || ((shopConf?._ts || 0) * 1000) || Date.now(),
+                updatedAt: toMs(conf.updatedAt) || toMs(shopConf?.updatedAt) || ((conf._ts || 0) * 1000) || ((shopConf?._ts || 0) * 1000) || Date.now(),
                 // Financial config
                 splitConfig: conf.splitConfig,
                 deployedSplitAddress: conf.splitAddress || conf.split?.address,

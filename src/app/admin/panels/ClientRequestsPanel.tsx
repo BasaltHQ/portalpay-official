@@ -62,6 +62,21 @@ type ClientRequest = {
     industryParams?: { restaurant?: { tables?: string[] }; [key: string]: any } | null;
 };
 
+// Helper to safely extract a numeric timestamp from Cosmos DB dates which may be numbers, strings, or {$date: string} objects
+function extractDateTs(val: any, fallbackTs?: number): number {
+    if (!val) return fallbackTs || 0;
+    if (typeof val === "number") return val;
+    if (typeof val === "string") {
+        const parsed = new Date(val).getTime();
+        return isNaN(parsed) ? (fallbackTs || 0) : parsed;
+    }
+    if (typeof val === "object" && val.$date) {
+        const parsed = new Date(val.$date).getTime();
+        return isNaN(parsed) ? (fallbackTs || 0) : parsed;
+    }
+    return fallbackTs || 0;
+}
+
 // Inline Tables Editor for restaurant industry pack merchants
 function InlineTablesEditor({ merchantWallet, adminWallet, brandKey, initialTables, initialParams }: { merchantWallet: string; adminWallet: string; brandKey: string; initialTables: string[]; initialParams: any }) {
     const [tables, setTables] = React.useState<string[]>(initialTables);
@@ -296,8 +311,8 @@ export default function ClientRequestsPanel() {
             let valB: any = b[sortField];
 
             if (sortField === "createdAt") {
-                valA = Number(a.createdAt || 0);
-                valB = Number(b.createdAt || 0);
+                valA = extractDateTs(a.createdAt, (a as any)._ts ? (a as any)._ts * 1000 : 0);
+                valB = extractDateTs(b.createdAt, (b as any)._ts ? (b as any)._ts * 1000 : 0);
             } else {
                 valA = String(valA || "").toLowerCase();
                 valB = String(valB || "").toLowerCase();
@@ -334,7 +349,11 @@ export default function ClientRequestsPanel() {
             const arr = Array.isArray(j?.requests) ? j.requests : [];
             setBrandKey(j?.brandKey || "");
             // Sort newest first
-            arr.sort((a: any, b: any) => Number(b?.createdAt || 0) - Number(a?.createdAt || 0));
+            arr.sort((a: any, b: any) => {
+                const tsA = extractDateTs(a?.createdAt, a?._ts ? a._ts * 1000 : 0);
+                const tsB = extractDateTs(b?.createdAt, b?._ts ? b._ts * 1000 : 0);
+                return tsB - tsA;
+            });
             setItems(arr);
         } catch (e: any) {
             setError(e?.message || "Failed to load requests");
@@ -724,7 +743,7 @@ export default function ClientRequestsPanel() {
                     </thead>
                     <tbody className="divide-y divide-foreground/5">
                         {paginatedItems.map((req, idx) => {
-                            const rawTs = Number(req.createdAt) || (Number((req as any)._ts) * 1000) || 0;
+                            const rawTs = extractDateTs(req.createdAt, (Number((req as any)._ts) * 1000) || 0);
                             const submitted = rawTs > 0 && !isNaN(new Date(rawTs).getTime()) ? new Date(rawTs).toLocaleString() : "—";
                             const badgeClass =
                                 req.status === "approved" ? "bg-green-500/10 text-green-500 border-green-500/20" :

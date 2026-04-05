@@ -823,6 +823,36 @@ export async function POST(req: NextRequest) {
     try {
       const c = await getContainer();
       await c.items.upsert(doc as any);
+
+      // ── Sync theme/name/slug to site_config documents ──
+      // The admin's Save Config (PATCH /api/partner/client-requests) updates ALL
+      // config docs. Do the same here so merchant edits propagate to site:config
+      // which terminal, KDS, and other touchpoints may read from.
+      try {
+        const siteConfigQuery = {
+          query: `SELECT * FROM c WHERE c.type = 'site_config' AND c.wallet = @w AND c.brandKey = @brand`,
+          parameters: [
+            { name: "@w", value: wallet },
+            { name: "@brand", value: normalizedBrand }
+          ]
+        };
+        const { resources: siteConfigs } = await c.items.query(siteConfigQuery).fetchAll();
+
+        for (const sc of siteConfigs) {
+          const updated = {
+            ...sc,
+            name: name || sc.name,
+            slug: slug || sc.slug,
+            theme: { ...(sc.theme || {}), ...theme },
+            updatedAt: now,
+          };
+          await c.item(sc.id, sc.wallet).replace(updated);
+        }
+      } catch (syncErr: any) {
+        // Non-fatal: shop:config was saved successfully, site_config sync is best-effort
+        console.warn("[shop/config] site_config sync failed (non-fatal):", syncErr?.message);
+      }
+
       return NextResponse.json({ ok: true, config: doc });
     } catch (e: any) {
       return NextResponse.json({ ok: true, degraded: true, reason: e?.message || "cosmos_unavailable", config: doc });

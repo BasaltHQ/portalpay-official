@@ -168,11 +168,11 @@ export async function GET(req: NextRequest) {
                 query: `SELECT c.wallet, c.totalUsd, c.tipAmount, c.createdAt, c.paymentMethod FROM c
                         WHERE c.type = 'receipt' AND c.status = 'paid'
                         AND ARRAY_CONTAINS(@wallets, c.wallet)
-                        AND c.createdAt >= @startMs AND c.createdAt <= @endMs`,
+                        AND c.createdAt >= @startDate AND c.createdAt <= @endDate`,
                 parameters: [
                     { name: "@wallets", value: partnerWalletArray },
-                    { name: "@startMs", value: startMs },
-                    { name: "@endMs", value: endMs },
+                    { name: "@startDate", value: new Date(startMs) },
+                    { name: "@endDate", value: new Date(endMs) },
                 ],
             };
             const { resources: receipts } = await container.items.query(receiptQuery).fetchAll();
