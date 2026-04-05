@@ -9739,7 +9739,12 @@ export default function AdminPage() {
         if (cancelled || !me) return;
 
         // 1. Approval Gate
-        const isApproved = String(me.shopStatus || "").toLowerCase() === "approved" || me.isPlatformAdmin;
+        const domContainerType = typeof document !== 'undefined' ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase() : '';
+        const isPartner = domContainerType === "partner" || containerType === "partner";
+        const isRegistrationRegime = process.env.NEXT_PUBLIC_PLATFORM_REGISTRATION_REGIME === "true";
+        
+        const isApproved = (!isPartner && !isRegistrationRegime) || String(me.shopStatus || "").toLowerCase() === "approved" || me.isPlatformAdmin;
+        
         if (!isApproved) {
             window.location.href = "/apply";
             return;
