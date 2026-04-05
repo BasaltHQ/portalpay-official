@@ -464,8 +464,14 @@ export default function ShopBuilderPage() {
         });
         const me = await meRes.json().catch(() => ({}));
         const status = String(me?.shopStatus || "none").toLowerCase();
-        // Allow only "approved" users and platform admins through
-        if (status !== "approved" && !me?.isPlatformAdmin) {
+        const domContainerType = typeof document !== 'undefined' ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase() : '';
+        const containerType = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || "platform").toLowerCase();
+        const isPartner = domContainerType === "partner" || containerType === "partner";
+        const isRegistrationRegime = process.env.NEXT_PUBLIC_PLATFORM_REGISTRATION_REGIME === "true";
+        
+        const isApproved = (!isPartner && !isRegistrationRegime) || status === "approved" || me?.isPlatformAdmin;
+
+        if (!isApproved) {
           router.replace("/apply");
           return;
         }
