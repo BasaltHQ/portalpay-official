@@ -131,6 +131,12 @@ Success (200 OK):
       "taxable": true,
       "jurisdictionCode": "US-CA",
       "industryPack": "restaurant",
+      "shippingEnabled": true,
+      "shippingConfig": {
+        "enabled": true,
+        "weightLbs": 1.5,
+        "shippingClass": "standard"
+      },
       "createdAt": 1698765432000,
       "updatedAt": 1698765432000
     }
@@ -215,6 +221,8 @@ Body Parameters:
 | `taxable` | boolean | No | Is taxable (default: false) |
 | `jurisdictionCode` | string | No | Tax jurisdiction |
 | `industryPack` | string | No | Industry pack (default: "general") |
+| `shippingEnabled` | boolean | No | Whether the item requires physical shipping |
+| `shippingConfig` | object | No | Settings for physical fulfillment (weight, class, etc.) |
 
 Example Requests:
 
@@ -234,7 +242,13 @@ curl -X POST "https://api.pay.ledger1.ai/portalpay/api/inventory" \
     "tags": ["hot", "coffee"],
     "taxable": true,
     "costUsd": 0.75,
-    "attributes": { "size": "single", "roast": "dark" }
+    "attributes": { "size": "single", "roast": "dark" },
+    "shippingEnabled": true,
+    "shippingConfig": {
+      "enabled": true,
+      "weightLbs": 1.5,
+      "shippingClass": "standard"
+    }
   }'
 ```
 <!-- TAB:JavaScript -->
@@ -255,7 +269,13 @@ const res = await fetch('https://api.pay.ledger1.ai/portalpay/api/inventory', {
     tags: ['hot', 'coffee'],
     taxable: true,
     costUsd: 0.75,
-    attributes: { size: 'single', roast: 'dark' }
+    attributes: { size: 'single', roast: 'dark' },
+    shippingEnabled: true,
+    shippingConfig: {
+      enabled: true,
+      weightLbs: 1.5,
+      shippingClass: 'standard'
+    }
   })
 });
 const data = await res.json();
@@ -281,7 +301,13 @@ r = requests.post(
     'tags': ['hot', 'coffee'],
     'taxable': True,
     'costUsd': 0.75,
-    'attributes': {'size': 'single', 'roast': 'dark'}
+    'attributes': {'size': 'single', 'roast': 'dark'},
+    'shippingEnabled': True,
+    'shippingConfig': {
+      'enabled': True,
+      'weightLbs': 1.5,
+      'shippingClass': 'standard'
+    }
   }
 )
 data = r.json()
@@ -309,6 +335,12 @@ Success (200 OK):
     "costUsd": 0.75,
     "attributes": { "size": "single", "roast": "dark" },
     "industryPack": "general",
+    "shippingEnabled": true,
+    "shippingConfig": {
+      "enabled": true,
+      "weightLbs": 1.5,
+      "shippingClass": "standard"
+    },
     "createdAt": 1698765432000,
     "updatedAt": 1698765432000
   }
