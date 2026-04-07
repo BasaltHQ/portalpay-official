@@ -72,6 +72,43 @@ import { NodeOperatorsPanel } from "@/app/admin/panels/NodeOperatorsPanel";
 import { NodeDashboardPanel } from "@/app/admin/panels/NodeDashboardPanel";
 import { isPlatformCtx, isPartnerCtx, isPlatformSuperAdmin, canAccessPanel } from "@/lib/authz";
 
+function ResendTrackingBtn({ receipt, operatorWallet }: { receipt: any, operatorWallet: string }) {
+  const [resending, setResending] = React.useState(false);
+  const [resendSuccess, setResendSuccess] = React.useState(false);
+  const [resendError, setResendError] = React.useState("");
+
+  if (!receipt.buyerEmail && !receipt.shippingAddress?.email) return null;
+
+  return (
+    <div className="mt-2 text-center w-full flex flex-col gap-1">
+      <button 
+        onClick={async () => {
+          setResending(true);
+          setResendError("");
+          try {
+            const r = await fetch(`/api/receipts/${encodeURIComponent(receipt.receiptId)}/tracking/resend`, {
+               method: "POST", headers: { "x-wallet": operatorWallet }
+            });
+            const j = await r.json().catch(()=>({}));
+            if (!r.ok) throw new Error(j.error || "Failed server response");
+            setResendSuccess(true);
+            setTimeout(() => setResendSuccess(false), 3000);
+          } catch(e: any) {
+            setResendError(e.message);
+          } finally {
+            setResending(false);
+          }
+        }}
+        disabled={resending || resendSuccess}
+        className="w-full px-2 py-1.5 rounded bg-muted/50 text-xs font-medium hover:bg-muted transition-colors disabled:opacity-50 border border-transparent shadow-sm hover:border-foreground/10 flex items-center justify-center gap-1"
+      >
+        <span>{resending ? "Sending..." : resendSuccess ? "Email Sent ✓" : "Resend Email"}</span>
+      </button>
+      {resendError && <div className="text-[10px] text-red-500">{resendError}</div>}
+    </div>
+  );
+}
+
 
 /**
  * Admin Page (modularized into tabs: Reserve, Inventory, Orders)
@@ -2162,6 +2199,8 @@ function ReceiptsAdmin() {
   const [error, setError] = React.useState("");
   const [seeding, setSeeding] = React.useState(false);
   const [purging, setPurging] = React.useState(false);
+  const [receiptsTab, setReceiptsTab] = React.useState<"history" | "shipping">("history");
+  const [expandedRowIds, setExpandedRowIds] = React.useState<string[]>([]);
   const [qrOpen, setQrOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<{
     receiptId: string;
@@ -2806,7 +2845,110 @@ function ReceiptsAdmin() {
         </div>
       </div>
       {error && <div className="microtext text-amber-600">{error}</div>}
+      <div className="flex items-center gap-2 mb-4 border-b pb-2">
+        <button
+          onClick={() => setReceiptsTab("history")}
+          className={`px-3 py-1.5 text-sm font-medium border-b-2 transition-colors ${receiptsTab === "history" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          Receipts History
+        </button>
+        <button
+          onClick={() => setReceiptsTab("shipping")}
+          className={`px-3 py-1.5 text-sm font-medium border-b-2 transition-colors ${receiptsTab === "shipping" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          Shipping Board
+        </button>
+      </div>
 
+      {receiptsTab === "shipping" ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+          {/* To Ship Column */}
+          <div className="rounded-lg border bg-foreground/5 p-4 space-y-3 min-h-[400px]">
+            <h3 className="font-semibold flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span> To Ship
+            </h3>
+            {(receipts || []).filter((r: any) => r.shippingAddress && r.status !== "shipped" && r.status !== "delivered" && r.status !== "completed" && !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST")).map((rec: any) => (
+              <div key={rec.receiptId} className="rounded-md border bg-background p-3 space-y-2 shadow-sm">
+                <div className="flex justify-between items-start">
+                  <span className="font-mono text-xs">{rec.receiptId.slice(0, 15)}...</span>
+                  <span className="text-sm font-medium">${Number(rec.totalUsd || 0).toFixed(2)}</span>
+                </div>
+                <div className="microtext text-muted-foreground">
+                  <div>{rec.shippingAddress.name}</div>
+                  <div>{rec.shippingAddress.city}, {rec.shippingAddress.state} {rec.shippingAddress.zip}</div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelected(rec);
+                    setTrackCarrier("");
+                    setTrackNumber("");
+                    setTrackUrl("");
+                    setTrackError("");
+                    setTrackingOpen(true);
+                  }}
+                  className="w-full mt-2 px-2 py-1.5 rounded bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+                >
+                  Add Tracking
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Shipped Column */}
+          <div className="rounded-lg border bg-foreground/5 p-4 space-y-3 min-h-[400px]">
+            <h3 className="font-semibold flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-sky-500"></span> Shipped
+            </h3>
+            {(receipts || []).filter((r: any) => r.tracking?.trackingNumber && r.status === "shipped" && !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST")).map((rec: any) => (
+              <div key={rec.receiptId} className="rounded-md border bg-background p-3 space-y-2 shadow-sm">
+                <div className="flex justify-between items-start">
+                  <span className="font-mono text-xs">{rec.receiptId.slice(0, 15)}...</span>
+                  <span className="text-sm font-medium">${Number(rec.totalUsd || 0).toFixed(2)}</span>
+                </div>
+                <div className="microtext text-muted-foreground">
+                  <div>{rec.shippingAddress?.name || "Customer"}</div>
+                  <div className="font-mono text-sky-600 dark:text-sky-400 mt-1">{rec.tracking?.carrier}: {rec.tracking?.trackingNumber}</div>
+                </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      const r = await fetch(`/api/receipts/${encodeURIComponent(rec.receiptId)}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json", "x-wallet": operatorWallet },
+                        body: JSON.stringify({ status: "delivered" }),
+                      });
+                      if (r.ok) await loadReceipts();
+                    } catch {}
+                  }}
+                  className="w-full mt-2 px-2 py-1.5 rounded border text-xs font-medium hover:bg-muted transition-colors"
+                >
+                  Mark Delivered
+                </button>
+                <ResendTrackingBtn receipt={rec} operatorWallet={operatorWallet} />
+              </div>
+            ))}
+          </div>
+
+          {/* Delivered Column */}
+          <div className="rounded-lg border bg-foreground/5 p-4 space-y-3 min-h-[400px]">
+            <h3 className="font-semibold flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500"></span> Delivered
+            </h3>
+            {(receipts || []).filter((r: any) => (r.status === "delivered" || r.status === "completed") && r.shippingAddress && !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST")).map((rec: any) => (
+              <div key={rec.receiptId} className="rounded-md border bg-background p-3 shadow-sm opacity-70">
+                <div className="flex justify-between items-start mb-1">
+                  <span className="font-mono text-xs">{rec.receiptId.slice(0, 15)}...</span>
+                  <span className="text-xs">{new Date(Number(rec.createdAt || 0)).toLocaleDateString()}</span>
+                </div>
+                <div className="microtext text-muted-foreground">{rec.shippingAddress?.name}</div>
+                {rec.tracking?.trackingNumber && (
+                  <div className="microtext font-mono mt-1" title={rec.tracking.trackingNumber}>Trk: {rec.tracking.trackingNumber.slice(0, 10)}...</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
       <div className="overflow-auto rounded-md border">
         <table className="min-w-full text-sm">
           <thead>
@@ -2824,111 +2966,186 @@ function ReceiptsAdmin() {
           <tbody>
             {(receipts || [])
               .filter((r: any) => !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST"))
-              .map((rec: any, idx: number) => (
-                <tr key={rec.receiptId || `receipt-${idx}`} className="border-t">
-                  <td className="px-3 py-2 font-mono">{rec.receiptId}</td>
-                  <td className="px-3 py-2">{resolveBrandName(rec)}</td>
-                  <td className="px-3 py-2">${Number(rec.totalUsd || 0).toFixed(2)}</td>
-                  <td className="px-3 py-2">{new Date(Number(rec.createdAt || 0)).toLocaleString()}</td>
-                  <td className="px-3 py-2">
-                    <span className={statusClass(rec.status)}>{statusLabel(rec.status)}</span>
-                  </td>
-                  <td className="px-3 py-2 text-xs text-muted-foreground">
-                    {(() => {
-                      if (!rec.employeeId) return "—";
-                      const mem = team.find((t: any) => t.id === rec.employeeId);
-                      return mem ? mem.name : (rec.employeeId === "admin" ? "Admin" : rec.employeeId.slice(0, 8));
-                    })()}
-                  </td>
-                  <td className="px-3 py-2">
-                    {rec.jurisdictionCode ? (
-                      <span className="microtext">{rec.jurisdictionCode} • {Math.round(Number(rec.taxRate || 0) * 10000) / 100}%</span>
-                    ) : (
-                      <span className="microtext text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => openQR(rec)}
-                        className="px-2 py-1 rounded-md border text-xs"
-                        disabled={isBlockedStatus(rec.status)}
-                        title={isBlockedStatus(rec.status) ? "QR disabled for settled/refunded receipts" : "QR Code"}
-                      >
-                        QR Code
-                      </button>
-                      <button
-                        onClick={() => {
-                          try {
-                            openPortalWindow(getPortalLink(rec.receiptId));
-                          } catch { }
-                        }}
-                        className="px-2 py-1 rounded-md border text-xs"
-                        title="Open portal in a new window"
-                      >
-                        Open Portal
-                      </button>
-                      <button
-                        onClick={() => {
-                          try {
-                            navigator.clipboard.writeText(getPortalLink(rec.receiptId));
-                          } catch { }
-                        }}
-                        className="px-2 py-1 rounded-md border text-xs"
-                        title="Copy portal link"
-                      >
-                        Copy Link
-                      </button>
-                      <button
-                        onClick={() => openEdit(rec)}
-                        className="px-2 py-1 rounded-md border text-xs"
-                        title="Edit Order"
-                      >
-                        ✎ Edit
-                      </button>
-                      <button
-                        onClick={() => openRefund(rec)}
-                        className="px-2 py-1 rounded-md border text-xs"
-                        title="Refund"
-                      >
-                        ↺ Refund
-                      </button>
-                      {String(rec.receiptId || "").toUpperCase() === "TEST" ? (
-                        <button
-                          onClick={() => setTestHidden(true)}
-                          className="px-2 py-1 rounded-md border text-xs"
-                          title="Hide TEST receipt from list"
-                        >
-                          🙈 Hide
-                        </button>
+              .map((rec: any, idx: number) => {
+                const isExpanded = expandedRowIds.includes(rec.receiptId);
+                const recItems = Array.isArray(rec.lineItems) ? rec.lineItems : [];
+                return (
+                <React.Fragment key={rec.receiptId || `receipt-${idx}`}>
+                  <tr
+                    className="border-t hover:bg-foreground/5 cursor-pointer transition-colors"
+                    onClick={() => setExpandedRowIds((prev) => isExpanded ? prev.filter(id => id !== rec.receiptId) : [...prev, rec.receiptId])}
+                  >
+                    <td className="px-3 py-2 font-mono flex items-center gap-2">
+                       <span className="text-muted-foreground w-4 flex justify-center">{isExpanded ? "▼" : "▶"}</span>
+                       {rec.receiptId}
+                    </td>
+                    <td className="px-3 py-2">{resolveBrandName(rec)}</td>
+                    <td className="px-3 py-2">${Number(rec.totalUsd || 0).toFixed(2)}</td>
+                    <td className="px-3 py-2">{new Date(Number(rec.createdAt || 0)).toLocaleString()}</td>
+                    <td className="px-3 py-2">
+                      <span className={statusClass(rec.status)}>{statusLabel(rec.status)}</span>
+                    </td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                      {(() => {
+                        if (!rec.employeeId) return "—";
+                        const mem = team.find((t: any) => t.id === rec.employeeId);
+                        return mem ? mem.name : (rec.employeeId === "admin" ? "Admin" : rec.employeeId.slice(0, 8));
+                      })()}
+                    </td>
+                    <td className="px-3 py-2">
+                      {rec.jurisdictionCode ? (
+                        <span className="microtext">{rec.jurisdictionCode} • {Math.round(Number(rec.taxRate || 0) * 10000) / 100}%</span>
                       ) : (
+                        <span className="microtext text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <button
-                          onClick={async () => {
+                          onClick={() => openQR(rec)}
+                          className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                          disabled={isBlockedStatus(rec.status)}
+                          title={isBlockedStatus(rec.status) ? "QR disabled for settled/refunded receipts" : "QR Code"}
+                        >
+                          QR Code
+                        </button>
+                        <button
+                          onClick={() => {
                             try {
-                              const url = `${window.location.origin}/api/receipts/${encodeURIComponent(rec.receiptId)}`;
-                              const r = await fetch(url, { method: "DELETE", headers: { "x-wallet": (account?.address || "") }, credentials: "include", cache: "no-store" });
-                              const j = await r.json().catch(() => ({}));
-                              if (r.ok && j?.ok) {
-                                await loadReceipts();
-                              } else {
-                                showInfo("Delete blocked", String(j?.error || "Delete blocked"), [
-                                  { label: "Receipt", value: String(rec.receiptId || "") },
-                                  { label: "Status", value: String(rec.status || "") },
-                                ]);
-                              }
+                              openPortalWindow(getPortalLink(rec.receiptId));
                             } catch { }
                           }}
-                          className="px-2 py-1 rounded-md border text-xs"
-                          title="Delete"
-                          disabled={isBlockedStatus(rec.status)}
+                          className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                          title="Open portal in a new window"
                         >
-                          🗑 Delete
+                          Open Portal
                         </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        <button
+                          onClick={() => {
+                            try {
+                              navigator.clipboard.writeText(getPortalLink(rec.receiptId));
+                            } catch { }
+                          }}
+                          className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                          title="Copy portal link"
+                        >
+                          Copy Link
+                        </button>
+                        <button
+                          onClick={() => openEdit(rec)}
+                          className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                          title="Edit Order"
+                        >
+                          ✎ Edit
+                        </button>
+                        <button
+                          onClick={() => openRefund(rec)}
+                          className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                          title="Refund"
+                        >
+                          ↺ Refund
+                        </button>
+                        {String(rec.receiptId || "").toUpperCase() === "TEST" ? (
+                          <button
+                            onClick={() => setTestHidden(true)}
+                            className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                            title="Hide TEST receipt from list"
+                          >
+                            🙈 Hide
+                          </button>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const url = `${window.location.origin}/api/receipts/${encodeURIComponent(rec.receiptId)}`;
+                                const r = await fetch(url, { method: "DELETE", headers: { "x-wallet": (account?.address || "") }, credentials: "include", cache: "no-store" });
+                                const j = await r.json().catch(() => ({}));
+                                if (r.ok && j?.ok) {
+                                  await loadReceipts();
+                                } else {
+                                  showInfo("Delete blocked", String(j?.error || "Delete blocked"), [
+                                    { label: "Receipt", value: String(rec.receiptId || "") },
+                                    { label: "Status", value: String(rec.status || "") },
+                                  ]);
+                                }
+                              } catch { }
+                            }}
+                            className="px-2 py-1 rounded-md border text-xs text-red-500 bg-background hover:bg-red-500/10 hover:border-red-500/50"
+                            title="Delete"
+                            disabled={isBlockedStatus(rec.status)}
+                          >
+                            🗑 Delete
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                  {isExpanded && (
+                    <tr className="bg-foreground-[0.02] border-b">
+                      <td colSpan={8} className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-muted-foreground uppercase text-xs tracking-wide">Line Items</h4>
+                            <div className="bg-background rounded-md border p-3 space-y-2">
+                              {recItems.length > 0 ? recItems.map((it: any, i: number) => (
+                                <div key={i} className="flex justify-between items-center text-xs">
+                                  <span className="truncate">{it.qty ? `${it.qty}x ` : ""}{it.label}</span>
+                                  <span className="font-medium whitespace-nowrap ml-4">${Number(it.priceUsd || 0).toFixed(2)}</span>
+                                </div>
+                              )) : (
+                                <div className="text-xs text-muted-foreground italic">No items</div>
+                              )}
+                              <div className="border-t pt-2 mt-2 font-semibold flex justify-between">
+                                <span>Total:</span>
+                                <span>${Number(rec.totalUsd || 0).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <div className="space-y-3">
+                              <h4 className="font-semibold text-muted-foreground uppercase text-xs tracking-wide">Payment Details</h4>
+                              <div className="bg-background rounded-md border p-3 text-xs space-y-1.5 font-mono">
+                                <div className="flex justify-between items-end gap-2 overflow-hidden">
+                                  <span className="text-muted-foreground min-w-[70px]">Wallet:</span>
+                                  <span className="truncate flex-1 text-right" title={rec.buyerWallet}>{rec.buyerWallet || "—"}</span>
+                                </div>
+                                <div className="flex justify-between items-end gap-2 overflow-hidden">
+                                  <span className="text-muted-foreground min-w-[70px]">Tx Hash:</span>
+                                  <span className="truncate flex-1 text-right" title={rec.transactionHash}>{rec.transactionHash || "—"}</span>
+                                </div>
+                                <div className="flex flex-wrap justify-between items-end gap-2 pt-1 border-t mt-1">
+                                  <span className="text-muted-foreground min-w-[70px]">Tip:</span>
+                                  <span className="text-right">${Number(rec.tipAmount || 0).toFixed(2)}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {rec.shippingAddress && (
+                              <div className="space-y-3">
+                                <h4 className="font-semibold text-muted-foreground uppercase text-xs tracking-wide">Shipping Info</h4>
+                                <div className="bg-background rounded-md border p-3 text-xs space-y-1">
+                                  <div className="font-medium">{rec.shippingAddress.name}</div>
+                                  <div className="text-muted-foreground">{rec.shippingAddress.email}</div>
+                                  <div className="text-muted-foreground">{rec.shippingAddress.line1}</div>
+                                  {rec.shippingAddress.line2 && <div className="text-muted-foreground">{rec.shippingAddress.line2}</div>}
+                                  <div className="text-muted-foreground">{rec.shippingAddress.city}, {rec.shippingAddress.state} {rec.shippingAddress.zip}</div>
+                                  {rec.tracking?.trackingNumber && (
+                                    <div className="mt-2 pt-2 border-t font-mono text-emerald-500">
+                                      Track: {rec.tracking.carrier} {rec.tracking.trackingNumber}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+                );
+              })}
             {(!receipts || receipts.length === 0) && (
               <tr>
                 <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
@@ -2939,6 +3156,7 @@ function ReceiptsAdmin() {
           </tbody>
         </table>
       </div>
+      )}
 
       {qrOpen && selected && typeof window !== "undefined"
         ? createPortal(

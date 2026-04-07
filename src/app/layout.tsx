@@ -698,7 +698,7 @@ export default async function RootLayout({
         style={{ overflowX: 'hidden' }}
       >
         <DeviceStyleInjector />
-        <Script id="linkedin-insight-tag" strategy="afterInteractive">{`
+        <Script id="linkedin-insight-tag" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
           _linkedin_partner_id = "8943644";
           window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
           window._linkedin_data_partner_ids.push(_linkedin_partner_id);
@@ -711,19 +711,19 @@ export default async function RootLayout({
             b.src = "https://snap.licdn.com/li.lms-analytics/insight.min.js";
             s.parentNode.insertBefore(b, s);
           })(window.lintrk);
-        `}</Script>
+        `}} />
         {containerIdentity.containerType === 'platform' && (
-          <Script id="microsoft-clarity-platform" strategy="afterInteractive">{`
+          <Script id="microsoft-clarity-platform" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
             (function(c,l,a,r,i,t,y){
               c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
               t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
               y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
             })(window,document,"clarity","script","w0lt4j6fw3");
-          `}</Script>
+          `}} />
         )}
-        {!isDebug() && <Script id="pp-silence-console" strategy="beforeInteractive">{`try{var _l=console.log.bind(console);console.log=function(){};console._log=_l}catch(e){}`}</Script>}
+        {!isDebug() && <Script id="pp-silence-console" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `try{var _l=console.log.bind(console);console.log=function(){};console._log=_l}catch(e){}`}} />}
         <ConsoleBanner />
-        <Script id="pp-preset-vars" strategy="beforeInteractive">{`try {
+        <Script id="pp-preset-vars" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `try {
           var d=document.documentElement;
           var dp=d.getAttribute('data-pp-brand-primary')||'#1f2937';
           var da=d.getAttribute('data-pp-brand-accent')||'#F54029';
@@ -736,8 +736,8 @@ export default async function RootLayout({
           d.style.setProperty('--pp-text-body',db);
           d.style.setProperty('--primary',dp);
           d.style.setProperty('--primary-foreground',dh);
-        } catch(e) {}`}</Script>
-        <Script id="pp-prelock" strategy="beforeInteractive">{`try {
+        } catch(e) {}`}} />
+        <Script id="pp-prelock" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `try {
           var d=document.documentElement;
           var url=new URL(window.location.href);
           var path=url.pathname || "";
@@ -773,8 +773,8 @@ export default async function RootLayout({
             d.setAttribute("data-pp-theme-stage","init");
             d.setAttribute("data-pp-theme-ready","1");
           }
-        } catch(e) {}`}</Script>
-        <Script id="pp-suppress-ethereum-redefine" strategy="beforeInteractive">{`
+        } catch(e) {}`}} />
+        <Script id="pp-suppress-ethereum-redefine" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
           try {
             // Suppress extension errors like "Cannot redefine property: ethereum"
             window.addEventListener('error', function (e) {
@@ -799,8 +799,8 @@ export default async function RootLayout({
               } catch {}
             }, true);
           } catch {}
-        `}</Script>
-        <Script id="pp-suppress-extension-errors" strategy="beforeInteractive">{`
+        `}} />
+        <Script id="pp-suppress-extension-errors" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
           try {
             window.addEventListener('error', function (e) {
               try {
@@ -838,9 +838,9 @@ export default async function RootLayout({
               } catch {}
             }, true);
           } catch {}
-        `}</Script>
+        `}} />
         {process.env.NODE_ENV !== "production" && (<>
-          <Script id="pp-suppress-nested-button-error" strategy="beforeInteractive">{`
+          <Script id="pp-suppress-nested-button-error" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
           try {
             // Suppress React DEV warning: "In HTML, <button> cannot be a descendant of <button>" from third-party modals
             // Only intercept when the message matches exactly to avoid hiding other errors
@@ -890,8 +890,8 @@ export default async function RootLayout({
               } catch {}
             }, true);
           } catch {}
-        `}</Script>
-          <Script id="pp-filter-react-nested-button" strategy="beforeInteractive">{`
+        `}} />
+          <Script id="pp-filter-react-nested-button" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
           try {
             (function(){
               var origError = console.error;
@@ -952,8 +952,8 @@ export default async function RootLayout({
               };
             })();
           } catch {}
-        `}</Script>
-          <Script id="pp-fix-thirdweb-nested-buttons" strategy="afterInteractive">{`
+        `}} />
+          <Script id="pp-fix-thirdweb-nested-buttons" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
           try {
             (function(){
               function patchRoot(root){
@@ -1027,8 +1027,8 @@ export default async function RootLayout({
               setInterval(function(){ try { patchRoot(document); } catch {} }, 1500);
             })();
           } catch {}
-        `}</Script>
-          <Script id="pp-reassert-console-filters" strategy="afterInteractive">{`
+        `}} />
+          <Script id="pp-reassert-console-filters" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
           try {
             (function(){
               var patterns = [
@@ -1082,20 +1082,20 @@ export default async function RootLayout({
               setInterval(function(){ try { if (!window.__pp_console_patch || !window.__pp_console_patch.patched) { patchConsoles(); } } catch {} }, 2000);
             })();
           } catch {}
-        `}</Script>
+        `}} />
         </>)}
         <ThemeLoader />
         <ThemeReadyGate />
         {/* Client-side scrub to prevent hydration mismatch from extensions */}
         <HydrationSanitizer />
-        <Script id="org-jsonld" type="application/ld+json" strategy="afterInteractive">{JSON.stringify({
+        <Script id="org-jsonld" type="application/ld+json" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Organization",
           name: displayBrandNameLayout,
           url: pageBase,
           logo: `${pageBase}${brand.logos.app}`,
           description: runtimeBrand.meta?.ogDescription || `${displayBrandNameLayout} enables modern crypto payments with unified billing, instant receipts, and real-time analytics.`,
-        })}</Script>
+        })}} />
         <div className="fixed inset-0 -z-10 pointer-events-none global-gradient-layer" aria-hidden hidden>
           <div className="absolute inset-0 max-w-[100vw] overflow-hidden" style={{
             background:
@@ -1104,7 +1104,7 @@ export default async function RootLayout({
             filter: "saturate(1.1)",
           }} />
         </div>
-        <Script id="pp-hide-global-gradient-portal" strategy="afterInteractive">{`
+        <Script id="pp-hide-global-gradient-portal" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
           try {
             var d=document.documentElement;
             var route=d.getAttribute('data-pp-route')||'';
@@ -1118,7 +1118,7 @@ export default async function RootLayout({
               if (ms) { ms.removeAttribute('hidden'); ms.style.height=''; }
             }
           } catch(e) {}
-        `}</Script>
+        `}} />
         <BrandProvider brand={brand}>
           <ThirdwebAppProvider>
             <ThemeProvider>

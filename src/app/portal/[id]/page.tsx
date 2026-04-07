@@ -1384,6 +1384,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   }, [items]);
 
   const [shipName, setShipName] = useState('');
+  const [shipEmail, setShipEmail] = useState('');
   const [shipLine1, setShipLine1] = useState('');
   const [shipLine2, setShipLine2] = useState('');
   const [shipCity, setShipCity] = useState('');
@@ -1407,6 +1408,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     if (receipt?.shippingAddress?.line1 && !shippingComplete) {
       const a = receipt.shippingAddress;
       if (a.name) setShipName(a.name);
+      if (a.email) setShipEmail(a.email);
       if (a.line1) setShipLine1(a.line1);
       if (a.line2) setShipLine2(a.line2);
       if (a.city) setShipCity(a.city);
@@ -1434,8 +1436,8 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   }, [shippingRequired, shippingComplete, shipMethod, shippingOptions.pricing, itemsSubtotalUsd, items, receipt?.shippingCostUsd]);
 
   const shippingAddressValid = useMemo(() => {
-    return !!(shipName.trim() && shipLine1.trim() && shipCity.trim() && shipZip.trim() && shipCountry.trim());
-  }, [shipName, shipLine1, shipCity, shipZip, shipCountry]);
+    return !!(shipEmail.trim().includes('@') && shipName.trim() && shipLine1.trim() && shipCity.trim() && shipZip.trim() && shipCountry.trim());
+  }, [shipEmail, shipName, shipLine1, shipCity, shipZip, shipCountry]);
 
   const handleShippingSubmit = async () => {
     if (!shippingAddressValid || !shipMethod || !receiptId) return;
@@ -1448,6 +1450,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         body: JSON.stringify({
           shippingAddress: {
             name: shipName.trim(),
+            email: shipEmail.trim(),
             line1: shipLine1.trim(),
             line2: shipLine2.trim(),
             city: shipCity.trim(),
@@ -2987,6 +2990,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                         ) : (
                                           <>
                                             <div className="grid grid-cols-1 gap-2">
+                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Email Address *" type="email" value={shipEmail} onChange={(e) => setShipEmail(e.target.value)} />
                                               <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Full Name *" value={shipName} onChange={(e) => setShipName(e.target.value)} />
                                               <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 1 *" value={shipLine1} onChange={(e) => setShipLine1(e.target.value)} />
                                               <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 2 (optional)" value={shipLine2} onChange={(e) => setShipLine2(e.target.value)} />
