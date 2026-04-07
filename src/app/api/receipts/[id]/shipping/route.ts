@@ -21,6 +21,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     const shippingAddress = {
         name: typeof addr.name === "string" ? addr.name.slice(0, 120) : "",
+        email: typeof addr.email === "string" ? addr.email.toLowerCase().slice(0, 200) : "",
         line1: typeof addr.line1 === "string" ? addr.line1.slice(0, 200) : "",
         line2: typeof addr.line2 === "string" ? addr.line2.slice(0, 200) : "",
         city: typeof addr.city === "string" ? addr.city.slice(0, 100) : "",
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         country: typeof addr.country === "string" ? addr.country.slice(0, 2).toUpperCase() : "US",
     };
 
-    if (!shippingAddress.line1 || !shippingAddress.city || !shippingAddress.zip) {
+    if (!shippingAddress.line1 || !shippingAddress.city || !shippingAddress.zip || !shippingAddress.email) {
         return NextResponse.json({ error: "invalid_request", message: "incomplete_address" }, { status: 400 });
     }
 
@@ -83,6 +84,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             ? body.buyerWallet.toLowerCase()
             : undefined;
 
+        // Ensure buyerEmail is at the root for easier querying if provided in shipping
+        const buyerEmail = shippingAddress.email || receipt.buyerEmail;
+
         const updatedReceipt = {
             ...receipt,
             shippingAddress,
@@ -92,6 +96,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             totalUsd: newTotalUsd,
             lastUpdatedAt: Date.now(),
             ...(buyerWallet ? { buyerWallet } : {}),
+            ...(buyerEmail ? { buyerEmail } : {}),
         };
 
         await container.items.upsert(updatedReceipt);

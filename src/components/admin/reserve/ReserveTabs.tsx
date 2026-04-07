@@ -7,8 +7,9 @@ import { ReserveAnalytics } from "./ReserveAnalytics";
 import { TipSettings } from "./TipSettings";
 import { TaxManagement } from "./TaxManagement";
 import { TransactionsViewer } from "./TransactionsViewer";
+import { OfframpPanel } from "./OfframpPanel";
 
-type ReserveTab = "configuration" | "analytics" | "transactions" | "tax" | "tips";
+type ReserveTab = "configuration" | "analytics" | "transactions" | "tax" | "tips" | "offramp";
 
 export function ReserveTabs() {
   const [activeTab, setActiveTab] = useState<ReserveTab>("configuration");
@@ -63,6 +64,15 @@ export function ReserveTabs() {
           >
             Tips
           </button>
+          <button
+            className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap flex-shrink-0 rounded-md border text-sm ${activeTab === "offramp"
+                ? "bg-foreground/10 border-foreground/20"
+                : "hover:bg-foreground/5"
+              }`}
+            onClick={() => setActiveTab("offramp")}
+          >
+            Fiat Offramp
+          </button>
         </nav>
       </div>
 
@@ -110,6 +120,12 @@ export function ReserveTabs() {
             Configure the tip percentage presets shown on the payment portal. Set a default tip and control whether buyers can enter a custom amount.
           </p>
           <TipSettings />
+        </div>
+      )}
+
+      {activeTab === "offramp" && (
+        <div className="space-y-4">
+          <OfframpPanel />
         </div>
       )}
     </div>
