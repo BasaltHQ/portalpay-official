@@ -202,6 +202,13 @@ export async function getSiteConfigForWallet(wallet?: string, brandKeyOverride?:
                 if (legacyDoc.defaultPaymentToken && resource.defaultPaymentToken === undefined) resource.defaultPaymentToken = legacyDoc.defaultPaymentToken;
                 if (legacyDoc.storeCurrency && resource.storeCurrency === undefined) resource.storeCurrency = legacyDoc.storeCurrency;
                 if (typeof legacyDoc.processingFeePct === "number" && typeof resource.processingFeePct !== "number") resource.processingFeePct = legacyDoc.processingFeePct;
+                if (legacyDoc.splitAddress && !resource.splitAddress) resource.splitAddress = legacyDoc.splitAddress;
+                if (legacyDoc.split && !resource.split) resource.split = legacyDoc.split;
+                if (legacyDoc.splitVersion && !resource.splitVersion) resource.splitVersion = legacyDoc.splitVersion;
+                if (legacyDoc.splitHistory && !resource.splitHistory) resource.splitHistory = legacyDoc.splitHistory;
+                if (legacyDoc.status && !resource.status) resource.status = legacyDoc.status;
+                if (legacyDoc.approvedAt && !resource.approvedAt) resource.approvedAt = legacyDoc.approvedAt;
+                if (legacyDoc.createdAt && !resource.createdAt) resource.createdAt = legacyDoc.createdAt;
               }
             } catch { }
 

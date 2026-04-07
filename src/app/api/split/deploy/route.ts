@@ -574,11 +574,30 @@ export async function POST(req: NextRequest) {
     const c = await getContainer();
     const docId = getDocId(brandKey);
     let prev: any | undefined;
+    let legacyPrev: any | undefined;
     try {
       const { resource } = await c.item(docId, wallet).read<any>();
       prev = resource;
     } catch {
       prev = undefined;
+    }
+    
+    try {
+      if (docId !== "site:config") {
+        const { resource } = await c.item("site:config", wallet).read<any>();
+        legacyPrev = resource;
+      }
+    } catch { }
+
+    // Hoist missing history and status fields from legacy doc to prevent data loss
+    if (legacyPrev && prev) {
+      if (!prev.splitHistory && legacyPrev.splitHistory) prev.splitHistory = legacyPrev.splitHistory;
+      if (!prev.splitVersion && legacyPrev.splitVersion) prev.splitVersion = legacyPrev.splitVersion;
+      if (!prev.createdAt && legacyPrev.createdAt) prev.createdAt = legacyPrev.createdAt;
+      if (!prev.status && legacyPrev.status) prev.status = legacyPrev.status;
+      if (!prev.approvedAt && legacyPrev.approvedAt) prev.approvedAt = legacyPrev.approvedAt;
+    } else if (legacyPrev && !prev) {
+      prev = { ...legacyPrev, id: docId };
     }
 
     const partnerWalletPrev = String((prev as any)?.partnerWallet || "").toLowerCase();

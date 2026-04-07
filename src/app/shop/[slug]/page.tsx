@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const container = await getContainer();
     const { resources: configs } = await container.items
       .query({
-        query: "SELECT c.name, c.description, c.bio, c.theme FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+        query: "SELECT c.name, c.description, c.bio, c.theme FROM c WHERE c.type = 'shop_config' AND (c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true))",
         parameters: [{ name: "@slug", value: cleanSlug }]
       })
       .fetchAll();
@@ -173,7 +173,7 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
 
     const { resources: configs } = await container.items
       .query({
-        query: "SELECT * FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+        query: "SELECT * FROM c WHERE c.type = 'shop_config' AND (c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true))",
         parameters: [{ name: "@slug", value: cleanSlug }]
       })
       .fetchAll();
