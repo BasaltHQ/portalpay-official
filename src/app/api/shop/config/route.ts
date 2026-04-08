@@ -520,9 +520,22 @@ export async function GET(req: NextRequest) {
                 }
               }
             } catch { }
-            // In partner containers, do NOT fallback to legacy; return defaults so shop appears unconfigured
+            // In partner containers, try the legacy doc before returning defaults
+            // The merchant may have saved their shop config before brand-scoping was added
             if (brandKey && String(brandKey).toLowerCase() !== "portalpay" && String(brandKey).toLowerCase() !== "basaltsurge") {
-              return jsonResponse({ config: normalize() }, {
+              try {
+                const { resource: legacyRes } = await c.item(DOC_ID, foundWallet).read<any>();
+                if (legacyRes) {
+                  return jsonResponse({ config: normalize(legacyRes, brandKey) }, {
+                    headers: {
+                      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+                      "Pragma": "no-cache",
+                      "Expires": "0",
+                    },
+                  });
+                }
+              } catch { }
+              return jsonResponse({ config: normalize(undefined, brandKey) }, {
                 headers: {
                   "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
                   "Pragma": "no-cache",
@@ -585,8 +598,22 @@ export async function GET(req: NextRequest) {
         } catch { }
       }
 
-      // In partner containers, do NOT fallback to legacy; return defaults (or 404 for authenticated management)
+      // In partner containers, try the legacy doc before returning defaults
+      // The merchant may have saved their shop config before brand-scoping was added
       if (brandKey && String(brandKey).toLowerCase() !== "portalpay" && String(brandKey).toLowerCase() !== "basaltsurge") {
+        try {
+          const { resource: legacyRes } = await c.item(DOC_ID, targetWallet).read<any>();
+          if (legacyRes) {
+            found = true;
+            return jsonResponse({ config: normalize(legacyRes, brandKey) }, {
+              headers: {
+                "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0",
+              },
+            });
+          }
+        } catch { }
         if (authUsed && !found) {
           // Authenticated path requested a specific wallet but no config exists in this brand
           return jsonResponse({ error: "not_found" }, { status: 404 });

@@ -334,11 +334,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             // Helper: detect any platform asset in a URL
             const isPlatformAsset = (url: string) => {
               if (!url) return false;
-              const lower = url.toLowerCase();
-              return lower.includes('basaltsurge') || lower.includes('portalpay') ||
-                     lower.includes('ppsymbol') || lower.includes('cblogod') ||
-                     lower === '/surge.png' || lower === '/favicon-32x32.png' ||
-                     lower === '/watermark.png';
+              // Trust external/CDN URLs — they've been validated server-side
+              if (url.startsWith('http')) return false;
+              // Only block known LOCAL path platform default assets
+              const filename = (url.split('/').pop() || '').toLowerCase();
+              return /^(basaltsurge(wided|d)?|bssymbol|ppsymbol(bg)?|cblogod|portalpay\d*|surge)\.(png|svg)$/i.test(filename)
+                || url === '/watermark.png' || url === '/favicon-32x32.png';
             };
 
             // If the API says "BasaltSurge" or "PortalPay", but we have a real partner name in explicit defaults, REVERT to defaults.

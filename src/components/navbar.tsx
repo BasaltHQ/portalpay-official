@@ -746,7 +746,7 @@ export function Navbar() {
         displayBrandName,
     });
 
-    const effectiveLogo = isBasaltSurge ? "/Surge.png" : (theme.symbolLogoUrl || theme.brandLogoUrl || fallbackLogo);
+    const effectiveLogo = isBasaltSurge ? "/Surge.png" : (theme.symbolLogoUrl || theme.brandLogoUrl || fallbackLogo || "/api/favicon");
     const maskUrl = effectiveLogo.startsWith("http")
         ? `/_next/image?url=${encodeURIComponent(effectiveLogo)}&w=96&q=75`
         : effectiveLogo;
