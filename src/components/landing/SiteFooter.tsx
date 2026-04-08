@@ -65,7 +65,7 @@ export default function SiteFooter() {
     return sym;
   })();
   const displaySymbolUrl = isPartner
-    ? (partnerSymbolUrl || theme.brandLogoUrl || partnerSymbolFallback)
+    ? (partnerSymbolUrl || theme.brandLogoUrl || partnerSymbolFallback || "/api/favicon")
     : (theme.symbolLogoUrl || "/Surge.png");
 
   // DEBUG: trace footer logo resolution

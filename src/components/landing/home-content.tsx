@@ -191,7 +191,7 @@ export default function HomeContent() {
           filename === 'cblogod.png';
 
         if (isPlatformAsset) {
-          return (brand as any)?.logos?.app || ''; // Use partner logo instead
+          return (brand as any)?.logos?.app || (brand as any)?.logos?.symbol || '/api/favicon'; // Use partner logo instead
         }
         return logo;
       };
