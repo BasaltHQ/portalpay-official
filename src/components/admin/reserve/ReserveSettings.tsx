@@ -415,7 +415,13 @@ export function ReserveSettings({ walletOverride, brandKey }: ReserveSettingsPro
           }}
         />
         <div className="microtext text-muted-foreground mt-1">
-          Base 0.5% is automatically included. This field adds your extra percentage (e.g., 2.5 = +2.5%). The merchant receives anything above the 0.5% base.
+          {(() => {
+            try {
+              const ct = typeof document !== 'undefined' ? (document.documentElement?.getAttribute('data-pp-container-type') || '') : '';
+              if (ct === 'partner') return 'This fee is added on top of the base platform rate. The merchant receives anything above the base.';
+            } catch {}
+            return 'Base 0.5% is automatically included. This field adds your extra percentage (e.g., 2.5 = +2.5%). The merchant receives anything above the 0.5% base.';
+          })()}
         </div>
       </div>
 
