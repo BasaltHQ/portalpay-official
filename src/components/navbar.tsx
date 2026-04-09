@@ -1024,41 +1024,45 @@ export function Navbar() {
                                 </button>
                             )}
                             {/* Login / Account Button */}
-                            <ConnectButton
-                                client={client}
-                                chain={chain}
-                                wallets={wallets}
-                                connectButton={{
-                                    label: "LOGIN",
-                                    className: "!text-white !rounded-[10px] !px-5 !py-2.5 !h-auto !min-w-[100px] !font-mono !text-xs !tracking-wider !font-bold !border-none !ring-0 !shadow-none transition-all hover:opacity-80 hover:scale-[1.02] active:scale-95",
-                                    style: { backgroundColor: secondaryColor, color: '#ffffff', borderRadius: '10px' },
-                                }}
-                                signInButton={{
-                                    label: "SIGN IN",
-                                    className: "!text-white !rounded-[10px] !px-5 !py-2.5 !h-auto !min-w-[100px] !font-mono !text-xs !tracking-wider !font-bold !border-none transition-all hover:opacity-80 hover:scale-[1.02] active:scale-95",
-                                    style: { backgroundColor: secondaryColor, color: '#ffffff', borderRadius: '10px' },
-                                }}
-                                detailsButton={{
-                                    displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
-                                    style: { borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' },
-                                    className: "!rounded-[10px] !bg-white/5 !border-white/10 hover:!bg-white/10 !px-4 !h-9"
-                                }}
-                                detailsModal={{
-                                    payOptions: {
-                                        buyWithFiat: { prefillSource: { currency: "USD" } },
-                                        prefillBuy: { chain: chain, token: { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", name: "USD Coin", symbol: "USDC" } },
-                                    },
-                                }}
-                                connectModal={{ title: tCommon("login"), titleIcon: modalTitleIcon, size: "compact", showThirdwebBranding: false }}
-                                theme={twTheme}
-                                onDisconnect={async () => {
-                                    try {
-                                        await fetch('/api/auth/logout', { method: 'POST' });
-                                        window.dispatchEvent(new CustomEvent("pp:auth:logged_out"));
-                                    } catch { }
-                                    try { window.location.href = '/'; } catch { }
-                                }}
-                            />
+                            {wallets.length > 0 ? (
+                                <ConnectButton
+                                    client={client}
+                                    chain={chain}
+                                    wallets={wallets}
+                                    connectButton={{
+                                        label: "LOGIN",
+                                        className: "!text-white !rounded-[10px] !px-5 !py-2.5 !h-auto !min-w-[100px] !font-mono !text-xs !tracking-wider !font-bold !border-none !ring-0 !shadow-none transition-all hover:opacity-80 hover:scale-[1.02] active:scale-95",
+                                        style: { backgroundColor: secondaryColor, color: '#ffffff', borderRadius: '10px' },
+                                    }}
+                                    signInButton={{
+                                        label: "SIGN IN",
+                                        className: "!text-white !rounded-[10px] !px-5 !py-2.5 !h-auto !min-w-[100px] !font-mono !text-xs !tracking-wider !font-bold !border-none transition-all hover:opacity-80 hover:scale-[1.02] active:scale-95",
+                                        style: { backgroundColor: secondaryColor, color: '#ffffff', borderRadius: '10px' },
+                                    }}
+                                    detailsButton={{
+                                        displayBalanceToken: { [((chain as any)?.id ?? 8453)]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+                                        style: { borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' },
+                                        className: "!rounded-[10px] !bg-white/5 !border-white/10 hover:!bg-white/10 !px-4 !h-9"
+                                    }}
+                                    detailsModal={{
+                                        payOptions: {
+                                            buyWithFiat: { prefillSource: { currency: "USD" } },
+                                            prefillBuy: { chain: chain, token: { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", name: "USD Coin", symbol: "USDC" } },
+                                        },
+                                    }}
+                                    connectModal={{ title: tCommon("login"), titleIcon: modalTitleIcon, size: "compact", showThirdwebBranding: false }}
+                                    theme={twTheme}
+                                    onDisconnect={async () => {
+                                        try {
+                                            await fetch('/api/auth/logout', { method: 'POST' });
+                                            window.dispatchEvent(new CustomEvent("pp:auth:logged_out"));
+                                        } catch { }
+                                        try { window.location.href = '/'; } catch { }
+                                    }}
+                                />
+                            ) : (
+                                <div className="w-[100px] h-[36px] bg-white/5 animate-pulse rounded-[10px]" />
+                            )}
                         </div>
 
                         {/* Mobile Menu Button */}
@@ -1225,19 +1229,25 @@ export function Navbar() {
                                             {!isPartnerContainer && <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-sm">FREE</span>}
                                         </button>
                                     )}
-                                    <ConnectButton
-                                        client={client}
-                                        chain={chain}
-                                        wallets={wallets}
-                                        connectButton={{
-                                            label: <span className="text-xs font-mono font-bold">LOGIN</span>,
-                                            className: "!text-white !w-full !justify-center !rounded-lg !py-3",
-                                            style: { backgroundColor: secondaryColor }
-                                        }}
-                                        connectModal={{ title: tCommon("login"), titleIcon: modalTitleIcon, size: "compact", showThirdwebBranding: false }}
-                                        theme={twTheme}
-                                        onConnect={() => setMobileOpen(false)}
-                                    />
+                                    <div onClickCapture={() => setMobileOpen(false)}>
+                                        {wallets.length > 0 ? (
+                                            <ConnectButton
+                                                client={client}
+                                                chain={chain}
+                                                wallets={wallets}
+                                                connectButton={{
+                                                    label: <span className="text-xs font-mono font-bold">LOGIN</span>,
+                                                    className: "!text-white !w-full !justify-center !rounded-lg !py-3",
+                                                    style: { backgroundColor: secondaryColor }
+                                                }}
+                                                connectModal={{ title: tCommon("login"), titleIcon: modalTitleIcon, size: "compact", showThirdwebBranding: false }}
+                                                theme={twTheme}
+                                                onConnect={() => setMobileOpen(false)}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-[40px] bg-white/5 animate-pulse rounded-lg" />
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
