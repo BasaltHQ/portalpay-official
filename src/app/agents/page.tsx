@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useActiveAccount, ConnectButton } from "thirdweb/react";
 import { sendTransaction, getContract, prepareContractCall } from "thirdweb";
-import { client, chain } from "@/lib/thirdweb/client";
+import { client, chain, getWallets } from "@/lib/thirdweb/client";
 import { usePortalThirdwebTheme } from "@/lib/thirdweb/theme";
 import { useBrand } from "@/contexts/BrandContext";
 import TruncatedAddress from "@/components/truncated-address";
@@ -565,6 +565,15 @@ export default function AgentDashboard() {
     const twTheme = usePortalThirdwebTheme();
     const agentWallet = (account?.address || "").toLowerCase();
 
+    const [wallets, setWallets] = useState<any[]>([]);
+    useEffect(() => {
+        let mounted = true;
+        getWallets().then((w) => {
+            if (mounted) setWallets(w as any[]);
+        }).catch(() => setWallets([]));
+        return () => { mounted = false; };
+    }, []);
+
     const [range, setRange] = useState("month");
     const [activeTab, setActiveTab] = useState<"dashboard" | "university" | "videos">("dashboard");
     const [customStart, setCustomStart] = useState(() => new Date().toISOString().split("T")[0]);
@@ -970,6 +979,7 @@ export default function AgentDashboard() {
                             client={client} 
                             chain={chain} 
                             theme={twTheme}
+                            wallets={wallets}
                             connectModal={{
                                 size: "compact",
                                 title: "Agent Console",

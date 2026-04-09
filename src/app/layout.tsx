@@ -808,7 +808,8 @@ export default async function RootLayout({
                 var low = String(msg || '').toLowerCase();
                 var pats = [
                   'a listener indicated an asynchronous response',
-                  'message channel closed before a response was received'
+                  'message channel closed before a response was received',
+                  'user rejected the request'
                 ];
                 for (var i=0;i<pats.length;i++){
                   if (low.indexOf(pats[i]) !== -1) {
@@ -826,7 +827,8 @@ export default async function RootLayout({
                 var low = String(msg || '').toLowerCase();
                 var pats = [
                   'a listener indicated an asynchronous response',
-                  'message channel closed before a response was received'
+                  'message channel closed before a response was received',
+                  'user rejected the request'
                 ];
                 for (var i=0;i<pats.length;i++){
                   if (low.indexOf(pats[i]) !== -1) {
@@ -837,6 +839,24 @@ export default async function RootLayout({
                 }
               } catch {}
             }, true);
+            // Suppress console.error for wallet extension 4001 rejections (auto-connect probes)
+            (function(){
+              var origErr = console.error;
+              console.error = function(){
+                try {
+                  for (var i=0;i<arguments.length;i++){
+                    var a = arguments[i];
+                    if (!a) continue;
+                    var t = '';
+                    if (typeof a === 'string') t = a;
+                    else if (typeof a === 'object') t = String(a.message || a.code || '');
+                    var low = t.toLowerCase();
+                    if (low.indexOf('user rejected the request') !== -1 || (a && a.code === 4001)) return;
+                  }
+                } catch {}
+                return origErr.apply(console, arguments);
+              };
+            })();
           } catch {}
         `}} />
         {process.env.NODE_ENV !== "production" && (<>
