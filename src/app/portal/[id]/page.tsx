@@ -236,6 +236,36 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   const viewerWalletLower = (account?.address || "").toLowerCase();
   const [resolvedRecipient, setResolvedRecipient] = useState<`0x${string}` | undefined>(undefined);
 
+  // Email Modal State
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [receiptEmail, setReceiptEmail] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailState, setEmailState] = useState<{type: "idle"|"success"|"error", msg: string}>({type: "idle", msg: ""});
+
+  async function sendReceiptEmail() {
+    if (!receiptEmail || !receiptId) return;
+    setEmailSending(true);
+    setEmailState({type: "idle", msg: ""});
+    try {
+      const res = await fetch(`/api/receipts/${receiptId.replace("receipt:", "")}/email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: receiptEmail })
+      });
+      if (!res.ok) throw new Error("Failed to send");
+      setEmailState({type: "success", msg: "Receipt emailed successfully!"});
+      setTimeout(() => {
+        setEmailModalOpen(false);
+        setReceiptEmail("");
+        setEmailState({type: "idle", msg: ""});
+      }, 2000);
+    } catch (e) {
+      setEmailState({type: "error", msg: "Failed to email receipt."});
+    } finally {
+      setEmailSending(false);
+    }
+  }
+
   // Site theme (seeded with brand defaults to avoid hydration flash)
   const [theme, setTheme] = useState<SiteTheme>(() => {
     const isBS = typeof window !== "undefined"
@@ -3513,6 +3543,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                               <button className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium transition-colors" onClick={() => window.location.reload()}>
                                 Refresh Receipt
                               </button>
+                              <button className="px-4 py-2 rounded-lg text-black text-sm font-bold transition-colors shadow-lg active:scale-95" style={{ backgroundColor: theme.primaryColor || '#10b981' }} onClick={() => setEmailModalOpen(true)}>
+                                Email Receipt
+                              </button>
                             </div>
 
                             {/* Claim / Link Wallet Section */}
@@ -3974,6 +4007,49 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         </div>
       )}
 
+      {/* Email Receipt Modal */}
+      {emailModalOpen && typeof window !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm grid place-items-center p-4 animate-in fade-in text-left">
+          <div className="bg-neutral-900 border border-white/10 rounded-2xl max-w-sm w-full p-6 relative shadow-2xl">
+            <h2 className="text-xl font-bold mb-4 text-white">Email Receipt</h2>
+            <input
+              type="email"
+              placeholder="customer@example.com"
+              className="w-full p-3 mb-4 rounded-xl bg-black border border-white/20 text-white placeholder:text-neutral-500 outline-none focus:border-emerald-500 transition-colors"
+              value={receiptEmail}
+              onChange={(e) => setReceiptEmail(e.target.value)}
+            />
+            {emailState.type !== "idle" && (
+                <div className={`text-sm mb-4 p-3 rounded-xl font-medium ${
+                    emailState.type === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+                }`}>
+                    {emailState.msg}
+                </div>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setEmailModalOpen(false);
+                  setEmailState({type: "idle", msg: ""});
+                }}
+                className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={sendReceiptEmail}
+                disabled={emailSending || !receiptEmail || emailState.type === "success"}
+                className="flex-1 px-4 py-3 text-black font-bold rounded-xl hover:brightness-110 active:scale-95 disabled:opacity-50 transition-all shadow-md"
+                style={{ backgroundColor: theme.primaryColor || '#10b981' }}
+              >
+                {emailSending ? "Sending..." : "Send"}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* Success Animation Overlay */}
       {paymentConfirmed && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-500">
@@ -4004,6 +4080,16 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
               </a>
             )}
+
+            <div className="mt-4 flex justify-center w-full max-w-[320px] mx-auto">
+              <button
+                onClick={() => setEmailModalOpen(true)}
+                className="w-full py-3 rounded-xl font-bold transition-colors shadow-lg active:scale-95 text-black"
+                style={{ backgroundColor: theme.primaryColor || '#10b981' }}
+              >
+                Email Receipt
+              </button>
+            </div>
 
             {/* Claim / Link Wallet Section */}
             <div className="mt-8 pt-6 border-t border-white/10 w-full max-w-[320px] flex flex-col items-center">

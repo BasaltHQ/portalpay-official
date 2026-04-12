@@ -135,6 +135,40 @@ export default function HandheldInterface({
     // Cash Modal State
     const [showCashModal, setShowCashModal] = useState(false);
 
+    // Email Modal State
+    const [emailModalOpen, setEmailModalOpen] = useState(false);
+    const [receiptEmail, setReceiptEmail] = useState("");
+    const [emailSending, setEmailSending] = useState(false);
+    const [emailReceiptTarget, setEmailReceiptTarget] = useState<any | null>(null);
+    const [emailState, setEmailState] = useState<{type: "idle"|"success"|"error", msg: string}>({type: "idle", msg: ""});
+
+    async function sendReceiptEmail() {
+        if (!receiptEmail || !emailReceiptTarget) return;
+        setEmailSending(true);
+        setEmailState({type: "idle", msg: ""});
+        try {
+            const idVal = emailReceiptTarget.receiptId || emailReceiptTarget.id;
+            const rawId = String(idVal).replace("receipt:", "");
+            const res = await fetch(`/api/receipts/${rawId}/email`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: receiptEmail })
+            });
+            if (!res.ok) throw new Error("Failed to send");
+            setEmailState({type: "success", msg: "Receipt emailed successfully!"});
+            setTimeout(() => {
+                setEmailModalOpen(false);
+                setReceiptEmail("");
+                setEmailReceiptTarget(null);
+                setEmailState({type: "idle", msg: ""});
+            }, 2000);
+        } catch (e) {
+            setEmailState({type: "error", msg: "Failed to email receipt."});
+        } finally {
+            setEmailSending(false);
+        }
+    }
+
     // Comp Ticket State
     const [showCompModal, setShowCompModal] = useState(false);
     const [compReasonPreset, setCompReasonPreset] = useState("Employee Meal");
@@ -969,6 +1003,16 @@ export default function HandheldInterface({
 
                                 <button
                                     onClick={() => {
+                                        setEmailReceiptTarget(currentReceipt);
+                                        setEmailModalOpen(true);
+                                    }}
+                                    className="w-full h-12 bg-white/5 text-white rounded-xl font-bold active:scale-95 transition-all text-sm flex items-center justify-center space-x-2 border border-white/10 mt-3 mb-3"
+                                >
+                                    Email Receipt
+                                </button>
+
+                                <button
+                                    onClick={() => {
                                         // Pay Cash Logic for this specific receipt
                                         if (currentReceipt.status === 'paid' || currentReceipt.status === 'checkout_success') return;
                                         setSelectedOrderForPayment(currentReceipt);
@@ -1186,6 +1230,15 @@ export default function HandheldInterface({
                                     Print Receipt
                                 </button>
                                 <button
+                                    onClick={() => {
+                                        setEmailReceiptTarget(selectedOrderForPayment);
+                                        setEmailModalOpen(true);
+                                    }}
+                                    className="h-16 bg-white/5 text-white border border-white/10 rounded-2xl font-bold text-lg active:scale-95 transition-all flex items-center justify-center space-x-2"
+                                >
+                                    Email
+                                </button>
+                                <button
                                     onClick={() => setIsSplitting(true)}
                                     className="h-16 bg-blue-500/10 text-blue-400 border border-blue-500/50 rounded-2xl font-bold text-lg active:scale-95 transition-all flex items-center justify-center space-x-2"
                                 >
@@ -1193,7 +1246,7 @@ export default function HandheldInterface({
                                 </button>
                                 <button
                                     onClick={() => setShowCompModal(true)}
-                                    className="h-16 col-span-2 bg-amber-500/10 text-amber-500 border border-amber-500/50 rounded-2xl font-bold text-lg active:scale-95 transition-all flex items-center justify-center space-x-2 shadow-[0_4px_10px_rgba(245,158,11,0.1)] hover:bg-amber-500/20"
+                                    className="h-16 bg-amber-500/10 text-amber-500 border border-amber-500/50 rounded-2xl font-bold text-lg active:scale-95 transition-all flex items-center justify-center space-x-2 shadow-[0_4px_10px_rgba(245,158,11,0.1)] hover:bg-amber-500/20"
                                 >
                                     <Gift className="w-6 h-6 mr-1" />
                                     Comp Ticket
@@ -2965,6 +3018,50 @@ export default function HandheldInterface({
                         </button>
                     </div>
                 </div>
+            )}
+
+            {/* Email Receipt Modal */}
+            {emailModalOpen && emailReceiptTarget && typeof window !== "undefined" && createPortal(
+                <div className="fixed inset-0 z-[75] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+                    <div className="bg-neutral-900 border border-white/10 rounded-2xl max-w-sm w-full p-6 relative shadow-2xl">
+                        <h2 className="text-xl font-bold mb-4 text-white">Email Receipt</h2>
+                        <input
+                            type="email"
+                            placeholder="customer@example.com"
+                            className="w-full p-3 mb-4 rounded-xl bg-black border border-white/20 text-white placeholder:text-neutral-500 outline-none focus:border-emerald-500 transition-colors"
+                            value={receiptEmail}
+                            onChange={(e) => setReceiptEmail(e.target.value)}
+                        />
+                        {emailState.type !== "idle" && (
+                            <div className={`text-sm mb-4 p-3 rounded-xl font-medium ${
+                                emailState.type === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+                            }`}>
+                                {emailState.msg}
+                            </div>
+                        )}
+                        <div className="flex space-x-3">
+                            <button
+                                onClick={() => {
+                                    setEmailModalOpen(false);
+                                    setEmailReceiptTarget(null);
+                                    setReceiptEmail("");
+                                    setEmailState({type: "idle", msg: ""});
+                                }}
+                                className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => sendReceiptEmail()}
+                                disabled={emailSending || !receiptEmail || emailState.type === "success"}
+                                className="flex-1 px-4 py-3 bg-emerald-500 text-black font-bold rounded-xl hover:bg-emerald-400 active:scale-95 disabled:opacity-50 transition-all"
+                            >
+                                {emailSending ? "Sending..." : "Send"}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
 
             {/* Hidden canvas for Payment View QR */}

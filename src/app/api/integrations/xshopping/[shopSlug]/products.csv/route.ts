@@ -1,9 +1,59 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getContainer } from "@/lib/cosmos";
+import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+/**
+ * Convert a base64 data URL to an S3-hosted URL.
+ * Uses a content-hash key so repeated exports don't create duplicates.
+ */
+async function resolveDataUrlToS3(dataUrl: string, wallet: string): Promise<string> {
+    try {
+        const m = dataUrl.match(/^data:([^;,]+)?(;base64)?,(.*)$/);
+        if (!m) return dataUrl;
+
+        const isBase64 = !!m[2];
+        const rawData = m[3] || "";
+        const buffer = isBase64
+            ? Buffer.from(rawData, "base64")
+            : Buffer.from(decodeURIComponent(rawData), "utf8");
+
+        // Content-hash key for deduplication
+        const hash = crypto.createHash("md5").update(buffer).digest("hex");
+        const containerName = process.env.AZURE_BLOB_CONTAINER || "uploads";
+        const key = `${containerName}/${wallet}/${hash}.webp`;
+
+        const { storage } = await import("@/lib/azure-storage");
+
+        // Check if already uploaded
+        const exists = await storage.exists(key).catch(() => false);
+        if (exists) {
+            return await storage.getUrl(key);
+        }
+
+        // Optimize with sharp before uploading
+        let uploadBuf: any = buffer;
+        try {
+            const sharpMod = await import("sharp");
+            const sharp = sharpMod.default || sharpMod;
+            const sharpOut = await sharp(buffer)
+                .resize({ width: 1500, height: 1500, fit: "inside", withoutEnlargement: true })
+                .webp({ quality: 82 })
+                .toBuffer();
+            uploadBuf = Buffer.from(sharpOut.buffer, sharpOut.byteOffset, sharpOut.byteLength);
+        } catch {
+            // If sharp fails, upload raw buffer
+        }
+
+        return await storage.upload(key, uploadBuf, "image/webp");
+    } catch (err) {
+        console.error("[CSV Feed] Failed to resolve data URL to S3:", err);
+        return dataUrl; // Fallback to original if upload fails
+    }
+}
 
 // Helper to escape CSV fields complying with RFC 4180
 function csvEscape(field: any): string {
@@ -110,9 +160,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ shop
         // Shop name cleanup
         const cleanBrandName = truncate(stripHtml(shop.name || effectiveSlug), 100);
 
-        const csvRows = items
-            // Remove filter to include all items with defaults as requested
-            .map((item: any, index: number) => {
+        const csvRows = await Promise.all(items.map(async (item: any, index: number) => {
                 // ID: Max 100 chars
                 let itemId = String(item.id || `missing-id-${index}`).trim();
                 itemId = truncate(itemId, 100);
@@ -153,11 +201,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ shop
                 }
 
                 // Image Link
-                // X requires unique image URLs to refresh cache, appending ID helps? 
-                // X Spec: "If you change the image later, the new image must use a different URL"
+                // X requires proper HTTPS URLs — base64 data URLs are not compatible.
+                // If the image is a data URL, upload it to S3 and use the permanent URL.
                 let imageLink = "";
                 if (item.images && item.images.length > 0) {
                     imageLink = item.images[0];
+                    // Convert data URLs to S3 URLs on-the-fly
+                    if (imageLink.startsWith("data:")) {
+                        imageLink = await resolveDataUrlToS3(imageLink, wallet);
+                    }
                 } else {
                     const platformUrl = process.env.NEXT_PUBLIC_APP_URL || "https://surge.basalthq.com";
                     imageLink = `${platformUrl}/api/integrations/xshopping/${effectiveSlug}/product-images/default?id=${encodedId}`;
@@ -192,9 +244,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ shop
                     "", // custom_label_2
                     "", // custom_label_3
                     "", // custom_label_4
-                    "v2-fix-spaces" // debug_source
+                    "v3-s3-resolve" // debug_source
                 ].join(",");
-            });
+            }));
 
         const csvContent = [headers.join(","), ...csvRows].join("\n");
 
