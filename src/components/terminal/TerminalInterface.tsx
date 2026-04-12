@@ -85,6 +85,35 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
     // Receipt Generation
     const [qrOpen, setQrOpen] = useState(false);
     const [selected, setSelected] = useState<any | null>(null);
+    const [emailModalOpen, setEmailModalOpen] = useState(false);
+    const [receiptEmail, setReceiptEmail] = useState("");
+    const [emailSending, setEmailSending] = useState(false);
+    const [emailState, setEmailState] = useState<{type: "idle"|"success"|"error", msg: string}>({type: "idle", msg: ""});
+
+    async function sendReceiptEmail() {
+        if (!receiptEmail || !selected?.receiptId) return;
+        setEmailSending(true);
+        setEmailState({type: "idle", msg: ""});
+        try {
+            const rawId = selected.receiptId.replace("receipt:", "");
+            const res = await fetch(`/api/receipts/${rawId}/email`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: receiptEmail })
+            });
+            if (!res.ok) throw new Error("Failed to send");
+            setEmailState({type: "success", msg: "Receipt emailed successfully!"});
+            setTimeout(() => {
+                setEmailModalOpen(false);
+                setReceiptEmail("");
+                setEmailState({type: "idle", msg: ""});
+            }, 2000);
+        } catch (e) {
+            setEmailState({type: "error", msg: "Failed to email receipt."});
+        } finally {
+            setEmailSending(false);
+        }
+    }
 
     async function generateReceipt() {
         try {
@@ -471,7 +500,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-3 space-x-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={async () => {
                                         if (hasPrinter && selected) {
@@ -509,6 +538,13 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                     style={{ border: '1px solid var(--tp-border)', color: 'var(--tp-text-primary)' }}
                                 >
                                     Print
+                                </button>
+                                <button
+                                    onClick={() => setEmailModalOpen(true)}
+                                    className="px-4 py-3 tp-btn font-semibold transition-colors"
+                                    style={{ border: '1px solid var(--tp-border)', color: 'var(--tp-text-primary)' }}
+                                >
+                                    Email Receipt
                                 </button>
                                 <button
                                     onClick={() => { if (portalUrl) navigator.clipboard.writeText(portalUrl); }}
@@ -583,6 +619,50 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                                     {window.location.host}/portal/{selected.receiptId.slice(0, 8)}...
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Email Receipt Modal */}
+            {emailModalOpen && typeof window !== "undefined" && createPortal(
+                <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm grid place-items-center p-4 animate-in fade-in">
+                    <div className="tp-glass rounded-2xl max-w-sm w-full p-6 relative shadow-2xl" style={{ color: 'var(--tp-text-primary)' }}>
+                        <h2 className="text-xl font-bold mb-4">Email Receipt</h2>
+                        <input
+                            type="email"
+                            placeholder="customer@example.com"
+                            className="w-full p-3 mb-4 rounded-xl tp-btn"
+                            style={{ background: 'var(--tp-bg-surface)', border: '1px solid var(--tp-border)', color: 'var(--tp-text-primary)' }}
+                            value={receiptEmail}
+                            onChange={(e) => setReceiptEmail(e.target.value)}
+                        />
+                        {emailState.type !== "idle" && (
+                            <div className={`text-sm mb-4 p-3 rounded-xl font-medium ${
+                                emailState.type === "success" ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                            }`}>
+                                {emailState.msg}
+                            </div>
+                        )}
+                        <div className="flex space-x-3">
+                            <button
+                                onClick={() => {
+                                    setEmailModalOpen(false);
+                                    setEmailState({type: "idle", msg: ""});
+                                }}
+                                className="flex-1 px-4 py-3 tp-btn font-semibold rounded-xl"
+                                style={{ border: '1px solid var(--tp-border)', color: 'var(--tp-text-primary)' }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={sendReceiptEmail}
+                                disabled={emailSending || !receiptEmail || emailState.type === "success"}
+                                className="flex-1 px-4 py-3 bg-primary text-primary-foreground font-bold rounded-xl active:scale-95 disabled:opacity-50"
+                            >
+                                {emailSending ? "Sending..." : "Send"}
+                            </button>
                         </div>
                     </div>
                 </div>,
