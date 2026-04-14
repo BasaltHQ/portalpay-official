@@ -31,10 +31,10 @@ function isCustomDomainHostname(hostname: string): boolean {
  * - Hides on custom domains (shop storefronts accessed via custom domain)
  * - Includes the LanguageSelectorBar below the navbar for language selection
  */
-export function HideableNavbar() {
+export function HideableNavbar({ isServerCustomDomain = false }: { isServerCustomDomain?: boolean }) {
   const pathname = usePathname() || "";
   const searchParams = useSearchParams();
-  const [isCustomDomain, setIsCustomDomain] = useState(false);
+  const [isCustomDomain, setIsCustomDomain] = useState(isServerCustomDomain);
   const [isMobile, setIsMobile] = useState(false);
 
   // Detect custom domain on client mount

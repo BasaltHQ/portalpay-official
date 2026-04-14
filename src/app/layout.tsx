@@ -668,6 +668,27 @@ export default async function RootLayout({
     ? titleizedKeyLayout
     : String(brand?.name || "").trim();
   const containerIdentity = await getContainerIdentityDirect();
+
+  let hostForNavbar = "";
+  try {
+    const { headers } = require('next/headers');
+    const headersList = await headers();
+    hostForNavbar = headersList.get('x-forwarded-host') || headersList.get('host') || "";
+    if (hostForNavbar) hostForNavbar = hostForNavbar.split(":")[0].toLowerCase();
+  } catch { }
+
+  const isCustomDomainServer = !!hostForNavbar && !(
+    hostForNavbar.endsWith("basalthq.com") ||
+    hostForNavbar.endsWith("portalpay.io") ||
+    hostForNavbar.includes("localhost") ||
+    hostForNavbar === "127.0.0.1" ||
+    hostForNavbar === "0.0.0.0" ||
+    hostForNavbar.includes("azurewebsites.net") ||
+    hostForNavbar.includes("vercel.app") ||
+    hostForNavbar.includes("xpaypass.com") ||
+    hostForNavbar.includes("vps.ovh.us")
+  );
+
   return (
     <html
       lang="en"
@@ -1148,7 +1169,7 @@ export default async function RootLayout({
                     <AutoTranslateProvider>
                       <TitleUpdater />
                       <FaviconUpdater />
-                      <HideableNavbar />
+                      <HideableNavbar isServerCustomDomain={isCustomDomainServer} />
                       {/* Mobile spacer below navbar to avoid content crowding */}
                       <div id="mobile-navbar-spacer" className="sm:hidden h-2" />
                       <SplitGuardMount />
