@@ -94,7 +94,7 @@ export function HideableNavbar({ isServerCustomDomain = false }: { isServerCusto
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[10001] flex flex-col">
+    <div id="global-hideable-navbar" className="fixed top-0 left-0 right-0 z-[10001] flex flex-col">
       <Navbar />
       {!isMobile && !((pathname.startsWith("/pricing") || pathname.startsWith("/terminal")) && isMobile) ? <LanguageSelectorBar /> : null}
       {(pathname.startsWith("/pricing") || pathname.startsWith("/terminal")) && !isMobile ? <TerminalViewBar /> : null}

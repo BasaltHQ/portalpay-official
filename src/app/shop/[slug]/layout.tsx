@@ -141,5 +141,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default function ShopLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <>
+      <style>{`
+        body.with-global-navbar {
+          padding-top: 0 !important;
+        }
+        #global-hideable-navbar {
+          display: none !important;
+        }
+      `}</style>
+      {children}
+    </>
+  );
 }

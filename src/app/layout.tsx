@@ -673,8 +673,10 @@ export default async function RootLayout({
   try {
     const { headers } = require('next/headers');
     const headersList = await headers();
-    hostForNavbar = headersList.get('x-forwarded-host') || headersList.get('host') || "";
-    if (hostForNavbar) hostForNavbar = hostForNavbar.split(":")[0].toLowerCase();
+    hostForNavbar = headersList.get('x-custom-host') || headersList.get('x-forwarded-host') || headersList.get('host') || "";
+    if (hostForNavbar) {
+      hostForNavbar = hostForNavbar.split(",")[0].trim().split(":")[0].toLowerCase();
+    }
   } catch { }
 
   const isCustomDomainServer = !!hostForNavbar && !(

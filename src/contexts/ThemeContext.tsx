@@ -490,7 +490,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     try {
       const url = new URL(window.location.href);
       const path = url.pathname || "";
-      if (path.startsWith("/portal") || path.startsWith("/shop")) {
+      const hostname = url.hostname.toLowerCase();
+      
+      const isCustomDomain = !(
+        hostname.endsWith("basalthq.com") ||
+        hostname.endsWith("portalpay.io") ||
+        hostname.includes("localhost") ||
+        hostname === "127.0.0.1" ||
+        hostname === "0.0.0.0" ||
+        hostname.includes("azurewebsites.net") ||
+        hostname.includes("vercel.app") ||
+        hostname.includes("xpaypass.com") ||
+        hostname.includes("vps.ovh.us")
+      );
+
+      if (path.startsWith("/portal") || path.startsWith("/shop") || isCustomDomain) {
         setIsLoading(false);
         return;
       }
@@ -514,7 +528,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       try {
         const url = new URL(window.location.href);
         const path = url.pathname || '';
-        if (path.startsWith('/portal') || path.startsWith('/shop')) {
+        const hostname = url.hostname.toLowerCase();
+        
+        const isCustomDomain = !(
+          hostname.endsWith("basalthq.com") ||
+          hostname.endsWith("portalpay.io") ||
+          hostname.includes("localhost") ||
+          hostname === "127.0.0.1" ||
+          hostname === "0.0.0.0" ||
+          hostname.includes("azurewebsites.net") ||
+          hostname.includes("vercel.app") ||
+          hostname.includes("xpaypass.com") ||
+          hostname.includes("vps.ovh.us")
+        );
+
+        if (path.startsWith('/portal') || path.startsWith('/shop') || isCustomDomain) {
           return;
         }
       } catch { }
