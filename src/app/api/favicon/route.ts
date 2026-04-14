@@ -64,6 +64,28 @@ export async function GET(req: NextRequest) {
       } catch { }
     }
 
+    // Also check if the host is a custom domain
+    if (!shopSlug) {
+      try {
+        const host = req.headers.get("host") || "";
+        const hostname = host.split(":")[0].toLowerCase();
+        const isMainDomain =
+          (hostname.endsWith("basalthq.com")) ||
+          hostname.endsWith("portalpay.io") ||
+          hostname.includes("localhost") ||
+          hostname === "127.0.0.1" ||
+          hostname === "0.0.0.0" ||
+          hostname.includes("azurewebsites.net") ||
+          hostname.includes("vercel.app") ||
+          hostname.includes("xpaypass.com") ||
+          hostname.includes("vps.ovh.us");
+
+        if (!isMainDomain && hostname && hostname.includes(".")) {
+          shopSlug = hostname;
+        }
+      } catch { }
+    }
+
     // If on a shop page, try to get merchant's favicon
     if (shopSlug) {
       try {

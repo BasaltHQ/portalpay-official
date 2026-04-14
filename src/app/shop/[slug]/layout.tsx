@@ -93,7 +93,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const shopFaviconRaw = config.theme?.brandFaviconUrl;
     const isFaviconBlocked = shopFaviconRaw && (shopFaviconRaw.includes("a311dcf8") || shopFaviconRaw.includes("cblogod.png"));
     const shopFavicon = isFaviconBlocked ? undefined : shopFaviconRaw;
-    const faviconUrl = shopFavicon || "/api/favicon";
+    const faviconUrl = shopFavicon || `/api/favicon?shop=${encodeURIComponent(dbSlug || slug)}`;
 
     const shopApple = config.theme?.appleTouchIconUrl;
     const appleUrl = shopApple || "/apple-touch-icon.png";
