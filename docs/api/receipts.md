@@ -9,7 +9,8 @@ Receipt APIs allow you to:
 - List recent receipts
 - Create a payment receipt payload (for QR or portal checkout)
 - Retrieve a specific receipt
-- Track receipt/payment status
+- Track receipt/payment status (polling or [webhooks](./webhooks.md))
+- Configure post-payment redirect URLs
 - Log refunds (admin/JWT)
 - Generate terminal receipts (POS-style)
 
@@ -175,15 +176,21 @@ Body (JSON):
     { "label": "Sample Item", "priceUsd": 25.0 },
     { "label": "Tax", "priceUsd": 2.0 }
   ],
-  "totalUsd": 27.0
+  "totalUsd": 27.0,
+  "redirect_url": "https://shop.example.com/thank-you",
+  "webhook_url": "https://shop.example.com/api/portalpay-webhook"
 }
 ```
 
 Fields:
 
-- `id` (string, required): Unique receipt ID you assign
-- `lineItems` (array, required): Array of `{ label, priceUsd }` items
-- `totalUsd` (number, required): Order total in USD
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | Yes | Unique receipt ID you assign |
+| `lineItems` | array | Yes | Array of `{ label, priceUsd, qty? }` items |
+| `totalUsd` | number | Yes | Order total in USD |
+| `redirect_url` | string | No | HTTPS URL passed through to the Stripe Crypto Onramp session. After the buyer completes the Stripe-hosted flow, Stripe redirects them to this URL. Only applies to Stripe; other onramp providers do not support external redirects. Also accepted as `redirectUrl`. |
+| `webhook_url` | string | No | HTTPS endpoint to receive push notifications when receipt status changes. Webhooks are signed with your API key (same `Ocp-Apim-Subscription-Key` used for authentication). Also accepted as `webhookUrl`. See [Webhooks Guide](./webhooks.md). |
 
 Example Requests:
 
@@ -251,8 +258,10 @@ Created (201):
 ```json
 {
   "id": "rcpt_12345",
-  "paymentUrl": "https://pay.ledger1.ai/portal/rcpt_12345",
-  "status": "pending"
+  "paymentUrl": "https://pay.ledger1.ai/portal/rcpt_12345?recipient=0x...&redirect_url=https%3A%2F%2Fshop.example.com%2Fthank-you",
+  "status": "pending",
+  "redirectUrl": "https://shop.example.com/thank-you",
+  "webhookUrl": "https://shop.example.com/api/portalpay-webhook"
 }
 ```
 
@@ -625,11 +634,13 @@ export async function getRecentReceipts(limit = 50) {
   return res.json();
 }
 
-// Create a payment receipt payload (QR/portal)
+// Create a payment receipt payload (QR/portal) with redirect and webhook
 export async function createReceipt(payload: {
   id: string;
   lineItems: { label: string; priceUsd: number }[];
   totalUsd: number;
+  redirect_url?: string;
+  webhook_url?: string;
 }) {
   const res = await fetch(`${API_BASE}/api/receipts`, {
     method: 'POST',

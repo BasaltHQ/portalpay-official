@@ -7,6 +7,7 @@ import { auditEvent } from "@/lib/audit";
 import { requireApimOrJwt } from "@/lib/gateway-auth";
 import crypto from "node:crypto";
 import { getBrandKey } from "@/config/brands";
+import { dispatchWebhookAsync, type WebhookPayload } from "@/lib/webhook-dispatch";
 
 /**
  * POST /api/receipts/status
@@ -280,6 +281,28 @@ export async function POST(req: NextRequest) {
           metadata: { receiptId, status, tracking: isTrackingStatus }
         });
       } catch { }
+
+      // Dispatch developer webhook if configured on the receipt
+      const webhookTarget = next?.webhookUrl || resource?.webhookUrl;
+      if (webhookTarget) {
+        const previousStatus = resource ? String(resource.status || "pending") : "pending";
+        // Use the signing secret stored on the receipt at creation time (container-stable)
+        const signingSecret = next?.webhookSigningSecret || resource?.webhookSigningSecret;
+        dispatchWebhookAsync(webhookTarget, {
+          event: "receipt.status_updated",
+          receiptId,
+          status,
+          previousStatus,
+          transactionHash: txHash || next?.transactionHash,
+          buyerWallet: buyerWallet || next?.buyerWallet,
+          merchantWallet: wallet,
+          totalUsd: next?.totalUsd,
+          token: next?.expectedToken,
+          timestamp: Date.now(),
+          brandKey,
+        } as WebhookPayload, signingSecret);
+      }
+
       return NextResponse.json({ ok: true }, { headers: { "x-correlation-id": correlationId } });
     } catch (e: any) {
       // Degraded mode: update in-memory store

@@ -7,6 +7,7 @@ import { requireApimOrJwt } from "@/lib/gateway-auth";
 import { requireCsrf, rateLimitOrThrow, rateKey } from "@/lib/security";
 import { requireThirdwebAuth, assertOwnershipOrAdmin } from "@/lib/auth";
 import { getBrandConfig, computeSplitAmounts, getEffectiveProcessingFeeBps } from "@/config/brands";
+import { isValidRedirectUrl, isValidWebhookUrl } from "@/lib/webhook-dispatch";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -238,6 +239,14 @@ export async function POST(req: NextRequest) {
     const employeeName = typeof body?.employeeName === "string" ? body.employeeName : undefined;
     const sessionId = typeof body?.sessionId === "string" ? body.sessionId : undefined;
 
+    // Optional redirect_url — buyer is navigated here after successful payment
+    const rawRedirectUrl = String(body?.redirect_url || body?.redirectUrl || "").trim();
+    const redirectUrl = rawRedirectUrl && isValidRedirectUrl(rawRedirectUrl) ? rawRedirectUrl : undefined;
+
+    // Optional webhook_url — developer endpoint receives push notifications on status change
+    const rawWebhookUrl = String(body?.webhook_url || body?.webhookUrl || "").trim();
+    const webhookUrl = rawWebhookUrl && isValidWebhookUrl(rawWebhookUrl) ? rawWebhookUrl : undefined;
+
 
     // Compute split breakdown and effective processing fee
     const brand = getBrandConfig();
@@ -272,6 +281,16 @@ export async function POST(req: NextRequest) {
       servedBy: employeeName,
       sessionId,
       ttl: 3600, // Auto-expire in 1h if not paid (User Request)
+      // Developer-configured redirect and webhook URLs
+      ...(redirectUrl ? { redirectUrl } : {}),
+      ...(webhookUrl ? {
+        webhookUrl,
+        // Use the developer's own API key as the HMAC signing secret.
+        // They already have it — no extra key to manage.
+        webhookSigningSecret: String(
+          req.headers.get("x-api-key") || req.headers.get("ocp-apim-subscription-key") || ""
+        ).trim(),
+      } : {}),
       // Split breakdown fields (minor units in cents)
       grossMinor,
       platformFeeBps: splits.platformFeeBps,
@@ -301,9 +320,13 @@ export async function POST(req: NextRequest) {
     const proto = xfProto || (process.env.NODE_ENV === "production" ? "https" : "http");
     const h = xfHost || host || "";
     const origin = h ? `${proto}://${h}` : (process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin);
-    const paymentUrl = `${origin}/portal/${encodeURIComponent(id)}?recipient=${encodeURIComponent(wallet)}`;
+    let paymentUrl = `${origin}/portal/${encodeURIComponent(id)}?recipient=${encodeURIComponent(wallet)}`;
+    // Append redirect_url to the portal URL so the portal page can read it from search params
+    if (redirectUrl) {
+      paymentUrl += `&redirect_url=${encodeURIComponent(redirectUrl)}`;
+    }
     return NextResponse.json(
-      { id, paymentUrl, status: "pending" },
+      { id, paymentUrl, status: "pending", ...(redirectUrl ? { redirectUrl } : {}), ...(webhookUrl ? { webhookUrl } : {}) },
       { status: 201, headers: { "x-correlation-id": correlationId } }
     );
   } catch (e: any) {
