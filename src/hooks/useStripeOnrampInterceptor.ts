@@ -17,6 +17,7 @@ type InterceptorProps = {
   receiptId?: string;
   merchantWallet?: string;
   brandKey?: string;
+  redirectUrl?: string;
   onSuccess?: (result: { sessionId: string; status: string }) => void;
   onError?: (error: Error) => void;
   onIntercept?: () => void;
@@ -80,6 +81,7 @@ export function useStripeOnrampInterceptor({
   receiptId,
   merchantWallet,
   brandKey,
+  redirectUrl,
   onSuccess,
   onError,
   onIntercept,
@@ -152,6 +154,7 @@ export function useStripeOnrampInterceptor({
             merchantWallet,
             brandKey,
             destinationCurrency,
+            redirectUrl,
           }),
         });
         const data = await res.json();
@@ -291,6 +294,7 @@ export function useStripeOnrampInterceptor({
           merchantWallet,
           brandKey,
           destinationCurrency,
+          redirectUrl,
         }),
       });
 
@@ -362,7 +366,7 @@ export function useStripeOnrampInterceptor({
       loadingDiv.style.color = "#ef4444";
       onError?.(err);
     }
-  }, [walletAddress, amount, receiptId, merchantWallet, brandKey, publishableKey, onSuccess, onError]);
+  }, [walletAddress, amount, receiptId, merchantWallet, brandKey, redirectUrl, publishableKey, onSuccess, onError]);
 
   // Keep the ref in sync so the window.open patch always calls the latest version
   useEffect(() => {

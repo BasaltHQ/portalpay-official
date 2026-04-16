@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
     const brandKey = String(body.brandKey || "").trim();
     const merchantWallet = String(body.merchantWallet || "").trim();
     const destinationCurrency = String(body.destinationCurrency || "usdc").trim().toLowerCase();
+    const redirectUrl = String(body.redirectUrl || "").trim() || undefined;
 
     if (!walletAddress || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
       return NextResponse.json(
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
     if (receiptId) params.append("metadata[receiptId]", receiptId);
     if (brandKey) params.append("metadata[brandKey]", brandKey);
     if (merchantWallet) params.append("metadata[merchantWallet]", merchantWallet);
+    if (redirectUrl) params.append("metadata[redirectUrl]", redirectUrl);
 
     // NOTE: We intentionally do NOT send customer_ip_address here.
     // Stripe does an early geo-check that can reject the entire session creation.
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
       clientSecret: data.client_secret,
       sessionId: data.id,
       status: data.status,
-      redirectUrl: data.redirect_url || null,
+      redirectUrl: redirectUrl || data.redirect_url || null,
     });
   } catch (e: any) {
     console.error("[STRIPE ONRAMP] Error:", e);

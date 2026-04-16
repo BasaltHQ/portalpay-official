@@ -1874,6 +1874,10 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   // Payment Confirmation State & Polling
   const [paymentConfirmed, setPaymentConfirmed] = useState<{ txHash: string; amount: number; token: string } | null>(null);
 
+  // Developer-configured redirect URL — passed through to Stripe onramp session only.
+  // Not used for portal-level redirect (other providers open in new tabs making portal redirect unreliable).
+  const stripeRedirectUrl = String(searchParams?.get("redirect_url") || "").trim() || undefined;
+
 
 
   useEffect(() => {
@@ -2223,6 +2227,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     receiptId,
     merchantWallet: (merchantWallet || resolvedRecipient || recipient) as string,
     brandKey: theme.brandKey || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge",
+    redirectUrl: stripeRedirectUrl,
     onSuccess: (result) => {
       console.log("[STRIPE ONRAMP] Completed:", result);
       // Yield control back to Thirdweb's CheckoutWidget.
@@ -2233,6 +2238,11 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
       console.error("[STRIPE ONRAMP] Error:", error);
     },
   });
+
+  // NOTE: Coinbase Onramp redirectUrl requires domain allowlisting in the CDP portal,
+  // which we cannot provision for arbitrary merchant domains in a multi-tenant platform.
+  // redirect_url is only passed through to Stripe's onramp session natively.
+  // Other providers (Coinbase, Transak, MoonPay, Ramp) do not support external redirect injection.
 
   const payLabel = useMemo(() => {
     return currency === "USD"
