@@ -285,7 +285,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
     const isManagerOrKeyholder = employeeRole === 'manager' || employeeRole === 'keyholder';
 
     return (
-        <div className="h-[100dvh] flex flex-col overflow-hidden p-2 space-x-2 md:h-auto md:overflow-visible md:max-w-4xl md:mx-auto md:p-4 md:p-6 md:space-y-6 md:gap-0" style={{ backgroundColor: 'var(--tp-bg-primary)', color: 'var(--tp-text-primary)', fontFamily: tpTheme.fontFamily || undefined, paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
+        <div className="h-screen h-[100dvh] flex flex-col overflow-hidden p-2 space-y-2 md:h-auto md:overflow-visible md:max-w-4xl md:mx-auto md:p-4 md:p-6 md:space-y-6 md:gap-0" style={{ backgroundColor: 'var(--tp-bg-primary)', color: 'var(--tp-text-primary)', fontFamily: tpTheme.fontFamily || undefined, paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
             <div className="tp-ambient" />
 
             {/* Dedicated Invisible Canvases strictly formatted for Native Hardware Image Buffers */}
@@ -347,7 +347,7 @@ export default function TerminalInterface({ merchantWallet, employeeId, employee
                 </div>
             </div>
 
-            <div className="flex-1 min-h-0 flex flex-col space-x-1 md:grid md:grid-cols-2 md:space-x-6 md:mt-0">
+            <div className="flex-1 min-h-0 flex flex-col space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 md:space-x-0 md:mt-0">
                 {/* Keypad */}
                 <div className="space-y-1 md:space-y-4">
                     <div className="tp-glass p-3 md:p-6 text-center space-y-2">
