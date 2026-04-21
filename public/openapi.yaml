@@ -133,7 +133,8 @@ paths:
         challenge when no x-payment proof is attached. Agents discover shops via
         GET /api/directory/shops, resolve inventory, then POST here with shopSlug
         and items to receive a payment challenge. Once paid, a receipt is returned.
-      security: []
+      security:
+        - x402: []
       x-payment-info:
         price:
           mode: dynamic
@@ -202,7 +203,8 @@ paths:
         x402-gated developer subscription endpoint. Returns 402 with payment
         challenge for paid tiers (pro=$399, enterprise=$500). Starter tier is
         free and does not require payment. Once paid, returns an API key.
-      security: []
+      security:
+        - x402: []
       x-payment-info:
         price:
           mode: dynamic
@@ -1249,6 +1251,10 @@ components:
       description: |
         Azure API Management subscription key. Required for developer-facing endpoints.
         Obtain your key via BasaltSurge Admin → API Subscriptions (or directly in APIM).
+    x402:
+      type: http
+      scheme: x402
+      description: "x402 Agentic Payment Standard"
 
   headers:
     X-RateLimit-Limit:
