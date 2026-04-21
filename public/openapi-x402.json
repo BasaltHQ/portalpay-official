@@ -226,10 +226,14 @@
         "description": "x402-gated order endpoint for AI agents. Always returns 402 with payment challenge when no x-payment proof is attached. Agents discover shops via GET /api/directory/shops, resolve inventory, then POST here with shopSlug and items to receive a payment challenge. Once paid, a receipt is returned.\n",
         "security": [],
         "x-payment-info": {
+          "price": {
+            "mode": "dynamic"
+          },
           "protocols": [
-            "x402"
-          ],
-          "pricingMode": "quote"
+            {
+              "x402": {}
+            }
+          ]
         },
         "requestBody": {
           "required": true,
@@ -359,12 +363,14 @@
         "description": "x402-gated developer subscription endpoint. Returns 402 with payment challenge for paid tiers (pro=$399, enterprise=$500). Starter tier is free and does not require payment. Once paid, returns an API key.\n",
         "security": [],
         "x-payment-info": {
+          "price": {
+            "mode": "dynamic"
+          },
           "protocols": [
-            "x402"
-          ],
-          "pricingMode": "range",
-          "minPrice": "0.00",
-          "maxPrice": "500.00"
+            {
+              "x402": {}
+            }
+          ]
         },
         "requestBody": {
           "required": true,

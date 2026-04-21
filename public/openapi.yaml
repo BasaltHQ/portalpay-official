@@ -135,8 +135,10 @@ paths:
         and items to receive a payment challenge. Once paid, a receipt is returned.
       security: []
       x-payment-info:
-        protocols: ["x402"]
-        pricingMode: "quote"
+        price:
+          mode: dynamic
+        protocols:
+          - x402: {}
       requestBody:
         required: true
         content:
@@ -202,10 +204,10 @@ paths:
         free and does not require payment. Once paid, returns an API key.
       security: []
       x-payment-info:
-        protocols: ["x402"]
-        pricingMode: "range"
-        minPrice: "0.00"
-        maxPrice: "500.00"
+        price:
+          mode: dynamic
+        protocols:
+          - x402: {}
       requestBody:
         required: true
         content:
