@@ -33,7 +33,10 @@ export async function POST(req: NextRequest) {
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || `https://${req.headers.get("host") || "surge.basalthq.com"}`).replace(/\/$/, "");
     const publicUrl = `${baseUrl}${req.nextUrl.pathname}`;
 
-    const bodyText = await req.text();
+    let bodyText = "";
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      try { bodyText = await req.text(); } catch {}
+    }
     const body = bodyText ? JSON.parse(bodyText) : {};
 
     let planKey = String(body.planKey || "").toLowerCase().trim();
@@ -53,7 +56,7 @@ export async function POST(req: NextRequest) {
               priceUsd: price,
             })),
           },
-          { status: 400, headers: { "x-correlation-id": correlationId } }
+          { status: 400, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
         );
       }
     }
@@ -68,7 +71,7 @@ export async function POST(req: NextRequest) {
       if (!wallet) {
         return NextResponse.json(
           { error: "unauthorized", message: "Connect your wallet to claim a free Starter subscription." },
-          { status: 401, headers: { "x-correlation-id": correlationId } }
+          { status: 401, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
         );
       }
 
@@ -93,7 +96,7 @@ export async function POST(req: NextRequest) {
           apiKey,
           message: "Free Starter subscription activated.",
         },
-        { status: 200, headers: { "x-correlation-id": correlationId } }
+        { status: 200, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
       );
     }
 
@@ -110,7 +113,7 @@ export async function POST(req: NextRequest) {
     if (!secretKey || !serviceWallet) {
       return NextResponse.json(
         { error: "x402_not_configured", message: "Server x402 payment infrastructure is not configured." },
-        { status: 503, headers: { "x-correlation-id": correlationId } }
+        { status: 503, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
       );
     }
 
@@ -208,7 +211,7 @@ export async function POST(req: NextRequest) {
     if (!wallet) {
       return NextResponse.json(
         { error: "wallet_required", message: "Could not resolve wallet identity. Connect wallet or provide x-payment proof." },
-        { status: 400, headers: { "x-correlation-id": correlationId } }
+        { status: 400, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
       );
     }
 
@@ -253,13 +256,13 @@ export async function POST(req: NextRequest) {
         apiKey,
         message: `${planKey.charAt(0).toUpperCase() + planKey.slice(1)} subscription activated via x402 payment.`,
       },
-      { status: 200, headers: { "x-correlation-id": correlationId } }
+      { status: 200, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
     );
   } catch (e: any) {
     console.error("[x402/subscribe] Error:", e);
     return NextResponse.json(
       { error: e?.message || "internal_error" },
-      { status: 500, headers: { "x-correlation-id": correlationId } }
+      { status: 500, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
     );
   }
 }

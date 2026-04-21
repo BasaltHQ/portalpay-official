@@ -24,7 +24,10 @@ export async function POST(req: NextRequest) {
     const publicUrl = `${baseUrl}${req.nextUrl.pathname}`;
 
     // Clone and parse body so we can read it AND forward it
-    const bodyText = await req.text();
+    let bodyText = "";
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      try { bodyText = await req.text(); } catch {}
+    }
     const body = bodyText ? JSON.parse(bodyText) : {};
 
     let shopSlug = String(body.shopSlug || "").trim();
@@ -44,7 +47,7 @@ export async function POST(req: NextRequest) {
         if (!secretKey || !serviceWallet) {
           return NextResponse.json(
             { error: "x402_not_configured", message: "Server x402 payment infrastructure is not configured." },
-            { status: 503, headers: { "x-correlation-id": correlationId } }
+            { status: 503, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
           );
         }
 
@@ -145,7 +148,7 @@ export async function POST(req: NextRequest) {
     if (!shopDocs.length || !shopDocs[0].wallet) {
       return NextResponse.json(
         { error: "shop_not_found", message: `No shop with slug '${shopSlug}' found.` },
-        { status: 404, headers: { "x-correlation-id": correlationId } }
+        { status: 404, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
       );
     }
 
@@ -169,7 +172,7 @@ export async function POST(req: NextRequest) {
       if (!found) {
         return NextResponse.json(
           { error: "item_not_found", message: `SKU '${sku}' not found in shop '${shopSlug}'.` },
-          { status: 400, headers: { "x-correlation-id": correlationId } }
+          { status: 400, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
         );
       }
 
@@ -197,7 +200,7 @@ export async function POST(req: NextRequest) {
     if (!secretKey || !serviceWallet) {
       return NextResponse.json(
         { error: "x402_not_configured", message: "Server x402 payment infrastructure is not configured." },
-        { status: 503, headers: { "x-correlation-id": correlationId } }
+        { status: 503, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
       );
     }
 
@@ -301,13 +304,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       { ok: true, receipt },
-      { status: 200, headers: { "x-correlation-id": correlationId } }
+      { status: 200, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
     );
   } catch (e: any) {
     console.error("[x402/orders] Error:", e);
     return NextResponse.json(
       { error: e?.message || "internal_error" },
-      { status: 500, headers: { "x-correlation-id": correlationId } }
+      { status: 500, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
     );
   }
 }
