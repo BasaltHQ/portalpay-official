@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
       return new NextResponse(JSON.stringify(updatedBody), {
         status: 402,
         headers: {
-          ...rawHeaders,
+          "Payment-Required": rawHeaders["Payment-Required"],
           "x-correlation-id": correlationId,
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",

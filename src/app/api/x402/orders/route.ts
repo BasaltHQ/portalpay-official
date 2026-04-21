@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     // Clone and parse body so we can read it AND forward it
     let bodyText = "";
     if (req.method !== "GET" && req.method !== "HEAD") {
-      try { bodyText = await req.text(); } catch {}
+      try { bodyText = await req.text(); } catch { }
     }
     const body = bodyText ? JSON.parse(bodyText) : {};
 
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
         if (paymentRequiredB64) {
           try {
             challengeBody = JSON.parse(Buffer.from(paymentRequiredB64, "base64").toString("utf-8"));
-            
+
             // Inject input schema so strict crawler parsers don't fail discovery
             if (challengeBody.accepts && Array.isArray(challengeBody.accepts)) {
               challengeBody.accepts.forEach((a: any) => {
@@ -94,30 +94,30 @@ export async function POST(req: NextRequest) {
                   required: ["shopSlug", "items"],
                   properties: {
                     shopSlug: { type: "string" },
-                    items: { 
-                      type: "array", 
-                      items: { 
-                        type: "object", 
-                        required: ["sku", "qty"], 
-                        properties: { sku: { type: "string" }, qty: { type: "number" } } 
-                      } 
+                    items: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        required: ["sku", "qty"],
+                        properties: { sku: { type: "string" }, qty: { type: "number" } }
+                      }
                     }
                   }
                 };
               });
             }
-            
+
             // Re-encode header to ensure it matches the body
             const newHeaderB64 = Buffer.from(JSON.stringify(challengeBody)).toString("base64");
             rawHeaders["Payment-Required"] = newHeaderB64;
-            
+
           } catch { challengeBody = { raw: paymentRequiredB64 }; }
         }
 
         return new NextResponse(JSON.stringify(challengeBody), {
           status: 402,
           headers: {
-            ...rawHeaders,
+            "Payment-Required": rawHeaders["Payment-Required"],
             "x-correlation-id": correlationId,
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
@@ -247,7 +247,7 @@ export async function POST(req: NextRequest) {
           challengeBody = JSON.parse(Buffer.from(paymentRequiredB64, "base64").toString("utf-8"));
         } catch { challengeBody = { raw: paymentRequiredB64 }; }
       }
-      
+
       const updatedBody = {
         ...challengeBody,
         order: {
@@ -258,13 +258,13 @@ export async function POST(req: NextRequest) {
           currency: "USD",
         },
       };
-      
+
       rawHeaders["Payment-Required"] = Buffer.from(JSON.stringify(updatedBody)).toString("base64");
 
       return new NextResponse(JSON.stringify(updatedBody), {
         status: 402,
         headers: {
-          ...rawHeaders,
+          "Payment-Required": rawHeaders["Payment-Required"],
           "x-correlation-id": correlationId,
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
@@ -320,7 +320,7 @@ export async function PUT(req: NextRequest) { return POST(req); }
 export async function PATCH(req: NextRequest) { return POST(req); }
 export async function DELETE(req: NextRequest) { return POST(req); }
 export async function HEAD(req: NextRequest) { return POST(req); }
-export async function OPTIONS(req: NextRequest) { 
+export async function OPTIONS(req: NextRequest) {
   return new NextResponse(null, {
     status: 200,
     headers: {
