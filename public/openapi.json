@@ -9,7 +9,7 @@
       "email": "support@ledger1.ai"
     },
     "description": "Public API surface for PortalPay under a hardened posture: Azure Front Door Premium (AFD) gateway → Azure API Management (APIM).\nAll developer-facing endpoints require an APIM subscription key header `Ocp-Apim-Subscription-Key` and use the APIM custom domain. AFD is optional as a fallback.\nAPIM policy permits requests with a valid subscription key and may also accept AFD-originated requests carrying `x-edge-secret` if AFD is configured. Direct backend origins are not supported.\nWallet identity is resolved at the gateway based on subscription; client-supplied `x-wallet` header and `wallet` parameters are ignored.\nHealth endpoint: `GET /portalpay/healthz` returns 200 JSON for probes; does not require a subscription.\nNote: Some endpoints are read-only or environment-gated in production. Admin/sensitive routes (JWT-only) are not part of this spec.\n",
-    "x-guidance": "Welcome to PortalPay's Agentic Commerce API.\nTo use this API:\n1. Send a POST request to `/api/orders` with the items you wish to purchase (e.g., `{ \"items\": [{ \"sku\": \"COFFEE-001\", \"qty\": 1 }] }`) and setting the header `x-agent-payment: true` or `Accept: application/vnd.l402+json`.\n2. Since this is an x402 endpoint, the server will reply with a 402 Payment Required status and provide an x402 payment challenge in the headers, along with JSON including a description of the price/token required.\n3. Use an x402-capable wallet (like agentcash) to fulfill the payment challenge on the correct destination chain and wallet (usually resolved via the POS environment).\n4. Upon successful on-chain transaction detection during the settlement window, the server will return the final generated receipt representing an active ticket.\n",
+    "x-guidance": "Welcome to PortalPay's Agentic Commerce API.\nTo use this API:\n1. Non-paid resources are fully accessible with standard API keys or without auth depending on the path.\n2. Payment-gated resources under /api/x402/ must be paid for. For example, POST /api/x402/orders to discover the pricing required. The server will reply with HTTP 402 and an x402 payment challenge.\n3. Use an x402-capable wallet (like agentcash MCP) to fulfill the challenge and attach the x-payment proof back to Leicester.\n4. To resubscribe or provision API keys, use /api/x402/subscribe and clear the x402 challenge there.",
     "x-origin-enforcement": "apim-first",
     "x-internal-headers": [
       {
@@ -231,10 +231,17 @@
           }
         ],
         "x-payment-info": {
+          "price": {
+            "mode": "dynamic",
+            "currency": "USD",
+            "min": "0.10",
+            "max": "10000.00"
+          },
           "protocols": [
-            "x402"
-          ],
-          "pricingMode": "quote"
+            {
+              "x402": {}
+            }
+          ]
         },
         "requestBody": {
           "required": true,
@@ -340,12 +347,17 @@
           }
         ],
         "x-payment-info": {
+          "price": {
+            "mode": "dynamic",
+            "currency": "USD",
+            "min": "0.00",
+            "max": "500.00"
+          },
           "protocols": [
-            "x402"
-          ],
-          "pricingMode": "range",
-          "minPrice": "0.00",
-          "maxPrice": "500.00"
+            {
+              "x402": {}
+            }
+          ]
         },
         "requestBody": {
           "required": true,
@@ -2076,6 +2088,11 @@
         "type": "http",
         "scheme": "x402",
         "description": "x402 payment protocol"
+      },
+      "siwx": {
+        "type": "http",
+        "scheme": "siwx",
+        "description": "Sign-In with X identity protocol"
       }
     },
     "headers": {

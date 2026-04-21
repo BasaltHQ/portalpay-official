@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useSearchParams } from "next/navigation";
 import { applyThemeVars, getTheme } from "@/lib/themes";
 import type { TouchpointType } from "@/lib/themes";
@@ -90,7 +91,7 @@ type Receipt = {
   sessionId?: string;
   status?: string;
   transactionHash?: string;
-  shippingAddress?: { name?: string; line1?: string; line2?: string; city?: string; state?: string; zip?: string; country?: string };
+  shippingAddress?: { name?: string; line1?: string; line2?: string; city?: string; state?: string; zip?: string; country?: string; email?: string; phone?: string };
   shippingMethod?: string;
   shippingCostUsd?: number;
 };
