@@ -138,7 +138,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
     const { resources: configs } = await container.items
       .query({
-        query: "SELECT c.name, c.description, c.bio, c.theme FROM c WHERE c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)",
+        query: "SELECT c.name, c.description, c.bio, c.theme FROM c WHERE (c.slug = @slug OR (c.customDomain = @slug AND c.customDomainVerified = true)) AND c.id = 'shop:config'",
         parameters: [{ name: "@slug", value: cleanSlug }]
       })
       .fetchAll();
@@ -165,7 +165,9 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const primaryColor = shopConfig?.theme?.primaryColor || '#0ea5e9';
   const secondaryColor = shopConfig?.theme?.secondaryColor || '#22c55e';
   const shopName = shopConfig?.name || 'Shop';
-  const shopDescription = shopConfig?.description || shopConfig?.bio || '';
+  const rawDesc = shopConfig?.description || shopConfig?.bio || '';
+  const cryptoTagline = 'Experience frictionless global payments. Fast, secure, and boundaryless crypto commerce powered by BasaltSurge.';
+  const shopDescription = rawDesc || '';
   const shopLogoUrl = shopConfig?.theme?.brandLogoUrl || '';
   const coverPhotoUrl = shopConfig?.theme?.coverPhotoUrl || '';
 
@@ -279,15 +281,20 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     }
   }
 
-  // Calculate layout positions based on cover photo layout
+  // Calculate dynamic line gaps based on reviews layout placeholder
+  const hasReviews = reviewCount > 0;
+  const lineGap = hasReviews ? 50 : 25;
+  const descGap = hasReviews ? 75 : 50;
+
   const layout = useFullWidthLayout || !coverPhotoBuffer
     ? {
       // Full-width layout OR no cover: content below cover area
       shopLogo: { x: 50, y: coverPhotoBuffer ? 310 : 160, size: 120 },
       text: {
         x: 190,
-        titleY: coverPhotoBuffer ? 350 : 200,
-        descStartY: coverPhotoBuffer ? 420 : 280,
+        titleY: coverPhotoBuffer ? 385 : 235,
+        lineY: (coverPhotoBuffer ? 385 : 235) + lineGap,
+        descStartY: (coverPhotoBuffer ? 385 : 235) + descGap,
         lineHeight: 26,
         maxWidth: 850,
       },
@@ -298,8 +305,9 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       shopLogo: { x: 45, y: 130, size: 110 },
       text: {
         x: 170,
-        titleY: 160,
-        descStartY: 240,
+        titleY: 195,
+        lineY: 195 + lineGap,
+        descStartY: 195 + descGap,
         lineHeight: 26,
         maxWidth: 420, // Narrower to leave room for cover
       },
@@ -375,6 +383,16 @@ export default async function Image({ params }: { params: Promise<{ slug: string
               text-anchor="middle">${escapeForSvg(shopName.charAt(0).toUpperCase())}</text>
       ` : ''}
       
+      <!-- Eyebrow text -->
+      <text x="${layout.text.x}" y="${layout.text.titleY - 45}" 
+            font-family="system-ui, -apple-system, sans-serif" 
+            font-size="14" 
+            font-weight="700" 
+            fill="${primaryColor}"
+            letter-spacing="0.1em">
+        VERIFIED CRYPTO MERCHANT
+      </text>
+      
       <!-- Shop name -->
       <text x="${layout.text.x}" y="${layout.text.titleY}" 
             font-family="system-ui, -apple-system, sans-serif" 
@@ -399,8 +417,8 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       ` : ''}
       
       <!-- Decorative line below title -->
-      <line x1="${layout.text.x}" y1="${layout.text.titleY + 50}" 
-            x2="${layout.text.x + Math.min(layout.text.maxWidth, 500)}" y2="${layout.text.titleY + 50}" 
+      <line x1="${layout.text.x}" y1="${layout.text.lineY}" 
+            x2="${layout.text.x + Math.min(layout.text.maxWidth, 500)}" y2="${layout.text.lineY}" 
             stroke="${primaryColor}" stroke-width="1" opacity="0.25" />
       
       <!-- Description lines -->
@@ -425,6 +443,16 @@ export default async function Image({ params }: { params: Promise<{ slug: string
             fill="${getContrastingColor(primaryColor)}"
             text-anchor="middle">
         Shop Now
+      </text>
+      
+      <!-- Generic crypto tagline (Microtext below CTA) -->
+      <text x="${layout.text.x}" y="${layout.text.descStartY + descLines.length * layout.text.lineHeight + 82}" 
+            font-family="system-ui, -apple-system, sans-serif" 
+            font-size="13" 
+            font-weight="500"
+            fill="rgba(255, 255, 255, 0.35)"
+            letter-spacing="0.02em">
+        Experience frictionless global payments. Fast, secure, and boundaryless crypto commerce.
       </text>
       
       <!-- Platform branding badge (bottom - position based on layout) -->
