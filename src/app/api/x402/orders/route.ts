@@ -106,9 +106,7 @@ export async function POST(req: NextRequest) {
             
             // Re-encode header to ensure it matches the body
             const newHeaderB64 = Buffer.from(JSON.stringify(challengeBody)).toString("base64");
-            if (rawHeaders["PAYMENT-REQUIRED"]) rawHeaders["PAYMENT-REQUIRED"] = newHeaderB64;
-            else if (rawHeaders["payment-required"]) rawHeaders["payment-required"] = newHeaderB64;
-            else if (rawHeaders["Payment-Required"]) rawHeaders["Payment-Required"] = newHeaderB64;
+            rawHeaders["Payment-Required"] = newHeaderB64;
             
           } catch { challengeBody = { raw: paymentRequiredB64 }; }
         }
@@ -129,7 +127,7 @@ export async function POST(req: NextRequest) {
             error: "invalid_request",
             message: "Body must include shopSlug and items[]. Example: { shopSlug: 'genrevo', items: [{ sku: 'COFFEE-001', qty: 1 }] }",
           },
-          { status: 400, headers: { "x-correlation-id": correlationId } }
+          { status: 400, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
         );
       }
     }
@@ -246,8 +244,8 @@ export async function POST(req: NextRequest) {
           challengeBody = JSON.parse(Buffer.from(paymentRequiredB64, "base64").toString("utf-8"));
         } catch { challengeBody = { raw: paymentRequiredB64 }; }
       }
-
-      return new NextResponse(JSON.stringify({
+      
+      const updatedBody = {
         ...challengeBody,
         order: {
           shopSlug,
@@ -256,7 +254,11 @@ export async function POST(req: NextRequest) {
           totalUsd,
           currency: "USD",
         },
-      }), {
+      };
+      
+      rawHeaders["Payment-Required"] = Buffer.from(JSON.stringify(updatedBody)).toString("base64");
+
+      return new NextResponse(JSON.stringify(updatedBody), {
         status: 402,
         headers: {
           ...rawHeaders,

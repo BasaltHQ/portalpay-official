@@ -166,21 +166,23 @@ export async function POST(req: NextRequest) {
           
           // Re-encode header to ensure it matches the body
           const newHeaderB64 = Buffer.from(JSON.stringify(challengeBody)).toString("base64");
-          if (rawHeaders["PAYMENT-REQUIRED"]) rawHeaders["PAYMENT-REQUIRED"] = newHeaderB64;
-          else if (rawHeaders["payment-required"]) rawHeaders["payment-required"] = newHeaderB64;
-          else if (rawHeaders["Payment-Required"]) rawHeaders["Payment-Required"] = newHeaderB64;
+          rawHeaders["Payment-Required"] = newHeaderB64;
           
         } catch { challengeBody = { raw: paymentRequiredB64 }; }
       }
 
-      return new NextResponse(JSON.stringify({
+      const updatedBody = {
         ...challengeBody,
         subscription: {
           planKey,
           priceUsd,
           currency: "USD",
         },
-      }), {
+      };
+      
+      rawHeaders["Payment-Required"] = Buffer.from(JSON.stringify(updatedBody)).toString("base64");
+
+      return new NextResponse(JSON.stringify(updatedBody), {
         status: 402,
         headers: {
           ...rawHeaders,
