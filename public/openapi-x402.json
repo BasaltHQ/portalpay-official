@@ -1,15 +1,15 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "PortalPay x402 Commerce API",
+    "title": "BasaltSurge x402 Commerce API",
     "version": "1.0.0",
     "contact": {
-      "name": "PortalPay Support",
+      "name": "BasaltSurge Support",
       "url": "https://ledger1.ai",
       "email": "support@ledger1.ai"
     },
-    "description": "x402-gated agentic commerce endpoints for PortalPay. These endpoints enforce the x402 payment challenge protocol: POST without an x-payment header to receive a 402 challenge, then re-POST with the fulfilled payment proof to complete the transaction.",
-    "x-guidance": "Welcome to PortalPay's Agentic Commerce API.\n\nThis spec contains ONLY the x402 payment-gated endpoints.\n\n## Place an Order\n1. Discover shops via GET /api/directory/shops (free, not in this spec).\n2. POST /api/x402/orders with { shopSlug, items: [{ sku, qty }] }.\n3. Server replies 402 with payment challenge headers.\n4. Fulfill the on-chain payment and re-POST with x-payment header.\n5. Server returns a paid receipt.\n\n## Subscribe to API Tier\n1. POST /api/x402/subscribe with { planKey: 'pro' | 'enterprise' }.\n2. Server replies 402 with payment challenge ($399 pro, $500 enterprise).\n3. Fulfill payment, re-POST with x-payment header.\n4. Server returns API key.\n\nStarter tier ($0) does not require payment."
+    "description": "x402-gated agentic commerce endpoints for BasaltSurge. These endpoints enforce the x402 payment challenge protocol: POST without an x-payment header to receive a 402 challenge, then re-POST with the fulfilled payment proof to complete the transaction.",
+    "x-guidance": "Welcome to BasaltSurge's Agentic Commerce API.\n\nThis spec contains ONLY the x402 payment-gated endpoints.\n\n## Place an Order\n1. Discover shops via GET /api/directory/shops (free, not in this spec).\n2. POST /api/x402/orders with { shopSlug, items: [{ sku, qty }] }.\n3. Server replies 402 with payment challenge headers.\n4. Fulfill the on-chain payment and re-POST with x-payment header.\n5. Server returns a paid receipt.\n\n## Subscribe to API Tier\n1. POST /api/x402/subscribe with { planKey: 'pro' | 'enterprise' }.\n2. Server replies 402 with payment challenge ($399 pro, $500 enterprise).\n3. Fulfill payment, re-POST with x-payment header.\n4. Server returns API key.\n\nStarter tier ($0) does not require payment."
   },
   "servers": [
     {
