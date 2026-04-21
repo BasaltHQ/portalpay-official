@@ -11,15 +11,15 @@ info:
     All developer-facing endpoints require an APIM subscription key header `Ocp-Apim-Subscription-Key` and use the APIM custom domain. AFD is optional as a fallback.
     APIM policy permits requests with a valid subscription key and may also accept AFD-originated requests carrying `x-edge-secret` if AFD is configured. Direct backend origins are not supported.
     Wallet identity is resolved at the gateway based on subscription; client-supplied `x-wallet` header and `wallet` parameters are ignored.
-    Health endpoint: `GET /BasaltSurge/healthz` returns 200 JSON for probes; does not require a subscription.
+    Health endpoint: `GET /healthz` returns 200 JSON for probes; does not require a subscription.
     Note: Some endpoints are read-only or environment-gated in production. Admin/sensitive routes (JWT-only) are not part of this spec.
   x-guidance: |
     Welcome to BasaltSurge's Agentic Commerce API.
     To use this API:
-    1. Send a POST request to `/api/orders` with the items you wish to purchase (e.g., `{ "items": [{ "sku": "COFFEE-001", "qty": 1 }] }`) and setting the header `x-agent-payment: true` or `Accept: application/vnd.l402+json`.
-    2. Since this is an x402 endpoint, the server will reply with a 402 Payment Required status and provide an x402 payment challenge in the headers, along with JSON including a description of the price/token required.
-    3. Use an x402-capable wallet (like agentcash) to fulfill the payment challenge on the correct destination chain and wallet (usually resolved via the POS environment).
-    4. Upon successful on-chain transaction detection during the settlement window, the server will return the final generated receipt representing an active ticket.
+    1. Non-paid resources are fully accessible with standard API keys or without auth depending on the path.
+    2. Payment-gated resources under /api/x402/ must be paid for. For example, POST /api/x402/orders to discover the pricing required. The server will reply with HTTP 402 and an x402 payment challenge.
+    3. Use an x402-capable wallet (like agentcash MCP) to fulfill the challenge and attach the x-payment proof back to Leicester.
+    4. To resubscribe or provision API keys, use /api/x402/subscribe and clear the x402 challenge there.
   x-origin-enforcement: apim-first
   x-internal-headers:
     - name: x-edge-secret
@@ -178,6 +178,19 @@ paths:
                       status: { type: string, enum: [paid] }
         "402":
           description: Payment Required – x402 challenge issued
+          headers:
+            Payment-Required:
+              description: Base64 encoded payload
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  x402Version: { type: integer }
+                  error: { type: string }
+                  accepts: { type: array, items: { type: object } }
   /api/x402/subscribe:
     post:
       summary: Subscribe to API Tier via x402 Payment
@@ -221,6 +234,19 @@ paths:
                   message: { type: string }
         "402":
           description: Payment Required – x402 challenge issued
+          headers:
+            Payment-Required:
+              description: Base64 encoded payload
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  x402Version: { type: integer }
+                  error: { type: string }
+                  accepts: { type: array, items: { type: object } }
   /api/inventory:
     get:
       summary: List inventory items

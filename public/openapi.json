@@ -8,8 +8,8 @@
       "url": "https://surge.basalthq.com",
       "email": "support@basalthq.com"
     },
-    "description": "Public API surface for BasaltSurge under a hardened posture: Azure Front Door Premium (AFD) gateway → Azure API Management (APIM).\nAll developer-facing endpoints require an APIM subscription key header `Ocp-Apim-Subscription-Key` and use the APIM custom domain. AFD is optional as a fallback.\nAPIM policy permits requests with a valid subscription key and may also accept AFD-originated requests carrying `x-edge-secret` if AFD is configured. Direct backend origins are not supported.\nWallet identity is resolved at the gateway based on subscription; client-supplied `x-wallet` header and `wallet` parameters are ignored.\nHealth endpoint: `GET /BasaltSurge/healthz` returns 200 JSON for probes; does not require a subscription.\nNote: Some endpoints are read-only or environment-gated in production. Admin/sensitive routes (JWT-only) are not part of this spec.\n",
-    "x-guidance": "Welcome to BasaltSurge's Agentic Commerce API.\nTo use this API:\n1. Non-paid resources are fully accessible with standard API keys or without auth depending on the path.\n2. Payment-gated resources under /api/x402/ must be paid for. For example, POST /api/x402/orders to discover the pricing required. The server will reply with HTTP 402 and an x402 payment challenge.\n3. Use an x402-capable wallet (like agentcash MCP) to fulfill the challenge and attach the x-payment proof back to Leicester.\n4. To resubscribe or provision API keys, use /api/x402/subscribe and clear the x402 challenge there.",
+    "description": "Public API surface for BasaltSurge under a hardened posture: Azure Front Door Premium (AFD) gateway → Azure API Management (APIM).\nAll developer-facing endpoints require an APIM subscription key header `Ocp-Apim-Subscription-Key` and use the APIM custom domain. AFD is optional as a fallback.\nAPIM policy permits requests with a valid subscription key and may also accept AFD-originated requests carrying `x-edge-secret` if AFD is configured. Direct backend origins are not supported.\nWallet identity is resolved at the gateway based on subscription; client-supplied `x-wallet` header and `wallet` parameters are ignored.\nHealth endpoint: `GET /healthz` returns 200 JSON for probes; does not require a subscription.\nNote: Some endpoints are read-only or environment-gated in production. Admin/sensitive routes (JWT-only) are not part of this spec.\n",
+    "x-guidance": "Welcome to BasaltSurge's Agentic Commerce API.\nTo use this API:\n1. Non-paid resources are fully accessible with standard API keys or without auth depending on the path.\n2. Payment-gated resources under /api/x402/ must be paid for. For example, POST /api/x402/orders to discover the pricing required. The server will reply with HTTP 402 and an x402 payment challenge.\n3. Use an x402-capable wallet (like agentcash MCP) to fulfill the challenge and attach the x-payment proof back to Leicester.\n4. To resubscribe or provision API keys, use /api/x402/subscribe and clear the x402 challenge there.\n",
     "x-origin-enforcement": "apim-first",
     "x-internal-headers": [
       {
@@ -213,8 +213,7 @@
               }
             }
           }
-        },
-        "x-auth-mode": "none"
+        }
       }
     },
     "/api/x402/orders": {
@@ -225,23 +224,12 @@
           "Orders"
         ],
         "description": "x402-gated order endpoint for AI agents. Always returns 402 with payment challenge when no x-payment proof is attached. Agents discover shops via GET /api/directory/shops, resolve inventory, then POST here with shopSlug and items to receive a payment challenge. Once paid, a receipt is returned.\n",
-        "security": [
-          {
-            "x402": []
-          }
-        ],
+        "security": [],
         "x-payment-info": {
-          "price": {
-            "mode": "dynamic",
-            "currency": "USD",
-            "min": "0.10",
-            "max": "10000.00"
-          },
           "protocols": [
-            {
-              "x402": {}
-            }
-          ]
+            "x402"
+          ],
+          "pricingMode": "quote"
         },
         "requestBody": {
           "required": true,
@@ -327,10 +315,38 @@
             }
           },
           "402": {
-            "description": "Payment Required – x402 challenge issued"
+            "description": "Payment Required – x402 challenge issued",
+            "headers": {
+              "Payment-Required": {
+                "description": "Base64 encoded payload",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "x402Version": {
+                      "type": "integer"
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "accepts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
-        },
-        "x-auth-mode": "x402"
+        }
       }
     },
     "/api/x402/subscribe": {
@@ -341,23 +357,14 @@
           "Subscriptions"
         ],
         "description": "x402-gated developer subscription endpoint. Returns 402 with payment challenge for paid tiers (pro=$399, enterprise=$500). Starter tier is free and does not require payment. Once paid, returns an API key.\n",
-        "security": [
-          {
-            "x402": []
-          }
-        ],
+        "security": [],
         "x-payment-info": {
-          "price": {
-            "mode": "dynamic",
-            "currency": "USD",
-            "min": "0.00",
-            "max": "500.00"
-          },
           "protocols": [
-            {
-              "x402": {}
-            }
-          ]
+            "x402"
+          ],
+          "pricingMode": "range",
+          "minPrice": "0.00",
+          "maxPrice": "500.00"
         },
         "requestBody": {
           "required": true,
@@ -415,10 +422,38 @@
             }
           },
           "402": {
-            "description": "Payment Required – x402 challenge issued"
+            "description": "Payment Required – x402 challenge issued",
+            "headers": {
+              "Payment-Required": {
+                "description": "Base64 encoded payload",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "x402Version": {
+                      "type": "integer"
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "accepts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
-        },
-        "x-auth-mode": "x402"
+        }
       }
     },
     "/api/inventory": {
@@ -604,13 +639,7 @@
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       },
       "post": {
         "summary": "Create or update an inventory item",
@@ -666,13 +695,7 @@
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       },
       "delete": {
         "summary": "Delete an inventory item",
@@ -729,13 +752,7 @@
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       }
     },
     "/api/orders": {
@@ -825,13 +842,7 @@
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       }
     },
     "/api/shop/config": {
@@ -881,13 +892,7 @@
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       }
     },
     "/api/receipts": {
@@ -986,13 +991,7 @@
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       },
       "post": {
         "summary": "Create a receipt payload for a QR-code payment portal",
@@ -1078,13 +1077,7 @@
           "500": {
             "description": "Server error"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       }
     },
     "/api/receipts/{id}": {
@@ -1163,13 +1156,7 @@
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       }
     },
     "/api/receipts/status": {
@@ -1239,13 +1226,7 @@
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       },
       "post": {
         "summary": "Update receipt status (tracking and sensitive events)",
@@ -1286,9 +1267,6 @@
           "400": {
             "description": "missing_receipt_id or invalid_wallet or missing_status"
           },
-          "401": {
-            "description": "Unauthorized – missing or invalid API key"
-          },
           "403": {
             "$ref": "#/components/responses/ForbiddenError"
           },
@@ -1298,13 +1276,7 @@
           "500": {
             "description": "failed"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       }
     },
     "/api/site/config": {
@@ -1358,8 +1330,7 @@
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "x-auth-mode": "none"
+        }
       }
     },
     "/api/split/transactions": {
@@ -1434,13 +1405,7 @@
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       }
     },
     "/healthz": {
@@ -1469,8 +1434,7 @@
               }
             }
           }
-        },
-        "x-auth-mode": "none"
+        }
       }
     },
     "/api/billing/balance": {
@@ -1515,13 +1479,7 @@
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       }
     },
     "/api/billing/purchase": {
@@ -1582,13 +1540,7 @@
           "500": {
             "description": "Server error"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       }
     },
     "/api/pricing/config": {
@@ -1621,19 +1573,10 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized – missing or invalid API key"
-          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       },
       "post": {
         "summary": "Update pricing configuration (owner-only JWT; APIM writes not permitted)",
@@ -1673,8 +1616,7 @@
           "500": {
             "description": "failed"
           }
-        },
-        "x-auth-mode": "none"
+        }
       }
     },
     "/api/split/deploy": {
@@ -1705,13 +1647,7 @@
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       },
       "post": {
         "summary": "Configure split (admin-only JWT; APIM writes not permitted)",
@@ -1748,8 +1684,7 @@
           "500": {
             "description": "failed"
           }
-        },
-        "x-auth-mode": "none"
+        }
       }
     },
     "/api/tax/catalog": {
@@ -1794,8 +1729,7 @@
           "500": {
             "description": "failed"
           }
-        },
-        "x-auth-mode": "none"
+        }
       }
     },
     "/api/receipts/refund": {
@@ -1848,8 +1782,7 @@
           "500": {
             "description": "failed"
           }
-        },
-        "x-auth-mode": "none"
+        }
       }
     },
     "/api/receipts/terminal": {
@@ -1892,9 +1825,6 @@
           "400": {
             "description": "wallet_required or invalid_amount"
           },
-          "401": {
-            "description": "Unauthorized – missing or invalid API key"
-          },
           "403": {
             "description": "split_required (Split contract not configured)"
           },
@@ -1904,13 +1834,7 @@
           "500": {
             "description": "failed"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       }
     },
     "/api/reserve/balances": {
@@ -1943,19 +1867,10 @@
           "400": {
             "description": "wallet_unset_or_invalid"
           },
-          "401": {
-            "description": "Unauthorized – missing or invalid API key"
-          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       }
     },
     "/api/reserve/recommend": {
@@ -1997,19 +1912,10 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized – missing or invalid API key"
-          },
           "500": {
             "description": "recommendation_failed"
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       }
     },
     "/api/split/withdraw": {
@@ -2031,9 +1937,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Unauthorized – missing or invalid API key"
           },
           "410": {
             "description": "Deprecated endpoint; use connected wallet",
@@ -2066,13 +1969,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "apimKey": []
-          }
-        ],
-        "x-auth-mode": "apiKey"
+        }
       }
     }
   },
@@ -2083,16 +1980,6 @@
         "in": "header",
         "name": "Ocp-Apim-Subscription-Key",
         "description": "Azure API Management subscription key. Required for developer-facing endpoints.\nObtain your key via BasaltSurge Admin → API Subscriptions (or directly in APIM).\n"
-      },
-      "x402": {
-        "type": "http",
-        "scheme": "x402",
-        "description": "x402 payment protocol"
-      },
-      "siwx": {
-        "type": "http",
-        "scheme": "siwx",
-        "description": "Sign-In with X identity protocol"
       }
     },
     "headers": {
