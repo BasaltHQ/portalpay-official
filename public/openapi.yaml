@@ -1,20 +1,20 @@
 openapi: 3.1.0
 info:
-  title: PortalPay API
+  title: BasaltSurge API
   version: "1.0.0"
   contact:
-    name: PortalPay Support
-    url: https://ledger1.ai
-    email: support@ledger1.ai
+    name: BasaltSurge Support
+    url: https://surge.basalthq.com
+    email: support@basalthq.com
   description: |
-    Public API surface for PortalPay under a hardened posture: Azure Front Door Premium (AFD) gateway → Azure API Management (APIM).
+    Public API surface for BasaltSurge under a hardened posture: Azure Front Door Premium (AFD) gateway → Azure API Management (APIM).
     All developer-facing endpoints require an APIM subscription key header `Ocp-Apim-Subscription-Key` and use the APIM custom domain. AFD is optional as a fallback.
     APIM policy permits requests with a valid subscription key and may also accept AFD-originated requests carrying `x-edge-secret` if AFD is configured. Direct backend origins are not supported.
     Wallet identity is resolved at the gateway based on subscription; client-supplied `x-wallet` header and `wallet` parameters are ignored.
-    Health endpoint: `GET /portalpay/healthz` returns 200 JSON for probes; does not require a subscription.
+    Health endpoint: `GET /BasaltSurge/healthz` returns 200 JSON for probes; does not require a subscription.
     Note: Some endpoints are read-only or environment-gated in production. Admin/sensitive routes (JWT-only) are not part of this spec.
   x-guidance: |
-    Welcome to PortalPay's Agentic Commerce API.
+    Welcome to BasaltSurge's Agentic Commerce API.
     To use this API:
     1. Send a POST request to `/api/orders` with the items you wish to purchase (e.g., `{ "items": [{ "sku": "COFFEE-001", "qty": 1 }] }`) and setting the header `x-agent-payment: true` or `Accept: application/vnd.l402+json`.
     2. Since this is an x402 endpoint, the server will reply with a 402 Payment Required status and provide an x402 payment challenge in the headers, along with JSON including a description of the price/token required.
@@ -26,7 +26,7 @@ info:
       description: Gateway-internal header injected by Azure Front Door. Clients must not send this. Validated by APIM inbound policy to enforce origin.
 
 servers:
-  - url: https://api.pay.ledger1.ai/portalpay
+  - url: /
     description: Production (APIM custom domain)
 
 # Default security requirement for all operations (override per-operation if needed)
@@ -538,7 +538,7 @@ paths:
                           - { label: "Tax", priceUsd: 1.09 }
                           - { label: "Processing Fee", priceUsd: 0.50 }
                         createdAt: 1698765432000
-                        brandName: "PortalPay"
+                        brandName: "BasaltSurge"
                         status: "paid"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
@@ -774,7 +774,7 @@ paths:
                       secondaryColor: "#F54029"
                       brandLogoUrl: "/cblogod.png"
                       brandFaviconUrl: "/favicon-32x32.png"
-                      brandName: "PortalPay"
+                      brandName: "BasaltSurge"
                       fontFamily: "Inter, ui-sans-serif, system-ui"
                       receiptBackgroundUrl: "/manifest.webmanifest"
                     defaultPaymentToken: "ETH"
@@ -1220,7 +1220,7 @@ components:
       name: Ocp-Apim-Subscription-Key
       description: |
         Azure API Management subscription key. Required for developer-facing endpoints.
-        Obtain your key via PortalPay Admin → API Subscriptions (or directly in APIM).
+        Obtain your key via BasaltSurge Admin → API Subscriptions (or directly in APIM).
 
   headers:
     X-RateLimit-Limit:
