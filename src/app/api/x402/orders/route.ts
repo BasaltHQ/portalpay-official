@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
                 };
                 
                 // INJECT EXPLICIT AMOUNT STRING FOR X402SCAN CRAWLER VALIDATION
-                if (!a.amount) a.amount = "0.10";
+                if (!a.amount) a.amount = a.maxAmountRequired || "100000";
               });
             }
 
