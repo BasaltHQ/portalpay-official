@@ -4,8 +4,9 @@ import { promises as fs } from "fs";
 import path from "path";
 import { getContainer } from "@/lib/cosmos";
 
-// Define strict 1-week ISR caching to satisfy aggregator stability
-export const revalidate = 604800; 
+// Define strict 1-hour ISR caching to satisfy aggregator stability
+export const revalidate = 3600;
+export const maxDuration = 60;
 
 export async function GET() {
   try {
