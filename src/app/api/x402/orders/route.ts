@@ -24,7 +24,10 @@ export async function POST(req: NextRequest) {
     const publicUrl = `${baseUrl}${req.nextUrl.pathname}`;
 
     // Clone and parse body so we can read it AND forward it
-    const bodyText = await req.text();
+    let bodyText = "";
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      try { bodyText = await req.text(); } catch { }
+    }
     const body = bodyText ? JSON.parse(bodyText) : {};
 
     let shopSlug = String(body.shopSlug || "").trim();
@@ -44,7 +47,7 @@ export async function POST(req: NextRequest) {
         if (!secretKey || !serviceWallet) {
           return NextResponse.json(
             { error: "x402_not_configured", message: "Server x402 payment infrastructure is not configured." },
-            { status: 503, headers: { "x-correlation-id": correlationId } }
+            { status: 503, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
           );
         }
 
@@ -80,43 +83,47 @@ export async function POST(req: NextRequest) {
         if (paymentRequiredB64) {
           try {
             challengeBody = JSON.parse(Buffer.from(paymentRequiredB64, "base64").toString("utf-8"));
-            
+
             // Inject input schema so strict crawler parsers don't fail discovery
-            if (challengeBody.accepts && Array.isArray(challengeBody.accepts)) {
-              challengeBody.accepts.forEach((a: any) => {
-                if (!a.outputSchema) a.outputSchema = {};
-                if (!a.outputSchema.input) a.outputSchema.input = { type: "http", method: "POST" };
-                a.outputSchema.input.schema = {
-                  type: "object",
-                  required: ["shopSlug", "items"],
-                  properties: {
-                    shopSlug: { type: "string" },
-                    items: { 
-                      type: "array", 
-                      items: { 
-                        type: "object", 
-                        required: ["sku", "qty"], 
-                        properties: { sku: { type: "string" }, qty: { type: "number" } } 
-                      } 
+            if (!challengeBody.extensions) challengeBody.extensions = {};
+            challengeBody.extensions.bazaar = {
+              discoverable: true,
+              category: "shopping",
+              tags: ["ecommerce", "pos", "retail", "orders"],
+              schema: {
+                type: "object",
+                properties: {
+                  input: {
+                    type: "object",
+                    required: ["shopSlug", "items"],
+                    properties: {
+                      shopSlug: { type: "string" },
+                      items: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          required: ["sku", "qty"],
+                          properties: { sku: { type: "string" }, qty: { type: "number" } }
+                        }
+                      }
                     }
-                  }
-                };
-              });
-            }
-            
+                  },
+                  output: { type: "object" }
+                }
+              }
+            };
+
             // Re-encode header to ensure it matches the body
             const newHeaderB64 = Buffer.from(JSON.stringify(challengeBody)).toString("base64");
-            if (rawHeaders["PAYMENT-REQUIRED"]) rawHeaders["PAYMENT-REQUIRED"] = newHeaderB64;
-            else if (rawHeaders["payment-required"]) rawHeaders["payment-required"] = newHeaderB64;
-            else if (rawHeaders["Payment-Required"]) rawHeaders["Payment-Required"] = newHeaderB64;
-            
+            rawHeaders["Payment-Required"] = newHeaderB64;
+
           } catch { challengeBody = { raw: paymentRequiredB64 }; }
         }
 
         return new NextResponse(JSON.stringify(challengeBody), {
           status: 402,
           headers: {
-            ...rawHeaders,
+            "Payment-Required": rawHeaders["Payment-Required"],
             "x-correlation-id": correlationId,
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
@@ -129,7 +136,7 @@ export async function POST(req: NextRequest) {
             error: "invalid_request",
             message: "Body must include shopSlug and items[]. Example: { shopSlug: 'genrevo', items: [{ sku: 'COFFEE-001', qty: 1 }] }",
           },
-          { status: 400, headers: { "x-correlation-id": correlationId } }
+          { status: 400, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
         );
       }
     }
@@ -147,7 +154,7 @@ export async function POST(req: NextRequest) {
     if (!shopDocs.length || !shopDocs[0].wallet) {
       return NextResponse.json(
         { error: "shop_not_found", message: `No shop with slug '${shopSlug}' found.` },
-        { status: 404, headers: { "x-correlation-id": correlationId } }
+        { status: 404, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
       );
     }
 
@@ -171,7 +178,7 @@ export async function POST(req: NextRequest) {
       if (!found) {
         return NextResponse.json(
           { error: "item_not_found", message: `SKU '${sku}' not found in shop '${shopSlug}'.` },
-          { status: 400, headers: { "x-correlation-id": correlationId } }
+          { status: 400, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
         );
       }
 
@@ -199,7 +206,7 @@ export async function POST(req: NextRequest) {
     if (!secretKey || !serviceWallet) {
       return NextResponse.json(
         { error: "x402_not_configured", message: "Server x402 payment infrastructure is not configured." },
-        { status: 503, headers: { "x-correlation-id": correlationId } }
+        { status: 503, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
       );
     }
 
@@ -215,7 +222,14 @@ export async function POST(req: NextRequest) {
     // Resolve split address for the merchant (pay the split if available, else merchant directly)
     const { getSiteConfigForWallet } = await import("@/lib/site-config");
     const cfg = await getSiteConfigForWallet(merchantWallet).catch(() => null as any);
-    const splitAddr = (cfg as any)?.splitAddress || (cfg as any)?.split?.address || "";
+    
+    // Robust split resolution from reserve analytics
+    const splitAddr = (cfg as any)?.splitAddress || 
+                      (cfg as any)?.split?.address || 
+                      (cfg as any)?.config?.splitAddress || 
+                      (cfg as any)?.config?.split?.address || 
+                      "";
+    
     const payTo = (/^0x[a-f0-9]{40}$/i.test(splitAddr) ? splitAddr : merchantWallet) as `0x${string}`;
     const brandName = cfg?.theme?.brandName || "PortalPay";
 
@@ -244,10 +258,43 @@ export async function POST(req: NextRequest) {
       if (paymentRequiredB64) {
         try {
           challengeBody = JSON.parse(Buffer.from(paymentRequiredB64, "base64").toString("utf-8"));
+          if (challengeBody.accepts && Array.isArray(challengeBody.accepts)) {
+            challengeBody.accepts.forEach((a: any) => {
+              if (!a.amount) a.amount = a.maxAmountRequired || String(Math.floor(totalUsd * 1000000));
+            });
+            
+            if (!challengeBody.extensions) challengeBody.extensions = {};
+            challengeBody.extensions.bazaar = {
+              discoverable: true,
+              category: "shopping",
+              tags: ["ecommerce", "pos", "retail", "orders"],
+              schema: {
+                type: "object",
+                properties: {
+                  input: {
+                    type: "object",
+                    required: ["shopSlug", "items"],
+                    properties: {
+                      shopSlug: { type: "string" },
+                      items: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          required: ["sku", "qty"],
+                          properties: { sku: { type: "string" }, qty: { type: "number" } }
+                        }
+                      }
+                    }
+                  },
+                  output: { type: "object" }
+                }
+              }
+            };
+          }
         } catch { challengeBody = { raw: paymentRequiredB64 }; }
       }
 
-      return new NextResponse(JSON.stringify({
+      const updatedBody = {
         ...challengeBody,
         order: {
           shopSlug,
@@ -256,10 +303,14 @@ export async function POST(req: NextRequest) {
           totalUsd,
           currency: "USD",
         },
-      }), {
+      };
+
+      rawHeaders["Payment-Required"] = Buffer.from(JSON.stringify(updatedBody)).toString("base64");
+
+      return new NextResponse(JSON.stringify(updatedBody), {
         status: 402,
         headers: {
-          ...rawHeaders,
+          "Payment-Required": rawHeaders["Payment-Required"],
           "x-correlation-id": correlationId,
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
@@ -299,13 +350,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       { ok: true, receipt },
-      { status: 200, headers: { "x-correlation-id": correlationId } }
+      { status: 200, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
     );
   } catch (e: any) {
     console.error("[x402/orders] Error:", e);
     return NextResponse.json(
       { error: e?.message || "internal_error" },
-      { status: 500, headers: { "x-correlation-id": correlationId } }
+      { status: 500, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
     );
   }
 }
@@ -315,7 +366,7 @@ export async function PUT(req: NextRequest) { return POST(req); }
 export async function PATCH(req: NextRequest) { return POST(req); }
 export async function DELETE(req: NextRequest) { return POST(req); }
 export async function HEAD(req: NextRequest) { return POST(req); }
-export async function OPTIONS(req: NextRequest) { 
+export async function OPTIONS(req: NextRequest) {
   return new NextResponse(null, {
     status: 200,
     headers: {

@@ -33,7 +33,10 @@ export async function POST(req: NextRequest) {
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || `https://${req.headers.get("host") || "surge.basalthq.com"}`).replace(/\/$/, "");
     const publicUrl = `${baseUrl}${req.nextUrl.pathname}`;
 
-    const bodyText = await req.text();
+    let bodyText = "";
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      try { bodyText = await req.text(); } catch {}
+    }
     const body = bodyText ? JSON.parse(bodyText) : {};
 
     let planKey = String(body.planKey || "").toLowerCase().trim();
@@ -53,7 +56,7 @@ export async function POST(req: NextRequest) {
               priceUsd: price,
             })),
           },
-          { status: 400, headers: { "x-correlation-id": correlationId } }
+          { status: 400, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
         );
       }
     }
@@ -68,7 +71,7 @@ export async function POST(req: NextRequest) {
       if (!wallet) {
         return NextResponse.json(
           { error: "unauthorized", message: "Connect your wallet to claim a free Starter subscription." },
-          { status: 401, headers: { "x-correlation-id": correlationId } }
+          { status: 401, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
         );
       }
 
@@ -93,7 +96,7 @@ export async function POST(req: NextRequest) {
           apiKey,
           message: "Free Starter subscription activated.",
         },
-        { status: 200, headers: { "x-correlation-id": correlationId } }
+        { status: 200, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
       );
     }
 
@@ -103,14 +106,14 @@ export async function POST(req: NextRequest) {
     const { defineChain } = await import("thirdweb/chains");
 
     const secretKey = process.env.THIRDWEB_SECRET_KEY || "";
-    const ownerWallet = process.env.NEXT_PUBLIC_OWNER_WALLET || "";
-    const serviceWallet = process.env.THIRDWEB_SERVER_WALLET_ADDRESS || ownerWallet;
+    const ownerWallet = process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0xaCDAa0314000a1d10f3e9EF1B88e986A72AA3f6e";
+    const serviceWallet = ownerWallet;
     const chainId = Number(process.env.CHAIN_ID || process.env.NEXT_PUBLIC_CHAIN_ID || 8453);
 
     if (!secretKey || !serviceWallet) {
       return NextResponse.json(
         { error: "x402_not_configured", message: "Server x402 payment infrastructure is not configured." },
-        { status: 503, headers: { "x-correlation-id": correlationId } }
+        { status: 503, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
       );
     }
 
@@ -152,38 +155,54 @@ export async function POST(req: NextRequest) {
           // Inject input schema so strict crawler parsers don't fail discovery
           if (challengeBody.accepts && Array.isArray(challengeBody.accepts)) {
             challengeBody.accepts.forEach((a: any) => {
-              if (!a.outputSchema) a.outputSchema = {};
-              if (!a.outputSchema.input) a.outputSchema.input = { type: "http", method: "POST" };
-              a.outputSchema.input.schema = {
-                type: "object",
-                required: ["planKey"],
-                properties: {
-                  planKey: { type: "string", enum: ["starter", "pro", "enterprise"] }
-                }
-              };
+              // INJECT EXPLICIT AMOUNT STRING FOR X402SCAN CRAWLER VALIDATION
+              const priceUsdRaw = challengeBody?.subscription?.priceUsd || 399;
+              if (!a.amount) a.amount = a.maxAmountRequired || String(Math.floor(priceUsdRaw * 1000000));
             });
+            
+            if (!challengeBody.extensions) challengeBody.extensions = {};
+            challengeBody.extensions.bazaar = {
+              discoverable: true,
+              category: "utilities",
+              tags: ["subscriptions", "access", "apim", "licenses"],
+              schema: {
+                type: "object",
+                properties: {
+                  input: {
+                    type: "object",
+                    required: ["planKey"],
+                    properties: {
+                      planKey: { type: "string", enum: ["starter", "pro", "enterprise"] }
+                    }
+                  },
+                  output: { type: "object" }
+                }
+              }
+            };
           }
           
           // Re-encode header to ensure it matches the body
           const newHeaderB64 = Buffer.from(JSON.stringify(challengeBody)).toString("base64");
-          if (rawHeaders["PAYMENT-REQUIRED"]) rawHeaders["PAYMENT-REQUIRED"] = newHeaderB64;
-          else if (rawHeaders["payment-required"]) rawHeaders["payment-required"] = newHeaderB64;
-          else if (rawHeaders["Payment-Required"]) rawHeaders["Payment-Required"] = newHeaderB64;
+          rawHeaders["Payment-Required"] = newHeaderB64;
           
         } catch { challengeBody = { raw: paymentRequiredB64 }; }
       }
 
-      return new NextResponse(JSON.stringify({
+      const updatedBody = {
         ...challengeBody,
         subscription: {
           planKey,
           priceUsd,
           currency: "USD",
         },
-      }), {
+      };
+      
+      rawHeaders["Payment-Required"] = Buffer.from(JSON.stringify(updatedBody)).toString("base64");
+
+      return new NextResponse(JSON.stringify(updatedBody), {
         status: 402,
         headers: {
-          ...rawHeaders,
+          "Payment-Required": rawHeaders["Payment-Required"],
           "x-correlation-id": correlationId,
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
@@ -206,7 +225,7 @@ export async function POST(req: NextRequest) {
     if (!wallet) {
       return NextResponse.json(
         { error: "wallet_required", message: "Could not resolve wallet identity. Connect wallet or provide x-payment proof." },
-        { status: 400, headers: { "x-correlation-id": correlationId } }
+        { status: 400, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
       );
     }
 
@@ -251,13 +270,13 @@ export async function POST(req: NextRequest) {
         apiKey,
         message: `${planKey.charAt(0).toUpperCase() + planKey.slice(1)} subscription activated via x402 payment.`,
       },
-      { status: 200, headers: { "x-correlation-id": correlationId } }
+      { status: 200, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
     );
   } catch (e: any) {
     console.error("[x402/subscribe] Error:", e);
     return NextResponse.json(
       { error: e?.message || "internal_error" },
-      { status: 500, headers: { "x-correlation-id": correlationId } }
+      { status: 500, headers: { "x-correlation-id": correlationId, "Access-Control-Allow-Origin": "*" } }
     );
   }
 }
