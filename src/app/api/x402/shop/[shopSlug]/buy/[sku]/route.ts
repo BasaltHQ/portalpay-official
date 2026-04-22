@@ -12,12 +12,12 @@ function getPublicUrl(req: NextRequest) {
   return `${baseUrl}${req.nextUrl.pathname}`;
 }
 
-export async function POST(req: NextRequest, { params }: { params: { shopSlug: string; sku: string } }) {
+export async function POST(req: NextRequest, context: any) {
   const correlationId = req.headers.get("x-correlation-id") || crypto.randomUUID();
   const publicUrl = getPublicUrl(req);
 
   try {
-    const { shopSlug, sku } = params;
+    const { shopSlug, sku } = await context.params;
     if (!shopSlug || !sku) {
       return NextResponse.json({ error: "Missing shop slug or sku" }, { status: 400 });
     }
