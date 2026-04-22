@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: { shopSlug: s
     const priceUsdRaw = Number(item.priceUsd || 0);
     const validPrice = Math.max(priceUsdRaw, 0.50);
     const priceStr = validPrice.toFixed(2);
-    
+
     // 2. Are we being paid?
     const paymentProof = req.headers.get("x-payment");
     if (!paymentProof) {
@@ -50,20 +50,20 @@ export async function POST(req: NextRequest, { params }: { params: { shopSlug: s
       const { settlePayment, facilitator } = await import("thirdweb/x402");
       const { createThirdwebClient } = await import("thirdweb");
       const { defineChain } = await import("thirdweb/chains");
-      
+
       const secretKey = process.env.THIRDWEB_SECRET_KEY || "";
       const chainId = Number(process.env.CHAIN_ID || process.env.NEXT_PUBLIC_CHAIN_ID || 8453);
-      
+
       const { getSiteConfigForWallet } = await import("@/lib/site-config");
       const cfg = await getSiteConfigForWallet(item.wallet).catch(() => null as any);
-      
+
       // Robust split resolution from reserve analytics
-      const splitAddr = (cfg as any)?.splitAddress || 
-                        (cfg as any)?.split?.address || 
-                        (cfg as any)?.config?.splitAddress || 
-                        (cfg as any)?.config?.split?.address || 
-                        "";
-                        
+      const splitAddr = (cfg as any)?.splitAddress ||
+        (cfg as any)?.split?.address ||
+        (cfg as any)?.config?.splitAddress ||
+        (cfg as any)?.config?.split?.address ||
+        "";
+
       const payTo = (/^0x[a-f0-9]{40}$/i.test(splitAddr) ? splitAddr : item.wallet) as `0x${string}`;
 
       const client = createThirdwebClient({ secretKey });
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest, { params }: { params: { shopSlug: s
           sku,
           quantity: 1,
           totalUsd: validPrice,
-          currency: "USDC",
+          currency: "USD",
         },
       };
 
@@ -142,20 +142,20 @@ export async function POST(req: NextRequest, { params }: { params: { shopSlug: s
     const { settlePayment, facilitator } = await import("thirdweb/x402");
     const { createThirdwebClient } = await import("thirdweb");
     const { defineChain } = await import("thirdweb/chains");
-    
+
     const secretKey = process.env.THIRDWEB_SECRET_KEY || "";
     const chainId = Number(process.env.CHAIN_ID || process.env.NEXT_PUBLIC_CHAIN_ID || 8453);
-    
+
     const { getSiteConfigForWallet } = await import("@/lib/site-config");
     const cfg = await getSiteConfigForWallet(item.wallet).catch(() => null as any);
-    
+
     // Robust split resolution from reserve analytics
-    const splitAddr = (cfg as any)?.splitAddress || 
-                      (cfg as any)?.split?.address || 
-                      (cfg as any)?.config?.splitAddress || 
-                      (cfg as any)?.config?.split?.address || 
-                      "";
-                      
+    const splitAddr = (cfg as any)?.splitAddress ||
+      (cfg as any)?.split?.address ||
+      (cfg as any)?.config?.splitAddress ||
+      (cfg as any)?.config?.split?.address ||
+      "";
+
     const payTo = (/^0x[a-f0-9]{40}$/i.test(splitAddr) ? splitAddr : item.wallet) as `0x${string}`;
 
     const client = createThirdwebClient({ secretKey });

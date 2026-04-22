@@ -57,9 +57,9 @@ export async function GET() {
           "x-payment-info": {
             price: {
               mode: "dynamic",
-              currency: "USDC",
-              min: String(Math.floor(Number(item.priceUsd || 0) * 1000000)),
-              max: String(Math.floor(Number(item.priceUsd || 0) * 1000000))
+              currency: "USD",
+              min: Number(item.priceUsd || 0).toFixed(2),
+              max: Number(item.priceUsd || 0).toFixed(2)
             },
             protocols: [
               { x402: {} }
