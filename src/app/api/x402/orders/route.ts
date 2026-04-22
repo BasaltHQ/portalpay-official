@@ -105,8 +105,8 @@ export async function POST(req: NextRequest) {
                   }
                 };
                 
-                // INJECT EXPLICIT PRICE STRING FOR X402SCAN CRAWLER VALIDATION
-                if (!a.price) a.price = "$0.10";
+                // INJECT EXPLICIT AMOUNT STRING FOR X402SCAN CRAWLER VALIDATION
+                if (!a.amount) a.amount = "0.10";
               });
             }
 

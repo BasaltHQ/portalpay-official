@@ -231,7 +231,10 @@
         ],
         "x-payment-info": {
           "price": {
-            "mode": "dynamic"
+            "mode": "dynamic",
+            "currency": "USD",
+            "min": "0.10",
+            "max": "100000.00"
           },
           "protocols": [
             {
@@ -372,7 +375,10 @@
         ],
         "x-payment-info": {
           "price": {
-            "mode": "dynamic"
+            "mode": "dynamic",
+            "currency": "USD",
+            "min": "0.00",
+            "max": "5000.00"
           },
           "protocols": [
             {

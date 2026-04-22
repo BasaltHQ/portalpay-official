@@ -165,9 +165,9 @@ export async function POST(req: NextRequest) {
                 }
               };
               
-              // INJECT EXPLICIT PRICE STRING FOR X402SCAN CRAWLER VALIDATION
+              // INJECT EXPLICIT AMOUNT STRING FOR X402SCAN CRAWLER VALIDATION
               const priceUsdRaw = challengeBody?.subscription?.priceUsd || 399;
-              if (!a.price) a.price = `$${priceUsdRaw}.00`;
+              if (!a.amount) a.amount = `${priceUsdRaw}.00`;
             });
           }
           
