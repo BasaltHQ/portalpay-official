@@ -164,6 +164,10 @@ export async function POST(req: NextRequest) {
                   planKey: { type: "string", enum: ["starter", "pro", "enterprise"] }
                 }
               };
+              
+              // INJECT EXPLICIT PRICE STRING FOR X402SCAN CRAWLER VALIDATION
+              const priceUsdRaw = challengeBody?.subscription?.priceUsd || 399;
+              if (!a.price) a.price = `$${priceUsdRaw}.00`;
             });
           }
           
@@ -189,11 +193,10 @@ export async function POST(req: NextRequest) {
         status: 402,
         headers: {
           "Payment-Required": rawHeaders["Payment-Required"],
-          "WWW-Authenticate": `x402 macaroon="${rawHeaders["Payment-Required"]}"`,
           "x-correlation-id": correlationId,
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Expose-Headers": "payment-required, Payment-Required, PAYMENT-REQUIRED, WWW-Authenticate, www-authenticate",
+          "Access-Control-Expose-Headers": "payment-required, Payment-Required, PAYMENT-REQUIRED",
         },
       });
     }
