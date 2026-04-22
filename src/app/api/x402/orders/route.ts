@@ -219,7 +219,14 @@ export async function POST(req: NextRequest) {
     // Resolve split address for the merchant (pay the split if available, else merchant directly)
     const { getSiteConfigForWallet } = await import("@/lib/site-config");
     const cfg = await getSiteConfigForWallet(merchantWallet).catch(() => null as any);
-    const splitAddr = (cfg as any)?.splitAddress || (cfg as any)?.split?.address || "";
+    
+    // Robust split resolution from reserve analytics
+    const splitAddr = (cfg as any)?.splitAddress || 
+                      (cfg as any)?.split?.address || 
+                      (cfg as any)?.config?.splitAddress || 
+                      (cfg as any)?.config?.split?.address || 
+                      "";
+    
     const payTo = (/^0x[a-f0-9]{40}$/i.test(splitAddr) ? splitAddr : merchantWallet) as `0x${string}`;
     const brandName = cfg?.theme?.brandName || "PortalPay";
 

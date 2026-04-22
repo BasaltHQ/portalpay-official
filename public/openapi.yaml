@@ -1,38 +1,59 @@
 openapi: 3.1.0
 info:
   title: BasaltSurge API
-  version: "1.0.0"
+  version: 1.0.0
   contact:
     name: BasaltSurge Support
     url: https://surge.basalthq.com
     email: support@basalthq.com
-  description: |
-    Public API surface for BasaltSurge under a hardened posture: Azure Front Door Premium (AFD) gateway → Azure API Management (APIM).
-    All developer-facing endpoints require an APIM subscription key header `Ocp-Apim-Subscription-Key` and use the APIM custom domain. AFD is optional as a fallback.
-    APIM policy permits requests with a valid subscription key and may also accept AFD-originated requests carrying `x-edge-secret` if AFD is configured. Direct backend origins are not supported.
-    Wallet identity is resolved at the gateway based on subscription; client-supplied `x-wallet` header and `wallet` parameters are ignored.
-    Health endpoint: `GET /healthz` returns 200 JSON for probes; does not require a subscription.
-    Note: Some endpoints are read-only or environment-gated in production. Admin/sensitive routes (JWT-only) are not part of this spec.
-  x-guidance: |
+  description: >
+    Public API surface for BasaltSurge under a hardened posture: Azure Front
+    Door Premium (AFD) gateway → Azure API Management (APIM).
+
+    All developer-facing endpoints require an APIM subscription key header
+    `Ocp-Apim-Subscription-Key` and use the APIM custom domain. AFD is optional
+    as a fallback.
+
+    APIM policy permits requests with a valid subscription key and may also
+    accept AFD-originated requests carrying `x-edge-secret` if AFD is
+    configured. Direct backend origins are not supported.
+
+    Wallet identity is resolved at the gateway based on subscription;
+    client-supplied `x-wallet` header and `wallet` parameters are ignored.
+
+    Health endpoint: `GET /healthz` returns 200 JSON for probes; does not
+    require a subscription.
+
+    Note: Some endpoints are read-only or environment-gated in production.
+    Admin/sensitive routes (JWT-only) are not part of this spec.
+  x-guidance: >
     Welcome to BasaltSurge's Agentic Commerce API.
+
     To use this API:
-    1. Non-paid resources are fully accessible with standard API keys or without auth depending on the path.
-    2. Payment-gated resources under /api/x402/ must be paid for. For example, POST /api/x402/orders to discover the pricing required. The server will reply with HTTP 402 and an x402 payment challenge.
-    3. Use an x402-capable wallet (like agentcash MCP) to fulfill the challenge and attach the x-payment proof back to Leicester.
-    4. To resubscribe or provision API keys, use /api/x402/subscribe and clear the x402 challenge there.
+
+    1. Non-paid resources are fully accessible with standard API keys or without
+    auth depending on the path.
+
+    2. Payment-gated resources under /api/x402/ must be paid for. For example,
+    POST /api/x402/orders to discover the pricing required. The server will
+    reply with HTTP 402 and an x402 payment challenge.
+
+    3. Use an x402-capable wallet (like agentcash MCP) to fulfill the challenge
+    and attach the x-payment proof back to Leicester.
+
+    4. To resubscribe or provision API keys, use /api/x402/subscribe and clear
+    the x402 challenge there.
   x-origin-enforcement: apim-first
   x-internal-headers:
     - name: x-edge-secret
-      description: Gateway-internal header injected by Azure Front Door. Clients must not send this. Validated by APIM inbound policy to enforce origin.
-
+      description: >-
+        Gateway-internal header injected by Azure Front Door. Clients must not
+        send this. Validated by APIM inbound policy to enforce origin.
 servers:
   - url: /
     description: Production (APIM custom domain)
-
-# Default security requirement for all operations (override per-operation if needed)
 security:
   - apimKey: []
-
 tags:
   - name: Receipts
     description: Receipt creation, retrieval, and status operations
@@ -58,89 +79,119 @@ tags:
     description: Reserve wallet analytics and recommendations
   - name: Directory
     description: Agentic discovery of platform shops
-
 paths:
   /api/directory/shops:
     get:
       summary: Discover active shops
       operationId: getDirectoryShops
-      tags: [Directory]
-      description: Search for active merchants hosting storefronts on this environment via category, keyword, or name. Supports UCP agent discovery.
-      security: []
+      tags:
+        - Directory
+      description: >-
+        Search for active merchants hosting storefronts on this environment via
+        category, keyword, or name. Supports UCP agent discovery.
+      security:
+        - apimKey: []
       parameters:
         - in: query
           name: q
-          schema: { type: string }
+          schema:
+            type: string
           required: false
           description: Search term (name, keyword, category, description)
         - in: query
           name: categories
-          schema: { type: string }
+          schema:
+            type: string
           required: false
           description: Comma-separated list of exact categories
         - in: query
           name: keywords
-          schema: { type: string }
+          schema:
+            type: string
           required: false
           description: Comma-separated list of exact keywords
         - in: query
           name: offset
-          schema: { type: integer, default: 0 }
+          schema:
+            type: integer
+            default: 0
           required: false
         - in: query
           name: limit
-          schema: { type: integer, maximum: 50, default: 20 }
+          schema:
+            type: integer
+            maximum: 50
+            default: 20
           required: false
       responses:
-        "200":
+        '200':
           description: List of discovered shops
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  ok: { type: boolean }
+                  ok:
+                    type: boolean
                   directory:
                     type: array
                     items:
                       type: object
                       properties:
-                        name: { type: string }
-                        slug: { type: string }
-                        description: { type: string }
-                        categories: { type: array, items: { type: string } }
-                        keywords: { type: array, items: { type: string } }
-                        industryPack: { type: string }
+                        name:
+                          type: string
+                        slug:
+                          type: string
+                        description:
+                          type: string
+                        categories:
+                          type: array
+                          items:
+                            type: string
+                        keywords:
+                          type: array
+                          items:
+                            type: string
+                        industryPack:
+                          type: string
                         theme:
                           type: object
                           properties:
-                            brandLogoUrl: { type: string }
-                            coverPhotoUrl: { type: string }
+                            brandLogoUrl:
+                              type: string
+                            coverPhotoUrl:
+                              type: string
                   meta:
                     type: object
                     properties:
-                      totalReturned: { type: integer }
-                      limit: { type: integer }
-                      offset: { type: integer }
-                      brandContext: { type: string }
+                      totalReturned:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+                      brandContext:
+                        type: string
   /api/x402/orders:
     post:
       summary: Create Order via x402 Payment
       operationId: x402CreateOrder
-      tags: [Orders]
+      tags:
+        - Orders
       description: >
         x402-gated order endpoint for AI agents. Always returns 402 with payment
         challenge when no x-payment proof is attached. Agents discover shops via
-        GET /api/directory/shops, resolve inventory, then POST here with shopSlug
-        and items to receive a payment challenge. Once paid, a receipt is returned.
+        GET /api/directory/shops, resolve inventory, then POST here with
+        shopSlug and items to receive a payment challenge. Once paid, a receipt
+        is returned.
       security:
         - x402: []
       x-payment-info:
         price:
           mode: dynamic
           currency: USD
-          min: "0.10"
-          max: "100000.00"
+          min: '0.10'
+          max: '100000.00'
         protocols:
           - x402: {}
       requestBody:
@@ -149,7 +200,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [shopSlug, items]
+              required:
+                - shopSlug
+                - items
               properties:
                 shopSlug:
                   type: string
@@ -159,30 +212,44 @@ paths:
                   description: Items to order with SKU and quantity
                   items:
                     type: object
-                    required: [sku, qty]
+                    required:
+                      - sku
+                      - qty
                     properties:
-                      sku: { type: string }
-                      qty: { type: integer, minimum: 1 }
+                      sku:
+                        type: string
+                      qty:
+                        type: integer
+                        minimum: 1
                 jurisdictionCode:
                   type: string
                   description: Optional tax jurisdiction code (e.g. US-CA)
       responses:
-        "200":
+        '200':
           description: Order receipt (payment settled)
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  ok: { type: boolean }
+                  ok:
+                    type: boolean
                   receipt:
                     type: object
                     properties:
-                      receiptId: { type: string }
-                      totalUsd: { type: number }
-                      lineItems: { type: array, items: { type: object } }
-                      status: { type: string, enum: [paid] }
-        "402":
+                      receiptId:
+                        type: string
+                      totalUsd:
+                        type: number
+                      lineItems:
+                        type: array
+                        items:
+                          type: object
+                      status:
+                        type: string
+                        enum:
+                          - paid
+        '402':
           description: Payment Required – x402 challenge issued
           headers:
             Payment-Required:
@@ -194,14 +261,20 @@ paths:
               schema:
                 type: object
                 properties:
-                  x402Version: { type: integer }
-                  error: { type: string }
-                  accepts: { type: array, items: { type: object } }
+                  x402Version:
+                    type: integer
+                  error:
+                    type: string
+                  accepts:
+                    type: array
+                    items:
+                      type: object
   /api/x402/subscribe:
     post:
       summary: Subscribe to API Tier via x402 Payment
       operationId: x402Subscribe
-      tags: [Subscriptions]
+      tags:
+        - Subscriptions
       description: >
         x402-gated developer subscription endpoint. Returns 402 with payment
         challenge for paid tiers (pro=$399, enterprise=$500). Starter tier is
@@ -212,8 +285,8 @@ paths:
         price:
           mode: dynamic
           currency: USD
-          min: "0.00"
-          max: "5000.00"
+          min: '0.00'
+          max: '5000.00'
         protocols:
           - x402: {}
       requestBody:
@@ -222,27 +295,37 @@ paths:
           application/json:
             schema:
               type: object
-              required: [planKey]
+              required:
+                - planKey
               properties:
                 planKey:
                   type: string
-                  enum: [starter, pro, enterprise]
-                  description: "Pricing: starter=$0, pro=$399, enterprise=$500"
+                  enum:
+                    - starter
+                    - pro
+                    - enterprise
+                  description: 'Pricing: starter=$0, pro=$399, enterprise=$500'
       responses:
-        "200":
+        '200':
           description: Subscription activated (API key issued)
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  ok: { type: boolean }
-                  plan: { type: string }
-                  priceUsd: { type: number }
-                  subscriptionId: { type: string }
-                  apiKey: { type: string }
-                  message: { type: string }
-        "402":
+                  ok:
+                    type: boolean
+                  plan:
+                    type: string
+                  priceUsd:
+                    type: number
+                  subscriptionId:
+                    type: string
+                  apiKey:
+                    type: string
+                  message:
+                    type: string
+        '402':
           description: Payment Required – x402 challenge issued
           headers:
             Payment-Required:
@@ -254,116 +337,154 @@ paths:
               schema:
                 type: object
                 properties:
-                  x402Version: { type: integer }
-                  error: { type: string }
-                  accepts: { type: array, items: { type: object } }
+                  x402Version:
+                    type: integer
+                  error:
+                    type: string
+                  accepts:
+                    type: array
+                    items:
+                      type: object
   /api/inventory:
     get:
       summary: List inventory items
       operationId: listInventory
-      tags: [Inventory]
+      tags:
+        - Inventory
       description: >
-        List inventory items for the merchant associated with the resolved wallet.
-        Requires APIM subscription and `inventory:read` scope.
-        Requests must traverse AFD; direct APIM origin may be rejected with 403 (origin enforcement).
+        List inventory items for the merchant associated with the resolved
+        wallet. Requires APIM subscription and `inventory:read` scope. Requests
+        must traverse AFD; direct APIM origin may be rejected with 403 (origin
+        enforcement).
       x-required-scopes:
         - inventory:read
       parameters:
         - in: query
           name: q
-          schema: { type: string }
+          schema:
+            type: string
           required: false
           description: Search term (name, SKU, description, category, tags)
         - in: query
           name: category
-          schema: { type: string }
+          schema:
+            type: string
           required: false
         - in: query
           name: taxable
           schema:
             type: string
-            enum: ["true", "false", "any"]
+            enum:
+              - 'true'
+              - 'false'
+              - any
           required: false
         - in: query
           name: stock
           schema:
             type: string
-            enum: [in, out, any]
+            enum:
+              - in
+              - out
+              - any
           required: false
         - in: query
           name: priceMin
-          schema: { type: number, format: float }
+          schema:
+            type: number
+            format: float
           required: false
         - in: query
           name: priceMax
-          schema: { type: number, format: float }
+          schema:
+            type: number
+            format: float
           required: false
         - in: query
           name: tags
-          schema: { type: string }
+          schema:
+            type: string
           required: false
           description: Comma-separated tags
         - in: query
           name: tagsMode
           schema:
             type: string
-            enum: [any, all]
+            enum:
+              - any
+              - all
           required: false
           description: Tag match mode
         - in: query
           name: pack
-          schema: { type: string }
+          schema:
+            type: string
           required: false
           description: Industry pack filter
         - in: query
           name: sort
           schema:
             type: string
-            enum: [name, sku, priceUsd, stockQty, updatedAt]
+            enum:
+              - name
+              - sku
+              - priceUsd
+              - stockQty
+              - updatedAt
             default: updatedAt
           required: false
         - in: query
           name: order
           schema:
             type: string
-            enum: [asc, desc]
+            enum:
+              - asc
+              - desc
             default: desc
           required: false
         - in: query
           name: limit
-          schema: { type: integer, format: int32 }
+          schema:
+            type: integer
+            format: int32
           required: false
         - in: query
           name: page
-          schema: { type: integer, format: int32 }
+          schema:
+            type: integer
+            format: int32
           required: false
       responses:
-        "200":
+        '200':
           description: Inventory list
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InventoryListResponse"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
+                $ref: '#/components/schemas/InventoryListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - apimKey: []
     post:
       summary: Create or update an inventory item
       operationId: upsertInventory
-      tags: [Inventory]
+      tags:
+        - Inventory
       description: >
-        Upsert (create/update) an inventory item. Requires APIM subscription and `inventory:write` scope.
-        Ownership/admin is enforced for JWT callers; APIM callers are bound to their subscription wallet.
+        Upsert (create/update) an inventory item. Requires APIM subscription and
+        `inventory:write` scope. Ownership/admin is enforced for JWT callers;
+        APIM callers are bound to their subscription wallet.
       x-required-scopes:
         - inventory:write
       requestBody:
@@ -371,75 +492,83 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/InventoryUpsertRequest"
+              $ref: '#/components/schemas/InventoryUpsertRequest'
       responses:
-        "200":
+        '200':
           description: Upserted item
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InventoryUpsertResponse"
-        "400":
+                $ref: '#/components/schemas/InventoryUpsertResponse'
+        '400':
           description: Invalid input
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - apimKey: []
     delete:
       summary: Delete an inventory item
       operationId: deleteInventory
-      tags: [Inventory]
+      tags:
+        - Inventory
       description: >
-        Delete an inventory item by ID. Requires APIM subscription and `inventory:write` scope.
+        Delete an inventory item by ID. Requires APIM subscription and
+        `inventory:write` scope.
       x-required-scopes:
         - inventory:write
       parameters:
         - in: query
           name: id
-          schema: { type: string }
+          schema:
+            type: string
           required: true
           description: Inventory item ID
       responses:
-        "200":
+        '200':
           description: Delete result
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeleteInventoryResponse"
-        "400":
+                $ref: '#/components/schemas/DeleteInventoryResponse'
+        '400':
           description: id_required
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - apimKey: []
   /api/orders:
     post:
       summary: Generate an order/receipt from inventory
       operationId: createOrder
-      tags: [Orders]
+      tags:
+        - Orders
       description: >
-        Generate an itemized receipt from inventory items with automatic tax computation and processing fee.
-        Requires APIM subscription and `orders:create` scope.
-        Split contract must be configured for the merchant.
+        Generate an itemized receipt from inventory items with automatic tax
+        computation and processing fee. Requires APIM subscription and
+        `orders:create` scope. Split contract must be configured for the
+        merchant.
       x-required-scopes:
         - orders:create
       requestBody:
@@ -447,79 +576,86 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/OrderCreateRequest"
+              $ref: '#/components/schemas/OrderCreateRequest'
             examples:
               default:
                 value:
                   items:
-                    - { sku: "COFFEE-001", qty: 2 }
-                    - { sku: "PASTRY-001", qty: 1 }
-                  jurisdictionCode: "US-CA"
+                    - sku: COFFEE-001
+                      qty: 2
+                    - sku: PASTRY-001
+                      qty: 1
+                  jurisdictionCode: US-CA
       responses:
-        "200":
+        '200':
           description: Receipt generated
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OrderCreateResponse"
-        "400":
+                $ref: '#/components/schemas/OrderCreateResponse'
+        '400':
           description: items_required or inventory_item_not_found
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "403":
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
           description: split_required or forbidden
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  error: { type: string }
-                  message: { type: string }
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-
+                  error:
+                    type: string
+                  message:
+                    type: string
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - apimKey: []
   /api/shop/config:
     get:
       summary: Get merchant shop configuration
       operationId: getShopConfig
-      tags: [Shop]
+      tags:
+        - Shop
       description: >
         Returns merchant shop configuration (branding, layout, tax defaults).
-        Requires APIM subscription and `shop:read` scope.
-        Requests must traverse AFD; direct APIM origin may be rejected with 403 (origin enforcement).
+        Requires APIM subscription and `shop:read` scope. Requests must traverse
+        AFD; direct APIM origin may be rejected with 403 (origin enforcement).
       x-required-scopes:
         - shop:read
       responses:
-        "200":
+        '200':
           description: Shop configuration
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   config:
-                    $ref: "#/components/schemas/ShopConfig"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-
+                    $ref: '#/components/schemas/ShopConfig'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - apimKey: []
   /api/receipts:
     get:
       summary: List receipts
@@ -527,9 +663,9 @@ paths:
       tags:
         - Receipts
       description: >
-        List recent receipts for the merchant associated with the resolved wallet.
-        Requires APIM subscription and `receipts:read` scope.
-        Gracefully degrades to in-memory when Cosmos is unavailable.
+        List recent receipts for the merchant associated with the resolved
+        wallet. Requires APIM subscription and `receipts:read` scope. Gracefully
+        degrades to in-memory when Cosmos is unavailable.
       x-required-scopes:
         - receipts:read
       parameters:
@@ -544,15 +680,15 @@ paths:
           required: false
           description: Number of receipts to return (default 100, max 200)
       responses:
-        "200":
+        '200':
           description: Recent receipts
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
           content:
             application/json:
               schema:
@@ -561,7 +697,7 @@ paths:
                   receipts:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Receipt"
+                      $ref: '#/components/schemas/Receipt'
               examples:
                 default:
                   value:
@@ -570,27 +706,34 @@ paths:
                         totalUsd: 13.09
                         currency: USD
                         lineItems:
-                          - { label: "Espresso", priceUsd: 7.00, qty: 2 }
-                          - { label: "Tax", priceUsd: 1.09 }
-                          - { label: "Processing Fee", priceUsd: 0.50 }
+                          - label: Espresso
+                            priceUsd: 7
+                            qty: 2
+                          - label: Tax
+                            priceUsd: 1.09
+                          - label: Processing Fee
+                            priceUsd: 0.5
                         createdAt: 1698765432000
-                        brandName: "BasaltSurge"
-                        status: "paid"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
+                        brandName: BasaltSurge
+                        status: paid
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - apimKey: []
     post:
       summary: Create a receipt payload for a QR-code payment portal
       operationId: createReceipt
       tags:
         - Receipts
       description: >
-        Create an itemized receipt used by the payment portal. The portal URL can be
-        QR-encoded and printed on POS receipts. Requires APIM subscription and `receipts:write` scope.
-        Requests must traverse AFD; direct APIM origin may be rejected with 403 (origin enforcement).
+        Create an itemized receipt used by the payment portal. The portal URL
+        can be QR-encoded and printed on POS receipts. Requires APIM
+        subscription and `receipts:write` scope. Requests must traverse AFD;
+        direct APIM origin may be rejected with 403 (origin enforcement).
       x-required-scopes:
         - receipts:write
       requestBody:
@@ -598,48 +741,49 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateReceiptRequest"
+              $ref: '#/components/schemas/CreateReceiptRequest'
             examples:
               default:
                 value:
                   id: rcpt_12345
                   lineItems:
                     - label: Sample Item
-                      priceUsd: 25.0
+                      priceUsd: 25
                     - label: Tax
-                      priceUsd: 2.0
-                  totalUsd: 27.0
+                      priceUsd: 2
+                  totalUsd: 27
       responses:
-        "201":
+        '201':
           description: Receipt created
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CreateReceiptResponse"
+                $ref: '#/components/schemas/CreateReceiptResponse'
               examples:
                 default:
                   value:
                     id: rcpt_12345
                     paymentUrl: https://pay.ledger1.ai/pay/rcpt_12345
                     status: pending
-        "400":
+        '400':
           description: Invalid request
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
           description: Server error
-
+      security:
+        - apimKey: []
   /api/receipts/{id}:
     get:
       summary: Get a receipt by ID
@@ -647,8 +791,9 @@ paths:
       tags:
         - Receipts
       description: >
-        Requires APIM subscription and `receipts:read` scope.
-        Requests must traverse AFD; direct APIM origin may be rejected with 403 (origin enforcement).
+        Requires APIM subscription and `receipts:read` scope. Requests must
+        traverse AFD; direct APIM origin may be rejected with 403 (origin
+        enforcement).
       x-required-scopes:
         - receipts:read
       parameters:
@@ -659,40 +804,41 @@ paths:
           required: true
           description: Receipt ID
       responses:
-        "200":
+        '200':
           description: Receipt found
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Receipt"
+                $ref: '#/components/schemas/Receipt'
               examples:
                 default:
                   value:
                     receiptId: rcpt_12345
-                    totalUsd: 27.0
+                    totalUsd: 27
                     currency: USD
                     lineItems:
                       - label: Sample Item
-                        priceUsd: 25.0
+                        priceUsd: 25
                       - label: Tax
-                        priceUsd: 2.0
+                        priceUsd: 2
                     createdAt: 1698765432000
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "404":
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
           description: Not found
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - apimKey: []
   /api/receipts/status:
     get:
       summary: Get receipt/payment status
@@ -700,8 +846,9 @@ paths:
       tags:
         - Receipts
       description: >
-        Requires APIM subscription and `receipts:read` scope.
-        Requests must traverse AFD; direct APIM origin may be rejected with 403 (origin enforcement).
+        Requires APIM subscription and `receipts:read` scope. Requests must
+        traverse AFD; direct APIM origin may be rejected with 403 (origin
+        enforcement).
       x-required-scopes:
         - receipts:read
       parameters:
@@ -712,19 +859,19 @@ paths:
           required: true
           description: Receipt ID to check
       responses:
-        "200":
+        '200':
           description: Status payload
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ReceiptStatus"
+                $ref: '#/components/schemas/ReceiptStatus'
               examples:
                 default:
                   value:
@@ -733,48 +880,55 @@ paths:
                     transactionHash: 0xabc123...
                     currency: USDC
                     amount: 27
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "404":
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
           description: Not found
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - apimKey: []
     post:
       summary: Update receipt status (tracking and sensitive events)
       operationId: postReceiptStatus
       tags:
         - Receipts
       description: >
-        Updates receipt status timeline. Certain tracking statuses may be allowed without JWT (e.g. link_opened, buyer_logged_in, checkout_initialized).
-        Sensitive updates (e.g. checkout_success, refund_*) require JWT and CSRF via the portal UI; APIM developer subscriptions typically use tracking statuses.
+        Updates receipt status timeline. Certain tracking statuses may be
+        allowed without JWT (e.g. link_opened, buyer_logged_in,
+        checkout_initialized). Sensitive updates (e.g. checkout_success,
+        refund_*) require JWT and CSRF via the portal UI; APIM developer
+        subscriptions typically use tracking statuses.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ReceiptStatusUpdateRequest"
+              $ref: '#/components/schemas/ReceiptStatusUpdateRequest'
       responses:
-        "200":
+        '200':
           description: Status update result
           headers:
             x-correlation-id:
               description: Correlation ID for tracing
-              schema: { type: string }
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OkResponse"
-        "400":
+                $ref: '#/components/schemas/OkResponse'
+        '400':
           description: missing_receipt_id or invalid_wallet or missing_status
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
           description: failed
-
+      security:
+        - apimKey: []
   /api/site/config:
     get:
       summary: Get site configuration (branding and defaults)
@@ -782,42 +936,43 @@ paths:
       tags:
         - Site
       description: >
-        Returns site-level branding and default payment settings used by the portal.
-        May be public/read-only depending on environment; APIM enforcement can be enabled
-        in production. If APIM is enabled, rate limiting headers may be present.
-        Requests may still be required to traverse AFD in protected environments; direct APIM origin may be rejected with 403.
-      # Override default security: allow unauthenticated reads if environment permits.
-      security: []
+        Returns site-level branding and default payment settings used by the
+        portal. May be public/read-only depending on environment; APIM
+        enforcement can be enabled in production. If APIM is enabled, rate
+        limiting headers may be present. Requests may still be required to
+        traverse AFD in protected environments; direct APIM origin may be
+        rejected with 403.
+      security:
+        - apimKey: []
       responses:
-        "200":
+        '200':
           description: Site configuration
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SiteConfig"
+                $ref: '#/components/schemas/SiteConfig'
               examples:
                 default:
                   value:
                     theme:
-                      primaryColor: "#1f2937"
-                      secondaryColor: "#F54029"
-                      brandLogoUrl: "/cblogod.png"
-                      brandFaviconUrl: "/favicon-32x32.png"
-                      brandName: "BasaltSurge"
-                      fontFamily: "Inter, ui-sans-serif, system-ui"
-                      receiptBackgroundUrl: "/manifest.webmanifest"
-                    defaultPaymentToken: "ETH"
-                    processingFeePct: 1.0
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-
+                      primaryColor: '#1f2937'
+                      secondaryColor: '#F54029'
+                      brandLogoUrl: /cblogod.png
+                      brandFaviconUrl: /favicon-32x32.png
+                      brandName: BasaltSurge
+                      fontFamily: Inter, ui-sans-serif, system-ui
+                      receiptBackgroundUrl: /manifest.webmanifest
+                    defaultPaymentToken: ETH
+                    processingFeePct: 1
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /api/split/transactions:
     get:
       summary: List split transactions (if configured)
@@ -825,9 +980,10 @@ paths:
       tags:
         - Split
       description: >
-        Returns transactions indexed by the split indexer. Availability varies by deployment.
-        Requires APIM subscription and `split:read` scope.
-        Requests must traverse AFD; direct APIM origin may be rejected with 403 (origin enforcement).
+        Returns transactions indexed by the split indexer. Availability varies
+        by deployment. Requires APIM subscription and `split:read` scope.
+        Requests must traverse AFD; direct APIM origin may be rejected with 403
+        (origin enforcement).
       x-required-scopes:
         - split:read
       parameters:
@@ -838,39 +994,40 @@ paths:
           required: false
           description: Optional filter by recipient/split address
       responses:
-        "200":
+        '200':
           description: Array of transactions
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Transaction"
+                  $ref: '#/components/schemas/Transaction'
               examples:
                 default:
                   value:
                     - id: txn_abc
                       receiptId: rcpt_12345
-                      amount: 27.0
-                      currency: "USDC"
-                      status: "completed"
-                      timestamp: "2025-01-01T12:00:00Z"
-                      transactionHash: "0x..."
+                      amount: 27
+                      currency: USDC
+                      status: completed
+                      timestamp: '2025-01-01T12:00:00Z'
+                      transactionHash: 0x...
                       fees: 0.2
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - apimKey: []
   /healthz:
     get:
       summary: Health check
@@ -878,11 +1035,13 @@ paths:
       tags:
         - Health
       description: >
-        Returns 200 with a small JSON payload for health probes. Subscription is not required.
-        Accessible via AFD and APIM; used by AFD origin-group HTTPS probe.
-      security: []
+        Returns 200 with a small JSON payload for health probes. Subscription is
+        not required. Accessible via AFD and APIM; used by AFD origin-group
+        HTTPS probe.
+      security:
+        - apimKey: []
       responses:
-        "200":
+        '200':
           description: Service is healthy
           content:
             application/json:
@@ -892,310 +1051,345 @@ paths:
                   status:
                     type: string
                     example: ok
-
-  # New developer-facing endpoints
   /api/billing/balance:
     get:
       summary: Get user balance (time credits)
       operationId: getBillingBalance
-      tags: [Billing]
+      tags:
+        - Billing
       description: >
-        Returns remaining time credits for the authenticated wallet (resolved at gateway). May include plan info if subscribed.
-        Requires APIM subscription. Gracefully degrades to zeros if Cosmos is unavailable.
+        Returns remaining time credits for the authenticated wallet (resolved at
+        gateway). May include plan info if subscribed. Requires APIM
+        subscription. Gracefully degrades to zeros if Cosmos is unavailable.
       responses:
-        "200":
+        '200':
           description: Balance response
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
             x-correlation-id:
               description: Correlation ID for tracing
-              schema: { type: string }
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BalanceResponse"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-
+                $ref: '#/components/schemas/BalanceResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - apimKey: []
   /api/billing/purchase:
     post:
       summary: Record a purchase/payment event
       operationId: postBillingPurchase
-      tags: [Billing]
+      tags:
+        - Billing
       description: >
-        Records a purchase tied to a merchant recipient and updates receipt status lifecycle.
-        Validates optional on-chain transaction recipient. Triggers split indexing when applicable.
-        Requires APIM subscription. Wallet is resolved via gateway/JWT or provided header/body in non-prod.
+        Records a purchase tied to a merchant recipient and updates receipt
+        status lifecycle. Validates optional on-chain transaction recipient.
+        Triggers split indexing when applicable. Requires APIM subscription.
+        Wallet is resolved via gateway/JWT or provided header/body in non-prod.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/BillingPurchaseRequest"
+              $ref: '#/components/schemas/BillingPurchaseRequest'
       responses:
-        "200":
+        '200':
           description: Purchase recorded
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
             x-correlation-id:
               description: Correlation ID for tracing
-              schema: { type: string }
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BillingPurchaseResponse"
-        "400":
-          description: invalid wallet or invalid seconds or merchant_required or tx_mismatch
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
+                $ref: '#/components/schemas/BillingPurchaseResponse'
+        '400':
+          description: >-
+            invalid wallet or invalid seconds or merchant_required or
+            tx_mismatch
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
           description: Server error
-
+      security:
+        - apimKey: []
   /api/pricing/config:
     get:
       summary: Get pricing configuration
       operationId: getPricingConfig
-      tags: [Pricing]
+      tags:
+        - Pricing
       description: >
-        Returns pricing defaults (rate per 2 minutes, minimum minutes, discount rules).
-        Requires APIM subscription. Gracefully degrades to defaults if Cosmos is unavailable.
+        Returns pricing defaults (rate per 2 minutes, minimum minutes, discount
+        rules). Requires APIM subscription. Gracefully degrades to defaults if
+        Cosmos is unavailable.
       responses:
-        "200":
+        '200':
           description: Pricing configuration
           headers:
             X-RateLimit-Limit:
-              $ref: "#/components/headers/X-RateLimit-Limit"
+              $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
-              $ref: "#/components/headers/X-RateLimit-Remaining"
+              $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
-              $ref: "#/components/headers/X-RateLimit-Reset"
+              $ref: '#/components/headers/X-RateLimit-Reset'
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PricingConfigResponse"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
+                $ref: '#/components/schemas/PricingConfigResponse'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - apimKey: []
     post:
       summary: Update pricing configuration (owner-only JWT; APIM writes not permitted)
       operationId: upsertPricingConfig
-      tags: [Pricing]
+      tags:
+        - Pricing
       description: >
-        Updates pricing configuration. Admin-only via JWT and CSRF; APIM dev subscriptions cannot write.
-        Included for completeness; not accessible via public developer subscription.
-      # Override default security for documentation purposes; this is not callable via APIM key.
-      security: []
+        Updates pricing configuration. Admin-only via JWT and CSRF; APIM dev
+        subscriptions cannot write. Included for completeness; not accessible
+        via public developer subscription.
+      security:
+        - apimKey: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PricingConfigUpsertRequest"
+              $ref: '#/components/schemas/PricingConfigUpsertRequest'
       responses:
-        "200":
+        '200':
           description: Updated pricing configuration (or degraded fallback)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PricingConfigUpsertResponse"
-        "400":
+                $ref: '#/components/schemas/PricingConfigUpsertResponse'
+        '400':
           description: invalid_rate
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "500":
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
           description: failed
-
   /api/split/deploy:
     get:
       summary: Get split configuration for merchant
       operationId: getSplitConfig
-      tags: [Split]
+      tags:
+        - Split
       description: >
-        Returns the split configuration saved for the merchant (address and recipients).
-        Requires APIM subscription and `split:read` scope.
+        Returns the split configuration saved for the merchant (address and
+        recipients). Requires APIM subscription and `split:read` scope.
       x-required-scopes:
         - split:read
       responses:
-        "200":
+        '200':
           description: Split configuration
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SplitConfigResponse"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
+                $ref: '#/components/schemas/SplitConfigResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - apimKey: []
     post:
       summary: Configure split (admin-only JWT; APIM writes not permitted)
       operationId: upsertSplitConfig
-      tags: [Split]
+      tags:
+        - Split
       description: >
-        Idempotently persists split address and recipients for a merchant. Admin-only via JWT and CSRF.
-        APIM developer subscriptions cannot perform this write.
-      security: []
+        Idempotently persists split address and recipients for a merchant.
+        Admin-only via JWT and CSRF. APIM developer subscriptions cannot perform
+        this write.
+      security:
+        - apimKey: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SplitConfigUpsertRequest"
+              $ref: '#/components/schemas/SplitConfigUpsertRequest'
       responses:
-        "200":
+        '200':
           description: Split configuration result
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SplitConfigUpsertResponse"
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "500":
+                $ref: '#/components/schemas/SplitConfigUpsertResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
           description: failed
-
   /api/tax/catalog:
     get:
       summary: Get tax catalog (illustrative jurisdictions and rates)
       operationId: getTaxCatalog
-      tags: [Tax]
+      tags:
+        - Tax
       description: >
-        Returns curated tax jurisdictions with example rates to bootstrap merchant tax settings.
-        For production-grade accuracy, integrate a certified tax provider (TaxJar/Avalara).
-      # Allow unauthenticated read depending on environment; may be protected by APIM in production.
-      security: []
+        Returns curated tax jurisdictions with example rates to bootstrap
+        merchant tax settings. For production-grade accuracy, integrate a
+        certified tax provider (TaxJar/Avalara).
+      security:
+        - apimKey: []
       parameters:
         - in: query
           name: country
-          schema: { type: string }
+          schema:
+            type: string
           required: false
           description: Filter by country code (e.g., US, CA, UK, EU, AU, SG, JP)
       responses:
-        "200":
+        '200':
           description: Tax catalog response
           headers:
             x-correlation-id:
               description: Correlation ID for tracing
-              schema: { type: string }
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TaxCatalogResponse"
-        "500":
+                $ref: '#/components/schemas/TaxCatalogResponse'
+        '500':
           description: failed
-
   /api/receipts/refund:
     post:
       summary: Log a refund for a receipt (merchant/admin via portal)
       operationId: postReceiptRefund
-      tags: [Receipts]
+      tags:
+        - Receipts
       description: >
-        Logs a refund entry for a receipt and updates status history. Requires JWT and CSRF via portal UI.
-        APIM developers typically do not call this directly; included for completeness of public surface.
-      security: []
+        Logs a refund entry for a receipt and updates status history. Requires
+        JWT and CSRF via portal UI. APIM developers typically do not call this
+        directly; included for completeness of public surface.
+      security:
+        - apimKey: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ReceiptRefundRequest"
+              $ref: '#/components/schemas/ReceiptRefundRequest'
       responses:
-        "200":
+        '200':
           description: Refund logged
           headers:
             x-correlation-id:
               description: Correlation ID for tracing
-              schema: { type: string }
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OkResponse"
-        "400":
+                $ref: '#/components/schemas/OkResponse'
+        '400':
           description: missing_receipt_id or invalid_wallet or invalid_buyer or invalid_usd
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
           description: failed
-
   /api/receipts/terminal:
     post:
       summary: Generate a terminal receipt (single item + tax/fees)
       operationId: postReceiptTerminal
-      tags: [Receipts]
+      tags:
+        - Receipts
       description: >
-        Creates a receipt from a terminal input amount, applies tax and processing fees, and persists.
-        Requires APIM subscription; merchant wallet provided via header `x-wallet` or query param `wallet`.
+        Creates a receipt from a terminal input amount, applies tax and
+        processing fees, and persists. Requires APIM subscription; merchant
+        wallet provided via header `x-wallet` or query param `wallet`.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ReceiptTerminalCreateRequest"
+              $ref: '#/components/schemas/ReceiptTerminalCreateRequest'
       responses:
-        "200":
+        '200':
           description: Terminal receipt generated
           headers:
             x-correlation-id:
               description: Correlation ID for tracing
-              schema: { type: string }
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ReceiptTerminalCreateResponse"
-        "400":
+                $ref: '#/components/schemas/ReceiptTerminalCreateResponse'
+        '400':
           description: wallet_required or invalid_amount
-        "403":
+        '403':
           description: split_required (Split contract not configured)
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
           description: failed
-
+      security:
+        - apimKey: []
   /api/reserve/balances:
     get:
       summary: Get reserve balances for merchant or owner wallet
       operationId: getReserveBalances
-      tags: [Reserve]
+      tags:
+        - Reserve
       description: >
-        Returns live balances across ETH, USDC, USDT, cbBTC, cbXRP with USD conversions and indexed split metrics.
-        Requires APIM subscription. Wallet resolved via header `x-wallet`, query `wallet`, or environment default.
+        Returns live balances across ETH, USDC, USDT, cbBTC, cbXRP with USD
+        conversions and indexed split metrics. Requires APIM subscription.
+        Wallet resolved via header `x-wallet`, query `wallet`, or environment
+        default.
       responses:
-        "200":
+        '200':
           description: Reserve balances
           headers:
             x-correlation-id:
               description: Correlation ID for tracing
-              schema: { type: string }
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ReserveBalancesResponse"
-        "400":
+                $ref: '#/components/schemas/ReserveBalancesResponse'
+        '400':
           description: wallet_unset_or_invalid
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - apimKey: []
   /api/reserve/recommend:
     get:
       summary: Recommend settlement token and frequency
       operationId: getReserveRecommendation
-      tags: [Reserve]
+      tags:
+        - Reserve
       description: >
-        Recommends which token to settle with and how frequently based on target reserve ratios vs current balances.
-        Considers optional upcoming receipt amount.
+        Recommends which token to settle with and how frequently based on target
+        reserve ratios vs current balances. Considers optional upcoming receipt
+        amount.
       parameters:
         - in: query
           name: receiptUsd
@@ -1205,64 +1399,79 @@ paths:
           required: false
           description: Optional upcoming payment amount to consider
       responses:
-        "200":
+        '200':
           description: Recommendation
           headers:
             x-correlation-id:
               description: Correlation ID for tracing
-              schema: { type: string }
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ReserveRecommendationResponse"
-        "500":
+                $ref: '#/components/schemas/ReserveRecommendationResponse'
+        '500':
           description: recommendation_failed
-
+      security:
+        - apimKey: []
   /api/split/withdraw:
     post:
-      summary: "Deprecated: server-side split withdraw"
+      summary: 'Deprecated: server-side split withdraw'
       operationId: postSplitWithdrawDeprecated
-      tags: [Split]
-      description: |
-        Deprecated in favor of client-side `PaymentSplitter.release` via connected wallet.
+      tags:
+        - Split
+      description: >
+        Deprecated in favor of client-side `PaymentSplitter.release` via
+        connected wallet.
+
         This endpoint returns 410 Gone and should not be used.
       responses:
-        "204":
+        '204':
           description: Deprecated endpoint; returns no content
           headers:
             x-correlation-id:
               description: Correlation ID for tracing
-              schema: { type: string }
-        "410":
+              schema:
+                type: string
+        '410':
           description: Deprecated endpoint; use connected wallet
           headers:
             x-correlation-id:
               description: Correlation ID for tracing
-              schema: { type: string }
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  error: { type: string, example: deprecated }
-                  reason: { type: string, example: use_connected_wallet }
-                  message: { type: string }
-
+                  error:
+                    type: string
+                    example: deprecated
+                  reason:
+                    type: string
+                    example: use_connected_wallet
+                  message:
+                    type: string
+      security:
+        - apimKey: []
 components:
   securitySchemes:
     apimKey:
       type: apiKey
       in: header
       name: Ocp-Apim-Subscription-Key
-      description: |
-        Azure API Management subscription key. Required for developer-facing endpoints.
-        Obtain your key via BasaltSurge Admin → API Subscriptions (or directly in APIM).
+      description: >
+        Azure API Management subscription key. Required for developer-facing
+        endpoints.
+
+        Obtain your key via BasaltSurge Admin → API Subscriptions (or directly
+        in APIM).
     x402:
       type: apiKey
       in: header
       name: x-payment
-      description: "x402 Agentic Payment Standard Proof (Base64 payload)"
-
+      description: x402 Agentic Payment Standard Proof (Base64 payload)
   headers:
     X-RateLimit-Limit:
       description: Maximum number of requests allowed in the current window
@@ -1279,7 +1488,6 @@ components:
       schema:
         type: integer
         format: int64
-
   responses:
     UnauthorizedError:
       description: Missing or invalid subscription key
@@ -1295,7 +1503,9 @@ components:
                 type: string
                 example: Missing or invalid subscription key
     ForbiddenError:
-      description: Valid key but insufficient scope or disallowed action; or origin enforcement failed (AFD required)
+      description: >-
+        Valid key but insufficient scope or disallowed action; or origin
+        enforcement failed (AFD required)
       content:
         application/json:
           schema:
@@ -1311,11 +1521,11 @@ components:
       description: Rate limit exceeded
       headers:
         X-RateLimit-Limit:
-          $ref: "#/components/headers/X-RateLimit-Limit"
+          $ref: '#/components/headers/X-RateLimit-Limit'
         X-RateLimit-Remaining:
-          $ref: "#/components/headers/X-RateLimit-Remaining"
+          $ref: '#/components/headers/X-RateLimit-Remaining'
         X-RateLimit-Reset:
-          $ref: "#/components/headers/X-RateLimit-Reset"
+          $ref: '#/components/headers/X-RateLimit-Reset'
       content:
         application/json:
           schema:
@@ -1328,7 +1538,6 @@ components:
                 type: integer
                 format: int64
                 description: Unix ms timestamp when requests may resume
-
   schemas:
     LineItem:
       type: object
@@ -1338,8 +1547,9 @@ components:
         priceUsd:
           type: number
           format: float
-      required: [label, priceUsd]
-
+      required:
+        - label
+        - priceUsd
     Receipt:
       type: object
       properties:
@@ -1350,11 +1560,12 @@ components:
           format: float
         currency:
           type: string
-          enum: ["USD"]
+          enum:
+            - USD
         lineItems:
           type: array
           items:
-            $ref: "#/components/schemas/ReceiptLineItem"
+            $ref: '#/components/schemas/ReceiptLineItem'
         createdAt:
           type: integer
           format: int64
@@ -1373,7 +1584,8 @@ components:
           nullable: true
         taxComponents:
           type: array
-          items: { type: string }
+          items:
+            type: string
           nullable: true
         transactionHash:
           type: string
@@ -1382,8 +1594,12 @@ components:
           type: integer
           format: int64
           nullable: true
-      required: [receiptId, totalUsd, currency, lineItems, createdAt]
-
+      required:
+        - receiptId
+        - totalUsd
+        - currency
+        - lineItems
+        - createdAt
     CreateReceiptRequest:
       type: object
       properties:
@@ -1393,12 +1609,14 @@ components:
         lineItems:
           type: array
           items:
-            $ref: "#/components/schemas/LineItem"
+            $ref: '#/components/schemas/LineItem'
         totalUsd:
           type: number
           format: float
-      required: [id, lineItems, totalUsd]
-
+      required:
+        - id
+        - lineItems
+        - totalUsd
     CreateReceiptResponse:
       type: object
       properties:
@@ -1409,9 +1627,14 @@ components:
           format: uri
         status:
           type: string
-          enum: [pending, completed, failed]
-      required: [id, paymentUrl, status]
-
+          enum:
+            - pending
+            - completed
+            - failed
+      required:
+        - id
+        - paymentUrl
+        - status
     ReceiptStatus:
       type: object
       properties:
@@ -1419,7 +1642,15 @@ components:
           type: string
         status:
           type: string
-          enum: [generated, pending, completed, failed, refunded, tx_mined, recipient_validated, tx_mismatch]
+          enum:
+            - generated
+            - pending
+            - completed
+            - failed
+            - refunded
+            - tx_mined
+            - recipient_validated
+            - tx_mismatch
         transactionHash:
           type: string
           nullable: true
@@ -1430,8 +1661,9 @@ components:
           type: number
           format: float
           nullable: true
-      required: [id, status]
-
+      required:
+        - id
+        - status
     Transaction:
       type: object
       properties:
@@ -1446,7 +1678,10 @@ components:
           type: string
         status:
           type: string
-          enum: [pending, completed, failed]
+          enum:
+            - pending
+            - completed
+            - failed
         timestamp:
           type: string
           format: date-time
@@ -1455,7 +1690,6 @@ components:
         fees:
           type: number
           format: float
-
     SiteTheme:
       type: object
       properties:
@@ -1473,26 +1707,28 @@ components:
           type: string
         receiptBackgroundUrl:
           type: string
-
     SiteConfig:
       type: object
       properties:
         theme:
-          $ref: "#/components/schemas/SiteTheme"
+          $ref: '#/components/schemas/SiteTheme'
         processingFeePct:
           type: number
           format: float
           nullable: true
         defaultPaymentToken:
           type: string
-          enum: [ETH, USDC, USDT, cbBTC, cbXRP]
+          enum:
+            - ETH
+            - USDC
+            - USDT
+            - cbBTC
+            - cbXRP
         reserveRatios:
           type: object
           additionalProperties:
             type: number
           nullable: true
-
-    # Shop configuration schemas (normalized response)
     ShopTheme:
       type: object
       properties:
@@ -1512,11 +1748,17 @@ components:
           type: string
         logoShape:
           type: string
-          enum: [square, circle]
+          enum:
+            - square
+            - circle
         heroFontSize:
           type: string
-          enum: [microtext, small, medium, large, xlarge]
-
+          enum:
+            - microtext
+            - small
+            - medium
+            - large
+            - xlarge
     LinkItem:
       type: object
       properties:
@@ -1524,8 +1766,9 @@ components:
           type: string
         url:
           type: string
-      required: [label, url]
-
+      required:
+        - label
+        - url
     ShopConfig:
       type: object
       properties:
@@ -1536,10 +1779,14 @@ components:
         bio:
           type: string
         theme:
-          $ref: "#/components/schemas/ShopTheme"
+          $ref: '#/components/schemas/ShopTheme'
         arrangement:
           type: string
-          enum: [grid, featured_first, groups, carousel]
+          enum:
+            - grid
+            - featured_first
+            - groups
+            - carousel
         xpPerDollar:
           type: number
           format: float
@@ -1549,10 +1796,14 @@ components:
         links:
           type: array
           items:
-            $ref: "#/components/schemas/LinkItem"
+            $ref: '#/components/schemas/LinkItem'
         industryPack:
           type: string
-          enum: [restaurant, retail, hotel, freelancer]
+          enum:
+            - restaurant
+            - retail
+            - hotel
+            - freelancer
           nullable: true
         industryPackActivatedAt:
           type: integer
@@ -1566,182 +1817,286 @@ components:
         updatedAt:
           type: integer
           format: int64
-      required: [name, theme, arrangement, xpPerDollar, setupComplete, createdAt, updatedAt]
-
-    # Inventory schemas
+      required:
+        - name
+        - theme
+        - arrangement
+        - xpPerDollar
+        - setupComplete
+        - createdAt
+        - updatedAt
     InventoryItem:
       type: object
       properties:
-        id: { type: string }
-        wallet: { type: string }
-        sku: { type: string }
-        name: { type: string }
-        priceUsd: { type: number, format: float }
-        currency: { type: string }
-        stockQty: { type: integer, format: int32, description: "-1=unlimited, 0=out of stock, >0=qty" }
-        category: { type: string }
-        description: { type: string }
+        id:
+          type: string
+        wallet:
+          type: string
+        sku:
+          type: string
+        name:
+          type: string
+        priceUsd:
+          type: number
+          format: float
+        currency:
+          type: string
+        stockQty:
+          type: integer
+          format: int32
+          description: '-1=unlimited, 0=out of stock, >0=qty'
+        category:
+          type: string
+        description:
+          type: string
         tags:
           type: array
-          items: { type: string }
+          items:
+            type: string
         images:
           type: array
-          items: { type: string }
-          description: "Image data URLs or URLs"
+          items:
+            type: string
+          description: Image data URLs or URLs
         attributes:
           type: object
           additionalProperties: true
-        costUsd: { type: number, format: float }
-        taxable: { type: boolean }
-        jurisdictionCode: { type: string }
-        industryPack: { type: string }
-        createdAt: { type: integer, format: int64 }
-        updatedAt: { type: integer, format: int64 }
-      required: [id, wallet, sku, name, priceUsd, stockQty, createdAt, updatedAt]
-
+        costUsd:
+          type: number
+          format: float
+        taxable:
+          type: boolean
+        jurisdictionCode:
+          type: string
+        industryPack:
+          type: string
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+      required:
+        - id
+        - wallet
+        - sku
+        - name
+        - priceUsd
+        - stockQty
+        - createdAt
+        - updatedAt
     InventoryListResponse:
       type: object
       properties:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/InventoryItem"
-        total: { type: integer, format: int32 }
-        page: { type: integer, format: int32 }
-        pageSize: { type: integer, format: int32 }
+            $ref: '#/components/schemas/InventoryItem'
+        total:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
         degraded:
           type: boolean
           nullable: true
         reason:
           type: string
           nullable: true
-
     InventoryUpsertRequest:
       type: object
       properties:
-        id: { type: string, description: "Item ID for updates (optional)" }
-        sku: { type: string }
-        name: { type: string }
-        priceUsd: { type: number, format: float }
-        stockQty: { type: integer, format: int32 }
-        currency: { type: string }
-        category: { type: string }
-        description: { type: string }
+        id:
+          type: string
+          description: Item ID for updates (optional)
+        sku:
+          type: string
+        name:
+          type: string
+        priceUsd:
+          type: number
+          format: float
+        stockQty:
+          type: integer
+          format: int32
+        currency:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
         tags:
           type: array
-          items: { type: string }
+          items:
+            type: string
         images:
           type: array
-          items: { type: string }
+          items:
+            type: string
         attributes:
           type: object
           additionalProperties: true
-        costUsd: { type: number, format: float }
-        taxable: { type: boolean }
-        jurisdictionCode: { type: string }
-        industryPack: { type: string }
-      required: [sku, name, priceUsd, stockQty]
-
+        costUsd:
+          type: number
+          format: float
+        taxable:
+          type: boolean
+        jurisdictionCode:
+          type: string
+        industryPack:
+          type: string
+      required:
+        - sku
+        - name
+        - priceUsd
+        - stockQty
     InventoryUpsertResponse:
       type: object
       properties:
-        ok: { type: boolean }
+        ok:
+          type: boolean
         item:
-          $ref: "#/components/schemas/InventoryItem"
+          $ref: '#/components/schemas/InventoryItem'
         degraded:
           type: boolean
           nullable: true
         reason:
           type: string
           nullable: true
-      required: [ok, item]
-
+      required:
+        - ok
+        - item
     DeleteInventoryResponse:
       type: object
       properties:
-        ok: { type: boolean }
+        ok:
+          type: boolean
         degraded:
           type: boolean
           nullable: true
         reason:
           type: string
           nullable: true
-      required: [ok]
-
-    # Orders schemas
+      required:
+        - ok
     OrderItem:
       type: object
       properties:
-        id: { type: string }
-        sku: { type: string }
-        qty: { type: integer, format: int32, minimum: 1 }
-      required: [qty]
-
+        id:
+          type: string
+        sku:
+          type: string
+        qty:
+          type: integer
+          format: int32
+          minimum: 1
+      required:
+        - qty
     OrderCreateRequest:
       type: object
       properties:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/OrderItem"
+            $ref: '#/components/schemas/OrderItem'
         jurisdictionCode:
           type: string
-          description: "Tax jurisdiction code (e.g., US-CA)"
+          description: Tax jurisdiction code (e.g., US-CA)
         taxRate:
           type: number
           format: float
-          description: "Override tax rate (0..1)"
+          description: Override tax rate (0..1)
         taxComponents:
           type: array
-          items: { type: string }
-      required: [items]
-
+          items:
+            type: string
+      required:
+        - items
     ReceiptLineItem:
       type: object
       properties:
-        label: { type: string }
-        priceUsd: { type: number, format: float }
-        qty: { type: integer, format: int32 }
-        thumb: { type: string }
-        itemId: { type: string }
-        sku: { type: string }
-      required: [label, priceUsd]
-
+        label:
+          type: string
+        priceUsd:
+          type: number
+          format: float
+        qty:
+          type: integer
+          format: int32
+        thumb:
+          type: string
+        itemId:
+          type: string
+        sku:
+          type: string
+      required:
+        - label
+        - priceUsd
     GeneratedReceipt:
       type: object
       properties:
-        receiptId: { type: string }
-        totalUsd: { type: number, format: float }
-        currency: { type: string, enum: ["USD"] }
+        receiptId:
+          type: string
+        totalUsd:
+          type: number
+          format: float
+        currency:
+          type: string
+          enum:
+            - USD
         lineItems:
           type: array
           items:
-            $ref: "#/components/schemas/ReceiptLineItem"
-        createdAt: { type: integer, format: int64 }
-        brandName: { type: string }
-        status: { type: string, enum: [generated, pending, completed, failed, refunded] }
-        jurisdictionCode: { type: string }
-        taxRate: { type: number, format: float }
+            $ref: '#/components/schemas/ReceiptLineItem'
+        createdAt:
+          type: integer
+          format: int64
+        brandName:
+          type: string
+        status:
+          type: string
+          enum:
+            - generated
+            - pending
+            - completed
+            - failed
+            - refunded
+        jurisdictionCode:
+          type: string
+        taxRate:
+          type: number
+          format: float
         taxComponents:
           type: array
-          items: { type: string }
-      required: [receiptId, totalUsd, currency, lineItems, createdAt, status]
-
+          items:
+            type: string
+      required:
+        - receiptId
+        - totalUsd
+        - currency
+        - lineItems
+        - createdAt
+        - status
     OrderCreateResponse:
       type: object
       properties:
-        ok: { type: boolean }
+        ok:
+          type: boolean
         receipt:
-          $ref: "#/components/schemas/GeneratedReceipt"
+          $ref: '#/components/schemas/GeneratedReceipt'
         degraded:
           type: boolean
           nullable: true
         reason:
           type: string
           nullable: true
-      required: [ok, receipt]
-
-    # Billing schemas
+      required:
+        - ok
+        - receipt
     BalanceResponse:
       type: object
       properties:
@@ -1759,7 +2114,9 @@ components:
           nullable: true
         plan:
           type: string
-          enum: [basic, unlimited]
+          enum:
+            - basic
+            - unlimited
           nullable: true
         planExpiry:
           type: integer
@@ -1771,8 +2128,10 @@ components:
         reason:
           type: string
           nullable: true
-      required: [balanceSeconds, purchasedSeconds, usedSeconds]
-
+      required:
+        - balanceSeconds
+        - purchasedSeconds
+        - usedSeconds
     BillingPurchaseRequest:
       type: object
       properties:
@@ -1804,41 +2163,75 @@ components:
         receiptId:
           type: string
           nullable: true
-      required: [seconds]
-
+      required:
+        - seconds
     BillingEvent:
       type: object
       properties:
-        id: { type: string }
-        type: { type: string, enum: [purchase] }
-        wallet: { type: string }
-        seconds: { type: integer, format: int64 }
-        usd: { type: number, format: float, nullable: true }
-        eth: { type: number, format: float, nullable: true }
-        txHash: { type: string, nullable: true }
-        recipient: { type: string, nullable: true }
-        receiptId: { type: string, nullable: true }
-        portalFeePct: { type: number, format: float }
-        portalFeeRecipient: { type: string, nullable: true }
-        portalFeeUsd: { type: number, format: float, nullable: true }
-        ts: { type: integer, format: int64 }
-      required: [id, type, wallet, seconds, portalFeePct, ts]
-
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+            - purchase
+        wallet:
+          type: string
+        seconds:
+          type: integer
+          format: int64
+        usd:
+          type: number
+          format: float
+          nullable: true
+        eth:
+          type: number
+          format: float
+          nullable: true
+        txHash:
+          type: string
+          nullable: true
+        recipient:
+          type: string
+          nullable: true
+        receiptId:
+          type: string
+          nullable: true
+        portalFeePct:
+          type: number
+          format: float
+        portalFeeRecipient:
+          type: string
+          nullable: true
+        portalFeeUsd:
+          type: number
+          format: float
+          nullable: true
+        ts:
+          type: integer
+          format: int64
+      required:
+        - id
+        - type
+        - wallet
+        - seconds
+        - portalFeePct
+        - ts
     BillingPurchaseResponse:
       type: object
       properties:
-        ok: { type: boolean }
+        ok:
+          type: boolean
         event:
-          $ref: "#/components/schemas/BillingEvent"
+          $ref: '#/components/schemas/BillingEvent'
         degraded:
           type: boolean
           nullable: true
         reason:
           type: string
           nullable: true
-      required: [ok, event]
-
-    # Pricing schemas
+      required:
+        - ok
+        - event
     DiscountRule:
       type: object
       properties:
@@ -1848,8 +2241,9 @@ components:
         discountPct:
           type: number
           format: float
-      required: [minMinutes, discountPct]
-
+      required:
+        - minMinutes
+        - discountPct
     PricingConfig:
       type: object
       properties:
@@ -1862,22 +2256,24 @@ components:
         discountRules:
           type: array
           items:
-            $ref: "#/components/schemas/DiscountRule"
-      required: [ethPer2Min, minMinutes, discountRules]
-
+            $ref: '#/components/schemas/DiscountRule'
+      required:
+        - ethPer2Min
+        - minMinutes
+        - discountRules
     PricingConfigResponse:
       type: object
       properties:
         config:
-          $ref: "#/components/schemas/PricingConfig"
+          $ref: '#/components/schemas/PricingConfig'
         degraded:
           type: boolean
           nullable: true
         reason:
           type: string
           nullable: true
-      required: [config]
-
+      required:
+        - config
     PricingConfigUpsertRequest:
       type: object
       properties:
@@ -1890,25 +2286,26 @@ components:
         discountRules:
           type: array
           items:
-            $ref: "#/components/schemas/DiscountRule"
-      required: [ethPer2Min, minMinutes]
-
+            $ref: '#/components/schemas/DiscountRule'
+      required:
+        - ethPer2Min
+        - minMinutes
     PricingConfigUpsertResponse:
       type: object
       properties:
         ok:
           type: boolean
         config:
-          $ref: "#/components/schemas/PricingConfig"
+          $ref: '#/components/schemas/PricingConfig'
         degraded:
           type: boolean
           nullable: true
         reason:
           type: string
           nullable: true
-      required: [ok, config]
-
-    # Split config schemas
+      required:
+        - ok
+        - config
     SplitRecipient:
       type: object
       properties:
@@ -1918,8 +2315,9 @@ components:
           type: integer
           format: int32
           description: Basis points of split shares (e.g., 9950 = 99.5%)
-      required: [address, sharesBps]
-
+      required:
+        - address
+        - sharesBps
     SplitConfig:
       type: object
       properties:
@@ -1929,15 +2327,14 @@ components:
         recipients:
           type: array
           items:
-            $ref: "#/components/schemas/SplitRecipient"
-
+            $ref: '#/components/schemas/SplitRecipient'
     SplitConfigResponse:
       type: object
       properties:
         split:
-          $ref: "#/components/schemas/SplitConfig"
-      required: [split]
-
+          $ref: '#/components/schemas/SplitConfig'
+      required:
+        - split
     SplitConfigUpsertRequest:
       type: object
       properties:
@@ -1947,15 +2344,14 @@ components:
         recipients:
           type: array
           items:
-            $ref: "#/components/schemas/SplitRecipient"
-
+            $ref: '#/components/schemas/SplitRecipient'
     SplitConfigUpsertResponse:
       type: object
       properties:
         ok:
           type: boolean
         split:
-          $ref: "#/components/schemas/SplitConfig"
+          $ref: '#/components/schemas/SplitConfig'
         idempotent:
           type: boolean
           nullable: true
@@ -1965,9 +2361,9 @@ components:
         reason:
           type: string
           nullable: true
-      required: [ok, split]
-
-    # Tax catalog schemas
+      required:
+        - ok
+        - split
     TaxProvider:
       type: object
       properties:
@@ -1977,7 +2373,6 @@ components:
         apiKeySet:
           type: boolean
           nullable: true
-
     TaxJurisdiction:
       type: object
       properties:
@@ -1994,25 +2389,28 @@ components:
         type:
           type: string
           nullable: true
-      required: [code, name, rate]
-
+      required:
+        - code
+        - name
+        - rate
     TaxCatalogResponse:
       type: object
       properties:
         provider:
-          $ref: "#/components/schemas/TaxProvider"
+          $ref: '#/components/schemas/TaxProvider'
         updatedAt:
           type: integer
           format: int64
         jurisdictions:
           type: array
           items:
-            $ref: "#/components/schemas/TaxJurisdiction"
+            $ref: '#/components/schemas/TaxJurisdiction'
         disclaimer:
           type: string
-      required: [provider, updatedAt, jurisdictions]
-
-    # Receipts update/refund/terminal schemas
+      required:
+        - provider
+        - updatedAt
+        - jurisdictions
     ReceiptStatusUpdateRequest:
       type: object
       properties:
@@ -2024,8 +2422,10 @@ components:
         status:
           type: string
           description: Status to update (tracking or sensitive)
-      required: [receiptId, wallet, status]
-
+      required:
+        - receiptId
+        - wallet
+        - status
     OkResponse:
       type: object
       properties:
@@ -2037,8 +2437,8 @@ components:
         reason:
           type: string
           nullable: true
-      required: [ok]
-
+      required:
+        - ok
     RefundItem:
       type: object
       properties:
@@ -2051,8 +2451,9 @@ components:
           type: integer
           format: int32
           nullable: true
-      required: [label, priceUsd]
-
+      required:
+        - label
+        - priceUsd
     ReceiptRefundRequest:
       type: object
       properties:
@@ -2070,12 +2471,15 @@ components:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/RefundItem"
+            $ref: '#/components/schemas/RefundItem'
         txHash:
           type: string
           nullable: true
-      required: [receiptId, wallet, buyer, usd]
-
+      required:
+        - receiptId
+        - wallet
+        - buyer
+        - usd
     ReceiptTerminalCreateRequest:
       type: object
       properties:
@@ -2097,26 +2501,27 @@ components:
           nullable: true
         taxComponents:
           type: array
-          items: { type: string }
+          items:
+            type: string
           nullable: true
-      required: [amountUsd]
-
+      required:
+        - amountUsd
     ReceiptTerminalCreateResponse:
       type: object
       properties:
         ok:
           type: boolean
         receipt:
-          $ref: "#/components/schemas/GeneratedReceipt"
+          $ref: '#/components/schemas/GeneratedReceipt'
         degraded:
           type: boolean
           nullable: true
         reason:
           type: string
           nullable: true
-      required: [ok, receipt]
-
-    # Reserve schemas
+      required:
+        - ok
+        - receipt
     ReserveBalanceEntry:
       type: object
       properties:
@@ -2132,17 +2537,27 @@ components:
         address:
           type: string
           nullable: true
-
     ReserveIndexedMetrics:
       type: object
       properties:
-        totalVolumeUsd: { type: number, format: float }
-        merchantEarnedUsd: { type: number, format: float }
-        platformFeeUsd: { type: number, format: float }
-        customers: { type: integer, format: int32 }
-        totalCustomerXp: { type: integer, format: int32 }
-        transactionCount: { type: integer, format: int32 }
-
+        totalVolumeUsd:
+          type: number
+          format: float
+        merchantEarnedUsd:
+          type: number
+          format: float
+        platformFeeUsd:
+          type: number
+          format: float
+        customers:
+          type: integer
+          format: int32
+        totalCustomerXp:
+          type: integer
+          format: int32
+        transactionCount:
+          type: integer
+          format: int32
     ReserveBalancesResponse:
       type: object
       properties:
@@ -2157,33 +2572,43 @@ components:
           type: object
           properties:
             ETH:
-              $ref: "#/components/schemas/ReserveBalanceEntry"
+              $ref: '#/components/schemas/ReserveBalanceEntry'
             USDC:
-              $ref: "#/components/schemas/ReserveBalanceEntry"
+              $ref: '#/components/schemas/ReserveBalanceEntry'
             USDT:
-              $ref: "#/components/schemas/ReserveBalanceEntry"
+              $ref: '#/components/schemas/ReserveBalanceEntry'
             cbBTC:
-              $ref: "#/components/schemas/ReserveBalanceEntry"
+              $ref: '#/components/schemas/ReserveBalanceEntry'
             cbXRP:
-              $ref: "#/components/schemas/ReserveBalanceEntry"
+              $ref: '#/components/schemas/ReserveBalanceEntry'
         rates:
           type: object
           properties:
-            ETH_USD: { type: number, format: float }
-            BTC_USD: { type: number, format: float }
-            XRP_USD: { type: number, format: float }
+            ETH_USD:
+              type: number
+              format: float
+            BTC_USD:
+              type: number
+              format: float
+            XRP_USD:
+              type: number
+              format: float
         totalUsd:
           type: number
           format: float
         indexedMetrics:
-          $ref: "#/components/schemas/ReserveIndexedMetrics"
-
+          $ref: '#/components/schemas/ReserveIndexedMetrics'
     ReserveRecommendationResponse:
       type: object
       properties:
         recommendedToken:
           type: string
-          enum: [USDC, USDT, cbBTC, cbXRP, ETH]
+          enum:
+            - USDC
+            - USDT
+            - cbBTC
+            - cbXRP
+            - ETH
         frequency:
           type: integer
           format: int32

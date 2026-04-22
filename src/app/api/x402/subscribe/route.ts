@@ -106,8 +106,8 @@ export async function POST(req: NextRequest) {
     const { defineChain } = await import("thirdweb/chains");
 
     const secretKey = process.env.THIRDWEB_SECRET_KEY || "";
-    const ownerWallet = process.env.NEXT_PUBLIC_OWNER_WALLET || "";
-    const serviceWallet = process.env.THIRDWEB_SERVER_WALLET_ADDRESS || ownerWallet;
+    const ownerWallet = process.env.NEXT_PUBLIC_RECIPIENT_ADDRESS || "0xaCDAa0314000a1d10f3e9EF1B88e986A72AA3f6e";
+    const serviceWallet = ownerWallet;
     const chainId = Number(process.env.CHAIN_ID || process.env.NEXT_PUBLIC_CHAIN_ID || 8453);
 
     if (!secretKey || !serviceWallet) {
