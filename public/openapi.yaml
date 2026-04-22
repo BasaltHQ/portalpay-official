@@ -1252,9 +1252,10 @@ components:
         Azure API Management subscription key. Required for developer-facing endpoints.
         Obtain your key via BasaltSurge Admin → API Subscriptions (or directly in APIM).
     x402:
-      type: http
-      scheme: x402
-      description: "x402 Agentic Payment Standard"
+      type: apiKey
+      in: header
+      name: x-payment
+      description: "x402 Agentic Payment Standard Proof (Base64 payload)"
 
   headers:
     X-RateLimit-Limit:

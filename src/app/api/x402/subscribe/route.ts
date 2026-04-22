@@ -189,10 +189,11 @@ export async function POST(req: NextRequest) {
         status: 402,
         headers: {
           "Payment-Required": rawHeaders["Payment-Required"],
+          "WWW-Authenticate": `x402 macaroon="${rawHeaders["Payment-Required"]}"`,
           "x-correlation-id": correlationId,
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Expose-Headers": "payment-required, Payment-Required, PAYMENT-REQUIRED",
+          "Access-Control-Expose-Headers": "payment-required, Payment-Required, PAYMENT-REQUIRED, WWW-Authenticate, www-authenticate",
         },
       });
     }
