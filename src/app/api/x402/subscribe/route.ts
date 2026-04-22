@@ -152,34 +152,40 @@ export async function POST(req: NextRequest) {
         try {
           challengeBody = JSON.parse(Buffer.from(paymentRequiredB64, "base64").toString("utf-8"));
           
+          const subscribeSchema = {
+            type: "object",
+            required: ["planKey"],
+            properties: {
+              planKey: { type: "string", enum: ["starter", "pro", "enterprise"] }
+            }
+          };
+
           // Inject input schema so strict crawler parsers don't fail discovery
           if (challengeBody.accepts && Array.isArray(challengeBody.accepts)) {
             challengeBody.accepts.forEach((a: any) => {
               // INJECT EXPLICIT AMOUNT STRING FOR X402SCAN CRAWLER VALIDATION
               const priceUsdRaw = challengeBody?.subscription?.priceUsd || 399;
               if (!a.amount) a.amount = a.maxAmountRequired || String(Math.floor(priceUsdRaw * 1000000));
+              
+              if (!a.outputSchema) a.outputSchema = {};
+              if (!a.outputSchema.input) a.outputSchema.input = { type: "http", method: "POST" };
+              a.outputSchema.input.schema = subscribeSchema;
             });
-            
-            if (!challengeBody.extensions) challengeBody.extensions = {};
-            challengeBody.extensions.bazaar = {
-              discoverable: true,
-              category: "utilities",
-              tags: ["subscriptions", "access", "apim", "licenses"],
-              schema: {
-                type: "object",
-                properties: {
-                  input: {
-                    type: "object",
-                    required: ["planKey"],
-                    properties: {
-                      planKey: { type: "string", enum: ["starter", "pro", "enterprise"] }
-                    }
-                  },
-                  output: { type: "object" }
-                }
-              }
-            };
           }
+            
+          if (!challengeBody.extensions) challengeBody.extensions = {};
+          challengeBody.extensions.bazaar = {
+            discoverable: true,
+            category: "utilities",
+            tags: ["subscriptions", "access", "apim", "licenses"],
+            schema: {
+              type: "object",
+              properties: {
+                input: subscribeSchema,
+                output: { type: "object" }
+              }
+            }
+          };
           
           // Re-encode header to ensure it matches the body
           const newHeaderB64 = Buffer.from(JSON.stringify(challengeBody)).toString("base64");
