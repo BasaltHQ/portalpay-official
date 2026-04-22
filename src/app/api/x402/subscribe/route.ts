@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
               
               // INJECT EXPLICIT AMOUNT STRING FOR X402SCAN CRAWLER VALIDATION
               const priceUsdRaw = challengeBody?.subscription?.priceUsd || 399;
-              if (!a.amount) a.amount = a.maxAmountRequired || String(priceUsdRaw * 1000000);
+              if (!a.amount) a.amount = a.maxAmountRequired || String(Math.floor(priceUsdRaw * 1000000));
             });
           }
           

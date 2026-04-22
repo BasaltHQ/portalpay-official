@@ -255,6 +255,11 @@ export async function POST(req: NextRequest) {
       if (paymentRequiredB64) {
         try {
           challengeBody = JSON.parse(Buffer.from(paymentRequiredB64, "base64").toString("utf-8"));
+          if (challengeBody.accepts && Array.isArray(challengeBody.accepts)) {
+            challengeBody.accepts.forEach((a: any) => {
+              if (!a.amount) a.amount = a.maxAmountRequired || String(Math.floor(totalUsd * 1000000));
+            });
+          }
         } catch { challengeBody = { raw: paymentRequiredB64 }; }
       }
 

@@ -175,9 +175,9 @@ paths:
       x-payment-info:
         price:
           mode: dynamic
-          currency: USD
-          min: "0.10"
-          max: "100000.00"
+          currency: USDC
+          min: "100000"
+          max: "100000000000"
         protocols:
           - x402: {}
       requestBody:
@@ -270,9 +270,9 @@ paths:
       x-payment-info:
         price:
           mode: dynamic
-          currency: USD
-          min: "0.00"
-          max: "5000.00"
+          currency: USDC
+          min: "0"
+          max: "5000000000"
         protocols:
           - x402: {}
       requestBody:
