@@ -155,16 +155,6 @@ export async function POST(req: NextRequest) {
           // Inject input schema so strict crawler parsers don't fail discovery
           if (challengeBody.accepts && Array.isArray(challengeBody.accepts)) {
             challengeBody.accepts.forEach((a: any) => {
-              if (!a.outputSchema) a.outputSchema = {};
-              if (!a.outputSchema.input) a.outputSchema.input = { type: "http", method: "POST" };
-              a.outputSchema.input.schema = {
-                type: "object",
-                required: ["planKey"],
-                properties: {
-                  planKey: { type: "string", enum: ["starter", "pro", "enterprise"] }
-                }
-              };
-              
               // INJECT EXPLICIT AMOUNT STRING FOR X402SCAN CRAWLER VALIDATION
               const priceUsdRaw = challengeBody?.subscription?.priceUsd || 399;
               if (!a.amount) a.amount = a.maxAmountRequired || String(Math.floor(priceUsdRaw * 1000000));
@@ -174,7 +164,20 @@ export async function POST(req: NextRequest) {
             challengeBody.extensions.bazaar = {
               discoverable: true,
               category: "utilities",
-              tags: ["subscriptions", "access", "apim", "licenses"]
+              tags: ["subscriptions", "access", "apim", "licenses"],
+              schema: {
+                type: "object",
+                properties: {
+                  input: {
+                    type: "object",
+                    required: ["planKey"],
+                    properties: {
+                      planKey: { type: "string", enum: ["starter", "pro", "enterprise"] }
+                    }
+                  },
+                  output: { type: "object" }
+                }
+              }
             };
           }
           

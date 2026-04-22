@@ -85,37 +85,33 @@ export async function POST(req: NextRequest) {
             challengeBody = JSON.parse(Buffer.from(paymentRequiredB64, "base64").toString("utf-8"));
 
             // Inject input schema so strict crawler parsers don't fail discovery
-            if (challengeBody.accepts && Array.isArray(challengeBody.accepts)) {
-              challengeBody.accepts.forEach((a: any) => {
-                if (!a.outputSchema) a.outputSchema = {};
-                if (!a.outputSchema.input) a.outputSchema.input = { type: "http", method: "POST" };
-                a.outputSchema.input.schema = {
-                  type: "object",
-                  required: ["shopSlug", "items"],
-                  properties: {
-                    shopSlug: { type: "string" },
-                    items: {
-                      type: "array",
+            if (!challengeBody.extensions) challengeBody.extensions = {};
+            challengeBody.extensions.bazaar = {
+              discoverable: true,
+              category: "shopping",
+              tags: ["ecommerce", "pos", "retail", "orders"],
+              schema: {
+                type: "object",
+                properties: {
+                  input: {
+                    type: "object",
+                    required: ["shopSlug", "items"],
+                    properties: {
+                      shopSlug: { type: "string" },
                       items: {
-                        type: "object",
-                        required: ["sku", "qty"],
-                        properties: { sku: { type: "string" }, qty: { type: "number" } }
+                        type: "array",
+                        items: {
+                          type: "object",
+                          required: ["sku", "qty"],
+                          properties: { sku: { type: "string" }, qty: { type: "number" } }
+                        }
                       }
                     }
-                  }
-                };
-                
-                // INJECT EXPLICIT AMOUNT STRING FOR X402SCAN CRAWLER VALIDATION
-                if (!a.amount) a.amount = a.maxAmountRequired || "100000";
-              });
-              
-              if (!challengeBody.extensions) challengeBody.extensions = {};
-              challengeBody.extensions.bazaar = {
-                discoverable: true,
-                category: "shopping",
-                tags: ["ecommerce", "pos", "retail", "orders"]
-              };
-            }
+                  },
+                  output: { type: "object" }
+                }
+              }
+            };
 
             // Re-encode header to ensure it matches the body
             const newHeaderB64 = Buffer.from(JSON.stringify(challengeBody)).toString("base64");
@@ -265,32 +261,34 @@ export async function POST(req: NextRequest) {
           if (challengeBody.accepts && Array.isArray(challengeBody.accepts)) {
             challengeBody.accepts.forEach((a: any) => {
               if (!a.amount) a.amount = a.maxAmountRequired || String(Math.floor(totalUsd * 1000000));
-              
-              // Inject input schema so strict crawler parsers don't fail discovery
-              if (!a.outputSchema) a.outputSchema = {};
-              if (!a.outputSchema.input) a.outputSchema.input = { type: "http", method: "POST" };
-              a.outputSchema.input.schema = {
-                type: "object",
-                required: ["shopSlug", "items"],
-                properties: {
-                  shopSlug: { type: "string" },
-                  items: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      required: ["sku", "qty"],
-                      properties: { sku: { type: "string" }, qty: { type: "number" } }
-                    }
-                  }
-                }
-              };
             });
             
             if (!challengeBody.extensions) challengeBody.extensions = {};
             challengeBody.extensions.bazaar = {
               discoverable: true,
               category: "shopping",
-              tags: ["ecommerce", "pos", "retail", "orders"]
+              tags: ["ecommerce", "pos", "retail", "orders"],
+              schema: {
+                type: "object",
+                properties: {
+                  input: {
+                    type: "object",
+                    required: ["shopSlug", "items"],
+                    properties: {
+                      shopSlug: { type: "string" },
+                      items: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          required: ["sku", "qty"],
+                          properties: { sku: { type: "string" }, qty: { type: "number" } }
+                        }
+                      }
+                    }
+                  },
+                  output: { type: "object" }
+                }
+              }
             };
           }
         } catch { challengeBody = { raw: paymentRequiredB64 }; }

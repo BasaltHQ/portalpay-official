@@ -97,12 +97,6 @@ export async function POST(req: NextRequest, context: any) {
           challengeBody = JSON.parse(Buffer.from(paymentRequiredB64, "base64").toString("utf-8"));
           if (challengeBody.accepts && Array.isArray(challengeBody.accepts)) {
             challengeBody.accepts.forEach((a: any) => {
-              if (!a.outputSchema) a.outputSchema = {};
-              if (!a.outputSchema.input) a.outputSchema.input = { type: "http", method: "POST" };
-              a.outputSchema.input.schema = {
-                type: "object",
-                description: "Optional metadata"
-              };
               // INJECT EXPLICIT AMOUNT STRING FOR X402SCAN CRAWLER VALIDATION
               // Strictly enforce USDC (6 decimals)
               if (!a.amount) a.amount = a.maxAmountRequired || String(Math.floor(validPrice * 1000000));
@@ -112,7 +106,17 @@ export async function POST(req: NextRequest, context: any) {
             challengeBody.extensions.bazaar = {
               discoverable: true,
               category: "commerce",
-              tags: ["shopping", "retail", "pos", "items"]
+              tags: ["shopping", "retail", "pos", "items"],
+              schema: {
+                type: "object",
+                properties: {
+                  input: {
+                    type: "object",
+                    description: "Optional metadata"
+                  },
+                  output: { type: "object" }
+                }
+              }
             };
           }
         } catch { /* ignore */ }
