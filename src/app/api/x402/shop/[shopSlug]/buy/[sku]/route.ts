@@ -104,7 +104,7 @@ export async function POST(req: NextRequest, { params }: { params: { shopSlug: s
                 description: "Optional metadata"
               };
               // INJECT EXPLICIT AMOUNT STRING FOR X402SCAN CRAWLER VALIDATION
-              // Use Thirdweb's native big-int equivalent generated natively based on pricing chain precision
+              // Strictly enforce USDC (6 decimals)
               if (!a.amount) a.amount = a.maxAmountRequired || String(Math.floor(validPrice * 1000000));
             });
           }
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest, { params }: { params: { shopSlug: s
           sku,
           quantity: 1,
           totalUsd: validPrice,
-          currency: "USD",
+          currency: "USDC",
         },
       };
 
