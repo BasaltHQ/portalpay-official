@@ -108,6 +108,13 @@ export async function POST(req: NextRequest) {
                 // INJECT EXPLICIT AMOUNT STRING FOR X402SCAN CRAWLER VALIDATION
                 if (!a.amount) a.amount = a.maxAmountRequired || "100000";
               });
+              
+              if (!challengeBody.extensions) challengeBody.extensions = {};
+              challengeBody.extensions.bazaar = {
+                discoverable: true,
+                category: "shopping",
+                tags: ["ecommerce", "pos", "retail", "orders"]
+              };
             }
 
             // Re-encode header to ensure it matches the body
@@ -258,7 +265,33 @@ export async function POST(req: NextRequest) {
           if (challengeBody.accepts && Array.isArray(challengeBody.accepts)) {
             challengeBody.accepts.forEach((a: any) => {
               if (!a.amount) a.amount = a.maxAmountRequired || String(Math.floor(totalUsd * 1000000));
+              
+              // Inject input schema so strict crawler parsers don't fail discovery
+              if (!a.outputSchema) a.outputSchema = {};
+              if (!a.outputSchema.input) a.outputSchema.input = { type: "http", method: "POST" };
+              a.outputSchema.input.schema = {
+                type: "object",
+                required: ["shopSlug", "items"],
+                properties: {
+                  shopSlug: { type: "string" },
+                  items: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      required: ["sku", "qty"],
+                      properties: { sku: { type: "string" }, qty: { type: "number" } }
+                    }
+                  }
+                }
+              };
             });
+            
+            if (!challengeBody.extensions) challengeBody.extensions = {};
+            challengeBody.extensions.bazaar = {
+              discoverable: true,
+              category: "shopping",
+              tags: ["ecommerce", "pos", "retail", "orders"]
+            };
           }
         } catch { challengeBody = { raw: paymentRequiredB64 }; }
       }

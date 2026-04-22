@@ -107,6 +107,13 @@ export async function POST(req: NextRequest, context: any) {
               // Strictly enforce USDC (6 decimals)
               if (!a.amount) a.amount = a.maxAmountRequired || String(Math.floor(validPrice * 1000000));
             });
+            
+            if (!challengeBody.extensions) challengeBody.extensions = {};
+            challengeBody.extensions.bazaar = {
+              discoverable: true,
+              category: "commerce",
+              tags: ["shopping", "retail", "pos", "items"]
+            };
           }
         } catch { /* ignore */ }
       }

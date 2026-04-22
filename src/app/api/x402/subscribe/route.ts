@@ -169,6 +169,13 @@ export async function POST(req: NextRequest) {
               const priceUsdRaw = challengeBody?.subscription?.priceUsd || 399;
               if (!a.amount) a.amount = a.maxAmountRequired || String(Math.floor(priceUsdRaw * 1000000));
             });
+            
+            if (!challengeBody.extensions) challengeBody.extensions = {};
+            challengeBody.extensions.bazaar = {
+              discoverable: true,
+              category: "utilities",
+              tags: ["subscriptions", "access", "apim", "licenses"]
+            };
           }
           
           // Re-encode header to ensure it matches the body
