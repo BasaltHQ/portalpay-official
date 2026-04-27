@@ -62,25 +62,25 @@ export async function POST(req: NextRequest) {
     const res = NextResponse.json({ ok: true });
     const cookieDomain = getCookieDomainFromRequest(req);
 
-    // Set auth cookie
-    res.cookies.set(AUTH_COOKIE, jwt, {
+    const opts = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: '/',
       domain: cookieDomain,
       maxAge: 60 * 60 * 24 // 24 hours
-    });
+    } as const;
+
+    // Set auth cookie
+    res.cookies.set(AUTH_COOKIE, jwt, opts);
+
+    // If this is the main platform container, also set the SSO cookie for the broader BasaltHQ portal
+    if (process.env.CONTAINER_TYPE === "platform") {
+      res.cookies.set("thirdweb_auth_token", jwt, opts);
+    }
 
     // Set wallet cookie
-    res.cookies.set("cb_wallet", wallet, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      path: '/',
-      domain: cookieDomain,
-      maxAge: 60 * 60 * 24,
-    });
+    res.cookies.set("cb_wallet", wallet, opts);
 
     return res;
   } catch (e: any) {

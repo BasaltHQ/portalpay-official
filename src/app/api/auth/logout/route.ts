@@ -53,5 +53,11 @@ export async function POST(req: NextRequest) {
 	// Clear auth token and secondary wallet cookie with proper domain
 	res.cookies.set(AUTH.COOKIE, "", opts);
 	res.cookies.set("cb_wallet", "", opts);
+
+	// Also clear the portal SSO cookie if this is the main platform container
+	if (process.env.CONTAINER_TYPE === "platform") {
+		res.cookies.set("thirdweb_auth_token", "", opts);
+	}
+
 	return res;
 }
