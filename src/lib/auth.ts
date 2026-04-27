@@ -71,7 +71,13 @@ export function getAuth(req?: NextRequest) {
 export async function getAuthenticatedWallet(req?: NextRequest): Promise<string | null> {
 	try {
 		const cookieStore = await cookies();
-		const token = cookieStore.get(AUTH_COOKIE)?.value;
+		let token = cookieStore.get(AUTH_COOKIE)?.value;
+
+		// Support BasaltHQ Portal SSO only for the platform container
+		if (!token && process.env.CONTAINER_TYPE === "platform") {
+			token = cookieStore.get("thirdweb_auth_token")?.value;
+		}
+
 		if (!token) return null;
 
 		// Try Thirdweb JWT verification first
@@ -161,7 +167,13 @@ export function isAdminWallet(addr: string | null | undefined): boolean {
 
 export async function requireThirdwebAuth(req?: NextRequest): Promise<{ wallet: string; roles: string[] }> {
 	const cookieStore = await cookies();
-	const token = cookieStore.get(AUTH_COOKIE)?.value;
+	let token = cookieStore.get(AUTH_COOKIE)?.value;
+
+	// Support BasaltHQ Portal SSO only for the platform container
+	if (!token && process.env.CONTAINER_TYPE === "platform") {
+		token = cookieStore.get("thirdweb_auth_token")?.value;
+	}
+
 	if (!token) throw new Error("unauthorized");
 
 	// Try Thirdweb JWT verification first
