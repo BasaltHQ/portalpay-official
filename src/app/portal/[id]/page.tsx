@@ -1474,10 +1474,18 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
 
               if (typeof modeTheme.primaryColor === 'string' && modeTheme.primaryColor) merchantTheme.primaryColor = modeTheme.primaryColor;
               if (typeof modeTheme.secondaryColor === 'string' && modeTheme.secondaryColor) merchantTheme.secondaryColor = modeTheme.secondaryColor;
-              if (typeof modeTheme.headerTextColor === 'string' && modeTheme.headerTextColor) merchantTheme.headerTextColor = modeTheme.headerTextColor;
+              if (typeof modeTheme.headerTextColor === 'string' && modeTheme.headerTextColor) {
+                merchantTheme.headerTextColor = modeTheme.headerTextColor;
+                merchantTheme.textColor = modeTheme.headerTextColor;
+              }
               if (typeof modeTheme.bodyTextColor === 'string' && modeTheme.bodyTextColor) merchantTheme.bodyTextColor = modeTheme.bodyTextColor;
               if (typeof modeTheme.fontFamily === 'string' && modeTheme.fontFamily) merchantTheme.fontFamily = modeTheme.fontFamily;
               if (typeof modeTheme.portalLogoUrl === 'string' && modeTheme.portalLogoUrl) merchantTheme.brandLogoUrl = modeTheme.portalLogoUrl;
+              if (typeof modeTheme.pageBg === 'string' && modeTheme.pageBg) merchantTheme.pageBg = modeTheme.pageBg;
+              if (typeof modeTheme.surfaceBg === 'string' && modeTheme.surfaceBg) merchantTheme.surfaceBg = modeTheme.surfaceBg;
+              if (typeof modeTheme.borderColor === 'string' && modeTheme.borderColor) merchantTheme.borderColor = modeTheme.borderColor;
+              if (typeof modeTheme.mutedTextColor === 'string' && modeTheme.mutedTextColor) (merchantTheme as any).mutedTextColor = modeTheme.mutedTextColor;
+
               if (modeTheme.logoShape === 'circle') merchantTheme.brandLogoShape = 'round';
               else if (modeTheme.logoShape === 'square') merchantTheme.brandLogoShape = 'square';
 
