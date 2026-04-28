@@ -12,9 +12,10 @@ type Props = {
   shopConfig: any; // ShopConfig from shop page
   onSave: (cfg?: any) => Promise<void>;
   saving: boolean;
+  onConfigUpdate?: (portalTheme: any) => void;
 };
 
-export default function PortalThemePlayground({ wallet, brandKey, shopConfig, onSave, saving }: Props) {
+export default function PortalThemePlayground({ wallet, brandKey, shopConfig, onSave, saving, onConfigUpdate }: Props) {
   // Initialize from saved portalTheme, or seed from current shopConfig.theme
   const [config, setConfig] = useState<PortalThemeConfig>(() => {
     const base = defaultPortalTheme();
@@ -78,6 +79,7 @@ export default function PortalThemePlayground({ wallet, brandKey, shopConfig, on
       });
 
       if (r.ok) {
+        if (onConfigUpdate) onConfigUpdate(config);
         setSaveStatus('saved');
         setHasChanges(false);
         setTimeout(() => setSaveStatus('idle'), 2500);
