@@ -16,6 +16,7 @@ import ShopClient from "@/app/shop/[slug]/ShopClient";
 import { useBrand } from "@/contexts/BrandContext";
 import AdvancedShopTab from "@/components/admin/AdvancedShopTab";
 import ShopDiscoveryEditor from "@/components/shop/ShopDiscoveryEditor";
+import { PortalThemePlayground } from "@/components/admin/portal-theme";
 
 export type ShopTheme = {
   primaryColor?: string;
@@ -153,7 +154,7 @@ export default function ShopBuilderPage() {
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [deployOk, setDeployOk] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
-  const [shopMode, setShopMode] = useState<'basic' | 'advanced'>('basic');
+  const [shopMode, setShopMode] = useState<'basic' | 'advanced' | 'portal'>('basic');
   const [showIndustryPacks, setShowIndustryPacks] = useState(false);
   const [activatingPack, setActivatingPack] = useState(false);
   const [packError, setPackError] = useState("");
@@ -862,15 +863,15 @@ export default function ShopBuilderPage() {
   }
 
   return (
-    <div className={shopMode === 'advanced' ? 'overflow-hidden flex flex-col' : 'max-w-5xl mx-auto px-4 py-10 space-y-6'} style={shopMode === 'advanced' ? { height: 'calc(100vh - 118px)' } : undefined}>
+    <div className={shopMode === 'advanced' || shopMode === 'portal' ? 'overflow-hidden flex flex-col' : 'max-w-5xl mx-auto px-4 py-10 space-y-6'} style={shopMode === 'advanced' || shopMode === 'portal' ? { height: 'calc(100vh - 118px)' } : undefined}>
       <ShopThemeAuditor expected={cfg.theme} />
-      <div className={`flex items-center justify-between ${shopMode === 'advanced' ? 'px-6 py-4 border-b border-white/5' : ''}`}>
+      <div className={`flex items-center justify-between ${shopMode === 'advanced' || shopMode === 'portal' ? 'px-6 py-4 border-b border-white/5' : ''}`}>
         <div className="flex items-center gap-4">
           <div>
-            <h1 className={shopMode === 'advanced' ? 'text-lg font-semibold' : 'text-3xl font-bold'}>Shop</h1>
+            <h1 className={shopMode === 'advanced' || shopMode === 'portal' ? 'text-lg font-semibold' : 'text-3xl font-bold'}>Shop</h1>
             {shopMode === 'basic' && <span className="microtext badge-soft">Merchant setup</span>}
           </div>
-          {/* Basic / Advanced Toggle */}
+          {/* Basic / Advanced / Portal Toggle */}
           <div className="flex gap-0.5 bg-black/20 p-0.5 rounded-lg">
             <button
               onClick={() => setShopMode('basic')}
@@ -894,6 +895,16 @@ export default function ShopBuilderPage() {
                 Advanced
               </button>
             )}
+            <button
+              onClick={() => setShopMode('portal')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                shopMode === 'portal'
+                  ? 'bg-violet-500/10 text-violet-400 shadow-sm border border-violet-500/20'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Portal Theme
+            </button>
           </div>
         </div>
         {shopMode === 'basic' && (
@@ -963,6 +974,18 @@ export default function ShopBuilderPage() {
                 }
               } catch {}
             }}
+            onSave={saveConfig}
+            saving={saving}
+          />
+        </div>
+      )}
+
+      {shopMode === 'portal' && (
+        <div className="flex-1 min-h-0">
+          <PortalThemePlayground
+            wallet={account?.address || ''}
+            brandKey={brand?.key || ''}
+            shopConfig={cfg}
             onSave={saveConfig}
             saving={saving}
           />

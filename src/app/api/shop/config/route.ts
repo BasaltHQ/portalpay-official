@@ -104,6 +104,7 @@ export type ShopConfig = {
   setupComplete?: boolean;
   keywords?: string[]; // Up to 5
   categories?: string[]; // Up to 3
+  portalTheme?: Record<string, any>; // Portal Theme Playground config (opaque blob)
   createdAt: number;
   updatedAt: number;
 };
@@ -297,6 +298,11 @@ function normalize(raw?: any, brandKey?: string): Omit<ShopConfig, "wallet" | "i
         .map((x: string) => x.trim().slice(0, 32))
         .filter((x: string) => x.length > 0)
         .slice(0, 3);
+    }
+
+    // Portal Theme Playground config — passthrough as opaque blob
+    if (raw.portalTheme && typeof raw.portalTheme === 'object') {
+      out.portalTheme = raw.portalTheme;
     }
 
   }
@@ -843,6 +849,9 @@ export async function POST(req: NextRequest) {
       setupComplete,
       keywords: Array.isArray(body.keywords) ? normalize(body).keywords : base.keywords,
       categories: Array.isArray(body.categories) ? normalize(body).categories : base.categories,
+      portalTheme: (body.portalTheme && typeof body.portalTheme === 'object')
+        ? body.portalTheme
+        : (body.portalTheme === null ? undefined : ((prev as any)?.portalTheme || (base as any).portalTheme || undefined)),
       createdAt: prev?.createdAt || now,
       updatedAt: now,
     };
@@ -871,6 +880,7 @@ export async function POST(req: NextRequest) {
             name: name || sc.name,
             slug: slug || sc.slug,
             theme: { ...(sc.theme || {}), ...theme },
+            portalTheme: (doc as any).portalTheme ?? sc.portalTheme,
             updatedAt: now,
           };
           await c.item(sc.id, sc.wallet).replace(updated);
