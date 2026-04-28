@@ -56,6 +56,7 @@ export type ShopConfig = {
   setupComplete?: boolean;
   keywords?: string[];
   categories?: string[];
+  portalTheme?: any;
 };
 
 function Input({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
@@ -514,6 +515,7 @@ export default function ShopBuilderPage() {
           setupComplete: conf.setupComplete === true || (!!conf.name && !!conf.slug),
           keywords: Array.isArray(conf.keywords) ? conf.keywords : [],
           categories: Array.isArray(conf.categories) ? conf.categories : [],
+          portalTheme: conf.portalTheme,
         }));
         setSnapshot(conf as ShopConfig);
       }
@@ -988,6 +990,7 @@ export default function ShopBuilderPage() {
             shopConfig={cfg}
             onSave={saveConfig}
             saving={saving}
+            onConfigUpdate={(portalTheme) => setCfg(prev => ({ ...prev, portalTheme }))}
           />
         </div>
       )}
