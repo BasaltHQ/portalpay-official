@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useParams, useSearchParams } from "next/navigation";
 import { applyThemeVars, getTheme } from "@/lib/themes";
 import type { TouchpointType } from "@/lib/themes";
-import { CheckoutWidget, darkTheme } from "thirdweb/react";
+import { CheckoutWidget, darkTheme, lightTheme } from "thirdweb/react";
 import { getAddress } from "thirdweb";
 import dynamic from "next/dynamic";
 const ConnectButton = dynamic(() => import("thirdweb/react").then((m) => m.ConnectButton), { ssr: false });
@@ -35,6 +35,7 @@ type SiteTheme = {
   textColor?: string;
   headerTextColor?: string;
   bodyTextColor?: string;
+  borderColor?: string;
   navbarMode?: "symbol" | "logo";
   brandKey?: string;
 };
@@ -47,6 +48,7 @@ type SiteConfigResponse = {
     processingFeePct?: number;
     tokens?: TokenDef[];
     touchpointThemes?: Record<string, string>;
+    portalTheme?: Record<string, any>; // Portal Theme Playground config
   };
   degraded?: boolean;
   reason?: string;
@@ -291,6 +293,90 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     };
   });
 
+  // Playground widget overrides (received via PostMessage from theme controls)
+  const [playgroundWidgetOverrides, setPlaygroundWidgetOverrides] = useState<{
+    buttonBg?: string; buttonTextColor?: string; cardBg?: string;
+    cardBorderColor?: string; inputBg?: string; inputBorderColor?: string;
+    accentColor?: string; buttonRadius?: string;
+  }>({});
+
+  const isLightText = useMemo(() => {
+    let light = true;
+    try {
+      const colorStr = (theme.headerTextColor || "#ffffff").trim().toLowerCase();
+      if (colorStr === 'black' || colorStr.includes('0, 0, 0')) {
+        light = false;
+      } else if (colorStr === 'white' || colorStr.includes('255, 255, 255')) {
+        light = true;
+      } else {
+        const hex = colorStr.replace('#', '');
+        if (hex.length === 3 || hex.length === 6) {
+          const fullHex = hex.length === 3 ? hex.split('').map(x => x + x).join('') : hex;
+          const r = parseInt(fullHex.substring(0, 2), 16);
+          const g = parseInt(fullHex.substring(2, 4), 16);
+          const b = parseInt(fullHex.substring(4, 6), 16);
+          if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+            light = ((r * 299) + (g * 587) + (b * 114)) / 1000 > 128;
+          }
+        }
+      }
+    } catch {}
+    return light;
+  }, [theme.headerTextColor]);
+
+  // Derived widget theme based on text color lightness
+  const widgetTheme = useMemo(() => {
+    const commonColors = {
+      modalBg: "transparent",
+      borderColor: "transparent",
+      primaryText: theme.headerTextColor,
+      secondaryText: isLightText ? theme.bodyTextColor : theme.headerTextColor,
+      accentText: theme.headerTextColor,
+      accentButtonBg: theme.primaryColor,
+      accentButtonText: isLightText ? "#ffffff" : "#ffffff", // Primary buttons often look best with white text
+      primaryButtonBg: theme.primaryColor,
+      primaryButtonText: isLightText ? "#ffffff" : "#ffffff",
+    };
+
+    const pw = playgroundWidgetOverrides;
+
+    return isLightText
+      ? darkTheme({
+          colors: {
+            ...commonColors,
+            ...(pw.buttonBg ? { primaryButtonBg: pw.buttonBg, accentButtonBg: pw.buttonBg } : {}),
+            ...(pw.buttonTextColor ? { primaryButtonText: pw.buttonTextColor, accentButtonText: pw.buttonTextColor } : {}),
+            ...(pw.cardBg ? { modalBg: pw.cardBg } : {}),
+            ...(pw.cardBorderColor ? { borderColor: pw.cardBorderColor } : {}),
+            ...(pw.inputBg ? { inputBg: pw.inputBg } : {}),
+            ...(pw.accentColor ? { accentText: pw.accentColor } : {}),
+            connectedButtonBg: "rgba(255,255,255,0.04)",
+            connectedButtonBgHover: "rgba(255,255,255,0.08)",
+            skeletonBg: "rgba(255,255,255,0.1)",
+            secondaryButtonBg: "rgba(255,255,255,0.05)",
+            secondaryButtonText: theme.headerTextColor,
+            secondaryButtonHoverBg: "rgba(255,255,255,0.1)",
+          }
+        })
+      : lightTheme({
+          colors: {
+            ...commonColors,
+            ...(pw.buttonBg ? { primaryButtonBg: pw.buttonBg, accentButtonBg: pw.buttonBg } : {}),
+            ...(pw.buttonTextColor ? { primaryButtonText: pw.buttonTextColor, accentButtonText: pw.buttonTextColor } : {}),
+            ...(pw.cardBg ? { modalBg: pw.cardBg } : {}),
+            ...(pw.cardBorderColor ? { borderColor: pw.cardBorderColor } : {}),
+            ...(pw.inputBg ? { inputBg: pw.inputBg } : {}),
+            ...(pw.accentColor ? { accentText: pw.accentColor } : {}),
+            connectedButtonBg: "rgba(0,0,0,0.04)",
+            connectedButtonBgHover: "rgba(0,0,0,0.08)",
+            skeletonBg: "rgba(0,0,0,0.1)",
+            secondaryButtonBg: "rgba(0,0,0,0.05)",
+            secondaryButtonText: theme.headerTextColor,
+            secondaryButtonHoverBg: "rgba(0,0,0,0.1)",
+          }
+        });
+  }, [theme, playgroundWidgetOverrides]);
+
   // Partner brand colors from container config (for partner containers without merchant theme)
   const [partnerBrandColors, setPartnerBrandColors] = useState<{ primary?: string; accent?: string } | null>(null);
 
@@ -486,6 +572,334 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   const lastPreferredHeightRef = useRef<number>(0);
   const loadedMerchantWalletRef = useRef<string>("");
 
+  // ── Playground PostMessage bridge ──
+  // Injects a <style> tag with !important rules to override ALL portal styling.
+  // This is the only reliable way to beat inline styles.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isPlayground = receiptId === 'playground' || receiptId === 'playground-shipping';
+    if (!isPlayground) return;
+
+    const STYLE_ID = 'pp-playground-override';
+
+    const handler = (e: MessageEvent) => {
+      try {
+        const d = e.data;
+        if (!d || d.type !== 'pp-playground-theme') return;
+        const t = d.theme;
+        if (!t || typeof t !== 'object') return;
+        const w = d.widget || {};
+
+        // Shadow map
+        const shadowMap: Record<string, string> = {
+          none: 'none',
+          soft: '0 4px 16px rgba(0,0,0,0.18)',
+          medium: '0 8px 28px rgba(0,0,0,0.3)',
+          strong: '0 12px 40px rgba(0,0,0,0.45), 0 4px 12px rgba(0,0,0,0.2)',
+        };
+        const shadow = shadowMap[t.shadowIntensity] || 'none';
+
+        // Widget button radius
+        const btnRadius = w.buttonRadius === 'pill' ? '9999px'
+          : w.buttonRadius === 'sharp' ? '4px'
+          : w.buttonRadius === 'rounded' ? '12px' : '12px';
+
+        const btnBg = w.buttonBg || t.primaryColor || '';
+        const btnText = w.buttonTextColor || '#ffffff';
+        const cardBg = w.cardBg || t.surfaceBg || '';
+        const cardBorder = w.cardBorderColor || t.borderColor || '';
+        // Detect if this is a light or dark theme from body text color
+        const bodyColor = (t.bodyTextColor || '#e5e7eb').toLowerCase().replace('#', '');
+        const isThemeDark = (() => {
+          if (bodyColor === 'ffffff' || bodyColor === 'fff' || bodyColor.includes('e5e7eb')) return true;
+          if (bodyColor === '000000' || bodyColor === '000') return false;
+          try {
+            const hex = bodyColor.length === 3 ? bodyColor.split('').map((c: string) => c + c).join('') : bodyColor;
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            return ((r * 299 + g * 587 + b * 114) / 1000) > 128;
+          } catch { return true; }
+        })();
+
+        const inputBg = w.inputBg || (isThemeDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.04)');
+        const inputBorder = w.inputBorderColor || t.borderColor || (isThemeDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)');
+        const radius = t.borderRadius || '12px';
+        const blur = t.blurStrength || '12px';
+        const glassOpacity = typeof t.glassOpacity === 'number' ? t.glassOpacity : 0.5;
+
+        // Build comprehensive CSS
+        const css = `
+          /* ── Portal Theme Playground Overrides ── */
+
+          /* Page background */
+          html, body {
+            background: ${isEmbedded ? 'transparent' : (t.pageBg || '#050510')} !important;
+          }
+
+          /* Root CSS variables */
+          :root {
+            --pp-primary: ${t.primaryColor || '#10b981'} !important;
+            --pp-secondary: ${t.secondaryColor || '#6366f1'} !important;
+            --pp-text: ${t.headerTextColor || '#ffffff'} !important;
+            --pp-text-header: ${t.headerTextColor || '#ffffff'} !important;
+            --pp-text-body: ${t.bodyTextColor || '#e5e7eb'} !important;
+            --primary: ${t.primaryColor || '#10b981'} !important;
+          }
+
+          /* Portal outer wrapper */
+          .pp-portal-container {
+            background: transparent !important;
+            font-family: ${t.fontFamily || 'Inter, system-ui, sans-serif'} !important;
+            border-radius: ${radius} !important;
+            box-shadow: ${shadow} !important;
+            overflow: hidden !important;
+            transform: translateZ(0) !important;
+          }
+
+          /* Header bar */
+          .pp-portal-container > div:first-child > div:first-child[style*="background"],
+          .pp-portal-container [style*="background"][class*="z-[10]"] {
+            background: ${t.primaryColor || '#10b981'} !important;
+          }
+
+          /* Main container surface */
+          .pp-portal-container > div {
+            background: ${t.pageBg || 'transparent'} !important;
+          }
+
+          /* All text — headers (bold, large) */
+          .pp-portal-container h1,
+          .pp-portal-container h2,
+          .pp-portal-container h3,
+          .pp-portal-container h4,
+          .pp-portal-container strong,
+          .pp-portal-container b,
+          .pp-portal-container [class*="font-bold"],
+          .pp-portal-container [class*="font-semibold"],
+          .pp-portal-container [class*="text-lg"],
+          .pp-portal-container [class*="text-xl"],
+          .pp-portal-container [class*="text-2xl"],
+          .pp-portal-container [class*="text-3xl"] {
+            color: ${t.headerTextColor || '#ffffff'} !important;
+          }
+
+          /* Body text */
+          .pp-portal-container p,
+          .pp-portal-container span,
+          .pp-portal-container div,
+          .pp-portal-container label,
+          .pp-portal-container td,
+          .pp-portal-container li {
+            color: ${t.bodyTextColor || '#e5e7eb'} !important;
+          }
+
+          /* Muted/secondary text */
+          .pp-portal-container [class*="text-white/4"],
+          .pp-portal-container [class*="text-white/5"],
+          .pp-portal-container [class*="text-white/6"],
+          .pp-portal-container [class*="text-gray"],
+          .pp-portal-container [class*="text-muted"],
+          .pp-portal-container [class*="microtext"],
+          .pp-portal-container [class*="uppercase"][class*="tracking"] {
+            color: ${t.mutedTextColor || '#9ca3af'} !important;
+          }
+
+          /* Re-assert header text (specificity boost) */
+          .pp-portal-container h1,
+          .pp-portal-container h2,
+          .pp-portal-container h3,
+          .pp-portal-container [class*="font-bold"],
+          .pp-portal-container [class*="font-semibold"] {
+            color: ${t.headerTextColor || '#ffffff'} !important;
+          }
+
+          /* Cards / surfaces */
+          .pp-portal-container [data-theme],
+          .pp-portal-container [class*="rounded"][class*="border"][class*="shadow"],
+          .pp-portal-container [class*="glass"],
+          .pp-portal-container [class*="backdrop"],
+          .pp-portal-container .pp-currency-menu {
+            background: ${cardBg} !important;
+            border-color: ${cardBorder} !important;
+            border-radius: ${radius} !important;
+            backdrop-filter: blur(${blur}) !important;
+            -webkit-backdrop-filter: blur(${blur}) !important;
+          }
+
+          /* All borders */
+          .pp-portal-container [class*="border"] {
+            border-color: ${t.borderColor || 'rgba(99,102,241,0.2)'} !important;
+          }
+          .pp-portal-container [class*="border-dashed"] {
+            border-color: ${t.borderColor || 'rgba(99,102,241,0.2)'} !important;
+          }
+
+          /* Inputs & selects */
+          .pp-portal-container input,
+          .pp-portal-container select,
+          .pp-portal-container textarea,
+          .pp-portal-container .pp-currency-btn {
+            background: ${inputBg} !important;
+            border-color: ${inputBorder} !important;
+            color: ${t.bodyTextColor || '#e5e7eb'} !important;
+            border-radius: ${radius} !important;
+            font-family: ${t.fontFamily || 'Inter, system-ui, sans-serif'} !important;
+          }
+          .pp-portal-container input::placeholder,
+          .pp-portal-container textarea::placeholder {
+            color: ${t.bodyTextColor || '#e5e7eb'} !important;
+            opacity: 0.4 !important;
+          }
+
+          /* ALL buttons */
+          .pp-portal-container button {
+            border-radius: ${btnRadius} !important;
+            font-family: ${t.fontFamily || 'Inter, system-ui, sans-serif'} !important;
+          }
+
+          /* Pay / CTA buttons */
+          .pp-portal-container button[data-pp-pay],
+          .pp-portal-container button[data-pp-bottom-pay],
+          .pp-portal-container button[class*="bg-gradient"],
+          .pp-portal-container button[class*="w-full"][class*="py-3"],
+          .pp-portal-container button[class*="w-full"][class*="font-bold"] {
+            background: linear-gradient(135deg, ${btnBg}, ${w.accentColor || t.secondaryColor || btnBg}) !important;
+            color: ${btnText} !important;
+            border-radius: ${btnRadius} !important;
+            box-shadow: 0 4px 20px ${btnBg}40 !important;
+          }
+
+          /* Tip / token selector buttons */
+          .pp-portal-container button[class*="flex-1"][class*="border"],
+          .pp-portal-container .pp-tip-btn {
+            border-color: ${t.borderColor || 'rgba(99,102,241,0.2)'} !important;
+            color: ${t.bodyTextColor || '#e5e7eb'} !important;
+            border-radius: ${radius} !important;
+          }
+
+          /* Font family — everything */
+          .pp-portal-container,
+          .pp-portal-container * {
+            font-family: ${t.fontFamily || 'Inter, system-ui, sans-serif'} !important;
+          }
+
+          /* Currency selector dropdown */
+          .pp-portal-container select option {
+            background: ${t.pageBg || '#0a0a14'} !important;
+            color: ${t.bodyTextColor || '#e5e7eb'} !important;
+          }
+
+          /* Powered-by footer */
+          .pp-portal-container [class*="justify-center"][class*="gap"] span {
+            color: ${t.mutedTextColor || '#9ca3af'} !important;
+          }
+
+          /* Scrollbar styling */
+          .pp-portal-container::-webkit-scrollbar-track {
+            background: ${t.pageBg || '#050510'} !important;
+          }
+          .pp-portal-container::-webkit-scrollbar-thumb {
+            background: ${t.borderColor || 'rgba(99,102,241,0.3)'} !important;
+          /* Thirdweb widget text & icon color (back arrow, SVGs) */
+          [data-theme] button[aria-label*="ack"],
+          .pp-portal-container button[aria-label*="ack"],
+          [data-theme] button[title*="ack"],
+          .pp-portal-container button[title*="ack"],
+          [data-theme] .tw-header-back-button,
+          .pp-portal-container .tw-header-back-button,
+          [data-theme] .tw-back-button,
+          .pp-portal-container .tw-back-button,
+          body .tw-back-button {
+            color: ${t.bodyTextColor || '#e5e7eb'} !important;
+          }
+          
+          [data-theme] .tw-back-button svg,
+          .pp-portal-container .tw-back-button svg,
+          body .tw-back-button svg,
+          [data-theme] .tw-header-back-button svg,
+          .pp-portal-container .tw-header-back-button svg {
+            color: ${t.bodyTextColor || '#e5e7eb'} !important;
+            stroke: ${t.bodyTextColor || '#e5e7eb'} !important;
+            fill: ${t.bodyTextColor || '#e5e7eb'} !important;
+          }
+
+          [data-theme] .tw-back-button svg *,
+          .pp-portal-container .tw-back-button svg *,
+          body .tw-back-button svg *,
+          [data-theme] .tw-header-back-button svg *,
+          .pp-portal-container .tw-header-back-button svg * {
+            stroke: inherit !important;
+            fill: inherit !important;
+          }
+          
+          [data-theme] svg,
+          .pp-portal-container svg {
+            color: ${t.bodyTextColor || '#e5e7eb'} !important;
+          }
+          /* Ensure thirdweb widget text inherits theme color */
+          [data-theme] p, .pp-portal-container [class*="tw-"] p,
+          [data-theme] span, .pp-portal-container [class*="tw-"] span,
+          [data-theme] h1, .pp-portal-container [class*="tw-"] h1,
+          [data-theme] h2, .pp-portal-container [class*="tw-"] h2,
+          [data-theme] h3, .pp-portal-container [class*="tw-"] h3,
+          [data-theme] h4, .pp-portal-container [class*="tw-"] h4 {
+            color: ${t.bodyTextColor || '#e5e7eb'} !important;
+          }
+        `;
+
+        // Inject or replace the style tag
+        let styleEl = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
+        if (!styleEl) {
+          styleEl = document.createElement('style');
+          styleEl.id = STYLE_ID;
+          document.head.appendChild(styleEl);
+        }
+        styleEl.textContent = css;
+
+        // Also set CSS vars on root for any var()-based rules
+        const root = document.documentElement;
+        root.style.setProperty('--pp-primary', t.primaryColor || '');
+        root.style.setProperty('--pp-secondary', t.secondaryColor || '');
+        root.style.setProperty('--pp-text', t.headerTextColor || '');
+        root.style.setProperty('--pp-text-header', t.headerTextColor || '');
+        root.style.setProperty('--pp-text-body', t.bodyTextColor || '');
+        root.style.setProperty('--primary', t.primaryColor || '');
+
+        // ALSO update React state so the Thirdweb widgetTheme hook can recompute!
+        setTheme(prev => ({
+          ...prev,
+          primaryColor: t.primaryColor || prev.primaryColor,
+          secondaryColor: t.secondaryColor || prev.secondaryColor,
+          headerTextColor: t.headerTextColor || prev.headerTextColor,
+          bodyTextColor: t.bodyTextColor || prev.bodyTextColor,
+        }));
+
+        // Apply widget overrides from the playground sidebar
+        if (w && typeof w === 'object') {
+          setPlaygroundWidgetOverrides(prev => ({
+            ...prev,
+            ...(w.buttonBg ? { buttonBg: w.buttonBg } : {}),
+            ...(w.buttonTextColor ? { buttonTextColor: w.buttonTextColor } : {}),
+            ...(w.cardBg ? { cardBg: w.cardBg } : {}),
+            ...(w.cardBorderColor ? { cardBorderColor: w.cardBorderColor } : {}),
+            ...(w.inputBg ? { inputBg: w.inputBg } : {}),
+            ...(w.inputBorderColor ? { inputBorderColor: w.inputBorderColor } : {}),
+            ...(w.accentColor ? { accentColor: w.accentColor } : {}),
+            ...(w.buttonRadius ? { buttonRadius: w.buttonRadius } : {}),
+          }));
+        }
+      } catch { }
+    };
+
+    window.addEventListener('message', handler);
+    return () => {
+      window.removeEventListener('message', handler);
+      // Cleanup style tag when leaving playground
+      try { document.getElementById(STYLE_ID)?.remove(); } catch { }
+    };
+  }, [receiptId]);
+
   // Deduplicate /api/site/config calls per-merchant (cache + in-flight coalescing)
   const cfgCacheRef = useRef<Map<string, SiteConfigResponse>>(new Map());
   const inflightCfgRef = useRef<Map<string, Promise<SiteConfigResponse>>>(new Map());
@@ -591,6 +1005,11 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
 
           // Replace the config theme entirely
           j.config.theme = t;
+
+          // Carry portalTheme from shop config into the merged response
+          if (shopConfig?.config?.portalTheme && typeof shopConfig.config.portalTheme === 'object') {
+            (j.config as any).portalTheme = shopConfig.config.portalTheme;
+          }
         }
 
 
@@ -1032,6 +1451,34 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             bodyTextColor: typeof (t as any)?.bodyTextColor === "string" ? (t as any).bodyTextColor : "#e5e7eb",
           };
 
+          // ── Portal Theme Playground overrides ──
+          // If merchant has configured portalTheme via the playground, layer those
+          // overrides on top of the base merchantTheme.
+          try {
+            const pt = (j.config as any)?.portalTheme;
+            if (pt && typeof pt === 'object') {
+              // Determine active mode — merchant's choice wins
+              const activeMode = pt.activeMode || 'dark';
+              const modeTheme = pt[activeMode] || pt.dark || {};
+
+              if (typeof modeTheme.primaryColor === 'string' && modeTheme.primaryColor) merchantTheme.primaryColor = modeTheme.primaryColor;
+              if (typeof modeTheme.secondaryColor === 'string' && modeTheme.secondaryColor) merchantTheme.secondaryColor = modeTheme.secondaryColor;
+              if (typeof modeTheme.headerTextColor === 'string' && modeTheme.headerTextColor) merchantTheme.headerTextColor = modeTheme.headerTextColor;
+              if (typeof modeTheme.bodyTextColor === 'string' && modeTheme.bodyTextColor) merchantTheme.bodyTextColor = modeTheme.bodyTextColor;
+              if (typeof modeTheme.fontFamily === 'string' && modeTheme.fontFamily) merchantTheme.fontFamily = modeTheme.fontFamily;
+              if (typeof modeTheme.portalLogoUrl === 'string' && modeTheme.portalLogoUrl) merchantTheme.brandLogoUrl = modeTheme.portalLogoUrl;
+              if (modeTheme.logoShape === 'circle') merchantTheme.brandLogoShape = 'round';
+              else if (modeTheme.logoShape === 'square') merchantTheme.brandLogoShape = 'square';
+
+              // Store widget overrides for the DOM mutator
+              if (pt.widget && typeof pt.widget === 'object') {
+                try { (window as any).__pp_portal_widget_overrides = pt.widget; } catch { }
+              }
+
+              console.log('[PORTAL THEME] Applied portalTheme playground overrides', { activeMode, modeTheme: Object.keys(modeTheme) });
+            }
+          } catch { }
+
           // Apply CSS variables immediately before setting state
           try {
             const root = document.documentElement;
@@ -1232,6 +1679,38 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   const [loadingReceipt, setLoadingReceipt] = useState(false);
   useEffect(() => {
     if (!receiptId) return;
+
+    // ── Playground/preview mode: inject synthetic receipt without API fetch ──
+    if (receiptId === 'playground' || receiptId === 'playground-shipping') {
+      const isShipping = receiptId === 'playground-shipping';
+      setReceipt({
+        receiptId,
+        totalUsd: isShipping ? 52.00 : 27.00,
+        currency: 'USD',
+        lineItems: isShipping
+          ? [
+              {
+                label: 'Premium Widget', priceUsd: 45.00, qty: 1,
+                requiresShipping: true,
+                shippingConfig: {
+                  methodPricing: { standard: 5.99, express: 12.99, overnight: 24.99 },
+                  allowedMethods: ['standard', 'express', 'overnight'],
+                  freeShippingThreshold: 100,
+                },
+              },
+              { label: 'Tax', priceUsd: 7.00, qty: 1 },
+            ]
+          : [
+              { label: 'Sample Item', priceUsd: 25.00, qty: 1 },
+              { label: 'Tax', priceUsd: 2.00, qty: 1 },
+            ],
+        createdAt: Date.now(),
+        brandName: theme.brandName || 'Preview',
+      });
+      setLoadingReceipt(false);
+      return;
+    }
+
     let cancelled = false;
     setLoadingReceipt(true);
     try {
@@ -2218,6 +2697,37 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     return () => { try { mo.disconnect(); } catch { }; clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [effectiveSecondaryColor, theme.secondaryColor]);
 
+  // ── Thirdweb Bruteforce DOM Overrides ──
+  // Thirdweb's Emotion CSS-in-JS aggressively overrides injected stylesheets with inline or high-specificity classes.
+  // We use a MutationObserver to forcibly apply the theme text color to the back button SVG paths natively on the DOM nodes.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mo = new MutationObserver(() => {
+      const backButtons = document.querySelectorAll<HTMLElement>(".tw-back-button, .tw-header-back-button");
+      if (!backButtons.length) return;
+      
+      const textColor = theme.bodyTextColor || "#e5e7eb";
+      
+      backButtons.forEach(btn => {
+        btn.style.setProperty("color", textColor, "important");
+        const svgs = btn.querySelectorAll("svg");
+        svgs.forEach(svg => {
+          svg.style.setProperty("color", textColor, "important");
+          svg.style.setProperty("fill", textColor, "important");
+          svg.style.setProperty("stroke", textColor, "important");
+          
+          svg.querySelectorAll("path, polyline, line, circle, rect").forEach(child => {
+            (child as HTMLElement).style.setProperty("fill", "inherit", "important");
+            (child as HTMLElement).style.setProperty("stroke", "inherit", "important");
+          });
+        });
+      });
+    });
+
+    mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+    return () => mo.disconnect();
+  }, [theme.bodyTextColor]);
+
   // ── Stripe Onramp Interceptor ──
   // Detects thirdweb's Stripe onramp in the DOM and replaces it with our direct Stripe Crypto Onramp
   useStripeOnrampInterceptor({
@@ -2325,6 +2835,29 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     });
   }, [isEmbedded]);
 
+  // ── CheckoutWidget Label Mutator ──
+  // Thirdweb's CheckoutWidget doesn't expose a prop for the "Price" label.
+  // We use a dedicated MutationObserver to dynamically replace it with "Price in USD".
+  useEffect(() => {
+    const applyLabelOverrides = () => {
+      try {
+        document.body.querySelectorAll<HTMLElement>("span").forEach(el => {
+          if (el.textContent === "Price") {
+            el.textContent = `Price in USD`;
+          }
+        });
+      } catch { }
+    };
+
+    applyLabelOverrides();
+    const mo = new MutationObserver(() => applyLabelOverrides());
+    mo.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+    return () => {
+      try { mo.disconnect(); } catch { }
+    };
+  }, []);
+
   // ── Touchpoint theme DOM mutator ──
   // Triggered AFTER applyThemeVars runs (via tpThemeApplied state).
   // Scopes to document.body because thirdweb CheckoutWidget renders
@@ -2407,7 +2940,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           el.style.backdropFilter = `saturate(1.2) blur(${tpBlur})`;
           (el.style as any).webkitBackdropFilter = `saturate(1.2) blur(${tpBlur})`;
           el.style.borderRadius = tpRadius;
-          el.style.border = `1px solid ${tpBorder}`;
+          el.style.border = 'none';
           el.style.boxShadow = tpShadow;
         });
 
@@ -2423,12 +2956,60 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             el.style.backdropFilter = `saturate(1.2) blur(${tpBlur})`;
             (el.style as any).webkitBackdropFilter = `saturate(1.2) blur(${tpBlur})`;
             el.style.borderRadius = tpRadius;
-            el.style.border = `1px solid ${tpBorder}`;
+            el.style.border = 'none';
             el.style.boxShadow = tpShadow;
           });
           container.querySelectorAll<HTMLElement>("[data-theme] button").forEach(el => {
             el.style.borderRadius = tpBtnRadius;
           });
+        }
+      } catch { }
+
+      // ── Portal Theme Playground widget overrides ──
+      try {
+        const wo = (window as any).__pp_portal_widget_overrides;
+        if (wo && typeof wo === 'object') {
+          const btnRadius = wo.buttonRadius === 'pill' ? '9999px'
+            : wo.buttonRadius === 'sharp' ? '4px'
+            : wo.buttonRadius === 'rounded' ? '12px'
+            : (typeof wo.buttonRadius === 'string' && wo.buttonRadius) ? wo.buttonRadius : null;
+
+          if (btnRadius) {
+            scopeEl.querySelectorAll<HTMLElement>('.pp-portal-container button, [data-theme] button')
+              .forEach(el => { el.style.borderRadius = btnRadius; });
+          }
+          if (typeof wo.buttonBg === 'string' && wo.buttonBg) {
+            scopeEl.querySelectorAll<HTMLElement>('.pp-portal-container button[data-pp-pay], .pp-portal-container button[data-pp-bottom-pay]')
+              .forEach(el => { el.style.backgroundColor = wo.buttonBg; });
+          }
+          if (typeof wo.buttonTextColor === 'string' && wo.buttonTextColor) {
+            scopeEl.querySelectorAll<HTMLElement>('.pp-portal-container button[data-pp-pay], .pp-portal-container button[data-pp-bottom-pay]')
+              .forEach(el => { el.style.color = wo.buttonTextColor; });
+          }
+          if (typeof wo.cardBg === 'string' && wo.cardBg) {
+            scopeEl.querySelectorAll<HTMLElement>('[data-theme]')
+              .forEach(el => {
+                if (!el.closest('.pp-portal-container') && el !== root) {
+                  el.style.backgroundColor = wo.cardBg;
+                }
+              });
+          }
+          if (typeof wo.cardBorderColor === 'string' && wo.cardBorderColor) {
+            scopeEl.querySelectorAll<HTMLElement>('[data-theme]')
+              .forEach(el => {
+                if (!el.closest('.pp-portal-container') && el !== root) {
+                  el.style.borderColor = wo.cardBorderColor;
+                }
+              });
+          }
+          if (typeof wo.inputBg === 'string' && wo.inputBg) {
+            scopeEl.querySelectorAll<HTMLElement>('[data-theme] input, [data-theme] select')
+              .forEach(el => { el.style.backgroundColor = wo.inputBg; });
+          }
+          if (typeof wo.inputBorderColor === 'string' && wo.inputBorderColor) {
+            scopeEl.querySelectorAll<HTMLElement>('[data-theme] input, [data-theme] select')
+              .forEach(el => { el.style.borderColor = wo.inputBorderColor; });
+          }
         }
       } catch { }
     };
@@ -2449,7 +3030,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, [tpThemeApplied]);
+  }, [tpThemeApplied, currency]);
 
   return (
     <div
@@ -2462,7 +3043,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     >
       <div
         ref={containerRef}
-        className={`pp-portal-container pp-embed-white-text relative ${isEmbedded ? "border-0 rounded-none md:border-2 md:rounded-2xl shadow-none bg-transparent" : (isInvoiceLayout ? "rounded-none border-0 shadow-none bg-transparent" : "rounded-2xl border shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur")} ${isTwoColumnLayout ? (isInvoiceLayout ? "w-full max-w-none mx-auto" : "w-full max-w-none mx-auto") : ""} ${isEmbedded ? "no-scrollbar" : ""}`}
+        className={`pp-portal-container pp-embed-white-text relative overflow-hidden ${isEmbedded ? "border-2 rounded-2xl shadow-none bg-transparent" : (isInvoiceLayout ? "rounded-none border-0 shadow-none bg-transparent" : "rounded-2xl border-2 shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur")} ${isTwoColumnLayout ? (isInvoiceLayout ? "w-full max-w-none mx-auto" : "w-full max-w-none mx-auto") : ""} ${isEmbedded ? "no-scrollbar" : ""}`}
         data-tp-active={tpThemeApplied ? "1" : undefined}
         style={{
           ...backgroundStyle,
@@ -2472,19 +3053,23 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           height: isEmbedded ? "auto" : "var(--pp-vh)",
           minHeight: isEmbedded ? 0 : undefined,
           maxHeight: isEmbedded ? "100%" : "var(--pp-vh)",
-          // Embedded: always use auto to allow scrolling when content exceeds container
-          overflowY: "auto", // Fix: explicit overflow-y
-          WebkitOverflowScrolling: "touch", // Fix: native momentum scrolling
-          overscrollBehavior: "contain", // Fix: prevent parent scroll chaining
-          touchAction: "pan-y", // Fix: explicit touch action
           fontFamily: theme.fontFamily,
-          borderColor: isEmbedded ? "var(--pp-primary)" : undefined,
+          borderColor: theme.borderColor || "var(--pp-primary)",
         }}
       >
         <style dangerouslySetInnerHTML={{
           __html: `
             .no-scrollbar::-webkit-scrollbar { display: none; }
             .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            [data-theme],
+            [data-theme] > div,
+            [data-theme] > div > div,
+            [data-theme] > div > div > div,
+            [data-theme] > div > div > div > div {
+              border: none !important;
+              border-color: transparent !important;
+              outline: none !important;
+            }
           `}} />
         {/* Left-half decorative gradient background (only for invoice-style full page) */}
         {!isEmbedded && isInvoiceLayout && (
@@ -2498,7 +3083,13 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         {/* Header (centered card width) */}
         <div
           className={`relative z-[10] flex items-center gap-3 w-full overflow-hidden ${isEmbedded ? "px-4 py-2 min-h-[56px] rounded-none md:rounded-t-2xl" : (isTwoColumnLayout ? (isInvoiceLayout ? "max-w-none px-4 md:px-6 py-1 md:py-2" : "max-w-none px-4 md:px-6 py-1 md:py-2") : "px-4 md:px-6 py-2")}`}
-          style={{ background: effectivePrimaryColor, color: "var(--pp-text-header)", flexShrink: 0 }}
+          style={{
+            background: effectivePrimaryColor,
+            color: "var(--pp-text-header)",
+            flexShrink: 0,
+            borderTopLeftRadius: "inherit",
+            borderTopRightRadius: "inherit"
+          }}
         >
           {effectiveNavbarMode === "logo" ? (
             // Full-width logo (no text)
@@ -2629,7 +3220,10 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             paddingBottom: isEmbedded ? 0 : (isTwoColumnLayout ? "calc(env(safe-area-inset-bottom, 0px) + 24px)" : "calc(env(safe-area-inset-bottom, 0px) + 36px)"),
             color: "var(--pp-text-body)",
             minHeight: isEmbedded ? undefined : "calc(var(--pp-vh) - 64px - 60px)",
-            overflow: "visible",
+            overflowY: "auto", // Moved from container to fix border-radius clipping
+            WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain",
+            touchAction: "pan-y",
             position: "relative",
             flexGrow: isEmbedded ? 1 : undefined,
             justifyContent: isEmbedded ? "space-between" : undefined,
@@ -2657,37 +3251,38 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                     <div className="mt-3">
                       <label className="text-xs text-muted-foreground">Select currency</label>
                       <div className="relative mt-1">
-                        <button
-                          type="button"
-                          onClick={() => setCurrencyOpen((v) => !v)}
-                          className="h-10 px-3 text-left border rounded-md bg-background hover:bg-foreground/5 transition-colors flex items-center gap-3 w-full"
-                          title="View currency equivalents"
-                        >
-                          <span className="inline-flex items-center justify-center">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              alt={currency}
-                              src={getCurrencyFlag(currency)}
-                              className="w-[18px] h-[14px] rounded-[2px] ring-1 ring-foreground/10"
-                            />
-                          </span>
-                          <span className="truncate">
-                            {currency} — {(availableFiatCurrencies as readonly any[]).find((x) => x.code === currency)?.name || ""}
-                          </span>
-                          <span className="ml-auto opacity-70">▾</span>
-                        </button>
-                        {currencyOpen && (
-                          <div className="absolute z-[20005] mt-1 w-full rounded-md border bg-background shadow-md p-1 max-h-64 overflow-hidden">
-                            {availableFiatCurrencies.map((c) => (
-                              <button
-                                key={c.code}
-                                type="button"
-                                onClick={() => {
-                                  setCurrency(c.code);
-                                  setCurrencyOpen(false);
-                                }}
-                                className="w-full px-2 py-2 rounded-md hover:bg-foreground/5 flex items-center gap-2 text-sm transition-colors"
-                              >
+                          <button
+                            type="button"
+                            onClick={() => setCurrencyOpen((v) => !v)}
+                            className="pp-currency-btn h-10 px-3 text-left border transition-colors flex items-center gap-3 w-full"
+                            title="View currency equivalents"
+                          >
+                            <span className="inline-flex items-center justify-center">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                alt={currency}
+                                src={getCurrencyFlag(currency)}
+                                className="w-[18px] h-[14px] rounded-[2px] ring-1 ring-foreground/10"
+                              />
+                            </span>
+                            <span className="truncate">
+                              {currency} — {(availableFiatCurrencies as readonly any[]).find((x) => x.code === currency)?.name || ""}
+                            </span>
+                            <span className="ml-auto opacity-70">▾</span>
+                          </button>
+                          {currencyOpen && (
+                            <div className="pp-currency-menu absolute z-[20005] mt-1 w-full border p-1 max-h-64 overflow-hidden">
+                              {availableFiatCurrencies.map((c) => (
+                                <button
+                                  key={c.code}
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrency(c.code);
+                                    setCurrencyOpen(false);
+                                  }}
+                                  className="w-full px-2 py-2 rounded-md hover:bg-white/10 flex items-center gap-2 text-sm transition-colors"
+                                  style={{ color: isLightText ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.9)" }}
+                                >
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                   alt={c.code}
@@ -2757,7 +3352,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                               key={v}
                               type="button"
                               onClick={() => setTipChoice(v)}
-                              className={`px-2 py-1 rounded-md border text-xs hover:bg-foreground/5 transition-colors ${tipChoice === v ? "bg-foreground/10 border-foreground/20" : ""}`}
+                              className={`pp-tip-btn px-2 py-1 rounded-md border text-xs transition-colors ${isLightText ? 'hover:bg-white/5' : 'hover:bg-black/5'} ${tipChoice === v ? (isLightText ? "bg-white/10 border-white/20" : "bg-black/10 border-black/20") : ""}`}
                               title={v === "custom" ? "Custom tip amount" : `Tip ${v}%`}
                             >
                               {v === "custom" ? "Custom" : `${v}%`}
@@ -2772,7 +3367,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                               value={Number.isFinite(tipCustomPct) ? String(tipCustomPct) : ""}
                               onChange={(e) => setTipCustomPct(Number(e.target.value))}
                               placeholder="%"
-                              className="h-7 px-2 rounded-md border bg-background text-xs w-20"
+                              className={`h-7 px-2 rounded-md border text-xs w-20 ${isLightText ? 'bg-white/5 border-white/10 text-white placeholder-white/30' : 'bg-black/5 border-black/10 text-black placeholder-black/30'}`}
                               title="Enter tip percentage"
                             />
                           )}
@@ -2834,25 +3429,13 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                         </div>
                       )}
                       <div className="border-t border-dashed my-2" />
-                      <div className="flex items-center justify-between font-semibold">
-                        <span>Total ({currency})</span>
-                        <span>{currency === "USD" ? formatCurrency(totalUsd, "USD") : formatCurrency(displayTotalRounded, currency)}</span>
-                      </div>
-                      {(() => {
-                        if (currency === "USD") return null;
-                        return (
-                          <div className="mt-1 microtext text-muted-foreground">
-                            Equivalent: {formatCurrency(totalUsd, "USD")} (USD)
-                          </div>
-                        );
-                      })()}
                     </div>
                   </div>
                 </div>
                 <div className="h-full flex flex-col justify-center">
                   {/* Payment Section */}
                   <div ref={payRef} className={`mt-0 md:mt-0 ${isEmbedded ? "rounded-none border-0 p-0 bg-transparent" : "rounded-2xl border p-3 bg-background/70"} flex flex-col`}>
-                    <div ref={widgetRootRef} className={isEmbedded ? "mt-0 border-2 rounded-2xl p-3" : "mt-0 rounded-2xl border p-3"} style={{ minHeight: isEmbedded ? `${EMBEDDED_WIDGET_HEIGHT}px` : undefined, overflow: isEmbedded ? "auto" : undefined, borderColor: isEmbedded ? "rgba(255,255,255,0.1)" : undefined }}>
+                    <div ref={widgetRootRef} className={isEmbedded ? "mt-0 rounded-2xl p-3" : "mt-0 rounded-2xl p-3"} style={{ minHeight: isEmbedded ? `${EMBEDDED_WIDGET_HEIGHT}px` : undefined, overflow: isEmbedded ? "auto" : undefined }}>
                       {!loadingReceipt && receipt && totalUsd > 0 && amountReady && merchantWallet && tokenDef && hasTokenAddr && widgetSupported ? (
                         <>
                           {/* Payment Complete State - Blocks Double Payment */}
@@ -2864,16 +3447,16 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                 </svg>
                               </div>
                               <div className="space-y-1">
-                                <div className="text-xl font-bold text-white">Payment Complete</div>
-                                <div className="text-sm text-foreground/80">
+                                <div className={`text-xl font-bold ${isLightText ? 'text-white' : 'text-black'}`}>Payment Complete</div>
+                                <div className={`text-sm ${isLightText ? 'text-white/80' : 'text-black/80'}`}>
                                   {formatCurrency(totalUsd, "USD")} • {receiptId}
                                 </div>
                               </div>
-                              <div className="p-4 rounded-xl bg-white/5 border border-white/10 w-full max-w-[280px] mt-2">
-                                <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
+                              <div className={`p-4 rounded-xl border w-full max-w-[280px] mt-2 ${isLightText ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/10'}`}>
+                                <div className={`text-xs uppercase tracking-wider font-semibold mb-1 ${isLightText ? 'text-white/50' : 'text-black/50'}`}>
                                   Proof of Payment
                                 </div>
-                                <div className="text-lg font-bold text-white break-all">
+                                <div className={`text-lg font-bold break-all ${isLightText ? 'text-white' : 'text-black'}`}>
                                   {(() => {
                                     const tx = paymentConfirmed?.txHash || (receipt as any)?.transactionHash;
                                     if (tx) return <span className="font-mono text-xs">{tx.slice(0, 10)}...{tx.slice(-8)}</span>;
@@ -2885,17 +3468,17 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                 </div>
                               </div>
                               <div className="mt-4 flex gap-2">
-                                <button className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium transition-colors" onClick={() => window.location.reload()}>
+                                <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isLightText ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-black/10 hover:bg-black/20 text-black'}`} onClick={() => window.location.reload()}>
                                   Refresh Receipt
                                 </button>
                               </div>
 
                               {/* Claim / Link Wallet Section */}
-                              <div className="mt-8 pt-6 border-t border-white/10 w-full max-w-[320px] flex flex-col items-center animate-in slide-in-from-bottom-4 duration-500">
+                              <div className={`mt-8 pt-6 border-t w-full max-w-[320px] flex flex-col items-center animate-in slide-in-from-bottom-4 duration-500 ${isLightText ? 'border-white/10' : 'border-black/10'}`}>
                                 {!account ? (
                                   <>
-                                    <div className="text-sm font-medium text-pink-200 mb-2">Claim Loyalty Points</div>
-                                    <div className="text-xs text-white/60 mb-3 max-w-[240px]">
+                                    <div className="text-sm font-medium text-pink-500 dark:text-pink-200 mb-2">Claim Loyalty Points</div>
+                                    <div className={`text-xs mb-3 max-w-[240px] ${isLightText ? 'text-white/60' : 'text-black/60'}`}>
                                       Connect your wallet to link this purchase and earn rewards.
                                     </div>
                                     <ConnectButton
@@ -2932,7 +3515,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                 ) : (
                                   <div className="text-center">
                                     {claimStatus === "claiming" && (
-                                      <div className="text-sm text-white/80 animate-pulse">Linking to wallet...</div>
+                                      <div className={`text-sm animate-pulse ${isLightText ? 'text-white/80' : 'text-black/80'}`}>Linking to wallet...</div>
                                     )}
                                     {(claimStatus === "success" || claimStatus === "base_registered") && (
                                       <>
@@ -2941,11 +3524,11 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                             <span>✓</span> <span>Purchase Claimed</span>
                                           </div>
                                           {claimStatus === "base_registered" && (
-                                            <div className="text-xs text-purple-200 animate-in fade-in zoom-in">
+                                            <div className="text-xs text-purple-600 dark:text-purple-200 animate-in fade-in zoom-in">
                                               You are now registered at {effectiveBrandName}
                                             </div>
                                           )}
-                                          <div className="text-xs text-white/50 pt-1">
+                                          <div className={`text-xs pt-1 ${isLightText ? 'text-white/50' : 'text-black/50'}`}>
                                             Linked to {account.address.slice(0, 6)}...{account.address.slice(-4)}
                                           </div>
                                         </div>
@@ -2977,7 +3560,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                               {shippingRequired && (
                                 <div className="w-full mb-4">
                                   {/* Step 1: Shipping Details */}
-                                  <div className="rounded-xl border border-white/10 overflow-hidden mb-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                  <div className="rounded-xl border overflow-hidden mb-3" style={{ borderColor: isLightText ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', background: isLightText ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)' }}>
                                     <button
                                       type="button"
                                       className="w-full flex items-center justify-between px-4 py-3 text-left"
@@ -2985,19 +3568,19 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                       style={{ cursor: shippingComplete ? 'pointer' : 'default' }}
                                     >
                                       <div className="flex items-center gap-2">
-                                        <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${shippingComplete ? 'bg-green-500 text-white' : 'bg-white/10 text-white'}`}>
+                                        <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${shippingComplete ? 'bg-green-500 text-white' : (isLightText ? 'bg-white/10 text-white' : 'bg-black/10 text-black')}`}>
                                           {shippingComplete ? '✓' : '1'}
                                         </div>
-                                        <span className="text-sm font-semibold text-white">Shipping Details</span>
+                                        <span className={`text-sm font-semibold ${isLightText ? 'text-white' : 'text-black'}`}>Shipping Details</span>
                                       </div>
                                       {shippingComplete && (
-                                        <span className="text-xs text-white/50">Click to edit</span>
+                                        <span className={`text-xs ${isLightText ? 'text-white/50' : 'text-black/50'}`}>Click to edit</span>
                                       )}
                                     </button>
 
                                     {/* Collapsed summary when complete */}
                                     {shippingComplete && (
-                                      <div className="px-4 pb-3 text-xs text-white/60">
+                                      <div className={`px-4 pb-3 text-xs ${isLightText ? 'text-white/60' : 'text-black/60'}`}>
                                         <div>{shipName} · {shipLine1}{shipLine2 ? `, ${shipLine2}` : ''}</div>
                                         <div>{shipCity}, {shipState} {shipZip} {shipCountry}</div>
                                         <div className="mt-1 capitalize">{shipMethod} Shipping{shippingCostUsd > 0 ? ` · $${shippingCostUsd.toFixed(2)}` : ' · Free'}</div>
@@ -3006,11 +3589,11 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
 
                                     {/* Expanded form when not complete */}
                                     {!shippingComplete && (
-                                      <div className="px-4 pb-4 space-y-3">
+                                      <div className="px-4 pb-4 pt-3 space-y-3">
                                         {/* Login gate — require wallet connection before shipping */}
                                         {!account?.address ? (
-                                          <div className="flex flex-col items-center gap-3 py-6 text-center">
-                                            <div className="text-sm text-white/70">Please log in to continue with shipping</div>
+                                          <div className={`flex flex-col items-center gap-3 py-6 text-center`}>
+                                            <div className={`text-sm ${isLightText ? 'text-white/70' : 'text-black/70'}`}>Please log in to continue with shipping</div>
                                             <ConnectButton
                                               client={client}
                                               chain={chain}
@@ -3031,23 +3614,23 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                         ) : (
                                           <>
                                             <div className="grid grid-cols-1 gap-2">
-                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Email Address *" type="email" value={shipEmail} onChange={(e) => setShipEmail(e.target.value)} />
-                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Full Name *" value={shipName} onChange={(e) => setShipName(e.target.value)} />
-                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 1 *" value={shipLine1} onChange={(e) => setShipLine1(e.target.value)} />
-                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 2 (optional)" value={shipLine2} onChange={(e) => setShipLine2(e.target.value)} />
+                                              <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="Email Address *" type="email" value={shipEmail} onChange={(e) => setShipEmail(e.target.value)} />
+                                              <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="Full Name *" value={shipName} onChange={(e) => setShipName(e.target.value)} />
+                                              <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="Address Line 1 *" value={shipLine1} onChange={(e) => setShipLine1(e.target.value)} />
+                                              <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="Address Line 2 (optional)" value={shipLine2} onChange={(e) => setShipLine2(e.target.value)} />
                                               <div className="grid grid-cols-2 gap-2">
-                                                <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="City *" value={shipCity} onChange={(e) => setShipCity(e.target.value)} />
-                                                <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="State/Province" value={shipState} onChange={(e) => setShipState(e.target.value)} />
+                                                <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="City *" value={shipCity} onChange={(e) => setShipCity(e.target.value)} />
+                                                <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="State/Province" value={shipState} onChange={(e) => setShipState(e.target.value)} />
                                               </div>
                                               <div className="grid grid-cols-2 gap-2">
-                                                <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="ZIP / Postal *" value={shipZip} onChange={(e) => setShipZip(e.target.value)} />
-                                                <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Country" value={shipCountry} onChange={(e) => setShipCountry(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} />
+                                                <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="ZIP / Postal *" value={shipZip} onChange={(e) => setShipZip(e.target.value)} />
+                                                <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="Country" value={shipCountry} onChange={(e) => setShipCountry(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} />
                                               </div>
                                             </div>
 
                                             {/* Shipping method selector with prices */}
                                             <div>
-                                              <div className="text-xs text-white/50 mb-2 font-medium">Select Shipping Method</div>
+                                              <div className={`text-xs mb-2 font-medium ${isLightText ? 'text-white/50' : 'text-black/50'}`}>Select Shipping Method</div>
                                               <div className="space-y-1.5">
                                                 {shippingOptions.methods.map((m) => {
                                                   const price = shippingOptions.pricing[m] || 0;
@@ -3059,12 +3642,12 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                                     return threshold > 0 && itemsSubtotalUsd >= threshold;
                                                   })();
                                                   return (
-                                                    <label key={m} className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${shipMethod === m ? 'bg-white/10 border border-white/20' : 'border border-transparent hover:bg-white/5'}`}>
+                                                    <label key={m} className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${shipMethod === m ? (isLightText ? 'bg-white/10 border border-white/20' : 'bg-black/10 border border-black/20') : (isLightText ? 'border border-transparent hover:bg-white/5' : 'border border-transparent hover:bg-black/5')}`}>
                                                       <div className="flex items-center gap-2">
                                                         <input type="radio" name="shipMethod" value={m} checked={shipMethod === m} onChange={() => setShipMethod(m)} className="accent-emerald-500" />
-                                                        <span className="text-sm text-white capitalize">{m}</span>
+                                                        <span className={`text-sm capitalize ${isLightText ? 'text-white' : 'text-black'}`}>{m}</span>
                                                       </div>
-                                                      <span className="text-sm font-medium text-white">{isFree ? 'Free' : price > 0 ? `$${price.toFixed(2)}` : 'Free'}</span>
+                                                      <span className={`text-sm font-medium ${isLightText ? 'text-white' : 'text-black'}`}>{isFree ? 'Free' : price > 0 ? `$${price.toFixed(2)}` : 'Free'}</span>
                                                     </label>
                                                   );
                                                 })}
@@ -3077,8 +3660,8 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                               type="button"
                                               disabled={!shippingAddressValid || !shipMethod || shippingSaving}
                                               onClick={handleShippingSubmit}
-                                              className="w-full h-10 rounded-lg text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                                              style={{ backgroundColor: shippingAddressValid && shipMethod ? (theme.primaryColor || '#10b981') : 'rgba(255,255,255,0.1)' }}
+                                              className={`w-full h-10 rounded-lg text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${isLightText ? 'text-white' : 'text-white'}`}
+                                              style={{ backgroundColor: shippingAddressValid && shipMethod ? (theme.primaryColor || '#10b981') : (isLightText ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'), color: shippingAddressValid && shipMethod ? '#ffffff' : (isLightText ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.4)') }}
                                             >
                                               {shippingSaving ? 'Saving…' : 'Continue to Payment →'}
                                             </button>
@@ -3089,16 +3672,17 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                   </div>
 
                                   {/* Step 2: Payment (visible only when shipping is complete) */}
-                                  <div className={`rounded-xl border overflow-hidden transition-all duration-300 ${shippingComplete ? 'border-white/10 opacity-100 max-h-[2000px]' : 'border-transparent opacity-40 max-h-12 pointer-events-none'}`} style={{ background: shippingComplete ? 'rgba(255,255,255,0.03)' : 'transparent' }}>
+                                  <div className={`rounded-xl border overflow-hidden transition-all duration-300 ${shippingComplete ? (isLightText ? 'border-white/10' : 'border-black/10') + ' opacity-100 max-h-[2000px]' : 'border-transparent opacity-40 max-h-12 pointer-events-none'}`} style={{ background: shippingComplete ? (isLightText ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)') : 'transparent' }}>
                                     <div className="flex items-center gap-2 px-4 py-3">
-                                      <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${shippingComplete ? 'bg-white/10 text-white' : 'bg-white/5 text-white/40'}`}>2</div>
-                                      <span className={`text-sm font-semibold ${shippingComplete ? 'text-white' : 'text-white/40'}`}>Payment</span>
+                                      <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${shippingComplete ? (isLightText ? 'bg-white/10 text-white' : 'bg-black/10 text-black') : (isLightText ? 'bg-white/5 text-white/40' : 'bg-black/5 text-black/40')}`}>2</div>
+                                      <span className={`text-sm font-semibold ${shippingComplete ? (isLightText ? 'text-white' : 'text-black') : (isLightText ? 'text-white/40' : 'text-black/40')}`}>Payment</span>
                                     </div>
                                     {shippingComplete && (
                                       <div className="px-2 pb-2">
                                         <CheckoutWidget
                                           key={`${token}-${currency}`}
                                           className="w-full"
+                                          name={`Total (${currency})`}
                                           client={client}
                                           chain={chain}
                                           currency={widgetCurrency as any}
@@ -3106,21 +3690,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                           seller={sellerAddress || merchantWallet || recipient}
                                           tokenAddress={token === "ETH" ? undefined : (tokenAddr as any)}
                                           showThirdwebBranding={false}
-                                          theme={darkTheme({
-                                            colors: {
-                                              modalBg: "transparent",
-                                              borderColor: "transparent",
-                                              primaryText: "#ffffff",
-                                              secondaryText: "#ffffff",
-                                              accentText: "#ffffff",
-                                              accentButtonBg: theme.primaryColor,
-                                              accentButtonText: "#ffffff",
-                                              primaryButtonBg: theme.primaryColor,
-                                              primaryButtonText: "#ffffff",
-                                              connectedButtonBg: "rgba(255,255,255,0.04)",
-                                              connectedButtonBgHover: "rgba(255,255,255,0.08)",
-                                            },
-                                          })}
+                                          theme={widgetTheme}
                                           style={{
                                             width: "100%",
                                             maxWidth: "100%",
@@ -3190,6 +3760,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                 <CheckoutWidget
                                   key={`noshp-${token}-${currency}`}
                                   className="w-full"
+                                  name={`Total (${currency})`}
                                   client={client}
                                   chain={chain}
                                   currency={widgetCurrency as any}
@@ -3197,21 +3768,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                   seller={sellerAddress || merchantWallet || recipient}
                                   tokenAddress={token === "ETH" ? undefined : (tokenAddr as any)}
                                   showThirdwebBranding={false}
-                                  theme={darkTheme({
-                                    colors: {
-                                      modalBg: "transparent",
-                                      borderColor: "transparent",
-                                      primaryText: "#ffffff",
-                                      secondaryText: "#ffffff",
-                                      accentText: "#ffffff",
-                                      accentButtonBg: theme.primaryColor,
-                                      accentButtonText: "#ffffff",
-                                      primaryButtonBg: theme.primaryColor,
-                                      primaryButtonText: "#ffffff",
-                                      connectedButtonBg: "rgba(255,255,255,0.04)",
-                                      connectedButtonBgHover: "rgba(255,255,255,0.08)",
-                                    },
-                                  })}
+                                  theme={widgetTheme}
                                   style={{
                                     width: "100%",
                                     maxWidth: "100%",
@@ -3291,7 +3848,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                       )}
 
                       <div className="microtext text-muted-foreground text-center mt-3">
-                        Trustless, permissionless settlement via {effectiveBrandName} on Base. Funds settle on-chain — no custodial hold. Uses live payment flow and records spend/XP.
+                        Thank You For Shopping At {effectiveBrandName}
                         {isClientSide && isIframe && !isMobileViewport ? (
                           <div className="mt-2">
                             <button
@@ -3335,7 +3892,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                     <button
                       type="button"
                       onClick={() => setCurrencyOpen((v) => !v)}
-                      className="h-10 px-3 text-left border rounded-md bg-background hover:bg-foreground/5 transition-colors flex items-center gap-3 w-full"
+                      className="pp-currency-btn h-10 px-3 text-left border transition-colors flex items-center gap-3 w-full"
                       title="View currency equivalents"
                     >
                       <span className="inline-flex items-center justify-center">
@@ -3352,7 +3909,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                       <span className="ml-auto opacity-70">▾</span>
                     </button>
                     {currencyOpen && (
-                      <div className="absolute z-[20005] mt-1 w-full rounded-md border bg-background shadow-md p-1 max-h-64 overflow-y-auto">
+                      <div className="pp-currency-menu absolute z-[20005] mt-1 w-full border p-1 max-h-64 overflow-y-auto">
                         {availableFiatCurrencies.map((c) => (
                           <button
                             key={c.code}
@@ -3424,7 +3981,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                             setTipChoice(v);
                             if (v !== "custom") handleTipUpdate(v);
                           }}
-                          className={`px-4 py-2 rounded-lg border text-sm font-medium hover:bg-foreground/5 transition-colors ${tipChoice === v ? "bg-foreground/10 border-foreground/20" : ""} ${updatingTip ? "opacity-50 cursor-not-allowed" : ""}`}
+                          className={`pp-tip-btn px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${isLightText ? 'hover:bg-white/5' : 'hover:bg-black/5'} ${tipChoice === v ? (isLightText ? "bg-white/10 border-white/20" : "bg-black/10 border-black/20") : ""} ${updatingTip ? "opacity-50 cursor-not-allowed" : ""}`}
                           title={v === "custom" ? "Custom tip amount" : `Tip ${v}%`}
                         >
                           {v === "custom" ? "Custom" : `${v}%`}
@@ -3441,7 +3998,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                           onChange={(e) => setTipCustomPct(Number(e.target.value))}
                           onBlur={() => handleTipUpdate(tipCustomPct)}
                           placeholder="%"
-                          className="h-9 px-3 rounded-lg border bg-background text-sm w-24"
+                          className={`h-9 px-3 rounded-lg border text-sm w-24 ${isLightText ? 'bg-white/5 border-white/10 text-white placeholder-white/30' : 'bg-black/5 border-black/10 text-black placeholder-black/30'}`}
                           title="Enter tip percentage"
                         />
                       )}
@@ -3503,23 +4060,11 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                     </div>
                   )}
                   <div className="border-t border-dashed my-2" />
-                  <div className="flex items-center justify-between font-semibold">
-                    <span>Total ({currency})</span>
-                    <span>{currency === "USD" ? formatCurrency(totalUsd, "USD") : formatCurrency(displayTotalRounded, currency)}</span>
-                  </div>
-                  {(() => {
-                    if (currency === "USD") return null;
-                    return (
-                      <div className="mt-1 microtext text-muted-foreground">
-                        Equivalent: {formatCurrency(totalUsd, "USD")} (USD)
-                      </div>
-                    );
-                  })()}
                 </div>
 
                 {/* Payment Section */}
                 <div ref={payRef} className={`mt-4 ${isEmbedded ? "rounded-none border-0 p-0 bg-transparent" : "rounded-2xl border p-3 bg-background/70"}`}>
-                  <div ref={widgetRootRef} className={isEmbedded ? "mt-1 flex-1 border-2 rounded-2xl p-3" : "mt-2 rounded-2xl border p-3 flex-1"} style={{ minHeight: isEmbedded ? `${EMBEDDED_WIDGET_HEIGHT}px` : undefined, overflow: isEmbedded ? "auto" : undefined, borderColor: isEmbedded ? "rgba(255,255,255,0.1)" : undefined }}>
+                  <div ref={widgetRootRef} className={isEmbedded ? "mt-1 flex-1 rounded-2xl p-3" : "mt-2 rounded-2xl p-3 flex-1"} style={{ minHeight: isEmbedded ? `${EMBEDDED_WIDGET_HEIGHT}px` : undefined, overflow: isEmbedded ? "auto" : undefined }}>
                     {!loadingReceipt && receipt && totalUsd > 0 && amountReady && merchantWallet && tokenDef && hasTokenAddr && widgetSupported ? (
                       <>
                         {(paymentConfirmed || isSettled(receipt.status)) ? (
@@ -3551,20 +4096,20 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                               </div>
                             </div>
                             <div className="mt-4 flex gap-2">
-                              <button className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium transition-colors" onClick={() => window.location.reload()}>
+                              <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isLightText ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-black/10 hover:bg-black/20 text-black'}`} onClick={() => window.location.reload()}>
                                 Refresh Receipt
                               </button>
-                              <button className="px-4 py-2 rounded-lg text-black text-sm font-bold transition-colors shadow-lg active:scale-95" style={{ backgroundColor: theme.primaryColor || '#10b981' }} onClick={() => setEmailModalOpen(true)}>
+                              <button className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg active:scale-95 text-white`} style={{ backgroundColor: theme.primaryColor || '#10b981' }} onClick={() => setEmailModalOpen(true)}>
                                 Email Receipt
                               </button>
                             </div>
 
                             {/* Claim / Link Wallet Section */}
-                            <div className="mt-8 pt-6 border-t border-white/10 w-full max-w-[320px] flex flex-col items-center">
+                            <div className={`mt-8 pt-6 border-t w-full max-w-[320px] flex flex-col items-center ${isLightText ? 'border-white/10' : 'border-black/10'}`}>
                               {!account ? (
                                 <>
-                                  <div className="text-sm font-medium text-pink-200 mb-2">Claim Loyalty Points</div>
-                                  <div className="text-xs text-white/60 mb-3 max-w-[240px] text-center">
+                                  <div className="text-sm font-medium text-pink-500 dark:text-pink-200 mb-2">Claim Loyalty Points</div>
+                                  <div className={`text-xs mb-3 max-w-[240px] text-center ${isLightText ? 'text-white/60' : 'text-black/60'}`}>
                                     Connect your wallet to link this purchase and earn rewards.
                                   </div>
                                   <ConnectButton
@@ -3601,7 +4146,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                               ) : (
                                 <div className="text-center w-full">
                                   {claimStatus === "claiming" && (
-                                    <div className="text-sm text-white/80 animate-pulse">Linking to wallet...</div>
+                                    <div className={`text-sm animate-pulse ${isLightText ? 'text-white/80' : 'text-black/80'}`}>Linking to wallet...</div>
                                   )}
                                   {(claimStatus === "success" || claimStatus === "base_registered") && (
                                     <>
@@ -3610,11 +4155,11 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                           <span>✓</span> <span>Purchase Claimed</span>
                                         </div>
                                         {claimStatus === "base_registered" && (
-                                          <div className="text-xs text-purple-200 animate-in fade-in zoom-in">
+                                          <div className="text-xs text-purple-600 dark:text-purple-200 animate-in fade-in zoom-in">
                                             You are now registered at {effectiveBrandName}
                                           </div>
                                         )}
-                                        <div className="text-xs text-white/50 pt-1">
+                                        <div className={`text-xs pt-1 ${isLightText ? 'text-white/50' : 'text-black/50'}`}>
                                           Linked to {account.address.slice(0, 6)}...{account.address.slice(-4)}
                                         </div>
                                       </div>
@@ -3628,7 +4173,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                         </a>
                                         <a
                                           href="/admin?tab=purchases"
-                                          className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium text-center transition-colors"
+                                          className={`px-4 py-2 rounded-lg text-sm font-medium text-center transition-colors ${isLightText ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-black/10 hover:bg-black/20 text-black'}`}
                                         >
                                           View My Purchases
                                         </a>
@@ -3636,7 +4181,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                     </>
                                   )}
                                   {claimStatus === "idle" && (
-                                    <div className="text-sm text-white/60">Checking claim status...</div>
+                                    <div className={`text-sm ${isLightText ? 'text-white/60' : 'text-black/60'}`}>Checking claim status...</div>
                                   )}
                                 </div>
                               )}
@@ -3648,7 +4193,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                             {shippingRequired && (
                               <div className="w-full mb-4">
                                 {/* Step 1: Shipping Details */}
-                                <div className="rounded-xl border border-white/10 overflow-hidden mb-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                <div className="rounded-xl border overflow-hidden mb-3" style={{ borderColor: isLightText ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', background: isLightText ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)' }}>
                                   <button
                                     type="button"
                                     className="w-full flex items-center justify-between px-4 py-3 text-left"
@@ -3656,28 +4201,28 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                     style={{ cursor: shippingComplete ? 'pointer' : 'default' }}
                                   >
                                     <div className="flex items-center gap-2">
-                                      <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${shippingComplete ? 'bg-green-500 text-white' : 'bg-white/10 text-white'}`}>
+                                      <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${shippingComplete ? 'bg-green-500 text-white' : (isLightText ? 'bg-white/10 text-white' : 'bg-black/10 text-black')}`}>
                                         {shippingComplete ? '✓' : '1'}
                                       </div>
-                                      <span className="text-sm font-semibold text-white">Shipping Details</span>
+                                      <span className={`text-sm font-semibold ${isLightText ? 'text-white' : 'text-black'}`}>Shipping Details</span>
                                     </div>
                                     {shippingComplete && (
-                                      <span className="text-xs text-white/50">Click to edit</span>
+                                      <span className={`text-xs ${isLightText ? 'text-white/50' : 'text-black/50'}`}>Click to edit</span>
                                     )}
                                   </button>
                                   {shippingComplete && (
-                                    <div className="px-4 pb-3 text-xs text-white/60">
+                                    <div className={`px-4 pb-3 text-xs ${isLightText ? 'text-white/60' : 'text-black/60'}`}>
                                       <div>{shipName} · {shipLine1}{shipLine2 ? `, ${shipLine2}` : ''}</div>
                                       <div>{shipCity}, {shipState} {shipZip} {shipCountry}</div>
                                       <div className="mt-1 capitalize">{shipMethod} Shipping{shippingCostUsd > 0 ? ` · $${shippingCostUsd.toFixed(2)}` : ' · Free'}</div>
                                     </div>
                                   )}
                                   {!shippingComplete && (
-                                    <div className="px-4 pb-4 space-y-3">
+                                    <div className="px-4 pb-4 pt-3 space-y-3">
                                       {/* Login gate — require wallet connection before shipping */}
                                       {!account?.address ? (
                                         <div className="flex flex-col items-center gap-3 py-6 text-center">
-                                          <div className="text-sm text-white/70">Please log in to continue with shipping</div>
+                                          <div className={`text-sm ${isLightText ? 'text-white/70' : 'text-black/70'}`}>Please log in to continue with shipping</div>
                                           <ConnectButton
                                             client={client}
                                             chain={chain}
@@ -3698,20 +4243,20 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                       ) : (
                                         <>
                                           <div className="grid grid-cols-1 gap-2">
-                                            <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Full Name *" value={shipName} onChange={(e) => setShipName(e.target.value)} />
-                                            <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 1 *" value={shipLine1} onChange={(e) => setShipLine1(e.target.value)} />
-                                            <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Address Line 2 (optional)" value={shipLine2} onChange={(e) => setShipLine2(e.target.value)} />
+                                            <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="Full Name *" value={shipName} onChange={(e) => setShipName(e.target.value)} />
+                                            <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="Address Line 1 *" value={shipLine1} onChange={(e) => setShipLine1(e.target.value)} />
+                                            <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="Address Line 2 (optional)" value={shipLine2} onChange={(e) => setShipLine2(e.target.value)} />
                                             <div className="grid grid-cols-2 gap-2">
-                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="City *" value={shipCity} onChange={(e) => setShipCity(e.target.value)} />
-                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="State/Province" value={shipState} onChange={(e) => setShipState(e.target.value)} />
+                                              <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="City *" value={shipCity} onChange={(e) => setShipCity(e.target.value)} />
+                                              <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="State/Province" value={shipState} onChange={(e) => setShipState(e.target.value)} />
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
-                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="ZIP / Postal *" value={shipZip} onChange={(e) => setShipZip(e.target.value)} />
-                                              <input className="w-full h-9 px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-white/30" placeholder="Country" value={shipCountry} onChange={(e) => setShipCountry(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} />
+                                              <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="ZIP / Postal *" value={shipZip} onChange={(e) => setShipZip(e.target.value)} />
+                                              <input className={`w-full h-9 px-3 py-1 rounded-lg border text-sm ${isLightText ? 'border-white/10 bg-white/5 text-white placeholder-white/30' : 'border-black/10 bg-black/5 text-black placeholder-black/30'}`} placeholder="Country" value={shipCountry} onChange={(e) => setShipCountry(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} />
                                             </div>
                                           </div>
                                           <div>
-                                            <div className="text-xs text-white/50 mb-2 font-medium">Select Shipping Method</div>
+                                            <div className={`text-xs mb-2 font-medium ${isLightText ? 'text-white/50' : 'text-black/50'}`}>Select Shipping Method</div>
                                             <div className="space-y-1.5">
                                               {shippingOptions.methods.map((m) => {
                                                 const price = shippingOptions.pricing[m] || 0;
@@ -3723,12 +4268,12 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                                   return threshold > 0 && itemsSubtotalUsd >= threshold;
                                                 })();
                                                 return (
-                                                  <label key={m} className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${shipMethod === m ? 'bg-white/10 border border-white/20' : 'border border-transparent hover:bg-white/5'}`}>
+                                                  <label key={m} className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${shipMethod === m ? (isLightText ? 'bg-white/10 border border-white/20' : 'bg-black/10 border border-black/20') : (isLightText ? 'border border-transparent hover:bg-white/5' : 'border border-transparent hover:bg-black/5')}`}>
                                                     <div className="flex items-center gap-2">
                                                       <input type="radio" name="shipMethodSingle" value={m} checked={shipMethod === m} onChange={() => setShipMethod(m)} className="accent-emerald-500" />
-                                                      <span className="text-sm text-white capitalize">{m}</span>
+                                                      <span className={`text-sm capitalize ${isLightText ? 'text-white' : 'text-black'}`}>{m}</span>
                                                     </div>
-                                                    <span className="text-sm font-medium text-white">{isFree ? 'Free' : price > 0 ? `$${price.toFixed(2)}` : 'Free'}</span>
+                                                    <span className={`text-sm font-medium ${isLightText ? 'text-white' : 'text-black'}`}>{isFree ? 'Free' : price > 0 ? `$${price.toFixed(2)}` : 'Free'}</span>
                                                   </label>
                                                 );
                                               })}
@@ -3739,8 +4284,8 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                             type="button"
                                             disabled={!shippingAddressValid || !shipMethod || shippingSaving}
                                             onClick={handleShippingSubmit}
-                                            className="w-full h-10 rounded-lg text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                                            style={{ backgroundColor: shippingAddressValid && shipMethod ? (theme.primaryColor || '#10b981') : 'rgba(255,255,255,0.1)' }}
+                                            className={`w-full h-10 rounded-lg text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
+                                            style={{ backgroundColor: shippingAddressValid && shipMethod ? (theme.primaryColor || '#10b981') : (isLightText ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'), color: shippingAddressValid && shipMethod ? '#ffffff' : (isLightText ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.4)') }}
                                           >
                                             {shippingSaving ? 'Saving…' : 'Continue to Payment →'}
                                           </button>
@@ -3750,16 +4295,17 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                   )}
                                 </div>
                                 {/* Step 2: Payment */}
-                                <div className={`rounded-xl border overflow-hidden transition-all duration-300 ${shippingComplete ? 'border-white/10 opacity-100 max-h-[2000px]' : 'border-transparent opacity-40 max-h-12 pointer-events-none'}`} style={{ background: shippingComplete ? 'rgba(255,255,255,0.03)' : 'transparent' }}>
+                                <div className={`rounded-xl border overflow-hidden transition-all duration-300 ${shippingComplete ? (isLightText ? 'border-white/10' : 'border-black/10') + ' opacity-100 max-h-[2000px]' : 'border-transparent opacity-40 max-h-12 pointer-events-none'}`} style={{ background: shippingComplete ? (isLightText ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)') : 'transparent' }}>
                                   <div className="flex items-center gap-2 px-4 py-3">
-                                    <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${shippingComplete ? 'bg-white/10 text-white' : 'bg-white/5 text-white/40'}`}>2</div>
-                                    <span className={`text-sm font-semibold ${shippingComplete ? 'text-white' : 'text-white/40'}`}>Payment</span>
+                                    <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${shippingComplete ? (isLightText ? 'bg-white/10 text-white' : 'bg-black/10 text-black') : (isLightText ? 'bg-white/5 text-white/40' : 'bg-black/5 text-black/40')}`}>2</div>
+                                    <span className={`text-sm font-semibold ${shippingComplete ? (isLightText ? 'text-white' : 'text-black') : (isLightText ? 'text-white/40' : 'text-black/40')}`}>Payment</span>
                                   </div>
                                   {shippingComplete && (
                                     <div className="px-2 pb-2">
                                       <CheckoutWidget
                                         key={`ship-${token}-${currency}`}
                                         className="w-full"
+                                        name={`Total (${currency})`}
                                         client={client}
                                         chain={base}
                                         currency={currency as any}
@@ -3767,21 +4313,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                         seller={sellerAddress || merchantWallet || recipient}
                                         tokenAddress={token === "ETH" ? undefined : (tokenAddr as any)}
                                         showThirdwebBranding={false}
-                                        theme={darkTheme({
-                                          colors: {
-                                            modalBg: "transparent",
-                                            borderColor: "transparent",
-                                            primaryText: "#ffffff",
-                                            secondaryText: "#ffffff",
-                                            accentText: "#ffffff",
-                                            accentButtonBg: theme.primaryColor,
-                                            accentButtonText: "#ffffff",
-                                            primaryButtonBg: theme.primaryColor,
-                                            primaryButtonText: "#ffffff",
-                                            connectedButtonBg: "rgba(255,255,255,0.04)",
-                                            connectedButtonBgHover: "rgba(255,255,255,0.08)",
-                                          },
-                                        })}
+                                        theme={widgetTheme}
                                         style={{ width: "100%", maxWidth: "100%", background: "transparent", border: "none", borderRadius: 0 }}
                                         connectOptions={{ accountAbstraction: { chain, sponsorGas: true } }}
                                         purchaseData={{
@@ -3826,6 +4358,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                               <CheckoutWidget
                                 key={`noshp-${token}-${currency}`}
                                 className="w-full"
+                                name={`Total (${currency})`}
                                 client={client}
                                 chain={base}
                                 currency={currency as any}
@@ -3833,21 +4366,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                 seller={sellerAddress || merchantWallet || recipient}
                                 tokenAddress={token === "ETH" ? undefined : (tokenAddr as any)}
                                 showThirdwebBranding={false}
-                                theme={darkTheme({
-                                  colors: {
-                                    modalBg: "transparent",
-                                    borderColor: "transparent",
-                                    primaryText: "#ffffff",
-                                    secondaryText: "#ffffff",
-                                    accentText: "#ffffff",
-                                    accentButtonBg: theme.primaryColor,
-                                    accentButtonText: "#ffffff",
-                                    primaryButtonBg: theme.primaryColor,
-                                    primaryButtonText: "#ffffff",
-                                    connectedButtonBg: "rgba(255,255,255,0.04)",
-                                    connectedButtonBgHover: "rgba(255,255,255,0.08)",
-                                  },
-                                })}
+                                theme={widgetTheme}
                                 style={{
                                   width: "100%",
                                   maxWidth: "100%",
@@ -3968,7 +4487,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                     )}
 
                     <div className="microtext text-muted-foreground text-center mt-3">
-                      Trustless, permissionless settlement via {effectiveBrandName} on Base. Funds settle on-chain — no custodial hold. Uses live payment flow and records spend/XP.
+                      Thank You For Shopping At {effectiveBrandName}
                       {isClientSide && isIframe && !isMobileViewport ? (
                         <div className="mt-2">
                           <button
@@ -3996,27 +4515,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           )}
 
         </div>
-
-        {/* Footer note - placed outside scrollable content for embedded to ensure visibility */}
-        {isClientSide && isEmbedded && (
-          <div
-            className="px-4 py-2 text-[11px] opacity-80 rounded-b-2xl"
-            style={{ background: effectiveSecondaryColor, color: "var(--pp-text-header)", flexShrink: 0 }}
-          >
-            Trustless, permissionless on-chain settlement via {effectiveBrandName}. Embedded view uses a transparent background to fit host UI.
-          </div>
-        )}
       </div>
-
-      {/* Footer note - non-embedded (outside container) */}
-      {isClientSide && !isEmbedded && (
-        <div
-          className="px-4 py-2 text-[11px] opacity-80 rounded-xl mt-2 mx-auto max-w-[428px]"
-          style={{ background: effectiveSecondaryColor, color: "var(--pp-text-header)" }}
-        >
-          Trustless, permissionless on-chain settlement via {effectiveBrandName}. Full-page view applies your configured branding and theme.
-        </div>
-      )}
 
       {/* Email Receipt Modal */}
       {emailModalOpen && typeof window !== "undefined" && createPortal(
