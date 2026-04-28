@@ -36,6 +36,10 @@ type SiteTheme = {
   headerTextColor?: string;
   bodyTextColor?: string;
   borderColor?: string;
+  primaryBg?: string;
+  secondaryBg?: string;
+  surfaceBg?: string;
+  pageBg?: string;
   navbarMode?: "symbol" | "logo";
   brandKey?: string;
 };
@@ -290,6 +294,10 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
       textColor: "#ffffff",
       headerTextColor: "#ffffff",
       bodyTextColor: "#e5e7eb",
+      primaryBg: undefined,
+      secondaryBg: undefined,
+      surfaceBg: undefined,
+      pageBg: undefined,
     };
   });
 
@@ -425,9 +433,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   const EMBEDDED_WIDGET_HEIGHT = Number(searchParams?.get("e_h") || 320);
   const mobileTextColor = isMobileViewport ? "#ffffff" : undefined;
   const forceEmbedTextColor = isEmbedded ? "#ffffff" : undefined;
-  // Portal always renders on a dark background — force light text regardless of shop theme
-  const portalTextColor = "#ffffff";
-  const portalBodyTextColor = "#e5e7eb";
+  
   // Move wallet theme readiness earlier so effects can safely depend on it
   const [walletThemeLoaded, setWalletThemeLoaded] = useState(false);
   const [useMerchantThemeLock, setUseMerchantThemeLock] = useState(false);
@@ -1226,9 +1232,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         };
         setVar("--pp-primary", theme.primaryColor);
         setVar("--pp-secondary", theme.secondaryColor);
-        setVar("--pp-text", portalTextColor);
-        setVar("--pp-text-header", portalTextColor);
-        setVar("--pp-text-body", portalBodyTextColor);
+        setVar("--pp-text", theme.textColor || theme.headerTextColor || "#ffffff");
+        setVar("--pp-text-header", theme.headerTextColor || "#ffffff");
+        setVar("--pp-text-body", theme.bodyTextColor || "#e5e7eb");
         setVar("--primary", theme.primaryColor);
         setVar("--pp-font", theme.fontFamily);
       } catch { }
@@ -1274,9 +1280,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         const root = document.documentElement;
         root.style.setProperty("--pp-primary", cachedTheme.primaryColor);
         root.style.setProperty("--pp-secondary", cachedTheme.secondaryColor);
-        root.style.setProperty("--pp-text", portalTextColor);
-        root.style.setProperty("--pp-text-header", portalTextColor);
-        root.style.setProperty("--pp-text-body", portalBodyTextColor);
+        root.style.setProperty("--pp-text", cachedTheme.textColor || cachedTheme.headerTextColor || "#ffffff");
+        root.style.setProperty("--pp-text-header", cachedTheme.headerTextColor || "#ffffff");
+        root.style.setProperty("--pp-text-body", cachedTheme.bodyTextColor || "#e5e7eb");
         root.style.setProperty("--primary", cachedTheme.primaryColor);
         if (cachedTheme.fontFamily) {
           root.style.setProperty("--pp-font", cachedTheme.fontFamily);
@@ -1341,9 +1347,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           root.style.setProperty("--pp-secondary", tSecondary);
         }
         {
-          root.style.setProperty("--pp-text", portalTextColor);
-          root.style.setProperty("--pp-text-header", portalTextColor);
-          root.style.setProperty("--pp-text-body", portalBodyTextColor);
+          root.style.setProperty("--pp-text", tText || theme.textColor || theme.headerTextColor || "#ffffff");
+          root.style.setProperty("--pp-text-header", tText || theme.headerTextColor || "#ffffff");
+          root.style.setProperty("--pp-text-body", tText || theme.bodyTextColor || "#e5e7eb");
         }
         if (tFont) {
           root.style.setProperty("--pp-font", tFont);
@@ -1449,6 +1455,11 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             textColor: typeof (t as any)?.textColor === "string" ? (t as any).textColor : "#ffffff",
             headerTextColor: typeof (t as any)?.headerTextColor === "string" ? (t as any).headerTextColor : (typeof (t as any)?.textColor === "string" ? (t as any).textColor : "#ffffff"),
             bodyTextColor: typeof (t as any)?.bodyTextColor === "string" ? (t as any).bodyTextColor : "#e5e7eb",
+            borderColor: typeof (t as any)?.borderColor === "string" ? (t as any).borderColor : undefined,
+            primaryBg: typeof (t as any)?.primaryBg === "string" ? (t as any).primaryBg : undefined,
+            secondaryBg: typeof (t as any)?.secondaryBg === "string" ? (t as any).secondaryBg : undefined,
+            surfaceBg: typeof (t as any)?.surfaceBg === "string" ? (t as any).surfaceBg : undefined,
+            pageBg: typeof (t as any)?.pageBg === "string" ? (t as any).pageBg : undefined,
           };
 
           // ── Portal Theme Playground overrides ──
@@ -1484,9 +1495,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             const root = document.documentElement;
             root.style.setProperty("--pp-primary", merchantTheme.primaryColor);
             root.style.setProperty("--pp-secondary", merchantTheme.secondaryColor);
-            root.style.setProperty("--pp-text", portalTextColor);
-            root.style.setProperty("--pp-text-header", portalTextColor);
-            root.style.setProperty("--pp-text-body", portalBodyTextColor);
+            root.style.setProperty("--pp-text", merchantTheme.textColor || merchantTheme.headerTextColor || "#ffffff");
+            root.style.setProperty("--pp-text-header", merchantTheme.headerTextColor || "#ffffff");
+            root.style.setProperty("--pp-text-body", merchantTheme.bodyTextColor || "#e5e7eb");
             root.style.setProperty("--primary", merchantTheme.primaryColor);
             if (merchantTheme.fontFamily) {
               root.style.setProperty("--pp-font", merchantTheme.fontFamily);
@@ -3055,6 +3066,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           maxHeight: isEmbedded ? "100%" : "var(--pp-vh)",
           fontFamily: theme.fontFamily,
           borderColor: theme.borderColor || "var(--pp-primary)",
+          backgroundColor: theme.surfaceBg || theme.primaryBg || theme.pageBg || (isEmbedded ? "transparent" : "rgba(10,11,16,0.6)"),
         }}
       >
         <style dangerouslySetInnerHTML={{
