@@ -919,19 +919,22 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         return await inflightCfgRef.current.get(normKey)!;
       }
       const p = (async () => {
-        const url = `/api/site/config?wallet=${encodeURIComponent(walletHex)}`;
+        const isHex = /^0x[a-f0-9]{40}$/i.test(walletHex);
+        const queryParam = isHex ? `wallet=${encodeURIComponent(walletHex)}` : `slug=${encodeURIComponent(walletHex)}`;
+        
+        const url = `/api/site/config?${queryParam}`;
         const headers = { "x-theme-caller": "PortalPage:merchant", "x-wallet": String(walletHex || "").toLowerCase(), "x-recipient": String(walletHex || "").toLowerCase() };
 
         // Concurrently fetch site config, shop config, AND user profile for smart logo fallback
         const [siteRes, shopConfig, profileRes] = await Promise.all([
           fetch(url, { cache: "no-store", headers }).then(r => r.json()).catch(() => ({} as any)),
           walletHex
-            ? fetch(`/api/shop/config?wallet=${encodeURIComponent(walletHex)}`, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant:shop" } })
+            ? fetch(`/api/shop/config?${queryParam}`, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant:shop" } })
               .then(r => r.ok ? r.json() : null)
               .catch(() => null)
             : Promise.resolve(null),
           walletHex
-            ? fetch(`/api/users/profile?wallet=${encodeURIComponent(walletHex)}`, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant:profile" } })
+            ? fetch(`/api/users/profile?${queryParam}`, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant:profile" } })
               .then(r => r.ok ? r.json() : null)
               .catch(() => null)
             : Promise.resolve(null)
@@ -1485,6 +1488,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
               if (typeof modeTheme.surfaceBg === 'string' && modeTheme.surfaceBg) merchantTheme.surfaceBg = modeTheme.surfaceBg;
               if (typeof modeTheme.borderColor === 'string' && modeTheme.borderColor) merchantTheme.borderColor = modeTheme.borderColor;
               if (typeof modeTheme.mutedTextColor === 'string' && modeTheme.mutedTextColor) (merchantTheme as any).mutedTextColor = modeTheme.mutedTextColor;
+              if (typeof modeTheme.borderRadius === 'string' && modeTheme.borderRadius) (merchantTheme as any).borderRadius = modeTheme.borderRadius;
+              if (typeof modeTheme.blurStrength === 'string' && modeTheme.blurStrength) (merchantTheme as any).blurStrength = modeTheme.blurStrength;
+              if (typeof modeTheme.shadowIntensity === 'string' && modeTheme.shadowIntensity) (merchantTheme as any).shadowIntensity = modeTheme.shadowIntensity;
 
               if (modeTheme.logoShape === 'circle') merchantTheme.brandLogoShape = 'round';
               else if (modeTheme.logoShape === 'square') merchantTheme.brandLogoShape = 'square';
@@ -2882,8 +2888,6 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   // Scopes to document.body because thirdweb CheckoutWidget renders
   // into a body-level portal, not inside .pp-portal-container.
   useEffect(() => {
-    if (!tpThemeApplied) return;
-
     const scopeEl = document.body;
     const root = document.documentElement;
 
@@ -2898,9 +2902,8 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         const tpBgSurface = rv("--tp-bg-surface");
         const tpBgSecondary = rv("--tp-bg-secondary");
 
-        if (!tpBorder && !tpRadius) return; // theme vars not set yet
-
-        // ── Portal container ──
+        if (tpThemeApplied && (tpBorder || tpRadius)) {
+          // ── Portal container ──
         const container = scopeEl.querySelector(".pp-portal-container") as HTMLElement | null;
         if (container) {
           container.style.backgroundColor = tpBgSecondary;
@@ -2982,6 +2985,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             el.style.borderRadius = tpBtnRadius;
           });
         }
+        }
       } catch { }
 
       // ── Portal Theme Playground widget overrides ──
@@ -3062,7 +3066,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     >
       <div
         ref={containerRef}
-        className={`pp-portal-container pp-embed-white-text relative overflow-hidden ${isEmbedded ? "border-2 rounded-2xl shadow-none bg-transparent" : (isInvoiceLayout ? "rounded-none border-0 shadow-none bg-transparent" : "rounded-2xl border-2 shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur")} ${isTwoColumnLayout ? (isInvoiceLayout ? "w-full max-w-none mx-auto" : "w-full max-w-none mx-auto") : ""} ${isEmbedded ? "no-scrollbar" : ""}`}
+        className={`pp-portal-container relative overflow-hidden ${isEmbedded ? "border-2 rounded-2xl shadow-none bg-transparent" : (isInvoiceLayout ? "rounded-none border-0 shadow-none bg-transparent" : "rounded-2xl border-2 shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur")} ${isTwoColumnLayout ? (isInvoiceLayout ? "w-full max-w-none mx-auto" : "w-full max-w-none mx-auto") : ""} ${isEmbedded ? "no-scrollbar" : ""}`}
         data-tp-active={tpThemeApplied ? "1" : undefined}
         style={{
           ...backgroundStyle,
@@ -3075,6 +3079,10 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           fontFamily: theme.fontFamily,
           borderColor: theme.borderColor || "var(--pp-primary)",
           backgroundColor: theme.surfaceBg || theme.primaryBg || theme.pageBg || (isEmbedded ? "transparent" : "rgba(10,11,16,0.6)"),
+          borderRadius: (theme as any).borderRadius || undefined,
+          boxShadow: (theme as any).shadowIntensity === 'none' ? 'none' : ((theme as any).shadowIntensity === 'soft' ? '0 4px 20px -2px rgba(0,0,0,0.05)' : ((theme as any).shadowIntensity === 'strong' ? '0 20px 40px -10px rgba(0,0,0,0.2)' : undefined)),
+          backdropFilter: (theme as any).blurStrength ? `blur(${(theme as any).blurStrength})` : undefined,
+          WebkitBackdropFilter: (theme as any).blurStrength ? `blur(${(theme as any).blurStrength})` : undefined,
         }}
       >
         <style dangerouslySetInnerHTML={{
