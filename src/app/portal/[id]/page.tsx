@@ -929,9 +929,17 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         const [siteRes, shopConfig, profileRes] = await Promise.all([
           fetch(url, { cache: "no-store", headers }).then(r => r.json()).catch(() => ({} as any)),
           walletHex
-            ? fetch(`/api/shop/config?${queryParam}`, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant:shop" } })
-              .then(r => r.ok ? r.json() : null)
-              .catch(() => null)
+            ? (() => {
+                // When a shop slug is available (e.g. ?shop=swaddleshawls), always include it
+                // so the API can use slug-based resolution (no JWT required for iframes)
+                let shopQuery = queryParam;
+                if (shopSlugParam && !shopQuery.includes('slug=')) {
+                  shopQuery += `&slug=${encodeURIComponent(shopSlugParam)}`;
+                }
+                return fetch(`/api/shop/config?${shopQuery}`, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant:shop" } })
+                  .then(r => r.ok ? r.json() : null)
+                  .catch(() => null);
+              })()
             : Promise.resolve(null),
           walletHex
             ? fetch(`/api/users/profile?${queryParam}`, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant:profile" } })
@@ -1519,10 +1527,11 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           } catch { }
 
           // Set html/body background to pageBg (matches playground CSS injector behavior)
+          // For embedded iframes, also set pageBg (not transparent) so the theme background shows
           try {
             if (merchantTheme.pageBg) {
-              document.documentElement.style.background = isEmbedded ? 'transparent' : merchantTheme.pageBg;
-              document.body.style.background = isEmbedded ? 'transparent' : merchantTheme.pageBg;
+              document.documentElement.style.background = merchantTheme.pageBg;
+              document.body.style.background = merchantTheme.pageBg;
             }
           } catch { }
 
