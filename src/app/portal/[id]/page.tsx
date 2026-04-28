@@ -1518,6 +1518,14 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             }
           } catch { }
 
+          // Set html/body background to pageBg (matches playground CSS injector behavior)
+          try {
+            if (merchantTheme.pageBg) {
+              document.documentElement.style.background = isEmbedded ? 'transparent' : merchantTheme.pageBg;
+              document.body.style.background = isEmbedded ? 'transparent' : merchantTheme.pageBg;
+            }
+          } catch { }
+
           // Set theme state (preserve explicit brand overrides from URL if present)
           const mergedTheme = {
             ...merchantTheme,
@@ -3066,7 +3074,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     >
       <div
         ref={containerRef}
-        className={`pp-portal-container relative overflow-hidden ${isEmbedded ? "border-2 rounded-2xl shadow-none bg-transparent" : (isInvoiceLayout ? "rounded-none border-0 shadow-none bg-transparent" : "rounded-2xl border-2 shadow-xl bg-[rgba(10,11,16,0.6)] backdrop-blur")} ${isTwoColumnLayout ? (isInvoiceLayout ? "w-full max-w-none mx-auto" : "w-full max-w-none mx-auto") : ""} ${isEmbedded ? "no-scrollbar" : ""}`}
+        className={`pp-portal-container relative overflow-hidden ${isEmbedded ? "border-2 rounded-2xl shadow-none" : (isInvoiceLayout ? "rounded-none border-0 shadow-none" : "rounded-2xl border-2 shadow-xl backdrop-blur")} ${isTwoColumnLayout ? (isInvoiceLayout ? "w-full max-w-none mx-auto" : "w-full max-w-none mx-auto") : ""} ${isEmbedded ? "no-scrollbar" : ""}`}
         data-tp-active={tpThemeApplied ? "1" : undefined}
         style={{
           ...backgroundStyle,
@@ -3078,7 +3086,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           maxHeight: isEmbedded ? "100%" : "var(--pp-vh)",
           fontFamily: theme.fontFamily,
           borderColor: theme.borderColor || "var(--pp-primary)",
-          backgroundColor: theme.surfaceBg || theme.primaryBg || theme.pageBg || (isEmbedded ? "transparent" : "rgba(10,11,16,0.6)"),
+          backgroundColor: theme.pageBg || theme.surfaceBg || theme.primaryBg || (isEmbedded ? "transparent" : "rgba(10,11,16,0.6)"),
           borderRadius: (theme as any).borderRadius || undefined,
           boxShadow: (theme as any).shadowIntensity === 'none' ? 'none' : ((theme as any).shadowIntensity === 'soft' ? '0 4px 20px -2px rgba(0,0,0,0.05)' : ((theme as any).shadowIntensity === 'strong' ? '0 20px 40px -10px rgba(0,0,0,0.2)' : undefined)),
           backdropFilter: (theme as any).blurStrength ? `blur(${(theme as any).blurStrength})` : undefined,
@@ -3098,6 +3106,162 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
               border-color: transparent !important;
               outline: none !important;
             }
+
+            /* ── portalTheme live overrides ── */
+            ${theme.pageBg ? `
+            .pp-portal-container > div {
+              background: ${theme.pageBg} !important;
+            }
+            ` : ''}
+
+            ${(theme as any).headerTextColor ? `
+            .pp-portal-container h1,
+            .pp-portal-container h2,
+            .pp-portal-container h3,
+            .pp-portal-container h4,
+            .pp-portal-container strong,
+            .pp-portal-container b,
+            .pp-portal-container [class*="font-bold"],
+            .pp-portal-container [class*="font-semibold"],
+            .pp-portal-container [class*="text-lg"],
+            .pp-portal-container [class*="text-xl"],
+            .pp-portal-container [class*="text-2xl"],
+            .pp-portal-container [class*="text-3xl"] {
+              color: ${(theme as any).headerTextColor} !important;
+            }
+            ` : ''}
+
+            ${(theme as any).bodyTextColor ? `
+            .pp-portal-container p,
+            .pp-portal-container span,
+            .pp-portal-container div,
+            .pp-portal-container label,
+            .pp-portal-container td,
+            .pp-portal-container li {
+              color: ${(theme as any).bodyTextColor} !important;
+            }
+            ` : ''}
+
+            ${(theme as any).mutedTextColor ? `
+            .pp-portal-container [class*="text-white/4"],
+            .pp-portal-container [class*="text-white/5"],
+            .pp-portal-container [class*="text-white/6"],
+            .pp-portal-container [class*="text-gray"],
+            .pp-portal-container [class*="text-muted"],
+            .pp-portal-container [class*="microtext"],
+            .pp-portal-container [class*="uppercase"][class*="tracking"] {
+              color: ${(theme as any).mutedTextColor} !important;
+            }
+            ` : ''}
+
+            ${(theme as any).headerTextColor ? `
+            .pp-portal-container h1,
+            .pp-portal-container h2,
+            .pp-portal-container h3,
+            .pp-portal-container [class*="font-bold"],
+            .pp-portal-container [class*="font-semibold"] {
+              color: ${(theme as any).headerTextColor} !important;
+            }
+            ` : ''}
+
+            ${theme.fontFamily ? `
+            .pp-portal-container,
+            .pp-portal-container * {
+              font-family: ${theme.fontFamily} !important;
+            }
+            ` : ''}
+
+            ${theme.primaryColor ? `
+            .pp-portal-container > div:first-child > div:first-child[style*="background"],
+            .pp-portal-container [style*="background"][class*="z-[10]"] {
+              background: ${theme.primaryColor} !important;
+            }
+            ` : ''}
+
+            ${theme.borderColor ? `
+            .pp-portal-container [class*="border"] {
+              border-color: ${theme.borderColor} !important;
+            }
+            .pp-portal-container [class*="border-dashed"] {
+              border-color: ${theme.borderColor} !important;
+            }
+            ` : ''}
+
+            ${theme.primaryColor ? `
+            .pp-portal-container {
+              border-color: ${theme.primaryColor} !important;
+            }
+            ` : ''}
+
+            ${theme.borderColor || theme.pageBg ? `
+            .pp-portal-container [data-theme],
+            .pp-portal-container [class*="rounded"][class*="border"][class*="shadow"],
+            .pp-portal-container [class*="glass"],
+            .pp-portal-container [class*="backdrop"],
+            .pp-portal-container .pp-currency-menu {
+              ${theme.pageBg ? `background: ${theme.pageBg} !important;` : ''}
+              ${theme.borderColor ? `border-color: ${theme.borderColor} !important;` : ''}
+              ${ (theme as any).borderRadius ? `border-radius: ${(theme as any).borderRadius} !important;` : ''}
+            }
+            ` : ''}
+
+            ${theme.borderColor || (theme as any).bodyTextColor ? `
+            .pp-portal-container input,
+            .pp-portal-container select,
+            .pp-portal-container textarea,
+            .pp-portal-container .pp-currency-btn {
+              ${theme.borderColor ? `border-color: ${theme.borderColor} !important;` : ''}
+              ${(theme as any).bodyTextColor ? `color: ${(theme as any).bodyTextColor} !important;` : ''}
+              ${ (theme as any).borderRadius ? `border-radius: ${(theme as any).borderRadius} !important;` : ''}
+              ${theme.fontFamily ? `font-family: ${theme.fontFamily} !important;` : ''}
+            }
+            .pp-portal-container input::placeholder,
+            .pp-portal-container textarea::placeholder {
+              color: ${(theme as any).mutedTextColor || (theme as any).bodyTextColor || '#9ca3af'} !important;
+              opacity: 0.4 !important;
+            }
+            ` : ''}
+
+            ${theme.borderColor ? `
+            .pp-portal-container button[class*="flex-1"][class*="border"],
+            .pp-portal-container .pp-tip-btn {
+              border-color: ${theme.borderColor} !important;
+              ${(theme as any).bodyTextColor ? `color: ${(theme as any).bodyTextColor} !important;` : ''}
+              ${ (theme as any).borderRadius ? `border-radius: ${(theme as any).borderRadius} !important;` : ''}
+            }
+            ` : ''}
+
+            ${ (theme as any).borderRadius ? `
+            .pp-portal-container button {
+              border-radius: ${ (theme as any).borderRadius} !important;
+              ${theme.fontFamily ? `font-family: ${theme.fontFamily} !important;` : ''}
+            }
+            ` : ''}
+
+            ${theme.secondaryColor ? `
+            .pp-portal-container button[data-pp-pay],
+            .pp-portal-container button[data-pp-bottom-pay],
+            .pp-portal-container button[class*="bg-gradient"],
+            .pp-portal-container button[class*="w-full"][class*="py-3"],
+            .pp-portal-container button[class*="w-full"][class*="font-bold"] {
+              background: linear-gradient(135deg, ${theme.primaryColor || '#10b981'}, ${theme.secondaryColor}) !important;
+              color: #ffffff !important;
+              box-shadow: 0 4px 20px ${(theme.primaryColor || '#10b981')}40 !important;
+            }
+            ` : ''}
+
+            ${theme.pageBg ? `
+            .pp-portal-container select option {
+              background: ${theme.pageBg} !important;
+              ${(theme as any).bodyTextColor ? `color: ${(theme as any).bodyTextColor} !important;` : ''}
+            }
+            ` : ''}
+
+            ${(theme as any).mutedTextColor ? `
+            .pp-portal-container [class*="justify-center"][class*="gap"] span {
+              color: ${(theme as any).mutedTextColor} !important;
+            }
+            ` : ''}
           `}} />
         {/* Left-half decorative gradient background (only for invoice-style full page) */}
         {!isEmbedded && isInvoiceLayout && (
