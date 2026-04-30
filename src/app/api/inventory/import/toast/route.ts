@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { restaurantGuid, clientId, clientSecret } = await request.json();
+    const { restaurantGuid, clientId, clientSecret, action = "sync", menuGuids } = await request.json();
 
     if (!restaurantGuid) {
       return NextResponse.json({ error: "Restaurant GUID is required" }, { status: 400 });
@@ -215,6 +215,14 @@ export async function POST(request: NextRequest) {
       optionRefs: (data?.modifierOptionReferences || {}) as Record<string, any>,
     };
 
+    if (action === "fetch_menus") {
+      const availableMenus = (Array.isArray(data?.menus) ? data!.menus! : []).map((m: any) => ({
+        guid: m.guid,
+        name: String(m.name || "Unnamed Menu")
+      }));
+      return NextResponse.json({ success: true, menus: availableMenus });
+    }
+
     const importedItems: Array<{
       name: string;
       sku: string;
@@ -225,7 +233,12 @@ export async function POST(request: NextRequest) {
       industryAttributes: { restaurant: RestaurantItemAttributes };
     }> = [];
 
-    for (const menu of Array.isArray(data?.menus) ? data!.menus! : []) {
+    const targetMenus = Array.isArray(data?.menus) ? data!.menus! : [];
+    const menusToProcess = Array.isArray(menuGuids) && menuGuids.length > 0
+      ? targetMenus.filter((m: any) => menuGuids.includes(m.guid))
+      : targetMenus;
+
+    for (const menu of menusToProcess) {
       collectItemsFromMenu(menu, refs, importedItems);
     }
 
@@ -354,14 +367,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const menuNames = (Array.isArray(data?.menus) ? data!.menus! : []).map((m: any) => String(m?.name || ""));
+    const syncedMenuNames = menusToProcess.map((m: any) => String(m?.name || ""));
 
     return NextResponse.json({
       success: true,
       added,
       updated,
       deleted,
-      menus: menuNames,
+      menus: syncedMenuNames,
     });
   } catch (error) {
     console.error("Toast sync error:", error);

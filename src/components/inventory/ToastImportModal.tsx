@@ -24,14 +24,15 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ added: number; updated: number; deleted: number; menus: string[] } | null>(null);
+  const [step, setStep] = useState<'credentials' | 'select_menus'>('credentials');
+  const [availableMenus, setAvailableMenus] = useState<{ guid: string, name: string }[]>([]);
+  const [selectedMenuGuids, setSelectedMenuGuids] = useState<Set<string>>(new Set());
 
-  const handleImport = async () => {
+  const handleFetchMenus = async () => {
     setLoading(true);
     setError(null);
-    setResult(null);
     try {
-      if (saveCredentials) {
-        // Save the credentials to the shop config before importing
+      if (saveCredentials && mode === 'edit') {
         await fetch('/api/site/config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -46,7 +47,38 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
       const response = await fetch('/api/inventory/import/toast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId, clientSecret, restaurantGuid }),
+        body: JSON.stringify({ clientId, clientSecret, restaurantGuid, action: 'fetch_menus' }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch menus');
+
+      setAvailableMenus(data.menus || []);
+      setSelectedMenuGuids(new Set((data.menus || []).map((m: any) => m.guid)));
+      setStep('select_menus');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch menus');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImport = async () => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+
+      const response = await fetch('/api/inventory/import/toast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          clientId, 
+          clientSecret, 
+          restaurantGuid, 
+          action: 'sync', 
+          menuGuids: Array.from(selectedMenuGuids) 
+        }),
       });
 
       const data = await response.json();
@@ -74,6 +106,9 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
     if (!toastConfig?.restaurantGuid) setRestaurantGuid('');
     setError(null);
     setResult(null);
+    setStep('credentials');
+    setAvailableMenus([]);
+    setSelectedMenuGuids(new Set());
     onClose();
   };
 
@@ -95,8 +130,10 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
         <div className="space-y-4 py-4">
           {!result ? (
             <>
-              {mode === 'edit' && (
+              {step === 'credentials' && (
                 <>
+                  {mode === 'edit' && (
+                    <>
                   <div className="space-y-2">
                     <Label htmlFor="restaurantGuid">Restaurant GUID</Label>
                     <Input
@@ -163,6 +200,39 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
                   </div>
                 </>
               )}
+              </>
+              )}
+
+              {step === 'select_menus' && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium">Select Menus to Sync</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Only items from the selected menus will be synced. Any previously synced items that are not in the selected menus will be removed from your PortalPay inventory.
+                  </p>
+                  <div className="border rounded-md divide-y max-h-60 overflow-y-auto">
+                    {availableMenus.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-muted-foreground">No menus found.</div>
+                    ) : (
+                      availableMenus.map(menu => (
+                        <div key={menu.guid} className="flex items-center gap-3 p-3 hover:bg-neutral-50/5 cursor-pointer" onClick={() => {
+                          const newSet = new Set(selectedMenuGuids);
+                          if (newSet.has(menu.guid)) newSet.delete(menu.guid);
+                          else newSet.add(menu.guid);
+                          setSelectedMenuGuids(newSet);
+                        }}>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedMenuGuids.has(menu.guid)}
+                            onChange={() => {}} // Handled by div onClick
+                            className="rounded border-gray-300 text-primary focus:ring-primary pointer-events-none"
+                          />
+                          <span className="text-sm font-medium">{menu.name}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
 
               {error && (
                 <Alert variant="destructive">
@@ -176,29 +246,27 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
                   Cancel
                 </Button>
                 
-                {mode === 'edit' && (
+                {step === 'credentials' ? (
                   <Button
-                    onClick={handleImport}
+                    onClick={handleFetchMenus}
                     disabled={loading || !clientId || !clientSecret || !restaurantGuid}
                   >
                     {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Syncing...
+                        Connecting...
                       </>
                     ) : (
                       <>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Save & Sync
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Fetch Menus
                       </>
                     )}
                   </Button>
-                )}
-
-                {mode === 'sync' && (
+                ) : (
                   <Button
                     onClick={handleImport}
-                    disabled={loading || !clientId || !clientSecret || !restaurantGuid}
+                    disabled={loading || selectedMenuGuids.size === 0}
                   >
                     {loading ? (
                       <>
@@ -208,7 +276,7 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
                     ) : (
                       <>
                         <Upload className="mr-2 h-4 w-4" />
-                        Confirm Sync
+                        Sync Selected Menus
                       </>
                     )}
                   </Button>
