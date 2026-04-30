@@ -62,6 +62,8 @@ import { lubeManufacturers } from './lube-manufacturers';
 import { adultNoveltyRetailers } from './adult-novelty-retailers';
 import { tattooPiercingStudios } from './tattoo-piercing-studios';
 import { nightclubs } from './nightclubs';
+import { publishingBookstores } from './publishing-bookstores';
+import { generalStore } from './general-store';
 import { 
   petServices, daycareChildcare, tutoringEducation, photographyStudios, eventPlanning,
   cateringServices, florists, printShops, dryCleaners, laundromats, storageFacilities,
@@ -159,6 +161,8 @@ export const INDUSTRY_DATA: Record<string, IndustryLandingData> = {
   'adult-novelty-retailers': adultNoveltyRetailers,
   'tattoo-piercing-studios': tattooPiercingStudios,
   'nightclubs': nightclubs,
+  'publishing-bookstores': publishingBookstores,
+  'general-store': generalStore,
   
   // Service Industries (24 new)
   'pet-services': petServices,

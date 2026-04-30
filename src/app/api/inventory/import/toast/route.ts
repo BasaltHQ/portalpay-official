@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { StorageFactory } from "@/lib/storage";
 import sharp from "sharp";
+import { getContainer } from "@/lib/cosmos";
+import { getAuthenticatedWallet } from "@/lib/auth";
 import type {
   RestaurantModifier,
   RestaurantModifierGroup,
@@ -143,6 +145,11 @@ function collectItemsFromMenu(
 
 export async function POST(request: NextRequest) {
   try {
+    const wallet = await getAuthenticatedWallet(request);
+    if (!wallet) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { restaurantGuid, clientId, clientSecret } = await request.json();
 
     if (!restaurantGuid) {
@@ -214,6 +221,7 @@ export async function POST(request: NextRequest) {
       description: string;
       price: number;
       category: string;
+      imageToastUrl?: string;
       industryAttributes: { restaurant: RestaurantItemAttributes };
     }> = [];
 
@@ -221,16 +229,40 @@ export async function POST(request: NextRequest) {
       collectItemsFromMenu(menu, refs, importedItems);
     }
 
+    // Fetch existing inventory for this wallet
+    const container = await getContainer();
+    const { resources: existingItems } = await container.items.query({
+      query: "SELECT c.id, c.sku, c.images, c.attributes FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet AND c.industryPack='restaurant'",
+      parameters: [{ name: "@wallet", value: wallet }]
+    }).fetchAll();
+
+    const existingBySku = new Map<string, any>();
+    for (const item of existingItems) {
+      if (item.sku) existingBySku.set(String(item.sku).toUpperCase().slice(0, 16), item);
+    }
+
     const storage = StorageFactory.getProvider();
-    const processedItems: any[] = [];
+    
+    let added = 0;
+    let updated = 0;
+    let deleted = 0;
+
+    const importedSkus = new Set<string>();
     const CHUNK_SIZE = 10;
     
     // Chunking to prevent serverless execution timeouts and OOM errors on massive menus
     for (let i = 0; i < importedItems.length; i += CHUNK_SIZE) {
       const chunk = importedItems.slice(i, i + CHUNK_SIZE);
-      const chunkResults = await Promise.all(
+      await Promise.all(
         chunk.map(async (item: any) => {
-          if (item.imageToastUrl) {
+          const itemSku = String(item.sku || "").toUpperCase().slice(0, 16);
+          if (!itemSku) return; // Skip items without SKU
+          
+          importedSkus.add(itemSku);
+          const existing = existingBySku.get(itemSku);
+          let finalImages = existing?.images || [];
+
+          if ((!existing || finalImages.length === 0) && item.imageToastUrl) {
             try {
               const res = await fetch(item.imageToastUrl);
               if (res.ok) {
@@ -256,32 +288,83 @@ export async function POST(request: NextRequest) {
                 }
 
                 const id = crypto.randomUUID().replace(/-/g, "");
-                const container = process.env.AZURE_BLOB_CONTAINER || "uploads";
+                const blobContainer = process.env.AZURE_BLOB_CONTAINER || "uploads";
                 const blobName = `files/toast_${id}.${finalExt}`;
-                const finalUrl = await storage.upload(`${container}/${blobName}`, buffer, finalMime);
-                item.images = [finalUrl];
+                const finalUrl = await storage.upload(`${blobContainer}/${blobName}`, buffer, finalMime);
+                finalImages = [finalUrl];
               }
             } catch (e) {
               console.warn("Toast image upload failed for", item.name, e);
             }
-            delete item.imageToastUrl;
           }
-          return item;
+
+          const now = Date.now();
+          const attrs = (item.industryAttributes?.restaurant || {}) as Record<string, any>;
+          const priceUsd = Math.max(0, Number(item.price || 0));
+
+          if (existing) {
+            // PATCH existing item
+            await container.item(existing.id, wallet).patch([
+              { op: "replace", path: "/name", value: String(item.name || "") },
+              { op: "replace", path: "/description", value: String(item.description || "") },
+              { op: "replace", path: "/priceUsd", value: priceUsd },
+              { op: "replace", path: "/category", value: item.category || undefined },
+              { op: "replace", path: "/attributes", value: attrs },
+              { op: "replace", path: "/images", value: finalImages },
+              { op: "replace", path: "/updatedAt", value: now }
+            ]).catch(e => console.warn(`Failed to update item ${itemSku}`, e));
+            updated++;
+          } else {
+            // POST new item
+            const newItem = {
+              id: crypto.randomUUID(),
+              wallet,
+              type: "inventory_item",
+              sku: itemSku,
+              name: String(item.name || ""),
+              priceUsd: priceUsd,
+              currency: "USD",
+              stockQty: -1,
+              category: item.category || undefined,
+              description: String(item.description || ""),
+              tags: [],
+              images: finalImages,
+              attributes: attrs,
+              taxable: true,
+              industryPack: "restaurant",
+              createdAt: now,
+              updatedAt: now
+            };
+            await container.items.create(newItem).catch(e => console.warn(`Failed to create item ${itemSku}`, e));
+            added++;
+          }
         })
       );
-      processedItems.push(...chunkResults);
+    }
+
+    // Process removals: DELETE items not present in Toast menu
+    for (const item of existingItems) {
+      if (item.sku && !importedSkus.has(String(item.sku).toUpperCase().slice(0, 16))) {
+        try {
+          await container.item(item.id, wallet).delete();
+          deleted++;
+        } catch (e) {
+          console.warn(`Failed to delete missing item ${item.sku}`, e);
+        }
+      }
     }
 
     const menuNames = (Array.isArray(data?.menus) ? data!.menus! : []).map((m: any) => String(m?.name || ""));
 
     return NextResponse.json({
       success: true,
-      itemCount: processedItems.length,
-      items: processedItems,
+      added,
+      updated,
+      deleted,
       menus: menuNames,
     });
   } catch (error) {
-    console.error("Toast import error:", error);
+    console.error("Toast sync error:", error);
     return NextResponse.json(
       {
         error: "Internal server error",
