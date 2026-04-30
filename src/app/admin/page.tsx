@@ -8389,6 +8389,18 @@ function InventoryPanel() {
             onClose={() => setToastImportOpen(false)}
             mode={toastModalMode}
             toastConfig={siteConfig?.integrations?.toast}
+            onCredentialsSaved={(creds) => {
+              setSiteConfig((prev: any) => ({
+                ...prev,
+                integrations: {
+                  ...prev?.integrations,
+                  toast: {
+                    ...prev?.integrations?.toast,
+                    ...creds
+                  }
+                }
+              }));
+            }}
             onImport={async () => {
               try {
                 await refresh({ resetPage: true });

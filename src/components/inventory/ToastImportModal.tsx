@@ -14,9 +14,10 @@ interface ToastImportModalProps {
   onImport: () => void; // Changed: backend handles sync now
   toastConfig?: { clientId?: string; clientSecret?: string; restaurantGuid?: string };
   mode?: 'sync' | 'edit';
+  onCredentialsSaved?: (creds: { clientId: string; clientSecret: string; restaurantGuid: string }) => void;
 }
 
-export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 'edit' }: ToastImportModalProps) {
+export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 'edit', onCredentialsSaved }: ToastImportModalProps) {
   const [clientId, setClientId] = useState(toastConfig?.clientId || '');
   const [clientSecret, setClientSecret] = useState(toastConfig?.clientSecret || '');
   const [restaurantGuid, setRestaurantGuid] = useState(toastConfig?.restaurantGuid || '');
@@ -27,6 +28,12 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
   const [step, setStep] = useState<'credentials' | 'select_menus'>('credentials');
   const [availableMenus, setAvailableMenus] = useState<{ guid: string, name: string }[]>([]);
   const [selectedMenuGuids, setSelectedMenuGuids] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (toastConfig?.clientId) setClientId(toastConfig.clientId);
+    if (toastConfig?.clientSecret) setClientSecret(toastConfig.clientSecret);
+    if (toastConfig?.restaurantGuid) setRestaurantGuid(toastConfig.restaurantGuid);
+  }, [toastConfig]);
 
   const handleFetchMenus = async () => {
     setLoading(true);
@@ -42,6 +49,10 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
             }
           }),
         }).catch(console.warn);
+        
+        if (onCredentialsSaved) {
+          onCredentialsSaved({ clientId, clientSecret, restaurantGuid });
+        }
       }
 
       const response = await fetch('/api/inventory/import/toast', {
@@ -114,7 +125,7 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] z-[100] mt-8 max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
