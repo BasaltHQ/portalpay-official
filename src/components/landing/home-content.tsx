@@ -5,7 +5,7 @@ import { SignupButton } from "@/components/landing/SignupButton";
 import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Zap, Shield, BarChart3, Globe, CreditCard } from "lucide-react";
+import { ArrowRight, CheckCircle2, Zap, Shield, BarChart3, Globe, CreditCard, Sparkles } from "lucide-react";
 import { buildPortalUrlForTest } from "@/lib/receipts";
 import { getRecipientAddress } from "@/lib/thirdweb/client";
 import { PortalPreviewEmbedded } from "@/components/portal-preview-embedded";
@@ -407,8 +407,7 @@ export default function HomeContent() {
         {/* Video Background */}
         <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
           {/* Gradient to ensure text readability on the left, fading out to reveal the video */}
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent z-10" />
-          {/* Subtle bottom gradient to blend with the next section */}
+          <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/40 to-transparent z-10" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent z-10" />
           
           {!isPartnerContainer && (
@@ -425,118 +424,177 @@ export default function HomeContent() {
         </div>
 
         <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-20 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left Content */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="flex flex-col"
-            >
-              <div className="mb-8">
-                <Link href="/" className="block" aria-label={`${brand.name} Home`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={resolveBrandAppLogo(brand.logos?.symbol || brand.logos?.app, (brand as any)?.key)}
-                    alt={`${brand.name} Logo`}
-                    className="h-14 w-auto max-w-[300px] object-contain"
-                  />
-                </Link>
-              </div>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="flex flex-col max-w-2xl"
+          >
 
-              {!isPartnerContainer && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm text-pp-secondary w-fit mb-6 shadow-xl"
-                >
-                  <span className="flex h-2 w-2 rounded-full bg-pp-secondary animate-pulse" />
-                  BasaltSurge Network is Live
-                </motion.div>
-              )}
 
-              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter mb-6 leading-[1.05]">
-                Global payments, <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60">
-                  instantly settled.
-                </span>
-              </h1>
+            {!isPartnerContainer && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-white/5 border border-white/10 text-sm text-pp-secondary w-fit mb-6 shadow-xl"
+              >
+                <span className="flex h-2 w-2 rounded-full bg-pp-secondary animate-pulse" />
+                BasaltSurge Network is Live
+              </motion.div>
+            )}
 
-              <p className="text-muted-foreground text-lg md:text-xl leading-relaxed mb-10 max-w-xl">
-                Scan. Pay. Settled. Give customers a frictionless checkout experience and get instant,
-                borderless settlement—wrapped in your brand, with zero chargebacks, built-in analytics, and programmable revenue routing.
-              </p>
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter mb-6 leading-[1.05]">
+              Global payments, <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60">
+                instantly settled.
+              </span>
+            </h1>
 
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <SignupButton
-                  variant="shiny"
-                  className="group relative px-8 py-4 rounded-full bg-white text-black font-semibold text-lg transition-all hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.1)] flex items-center gap-2"
-                >
-                  Start accepting payments
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </SignupButton>
-                <Link
-                  href="/get-started"
-                  className="px-8 py-4 rounded-full bg-white/5 border border-white/10 font-semibold text-lg hover:bg-white/10 transition-colors flex items-center gap-2"
-                >
-                  Explore docs
-                </Link>
-              </div>
+            <p className="text-muted-foreground text-lg md:text-xl leading-relaxed mb-10 max-w-xl">
+              Scan. Pay. Settled. Give customers a frictionless checkout experience and get instant,
+              borderless settlement—wrapped in your brand, with zero chargebacks, built-in analytics, and programmable revenue routing.
+            </p>
 
-              {/* Supported chains/tokens mini ribbon */}
-              <div className="mt-12 pt-8 border-t border-white/10">
-                <div className="flex flex-col sm:flex-row gap-6 sm:items-center">
-                  <div className="flex items-center gap-2 font-bold text-sm bg-white/5 border border-white/10 px-4 py-2 rounded-full w-fit">
-                    <img src="/logos/base.png" className="w-5 h-5" alt="Base" />
-                    Settlements on Base
-                  </div>
-                  <p className="text-sm font-semibold text-muted-foreground max-w-sm leading-relaxed">
-                    Accept payments across 95+ chains in 160 countries and over 17,000 tokens.
-                  </p>
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <SignupButton
+                variant="shiny"
+                className="group relative px-8 py-4 rounded-xl bg-white text-black font-semibold text-lg transition-all hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.1)] flex items-center gap-2"
+              >
+                Start accepting payments
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </SignupButton>
+              <Link
+                href="/get-started"
+                className="px-8 py-4 rounded-xl bg-white/5 border border-white/10 font-semibold text-lg hover:bg-white/10 transition-colors flex items-center gap-2"
+              >
+                Explore docs
+              </Link>
+            </div>
+
+            {/* Supported chains/tokens mini ribbon */}
+            <div className="mt-12 pt-8 border-t border-white/10 w-full">
+              <div className="flex flex-col sm:flex-row gap-6 sm:items-center">
+                <div className="flex items-center gap-2 font-bold text-sm bg-white/5 border border-white/10 px-4 py-2 rounded-xl w-fit">
+                  <img src="/logos/base.png" className="w-5 h-5" alt="Base" />
+                  Settlements on Base
                 </div>
+                <p className="text-sm font-semibold text-muted-foreground max-w-sm leading-relaxed">
+                  Accept payments across 95+ chains in 160 countries and over 17,000 tokens.
+                </p>
               </div>
-            </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
-            {/* Right Content - Floating Portal Preview */}
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
-              className="relative lg:ml-auto w-full max-w-[480px]"
-            >
-              {/* Decorative glows */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-pp-secondary/30 to-blue-500/20 blur-3xl opacity-50 rounded-[2.5rem] pointer-events-none" />
-
-              <div className="relative glass-pane rounded-[2.5rem] border border-white/10 shadow-2xl backdrop-blur-xl overflow-hidden bg-background/40">
-                <div className="bg-black/40 border-b border-white/10 px-4 py-3 flex items-center gap-3">
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
-                  </div>
-                  <div className="text-xs text-white/40 font-mono flex-1 text-center pr-12">Live Preview</div>
+      {/* Portal Showcase Section */}
+      <section className="relative py-24 border-b border-white/5 overflow-hidden bg-background/50">
+        <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-20">
+          <div className="text-center mb-24">
+            <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">The ultimate payment experience</h2>
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              A frictionless checkout flow designed for conversion. Customize every detail in our new 
+              <span className="text-pp-secondary font-medium flex items-center justify-center gap-2 mt-2">
+                <Sparkles className="w-5 h-5" /> Portal Theme Playground
+              </span>
+            </p>
+          </div>
+          
+          <div className="relative max-w-[420px] mx-auto">
+            {/* Left Pointers - Desktop Only */}
+            <div className="hidden xl:block absolute -left-[360px] top-[5%] w-[320px] z-20">
+              <div className="relative">
+                <div className="text-right pr-24">
+                  <h3 className="text-2xl font-bold text-white mb-2 whitespace-nowrap">Custom Branding</h3>
+                  <p className="text-base text-muted-foreground ml-auto">Your colors, your logo, your identity. Fully white-labeled.</p>
                 </div>
-
-                <div className="p-4 md:p-6 pb-8">
-                  <PortalPreviewEmbedded
-                    key={`${siteTheme.brandLogoUrl}-${siteTheme.primaryColor}`}
-                    theme={siteTheme}
-                    demoReceipt={demoReceipt}
-                    recipient={recipient as any}
-                    className="mx-auto rounded-2xl overflow-hidden shadow-2xl border border-white/5"
-                    style={{
-                      ...previewStyle,
-                      maxHeight: "calc(100vh - 280px)",
-                      minHeight: "500px",
-                    }}
-                  />
-                  <div className="microtext text-white/40 text-center mt-4 font-mono">
-                    Preview inherits your theme
-                  </div>
-                </div>
+                <svg className="absolute -right-12 top-1/2 -translate-y-1/2 w-32 h-24 text-pp-secondary opacity-100" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0,60 Q50,60 90,20" stroke="currentColor" strokeWidth="2.5" strokeDasharray="6,4" />
+                  <path d="M75,20 L90,20 L90,35" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </div>
-            </motion.div>
+            </div>
+
+            <div className="hidden xl:block absolute -left-[360px] top-[45%] w-[320px] z-20">
+              <div className="relative">
+                <div className="text-right pr-24">
+                  <h3 className="text-2xl font-bold text-white mb-2 whitespace-nowrap">Apple/Google Pay</h3>
+                  <p className="text-base text-muted-foreground ml-auto">Native wallet integration for instant 1-click checkout</p>
+                </div>
+                <svg className="absolute -right-12 top-1/2 -translate-y-1/2 w-32 h-16 text-pp-secondary opacity-100" viewBox="0 0 100 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0,40 Q50,40 90,10" stroke="currentColor" strokeWidth="2.5" strokeDasharray="6,4" />
+                  <path d="M75,10 L90,10 L90,25" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Right Pointers - Desktop Only */}
+            <div className="hidden xl:block absolute -right-[360px] top-[25%] w-[320px] z-20">
+              <div className="relative">
+                <div className="text-left pl-24">
+                  <h3 className="text-2xl font-bold text-white mb-2 whitespace-nowrap">Zero Chargebacks</h3>
+                  <p className="text-base text-muted-foreground">Cryptographic finality means no reversed payments or fraud</p>
+                </div>
+                <svg className="absolute -left-12 top-1/2 -translate-y-1/2 w-32 h-16 text-pp-secondary opacity-100" viewBox="0 0 100 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M100,10 Q50,10 10,40" stroke="currentColor" strokeWidth="2.5" strokeDasharray="6,4" />
+                  <path d="M25,40 L10,40 L10,25" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="hidden xl:block absolute -right-[360px] bottom-[25%] w-[320px] z-20">
+              <div className="relative">
+                <div className="text-left pl-24">
+                  <h3 className="text-2xl font-bold text-white mb-2 whitespace-nowrap">Instant Settlement</h3>
+                  <p className="text-base text-muted-foreground">Funds hit your wallet the second they pay. No holding periods.</p>
+                </div>
+                <svg className="absolute -left-12 top-1/2 -translate-y-1/2 w-32 h-24 text-pp-secondary opacity-100" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M100,20 Q50,20 10,60" stroke="currentColor" strokeWidth="2.5" strokeDasharray="6,4" />
+                  <path d="M25,60 L10,60 L10,45" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+
+            {/* The Portal Preview Container */}
+            <div className="relative z-10 w-full transform perspective-1000">
+              <div className="absolute -inset-2 bg-gradient-to-r from-pp-secondary/30 to-blue-500/20 blur-3xl opacity-50 rounded-2xl pointer-events-none" />
+              
+              <div className="relative transition-transform duration-700 hover:scale-[1.02]">
+                <PortalPreviewEmbedded
+                  key={`${siteTheme.brandLogoUrl}-${siteTheme.primaryColor}`}
+                  theme={siteTheme}
+                  demoReceipt={demoReceipt}
+                  recipient={recipient as any}
+                  className="mx-auto rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10"
+                  style={{
+                    ...previewStyle,
+                    height: "900px",
+                    width: "100%",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Mobile Fallback Features */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-16 xl:hidden">
+             <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+               <h3 className="font-bold text-lg text-white mb-1">Apple/Google Pay</h3>
+               <p className="text-sm text-muted-foreground">Native wallet integration for instant checkout</p>
+             </div>
+             <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+               <h3 className="font-bold text-lg text-white mb-1">Custom Branding</h3>
+               <p className="text-sm text-muted-foreground">Your colors, your logo, your identity</p>
+             </div>
+             <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+               <h3 className="font-bold text-lg text-white mb-1">Zero Chargebacks</h3>
+               <p className="text-sm text-muted-foreground">Cryptographic finality prevents reversed payments</p>
+             </div>
+             <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+               <h3 className="font-bold text-lg text-white mb-1">Instant Settlement</h3>
+               <p className="text-sm text-muted-foreground">Funds hit your wallet the second they pay</p>
+             </div>
           </div>
         </div>
       </section>
