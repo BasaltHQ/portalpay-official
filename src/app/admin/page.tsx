@@ -6045,6 +6045,35 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
   const [localConfig, setLocalConfig] = useState<Record<string, { order: number; hidden: boolean }>>({});
   const [categoryList, setCategoryList] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadAll() {
+      try {
+        // Fetch full inventory to ensure we discover categories not on the first paginated page
+        const r = await fetch("/api/inventory", { cache: "no-store", credentials: "include" });
+        const j = await r.json();
+        if (mounted && Array.isArray(j.items)) {
+          const extracted = new Set<string>();
+          j.items.forEach((it: any) => {
+            if (it.category) extracted.add(it.category.trim());
+            const attrs = it.attributes;
+            if (attrs) {
+              if (attrs.type === "restaurant" && attrs.data?.menuSection) {
+                extracted.add(attrs.data.menuSection.trim());
+              } else if ((attrs as any).menuSection) {
+                extracted.add(String((attrs as any).menuSection).trim());
+              }
+            }
+          });
+          setAllCategories(Array.from(extracted).filter(Boolean));
+        }
+      } catch {}
+    }
+    loadAll();
+    return () => { mounted = false; };
+  }, []);
 
   useEffect(() => {
     // Extract unique categories from items, existing config, and legacy categories array
@@ -6060,8 +6089,10 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
         }
       }
     });
-    if (shopConfig?.categories) shopConfig.categories.forEach((c: string) => extracted.add(c.trim()));
-    if (shopConfig?.categoryConfig) Object.keys(shopConfig.categoryConfig).forEach(c => extracted.add(c.trim()));
+    // Do NOT blindly add all categories from shopConfig, as it causes "ghost" categories
+    // to linger after their items have been removed during a Toast sync.
+    // We only want to manage categories that actually have items in the inventory.
+    allCategories.forEach(c => extracted.add(c));
     
     const uniqueCats = Array.from(extracted).filter(Boolean);
     const config = shopConfig?.categoryConfig || {};
@@ -6085,7 +6116,7 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
       };
     });
     setLocalConfig(lc);
-  }, [items, shopConfig]);
+  }, [items, shopConfig, allCategories]);
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;

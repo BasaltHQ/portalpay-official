@@ -126,7 +126,7 @@ function collectItemsFromMenu(
         sku: String(item?.sku || item?.plu || item?.guid || ""),
         description: String(item?.description || ""),
         price: Number(item?.price || 0),
-        category: String(item?.salesCategory?.name || groupName || menuName),
+        category: String(groupName || menuName),
         industryAttributes: { restaurant: attrs },
         imageToastUrl: item?.image || item?.imageUrl || undefined,
       } as any);
