@@ -49,7 +49,15 @@ export default async function KioskPage({ params }: { params: Promise<{ id: stri
     console.log(`[KIOSK DEBUG] found ${docs.length} docs for ${cleanSlug}:`, docs.map((c: any) => ({ id: c.id, type: c.type, kiosk: c.kioskEnabled })));
 
     // Categorize docs
-    let shopConfig = docs.find((c: any) => c.type === 'shop_config');
+    const envBrandKey = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge").toLowerCase();
+    
+    let shopConfig = (
+      docs.filter((c: any) => c.type === 'shop_config').find((c: any) => (c.brandKey || "").toLowerCase() === envBrandKey) ||
+      ((envBrandKey === "basaltsurge" || envBrandKey === "portalpay")
+        ? docs.filter((c: any) => c.type === 'shop_config').find((c: any) => !c.brandKey || c.brandKey === "portalpay" || c.brandKey === "basaltsurge")
+        : undefined) ||
+      docs.find((c: any) => c.type === 'shop_config')
+    );
 
     // Multiple site_config docs may exist (site:config:basaltsurge, site:config:portalpay, site:config).
     // Prefer the brand-scoped doc that the admin actually writes to.

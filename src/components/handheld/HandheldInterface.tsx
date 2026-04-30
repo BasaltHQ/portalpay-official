@@ -77,6 +77,7 @@ interface HandheldInterfaceProps {
     items?: any[];
     tables?: string[];
     handheldMode?: "general" | "restaurant";
+    shopConfig?: any;
 }
 
 interface CartItem {
@@ -98,7 +99,8 @@ export default function HandheldInterface({
     theme,
     items = [],
     tables = [],
-    handheldMode = "restaurant"
+    handheldMode = "restaurant",
+    shopConfig
 }: HandheldInterfaceProps) {
     const isGeneralMode = handheldMode === "general";
     // -- THEME & STYLES (Dark Mode Default) --
@@ -417,32 +419,52 @@ export default function HandheldInterface({
         const cats = new Set<string>();
         cats.add("All");
         activeItems.forEach(i => {
-            if (i.category) cats.add(i.category);
+            if (i.category) cats.add(i.category.trim());
             if (!isGeneralMode) {
                 const attrs = i.attributes;
                 if (attrs) {
                     if (isRestaurantAttributes(attrs) && attrs.data?.menuSection) {
-                        cats.add(attrs.data.menuSection);
+                        cats.add(attrs.data.menuSection.trim());
                     } else if ((attrs as any).menuSection) {
-                        cats.add((attrs as any).menuSection);
+                        cats.add(String((attrs as any).menuSection).trim());
                     }
                 }
             }
         });
-        return Array.from(cats).sort();
-    }, [activeItems, isGeneralMode]);
+        
+        const cConfig = shopConfig?.categoryConfig || {};
+        
+        // Case insensitive lookup
+        const ciConfig: Record<string, any> = {};
+        for (const [k, v] of Object.entries(cConfig)) {
+            ciConfig[k.toLowerCase()] = v;
+        }
+
+        const activeCats = Array.from(cats).filter(c => c === "All" || !ciConfig[c.toLowerCase()]?.hidden);
+        
+        activeCats.sort((a, b) => {
+            if (a === "All") return -1;
+            if (b === "All") return 1;
+            const orderA = ciConfig[a.toLowerCase()]?.order ?? 999;
+            const orderB = ciConfig[b.toLowerCase()]?.order ?? 999;
+            if (orderA !== orderB) return orderA - orderB;
+            return a.localeCompare(b);
+        });
+        
+        return activeCats;
+    }, [activeItems, isGeneralMode, shopConfig?.categoryConfig]);
 
     const displayedItems = useMemo(() => {
         if (activeCategory === "All") return activeItems;
         return activeItems.filter(i => {
-            const matchesCategory = i.category === activeCategory;
+            const matchesCategory = i.category?.trim() === activeCategory;
             let matchesSection = false;
             if (!isGeneralMode) {
                 const attrs = i.attributes;
                 if (attrs) {
-                    if (isRestaurantAttributes(attrs) && attrs.data?.menuSection === activeCategory) {
+                    if (isRestaurantAttributes(attrs) && attrs.data?.menuSection?.trim() === activeCategory) {
                         matchesSection = true;
-                    } else if ((attrs as any).menuSection === activeCategory) {
+                    } else if ((attrs as any).menuSection && String((attrs as any).menuSection).trim() === activeCategory) {
                         matchesSection = true;
                     }
                 }

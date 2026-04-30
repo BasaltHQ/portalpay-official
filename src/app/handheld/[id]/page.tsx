@@ -43,8 +43,27 @@ export default async function HandheldModePage({ params }: { params: Promise<{ i
         })
         .fetchAll();
 
-    const shopConfig = docs.find((c: any) => c.type === 'shop_config');
-    const siteConfig = docs.find((c: any) => c.type === 'site_config');
+    // 2. Select Best Match (Prioritize active brand key to avoid slug collisions)
+    const envBrandKey = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge").toLowerCase();
+
+    const shopConfig = (
+      // 1. Exact match for current brand environment
+      docs.filter((c: any) => c.type === 'shop_config').find((c: any) => (c.brandKey || "").toLowerCase() === envBrandKey) ||
+      // 2. Fallback for platform: basaltsurge, portalpay, or legacy (no brandKey)
+      ((envBrandKey === "basaltsurge" || envBrandKey === "portalpay")
+        ? docs.filter((c: any) => c.type === 'shop_config').find((c: any) => !c.brandKey || c.brandKey === "portalpay" || c.brandKey === "basaltsurge")
+        : undefined) ||
+      // 3. Fallback to first result
+      docs.find((c: any) => c.type === 'shop_config')
+    );
+
+    const siteConfig = (
+      docs.filter((c: any) => c.type === 'site_config').find((c: any) => (c.brandKey || "").toLowerCase() === envBrandKey) ||
+      ((envBrandKey === "basaltsurge" || envBrandKey === "portalpay")
+        ? docs.filter((c: any) => c.type === 'site_config').find((c: any) => !c.brandKey || c.brandKey === "portalpay" || c.brandKey === "basaltsurge")
+        : undefined) ||
+      docs.find((c: any) => c.type === 'site_config')
+    );
 
     if (!shopConfig && !siteConfig) {
         return notFound();

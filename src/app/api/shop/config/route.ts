@@ -104,6 +104,7 @@ export type ShopConfig = {
   setupComplete?: boolean;
   keywords?: string[]; // Up to 5
   categories?: string[]; // Up to 3
+  categoryConfig?: Record<string, { order: number; hidden: boolean }>; // Detailed category settings
   portalTheme?: Record<string, any>; // Portal Theme Playground config (opaque blob)
   createdAt: number;
   updatedAt: number;
@@ -151,6 +152,8 @@ function defaults(brandKey?: string): Required<Omit<ShopConfig, "wallet" | "id" 
     setupComplete: false,
     keywords: [],
     categories: [],
+    categoryConfig: undefined as any,
+    portalTheme: undefined as any,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
@@ -186,6 +189,8 @@ function normalize(raw?: any, brandKey?: string): Omit<ShopConfig, "wallet" | "i
     setupComplete: false,
     keywords: [],
     categories: [],
+    categoryConfig: undefined,
+    portalTheme: undefined,
     createdAt: d.createdAt,
     updatedAt: d.updatedAt,
     slug: undefined as string | undefined,
@@ -298,6 +303,21 @@ function normalize(raw?: any, brandKey?: string): Omit<ShopConfig, "wallet" | "i
         .map((x: string) => x.trim().slice(0, 32))
         .filter((x: string) => x.length > 0)
         .slice(0, 3);
+    }
+    
+    // Category Config Validation
+    if (raw.categoryConfig && typeof raw.categoryConfig === "object") {
+      const cc: Record<string, { order: number; hidden: boolean }> = {};
+      for (const [key, val] of Object.entries(raw.categoryConfig)) {
+        if (typeof key === "string" && val && typeof val === "object") {
+          const v = val as any;
+          cc[key.trim()] = {
+            order: typeof v.order === "number" && Number.isFinite(v.order) ? v.order : 0,
+            hidden: typeof v.hidden === "boolean" ? v.hidden : false,
+          };
+        }
+      }
+      out.categoryConfig = cc;
     }
 
     // Portal Theme Playground config — passthrough as opaque blob
@@ -849,6 +869,7 @@ export async function POST(req: NextRequest) {
       setupComplete,
       keywords: Array.isArray(body.keywords) ? normalize(body).keywords : base.keywords,
       categories: Array.isArray(body.categories) ? normalize(body).categories : base.categories,
+      categoryConfig: typeof body.categoryConfig === "object" ? normalize({ categoryConfig: body.categoryConfig }).categoryConfig : base.categoryConfig,
       portalTheme: (body.portalTheme && typeof body.portalTheme === 'object')
         ? body.portalTheme
         : (body.portalTheme === null ? undefined : ((prev as any)?.portalTheme || (base as any).portalTheme || undefined)),
