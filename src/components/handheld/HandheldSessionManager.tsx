@@ -262,6 +262,7 @@ export default function HandheldSessionManager({ config, merchantWallet, items }
                 items={items}
                 tables={(config as any).industryParams?.restaurant?.tables || []}
                 handheldMode={handheldMode}
+                shopConfig={config}
             />
         );
     }

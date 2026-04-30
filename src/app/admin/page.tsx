@@ -7,7 +7,10 @@ import { createPortal } from "react-dom";
 import { sendTransaction, prepareTransaction, getContract, prepareContractCall, readContract } from "thirdweb";
 import { client, chain } from "@/lib/thirdweb/client";
 import { fetchEthRates, fetchUsdRates } from "@/lib/eth";
-import { ImagePlus, Trash2, Star, StarOff, Link as LinkIcon, Plus, Wand2, Infinity as InfinityIcon, Copy, ExternalLink, Download, LayoutGrid, List, Repeat, RefreshCw, Settings } from "lucide-react";
+import { ImagePlus, Trash2, Star, StarOff, Link as LinkIcon, Plus, Wand2, Infinity as InfinityIcon, Copy, ExternalLink, Download, LayoutGrid, List, Repeat, RefreshCw, Settings, GripVertical, Eye, EyeOff, Folder } from "lucide-react";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import TruncatedAddress from "@/components/truncated-address";
 import { SUPPORTED_CURRENCIES, formatCurrency, convertFromUsd, convertToUsd, roundForCurrency } from "@/lib/fx";
 import { RestaurantFields, type ModifierGroup } from "@/components/inventory/RestaurantFields";
@@ -5996,14 +5999,188 @@ type InventoryItem = {
   updatedAt: number;
 };
 
+function SortableCategoryItem(props: { id: string; category: string; hidden: boolean; onToggleHide: (id: string) => void; onViewItems: (cat: string) => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: props.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center justify-between p-3 border rounded-md bg-card mb-2">
+      <div className="flex items-center gap-3">
+        <button {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing p-1">
+          <GripVertical className="h-5 w-5" />
+        </button>
+        <span className={`font-medium ${props.hidden ? 'text-muted-foreground line-through' : ''}`}>{props.category}</span>
+        {props.hidden && <span className="text-[10px] uppercase bg-muted text-muted-foreground px-1.5 py-0.5 rounded-sm ml-2">Hidden</span>}
+      </div>
+      <div className="flex items-center gap-2">
+        <button 
+          onClick={() => props.onViewItems(props.category)}
+          className="text-xs px-2 py-1 rounded border hover:bg-muted/50 flex items-center gap-1"
+        >
+          View Items
+        </button>
+        <button
+          onClick={() => props.onToggleHide(props.id)}
+          className={`p-1.5 rounded-md transition-all ${props.hidden ? 'text-muted-foreground hover:text-foreground' : 'text-primary hover:bg-primary/10'}`}
+          title={props.hidden ? "Show category" : "Hide category"}
+        >
+          {props.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { items: any[]; shopConfig: any; onSave: (config: any) => Promise<void>; onViewItems: (cat: string) => void }) {
+  const [localConfig, setLocalConfig] = useState<Record<string, { order: number; hidden: boolean }>>({});
+  const [categoryList, setCategoryList] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    // Extract unique categories from items, existing config, and legacy categories array
+    const extracted = new Set<string>();
+    (items || []).forEach(it => {
+      if (it.category) extracted.add(it.category.trim());
+      const attrs = it.attributes;
+      if (attrs) {
+        if (attrs.type === "restaurant" && attrs.data?.menuSection) {
+          extracted.add(attrs.data.menuSection.trim());
+        } else if ((attrs as any).menuSection) {
+          extracted.add(String((attrs as any).menuSection).trim());
+        }
+      }
+    });
+    if (shopConfig?.categories) shopConfig.categories.forEach((c: string) => extracted.add(c.trim()));
+    if (shopConfig?.categoryConfig) Object.keys(shopConfig.categoryConfig).forEach(c => extracted.add(c.trim()));
+    
+    const uniqueCats = Array.from(extracted).filter(Boolean);
+    const config = shopConfig?.categoryConfig || {};
+    
+    // Sort initial list by config order, then alphabetical
+    uniqueCats.sort((a, b) => {
+      const orderA = config[a]?.order ?? 999;
+      const orderB = config[b]?.order ?? 999;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.localeCompare(b);
+    });
+
+    setCategoryList(uniqueCats);
+    
+    // Initialize local config mapping
+    const lc: Record<string, { order: number; hidden: boolean }> = {};
+    uniqueCats.forEach((c, idx) => {
+      lc[c] = {
+        order: config[c]?.order ?? idx,
+        hidden: config[c]?.hidden ?? false
+      };
+    });
+    setLocalConfig(lc);
+  }, [items, shopConfig]);
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (active && over && active.id !== over.id) {
+      setCategoryList((items) => {
+        const oldIndex = items.indexOf(active.id);
+        const newIndex = items.indexOf(over.id);
+        const newArr = arrayMove(items, oldIndex, newIndex);
+        
+        // Update order in localConfig
+        setLocalConfig(prev => {
+          const updatedConfig = { ...prev };
+          newArr.forEach((cat, idx) => {
+            if (!updatedConfig[cat]) updatedConfig[cat] = { order: idx, hidden: false };
+            else updatedConfig[cat] = { ...updatedConfig[cat], order: idx };
+          });
+          return updatedConfig;
+        });
+        
+        return newArr;
+      });
+    }
+  };
+
+  const toggleHide = (cat: string) => {
+    setLocalConfig(prev => ({
+      ...prev,
+      [cat]: {
+        ...(prev[cat] || { order: categoryList.indexOf(cat) }),
+        hidden: !(prev[cat]?.hidden)
+      }
+    }));
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    await onSave(localConfig);
+    setIsSaving(false);
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  return (
+    <div className="space-y-4 border rounded-md p-4 bg-muted/10">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-semibold">Category Display Order & Visibility</h3>
+        <button 
+          onClick={handleSave} 
+          disabled={isSaving}
+          className="px-3 py-1.5 text-xs rounded border bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        >
+          {isSaving ? "Saving..." : "Save Category Config"}
+        </button>
+      </div>
+      <div className="microtext text-muted-foreground mb-4">
+        Drag categories to reorder them on the Shop, Handheld, and Kiosk. Click the eye icon to completely hide a category from all customer touchpoints.
+      </div>
+      
+      {categoryList.length === 0 ? (
+        <div className="text-sm text-muted-foreground py-4 text-center border border-dashed rounded-md">
+          No categories found. Assign categories to your items first.
+        </div>
+      ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={categoryList} strategy={verticalListSortingStrategy}>
+            <div className="space-y-1">
+              {categoryList.map(cat => (
+                <SortableCategoryItem 
+                  key={cat} 
+                  id={cat} 
+                  category={cat} 
+                  hidden={localConfig[cat]?.hidden ?? false} 
+                  onToggleHide={toggleHide}
+                  onViewItems={onViewItems}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
+    </div>
+  );
+}
+
 function InventoryPanel() {
   const account = useActiveAccount();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // View mode state (List vs Grid) - default to Grid on mobile
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  // View mode state (List vs Grid vs Categories) - default to Grid on mobile
+  const [viewMode, setViewMode] = useState<"list" | "grid" | "categories">("list");
 
   useEffect(() => {
     const handleResize = () => {
@@ -6020,6 +6197,7 @@ function InventoryPanel() {
   // Industry pack detection - default to 'general' so fields always render
   const [activeIndustryPack, setActiveIndustryPack] = useState<string>('general');
   const [siteConfig, setSiteConfig] = useState<any>(null);
+  const [shopConfig, setShopConfig] = useState<any>(null);
 
   // Store currency for display conversion
   const [storeCurrency, setStoreCurrency] = useState<string>("USD");
@@ -6041,6 +6219,7 @@ function InventoryPanel() {
         const sc = typeof siteData?.config?.storeCurrency === "string" ? siteData.config.storeCurrency : "USD";
         setStoreCurrency(sc);
         setSiteConfig(siteData?.config);
+        setShopConfig(shopData?.config);
       } catch { }
     })();
   }, [account?.address]);
@@ -7289,6 +7468,13 @@ function InventoryPanel() {
               </button>
             </div>
             <button
+              onClick={() => setViewMode("categories")}
+              className={`h-9 px-3 text-sm font-medium rounded-md border flex items-center gap-2 transition-all ${viewMode === "categories" ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground hover:bg-muted"}`}
+            >
+              <Folder className="w-4 h-4" />
+              Manage Categories
+            </button>
+            <button
               type="button"
               onClick={openAdd}
               className="h-9 w-9 rounded-md border flex items-center justify-center hover:bg-foreground/5"
@@ -7539,7 +7725,34 @@ function InventoryPanel() {
           </div>
         </div>
 
-        {viewMode === "grid" ? (
+        {viewMode === "categories" ? (
+          <CategoryManagementList 
+            items={items} 
+            shopConfig={shopConfig} 
+            onSave={async (config) => {
+              try {
+                const res = await fetch("/api/shop/config", {
+                  method: "POST",
+                  body: JSON.stringify({ categoryConfig: config }),
+                });
+                if (res.ok) {
+                  // Refresh config
+                  const updated = await res.json();
+                  setShopConfig(updated.config);
+                } else {
+                  console.error("Failed to save category config", await res.text());
+                }
+              } catch (e) {
+                console.error("Error saving category config", e);
+              }
+            }}
+            onViewItems={(cat) => {
+              setCategoryFilter(cat);
+              setViewMode("list");
+              refresh({ resetPage: true });
+            }}
+          />
+        ) : viewMode === "grid" ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {(items || []).map((it) => (
               <div key={it.id} className="group relative bg-muted/40 backdrop-blur-md rounded-xl border p-3 hover:shadow-lg hover:border-primary/20 transition-all flex flex-col">

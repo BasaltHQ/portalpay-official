@@ -238,7 +238,24 @@ export default function KioskClient({ config, items: initialItems, merchantWalle
 
     const scrollCategories = (dir: "left" | "right") => { categoryScrollRef.current?.scrollBy({ left: dir === "left" ? -200 : 200, behavior: "smooth" }); };
 
-    const categories = useMemo(() => { const cats = new Set<string>(); items.forEach(i => { if (i.category) cats.add(i.category); }); return Array.from(cats).sort(); }, [items]);
+    const categories = useMemo(() => {
+        const cats = new Set<string>();
+        items.forEach(i => { if (i.category) cats.add(i.category.trim()); });
+        const cConfig = config?.categoryConfig || {};
+        const ciConfig: Record<string, any> = {};
+        for (const [k, v] of Object.entries(cConfig)) {
+            ciConfig[k.toLowerCase()] = v;
+        }
+
+        const activeCats = Array.from(cats).filter(c => !ciConfig[c.toLowerCase()]?.hidden);
+        activeCats.sort((a, b) => {
+            const orderA = ciConfig[a.toLowerCase()]?.order ?? 999;
+            const orderB = ciConfig[b.toLowerCase()]?.order ?? 999;
+            if (orderA !== orderB) return orderA - orderB;
+            return a.localeCompare(b);
+        });
+        return activeCats;
+    }, [items, config?.categoryConfig]);
 
     const filteredItems = useMemo(() => {
         let result = items.filter(i => !selectedCategory || i.category === selectedCategory);

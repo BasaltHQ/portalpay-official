@@ -61,6 +61,8 @@ export type ShopConfig = {
     customDomainVerified?: boolean;
     defaultPaymentToken?: string;
     accumulationMode?: string;
+    categoryConfig?: Record<string, { order: number; hidden: boolean }>;
+    portalTheme?: any;
     /** Per-touchpoint theme overrides (theme IDs from the theme registry) */
     touchpointThemes?: import("@/lib/themes/types").TouchpointThemeConfig;
 };
@@ -1254,10 +1256,23 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
     const allCategories = useMemo(() => {
         const cats = new Set<string>();
         items.forEach((it) => {
-            if (it.category) cats.add(it.category);
+            if (it.category) cats.add(it.category.trim());
         });
-        return Array.from(cats).sort();
-    }, [items]);
+        const cConfig = cfg?.categoryConfig || {};
+        const ciConfig: Record<string, any> = {};
+        for (const [k, v] of Object.entries(cConfig)) {
+            ciConfig[k.toLowerCase()] = v;
+        }
+
+        const activeCats = Array.from(cats).filter(c => !ciConfig[c.toLowerCase()]?.hidden);
+        activeCats.sort((a, b) => {
+            const orderA = ciConfig[a.toLowerCase()]?.order ?? 999;
+            const orderB = ciConfig[b.toLowerCase()]?.order ?? 999;
+            if (orderA !== orderB) return orderA - orderB;
+            return a.localeCompare(b);
+        });
+        return activeCats;
+    }, [items, cfg?.categoryConfig]);
 
     // Set shop context for voice agent
     useEffect(() => {
@@ -1879,9 +1894,16 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             });
             const grouped = groupBy(sorted, (it) => (it.category || "Uncategorized"));
 
+            const catsToRender = [...allCategories];
+            if (grouped["Uncategorized"] && !catsToRender.includes("Uncategorized") && !(cfg?.categoryConfig?.["Uncategorized"]?.hidden)) {
+                catsToRender.push("Uncategorized");
+            }
+
             return (
                 <div className="space-y-6">
-                    {Object.entries(grouped).map(([category, items], index, array) => {
+                    {catsToRender.map((category, index, array) => {
+                        const items = grouped[category];
+                        if (!items || items.length === 0) return null;
                         const categoryColor = getCategoryColor(index, array.length);
                         return (
                             <div key={category} className="rounded-xl border-2 shadow-sm" style={{ borderColor: categoryColor }}>
