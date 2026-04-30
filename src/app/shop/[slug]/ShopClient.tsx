@@ -422,7 +422,16 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             setFullscreenImage(null);
             // Only reset modifiers when NOT editing from cart (editingCartIndex pre-populates them)
             if (editingCartIndex === null) {
-                setSelectedModifiers([]);
+                if (selectedItem.industryPack === 'restaurant') {
+                    const attrs = (selectedItem.attributes as any)?.data || selectedItem.attributes;
+                    if (attrs && attrs.modifierGroups) {
+                        setSelectedModifiers(getDefaultModifierSelections(attrs.modifierGroups));
+                    } else {
+                        setSelectedModifiers([]);
+                    }
+                } else {
+                    setSelectedModifiers([]);
+                }
             }
         } else {
             setEditingCartIndex(null);
