@@ -6089,8 +6089,9 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
         }
       }
     });
-    if (shopConfig?.categories) shopConfig.categories.forEach((c: string) => extracted.add(c.trim()));
-    if (shopConfig?.categoryConfig) Object.keys(shopConfig.categoryConfig).forEach(c => extracted.add(c.trim()));
+    // Do NOT blindly add all categories from shopConfig, as it causes "ghost" categories
+    // to linger after their items have been removed during a Toast sync.
+    // We only want to manage categories that actually have items in the inventory.
     allCategories.forEach(c => extracted.add(c));
     
     const uniqueCats = Array.from(extracted).filter(Boolean);
