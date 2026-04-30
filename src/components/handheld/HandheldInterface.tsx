@@ -467,7 +467,15 @@ export default function HandheldInterface({
 
         if (groups && groups.length > 0) {
             setSelectedItemForModifiers(item);
-            setPendingModifiers([]);
+            const defaultMods: RestaurantModifier[] = [];
+            groups.forEach(g => {
+                g.modifiers.forEach(m => {
+                    if (m.default && m.available !== false) {
+                        defaultMods.push(m);
+                    }
+                });
+            });
+            setPendingModifiers(defaultMods);
             setView("modifiers");
             return;
         }
