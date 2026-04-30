@@ -130,18 +130,24 @@ export default function HomeContent() {
 
   const { theme: rawTheme } = useTheme();
 
+  const [domAttrs, setDomAttrs] = React.useState({ containerType: '', brandKey: '' });
+
+  React.useEffect(() => {
+    if (typeof document !== 'undefined') {
+      setDomAttrs({
+        containerType: (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase(),
+        brandKey: (document.documentElement.getAttribute('data-pp-brand-key') || '').toLowerCase()
+      });
+    }
+  }, []);
+
   // CRITICAL: When logged out on BasaltSurge (PLATFORM ONLY), use static defaults for Live Preview
   // BUT: Never do this in Partner containers - they should always show their own branding
   const siteTheme = React.useMemo(() => {
     const t = rawTheme;
 
-    // Read DOM attributes directly for most reliable partner detection
-    const domContainerType = typeof document !== 'undefined'
-      ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase()
-      : '';
-    const domBrandKey = typeof document !== 'undefined'
-      ? (document.documentElement.getAttribute('data-pp-brand-key') || '').toLowerCase()
-      : '';
+    const domContainerType = domAttrs.containerType;
+    const domBrandKey = domAttrs.brandKey;
 
     // Detect partner container from DOM attribute (most reliable) OR from environment/context
     // This ensures partner detection works even during initial render before DOM is fully hydrated
@@ -222,11 +228,9 @@ export default function HomeContent() {
   // Detect if this is a partner container
   const isPartnerContainer = React.useMemo(() => {
     const ctFromState = containerType.toLowerCase();
-    const ctFromAttr = typeof document !== "undefined"
-      ? (document.documentElement.getAttribute("data-pp-container-type") || "").toLowerCase()
-      : "";
+    const ctFromAttr = domAttrs.containerType;
     return ctFromState === "partner" || ctFromAttr === "partner";
-  }, [containerType]);
+  }, [containerType, domAttrs.containerType]);
 
   const displayBrandName = React.useMemo(() => {
     try {
@@ -459,7 +463,7 @@ export default function HomeContent() {
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
               <SignupButton
                 variant="shiny"
-                className="group relative px-8 py-4 rounded-xl bg-white text-black font-semibold text-lg transition-all hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.1)] flex items-center gap-2"
+                className="group relative overflow-hidden px-8 py-4 rounded-xl bg-white text-black hover:text-white font-semibold text-lg transition-all hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.1)] flex items-center gap-2"
               >
                 Start accepting payments
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

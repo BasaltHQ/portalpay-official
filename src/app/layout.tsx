@@ -797,6 +797,13 @@ export default async function RootLayout({
             d.setAttribute("data-pp-theme-ready","1");
           }
         } catch(e) {}`}} />
+        <Script id="pp-ios-webview-polyfill" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
+          try {
+            if (typeof window !== "undefined" && !window.webkit) {
+              window.webkit = { messageHandlers: {} };
+            }
+          } catch(e) {}
+        `}} />
         <Script id="pp-suppress-ethereum-redefine" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
           try {
             // Suppress extension errors like "Cannot redefine property: ethereum"
