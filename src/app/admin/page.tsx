@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import { sendTransaction, prepareTransaction, getContract, prepareContractCall, readContract } from "thirdweb";
 import { client, chain } from "@/lib/thirdweb/client";
 import { fetchEthRates, fetchUsdRates } from "@/lib/eth";
-import { ImagePlus, Trash2, Star, StarOff, Link as LinkIcon, Plus, Wand2, Infinity as InfinityIcon, Copy, ExternalLink, Download, LayoutGrid, List, Repeat } from "lucide-react";
+import { ImagePlus, Trash2, Star, StarOff, Link as LinkIcon, Plus, Wand2, Infinity as InfinityIcon, Copy, ExternalLink, Download, LayoutGrid, List, Repeat, RefreshCw, Settings } from "lucide-react";
 import TruncatedAddress from "@/components/truncated-address";
 import { SUPPORTED_CURRENCIES, formatCurrency, convertFromUsd, convertToUsd, roundForCurrency } from "@/lib/fx";
 import { RestaurantFields, type ModifierGroup } from "@/components/inventory/RestaurantFields";
@@ -6019,6 +6019,7 @@ function InventoryPanel() {
 
   // Industry pack detection - default to 'general' so fields always render
   const [activeIndustryPack, setActiveIndustryPack] = useState<string>('general');
+  const [siteConfig, setSiteConfig] = useState<any>(null);
 
   // Store currency for display conversion
   const [storeCurrency, setStoreCurrency] = useState<string>("USD");
@@ -6039,6 +6040,7 @@ function InventoryPanel() {
         setActiveIndustryPack(shopData?.config?.industryPack || 'general');
         const sc = typeof siteData?.config?.storeCurrency === "string" ? siteData.config.storeCurrency : "USD";
         setStoreCurrency(sc);
+        setSiteConfig(siteData?.config);
       } catch { }
     })();
   }, [account?.address]);
@@ -6080,6 +6082,7 @@ function InventoryPanel() {
   const [imagesError, setImagesError] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [toastImportOpen, setToastImportOpen] = useState(false);
+  const [toastModalMode, setToastModalMode] = useState<'sync' | 'edit'>('edit');
   const [editOpenInv, setEditOpenInv] = useState(false);
   const [editTarget, setEditTarget] = useState<InventoryItem | null>(null);
   const [editStockQty, setEditStockQty] = useState<number>(0);
@@ -7295,15 +7298,47 @@ function InventoryPanel() {
               <Plus className="h-5 w-5" />
             </button>
             {activeIndustryPack === 'restaurant' && (
-              <button
-                type="button"
-                onClick={() => setToastImportOpen(true)}
-                className="px-3 py-1.5 rounded-md border text-sm flex items-center gap-2 hover:bg-foreground/5"
-                title="Import from Toast POS"
-              >
-                <Download className="h-4 w-4" />
-                Import from Toast
-              </button>
+              siteConfig?.integrations?.toast?.clientId ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setToastModalMode('sync');
+                      setToastImportOpen(true);
+                    }}
+                    className="px-3 py-1.5 rounded-md border border-primary text-primary text-sm flex items-center gap-2 hover:bg-primary/5"
+                    title="Sync Menu from Toast POS"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Sync Menu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setToastModalMode('edit');
+                      setToastImportOpen(true);
+                    }}
+                    className="px-3 py-1.5 rounded-md border text-sm flex items-center gap-2 hover:bg-foreground/5"
+                    title="Toast Settings"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Toast Settings
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setToastModalMode('edit');
+                    setToastImportOpen(true);
+                  }}
+                  className="px-3 py-1.5 rounded-md border text-sm flex items-center gap-2 hover:bg-foreground/5"
+                  title="Import from Toast POS"
+                >
+                  <Download className="h-4 w-4" />
+                  Import from Toast
+                </button>
+              )
             )}
             <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => refresh()} disabled={loading}>
               {loading ? "Refreshing…" : "Refresh"}
@@ -8139,50 +8174,13 @@ function InventoryPanel() {
           <ToastImportModal
             open={toastImportOpen}
             onClose={() => setToastImportOpen(false)}
-            onImport={async (imported: any[]) => {
+            mode={toastModalMode}
+            toastConfig={siteConfig?.integrations?.toast}
+            onImport={async () => {
               try {
-                setLoading(true);
-                const results = await Promise.allSettled(
-                  (imported || []).map(async (it: any) => {
-                    const attrs = (it?.industryAttributes?.restaurant || {}) as Record<string, any>;
-                    const payload = {
-                      sku: String(it?.sku || "").toUpperCase().slice(0, 16),
-                      name: String(it?.name || ""),
-                      priceUsd: Math.max(0, Number(it?.price || 0)),
-                      currency: storeCurrency || "USD",
-                      stockQty: -1,
-                      category: it?.category || undefined,
-                      description: it?.description || undefined,
-                      tags: [],
-                      images: Array.isArray(it?.images) ? it.images : [],
-                      attributes: attrs,
-                      taxable: true,
-                      industryPack: "restaurant" as const,
-                    };
-                    const r = await fetch("/api/inventory", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json", "x-wallet": account?.address || "" },
-                      credentials: "include",
-                      cache: "no-store",
-                      body: JSON.stringify(payload),
-                    });
-                    const j = await r.json().catch(() => ({}));
-                    if (!r.ok || !j?.ok) throw new Error(j?.error || "Failed to add item");
-                  })
-                );
-                const failed = results.filter((res: any) => res.status === "rejected");
-                if (failed.length) {
-                  setError(`Imported with ${failed.length} error(s).`);
-                } else {
-                  setError("");
-                }
-              } catch (e: any) {
-                setError(e?.message || "Import failed");
-              } finally {
-                try { await refresh({ resetPage: true }); } catch { }
-                setToastImportOpen(false);
-                setLoading(false);
-              }
+                await refresh({ resetPage: true });
+              } catch { }
+              setToastImportOpen(false);
             }}
           />,
           document.body

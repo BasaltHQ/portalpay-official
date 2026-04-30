@@ -494,6 +494,13 @@ function normalizeSiteConfig(raw?: any, targetWallet?: string) {
       provider: { name: "", apiKeySet: false } as { name?: string; apiKeySet?: boolean },
       defaultJurisdictionCode: "" as string | undefined,
     },
+    integrations: {
+      toast: {
+        clientId: "" as string | undefined,
+        clientSecret: "" as string | undefined,
+        restaurantGuid: "" as string | undefined,
+      }
+    },
   };
 
   const config: any = {
@@ -878,6 +885,19 @@ function normalizeSiteConfig(raw?: any, targetWallet?: string) {
     out.defaultJurisdictionCode = defCode || undefined;
 
     config.taxConfig = out;
+  })();
+
+  // Integrations config normalization
+  ;(() => {
+    const itg = config.integrations && typeof config.integrations === "object" ? config.integrations : {};
+    const out: any = {};
+    const toast = itg.toast && typeof itg.toast === "object" ? itg.toast : {};
+    out.toast = {
+      clientId: typeof toast.clientId === "string" ? toast.clientId : undefined,
+      clientSecret: typeof toast.clientSecret === "string" ? toast.clientSecret : undefined,
+      restaurantGuid: typeof toast.restaurantGuid === "string" ? toast.restaurantGuid : undefined,
+    };
+    config.integrations = out;
   })();
 
   // Tip config normalization: preserve tipConfig through normalization
@@ -1589,6 +1609,26 @@ export async function POST(req: NextRequest) {
         merged.allowCustom = incoming.allowCustom;
       }
       candidate.tipConfig = merged;
+    }
+
+    // Optional integrations update
+    if (body && typeof body.integrations === "object" && body.integrations) {
+      const prevItg = prevConfig.integrations && typeof prevConfig.integrations === "object" ? prevConfig.integrations : {};
+      const incoming = body.integrations || {};
+      
+      const merged: any = { ...prevItg };
+      
+      if (incoming.toast && typeof incoming.toast === "object") {
+        const prevToast = prevItg.toast && typeof prevItg.toast === "object" ? prevItg.toast : {};
+        merged.toast = {
+          ...prevToast,
+          ...(typeof incoming.toast.clientId === "string" ? { clientId: incoming.toast.clientId } : {}),
+          ...(typeof incoming.toast.clientSecret === "string" ? { clientSecret: incoming.toast.clientSecret } : {}),
+          ...(typeof incoming.toast.restaurantGuid === "string" ? { restaurantGuid: incoming.toast.restaurantGuid } : {}),
+        };
+      }
+      
+      candidate.integrations = merged;
     }
 
     // Optional split config update

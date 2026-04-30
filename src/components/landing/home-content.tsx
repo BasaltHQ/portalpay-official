@@ -4,6 +4,8 @@ import Link from "next/link";
 import { SignupButton } from "@/components/landing/SignupButton";
 import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
+import { ArrowRight, CheckCircle2, Zap, Shield, BarChart3, Globe, CreditCard } from "lucide-react";
 import { buildPortalUrlForTest } from "@/lib/receipts";
 import { getRecipientAddress } from "@/lib/thirdweb/client";
 import { PortalPreviewEmbedded } from "@/components/portal-preview-embedded";
@@ -19,12 +21,11 @@ import { resolveBrandSymbol, resolveBrandAppLogo, getEffectiveBrandKey } from "@
 import { cachedFetch } from "@/lib/client-api-cache";
 import RebrandingHero from "@/components/landing/RebrandingHero";
 import { ExitIntentModal } from "@/components/landing/ExitIntentModal";
-import PublisherOsirisSection from "@/components/landing/PublisherOsirisSection";
 import PluginsSection from "@/components/landing/PluginsSection";
 import TrustlessPermissionlessSection from "@/components/landing/TrustlessPermissionlessSection";
 import { AgenticPaymentsSection } from "@/components/landing/AgenticPaymentsSection";
 import ContactFormSection from "@/components/landing/ContactFormSection";
-import CannabisComplianceSection from "@/components/landing/CannabisComplianceSection";
+import IndustryTouchpointsSection from "@/components/landing/IndustryTouchpointsSection";
 
 type Metrics = {
   totalUsers: number;
@@ -401,171 +402,146 @@ export default function HomeContent() {
   return (
     <div className="min-h-screen">
 
-      {/* Rebranding Announcement Hero - Full Width with negative bottom margin to blend */}
-      <div className="w-full">
-        <RebrandingHero
-          brandName={displayBrandName}
-          logoUrl={siteTheme.brandLogoUrl || (isPartnerContainer ? ((brand as any)?.logos?.app || '') : "/BasaltSurge.png")}
-          isPartner={isPartnerContainer}
-        />
-      </div>
+      {/* Stripe-style Hero Section */}
+      <section className="relative min-h-[90vh] flex items-center pt-24 pb-24 overflow-hidden border-b border-white/5">
+        {/* Video Background */}
+        <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
+          {/* Gradient to ensure text readability on the left, fading out to reveal the video */}
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent z-10" />
+          {/* Subtle bottom gradient to blend with the next section */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent z-10" />
+          
+          {!isPartnerContainer && (
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover opacity-80"
+            >
+              <source src="/SurgeHeader.mp4" type="video/mp4" />
+            </video>
+          )}
+        </div>
 
-      <div className="max-w-6xl mx-auto p-6 md:p-8 relative z-10 w-full">
-        <style dangerouslySetInnerHTML={{
-          __html: `
-          @keyframes bg-pan {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 100% 50%; }
-          }
-          @keyframes free-shimmer-sweep {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-          }
-          @keyframes free-banner-shimmer {
-            0%, 100% { border-color: rgba(16,185,129,0.3); }
-            50% { border-color: rgba(6,182,212,0.4); }
-          }
-          @keyframes signup-pulse {
-            0%, 100% { transform: scale(1); filter: brightness(1); }
-            50% { transform: scale(1.03); filter: brightness(1.15); }
-          }
-          @keyframes surge-line {
-            0% { left: -100%; }
-            100% { left: 200%; }
-          }
-        `}} />
+        <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-20 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left Content */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="flex flex-col"
+            >
+              <div className="mb-8">
+                <Link href="/" className="block" aria-label={`${brand.name} Home`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={resolveBrandAppLogo(brand.logos?.symbol || brand.logos?.app, (brand as any)?.key)}
+                    alt={`${brand.name} Logo`}
+                    className="h-14 w-auto max-w-[300px] object-contain"
+                  />
+                </Link>
+              </div>
 
-        {/* Hero: Value Prop + Live Preview */}
-        <section id="main-value-prop" className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-stretch">
-          {/* Left: Messaging + CTAs */}
-          <div className="glass-pane rounded-2xl border p-8 lg:p-10 flex flex-col">
-            <div className="mb-6">
-              <Link href="/" className="block" aria-label={`${brand.name} Home`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={resolveBrandAppLogo(brand.logos?.symbol || brand.logos?.app, (brand as any)?.key)}
-                  alt={`${brand.name} Logo`}
-                  className="h-16 w-auto max-w-[340px] object-contain rounded-xl"
-                  style={{ backgroundColor: 'transparent' }}
-                />
-              </Link>
-            </div>
+              {!isPartnerContainer && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm text-pp-secondary w-fit mb-6 shadow-xl"
+                >
+                  <span className="flex h-2 w-2 rounded-full bg-pp-secondary animate-pulse" />
+                  BasaltSurge Network is Live
+                </motion.div>
+              )}
 
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
-              Accept crypto at the point of sale
-            </h1>
-            <p className="text-muted-foreground mb-6 text-base md:text-lg leading-relaxed">
-              Scan. Pay. Settled. Give customers a secure web3‑native checkout and get instant,
-              programmable settlement in stablecoins or tokens—wrapped in your brand, with analytics,
-              splits, and reserve controls built‑in.
-            </p>
-
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mb-6">
-              <li className="rounded-md border p-3 bg-background/60">
-                <span className="font-semibold">Lower fees</span>
-                <span className="microtext text-muted-foreground block">
-                  Avoid legacy card rails and reduce FX friction
+              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter mb-6 leading-[1.05]">
+                Global payments, <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60">
+                  instantly settled.
                 </span>
-              </li>
-              <li className="rounded-md border p-3 bg-background/60">
-                <span className="font-semibold">Brand control</span>
-                <span className="microtext text-muted-foreground block">
-                  White‑label portal, colors, logo, and receipt backdrop
-                </span>
-              </li>
-              <li className="rounded-md border p-3 bg-background/60">
-                <span className="font-semibold">Multi‑token</span>
-                <span className="microtext text-muted-foreground block">
-                  USDC, USDT, cbBTC, cbXRP, or ETH on Base
-                </span>
-              </li>
-              <li className="rounded-md border p-3 bg-background/60">
-                <span className="font-semibold">Real‑time insight</span>
-                <span className="microtext text-muted-foreground block">
-                  Live receipts, USD volume, and trends
-                </span>
-              </li>
-            </ul>
+              </h1>
 
-            {/* Animated Free Tier Banner — Platform Only */}
-            {!isPartnerContainer && (
-              <div className="relative overflow-hidden rounded-xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-500/15 via-cyan-500/10 to-emerald-600/15 p-6"
-                style={{ animation: 'free-banner-shimmer 3s ease-in-out infinite' }}
-              >
-                {/* Shimmer overlay */}
-                <div className="absolute inset-0 pointer-events-none" style={{
-                  background: 'linear-gradient(110deg, transparent 20%, rgba(16,185,129,0.1) 40%, rgba(6,182,212,0.15) 50%, rgba(16,185,129,0.1) 60%, transparent 80%)',
-                  backgroundSize: '200% 100%',
-                  animation: 'free-shimmer-sweep 3s ease-in-out infinite',
-                }} />
-                <div className="relative">
-                  {/* Top row: Price + Badge */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-6xl font-black text-white leading-none">$0</span>
-                      <span className="text-xl text-gray-400 font-normal">/mo</span>
-                      <span className="text-gray-500 ml-1">— forever</span>
-                    </div>
-                    <span className="px-3 py-1 rounded-md text-[10px] font-bold tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono">FOREVER FREE</span>
+              <p className="text-muted-foreground text-lg md:text-xl leading-relaxed mb-10 max-w-xl">
+                Scan. Pay. Settled. Give customers a frictionless checkout experience and get instant,
+                borderless settlement—wrapped in your brand, with zero chargebacks, built-in analytics, and programmable revenue routing.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <SignupButton
+                  variant="shiny"
+                  className="group relative px-8 py-4 rounded-full bg-white text-black font-semibold text-lg transition-all hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.1)] flex items-center gap-2"
+                >
+                  Start accepting payments
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </SignupButton>
+                <Link
+                  href="/get-started"
+                  className="px-8 py-4 rounded-full bg-white/5 border border-white/10 font-semibold text-lg hover:bg-white/10 transition-colors flex items-center gap-2"
+                >
+                  Explore docs
+                </Link>
+              </div>
+
+              {/* Supported chains/tokens mini ribbon */}
+              <div className="mt-12 pt-8 border-t border-white/10">
+                <div className="flex flex-col sm:flex-row gap-6 sm:items-center">
+                  <div className="flex items-center gap-2 font-bold text-sm bg-white/5 border border-white/10 px-4 py-2 rounded-full w-fit">
+                    <img src="/logos/base.png" className="w-5 h-5" alt="Base" />
+                    Settlements on Base
                   </div>
-
-                  {/* Description */}
-                  <p className="text-sm text-gray-300 leading-relaxed mb-4">
-                    No monthly subscription. No setup fees. No contracts. The full platform with <span className="text-white font-semibold">all industry packs</span> is completely free — funded entirely through a small processing fee on transactions, <span className="text-emerald-400 font-semibold">paid by the customer</span>.
+                  <p className="text-sm font-semibold text-muted-foreground max-w-sm leading-relaxed">
+                    Accept payments across 95+ chains in 160 countries and over 17,000 tokens.
                   </p>
+                </div>
+              </div>
+            </motion.div>
 
-                  {/* Industry Pack Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {[
-                      { emoji: "🍽️", label: "Restaurant" },
-                      { emoji: "🛍️", label: "Retail" },
-                      { emoji: "🌿", label: "Cannabis" },
-                      { emoji: "🏨", label: "Hotel" },
-                      { emoji: "💼", label: "Freelancer" },
-                      { emoji: "🛒", label: "E-Commerce" },
-                    ].map((p) => (
-                      <div key={p.label} className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-white/5 border border-white/10 whitespace-nowrap">
-                        <span className="text-emerald-400 text-[10px] font-bold">✓</span>
-                        <span className="text-[10px] text-gray-300 font-medium">{p.emoji} {p.label}</span>
-                      </div>
-                    ))}
+            {/* Right Content - Floating Portal Preview */}
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
+              className="relative lg:ml-auto w-full max-w-[480px]"
+            >
+              {/* Decorative glows */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-pp-secondary/30 to-blue-500/20 blur-3xl opacity-50 rounded-[2.5rem] pointer-events-none" />
+
+              <div className="relative glass-pane rounded-[2.5rem] border border-white/10 shadow-2xl backdrop-blur-xl overflow-hidden bg-background/40">
+                <div className="bg-black/40 border-b border-white/10 px-4 py-3 flex items-center gap-3">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  </div>
+                  <div className="text-xs text-white/40 font-mono flex-1 text-center pr-12">Live Preview</div>
+                </div>
+
+                <div className="p-4 md:p-6 pb-8">
+                  <PortalPreviewEmbedded
+                    key={`${siteTheme.brandLogoUrl}-${siteTheme.primaryColor}`}
+                    theme={siteTheme}
+                    demoReceipt={demoReceipt}
+                    recipient={recipient as any}
+                    className="mx-auto rounded-2xl overflow-hidden shadow-2xl border border-white/5"
+                    style={{
+                      ...previewStyle,
+                      maxHeight: "calc(100vh - 280px)",
+                      minHeight: "500px",
+                    }}
+                  />
+                  <div className="microtext text-white/40 text-center mt-4 font-mono">
+                    Preview inherits your theme
                   </div>
                 </div>
               </div>
-            )}
-
-            <div className="mt-auto pt-2">
-              <SignupButton
-                variant="shiny"
-                className="group relative overflow-hidden w-full px-8 py-4 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-bold text-lg transition-all hover:opacity-100 shadow-lg hover:shadow-xl"
-              >
-                <span className="relative z-10 flex items-center justify-center gap-2" style={{ animation: !isPartnerContainer ? 'signup-pulse 2s ease-in-out infinite' : undefined }}>
-                  Sign Up Now{!isPartnerContainer && <> — It&apos;s Free</>}
-                </span>
-              </SignupButton>
-            </div>
+            </motion.div>
           </div>
+        </div>
+      </section>
 
-          {/* Right: Embedded live preview */}
-          <div className="glass-pane rounded-2xl border p-4 md:p-5">
-            <div className="text-sm font-semibold mb-3">Live Portal Preview</div>
-            <PortalPreviewEmbedded
-              key={`${siteTheme.brandLogoUrl}-${siteTheme.primaryColor}`}
-              theme={siteTheme}
-              demoReceipt={demoReceipt}
-              recipient={recipient as any}
-              className="max-w-[428px] mx-auto"
-              style={{
-                ...previewStyle,
-                maxHeight: "calc(100vh - 220px)",
-              }}
-            />
-            <div className="microtext text-muted-foreground text-center mt-3">
-              Connect a wallet to simulate checkout. Preview inherits your theme.
-            </div>
-          </div>
-        </section>
-
+      <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10 w-full">
         {/* Social Proof: Stats */}
         <section className="mt-6">
           <div className="glass-pane rounded-xl border p-4 md:p-5">
@@ -607,53 +583,95 @@ export default function HomeContent() {
 
         <AcceptedServices />
 
-        {/* What we do */}
-        <section className="mt-8">
-          <div className="glass-pane rounded-xl border p-6">
-            <h2 className="text-xl font-semibold mb-2">What We Do</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-              <div className="rounded-md border p-4 bg-background/60">
-                <div className="font-semibold">QR Code Payments</div>
-                <div className="microtext text-muted-foreground mt-1">
-                  Print QR codes on POS receipts; customers scan and pay on mobile.
-                </div>
-              </div>
-              <div className="rounded-md border p-4 bg-background/60">
-                <div className="font-semibold">Multi‑Token Support</div>
-                <div className="microtext text-muted-foreground mt-1">
-                  Accept USDC, USDT, cbBTC, cbXRP, or ETH. Base supported.
-                </div>
-              </div>
-              <div className="rounded-md border p-4 bg-background/60">
-                <div className="font-semibold">Web3‑Native Checkout</div>
-                <div className="microtext text-muted-foreground mt-1">
-                  Secure wallet connect and on‑chain settlement with AA gas sponsorship.
-                </div>
-              </div>
-              <div className="rounded-md border p-4 bg-background/60">
-                <div className="font-semibold">Branding & Themes</div>
-                <div className="microtext text-muted-foreground mt-1">
-                  White‑label portal with your logo, colors, font, and receipt background.
-                </div>
-              </div>
-              <div className="rounded-md border p-4 bg-background/60">
-                <div className="font-semibold">Reserve & Splits</div>
-                <div className="microtext text-muted-foreground mt-1">
-                  Configure token mix, smart rotation, and on‑chain revenue splits.
-                </div>
-              </div>
-              <div className="rounded-md border p-4 bg-background/60">
-                <div className="font-semibold">Analytics</div>
-                <div className="microtext text-muted-foreground mt-1">
-                  Track transactions, USD volume, fees, and trends in real time.
-                </div>
-              </div>
+        {/* Unified Platform Features - Bento Box */}
+        <section className="py-24 relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-pp-secondary/5 to-transparent pointer-events-none" />
+          
+          <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">
+            <div className="mb-16 max-w-3xl">
+              <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">A unified platform for modern commerce</h2>
+              <p className="text-xl text-muted-foreground">Everything you need to accept global payments, route funds instantly, and manage your revenue without intermediaries.</p>
             </div>
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
-              <SignupButton
-                className="px-8 py-3 rounded-md bg-pp-secondary text-[var(--primary-foreground)] font-bold text-lg transition-opacity hover:opacity-90"
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Bento Box 1: Checkout */}
+              <motion.div 
+                whileHover={{ y: -5 }}
+                className="md:col-span-2 glass-pane rounded-[2rem] border border-white/10 p-8 md:p-10 relative overflow-hidden group shadow-xl"
               >
-                Sign Up Now
+                <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:opacity-40 transition-opacity">
+                  <CreditCard className="w-40 h-40 text-pp-secondary rotate-12 translate-x-8 -translate-y-8" />
+                </div>
+                <div className="relative z-10">
+                  <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mb-6 shadow-inner border border-white/5">
+                    <Zap className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-3xl font-bold mb-4 tracking-tight">Frictionless Checkout</h3>
+                  <p className="text-muted-foreground text-lg max-w-md leading-relaxed">
+                    Print QR codes directly on POS receipts. Customers scan and pay instantly with zero friction—no manual entry, no hidden fees, and zero chargeback risk.
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Bento Box 2: Branding */}
+              <motion.div 
+                whileHover={{ y: -5 }}
+                className="glass-pane rounded-[2rem] border border-white/10 p-8 md:p-10 relative overflow-hidden group shadow-xl"
+              >
+                <div className="relative z-10 h-full flex flex-col">
+                  <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mb-6 shadow-inner border border-white/5">
+                    <CheckCircle2 className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-4 tracking-tight">White-Label Experience</h3>
+                  <p className="text-muted-foreground text-lg leading-relaxed">
+                    Maintain complete control over the customer experience with fully customizable colors, logos, typography, and branded digital receipts.
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Bento Box 3: Analytics */}
+              <motion.div 
+                whileHover={{ y: -5 }}
+                className="glass-pane rounded-[2rem] border border-white/10 p-8 md:p-10 relative overflow-hidden group shadow-xl"
+              >
+                <div className="relative z-10 h-full flex flex-col">
+                  <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mb-6 shadow-inner border border-white/5">
+                    <BarChart3 className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-4 tracking-tight">Real-Time Intelligence</h3>
+                  <p className="text-muted-foreground text-lg leading-relaxed">
+                    Monitor your business with precision. Track transactions, settlement volume, fee savings, and customer trends as they happen.
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Bento Box 4: Multi-token */}
+              <motion.div 
+                whileHover={{ y: -5 }}
+                className="md:col-span-2 glass-pane rounded-[2rem] border border-white/10 p-8 md:p-10 relative overflow-hidden group shadow-xl"
+              >
+                <div className="absolute bottom-0 right-0 p-8 opacity-20 group-hover:opacity-40 transition-opacity">
+                  <Globe className="w-40 h-40 text-pp-secondary translate-x-8 translate-y-8" />
+                </div>
+                <div className="relative z-10">
+                  <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mb-6 shadow-inner border border-white/5">
+                    <Shield className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-3xl font-bold mb-4 tracking-tight">Programmable Revenue Routing</h3>
+                  <p className="text-muted-foreground text-lg max-w-md leading-relaxed">
+                    Accept payments globally and settle in the currency of your choice. Configure smart rotation, instant vendor payouts, and automated revenue splits without touching a bank.
+                  </p>
+                </div>
+              </motion.div>
+            </div>
+            
+            <div className="mt-12 flex items-center justify-center">
+              <SignupButton
+                variant="shiny"
+                className="group px-8 py-4 rounded-full bg-white text-black font-semibold text-lg transition-all hover:scale-105 shadow-[0_0_30px_rgba(255,255,255,0.1)] flex items-center gap-2"
+              >
+                Create your account
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </SignupButton>
             </div>
           </div>
@@ -689,13 +707,6 @@ export default function HomeContent() {
                 </div>
               </li>
             </ol>
-          </div>
-        </section>
-
-        {/* Publisher / Osiris Section */}
-        <section className="mt-6">
-          <div className="glass-pane rounded-xl border p-6 md:p-8">
-            <PublisherOsirisSection />
           </div>
         </section>
 
@@ -746,8 +757,8 @@ export default function HomeContent() {
         {/* Plugins & Integrations */}
         <PluginsSection />
 
-        {/* Cannabis Compliance — First Free + Fully Compliant POS — Platform Only */}
-        {!isPartnerContainer && <CannabisComplianceSection />}
+        {/* Industry Packs — Platform Only */}
+        {!isPartnerContainer && <IndustryTouchpointsSection />}
 
         {/* Agentic Payments (x402) */}
         <AgenticPaymentsSection />
