@@ -18,6 +18,7 @@ import { getDefaultBrandName, getDefaultBrandSymbol, resolveBrandAppLogo, resolv
 import { fetchEthRates, fetchUsdRates, fetchBtcUsd, fetchXrpUsd, type EthRates } from "@/lib/eth";
 import { SUPPORTED_CURRENCIES, convertFromUsd, formatCurrency, getCurrencyFlag, roundForCurrency } from "@/lib/fx";
 import { useStripeOnrampInterceptor } from "@/hooks/useStripeOnrampInterceptor";
+import { useStripeEmbeddedOnramp } from "@/hooks/useStripeEmbeddedOnramp";
 
 // Live QR Payment Portal: supports compact (default) and wide layout variants.
 // Embedded mode (embedded=1 or iframe) removes page background to fit seamlessly in host modals.
@@ -247,12 +248,12 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [receiptEmail, setReceiptEmail] = useState("");
   const [emailSending, setEmailSending] = useState(false);
-  const [emailState, setEmailState] = useState<{type: "idle"|"success"|"error", msg: string}>({type: "idle", msg: ""});
+  const [emailState, setEmailState] = useState<{ type: "idle" | "success" | "error", msg: string }>({ type: "idle", msg: "" });
 
   async function sendReceiptEmail() {
     if (!receiptEmail || !receiptId) return;
     setEmailSending(true);
-    setEmailState({type: "idle", msg: ""});
+    setEmailState({ type: "idle", msg: "" });
     try {
       const res = await fetch(`/api/receipts/${receiptId.replace("receipt:", "")}/email`, {
         method: "POST",
@@ -260,14 +261,14 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         body: JSON.stringify({ email: receiptEmail })
       });
       if (!res.ok) throw new Error("Failed to send");
-      setEmailState({type: "success", msg: "Receipt emailed successfully!"});
+      setEmailState({ type: "success", msg: "Receipt emailed successfully!" });
       setTimeout(() => {
         setEmailModalOpen(false);
         setReceiptEmail("");
-        setEmailState({type: "idle", msg: ""});
+        setEmailState({ type: "idle", msg: "" });
       }, 2000);
     } catch (e) {
-      setEmailState({type: "error", msg: "Failed to email receipt."});
+      setEmailState({ type: "error", msg: "Failed to email receipt." });
     } finally {
       setEmailSending(false);
     }
@@ -328,7 +329,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           }
         }
       }
-    } catch {}
+    } catch { }
     return light;
   }, [theme.headerTextColor]);
 
@@ -350,39 +351,39 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
 
     return isLightText
       ? darkTheme({
-          colors: {
-            ...commonColors,
-            ...(pw.buttonBg ? { primaryButtonBg: pw.buttonBg, accentButtonBg: pw.buttonBg } : {}),
-            ...(pw.buttonTextColor ? { primaryButtonText: pw.buttonTextColor, accentButtonText: pw.buttonTextColor } : {}),
-            ...(pw.cardBg ? { modalBg: pw.cardBg } : {}),
-            ...(pw.cardBorderColor ? { borderColor: pw.cardBorderColor } : {}),
-            ...(pw.inputBg ? { inputBg: pw.inputBg } : {}),
-            ...(pw.accentColor ? { accentText: pw.accentColor } : {}),
-            connectedButtonBg: "rgba(255,255,255,0.04)",
-            connectedButtonBgHover: "rgba(255,255,255,0.08)",
-            skeletonBg: "rgba(255,255,255,0.1)",
-            secondaryButtonBg: "rgba(255,255,255,0.05)",
-            secondaryButtonText: theme.headerTextColor,
-            secondaryButtonHoverBg: "rgba(255,255,255,0.1)",
-          }
-        })
+        colors: {
+          ...commonColors,
+          ...(pw.buttonBg ? { primaryButtonBg: pw.buttonBg, accentButtonBg: pw.buttonBg } : {}),
+          ...(pw.buttonTextColor ? { primaryButtonText: pw.buttonTextColor, accentButtonText: pw.buttonTextColor } : {}),
+          ...(pw.cardBg ? { modalBg: pw.cardBg } : {}),
+          ...(pw.cardBorderColor ? { borderColor: pw.cardBorderColor } : {}),
+          ...(pw.inputBg ? { inputBg: pw.inputBg } : {}),
+          ...(pw.accentColor ? { accentText: pw.accentColor } : {}),
+          connectedButtonBg: "rgba(255,255,255,0.04)",
+          connectedButtonBgHover: "rgba(255,255,255,0.08)",
+          skeletonBg: "rgba(255,255,255,0.1)",
+          secondaryButtonBg: "rgba(255,255,255,0.05)",
+          secondaryButtonText: theme.headerTextColor,
+          secondaryButtonHoverBg: "rgba(255,255,255,0.1)",
+        }
+      })
       : lightTheme({
-          colors: {
-            ...commonColors,
-            ...(pw.buttonBg ? { primaryButtonBg: pw.buttonBg, accentButtonBg: pw.buttonBg } : {}),
-            ...(pw.buttonTextColor ? { primaryButtonText: pw.buttonTextColor, accentButtonText: pw.buttonTextColor } : {}),
-            ...(pw.cardBg ? { modalBg: pw.cardBg } : {}),
-            ...(pw.cardBorderColor ? { borderColor: pw.cardBorderColor } : {}),
-            ...(pw.inputBg ? { inputBg: pw.inputBg } : {}),
-            ...(pw.accentColor ? { accentText: pw.accentColor } : {}),
-            connectedButtonBg: "rgba(0,0,0,0.04)",
-            connectedButtonBgHover: "rgba(0,0,0,0.08)",
-            skeletonBg: "rgba(0,0,0,0.1)",
-            secondaryButtonBg: "rgba(0,0,0,0.05)",
-            secondaryButtonText: theme.headerTextColor,
-            secondaryButtonHoverBg: "rgba(0,0,0,0.1)",
-          }
-        });
+        colors: {
+          ...commonColors,
+          ...(pw.buttonBg ? { primaryButtonBg: pw.buttonBg, accentButtonBg: pw.buttonBg } : {}),
+          ...(pw.buttonTextColor ? { primaryButtonText: pw.buttonTextColor, accentButtonText: pw.buttonTextColor } : {}),
+          ...(pw.cardBg ? { modalBg: pw.cardBg } : {}),
+          ...(pw.cardBorderColor ? { borderColor: pw.cardBorderColor } : {}),
+          ...(pw.inputBg ? { inputBg: pw.inputBg } : {}),
+          ...(pw.accentColor ? { accentText: pw.accentColor } : {}),
+          connectedButtonBg: "rgba(0,0,0,0.04)",
+          connectedButtonBgHover: "rgba(0,0,0,0.08)",
+          skeletonBg: "rgba(0,0,0,0.1)",
+          secondaryButtonBg: "rgba(0,0,0,0.05)",
+          secondaryButtonText: theme.headerTextColor,
+          secondaryButtonHoverBg: "rgba(0,0,0,0.1)",
+        }
+      });
   }, [theme, playgroundWidgetOverrides]);
 
   // Partner brand colors from container config (for partner containers without merchant theme)
@@ -433,7 +434,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   const EMBEDDED_WIDGET_HEIGHT = Number(searchParams?.get("e_h") || 320);
   const mobileTextColor = isMobileViewport ? "#ffffff" : undefined;
   const forceEmbedTextColor = isEmbedded ? "#ffffff" : undefined;
-  
+
   // Move wallet theme readiness earlier so effects can safely depend on it
   const [walletThemeLoaded, setWalletThemeLoaded] = useState(false);
   const [useMerchantThemeLock, setUseMerchantThemeLock] = useState(false);
@@ -608,7 +609,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         // Widget button radius
         const btnRadius = w.buttonRadius === 'pill' ? '9999px'
           : w.buttonRadius === 'sharp' ? '4px'
-          : w.buttonRadius === 'rounded' ? '12px' : '12px';
+            : w.buttonRadius === 'rounded' ? '12px' : '12px';
 
         const btnBg = w.buttonBg || t.primaryColor || '';
         const btnText = w.buttonTextColor || '#ffffff';
@@ -672,6 +673,11 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           /* Main container surface */
           .pp-portal-container > div {
             background: ${t.pageBg || 'transparent'} !important;
+          }
+
+          /* Logo shape override */
+          .pp-portal-container [data-pp-logo-wrapper] {
+            border-radius: ${t.logoShape === 'square' ? '8px' : '9999px'} !important;
           }
 
           /* All text — headers (bold, large) */
@@ -921,7 +927,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
       const p = (async () => {
         const isHex = /^0x[a-f0-9]{40}$/i.test(walletHex);
         const queryParam = isHex ? `wallet=${encodeURIComponent(walletHex)}` : `slug=${encodeURIComponent(walletHex)}`;
-        
+
         const url = `/api/site/config?${queryParam}`;
         const headers = { "x-theme-caller": "PortalPage:merchant", "x-wallet": String(walletHex || "").toLowerCase(), "x-recipient": String(walletHex || "").toLowerCase() };
 
@@ -930,16 +936,16 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           fetch(url, { cache: "no-store", headers }).then(r => r.json()).catch(() => ({} as any)),
           walletHex
             ? (() => {
-                // When a shop slug is available (e.g. ?shop=swaddleshawls), always include it
-                // so the API can use slug-based resolution (no JWT required for iframes)
-                let shopQuery = queryParam;
-                if (shopSlugParam && !shopQuery.includes('slug=')) {
-                  shopQuery += `&slug=${encodeURIComponent(shopSlugParam)}`;
-                }
-                return fetch(`/api/shop/config?${shopQuery}`, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant:shop" } })
-                  .then(r => r.ok ? r.json() : null)
-                  .catch(() => null);
-              })()
+              // When a shop slug is available (e.g. ?shop=swaddleshawls), always include it
+              // so the API can use slug-based resolution (no JWT required for iframes)
+              let shopQuery = queryParam;
+              if (shopSlugParam && !shopQuery.includes('slug=')) {
+                shopQuery += `&slug=${encodeURIComponent(shopSlugParam)}`;
+              }
+              return fetch(`/api/shop/config?${shopQuery}`, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant:shop" } })
+                .then(r => r.ok ? r.json() : null)
+                .catch(() => null);
+            })()
             : Promise.resolve(null),
           walletHex
             ? fetch(`/api/users/profile?${queryParam}`, { cache: "no-store", headers: { "x-theme-caller": "PortalPage:merchant:profile" } })
@@ -1731,21 +1737,21 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         currency: 'USD',
         lineItems: isShipping
           ? [
-              {
-                label: 'Premium Widget', priceUsd: 45.00, qty: 1,
-                requiresShipping: true,
-                shippingConfig: {
-                  methodPricing: { standard: 5.99, express: 12.99, overnight: 24.99 },
-                  allowedMethods: ['standard', 'express', 'overnight'],
-                  freeShippingThreshold: 100,
-                },
+            {
+              label: 'Premium Widget', priceUsd: 45.00, qty: 1,
+              requiresShipping: true,
+              shippingConfig: {
+                methodPricing: { standard: 5.99, express: 12.99, overnight: 24.99 },
+                allowedMethods: ['standard', 'express', 'overnight'],
+                freeShippingThreshold: 100,
               },
-              { label: 'Tax', priceUsd: 7.00, qty: 1 },
-            ]
+            },
+            { label: 'Tax', priceUsd: 7.00, qty: 1 },
+          ]
           : [
-              { label: 'Sample Item', priceUsd: 25.00, qty: 1 },
-              { label: 'Tax', priceUsd: 2.00, qty: 1 },
-            ],
+            { label: 'Sample Item', priceUsd: 25.00, qty: 1 },
+            { label: 'Tax', priceUsd: 2.00, qty: 1 },
+          ],
         createdAt: Date.now(),
         brandName: theme.brandName || 'Preview',
       });
@@ -1937,6 +1943,10 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
 
   const [shipName, setShipName] = useState('');
   const [shipEmail, setShipEmail] = useState('');
+
+  // ── Stripe Headless Onramp State ──
+  const [headlessEmailPrompt, setHeadlessEmailPrompt] = useState(false);
+  const [headlessEmailInput, setHeadlessEmailInput] = useState('');
   const [shipLine1, setShipLine1] = useState('');
   const [shipLine2, setShipLine2] = useState('');
   const [shipCity, setShipCity] = useState('');
@@ -2747,9 +2757,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     const mo = new MutationObserver(() => {
       const backButtons = document.querySelectorAll<HTMLElement>(".tw-back-button, .tw-header-back-button");
       if (!backButtons.length) return;
-      
+
       const textColor = theme.bodyTextColor || "#e5e7eb";
-      
+
       backButtons.forEach(btn => {
         btn.style.setProperty("color", textColor, "important");
         const svgs = btn.querySelectorAll("svg");
@@ -2757,7 +2767,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           svg.style.setProperty("color", textColor, "important");
           svg.style.setProperty("fill", textColor, "important");
           svg.style.setProperty("stroke", textColor, "important");
-          
+
           svg.querySelectorAll("path, polyline, line, circle, rect").forEach(child => {
             (child as HTMLElement).style.setProperty("fill", "inherit", "important");
             (child as HTMLElement).style.setProperty("stroke", "inherit", "important");
@@ -2770,11 +2780,47 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     return () => mo.disconnect();
   }, [theme.bodyTextColor]);
 
-  // ── Stripe Onramp Interceptor ──
-  // Detects thirdweb's Stripe onramp in the DOM and replaces it with our direct Stripe Crypto Onramp
+  // ── Stripe Onramp Mode Toggle ──
+  // NEXT_PUBLIC_STRIPE_HEADLESS=TRUE → New Embedded Components headless flow (Smart Wallet Bridge)
+  // Otherwise → Legacy iframe-based Stripe Crypto Onramp interceptor
+  const stripeHeadless = String(process.env.NEXT_PUBLIC_STRIPE_HEADLESS || "").toUpperCase() === "TRUE";
+
+  // Headless: New Embedded Components flow with Smart Wallet Bridge
+  // If buyer is already connected via Thirdweb (account?.address), uses their existing wallet.
+  // Otherwise, creates a deterministic smart wallet from their email (no OTP via auth_endpoint).
+  const {
+    step: headlessStep,
+    statusMessage: headlessStatus,
+    error: headlessError,
+    authElement: headlessAuthElement,
+    paymentElement: headlessPaymentElement,
+    startOnramp: startHeadlessOnramp,
+    isActive: headlessActive,
+    buyerWalletAddress: headlessBuyerWallet,
+  } = useStripeEmbeddedOnramp({
+    email: shipEmail || undefined,
+    splitAddress: sellerAddress as string,
+    amount: totalUsd,
+    receiptId,
+    merchantWallet: (merchantWallet || resolvedRecipient || recipient) as string,
+    brandKey: theme.brandKey || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge",
+    connectedWalletAddress: account?.address, // Skip wallet creation if buyer is already connected
+    enabled: stripeHeadless,
+    onSuccess: (result) => {
+      console.log("[STRIPE HEADLESS] ✓ Onramp + transfer completed:", result);
+      // Funds are now in the split contract — receipt can be marked paid
+    },
+    onError: (error) => {
+      console.error("[STRIPE HEADLESS] Error:", error);
+    },
+  });
+
+
+
+  // Interceptor: ALWAYS active to block crypto.link.com redirects from Thirdweb's CheckoutWidget.
+  // In headless mode: interceptOnly=true → blocks redirect, calls onIntercept → startHeadlessOnramp()
+  // In legacy mode: interceptOnly=false → blocks redirect, launches legacy Stripe modal
   useStripeOnrampInterceptor({
-    // Direct-to-split: Stripe deposits USDC straight into the deployed split contract.
-    // No fallback — acceptCredit requires a split to be deployed for the merchant.
     walletAddress: sellerAddress as string,
     amount: totalUsd,
     receiptId,
@@ -2783,13 +2829,20 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     redirectUrl: stripeRedirectUrl,
     onSuccess: (result) => {
       console.log("[STRIPE ONRAMP] Completed:", result);
-      // Yield control back to Thirdweb's CheckoutWidget.
-      // Thirdweb is listening to the buyer's wallet balance. 
-      // When the USDC arrives, Thirdweb's UI will naturally proceed to the executing Step 2 (Swap + Transfer).
     },
     onError: (error) => {
       console.error("[STRIPE ONRAMP] Error:", error);
     },
+    onIntercept: stripeHeadless ? () => {
+      console.log("[STRIPE ONRAMP] Intercepted → deferring to headless onramp");
+      if (!shipEmail) {
+        setHeadlessEmailPrompt(true);
+      } else {
+        startHeadlessOnramp(shipEmail);
+      }
+    } : undefined,
+    interceptOnly: stripeHeadless, // Block redirect only, don't launch legacy modal
+    enabled: true, // Always enabled to catch crypto.link.com redirects
   });
 
   // NOTE: Coinbase Onramp redirectUrl requires domain allowlisting in the CDP portal,
@@ -2921,76 +2974,60 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
 
         if (tpThemeApplied && (tpBorder || tpRadius)) {
           // ── Portal container ──
-        const container = scopeEl.querySelector(".pp-portal-container") as HTMLElement | null;
-        if (container) {
-          container.style.backgroundColor = tpBgSecondary;
-          container.style.backdropFilter = `saturate(1.2) blur(${tpBlur})`;
-          (container.style as any).webkitBackdropFilter = `saturate(1.2) blur(${tpBlur})`;
-          container.style.borderRadius = tpRadius;
-          container.style.borderColor = tpBorder;
-          container.style.boxShadow = tpShadow;
-        }
+          const container = scopeEl.querySelector(".pp-portal-container") as HTMLElement | null;
+          if (container) {
+            container.style.backgroundColor = tpBgSecondary;
+            container.style.backdropFilter = `saturate(1.2) blur(${tpBlur})`;
+            (container.style as any).webkitBackdropFilter = `saturate(1.2) blur(${tpBlur})`;
+            container.style.borderRadius = tpRadius;
+            container.style.borderColor = tpBorder;
+            container.style.boxShadow = tpShadow;
+          }
 
-        // ── Card panels inside portal (.rounded-xl.border etc) ──
-        scopeEl.querySelectorAll<HTMLElement>(
-          ".pp-portal-container .rounded-xl.border, " +
-          ".pp-portal-container .rounded-2xl.border, " +
-          ".pp-portal-container .rounded-lg.border, " +
-          ".pp-portal-container .rounded-xl.bg-background\\/80, " +
-          ".pp-portal-container .rounded-2xl.bg-background\\/70"
-        ).forEach(el => {
-          el.style.borderColor = tpBorder;
-          el.style.borderRadius = tpRadius;
-          el.style.backgroundColor = tpBgSurface;
-          el.style.backdropFilter = `saturate(1.2) blur(${tpBlur})`;
-          (el.style as any).webkitBackdropFilter = `saturate(1.2) blur(${tpBlur})`;
-          el.style.boxShadow = tpShadow;
-        });
+          // ── Card panels inside portal (.rounded-xl.border etc) ──
+          scopeEl.querySelectorAll<HTMLElement>(
+            ".pp-portal-container .rounded-xl.border, " +
+            ".pp-portal-container .rounded-2xl.border, " +
+            ".pp-portal-container .rounded-lg.border, " +
+            ".pp-portal-container .rounded-xl.bg-background\\/80, " +
+            ".pp-portal-container .rounded-2xl.bg-background\\/70"
+          ).forEach(el => {
+            el.style.borderColor = tpBorder;
+            el.style.borderRadius = tpRadius;
+            el.style.backgroundColor = tpBgSurface;
+            el.style.backdropFilter = `saturate(1.2) blur(${tpBlur})`;
+            (el.style as any).webkitBackdropFilter = `saturate(1.2) blur(${tpBlur})`;
+            el.style.boxShadow = tpShadow;
+          });
 
-        // ── Buttons inside portal ──
-        scopeEl.querySelectorAll<HTMLElement>(".pp-portal-container button").forEach(el => {
-          el.style.borderRadius = tpBtnRadius;
-        });
+          // ── Buttons inside portal ──
+          scopeEl.querySelectorAll<HTMLElement>(".pp-portal-container button").forEach(el => {
+            el.style.borderRadius = tpBtnRadius;
+          });
 
-        // ── Inputs and selects ──
-        scopeEl.querySelectorAll<HTMLElement>(".pp-portal-container input, .pp-portal-container select").forEach(el => {
-          el.style.borderColor = tpBorder;
-          el.style.borderRadius = tpRadius;
-        });
+          // ── Inputs and selects ──
+          scopeEl.querySelectorAll<HTMLElement>(".pp-portal-container input, .pp-portal-container select").forEach(el => {
+            el.style.borderColor = tpBorder;
+            el.style.borderRadius = tpRadius;
+          });
 
-        // ── Dashed/solid borders ──
-        scopeEl.querySelectorAll<HTMLElement>(".pp-portal-container .border-dashed, .pp-portal-container .border-t").forEach(el => {
-          el.style.borderColor = tpBorder;
-        });
+          // ── Dashed/solid borders ──
+          scopeEl.querySelectorAll<HTMLElement>(".pp-portal-container .border-dashed, .pp-portal-container .border-t").forEach(el => {
+            el.style.borderColor = tpBorder;
+          });
 
-        // ── Shadow panels ──
-        scopeEl.querySelectorAll<HTMLElement>(".pp-portal-container .shadow-md, .pp-portal-container .shadow-lg, .pp-portal-container .shadow-xl").forEach(el => {
-          el.style.backgroundColor = tpBgSurface;
-          el.style.borderColor = tpBorder;
-          el.style.borderRadius = tpRadius;
-          el.style.boxShadow = tpShadow;
-        });
+          // ── Shadow panels ──
+          scopeEl.querySelectorAll<HTMLElement>(".pp-portal-container .shadow-md, .pp-portal-container .shadow-lg, .pp-portal-container .shadow-xl").forEach(el => {
+            el.style.backgroundColor = tpBgSurface;
+            el.style.borderColor = tpBorder;
+            el.style.borderRadius = tpRadius;
+            el.style.boxShadow = tpShadow;
+          });
 
-        // ── Thirdweb CheckoutWidget (renders to body-level portal with data-theme) ──
-        scopeEl.querySelectorAll<HTMLElement>("[data-theme]").forEach(el => {
-          // Only target thirdweb containers, not arbitrary elements
-          if (el.closest(".pp-portal-container") || el === root) return;
-          el.style.backgroundColor = tpBgSecondary;
-          el.style.backdropFilter = `saturate(1.2) blur(${tpBlur})`;
-          (el.style as any).webkitBackdropFilter = `saturate(1.2) blur(${tpBlur})`;
-          el.style.borderRadius = tpRadius;
-          el.style.border = 'none';
-          el.style.boxShadow = tpShadow;
-        });
-
-        // ── Thirdweb inner elements (buttons, divs with border-radius) ──
-        scopeEl.querySelectorAll<HTMLElement>("[data-theme] button").forEach(el => {
-          el.style.borderRadius = tpBtnRadius;
-        });
-
-        // ── Also style thirdweb widget within portal container ──
-        if (container) {
-          container.querySelectorAll<HTMLElement>("[data-theme]").forEach(el => {
+          // ── Thirdweb CheckoutWidget (renders to body-level portal with data-theme) ──
+          scopeEl.querySelectorAll<HTMLElement>("[data-theme]").forEach(el => {
+            // Only target thirdweb containers, not arbitrary elements
+            if (el.closest(".pp-portal-container") || el === root) return;
             el.style.backgroundColor = tpBgSecondary;
             el.style.backdropFilter = `saturate(1.2) blur(${tpBlur})`;
             (el.style as any).webkitBackdropFilter = `saturate(1.2) blur(${tpBlur})`;
@@ -2998,10 +3035,26 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             el.style.border = 'none';
             el.style.boxShadow = tpShadow;
           });
-          container.querySelectorAll<HTMLElement>("[data-theme] button").forEach(el => {
+
+          // ── Thirdweb inner elements (buttons, divs with border-radius) ──
+          scopeEl.querySelectorAll<HTMLElement>("[data-theme] button").forEach(el => {
             el.style.borderRadius = tpBtnRadius;
           });
-        }
+
+          // ── Also style thirdweb widget within portal container ──
+          if (container) {
+            container.querySelectorAll<HTMLElement>("[data-theme]").forEach(el => {
+              el.style.backgroundColor = tpBgSecondary;
+              el.style.backdropFilter = `saturate(1.2) blur(${tpBlur})`;
+              (el.style as any).webkitBackdropFilter = `saturate(1.2) blur(${tpBlur})`;
+              el.style.borderRadius = tpRadius;
+              el.style.border = 'none';
+              el.style.boxShadow = tpShadow;
+            });
+            container.querySelectorAll<HTMLElement>("[data-theme] button").forEach(el => {
+              el.style.borderRadius = tpBtnRadius;
+            });
+          }
         }
       } catch { }
 
@@ -3011,8 +3064,8 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         if (wo && typeof wo === 'object') {
           const btnRadius = wo.buttonRadius === 'pill' ? '9999px'
             : wo.buttonRadius === 'sharp' ? '4px'
-            : wo.buttonRadius === 'rounded' ? '12px'
-            : (typeof wo.buttonRadius === 'string' && wo.buttonRadius) ? wo.buttonRadius : null;
+              : wo.buttonRadius === 'rounded' ? '12px'
+                : (typeof wo.buttonRadius === 'string' && wo.buttonRadius) ? wo.buttonRadius : null;
 
           if (btnRadius) {
             scopeEl.querySelectorAll<HTMLElement>('.pp-portal-container button, [data-theme] button')
@@ -3071,6 +3124,128 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
       clearTimeout(t3);
     };
   }, [tpThemeApplied, currency]);
+
+  // ─── STRIPE HEADLESS INLINE UI ───
+  const stripeHeadlessUI = (headlessEmailPrompt || headlessActive) ? (
+    <div className="w-full flex flex-col items-center justify-center p-4 rounded-2xl bg-black/20 animate-in fade-in duration-300" style={{ minHeight: '300px' }}>
+      {headlessEmailPrompt ? (
+        <div className="bg-[#131418] border border-white/10 rounded-2xl shadow-xl p-6 max-w-sm w-full animate-in zoom-in duration-300">
+          <h3 className="text-white text-lg font-semibold mb-2">Stripe Quick Checkout</h3>
+          <p className="text-white/60 text-sm mb-4">Enter your email to verify your identity with Stripe Link.</p>
+          <input
+            type="email"
+            placeholder="Email address"
+            className="w-full h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-white placeholder-white/30 mb-4 focus:outline-none focus:border-white/30"
+            value={headlessEmailInput}
+            onChange={(e) => setHeadlessEmailInput(e.target.value)}
+            autoFocus
+          />
+          <div className="flex gap-2">
+            <button
+              className="flex-1 py-2 rounded-lg bg-white/5 text-white font-medium border border-white/10 hover:bg-white/10 transition-colors"
+              onClick={() => {
+                setHeadlessEmailPrompt(false);
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              className="flex-1 py-2 rounded-lg bg-white text-black font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
+              disabled={!headlessEmailInput.includes('@')}
+              onClick={() => {
+                setShipEmail(headlessEmailInput);
+                setHeadlessEmailPrompt(false);
+                startHeadlessOnramp(headlessEmailInput);
+              }}
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-[#131418] border border-white/10 rounded-2xl shadow-xl overflow-hidden max-w-[440px] w-full flex flex-col relative min-h-[400px]">
+          {/* Header */}
+          <div className="p-4 border-b border-white/10 flex items-center justify-between">
+            <span className="text-white font-semibold flex items-center gap-2">
+              <svg viewBox="0 0 60 25" className="h-5 text-[#635BFF] fill-current">
+                <path d="M59.64 14.28h-8.06c.19 1.93 1.6 2.55 3.2 2.55 1.64 0 2.96-.37 4.05-.95v3.32c-1.15.58-2.82.96-4.96.96-4.24 0-6.78-2.61-6.78-6.97 0-4.46 2.37-7.23 6.36-7.23 3.91 0 5.67 2.66 5.67 6.13 0 .42-.03.74-.08 1.15-.06.51-.15 1.04-.4 1.04zm-8.02-2.19h3.76c-.08-1.57-.96-2.48-2.18-2.48-1.37 0-1.87 1.1-1.58 2.48zM36.19 19.86h-4.2V6.36h4.2v13.5zM30.68 11.23c-1.07-.86-2.33-1.1-3.6-1.1-2.43 0-3.8 1.1-3.8 2.57 0 3.1 4.7 2.14 4.7 4.3 0 1.25-1.14 1.83-2.66 1.83-1.42 0-2.8-.5-3.86-1.1v3.4c1.1.58 2.8.96 4.34.96 2.76 0 4.15-1.17 4.15-2.83 0-3.3-4.7-2.3-4.7-4.32 0-1.05 1.12-1.56 2.4-1.56 1.18 0 2.25.33 3.03.8v-3.05zm-15.08 8.63h-4.2v-9.3c0-1.15-.84-1.56-1.84-1.56-1.03 0-2 .46-2.8 1.06v9.8H2.57V6.36h4.2v1.54c1.1-1.1 2.66-1.93 4.46-1.93 2.92 0 4.37 1.83 4.37 5.16v8.73zm13.19-2.65V6.36h4.2v13.5h-4.2v-2.65c-1.1 1.57-2.8 2.2-4.66 2.2-3.34 0-5.74-2.6-5.74-6.8 0-4.22 2.37-6.66 5.68-6.66 1.9 0 3.65-.65 4.72 2.24zm-1.8 1.92c1.23-.97 1.8-2.33 1.8-3.9 0-3.06-1.55-4.46-3.48-4.46-2.12 0-3.64 1.57-3.64 4.46 0 2.72 1.45 4.47 3.48 4.47 1.05 0 1.9-.38 2.4-1.07zm22.42-7.5c-1.1-1.57-2.8-2.2-4.66-2.2-3.34 0-5.74 2.6-5.74 6.8 0 4.22 2.37 6.66 5.68 6.66 1.9 0 3.65-.65 4.72-2.24v2.6h4.2V6.36h-4.2v5.27zm-1.8 1.92c1.23-.97 1.8-2.33 1.8-3.9 0-3.06-1.55-4.46-3.48-4.46-2.12 0-3.64 1.57-3.64 4.46 0 2.72 1.45 4.47 3.48 4.47 1.05 0 1.9-.38 2.4-1.07z"/>
+              </svg>
+            </span>
+            {headlessStep === "error" && (
+              <button 
+                onClick={() => window.location.reload()}
+                className="text-white/50 hover:text-white transition-colors p-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            )}
+          </div>
+
+          {/* Content Body */}
+          <div className="flex-1 flex flex-col p-6 items-center justify-center relative min-h-[300px]">
+            {headlessStep === "error" ? (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                </div>
+                <h3 className="text-white text-lg font-semibold mb-2">Payment Failed</h3>
+                <p className="text-white/60 text-sm mb-6">{headlessError}</p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="w-full py-3 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : headlessStep === "completed" ? (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </div>
+                <h3 className="text-white text-lg font-semibold mb-2">Payment Complete</h3>
+                <p className="text-white/60 text-sm mb-6">USDC has been transferred successfully.</p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="w-full py-3 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            ) : headlessAuthElement || headlessPaymentElement ? (
+              <div 
+                className="w-full" 
+                ref={(el) => {
+                  if (el) {
+                    const elementToMount = headlessAuthElement || headlessPaymentElement;
+                    if (elementToMount && !el.contains(elementToMount)) {
+                      el.innerHTML = "";
+                      el.appendChild(elementToMount);
+                    }
+                  }
+                }} 
+              />
+            ) : (
+              <div className="text-center flex flex-col items-center">
+                <svg className="animate-spin h-10 w-10 text-[#635BFF] mb-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="text-white/80 font-medium text-lg">{headlessStatus}</p>
+              </div>
+            )}
+          </div>
+          
+          {/* Footer */}
+          <div className="p-4 border-t border-white/10 bg-white/5 text-center">
+            <p className="text-xs text-white/40 flex items-center justify-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Secure connection to Stripe
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  ) : null;
 
   return (
     <div
@@ -3210,7 +3385,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             .pp-portal-container .pp-currency-menu {
               ${theme.pageBg ? `background: ${theme.pageBg} !important;` : ''}
               ${theme.borderColor ? `border-color: ${theme.borderColor} !important;` : ''}
-              ${ (theme as any).borderRadius ? `border-radius: ${(theme as any).borderRadius} !important;` : ''}
+              ${(theme as any).borderRadius ? `border-radius: ${(theme as any).borderRadius} !important;` : ''}
             }
             ` : ''}
 
@@ -3221,7 +3396,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             .pp-portal-container .pp-currency-btn {
               ${theme.borderColor ? `border-color: ${theme.borderColor} !important;` : ''}
               ${(theme as any).bodyTextColor ? `color: ${(theme as any).bodyTextColor} !important;` : ''}
-              ${ (theme as any).borderRadius ? `border-radius: ${(theme as any).borderRadius} !important;` : ''}
+              ${(theme as any).borderRadius ? `border-radius: ${(theme as any).borderRadius} !important;` : ''}
               ${theme.fontFamily ? `font-family: ${theme.fontFamily} !important;` : ''}
             }
             .pp-portal-container input::placeholder,
@@ -3236,13 +3411,13 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             .pp-portal-container .pp-tip-btn {
               border-color: ${theme.borderColor} !important;
               ${(theme as any).bodyTextColor ? `color: ${(theme as any).bodyTextColor} !important;` : ''}
-              ${ (theme as any).borderRadius ? `border-radius: ${(theme as any).borderRadius} !important;` : ''}
+              ${(theme as any).borderRadius ? `border-radius: ${(theme as any).borderRadius} !important;` : ''}
             }
             ` : ''}
 
-            ${ (theme as any).borderRadius ? `
+            ${(theme as any).borderRadius ? `
             .pp-portal-container button {
-              border-radius: ${ (theme as any).borderRadius} !important;
+              border-radius: ${(theme as any).borderRadius} !important;
               ${theme.fontFamily ? `font-family: ${theme.fontFamily} !important;` : ''}
             }
             ` : ''}
@@ -3303,7 +3478,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             />
           ) : (
             <>
-              <div className={`${theme.brandLogoShape === "round" ? "rounded-full" : "rounded-md"} w-9 h-9 bg-white/10 flex items-center justify-center overflow-hidden`}>
+              <div data-pp-logo-wrapper="1" className={`${theme.brandLogoShape === "round" ? "rounded-full" : "rounded-md"} w-9 h-9 bg-white/10 flex items-center justify-center overflow-hidden`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   alt="logo"
@@ -3452,38 +3627,38 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                     <div className="mt-3">
                       <label className="text-xs text-muted-foreground">Select currency</label>
                       <div className="relative mt-1">
-                          <button
-                            type="button"
-                            onClick={() => setCurrencyOpen((v) => !v)}
-                            className="pp-currency-btn h-10 px-3 text-left border transition-colors flex items-center gap-3 w-full"
-                            title="View currency equivalents"
-                          >
-                            <span className="inline-flex items-center justify-center">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                alt={currency}
-                                src={getCurrencyFlag(currency)}
-                                className="w-[18px] h-[14px] rounded-[2px] ring-1 ring-foreground/10"
-                              />
-                            </span>
-                            <span className="truncate">
-                              {currency} — {(availableFiatCurrencies as readonly any[]).find((x) => x.code === currency)?.name || ""}
-                            </span>
-                            <span className="ml-auto opacity-70">▾</span>
-                          </button>
-                          {currencyOpen && (
-                            <div className="pp-currency-menu absolute z-[20005] mt-1 w-full border p-1 max-h-64 overflow-hidden">
-                              {availableFiatCurrencies.map((c) => (
-                                <button
-                                  key={c.code}
-                                  type="button"
-                                  onClick={() => {
-                                    setCurrency(c.code);
-                                    setCurrencyOpen(false);
-                                  }}
-                                  className="w-full px-2 py-2 rounded-md hover:bg-white/10 flex items-center gap-2 text-sm transition-colors"
-                                  style={{ color: isLightText ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.9)" }}
-                                >
+                        <button
+                          type="button"
+                          onClick={() => setCurrencyOpen((v) => !v)}
+                          className="pp-currency-btn h-10 px-3 text-left border transition-colors flex items-center gap-3 w-full"
+                          title="View currency equivalents"
+                        >
+                          <span className="inline-flex items-center justify-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              alt={currency}
+                              src={getCurrencyFlag(currency)}
+                              className="w-[18px] h-[14px] rounded-[2px] ring-1 ring-foreground/10"
+                            />
+                          </span>
+                          <span className="truncate">
+                            {currency} — {(availableFiatCurrencies as readonly any[]).find((x) => x.code === currency)?.name || ""}
+                          </span>
+                          <span className="ml-auto opacity-70">▾</span>
+                        </button>
+                        {currencyOpen && (
+                          <div className="pp-currency-menu absolute z-[20005] mt-1 w-full border p-1 max-h-64 overflow-hidden">
+                            {availableFiatCurrencies.map((c) => (
+                              <button
+                                key={c.code}
+                                type="button"
+                                onClick={() => {
+                                  setCurrency(c.code);
+                                  setCurrencyOpen(false);
+                                }}
+                                className="w-full px-2 py-2 rounded-md hover:bg-white/10 flex items-center gap-2 text-sm transition-colors"
+                                style={{ color: isLightText ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.9)" }}
+                              >
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                   alt={c.code}
@@ -3503,7 +3678,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                   {/* Receipt */}
                   <div className="mt-2 p-3">
                     <div className="flex items-center gap-3">
-                      <div className={`${theme.brandLogoShape === "round" ? "rounded-full" : "rounded-lg"} w-10 h-10 bg-foreground/5 overflow-hidden grid place-items-center`}>
+                      <div data-pp-logo-wrapper="1" className={`${theme.brandLogoShape === "round" ? "rounded-full" : "rounded-lg"} w-10 h-10 bg-foreground/5 overflow-hidden grid place-items-center`}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={getSymbolLogo()}
@@ -3880,6 +4055,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                     </div>
                                     {shippingComplete && (
                                       <div className="px-2 pb-2">
+                                        {(headlessEmailPrompt || headlessActive) ? stripeHeadlessUI : (
                                         <CheckoutWidget
                                           key={`${token}-${currency}`}
                                           className="w-full"
@@ -3951,6 +4127,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                             } catch { }
                                           }}
                                         />
+                                        )}
                                       </div>
                                     )}
                                   </div>
@@ -3958,7 +4135,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                               )}
                               {/* Non-shipping: render CheckoutWidget directly */}
                               {!shippingRequired && (
-                                <CheckoutWidget
+                                <>
+                                  {(headlessEmailPrompt || headlessActive) ? stripeHeadlessUI : (
+                                  <CheckoutWidget
                                   key={`noshp-${token}-${currency}`}
                                   className="w-full"
                                   name={`Total (${currency})`}
@@ -4018,6 +4197,8 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                     } catch { }
                                   }}
                                 />
+                                  )}
+                                </>
                               )}
                             </>
                           )}
@@ -4503,6 +4684,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                   </div>
                                   {shippingComplete && (
                                     <div className="px-2 pb-2">
+                                      {(headlessEmailPrompt || headlessActive) ? stripeHeadlessUI : (
                                       <CheckoutWidget
                                         key={`ship-${token}-${currency}`}
                                         className="w-full"
@@ -4549,6 +4731,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                         }}
                                         onError={(error) => { console.error("CheckoutWidget Error:", error); postStatus("checkout_error", { error: error.message }); }}
                                       />
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -4556,7 +4739,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                             )}
                             {/* Non-shipping: render CheckoutWidget directly */}
                             {!shippingRequired && (
-                              <CheckoutWidget
+                              <>
+                                {(headlessEmailPrompt || headlessActive) ? stripeHeadlessUI : (
+                                <CheckoutWidget
                                 key={`noshp-${token}-${currency}`}
                                 className="w-full"
                                 name={`Total (${currency})`}
@@ -4657,6 +4842,8 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                   postStatus("checkout_error", { error: error.message });
                                 }}
                               />
+                                )}
+                              </>
                             )}
                           </>
                         )}
@@ -4731,17 +4918,16 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
               onChange={(e) => setReceiptEmail(e.target.value)}
             />
             {emailState.type !== "idle" && (
-                <div className={`text-sm mb-4 p-3 rounded-xl font-medium ${
-                    emailState.type === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+              <div className={`text-sm mb-4 p-3 rounded-xl font-medium ${emailState.type === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
                 }`}>
-                    {emailState.msg}
-                </div>
+                {emailState.msg}
+              </div>
             )}
             <div className="flex gap-3">
               <button
                 onClick={() => {
                   setEmailModalOpen(false);
-                  setEmailState({type: "idle", msg: ""});
+                  setEmailState({ type: "idle", msg: "" });
                 }}
                 className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors"
               >

@@ -22,6 +22,12 @@ type InterceptorProps = {
   onError?: (error: Error) => void;
   onIntercept?: () => void;
   enabled?: boolean;
+  /**
+   * When true, the interceptor only blocks crypto.link.com redirects and calls onIntercept.
+   * It does NOT launch the legacy modal overlay or create sessions.
+   * Used when headless mode handles the onramp flow externally.
+   */
+  interceptOnly?: boolean;
 };
 
 type StripeQuote = {
@@ -86,6 +92,7 @@ export function useStripeOnrampInterceptor({
   onError,
   onIntercept,
   enabled = true,
+  interceptOnly = false,
 }: InterceptorProps) {
   const activeSessionRef = useRef<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -134,6 +141,13 @@ export function useStripeOnrampInterceptor({
       onIntercept();
     }
 
+    // In interceptOnly mode, we just block the redirect and call onIntercept.
+    // The actual onramp is handled externally (headless mode).
+    if (interceptOnly) {
+      console.log("[STRIPE INTERCEPTOR] interceptOnly mode — redirect blocked, deferring to headless flow");
+      return;
+    }
+
     if (!walletAddress || !publishableKey) {
       console.warn("[STRIPE INTERCEPTOR] Missing wallet or publishable key");
       return;
@@ -164,12 +178,12 @@ export function useStripeOnrampInterceptor({
           return;
         }
 
-        const { clientSecret, sessionId, redirectUrl } = data;
+        const { clientSecret, sessionId, redirectUrl: sessionRedirectUrl } = data;
         activeSessionRef.current = sessionId;
 
         // Use Stripe's session-bound redirect URL (contains correct amount/wallet/currency)
         // Falls back to intercepted URL or bare crypto.link.com
-        const targetUrl = redirectUrl || interceptedUrl || `https://crypto.link.com`;
+        const targetUrl = sessionRedirectUrl || interceptedUrl || `https://crypto.link.com`;
         _bypassInterceptor = true;
         const a = document.createElement("a");
         a.href = targetUrl;
@@ -519,17 +533,22 @@ export function useStripeOnrampInterceptor({
     // 1. Patch window.open (desktop browsers)
     const originalOpen = window.open;
     window.open = function patchedOpen(
-      url?: string | URL,
-      target?: string,
-      features?: string
+      ...args: Parameters<typeof window.open>
     ): WindowProxy | null {
-      const urlStr = String(url || "");
+      const urlStr = String(args[0] || "");
       if (isCryptoLinkUrl(urlStr) && !_bypassInterceptor) {
         console.log("[STRIPE INTERCEPTOR] 🎯 Intercepted window.open to:", urlStr);
         launchRef.current(undefined, urlStr);
-        return null;
+        // Return a stub WindowProxy so Stripe's minified code doesn't crash
+        // when it immediately accesses properties on the return value.
+        // A real `about:blank` window satisfies Stripe's TDZ expectations.
+        const stub = originalOpen.call(window, "about:blank", "_blank");
+        if (stub) {
+          try { stub.close(); } catch {}
+        }
+        return stub;
       }
-      return originalOpen.call(window, url, target, features);
+      return originalOpen.apply(window, args);
     };
 
     // 2. Capture-phase click handler for <a> tags (catches mobile taps too)
