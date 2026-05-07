@@ -30,7 +30,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ shop
             })
             .fetchAll();
 
-        const shop = shops[0];
+        const envBrandKey = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge").toLowerCase();
+
+        const shop = (
+            shops.find((c: any) => (c.brandKey || "").toLowerCase() === envBrandKey) ||
+            ((envBrandKey === "basaltsurge" || envBrandKey === "portalpay")
+                ? shops.find((c: any) => !c.brandKey || c.brandKey === "portalpay" || c.brandKey === "basaltsurge")
+                : undefined) ||
+            shops[0]
+        );
 
         if (!shop || !shop.wallet) {
             return new NextResponse("Shop not found", { status: 404 });

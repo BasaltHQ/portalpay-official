@@ -1254,9 +1254,15 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
     }, [merchantWallet, cleanSlug, isOwner, cartList, subtotal, itemsById]);
 
     const allCategories = useMemo(() => {
-        const cats = new Set<string>();
+        const catMap = new Map<string, string>();
         items.forEach((it) => {
-            if (it.category) cats.add(it.category.trim());
+            if (it.category) {
+                const cat = it.category.trim();
+                const lowerCat = cat.toLowerCase();
+                if (cat && !catMap.has(lowerCat)) {
+                    catMap.set(lowerCat, cat);
+                }
+            }
         });
         const cConfig = cfg?.categoryConfig || {};
         const ciConfig: Record<string, any> = {};
@@ -1264,7 +1270,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             ciConfig[k.toLowerCase()] = v;
         }
 
-        const activeCats = Array.from(cats).filter(c => !ciConfig[c.toLowerCase()]?.hidden);
+        const activeCats = Array.from(catMap.values()).filter(c => !ciConfig[c.toLowerCase()]?.hidden);
         activeCats.sort((a, b) => {
             const orderA = ciConfig[a.toLowerCase()]?.order ?? 999;
             const orderB = ciConfig[b.toLowerCase()]?.order ?? 999;
@@ -1314,7 +1320,11 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
             );
         }
         if (selectedCategories.length > 0) {
-            filtered = filtered.filter((it) => it.category && selectedCategories.includes(it.category));
+            const lowerSelected = selectedCategories.map(c => c.toLowerCase());
+            filtered = filtered.filter((it) => {
+                const itemCat = it.category ? it.category.trim().toLowerCase() : "uncategorized";
+                return lowerSelected.includes(itemCat);
+            });
         }
         filtered = filtered.filter((it) => {
             const price = Number(it.priceUsd || 0);
@@ -1886,13 +1896,21 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                 : "grid-cols-2 md:grid-cols-3";
 
         if (viewMode === "category") {
+            const catLowerToCanonical = new Map<string, string>();
+            allCategories.forEach(c => catLowerToCanonical.set(c.toLowerCase(), c));
+
             const sorted = [...list].sort((a, b) => {
-                const catA = a.category || "Uncategorized";
-                const catB = b.category || "Uncategorized";
+                const rawA = a.category ? a.category.trim() : "";
+                const rawB = b.category ? b.category.trim() : "";
+                const catA = rawA ? (catLowerToCanonical.get(rawA.toLowerCase()) || rawA) : "Uncategorized";
+                const catB = rawB ? (catLowerToCanonical.get(rawB.toLowerCase()) || rawB) : "Uncategorized";
                 if (catA !== catB) return catA.localeCompare(catB);
                 return a.name.localeCompare(b.name);
             });
-            const grouped = groupBy(sorted, (it) => (it.category || "Uncategorized"));
+            const grouped = groupBy(sorted, (it) => {
+                const raw = it.category ? it.category.trim() : "";
+                return raw ? (catLowerToCanonical.get(raw.toLowerCase()) || raw) : "Uncategorized";
+            });
 
             const catsToRender = [...allCategories];
             if (grouped["Uncategorized"] && !catsToRender.includes("Uncategorized") && !(cfg?.categoryConfig?.["Uncategorized"]?.hidden)) {
