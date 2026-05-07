@@ -6055,19 +6055,24 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
         const r = await fetch("/api/inventory", { cache: "no-store", credentials: "include" });
         const j = await r.json();
         if (mounted && Array.isArray(j.items)) {
-          const extracted = new Set<string>();
+          const extracted = new Map<string, string>();
           j.items.forEach((it: any) => {
-            if (it.category) extracted.add(it.category.trim());
+            if (it.category) {
+              const cat = it.category.trim();
+              if (cat && !extracted.has(cat.toLowerCase())) extracted.set(cat.toLowerCase(), cat);
+            }
             const attrs = it.attributes;
             if (attrs) {
               if (attrs.type === "restaurant" && attrs.data?.menuSection) {
-                extracted.add(attrs.data.menuSection.trim());
+                const ms = attrs.data.menuSection.trim();
+                if (ms && !extracted.has(ms.toLowerCase())) extracted.set(ms.toLowerCase(), ms);
               } else if ((attrs as any).menuSection) {
-                extracted.add(String((attrs as any).menuSection).trim());
+                const ms = String((attrs as any).menuSection).trim();
+                if (ms && !extracted.has(ms.toLowerCase())) extracted.set(ms.toLowerCase(), ms);
               }
             }
           });
-          setAllCategories(Array.from(extracted).filter(Boolean));
+          setAllCategories(Array.from(extracted.values()));
         }
       } catch {}
     }
@@ -6077,24 +6082,31 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
 
   useEffect(() => {
     // Extract unique categories from items, existing config, and legacy categories array
-    const extracted = new Set<string>();
+    const extracted = new Map<string, string>();
     (items || []).forEach(it => {
-      if (it.category) extracted.add(it.category.trim());
+      if (it.category) {
+        const cat = it.category.trim();
+        if (cat && !extracted.has(cat.toLowerCase())) extracted.set(cat.toLowerCase(), cat);
+      }
       const attrs = it.attributes;
       if (attrs) {
         if (attrs.type === "restaurant" && attrs.data?.menuSection) {
-          extracted.add(attrs.data.menuSection.trim());
+          const ms = attrs.data.menuSection.trim();
+          if (ms && !extracted.has(ms.toLowerCase())) extracted.set(ms.toLowerCase(), ms);
         } else if ((attrs as any).menuSection) {
-          extracted.add(String((attrs as any).menuSection).trim());
+          const ms = String((attrs as any).menuSection).trim();
+          if (ms && !extracted.has(ms.toLowerCase())) extracted.set(ms.toLowerCase(), ms);
         }
       }
     });
     // Do NOT blindly add all categories from shopConfig, as it causes "ghost" categories
     // to linger after their items have been removed during a Toast sync.
     // We only want to manage categories that actually have items in the inventory.
-    allCategories.forEach(c => extracted.add(c));
+    allCategories.forEach(c => {
+      if (!extracted.has(c.toLowerCase())) extracted.set(c.toLowerCase(), c);
+    });
     
-    const uniqueCats = Array.from(extracted).filter(Boolean);
+    const uniqueCats = Array.from(extracted.values());
     const config = shopConfig?.categoryConfig || {};
     
     // Sort initial list by config order, then alphabetical
@@ -7764,6 +7776,7 @@ function InventoryPanel() {
               try {
                 const res = await fetch("/api/shop/config", {
                   method: "POST",
+                  headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ categoryConfig: config }),
                 });
                 if (res.ok) {
