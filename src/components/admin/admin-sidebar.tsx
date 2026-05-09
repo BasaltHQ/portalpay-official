@@ -21,6 +21,43 @@ import {
   FileText,
   Sparkles,
   Server,
+  ChevronDown,
+  LifeBuoy,
+  UserCircle,
+  ShoppingBasket,
+  MessageCircle,
+  Gift,
+  Store,
+  LineChart,
+  Terminal,
+  Vault,
+  Boxes,
+  ReceiptText,
+  Medal,
+  Trophy,
+  Repeat,
+  Plug,
+  MonitorSmartphone,
+  FileBarChart,
+  ChefHat,
+  Armchair,
+  Truck,
+  PenTool,
+  ShieldCheck,
+  Smartphone,
+  GitMerge,
+  Palette,
+  Search,
+  Puzzle,
+  FileQuestion,
+  Bot,
+  Shield,
+  Blocks,
+  LayoutGrid,
+  Handshake,
+  FileSignature,
+  Code,
+  GraduationCap
 } from 'lucide-react';
 import { useBrand } from '@/contexts/BrandContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -97,7 +134,7 @@ interface NavItem {
   title: string;
   key?: AdminTabKey;
   icon?: React.ReactNode;
-  items?: { title: string; key: AdminTabKey }[];
+  items?: { title: string; key: AdminTabKey; icon?: React.ReactNode }[];
 }
 
 function NavGroup({ item, activeTab, onChangeTab }: { item: NavItem; activeTab: AdminTabKey; onChangeTab: (tab: AdminTabKey) => void }) {
@@ -117,10 +154,9 @@ function NavGroup({ item, activeTab, onChangeTab }: { item: NavItem; activeTab: 
       <button
         type="button"
         onClick={() => onChangeTab(item.key!)}
-        className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap ${isActive ? 'bg-[var(--pp-secondary)] text-white font-medium shadow-md shadow-[var(--pp-secondary)]/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
+        className={`admin-nav-item ${isActive ? 'active' : ''}`}
       >
-        {item.icon}
+        <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center opacity-70">{item.icon}</span>
         <span className="text-left">{item.title}</span>
       </button>
     );
@@ -129,33 +165,37 @@ function NavGroup({ item, activeTab, onChangeTab }: { item: NavItem; activeTab: 
   return (
     <>
       {/* Desktop: vertical collapsible */}
-      <div className="hidden md:block space-y-1">
+      <div className="hidden md:block space-y-0.5">
+        {/* Group label — clickable to toggle */}
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg transition-colors"
+          className="admin-nav-group-label mt-4 mb-1 w-full cursor-pointer hover:text-white/40 transition-colors"
         >
-          {item.icon}
-          <span className="flex-1 text-left">{item.title}</span>
-          {hasChildren && (
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              {isOpen ? <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" /> : <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6" />}
-            </svg>
-          )}
+          <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">{item.icon}</span>
+          <span>{item.title}</span>
+          <ChevronDown
+            className={`w-3 h-3 ml-auto text-white/15 transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`}
+          />
         </button>
+
         {isOpen && hasChildren && (
-          <div className="ml-6 space-y-1 border-l border-border pl-3">
+          <div className="space-y-0.5">
             {item.items!.map((child) => {
               const isActive = activeTab === child.key;
               return (
                 <button
                   key={child.key}
                   type="button"
-                  onClick={() => onChangeTab(child.key)}
-                  className={`block w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${isActive ? 'bg-[var(--pp-secondary)] text-white font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                    }`}
+                  onClick={() => onChangeTab(child.key!)}
+                  className={`admin-nav-item ml-3 group transition-all duration-300 ${isActive ? 'active' : 'hover:bg-white/5'}`}
                 >
-                  {child.title}
+                  {child.icon && (
+                    <span className={`flex-shrink-0 w-4 h-4 flex items-center justify-center transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-100 group-hover:scale-110'}`}>
+                      {child.icon}
+                    </span>
+                  )}
+                  <span className={`text-left transition-colors duration-300 ${isActive ? 'text-white font-medium' : 'text-white/70 group-hover:text-white'}`}>{child.title}</span>
                 </button>
               );
             })}
@@ -172,10 +212,9 @@ function NavGroup({ item, activeTab, onChangeTab }: { item: NavItem; activeTab: 
               key={child.key}
               type="button"
               onClick={() => onChangeTab(child.key)}
-              className={`md:hidden flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap ${isActive ? 'bg-[var(--pp-secondary)] text-white font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                }`}
+              className={`md:hidden admin-mobile-nav-item ${isActive ? 'active' : ''}`}
             >
-              <span>{child.title}</span>
+              {child.title}
             </button>
           );
         })}
@@ -195,6 +234,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
   const [partnerLogoApp, setPartnerLogoApp] = useState<string>("");
   const [partnerBrandName, setPartnerBrandName] = useState<string>("");
   const [isPartnerBrandLoading, setIsPartnerBrandLoading] = useState<boolean>(true);
+  const [hoveredTooltip, setHoveredTooltip] = useState<{ title: string; top: number; right: number } | null>(null);
 
   const toggleSidebar = () => {
     const newState = !isCollapsed;
@@ -316,33 +356,37 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
       title: 'General',
       icon: <LayoutDashboard className="w-4 h-4" />,
       items: [
-        { title: 'Support', key: 'support' as AdminTabKey },
+        { title: 'Support', key: 'support' as AdminTabKey, icon: <LifeBuoy className="w-4 h-4" /> },
       ],
     },
     {
       title: 'Shopper',
       icon: <ShoppingBag className="w-4 h-4" />,
       items: [
-        { title: 'My Purchases', key: 'purchases' as AdminTabKey },
-        { title: 'Messages', key: 'messages-buyer' as AdminTabKey },
-        { title: 'Rewards', key: 'rewards' as AdminTabKey },
+        { title: 'My Profile', key: 'profileSetup' as AdminTabKey, icon: <UserCircle className="w-4 h-4" /> },
+        { title: 'My Purchases', key: 'purchases' as AdminTabKey, icon: <ShoppingBasket className="w-4 h-4" /> },
+        { title: 'Messages', key: 'messages-buyer' as AdminTabKey, icon: <MessageCircle className="w-4 h-4" /> },
+        { title: 'Rewards', key: 'rewards' as AdminTabKey, icon: <Gift className="w-4 h-4" /> },
       ],
     },
     {
       title: 'Merchant',
       icon: <Building2 className="w-4 h-4" />,
       items: [
-        { title: 'Terminal', key: 'terminal' as AdminTabKey },
-        { title: 'Reserve', key: 'reserve' as AdminTabKey },
-        { title: 'Inventory', key: 'inventory' as AdminTabKey },
-        { title: 'Orders', key: 'orders' as AdminTabKey },
-        { title: 'Loyalty', key: 'loyalty' as AdminTabKey },
-        { title: 'Subscriptions', key: 'subscriptions' as AdminTabKey },
-        { title: 'Messages', key: 'messages-merchant' as AdminTabKey },
-        { title: 'Integrations', key: 'integrations' as AdminTabKey },
-        { title: 'Touchpoints', key: 'endpoints' as AdminTabKey },
-        { title: 'Team', key: 'team' as AdminTabKey },
-        { title: 'Reports', key: 'reports' as AdminTabKey },
+        { title: 'Shop Configuration', key: 'shopSetup' as AdminTabKey, icon: <Store className="w-4 h-4" /> },
+        { title: 'Analytics', key: 'analytics' as AdminTabKey, icon: <LineChart className="w-4 h-4" /> },
+        { title: 'Terminal', key: 'terminal' as AdminTabKey, icon: <Terminal className="w-4 h-4" /> },
+        { title: 'Reserve', key: 'reserve' as AdminTabKey, icon: <Vault className="w-4 h-4" /> },
+        { title: 'Inventory', key: 'inventory' as AdminTabKey, icon: <Boxes className="w-4 h-4" /> },
+        { title: 'Orders', key: 'orders' as AdminTabKey, icon: <ReceiptText className="w-4 h-4" /> },
+        { title: 'Loyalty Config', key: 'loyalty' as AdminTabKey, icon: <Medal className="w-4 h-4" /> },
+        { title: 'Loyalty Leaderboard', key: 'leaderboard' as AdminTabKey, icon: <Trophy className="w-4 h-4" /> },
+        { title: 'Subscriptions', key: 'subscriptions' as AdminTabKey, icon: <Repeat className="w-4 h-4" /> },
+        { title: 'Messages', key: 'messages-merchant' as AdminTabKey, icon: <MessageSquare className="w-4 h-4" /> },
+        { title: 'Integrations', key: 'integrations' as AdminTabKey, icon: <Plug className="w-4 h-4" /> },
+        { title: 'Touchpoints', key: 'endpoints' as AdminTabKey, icon: <MonitorSmartphone className="w-4 h-4" /> },
+        { title: 'Team', key: 'team' as AdminTabKey, icon: <Users className="w-4 h-4" /> },
+        { title: 'Reports', key: 'reports' as AdminTabKey, icon: <FileBarChart className="w-4 h-4" /> },
       ].filter((item) => !disabledMerchantModules.includes(item.key)),
     },
     {
@@ -350,14 +394,14 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
       icon: <Package className="w-4 h-4" />,
       items: [
         ...(industryPack === 'restaurant' ? [
-          { title: 'Kitchen', key: 'kitchen' as AdminTabKey },
-          { title: 'Tables', key: 'tables' as AdminTabKey },
-          { title: 'Delivery', key: 'delivery' as AdminTabKey }
+          { title: 'Kitchen', key: 'kitchen' as AdminTabKey, icon: <ChefHat className="w-4 h-4" /> },
+          { title: 'Tables', key: 'tables' as AdminTabKey, icon: <Armchair className="w-4 h-4" /> },
+          { title: 'Delivery', key: 'delivery' as AdminTabKey, icon: <Truck className="w-4 h-4" /> }
         ] : []),
 
-        ...(industryPack === 'hotel' ? [{ title: 'PMS', key: 'pms' as AdminTabKey }] : []),
-        ...(industryPack === 'publishing' ? [{ title: "Writer's Workshop", key: 'writersWorkshop' as AdminTabKey }] : []),
-        ...(industryPack === 'cannabis' ? [{ title: 'Compliance', key: 'cannabisCompliance' as AdminTabKey }] : []),
+        ...(industryPack === 'hotel' ? [{ title: 'PMS', key: 'pms' as AdminTabKey, icon: <Hotel className="w-4 h-4" /> }] : []),
+        ...(industryPack === 'publishing' ? [{ title: "Writer's Workshop", key: 'writersWorkshop' as AdminTabKey, icon: <PenTool className="w-4 h-4" /> }] : []),
+        ...(industryPack === 'cannabis' ? [{ title: 'Compliance', key: 'cannabisCompliance' as AdminTabKey, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
       ],
     },
     ...(canBranding || isSuperadmin || canAdmins
@@ -366,21 +410,22 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
           title: 'Partner/Admin',
           icon: <Brush className="w-4 h-4" />,
           items: [
-            { title: 'Devices', key: 'devices' as AdminTabKey },
+            { title: 'Devices', key: 'devices' as AdminTabKey, icon: <Smartphone className="w-4 h-4" /> },
             // Split Config: Show only in OPEN mode (or superadmin debug), as Request mode configures per-split
-            ...(!isRequestMode || isSuperadmin ? [{ title: 'Split Config', key: 'splitConfig' as AdminTabKey }] : []),
-            { title: 'Branding', key: 'branding' as AdminTabKey },
-            { title: 'Merchants', key: 'users' as AdminTabKey },
-            { title: 'SEO Pages', key: 'seoPages' as AdminTabKey },
-            { title: 'Plugins', key: 'plugins' as AdminTabKey },
+            ...(!isRequestMode || isSuperadmin ? [{ title: 'Split Config', key: 'splitConfig' as AdminTabKey, icon: <GitMerge className="w-4 h-4" /> }] : []),
+            { title: 'Branding', key: 'branding' as AdminTabKey, icon: <Palette className="w-4 h-4" /> },
+            { title: 'Merchants', key: 'users' as AdminTabKey, icon: <Store className="w-4 h-4" /> },
+            { title: 'SEO Pages', key: 'seoPages' as AdminTabKey, icon: <Search className="w-4 h-4" /> },
+            { title: 'Plugins', key: 'plugins' as AdminTabKey, icon: <Puzzle className="w-4 h-4" /> },
             // Client Requests & Agent Requests: Show for all admins now that platform requires approval
-            ...((canBranding || isSuperadmin) ? [{ title: 'Client Requests', key: 'clientRequests' as AdminTabKey }] : []),
-            ...((canBranding || isSuperadmin) ? [{ title: 'Agent Requests', key: 'agentRequests' as AdminTabKey }] : []),
+            ...((canBranding || isSuperadmin) ? [{ title: 'Client Requests', key: 'clientRequests' as AdminTabKey, icon: <FileQuestion className="w-4 h-4" /> }] : []),
+            ...((canBranding || isSuperadmin) ? [{ title: 'Agent Requests', key: 'agentRequests' as AdminTabKey, icon: <Bot className="w-4 h-4" /> }] : []),
             ...(canAdmins ? [
-              { title: 'Admin Users', key: 'admins' as AdminTabKey },
+              { title: 'Admin Users', key: 'admins' as AdminTabKey, icon: <Shield className="w-4 h-4" /> },
             ] : []),
-            { title: 'Reports', key: 'reportsPartner' as AdminTabKey },
-            { title: 'Modules', key: 'modules' as AdminTabKey },
+            { title: 'Reports', key: 'reportsPartner' as AdminTabKey, icon: <FileBarChart className="w-4 h-4" /> },
+            { title: 'Roadmap', key: 'roadmap' as AdminTabKey, icon: <LayoutGrid className="w-4 h-4" /> },
+            { title: 'Modules', key: 'modules' as AdminTabKey, icon: <Blocks className="w-4 h-4" /> },
           ],
         } as NavItem,
       ]
@@ -391,18 +436,19 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
           title: 'Platform',
           icon: <Building2 className="w-4 h-4" />,
           items: [
-            { title: 'Publications', key: 'publications' as AdminTabKey },
+            { title: 'Publications', key: 'publications' as AdminTabKey, icon: <BookOpen className="w-4 h-4" /> },
+            { title: 'Updates', key: 'updates' as AdminTabKey, icon: <FileBarChart className="w-4 h-4" /> },
             ...(isSuperadmin
               ? [
-                { title: 'Loyalty Config', key: 'loyaltyConfig' as AdminTabKey },
-                { title: 'Applications', key: 'applications' as AdminTabKey },
-                { title: 'Partners', key: 'partners' as AdminTabKey },
-                { title: 'Contracts', key: 'contracts' as AdminTabKey },
-                { title: 'Plugin Studio', key: 'pluginStudio' as AdminTabKey },
-                { title: 'Support Admin', key: 'supportAdmin' as AdminTabKey },
-                { title: 'Agent University', key: 'agentUniversity' as AdminTabKey },
-                { title: 'Reports', key: 'reportsPlatform' as AdminTabKey },
-                ...(process.env.NEXT_PUBLIC_DECENTRALIZATION?.toUpperCase() === 'TRUE' ? [{ title: 'Node Operators', key: 'nodeOperators' as AdminTabKey }] : []),
+                { title: 'Loyalty Config', key: 'loyaltyConfig' as AdminTabKey, icon: <Medal className="w-4 h-4" /> },
+                { title: 'Applications', key: 'applications' as AdminTabKey, icon: <LayoutGrid className="w-4 h-4" /> },
+                { title: 'Partners', key: 'partners' as AdminTabKey, icon: <Handshake className="w-4 h-4" /> },
+                { title: 'Contracts', key: 'contracts' as AdminTabKey, icon: <FileSignature className="w-4 h-4" /> },
+                { title: 'Plugin Studio', key: 'pluginStudio' as AdminTabKey, icon: <Code className="w-4 h-4" /> },
+                { title: 'Support Admin', key: 'supportAdmin' as AdminTabKey, icon: <LifeBuoy className="w-4 h-4" /> },
+                { title: 'Agent University', key: 'agentUniversity' as AdminTabKey, icon: <GraduationCap className="w-4 h-4" /> },
+                { title: 'Reports', key: 'reportsPlatform' as AdminTabKey, icon: <FileBarChart className="w-4 h-4" /> },
+                ...(process.env.NEXT_PUBLIC_DECENTRALIZATION?.toUpperCase() === 'TRUE' ? [{ title: 'Node Operators', key: 'nodeOperators' as AdminTabKey, icon: <Server className="w-4 h-4" /> }] : []),
               ]
               : []),
           ],
@@ -415,7 +461,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
           title: 'Nodes',
           icon: <Server className="w-4 h-4" />,
           items: [
-            { title: 'Dashboard', key: 'nodeDashboard' as AdminTabKey },
+            { title: 'Dashboard', key: 'nodeDashboard' as AdminTabKey, icon: <LayoutDashboard className="w-4 h-4" /> },
           ],
         } as NavItem,
       ]
@@ -424,85 +470,137 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
       title: 'Manuals',
       icon: <BookOpen className="w-4 h-4" />,
       items: [
-        { title: 'Shop Setup', key: 'shopSetup' as AdminTabKey },
+        { title: 'Shop Setup', key: 'shopSetup' as AdminTabKey, icon: <BookOpen className="w-4 h-4" /> },
         { title: 'Profile Setup', key: 'profileSetup' as AdminTabKey },
-        { title: 'Whitelabel', key: 'whitelabel' as AdminTabKey },
-        { title: 'Withdrawal', key: 'withdrawal' as AdminTabKey },
+        { title: 'Whitelabel', key: 'whitelabel' as AdminTabKey, icon: <BookOpen className="w-4 h-4" /> },
+        { title: 'Withdrawal', key: 'withdrawal' as AdminTabKey, icon: <BookOpen className="w-4 h-4" /> },
       ],
     },
   ];
 
+  // Filter out groups with zero children (e.g. Apps when no industry pack is set)
+  const visibleGroups = groups.filter(g => !g.items || g.items.length > 0);
+
   return (
-    <aside
+    <>
+      <style>{`
+        .compact-sidebar-scroll::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+        }
+        .compact-sidebar-scroll {
+          scrollbar-width: none !important;
+          -ms-overflow-style: none !important;
+        }
+      `}</style>
+      <aside
       className={`
-        fixed z-10 bg-background transition-all duration-300
-        md:top-[176px] md:bottom-0 md:left-0 md:border-r md:flex-col md:h-[calc(100vh-176px)]
-        ${isCollapsed ? 'md:w-16' : 'md:w-64'}
-        top-[176px] left-0 right-0 border-b md:border-b-0 border-border
+        fixed z-[60] transition-all duration-300
+        md:top-[64px] md:bottom-0 md:left-0 md:flex-col md:h-[calc(100vh-64px)]
+        ${isCollapsed ? 'md:w-[72px]' : 'md:w-64'}
+        top-[64px] left-0 right-0 md:border-b-0
         max-md:h-14 max-md:overflow-x-auto max-md:overflow-y-hidden
         flex
+        admin-sidebar-surface
       `}
     >
-      {/* Desktop: vertical sidebar */}
-      <div className="hidden md:flex md:flex-1 md:overflow-y-auto md:p-2 md:space-y-2 md:flex-col">
-        {/* Logo - desktop only */}
-        <div className="flex items-center justify-center group p-2 shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={getSymbolLogo()}
-            alt={displayBrandName || 'Brand'}
-            className={"transition-transform group-hover:scale-105 rounded-md object-contain " + (isWideLogo ? "h-10 w-auto max-w-[200px]" : "h-10 w-10")}
-          />
-          {!isCollapsed && !isWideLogo && (
-            <div className="ml-3">
-              <div className="font-bold text-foreground text-sm">{displayBrandName}</div>
-              <div className="text-xs text-muted-foreground">Admin Console</div>
-            </div>
-          )}
-          {!isCollapsed && isWideLogo && (
-            <span className="sr-only">{displayBrandName} Admin</span>
-          )}
-        </div>
+      {/* Desktop Sticky Logo section */}
+      <div className={`hidden md:flex items-center group pt-4 pb-4 mb-2 shrink-0 border-b border-white/5 ${isCollapsed ? 'justify-center px-0' : 'px-5'}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={getSymbolLogo()}
+          alt={displayBrandName || 'Brand'}
+          className={"transition-all group-hover:scale-105 rounded-lg object-contain " + (isWideLogo ? "h-9 w-auto max-w-[180px]" : "h-9 w-9")}
+        />
+        {!isCollapsed && !isWideLogo && (
+          <div className="ml-3 min-w-0">
+            <div className="font-semibold text-white/90 text-sm truncate">{displayBrandName}</div>
+            <div className="text-[10px] font-medium tracking-widest uppercase text-white/30">Console</div>
+          </div>
+        )}
+        {!isCollapsed && isWideLogo && (
+          <span className="sr-only">{displayBrandName} Admin</span>
+        )}
+      </div>
 
+      {/* Desktop: vertical sidebar navigation */}
+      <div className={`hidden md:flex md:flex-1 md:overflow-y-auto md:pb-4 md:space-y-1 md:flex-col ${isCollapsed ? 'compact-sidebar-scroll px-0' : 'admin-scroll md:px-3'}`}>
         {/* Navigation */}
-        <nav className={isCollapsed ? 'space-y-0.5 flex flex-col items-stretch' : 'space-y-1'}>
-          {groups.map((item) => (
+        <nav className={isCollapsed ? 'space-y-1 flex flex-col items-stretch' : 'space-y-0.5 flex-1'}>
+          {visibleGroups.map((item) => (
             <div key={item.title}>
               {isCollapsed ? (
-                <div className="flex flex-col items-center gap-1 py-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      try {
-                        const first = item.items?.[0];
-                        if (first) onChangeTab(first.key);
-                      } catch { }
-                    }}
-                    className="w-8 h-8 rounded-full border-2 border-[var(--pp-secondary)] flex items-center justify-center hover:bg-[var(--pp-secondary)]/10 transition-colors"
-                    title={item.title}
-                    aria-label={item.title}
-                  >
-                    <div className="text-[var(--pp-secondary)]">
-                      {item.icon}
-                    </div>
-                  </button>
-                  <div className="w-px h-1 bg-border" />
-                  {item.items?.slice(1).map((child) => {
-                    const isActive = activeTab === child.key;
-                    return (
-                      <button
-                        key={child.key}
-                        type="button"
-                        onClick={() => onChangeTab(child.key)}
-                        className={`p-1 rounded-sm transition-colors ${isActive ? 'bg-[var(--pp-secondary)]' : 'hover:bg-muted'}`}
-                        title={child.title}
-                        aria-label={child.title}
+                (() => {
+                  const isGroupActive = item.items?.some((c) => c.key === activeTab);
+                  return (
+                    <div className={`flex flex-col items-center gap-1 py-3 mb-2 rounded-[20px] transition-all duration-500 relative mx-auto ${
+                      isGroupActive 
+                        ? 'bg-gradient-to-b from-white/[0.08] to-transparent shadow-[inset_0_1px_0_rgba(255,255,255,0.1),inset_0_0_0_1px_rgba(255,255,255,0.02),0_8px_20px_-4px_rgba(0,0,0,0.5)] border-b border-black/20 w-[48px]' 
+                        : 'w-[48px]'
+                    }`}>
+                      {/* Badass glowing accent for active group */}
+                      {isGroupActive && (
+                        <div className="absolute inset-0 rounded-[20px] pointer-events-none drop-shadow-[0_0_8px_var(--pp-secondary)]">
+                          <div 
+                            className="absolute top-0 inset-x-0 h-6 rounded-t-[20px] border-t-[2px] border-[var(--pp-secondary)] opacity-90"
+                            style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 25%, black 75%, transparent)', maskImage: 'linear-gradient(to right, transparent, black 25%, black 75%, transparent)' }}
+                          />
+                          <div 
+                            className="absolute bottom-0 inset-x-0 h-6 rounded-b-[20px] border-b-[2px] border-[var(--pp-secondary)] opacity-90"
+                            style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 25%, black 75%, transparent)', maskImage: 'linear-gradient(to right, transparent, black 25%, black 75%, transparent)' }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Group icon in collapsed mode */}
+                      <div 
+                        className={`w-10 h-10 flex items-center justify-center transition-all duration-300 rounded-xl relative ${
+                          isGroupActive 
+                            ? 'text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] scale-110' 
+                            : 'text-white/30 hover:text-white/80 hover:bg-white/5 hover:scale-105 cursor-default'
+                        }`}
+                        onMouseEnter={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setHoveredTooltip({ title: item.title, top: rect.top + rect.height / 2, right: rect.right });
+                        }}
+                        onMouseLeave={() => setHoveredTooltip(null)}
                       >
-                        <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-foreground'}`} />
-                      </button>
-                    );
-                  })}
-                </div>
+                        {item.icon}
+                      </div>
+
+                      {/* Sub-panel icons */}
+                      <div className="flex flex-col items-center gap-1 w-full px-1 mt-1">
+                        {item.items?.map((child) => {
+                          const isActive = activeTab === child.key;
+                          return (
+                            <button
+                              key={child.key}
+                              type="button"
+                              onClick={() => onChangeTab(child.key!)}
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 relative group/btn ${
+                                isActive
+                                  ? 'bg-[var(--pp-secondary)] shadow-[0_0_15px_color-mix(in_srgb,var(--pp-secondary)_40%,transparent)] border border-white/20 z-10'
+                                  : 'hover:bg-white/10 hover:shadow-lg border border-transparent hover:border-white/10'
+                              }`}
+                              aria-label={child.title}
+                              onMouseEnter={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setHoveredTooltip({ title: child.title, top: rect.top + rect.height / 2, right: rect.right });
+                              }}
+                              onMouseLeave={() => setHoveredTooltip(null)}
+                            >
+                              <div className={`transition-all duration-300 flex items-center justify-center ${isActive ? 'text-white scale-100' : 'text-white/40 scale-90 group-hover/btn:text-white/90 group-hover/btn:scale-100'}`}>
+                                {child.icon || item.icon}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {/* Only render separator if the group is NOT active, since active group is self-contained visually */}
+                      {!isGroupActive && <div className="w-6 h-px bg-white/5 mt-3" />}
+                    </div>
+                  );
+                })()
               ) : (
                 <NavGroup item={item} activeTab={activeTab} onChangeTab={onChangeTab} />
               )}
@@ -511,29 +609,12 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
         </nav>
       </div>
 
-      {/* Mobile: horizontal scrolling compact carousel */}
-      <div className="flex md:hidden items-center gap-6 px-3 overflow-x-auto flex-nowrap w-full h-14">
-        {groups.map((group, groupIndex) => (
-          <div key={group.title} className="flex items-center gap-6 shrink-0 h-full">
-            {/* Main topic icon circle */}
-            <button
-              type="button"
-              onClick={() => {
-                try {
-                  const first = group.items?.[0];
-                  if (first) onChangeTab(first.key);
-                } catch { }
-              }}
-              className="w-10 h-10 rounded-full border-2 border-[var(--pp-secondary)] flex items-center justify-center hover:bg-[var(--pp-secondary)]/10 transition-colors"
-              title={group.title}
-            >
-              <div className="text-[var(--pp-secondary)]">
-                {group.icon}
-              </div>
-            </button>
-
-            {/* Children as simple text links next to it */}
-            <div className="flex items-center gap-4">
+      {/* Mobile: horizontal scrolling compact nav */}
+      <div className="flex md:hidden items-center gap-5 px-4 overflow-x-auto flex-nowrap w-full h-14 admin-mobile-nav">
+        {visibleGroups.map((group, groupIndex) => (
+          <div key={group.title} className="flex items-center gap-4 shrink-0 h-full">
+            {/* Children as text links */}
+            <div className="flex items-center gap-3">
               {group.items?.map((child) => {
                 const isActive = activeTab === child.key;
                 return (
@@ -541,7 +622,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
                     key={child.key}
                     type="button"
                     onClick={() => onChangeTab(child.key)}
-                    className={`text-sm whitespace-nowrap transition-colors ${isActive ? 'font-bold text-[var(--pp-secondary)]' : 'text-muted-foreground'}`}
+                    className={`admin-mobile-nav-item ${isActive ? 'active' : ''}`}
                   >
                     {child.title}
                   </button>
@@ -550,23 +631,38 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
             </div>
 
             {/* Divider unless last group */}
-            {groupIndex < groups.length - 1 && (
-              <div className="w-px h-8 bg-border/50" />
+            {groupIndex < visibleGroups.length - 1 && (
+              <div className="w-px h-5 bg-white/8 shrink-0" />
             )}
           </div>
         ))}
       </div>
 
       {/* Toggle Button at bottom */}
-      <div className="hidden md:flex border-t border-border p-2 justify-center">
+      <div className="hidden md:flex border-t border-white/5 p-3 justify-center shrink-0">
         <button
           onClick={toggleSidebar}
-          className="p-2 rounded-lg hover:bg-muted transition-colors"
+          className="p-2 rounded-lg hover:bg-white/[0.04] transition-all text-white/30 hover:text-white/60"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
         </button>
       </div>
-    </aside>
+
+      {/* Global Compact Tooltip */}
+      {hoveredTooltip && isCollapsed && (
+        <div 
+          className="fixed px-2.5 py-1.5 rounded-md bg-[#1A1A1A] text-white/90 text-xs font-medium whitespace-nowrap border border-white/10 shadow-xl z-[9999] pointer-events-none animate-in fade-in zoom-in-95 duration-200"
+          style={{
+            top: hoveredTooltip.top,
+            left: hoveredTooltip.right + 12,
+            transform: 'translateY(-50%)'
+          }}
+        >
+          {hoveredTooltip.title}
+        </div>
+        )}
+      </aside>
+    </>
   );
 }

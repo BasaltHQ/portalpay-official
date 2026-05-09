@@ -53,11 +53,17 @@ import GetSupportPanel from "@/app/admin/panels/GetSupportPanel";
 import SupportAdminPanel from "@/app/admin/panels/SupportAdminPanel";
 import RewardsPanel from "@/app/admin/panels/RewardsPanel";
 import LoyaltyPanel from "@/app/admin/panels/LoyaltyPanel";
+import { AnalyticsPanel } from "@/components/admin/panels/analytics-panel";
+import { LeaderboardPanel } from "@/components/admin/panels/leaderboard-panel";
 import LoyaltyPanelPartner from "@/app/admin/panels/LoyaltyPanelPartner";
 import LoyaltyPanelPlatform from "@/app/admin/panels/LoyaltyPanelPlatform";
 import ContractsPanel from "@/app/admin/panels/ContractsPanel";
 import DeliveryPanel from "@/app/admin/panels/DeliveryPanel";
 import WritersWorkshopPanelExt from "@/app/admin/panels/WritersWorkshopPanel";
+import { ShopPanel } from "@/components/admin/panels/shop-panel";
+import { ProfilePanel } from "@/components/admin/panels/profile-panel";
+import { RoadmapPanel } from "@/components/admin/panels/roadmap-panel";
+import { UpdatesPanel } from "@/components/admin/panels/updates-panel";
 import CannabisCompliancePanel from "@/app/admin/panels/CannabisCompliancePanel";
 import PublicationsPanelExt from "@/app/admin/panels/PublicationsPanel";
 import AgentUniversityPanelExt from "@/app/admin/panels/AgentUniversityPanel";
@@ -10214,6 +10220,15 @@ export default function AdminPage() {
       .catch(() => { });
   }, [wallet]);
 
+  // Redirect to homepage upon disconnection
+  const [wasConnected, setWasConnected] = useState(isConnected);
+  useEffect(() => {
+    if (wasConnected && !isConnected) {
+      window.location.href = "/";
+    }
+    if (isConnected) setWasConnected(true);
+  }, [isConnected, wasConnected]);
+
   // When user lands on /admin check both their auth session and approval status
   useEffect(() => {
     let cancelled = false;
@@ -10265,32 +10280,38 @@ export default function AdminPage() {
 
   if (!isConnected) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-10">
-        <div className="glass-pane rounded-xl border p-6">
-          <h1 className="text-2xl font-semibold mb-2">Admin</h1>
-          <p className="microtext text-muted-foreground">
-            Connect your wallet to access this page.
-          </p>
-          <div className="mt-3 p-3 rounded-md border microtext">
-            <div className="text-muted-foreground">Wallet connection required</div>
-            <div>
-              Connected wallet:{" "}
-              {account?.address ? (
-                <TruncatedAddress address={(account?.address || "").toLowerCase()} />
-              ) : (
-                <code className="text-xs">(not connected)</code>
-              )}
+      <>
+        <div className="admin-ambient" />
+        <AdminHero />
+        <div className="max-w-6xl mx-auto px-4 pt-[88px] pb-10">
+          <div className="admin-card p-8">
+            <h1 className="text-2xl font-semibold mb-2 text-white/90">Admin Console</h1>
+            <p className="text-xs text-white/40 tracking-wide">
+              Connect your wallet to access this page.
+            </p>
+            <div className="mt-4 p-4 rounded-xl border border-white/8 bg-white/[0.02] text-xs">
+              <div className="text-white/40 uppercase tracking-widest text-[10px] font-medium mb-1">Wallet connection required</div>
+              <div className="text-white/60">
+                Connected wallet:{" "}
+                {account?.address ? (
+                  <TruncatedAddress address={(account?.address || "").toLowerCase()} />
+                ) : (
+                  <code className="text-[11px] text-white/30">(not connected)</code>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
   const isSupportTab = activeTab === 'support' || activeTab === 'supportAdmin';
 
   return (
-    <div className={`mx-auto pl-4 pr-4 space-y-6 pt-[204px] md:pt-[148px] pb-10 transition-all duration-300 ${isSidebarCollapsed ? 'md:pl-24' : 'md:pl-72'
+    <>
+    <div className="admin-ambient" />
+    <div className={`mx-auto pl-4 pr-4 space-y-6 pt-[144px] md:pt-[88px] pb-10 transition-all duration-300 ${isSidebarCollapsed ? 'md:pl-24' : 'md:pl-72'
       } ${isSupportTab ? '' : 'max-w-full'}`}>
       <AdminHero />
       <AdminSidebar
@@ -10455,7 +10476,7 @@ export default function AdminPage() {
 
       {/* Tabs Content */}
       {activeTab === "devices" && (
-        <div className="glass-pane rounded-xl border p-6 space-y-3">
+        <div className="admin-card p-6 space-y-3 admin-panel-enter">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Installer Packages</h2>
             <span className="microtext text-muted-foreground">
@@ -10475,9 +10496,13 @@ export default function AdminPage() {
       )}
       {activeTab === "reserve" && <ReserveTabs />}
       {activeTab === "delivery" && <DeliveryPanel />}
+      {activeTab === "shopSetup" && <ShopPanel />}
+      {activeTab === "profileSetup" && <ProfilePanel />}
+      {activeTab === "roadmap" && <RoadmapPanel brandKey={getEffectiveBrandKey()} />}
+      {activeTab === "updates" && <UpdatesPanel brandKey={getEffectiveBrandKey()} />}
 
       {activeTab === "withdrawal" && (
-        <div className="glass-pane rounded-xl border p-6 space-y-4">
+        <div className="admin-card p-6 space-y-4 admin-panel-enter">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Withdrawal Instructions</h2>
             <span className="microtext text-muted-foreground">How funds flow and how to cash out</span>
@@ -10487,7 +10512,7 @@ export default function AdminPage() {
       )}
 
       {activeTab === "shopSetup" && (
-        <div className="glass-pane rounded-xl border p-6 space-y-4">
+        <div className="admin-card p-6 space-y-4 admin-panel-enter">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Shop Setup</h2>
             <span className="microtext text-muted-foreground">Claim slug → add inventory → share link</span>
@@ -10497,7 +10522,7 @@ export default function AdminPage() {
       )}
 
       {activeTab === "profileSetup" && (
-        <div className="glass-pane rounded-xl border p-6 space-y-4">
+        <div className="admin-card p-6 space-y-4 admin-panel-enter">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Profile Setup</h2>
             <span className="microtext text-muted-foreground">Customize identity & roles</span>
@@ -10507,7 +10532,7 @@ export default function AdminPage() {
       )}
 
       {activeTab === "whitelabel" && (
-        <div className="glass-pane rounded-xl border p-6 space-y-4">
+        <div className="admin-card p-6 space-y-4 admin-panel-enter">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Whitelabel</h2>
             <span className="microtext text-muted-foreground">Customize the entire experience</span>
@@ -10517,7 +10542,7 @@ export default function AdminPage() {
       )}
 
       {activeTab === "loyalty" && (
-        <div className="glass-pane rounded-xl border p-6 space-y-4">
+        <div className="admin-card p-6 space-y-4 admin-panel-enter">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Loyalty</h2>
             <span className="microtext text-muted-foreground">Manage Rewards</span>
@@ -10526,8 +10551,10 @@ export default function AdminPage() {
         </div>
       )}
 
-      {activeTab === "loyaltyConfig" && (
-        <div className="glass-pane rounded-xl border p-6 space-y-4">
+      {activeTab === "analytics" && <AnalyticsPanel />}
+        {activeTab === "leaderboard" && <LeaderboardPanel />}
+        {activeTab === "loyaltyConfig" && (
+        <div className="admin-card p-6 space-y-4 admin-panel-enter">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Loyalty Configuration</h2>
             <span className="microtext text-muted-foreground">{isPlatform ? 'Platform Admin' : 'Partner Admin'}</span>
@@ -10619,17 +10646,17 @@ export default function AdminPage() {
       )}
 
       {activeTab === "clientRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
-        <div className="glass-pane rounded-xl border p-6">
+        <div className="admin-card p-6 admin-panel-enter">
           <ClientRequestsPanel />
         </div>
       )}
       {activeTab === "agentRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
-        <div className="glass-pane rounded-xl border p-6">
+        <div className="admin-card p-6 admin-panel-enter">
           <AgentRequestsPanel />
         </div>
       )}
       {activeTab === "modules" && (canBranding || isSuperadmin) && (
-        <div className="glass-pane rounded-xl border p-6">
+        <div className="admin-card p-6 admin-panel-enter">
           <ModulesPanel />
         </div>
       )}
@@ -10686,12 +10713,12 @@ export default function AdminPage() {
         <ReportsPanelPlatform />
       )}
       {activeTab === "nodeOperators" && isPlatform && isSuperadmin && (
-        <div className="glass-pane rounded-xl border p-6">
+        <div className="admin-card p-6 admin-panel-enter">
           <NodeOperatorsPanel />
         </div>
       )}
       {activeTab === "nodeDashboard" && isSuperadmin && (
-        <div className="glass-pane rounded-xl border p-6">
+        <div className="admin-card p-6 admin-panel-enter">
           <NodeDashboardPanel />
         </div>
       )}
@@ -10701,5 +10728,6 @@ export default function AdminPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

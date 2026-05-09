@@ -5,6 +5,11 @@ import React, { useEffect, useState } from 'react';
 import { useBrand } from '@/contexts/BrandContext';
 import { cachedFetch } from '@/lib/client-api-cache';
 import { resolveBrandAppLogo } from "@/lib/branding";
+import dynamic from "next/dynamic";
+import { client } from "@/lib/thirdweb/client";
+import { usePortalThirdwebTheme, getConnectButtonStyle, connectButtonClass } from "@/lib/thirdweb/theme";
+
+const ConnectButton = dynamic(() => import("thirdweb/react").then((m) => m.ConnectButton), { ssr: false });
 
 // Fixed hero/nav bar for Admin, aligned with global navbar and AdminSidebar offsets
 // Mirrors docs header positioning: fixed under global nav, with blur + border.
@@ -39,24 +44,48 @@ export default function AdminHero() {
 
   const logoUrl = resolveBrandAppLogo(brand?.logos?.app, (brand as any)?.key);
 
+  const twTheme = usePortalThirdwebTheme();
+
   return (
-    <header className="fixed top-[112px] left-0 right-0 z-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4">
+    <header className="fixed top-0 left-0 right-0 z-[70] admin-hero-bar">
+      <div className="w-full flex h-16 items-center justify-between px-6">
         <div className="flex items-center gap-4">
+          {/* Brand logo */}
           <div className="flex items-center">
             <Image
               src={logoUrl}
               alt={displayBrandName || 'Brand'}
-              width={160}
-              height={40}
-              className="object-contain h-10 w-auto max-w-[200px]"
+              width={140}
+              height={36}
+              className="object-contain h-8 w-auto max-w-[160px]"
             />
           </div>
-          <div className="h-6 w-px bg-border ml-4" />
-          <h1 className="text-xl md:text-2xl font-semibold">Admin</h1>
+
+          {/* Divider */}
+          <div className="h-5 w-px bg-white/10" />
+
+          {/* Admin Console title */}
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-base font-semibold text-white/90 tracking-tight">Admin Console</h1>
+            <span className="admin-status-chip">
+              <span className="status-dot" />
+              <span>Live</span>
+            </span>
+          </div>
         </div>
-        {/* Right side reserved for future quick actions if needed */}
-        <div className="hidden md:flex items-center gap-3" />
+
+        {/* Right side — brand badge and connect button */}
+        <div className="hidden md:flex items-center">
+          <ConnectButton
+            client={client}
+            theme={twTheme}
+            connectButton={{
+              label: "Sign In",
+              className: connectButtonClass,
+              style: getConnectButtonStyle(),
+            }}
+          />
+        </div>
       </div>
     </header>
   );

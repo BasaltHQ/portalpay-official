@@ -858,6 +858,281 @@ html[data-pp-theme-ready="0"] body::before {
 }
 
 /* ========================================
+   Admin Module — Premium Shell Design System
+   ======================================== */
+
+/* Admin panel entry animation */
+@keyframes admin-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes admin-gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes admin-border-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.admin-panel-enter {
+  animation: admin-panel-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Admin card — elevated glass surface with refined border */
+.admin-card {
+  background: linear-gradient(
+    168deg,
+    hsl(220 20% 8% / 0.65) 0%,
+    hsl(222 20% 6% / 0.55) 100%
+  );
+  backdrop-filter: saturate(1.3) blur(16px);
+  -webkit-backdrop-filter: saturate(1.3) blur(16px);
+  border: 1px solid hsl(220 14% 20% / 0.5);
+  border-radius: 16px;
+  box-shadow:
+    0 1px 0 0 hsl(0 0% 100% / 0.03) inset,
+    0 12px 32px hsl(220 50% 2% / 0.35);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-card:hover {
+  border-color: hsl(220 14% 24% / 0.65);
+  box-shadow:
+    0 1px 0 0 hsl(0 0% 100% / 0.04) inset,
+    0 16px 40px hsl(220 50% 2% / 0.45);
+}
+
+/* Admin panel header — used at top of each panel */
+.admin-panel-header {
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid hsl(220 14% 18% / 0.5);
+  position: relative;
+}
+
+.admin-panel-header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 80px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--pp-secondary, #7C3AED),
+    transparent
+  );
+}
+
+/* Admin sidebar — premium glass sidebar surface */
+.admin-sidebar-surface {
+  background: linear-gradient(
+    180deg,
+    hsl(220 18% 7% / 0.4) 0%,
+    hsl(222 20% 5% / 0.6) 100%
+  );
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border-right: 1px solid hsl(220 14% 30% / 0.15);
+  box-shadow: inset -1px 0 0 hsl(0 0% 100% / 0.03), 4px 0 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Admin nav item — refined interactive states */
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 450;
+  color: hsl(220 10% 55%);
+  transition: all 0.15s ease;
+  position: relative;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.admin-nav-item:hover {
+  color: hsl(220 10% 80%);
+  background: hsl(220 14% 14% / 0.5);
+  border-color: hsl(220 14% 20% / 0.3);
+}
+
+.admin-nav-item.active {
+  color: #ffffff;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--pp-secondary, #7C3AED) 18%, transparent) 0%,
+    color-mix(in srgb, var(--pp-secondary, #7C3AED) 8%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--pp-secondary, #7C3AED) 25%, transparent);
+  font-weight: 550;
+  box-shadow:
+    0 0 16px color-mix(in srgb, var(--pp-secondary, #7C3AED) 12%, transparent),
+    0 1px 0 0 hsl(0 0% 100% / 0.04) inset;
+}
+
+/* Active indicator bar (left edge) */
+.admin-nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--pp-secondary, #7C3AED);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--pp-secondary, #7C3AED) 60%, transparent);
+}
+
+/* Admin nav group label */
+.admin-nav-group-label {
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(220 10% 38%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-nav-group-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: hsl(220 14% 16% / 0.5);
+}
+
+/* Admin hero bar */
+.admin-hero-bar {
+  background: linear-gradient(
+    180deg,
+    hsl(220 18% 7% / 0.5) 0%,
+    hsl(222 20% 5% / 0.7) 100%
+  );
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border-bottom: 1px solid hsl(220 14% 16% / 0.3);
+  box-shadow: inset 0 -1px 0 hsl(0 0% 100% / 0.02);
+}
+
+/* Gradient accent line under hero — visible full width */
+.admin-hero-bar::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: color-mix(in srgb, var(--pp-secondary, #7C3AED) 60%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--pp-secondary, #7C3AED) 40%, transparent);
+}
+
+/* Admin status chip (connected wallet, role badge) */
+.admin-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  background: hsl(220 14% 12% / 0.7);
+  border: 1px solid hsl(220 14% 20% / 0.4);
+  color: hsl(220 10% 65%);
+}
+
+.admin-status-chip .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+  animation: admin-border-glow 2s ease-in-out infinite;
+}
+
+/* Admin ambient background gradient mesh */
+.admin-ambient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 20%, color-mix(in srgb, var(--pp-secondary, #7C3AED) 4%, transparent), transparent),
+    radial-gradient(ellipse 60% 50% at 90% 80%, hsl(220 50% 8% / 0.3), transparent);
+}
+
+/* Admin content scrollbar refinement */
+.admin-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.admin-scroll::-webkit-scrollbar-thumb {
+  background: hsl(220 14% 24% / 0.5);
+  border-radius: 4px;
+}
+
+.admin-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(220 14% 32% / 0.6);
+}
+
+/* Mobile admin nav bar */
+.admin-mobile-nav {
+  background: linear-gradient(
+    180deg,
+    hsl(220 18% 7% / 0.95) 0%,
+    hsl(222 20% 5% / 0.98) 100%
+  );
+  backdrop-filter: blur(20px) saturate(1.15);
+  -webkit-backdrop-filter: blur(20px) saturate(1.15);
+  border-bottom: 1px solid hsl(220 14% 16% / 0.5);
+}
+
+.admin-mobile-nav-item {
+  position: relative;
+  padding: 4px 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: hsl(220 10% 50%);
+  transition: color 0.15s ease;
+  white-space: nowrap;
+}
+
+.admin-mobile-nav-item.active {
+  color: #fff;
+  font-weight: 600;
+}
+
+.admin-mobile-nav-item.active::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--pp-secondary, #7C3AED);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--pp-secondary, #7C3AED) 40%, transparent);
+}
+
+/* ========================================
    BasaltCRM Theme Animations & Effects
    ======================================== */
 @keyframes gleam {

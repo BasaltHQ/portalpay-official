@@ -75,6 +75,7 @@ export function HideableNavbar({ isServerCustomDomain = false }: { isServerCusto
     pathname.match(/^\/terminal\/0x[a-fA-F0-9]{40}/) ||
     pathname === "/handheld" || pathname.startsWith("/handheld/") ||
     pathname.startsWith("/pms/") || // PMS fullscreen mode
+    pathname === "/admin" || pathname.startsWith("/admin/") ||
     isCandidateSlug(pathname);
 
   // Apply body class for navbar padding
