@@ -315,7 +315,7 @@ export function ProfilePanel() {
   }
 
   return (
-    <>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
       {/* Hidden file inputs */}
       <input
         ref={filePfpRef}
@@ -497,6 +497,6 @@ export function ProfilePanel() {
           merchantLoyaltyConfigs={merchantLoyaltyConfigs}
         />
       </div>
-    </>
+    </div>
   );
 }

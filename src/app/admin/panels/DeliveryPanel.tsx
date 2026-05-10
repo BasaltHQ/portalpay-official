@@ -624,7 +624,11 @@ export default function DeliveryPanel() {
     }
 
     // Use simple conditional rendering
-    if (mode === 'wizard') return renderWizard();
-    if (mode === 'menu') return renderMenuSync();
-    return renderDashboard();
+    return (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
+            {mode === 'wizard' && renderWizard()}
+            {mode === 'menu' && renderMenuSync()}
+            {mode === 'dashboard' && renderDashboard()}
+        </div>
+    );
 }

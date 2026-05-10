@@ -1187,7 +1187,7 @@ function ContractsManager({
     const chainContracts = contracts.filter(c => c.chainId === selectedChainId);
 
     return (
-        <div className="space-y-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Deployment Card */}
                 <div className="p-6 border rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl relative overflow-hidden">

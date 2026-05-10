@@ -284,7 +284,7 @@ export default function IntegrationsPanel() {
   }
 
   return (
-    <div className="glass-pane rounded-xl border p-5 space-y-4">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Integrations</h2>
         <span className="microtext text-muted-foreground">Brand: {normalizedKey || "—"}</span>

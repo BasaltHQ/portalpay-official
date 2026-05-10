@@ -661,7 +661,7 @@ export default function ClientRequestsPanel() {
                         <input
                             type="text"
                             placeholder="Search requests..."
-                            className="pl-9 pr-4 py-2 w-full text-sm bg-black/40 border border-white/10 rounded-lg focus:ring-1 focus:ring-emerald-500/50"
+                            className="pl-9 pr-4 h-10 w-full text-sm rounded-lg border border-foreground/10 bg-foreground/[0.03] focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -730,10 +730,10 @@ export default function ClientRequestsPanel() {
                 </div>
             </div>
 
-            <div className="overflow-auto rounded-md border bg-black/20">
+            <div className="glass-pane rounded-xl border overflow-hidden">
                 <table className="min-w-full text-sm">
                     <thead>
-                        <tr className="bg-foreground/5 text-xs uppercase tracking-wider text-muted-foreground border-b border-foreground/10">
+                        <tr className="border-b border-foreground/5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                             <th className="text-left px-4 py-3 font-medium">Business</th>
                             <th className="text-left px-4 py-3 font-medium">KYB Info</th>
                             <th className="text-left px-4 py-3 font-medium">Status</th>
@@ -1440,8 +1440,8 @@ export default function ClientRequestsPanel() {
 
                                             {/* History List */}
                                             {items.find(r => r.wallet === approvingId)?.splitHistory && (items.find(r => r.wallet === approvingId)?.splitHistory?.length || 0) > 0 && (
-                                                <div className="bg-black/20 rounded border border-white/5 p-2 space-y-1 mb-2 max-h-[100px] overflow-y-auto">
-                                                    <div className="text-[10px] text-zinc-500 uppercase font-mono mb-1">Version History</div>
+                                                <div className="glass-pane rounded-xl border p-3 space-y-1 mb-2 max-h-[100px] overflow-y-auto">
+                                                    <div className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wide mb-1.5">Version History</div>
                                                     {(items.find(r => r.wallet === approvingId)?.splitHistory || []).map((h: any, i: number) => (
                                                         <div key={i} className="flex justify-between items-center text-xs font-mono">
                                                             <span className="text-zinc-400">{h.address.slice(0, 6)}...{h.address.slice(-4)}</span>
@@ -1784,7 +1784,7 @@ function TouchpointThemesTab({
     }
 
     return (
-        <div className="animate-in fade-in slide-in-from-top-1 duration-200 space-y-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 space-y-6 pb-24">
             <div>
                 <h4 className="text-sm font-medium mb-1">Touchpoint Themes (Admin Override)</h4>
                 <p className="text-xs text-muted-foreground mb-4">

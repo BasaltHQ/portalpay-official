@@ -383,7 +383,7 @@ export default function MyPurchasesPanel() {
   }), [items]);
 
   return (
-    <div className="glass-pane rounded-xl border p-6 space-y-4 min-h-[600px] flex flex-col">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
       <div className="flex items-center justify-between border-b pb-4">
         <div className="flex items-center gap-6">
           <button

@@ -116,6 +116,10 @@ type AdminTabKey =
   | 'nodeDashboard'
   | 'modules'
   | 'cannabisCompliance'
+  | 'roadmap'
+  | 'updates'
+  | 'analytics'
+  | 'leaderboard'
   | 'agentUniversity';
 
 interface AdminSidebarProps {
@@ -134,7 +138,7 @@ interface NavItem {
   title: string;
   key?: AdminTabKey;
   icon?: React.ReactNode;
-  items?: { title: string; key: AdminTabKey; icon?: React.ReactNode }[];
+  items?: { title: string; key: AdminTabKey; icon?: React.ReactNode; badge?: React.ReactNode }[];
 }
 
 function NavGroup({ item, activeTab, onChangeTab }: { item: NavItem; activeTab: AdminTabKey; onChangeTab: (tab: AdminTabKey) => void }) {
@@ -195,7 +199,8 @@ function NavGroup({ item, activeTab, onChangeTab }: { item: NavItem; activeTab: 
                       {child.icon}
                     </span>
                   )}
-                  <span className={`text-left transition-colors duration-300 ${isActive ? 'text-white font-medium' : 'text-white/70 group-hover:text-white'}`}>{child.title}</span>
+                  <span className={`text-left transition-colors duration-300 flex-1 ${isActive ? 'text-white font-medium' : 'text-white/70 group-hover:text-white'}`}>{child.title}</span>
+                  {child.badge && <span className="ml-auto">{child.badge}</span>}
                 </button>
               );
             })}
@@ -351,7 +356,21 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
 
   const isRequestMode = (brand?.accessMode || "").toLowerCase().includes('request');
 
+
+
+  const getIndustryPackBadge = (pack: string) => {
+    switch (pack) {
+      case 'restaurant': return <ChefHat className="w-3.5 h-3.5 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]" />;
+      case 'hotel': return <Hotel className="w-3.5 h-3.5 text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]" />;
+      case 'publishing': return <PenTool className="w-3.5 h-3.5 text-pink-400 drop-shadow-[0_0_8px_rgba(244,114,182,0.5)]" />;
+      case 'cannabis': return <ShieldCheck className="w-3.5 h-3.5 text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]" />;
+      default: return null;
+    }
+  };
+
   const groups: NavItem[] = [
+
+
     {
       title: 'General',
       icon: <LayoutDashboard className="w-4 h-4" />,
@@ -384,7 +403,6 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
         { title: 'Subscriptions', key: 'subscriptions' as AdminTabKey, icon: <Repeat className="w-4 h-4" /> },
         { title: 'Messages', key: 'messages-merchant' as AdminTabKey, icon: <MessageSquare className="w-4 h-4" /> },
         { title: 'Integrations', key: 'integrations' as AdminTabKey, icon: <Plug className="w-4 h-4" /> },
-        { title: 'Touchpoints', key: 'endpoints' as AdminTabKey, icon: <MonitorSmartphone className="w-4 h-4" /> },
         { title: 'Team', key: 'team' as AdminTabKey, icon: <Users className="w-4 h-4" /> },
         { title: 'Reports', key: 'reports' as AdminTabKey, icon: <FileBarChart className="w-4 h-4" /> },
       ].filter((item) => !disabledMerchantModules.includes(item.key)),
@@ -393,15 +411,16 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
       title: 'Apps',
       icon: <Package className="w-4 h-4" />,
       items: [
+        { title: 'Touchpoints', key: 'endpoints' as AdminTabKey, icon: <MonitorSmartphone className="w-4 h-4" /> },
         ...(industryPack === 'restaurant' ? [
-          { title: 'Kitchen', key: 'kitchen' as AdminTabKey, icon: <ChefHat className="w-4 h-4" /> },
-          { title: 'Tables', key: 'tables' as AdminTabKey, icon: <Armchair className="w-4 h-4" /> },
-          { title: 'Delivery', key: 'delivery' as AdminTabKey, icon: <Truck className="w-4 h-4" /> }
+          { title: 'Kitchen', key: 'kitchen' as AdminTabKey, icon: <ChefHat className="w-4 h-4" />, badge: getIndustryPackBadge('restaurant') },
+          { title: 'Tables', key: 'tables' as AdminTabKey, icon: <Armchair className="w-4 h-4" />, badge: getIndustryPackBadge('restaurant') },
+          { title: 'Delivery', key: 'delivery' as AdminTabKey, icon: <Truck className="w-4 h-4" />, badge: getIndustryPackBadge('restaurant') }
         ] : []),
 
-        ...(industryPack === 'hotel' ? [{ title: 'PMS', key: 'pms' as AdminTabKey, icon: <Hotel className="w-4 h-4" /> }] : []),
-        ...(industryPack === 'publishing' ? [{ title: "Writer's Workshop", key: 'writersWorkshop' as AdminTabKey, icon: <PenTool className="w-4 h-4" /> }] : []),
-        ...(industryPack === 'cannabis' ? [{ title: 'Compliance', key: 'cannabisCompliance' as AdminTabKey, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
+        ...(industryPack === 'hotel' ? [{ title: 'PMS', key: 'pms' as AdminTabKey, icon: <Hotel className="w-4 h-4" />, badge: getIndustryPackBadge('hotel') }] : []),
+        ...(industryPack === 'publishing' ? [{ title: "Writer's Workshop", key: 'writersWorkshop' as AdminTabKey, icon: <PenTool className="w-4 h-4" />, badge: getIndustryPackBadge('publishing') }] : []),
+        ...(industryPack === 'cannabis' ? [{ title: 'Compliance', key: 'cannabisCompliance' as AdminTabKey, icon: <ShieldCheck className="w-4 h-4" />, badge: getIndustryPackBadge('cannabis') }] : []),
       ],
     },
     ...(canBranding || isSuperadmin || canAdmins

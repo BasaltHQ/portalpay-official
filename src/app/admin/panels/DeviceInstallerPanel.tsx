@@ -1667,7 +1667,7 @@ export default function DeviceInstallerPanel() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
       {!supported && (
         <div className="rounded-md border p-3 bg-foreground/5 microtext">
           Your browser does not support WebUSB. Use Chrome/Edge on HTTPS (or localhost).

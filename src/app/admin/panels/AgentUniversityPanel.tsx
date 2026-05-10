@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useActiveAccount } from "thirdweb/react";
-import { Loader2, Video, Plus, Trash2, Link as LinkIcon, RefreshCcw, UploadCloud, Star } from "lucide-react";
+import { Loader2, Video, Plus, Trash2, Link as LinkIcon, RefreshCcw, UploadCloud, Star, FileVideo, X } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 
 export interface AgentVideo {
@@ -30,6 +30,7 @@ export default function AgentUniversityPanelExt() {
     const [description, setDescription] = useState("");
     const [category, setCategory] = useState("General");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -167,26 +168,26 @@ export default function AgentUniversityPanelExt() {
     }
 
     return (
-        <div className="space-y-6 w-full animate-in fade-in duration-500">
+        <div className="w-full space-y-6 pb-24 px-4 sm:px-6 lg:px-8">
             {/* Header Toolbar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 border-b border-border/50 pb-6">
+            <div className="glass-pane rounded-xl border p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Agent University</h2>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <h2 className="text-xl font-semibold tracking-tight">Agent University</h2>
+                    <p className="text-xs text-muted-foreground/70 mt-1 max-w-2xl">
                         S3-backed global training pipelines. Videos uploaded here instantly syndicate out to all active agent dashboards over the platform namespace.
                     </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                     <button 
                         onClick={loadVideos} 
-                        className="p-2.5 rounded-lg border hover:bg-muted transition-colors disabled:opacity-50"
+                        className="p-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors disabled:opacity-50"
                         title="Refresh Repository"
                     >
-                        <RefreshCcw className="h-4 w-4" />
+                        <RefreshCcw className="h-4 w-4 text-muted-foreground" />
                     </button>
                     <button 
                         onClick={() => setIsUploadModalOpen(true)}
-                        className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:brightness-110 transition flex items-center gap-2"
+                        className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:brightness-110 shadow-lg shadow-primary/20 transition flex items-center gap-2"
                     >
                         <UploadCloud className="h-4 w-4" />
                         Upload Video
@@ -202,11 +203,11 @@ export default function AgentUniversityPanelExt() {
 
             {/* Global Matrix Render */}
             {videos.length === 0 ? (
-                <div className="py-20 text-center border rounded-xl bg-card border-dashed">
-                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-muted shadow-inner mb-4">
+                <div className="py-20 text-center glass-pane border border-dashed border-foreground/20 rounded-xl">
+                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-foreground/5 shadow-inner mb-4 border border-foreground/10">
                         <Video className="h-8 w-8 text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-semibold">No Training Protocols Embedded</h3>
+                    <h3 className="text-base font-semibold">No Training Protocols Embedded</h3>
                     <p className="text-sm text-muted-foreground max-w-sm mx-auto mt-2">
                         You have not uploaded any agent training videos to the decentralized repository yet.
                     </p>
@@ -214,14 +215,14 @@ export default function AgentUniversityPanelExt() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {videos.map((vid) => (
-                        <div key={vid._id || vid.id} className={`rounded-xl border overflow-hidden shadow-sm group relative ${vid.isPrimary ? 'border-primary ring-1 ring-primary/20 bg-primary/5' : 'bg-card border-border'}`}>
+                        <div key={vid._id || vid.id} className={`glass-pane rounded-xl border overflow-hidden shadow-sm group relative ${vid.isPrimary ? 'border-primary/50 ring-1 ring-primary/20 bg-primary/5' : 'border-foreground/10'}`}>
                             {vid.isPrimary && (
                                 <div className="absolute top-3 right-3 z-20 bg-primary text-black text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
                                     <Star className="w-3 h-3 fill-black" /> Primary
                                 </div>
                             )}
                             {/* Player Wrapper */}
-                            <div className="aspect-video bg-black relative border-b border-white/5">
+                            <div className="aspect-video bg-black/50 relative border-b border-foreground/5">
                                 <video 
                                     src={vid.url} 
                                     controls 
@@ -233,15 +234,17 @@ export default function AgentUniversityPanelExt() {
                             </div>
                             
                             {/* Meta Data Panel */}
-                            <div className="p-4 bg-background z-10 space-y-2">
-                                <h4 className="font-semibold text-sm line-clamp-1" title={vid.title}>{vid.title}</h4>
-                                {vid.description && (
-                                    <p className="text-xs text-muted-foreground line-clamp-2" title={vid.description}>
-                                        {vid.description}
-                                    </p>
-                                )}
-                                <div className="pt-2 flex items-center justify-between border-t border-border mt-3">
-                                    <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                            <div className="p-5 z-10 space-y-3 bg-foreground/[0.01]">
+                                <div>
+                                    <h4 className="font-semibold text-sm line-clamp-1" title={vid.title}>{vid.title}</h4>
+                                    {vid.description && (
+                                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1" title={vid.description}>
+                                            {vid.description}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="pt-3 flex items-center justify-between border-t border-foreground/5">
+                                    <span className="text-[10px] uppercase font-semibold tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                                         {vid.category || "General"}
                                     </span>
                                     <div className="flex items-center gap-1.5">
@@ -276,23 +279,66 @@ export default function AgentUniversityPanelExt() {
             >
                 <form onSubmit={handleUploadSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-semibold mb-1 uppercase tracking-wider text-muted-foreground">Video Package (Max 250MB)</label>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="video/mp4,video/webm,video/quicktime,video/*"
-                                className="w-full text-sm rounded-lg border bg-background file:mr-4 file:py-2.5 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:brightness-110 cursor-pointer"
-                                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                                disabled={uploading}
-                            />
+                            <label className="block text-xs font-semibold mb-2 uppercase tracking-wider text-muted-foreground/70">Video Package (Max 250MB)</label>
+                            
+                            {!selectedFile ? (
+                                <div 
+                                    className={`relative border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center transition-all duration-200 cursor-pointer ${isDragging ? 'border-primary bg-primary/5' : 'border-foreground/10 hover:border-foreground/20 hover:bg-foreground/[0.02]'}`}
+                                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                                    onDragLeave={() => setIsDragging(false)}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setIsDragging(false);
+                                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                            setSelectedFile(e.dataTransfer.files[0]);
+                                        }
+                                    }}
+                                    onClick={() => !uploading && fileInputRef.current?.click()}
+                                >
+                                    <div className={`p-4 rounded-full mb-4 transition-colors ${isDragging ? 'bg-primary/20 text-primary' : 'bg-foreground/5 text-muted-foreground'}`}>
+                                        <UploadCloud className="w-8 h-8" />
+                                    </div>
+                                    <h4 className="text-sm font-semibold mb-1">Drag and drop your video here</h4>
+                                    <p className="text-xs text-muted-foreground">or click to browse from your computer</p>
+                                    <p className="text-[10px] text-muted-foreground/60 mt-4 uppercase tracking-widest font-semibold">Supports MP4, WebM, QuickTime</p>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="video/mp4,video/webm,video/quicktime,video/*"
+                                        className="hidden"
+                                        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                                        disabled={uploading}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="border border-primary/30 bg-primary/5 rounded-xl p-4 flex items-center justify-between relative overflow-hidden group">
+                                    <div className="flex items-center gap-3 relative z-10">
+                                        <div className="p-2.5 rounded-lg bg-primary/20 text-primary">
+                                            <FileVideo className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-semibold line-clamp-1">{selectedFile.name}</h4>
+                                            <p className="text-xs text-muted-foreground">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setSelectedFile(null)}
+                                        disabled={uploading}
+                                        className="p-2 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-400/10 transition-colors relative z-10 disabled:opacity-50"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold mb-1 uppercase tracking-wider text-muted-foreground">Course Title</label>
+                            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider text-muted-foreground/70">Course Title</label>
                             <input 
                                 type="text"
                                 placeholder="E.g. Objection Handling 101"
-                                className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:ring-1 focus:ring-primary/50 outline-none"
+                                className="w-full px-3 py-2 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 disabled={uploading}
@@ -301,9 +347,9 @@ export default function AgentUniversityPanelExt() {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold mb-1 uppercase tracking-wider text-muted-foreground">Category</label>
+                            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider text-muted-foreground/70">Category</label>
                             <select
-                                className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:ring-1 focus:ring-primary/50 outline-none"
+                                className="w-full px-3 py-2 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
                                 disabled={uploading}
@@ -317,10 +363,10 @@ export default function AgentUniversityPanelExt() {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold mb-1 uppercase tracking-wider text-muted-foreground">Course Details (Optional)</label>
+                            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider text-muted-foreground/70">Course Details (Optional)</label>
                             <textarea 
                                 placeholder="Brief summary to display underneath video block..."
-                                className="w-full px-3 py-2 rounded-lg border bg-background text-sm min-h-[80px] focus:ring-1 focus:ring-primary/50 outline-none resize-none"
+                                className="w-full px-3 py-2 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm min-h-[80px] focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors resize-none"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 disabled={uploading}

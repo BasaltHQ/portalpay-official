@@ -90,19 +90,19 @@ function ResendTrackingBtn({ receipt, operatorWallet }: { receipt: any, operator
 
   return (
     <div className="mt-2 text-center w-full flex flex-col gap-1">
-      <button 
+      <button
         onClick={async () => {
           setResending(true);
           setResendError("");
           try {
             const r = await fetch(`/api/receipts/${encodeURIComponent(receipt.receiptId)}/tracking/resend`, {
-               method: "POST", headers: { "x-wallet": operatorWallet }
+              method: "POST", headers: { "x-wallet": operatorWallet }
             });
-            const j = await r.json().catch(()=>({}));
+            const j = await r.json().catch(() => ({}));
             if (!r.ok) throw new Error(j.error || "Failed server response");
             setResendSuccess(true);
             setTimeout(() => setResendSuccess(false), 3000);
-          } catch(e: any) {
+          } catch (e: any) {
             setResendError(e.message);
           } finally {
             setResending(false);
@@ -2927,7 +2927,7 @@ function ReceiptsAdmin() {
                         body: JSON.stringify({ status: "delivered" }),
                       });
                       if (r.ok) await loadReceipts();
-                    } catch {}
+                    } catch { }
                   }}
                   className="w-full mt-2 px-2 py-1.5 rounded border text-xs font-medium hover:bg-muted transition-colors"
                 >
@@ -2958,213 +2958,213 @@ function ReceiptsAdmin() {
           </div>
         </div>
       ) : (
-      <div className="overflow-auto rounded-md border">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="bg-foreground/5">
-              <th className="text-left px-3 py-2 font-medium">Receipt ID</th>
-              <th className="text-left px-3 py-2 font-medium">Brand</th>
-              <th className="text-left px-3 py-2 font-medium">Total (USD)</th>
-              <th className="text-left px-3 py-2 font-medium">Created</th>
-              <th className="text-left px-3 py-2 font-medium">Status</th>
-              <th className="text-left px-3 py-2 font-medium">Staff</th>
-              <th className="text-left px-3 py-2 font-medium">Jurisdiction</th>
-              <th className="text-left px-3 py-2 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(receipts || [])
-              .filter((r: any) => !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST"))
-              .map((rec: any, idx: number) => {
-                const isExpanded = expandedRowIds.includes(rec.receiptId);
-                const recItems = Array.isArray(rec.lineItems) ? rec.lineItems : [];
-                return (
-                <React.Fragment key={rec.receiptId || `receipt-${idx}`}>
-                  <tr
-                    className="border-t hover:bg-foreground/5 cursor-pointer transition-colors"
-                    onClick={() => setExpandedRowIds((prev) => isExpanded ? prev.filter(id => id !== rec.receiptId) : [...prev, rec.receiptId])}
-                  >
-                    <td className="px-3 py-2 font-mono flex items-center gap-2">
-                       <span className="text-muted-foreground w-4 flex justify-center">{isExpanded ? "▼" : "▶"}</span>
-                       {rec.receiptId}
-                    </td>
-                    <td className="px-3 py-2">{resolveBrandName(rec)}</td>
-                    <td className="px-3 py-2">${Number(rec.totalUsd || 0).toFixed(2)}</td>
-                    <td className="px-3 py-2">{new Date(Number(rec.createdAt || 0)).toLocaleString()}</td>
-                    <td className="px-3 py-2">
-                      <span className={statusClass(rec.status)}>{statusLabel(rec.status)}</span>
-                    </td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">
-                      {(() => {
-                        if (!rec.employeeId) return "—";
-                        const mem = team.find((t: any) => t.id === rec.employeeId);
-                        return mem ? mem.name : (rec.employeeId === "admin" ? "Admin" : rec.employeeId.slice(0, 8));
-                      })()}
-                    </td>
-                    <td className="px-3 py-2">
-                      {rec.jurisdictionCode ? (
-                        <span className="microtext">{rec.jurisdictionCode} • {Math.round(Number(rec.taxRate || 0) * 10000) / 100}%</span>
-                      ) : (
-                        <span className="microtext text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => openQR(rec)}
-                          className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
-                          disabled={isBlockedStatus(rec.status)}
-                          title={isBlockedStatus(rec.status) ? "QR disabled for settled/refunded receipts" : "QR Code"}
-                        >
-                          QR Code
-                        </button>
-                        <button
-                          onClick={() => {
-                            try {
-                              openPortalWindow(getPortalLink(rec.receiptId));
-                            } catch { }
-                          }}
-                          className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
-                          title="Open portal in a new window"
-                        >
-                          Open Portal
-                        </button>
-                        <button
-                          onClick={() => {
-                            try {
-                              navigator.clipboard.writeText(getPortalLink(rec.receiptId));
-                            } catch { }
-                          }}
-                          className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
-                          title="Copy portal link"
-                        >
-                          Copy Link
-                        </button>
-                        <button
-                          onClick={() => openEdit(rec)}
-                          className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
-                          title="Edit Order"
-                        >
-                          ✎ Edit
-                        </button>
-                        <button
-                          onClick={() => openRefund(rec)}
-                          className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
-                          title="Refund"
-                        >
-                          ↺ Refund
-                        </button>
-                        {String(rec.receiptId || "").toUpperCase() === "TEST" ? (
-                          <button
-                            onClick={() => setTestHidden(true)}
-                            className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
-                            title="Hide TEST receipt from list"
-                          >
-                            🙈 Hide
-                          </button>
-                        ) : (
-                          <button
-                            onClick={async () => {
-                              try {
-                                const url = `${window.location.origin}/api/receipts/${encodeURIComponent(rec.receiptId)}`;
-                                const r = await fetch(url, { method: "DELETE", headers: { "x-wallet": (account?.address || "") }, credentials: "include", cache: "no-store" });
-                                const j = await r.json().catch(() => ({}));
-                                if (r.ok && j?.ok) {
-                                  await loadReceipts();
-                                } else {
-                                  showInfo("Delete blocked", String(j?.error || "Delete blocked"), [
-                                    { label: "Receipt", value: String(rec.receiptId || "") },
-                                    { label: "Status", value: String(rec.status || "") },
-                                  ]);
-                                }
-                              } catch { }
-                            }}
-                            className="px-2 py-1 rounded-md border text-xs text-red-500 bg-background hover:bg-red-500/10 hover:border-red-500/50"
-                            title="Delete"
-                            disabled={isBlockedStatus(rec.status)}
-                          >
-                            🗑 Delete
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                  {isExpanded && (
-                    <tr className="bg-foreground-[0.02] border-b">
-                      <td colSpan={8} className="p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
-                          <div className="space-y-3">
-                            <h4 className="font-semibold text-muted-foreground uppercase text-xs tracking-wide">Line Items</h4>
-                            <div className="bg-background rounded-md border p-3 space-y-2">
-                              {recItems.length > 0 ? recItems.map((it: any, i: number) => (
-                                <div key={i} className="flex justify-between items-center text-xs">
-                                  <span className="truncate">{it.qty ? `${it.qty}x ` : ""}{it.label}</span>
-                                  <span className="font-medium whitespace-nowrap ml-4">${Number(it.priceUsd || 0).toFixed(2)}</span>
-                                </div>
-                              )) : (
-                                <div className="text-xs text-muted-foreground italic">No items</div>
-                              )}
-                              <div className="border-t pt-2 mt-2 font-semibold flex justify-between">
-                                <span>Total:</span>
-                                <span>${Number(rec.totalUsd || 0).toFixed(2)}</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-4">
-                            <div className="space-y-3">
-                              <h4 className="font-semibold text-muted-foreground uppercase text-xs tracking-wide">Payment Details</h4>
-                              <div className="bg-background rounded-md border p-3 text-xs space-y-1.5 font-mono">
-                                <div className="flex justify-between items-end gap-2 overflow-hidden">
-                                  <span className="text-muted-foreground min-w-[70px]">Wallet:</span>
-                                  <span className="truncate flex-1 text-right" title={rec.buyerWallet}>{rec.buyerWallet || "—"}</span>
-                                </div>
-                                <div className="flex justify-between items-end gap-2 overflow-hidden">
-                                  <span className="text-muted-foreground min-w-[70px]">Tx Hash:</span>
-                                  <span className="truncate flex-1 text-right" title={rec.transactionHash}>{rec.transactionHash || "—"}</span>
-                                </div>
-                                <div className="flex flex-wrap justify-between items-end gap-2 pt-1 border-t mt-1">
-                                  <span className="text-muted-foreground min-w-[70px]">Tip:</span>
-                                  <span className="text-right">${Number(rec.tipAmount || 0).toFixed(2)}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {rec.shippingAddress && (
-                              <div className="space-y-3">
-                                <h4 className="font-semibold text-muted-foreground uppercase text-xs tracking-wide">Shipping Info</h4>
-                                <div className="bg-background rounded-md border p-3 text-xs space-y-1">
-                                  <div className="font-medium">{rec.shippingAddress.name}</div>
-                                  <div className="text-muted-foreground">{rec.shippingAddress.email}</div>
-                                  <div className="text-muted-foreground">{rec.shippingAddress.line1}</div>
-                                  {rec.shippingAddress.line2 && <div className="text-muted-foreground">{rec.shippingAddress.line2}</div>}
-                                  <div className="text-muted-foreground">{rec.shippingAddress.city}, {rec.shippingAddress.state} {rec.shippingAddress.zip}</div>
-                                  {rec.tracking?.trackingNumber && (
-                                    <div className="mt-2 pt-2 border-t font-mono text-emerald-500">
-                                      Track: {rec.tracking.carrier} {rec.tracking.trackingNumber}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
+        <div className="overflow-auto rounded-md border">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="bg-foreground/5">
+                <th className="text-left px-3 py-2 font-medium">Receipt ID</th>
+                <th className="text-left px-3 py-2 font-medium">Brand</th>
+                <th className="text-left px-3 py-2 font-medium">Total (USD)</th>
+                <th className="text-left px-3 py-2 font-medium">Created</th>
+                <th className="text-left px-3 py-2 font-medium">Status</th>
+                <th className="text-left px-3 py-2 font-medium">Staff</th>
+                <th className="text-left px-3 py-2 font-medium">Jurisdiction</th>
+                <th className="text-left px-3 py-2 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(receipts || [])
+                .filter((r: any) => !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST"))
+                .map((rec: any, idx: number) => {
+                  const isExpanded = expandedRowIds.includes(rec.receiptId);
+                  const recItems = Array.isArray(rec.lineItems) ? rec.lineItems : [];
+                  return (
+                    <React.Fragment key={rec.receiptId || `receipt-${idx}`}>
+                      <tr
+                        className="border-t hover:bg-foreground/5 cursor-pointer transition-colors"
+                        onClick={() => setExpandedRowIds((prev) => isExpanded ? prev.filter(id => id !== rec.receiptId) : [...prev, rec.receiptId])}
+                      >
+                        <td className="px-3 py-2 font-mono flex items-center gap-2">
+                          <span className="text-muted-foreground w-4 flex justify-center">{isExpanded ? "▼" : "▶"}</span>
+                          {rec.receiptId}
+                        </td>
+                        <td className="px-3 py-2">{resolveBrandName(rec)}</td>
+                        <td className="px-3 py-2">${Number(rec.totalUsd || 0).toFixed(2)}</td>
+                        <td className="px-3 py-2">{new Date(Number(rec.createdAt || 0)).toLocaleString()}</td>
+                        <td className="px-3 py-2">
+                          <span className={statusClass(rec.status)}>{statusLabel(rec.status)}</span>
+                        </td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground">
+                          {(() => {
+                            if (!rec.employeeId) return "—";
+                            const mem = team.find((t: any) => t.id === rec.employeeId);
+                            return mem ? mem.name : (rec.employeeId === "admin" ? "Admin" : rec.employeeId.slice(0, 8));
+                          })()}
+                        </td>
+                        <td className="px-3 py-2">
+                          {rec.jurisdictionCode ? (
+                            <span className="microtext">{rec.jurisdictionCode} • {Math.round(Number(rec.taxRate || 0) * 10000) / 100}%</span>
+                          ) : (
+                            <span className="microtext text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => openQR(rec)}
+                              className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                              disabled={isBlockedStatus(rec.status)}
+                              title={isBlockedStatus(rec.status) ? "QR disabled for settled/refunded receipts" : "QR Code"}
+                            >
+                              QR Code
+                            </button>
+                            <button
+                              onClick={() => {
+                                try {
+                                  openPortalWindow(getPortalLink(rec.receiptId));
+                                } catch { }
+                              }}
+                              className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                              title="Open portal in a new window"
+                            >
+                              Open Portal
+                            </button>
+                            <button
+                              onClick={() => {
+                                try {
+                                  navigator.clipboard.writeText(getPortalLink(rec.receiptId));
+                                } catch { }
+                              }}
+                              className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                              title="Copy portal link"
+                            >
+                              Copy Link
+                            </button>
+                            <button
+                              onClick={() => openEdit(rec)}
+                              className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                              title="Edit Order"
+                            >
+                              ✎ Edit
+                            </button>
+                            <button
+                              onClick={() => openRefund(rec)}
+                              className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                              title="Refund"
+                            >
+                              ↺ Refund
+                            </button>
+                            {String(rec.receiptId || "").toUpperCase() === "TEST" ? (
+                              <button
+                                onClick={() => setTestHidden(true)}
+                                className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                                title="Hide TEST receipt from list"
+                              >
+                                🙈 Hide
+                              </button>
+                            ) : (
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const url = `${window.location.origin}/api/receipts/${encodeURIComponent(rec.receiptId)}`;
+                                    const r = await fetch(url, { method: "DELETE", headers: { "x-wallet": (account?.address || "") }, credentials: "include", cache: "no-store" });
+                                    const j = await r.json().catch(() => ({}));
+                                    if (r.ok && j?.ok) {
+                                      await loadReceipts();
+                                    } else {
+                                      showInfo("Delete blocked", String(j?.error || "Delete blocked"), [
+                                        { label: "Receipt", value: String(rec.receiptId || "") },
+                                        { label: "Status", value: String(rec.status || "") },
+                                      ]);
+                                    }
+                                  } catch { }
+                                }}
+                                className="px-2 py-1 rounded-md border text-xs text-red-500 bg-background hover:bg-red-500/10 hover:border-red-500/50"
+                                title="Delete"
+                                disabled={isBlockedStatus(rec.status)}
+                              >
+                                🗑 Delete
+                              </button>
                             )}
                           </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-                );
-              })}
-            {(!receipts || receipts.length === 0) && (
-              <tr>
-                <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
-                  No receipts yet. Use "Seed Receipt" to generate a demo receipt.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="bg-foreground-[0.02] border-b">
+                          <td colSpan={8} className="p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+                              <div className="space-y-3">
+                                <h4 className="font-semibold text-muted-foreground uppercase text-xs tracking-wide">Line Items</h4>
+                                <div className="bg-background rounded-md border p-3 space-y-2">
+                                  {recItems.length > 0 ? recItems.map((it: any, i: number) => (
+                                    <div key={i} className="flex justify-between items-center text-xs">
+                                      <span className="truncate">{it.qty ? `${it.qty}x ` : ""}{it.label}</span>
+                                      <span className="font-medium whitespace-nowrap ml-4">${Number(it.priceUsd || 0).toFixed(2)}</span>
+                                    </div>
+                                  )) : (
+                                    <div className="text-xs text-muted-foreground italic">No items</div>
+                                  )}
+                                  <div className="border-t pt-2 mt-2 font-semibold flex justify-between">
+                                    <span>Total:</span>
+                                    <span>${Number(rec.totalUsd || 0).toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="space-y-4">
+                                <div className="space-y-3">
+                                  <h4 className="font-semibold text-muted-foreground uppercase text-xs tracking-wide">Payment Details</h4>
+                                  <div className="bg-background rounded-md border p-3 text-xs space-y-1.5 font-mono">
+                                    <div className="flex justify-between items-end gap-2 overflow-hidden">
+                                      <span className="text-muted-foreground min-w-[70px]">Wallet:</span>
+                                      <span className="truncate flex-1 text-right" title={rec.buyerWallet}>{rec.buyerWallet || "—"}</span>
+                                    </div>
+                                    <div className="flex justify-between items-end gap-2 overflow-hidden">
+                                      <span className="text-muted-foreground min-w-[70px]">Tx Hash:</span>
+                                      <span className="truncate flex-1 text-right" title={rec.transactionHash}>{rec.transactionHash || "—"}</span>
+                                    </div>
+                                    <div className="flex flex-wrap justify-between items-end gap-2 pt-1 border-t mt-1">
+                                      <span className="text-muted-foreground min-w-[70px]">Tip:</span>
+                                      <span className="text-right">${Number(rec.tipAmount || 0).toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {rec.shippingAddress && (
+                                  <div className="space-y-3">
+                                    <h4 className="font-semibold text-muted-foreground uppercase text-xs tracking-wide">Shipping Info</h4>
+                                    <div className="bg-background rounded-md border p-3 text-xs space-y-1">
+                                      <div className="font-medium">{rec.shippingAddress.name}</div>
+                                      <div className="text-muted-foreground">{rec.shippingAddress.email}</div>
+                                      <div className="text-muted-foreground">{rec.shippingAddress.line1}</div>
+                                      {rec.shippingAddress.line2 && <div className="text-muted-foreground">{rec.shippingAddress.line2}</div>}
+                                      <div className="text-muted-foreground">{rec.shippingAddress.city}, {rec.shippingAddress.state} {rec.shippingAddress.zip}</div>
+                                      {rec.tracking?.trackingNumber && (
+                                        <div className="mt-2 pt-2 border-t font-mono text-emerald-500">
+                                          Track: {rec.tracking.carrier} {rec.tracking.trackingNumber}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              {(!receipts || receipts.length === 0) && (
+                <tr>
+                  <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
+                    No receipts yet. Use "Seed Receipt" to generate a demo receipt.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {qrOpen && selected && typeof window !== "undefined"
@@ -6029,7 +6029,7 @@ function SortableCategoryItem(props: { id: string; category: string; hidden: boo
         {props.hidden && <span className="text-[10px] uppercase bg-muted text-muted-foreground px-1.5 py-0.5 rounded-sm ml-2">Hidden</span>}
       </div>
       <div className="flex items-center gap-2">
-        <button 
+        <button
           onClick={() => props.onViewItems(props.category)}
           className="text-xs px-2 py-1 rounded border hover:bg-muted/50 flex items-center gap-1"
         >
@@ -6080,7 +6080,7 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
           });
           setAllCategories(Array.from(extracted.values()));
         }
-      } catch {}
+      } catch { }
     }
     loadAll();
     return () => { mounted = false; };
@@ -6111,10 +6111,10 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
     allCategories.forEach(c => {
       if (!extracted.has(c.toLowerCase())) extracted.set(c.toLowerCase(), c);
     });
-    
+
     const uniqueCats = Array.from(extracted.values());
     const config = shopConfig?.categoryConfig || {};
-    
+
     // Sort initial list by config order, then alphabetical
     uniqueCats.sort((a, b) => {
       const orderA = config[a]?.order ?? 999;
@@ -6124,7 +6124,7 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
     });
 
     setCategoryList(uniqueCats);
-    
+
     // Initialize local config mapping
     const lc: Record<string, { order: number; hidden: boolean }> = {};
     uniqueCats.forEach((c, idx) => {
@@ -6143,7 +6143,7 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
         const oldIndex = items.indexOf(active.id);
         const newIndex = items.indexOf(over.id);
         const newArr = arrayMove(items, oldIndex, newIndex);
-        
+
         // Update order in localConfig
         setLocalConfig(prev => {
           const updatedConfig = { ...prev };
@@ -6153,7 +6153,7 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
           });
           return updatedConfig;
         });
-        
+
         return newArr;
       });
     }
@@ -6184,8 +6184,8 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
     <div className="space-y-4 border rounded-md p-4 bg-muted/10">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold">Category Display Order & Visibility</h3>
-        <button 
-          onClick={handleSave} 
+        <button
+          onClick={handleSave}
           disabled={isSaving}
           className="px-3 py-1.5 text-xs rounded border bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
@@ -6195,7 +6195,7 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
       <div className="microtext text-muted-foreground mb-4">
         Drag categories to reorder them on the Shop, Handheld, and Kiosk. Click the eye icon to completely hide a category from all customer touchpoints.
       </div>
-      
+
       {categoryList.length === 0 ? (
         <div className="text-sm text-muted-foreground py-4 text-center border border-dashed rounded-md">
           No categories found. Assign categories to your items first.
@@ -6205,11 +6205,11 @@ function CategoryManagementList({ items, shopConfig, onSave, onViewItems }: { it
           <SortableContext items={categoryList} strategy={verticalListSortingStrategy}>
             <div className="space-y-1">
               {categoryList.map(cat => (
-                <SortableCategoryItem 
-                  key={cat} 
-                  id={cat} 
-                  category={cat} 
-                  hidden={localConfig[cat]?.hidden ?? false} 
+                <SortableCategoryItem
+                  key={cat}
+                  id={cat}
+                  category={cat}
+                  hidden={localConfig[cat]?.hidden ?? false}
                   onToggleHide={toggleHide}
                   onViewItems={onViewItems}
                 />
@@ -7775,9 +7775,9 @@ function InventoryPanel() {
         </div>
 
         {viewMode === "categories" ? (
-          <CategoryManagementList 
-            items={items} 
-            shopConfig={shopConfig} 
+          <CategoryManagementList
+            items={items}
+            shopConfig={shopConfig}
             onSave={async (config) => {
               try {
                 const res = await fetch("/api/shop/config", {
@@ -10202,6 +10202,10 @@ export default function AdminPage() {
     | "modules"
     | "nodeOperators"
     | "nodeDashboard"
+    | "roadmap"
+    | "updates"
+    | "analytics"
+    | "leaderboard"
     | "agentUniversity"
     | "cannabisCompliance"
   >("reserve");
@@ -10242,12 +10246,12 @@ export default function AdminPage() {
         const domContainerType = typeof document !== 'undefined' ? (document.documentElement.getAttribute('data-pp-container-type') || '').toLowerCase() : '';
         const isPartner = domContainerType === "partner" || containerType === "partner";
         const isRegistrationRegime = process.env.NEXT_PUBLIC_PLATFORM_REGISTRATION_REGIME === "true";
-        
+
         const isApproved = (!isPartner && !isRegistrationRegime) || String(me.shopStatus || "").toLowerCase() === "approved" || me.isPlatformAdmin;
-        
+
         if (!isApproved) {
-            window.location.href = "/apply";
-            return;
+          window.location.href = "/apply";
+          return;
         }
 
         // 2. Authentication Gate (prompt signature if needed)
@@ -10284,7 +10288,7 @@ export default function AdminPage() {
         <div className="admin-ambient" />
         <AdminHero />
         <div className="max-w-6xl mx-auto px-4 pt-[88px] pb-10">
-          <div className="admin-card p-8">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
             <h1 className="text-2xl font-semibold mb-2 text-white/90">Admin Console</h1>
             <p className="text-xs text-white/40 tracking-wide">
               Connect your wallet to access this page.
@@ -10310,424 +10314,423 @@ export default function AdminPage() {
 
   return (
     <>
-    <div className="admin-ambient" />
-    <div className={`mx-auto pl-4 pr-4 space-y-6 pt-[144px] md:pt-[88px] pb-10 transition-all duration-300 ${isSidebarCollapsed ? 'md:pl-24' : 'md:pl-72'
-      } ${isSupportTab ? '' : 'max-w-full'}`}>
-      <AdminHero />
-      <AdminSidebar
-        activeTab={activeTab}
-        onChangeTab={setActiveTab}
-        industryPack={industryPack || ""}
-        canBranding={canBranding}
-        canMerchants={canMerchants}
-        isSuperadmin={isSuperadmin}
-        canAdmins={canAdmins}
-        onCollapseChange={setIsSidebarCollapsed}
-        disabledMerchantModules={disabledMerchantModules}
-      />
-      <div className="hidden">
-        <h1 className="text-3xl font-bold">Admin</h1>
-        <span className="microtext badge-soft">Admin access</span>
-      </div>
+      <div className="admin-ambient" />
+      <div className={`mx-auto pl-4 pr-4 space-y-6 pt-[144px] md:pt-[88px] pb-10 transition-all duration-300 ${isSidebarCollapsed ? 'md:pl-24' : 'md:pl-72'
+        } ${isSupportTab ? '' : 'max-w-full'}`}>
+        <AdminHero />
+        <AdminSidebar
+          activeTab={activeTab}
+          onChangeTab={setActiveTab}
+          industryPack={industryPack || ""}
+          canBranding={canBranding}
+          canMerchants={canMerchants}
+          isSuperadmin={isSuperadmin}
+          canAdmins={canAdmins}
+          onCollapseChange={setIsSidebarCollapsed}
+          disabledMerchantModules={disabledMerchantModules}
+        />
+        <div className="hidden">
+          <h1 className="text-3xl font-bold">Admin</h1>
+          <span className="microtext badge-soft">Admin access</span>
+        </div>
 
-      {/* Tab Navigation */}
-      <div className="glass-pane rounded-xl border hidden">
-        <nav className="admin-nav p-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* General */}
-            <button
-              className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "terminal" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-              onClick={() => setActiveTab("terminal")}
-            >
-              Terminal
-            </button>
-            {industryPack === 'restaurant' && (
+        {/* Tab Navigation */}
+        <div className="glass-pane rounded-xl border hidden">
+          <nav className="admin-nav p-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* General */}
               <button
-                className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "kitchen" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-                onClick={() => setActiveTab("kitchen")}
+                className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "terminal" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("terminal")}
               >
-                Kitchen
+                Terminal
               </button>
-            )}
-            <button
-              className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "reserve" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-              onClick={() => setActiveTab("reserve")}
-            >
-              Reserve
-            </button>
-            <button
-              className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "inventory" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-              onClick={() => setActiveTab("inventory")}
-            >
-              Inventory
-            </button>
-            <button
-              className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "orders" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-              onClick={() => setActiveTab("orders")}
-            >
-              Orders
-            </button>
-            <button
-              className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "reports" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-              onClick={() => setActiveTab("reports")}
-            >
-              Reports
-            </button>
-
-            <button
-              className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "purchases" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-              onClick={() => setActiveTab("purchases")}
-            >
-              My Purchases
-            </button>
-            <button
-              className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "messages" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-              onClick={() => setActiveTab("messages")}
-            >
-              Messages
-            </button>
-            <button
-              className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "loyalty" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-              onClick={() => setActiveTab("loyalty")}
-            >
-              Loyalty
-            </button>
-            <button
-              className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm flex items-center gap-1 ${activeTab === "pms" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-              onClick={() => setActiveTab("pms")}
-            >
-              PMS
-              {industryPack !== 'hotel' && (
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-gray-500/20 text-gray-500 border border-gray-500/30">
-                  inactive
-                </span>
+              {industryPack === 'restaurant' && (
+                <button
+                  className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "kitchen" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                  onClick={() => setActiveTab("kitchen")}
+                >
+                  Kitchen
+                </button>
               )}
-            </button>
-
-            {/* Divider between General and Partner/Admin */}
-            <div className="h-6 w-px bg-border mx-1" />
-
-            {/* Partner/Admin */}
-            {canBranding && (
               <button
-                className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "branding" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-                onClick={() => setActiveTab("branding")}
+                className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "reserve" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("reserve")}
               >
-                Branding
+                Reserve
               </button>
-            )}
-
-            {/* Divider between Partner/Admin and Platform/SuperAdmin */}
-            <div className="h-6 w-px bg-border mx-1" />
-
-            {/* Platform/SuperAdmin */}
-            {canMerchants && (
               <button
-                className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "users" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-                onClick={() => setActiveTab("users")}
+                className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "inventory" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("inventory")}
               >
-                Merchants
+                Inventory
               </button>
-            )}
-            {isSuperadmin && (
               <button
-                className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "partners" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-                onClick={() => setActiveTab("partners")}
+                className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "orders" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("orders")}
               >
-                Partners
+                Orders
               </button>
-            )}
-          </div>
+              <button
+                className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "reports" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("reports")}
+              >
+                Reports
+              </button>
 
-          {/* Manuals row unchanged */}
-          <div className="mt-2 flex items-center gap-2">
-            <span className="microtext text-muted-foreground">Manuals:</span>
-            <button
-              className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "shopSetup" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-              onClick={() => setActiveTab("shopSetup")}
-              title="Shop Setup Instructions"
-            >
-              Shop Setup
-            </button>
-            <button
-              className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "profileSetup" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-              onClick={() => setActiveTab("profileSetup")}
-              title="Profile Setup Instructions"
-            >
-              Profile Setup
-            </button>
-            <button
-              className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "whitelabel" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-              onClick={() => setActiveTab("whitelabel")}
-              title="Whitelabel Instructions"
-            >
-              Whitelabel
-            </button>
-            <button
-              className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "withdrawal" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-              onClick={() => setActiveTab("withdrawal")}
-              title="Withdrawal Instructions"
-            >
-              Withdrawal Instructions
-            </button>
-          </div>
-        </nav>
-      </div>
+              <button
+                className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "purchases" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("purchases")}
+              >
+                My Purchases
+              </button>
+              <button
+                className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "messages" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("messages")}
+              >
+                Messages
+              </button>
+              <button
+                className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "loyalty" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("loyalty")}
+              >
+                Loyalty
+              </button>
+              <button
+                className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm flex items-center gap-1 ${activeTab === "pms" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("pms")}
+              >
+                PMS
+                {industryPack !== 'hotel' && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-gray-500/20 text-gray-500 border border-gray-500/30">
+                    inactive
+                  </span>
+                )}
+              </button>
 
-      {/* Tabs Content */}
-      {activeTab === "devices" && (
-        <div className="admin-card p-6 space-y-3 admin-panel-enter">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Installer Packages</h2>
-            <span className="microtext text-muted-foreground">
-              Download branded installer ZIPs; first run registers installs
-            </span>
-          </div>
-          <div className="microtext text-muted-foreground">
-            Download the ZIP for your brand, run the included Windows .bat (adb install -r), then launch the app.
-            The APK phones home on first launch to record the install in Devices.
-          </div>
-          <TouchpointMonitoringPanel />
-          <div className="h-px bg-border my-6" />
-          <DeviceInstallerPanel />
-          <div className="h-px bg-border my-6" />
-          <InstallerPackagesPanel />
+              {/* Divider between General and Partner/Admin */}
+              <div className="h-6 w-px bg-border mx-1" />
+
+              {/* Partner/Admin */}
+              {canBranding && (
+                <button
+                  className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "branding" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                  onClick={() => setActiveTab("branding")}
+                >
+                  Branding
+                </button>
+              )}
+
+              {/* Divider between Partner/Admin and Platform/SuperAdmin */}
+              <div className="h-6 w-px bg-border mx-1" />
+
+              {/* Platform/SuperAdmin */}
+              {canMerchants && (
+                <button
+                  className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "users" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                  onClick={() => setActiveTab("users")}
+                >
+                  Merchants
+                </button>
+              )}
+              {isSuperadmin && (
+                <button
+                  className={`px-3 py-2 md:py-1.5 min-h-[36px] whitespace-nowrap rounded-md border text-sm ${activeTab === "partners" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                  onClick={() => setActiveTab("partners")}
+                >
+                  Partners
+                </button>
+              )}
+            </div>
+
+            {/* Manuals row unchanged */}
+            <div className="mt-2 flex items-center gap-2">
+              <span className="microtext text-muted-foreground">Manuals:</span>
+              <button
+                className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "shopSetup" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("shopSetup")}
+                title="Shop Setup Instructions"
+              >
+                Shop Setup
+              </button>
+              <button
+                className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "profileSetup" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("profileSetup")}
+                title="Profile Setup Instructions"
+              >
+                Profile Setup
+              </button>
+              <button
+                className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "whitelabel" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("whitelabel")}
+                title="Whitelabel Instructions"
+              >
+                Whitelabel
+              </button>
+              <button
+                className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "withdrawal" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("withdrawal")}
+                title="Withdrawal Instructions"
+              >
+                Withdrawal Instructions
+              </button>
+            </div>
+          </nav>
         </div>
-      )}
-      {activeTab === "reserve" && <ReserveTabs />}
-      {activeTab === "delivery" && <DeliveryPanel />}
-      {activeTab === "shopSetup" && <ShopPanel />}
-      {activeTab === "profileSetup" && <ProfilePanel />}
-      {activeTab === "roadmap" && <RoadmapPanel brandKey={getEffectiveBrandKey()} />}
-      {activeTab === "updates" && <UpdatesPanel brandKey={getEffectiveBrandKey()} />}
 
-      {activeTab === "withdrawal" && (
-        <div className="admin-card p-6 space-y-4 admin-panel-enter">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Withdrawal Instructions</h2>
-            <span className="microtext text-muted-foreground">How funds flow and how to cash out</span>
+        {/* Tabs Content */}
+        {activeTab === "devices" && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Installer Packages</h2>
+              <span className="microtext text-muted-foreground">
+                Download branded installer ZIPs; first run registers installs
+              </span>
+            </div>
+            <div className="microtext text-muted-foreground">
+              Download the ZIP for your brand, run the included Windows .bat (adb install -r), then launch the app.
+              The APK phones home on first launch to record the install in Devices.
+            </div>
+            <TouchpointMonitoringPanel />
+            <div className="h-px bg-border my-6" />
+            <DeviceInstallerPanel />
+            <div className="h-px bg-border my-6" />
+            <InstallerPackagesPanel />
           </div>
-          <WithdrawalInstructionsPanel />
-        </div>
-      )}
+        )}
+        {activeTab === "reserve" && <ReserveTabs />}
+        {activeTab === "delivery" && <DeliveryPanel />}
+        {activeTab === "shopSetup" && <ShopPanel />}
+        {activeTab === "profileSetup" && <ProfilePanel />}
+        {activeTab === "roadmap" && <RoadmapPanel brandKey={getEffectiveBrandKey()} />}
+        {activeTab === "updates" && <UpdatesPanel brandKey={getEffectiveBrandKey()} />}
 
-      {activeTab === "shopSetup" && (
-        <div className="admin-card p-6 space-y-4 admin-panel-enter">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Shop Setup</h2>
-            <span className="microtext text-muted-foreground">Claim slug → add inventory → share link</span>
+        {activeTab === "withdrawal" && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Withdrawal Instructions</h2>
+              <span className="microtext text-muted-foreground">How funds flow and how to cash out</span>
+            </div>
+            <WithdrawalInstructionsPanel />
           </div>
-          <ShopSetupInstructionsPanel />
-        </div>
-      )}
+        )}
 
-      {activeTab === "profileSetup" && (
-        <div className="admin-card p-6 space-y-4 admin-panel-enter">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Profile Setup</h2>
-            <span className="microtext text-muted-foreground">Customize identity & roles</span>
+        {activeTab === "shopSetup" && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Shop Setup</h2>
+              <span className="microtext text-muted-foreground">Claim slug → add inventory → share link</span>
+            </div>
+            <ShopSetupInstructionsPanel />
           </div>
-          <ProfileSetupInstructionsPanel />
-        </div>
-      )}
+        )}
 
-      {activeTab === "whitelabel" && (
-        <div className="admin-card p-6 space-y-4 admin-panel-enter">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Whitelabel</h2>
-            <span className="microtext text-muted-foreground">Customize the entire experience</span>
+        {activeTab === "profileSetup" && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Profile Setup</h2>
+              <span className="microtext text-muted-foreground">Customize identity & roles</span>
+            </div>
+            <ProfileSetupInstructionsPanel />
           </div>
-          <WhitelabelInstructionsPanel />
-        </div>
-      )}
+        )}
 
-      {activeTab === "loyalty" && (
-        <div className="admin-card p-6 space-y-4 admin-panel-enter">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Loyalty</h2>
-            <span className="microtext text-muted-foreground">Manage Rewards</span>
+        {activeTab === "whitelabel" && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Whitelabel</h2>
+              <span className="microtext text-muted-foreground">Customize the entire experience</span>
+            </div>
+            <WhitelabelInstructionsPanel />
           </div>
-          <LoyaltyPanel />
-        </div>
-      )}
+        )}
 
-      {activeTab === "analytics" && <AnalyticsPanel />}
+        {activeTab === "loyalty" && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Loyalty</h2>
+              <span className="microtext text-muted-foreground">Manage Rewards</span>
+            </div>
+            <LoyaltyPanel />
+          </div>
+        )}
+
+        {activeTab === "analytics" && <AnalyticsPanel />}
         {activeTab === "leaderboard" && <LeaderboardPanel />}
         {activeTab === "loyaltyConfig" && (
-        <div className="admin-card p-6 space-y-4 admin-panel-enter">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Loyalty Configuration</h2>
-            <span className="microtext text-muted-foreground">{isPlatform ? 'Platform Admin' : 'Partner Admin'}</span>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Loyalty Configuration</h2>
+              <span className="microtext text-muted-foreground">{isPlatform ? 'Platform Admin' : 'Partner Admin'}</span>
+            </div>
+            {isPartner ? (
+              <LoyaltyPanelPartner />
+            ) : (
+              <LoyaltyPanelPlatform />
+            )}
           </div>
-          {isPartner ? (
-            <LoyaltyPanelPartner />
-          ) : (
-            <LoyaltyPanelPlatform />
-          )}
-        </div>
-      )}
-      {activeTab === "integrations" && (
-        <IntegrationsPanel />
-      )}
-      {activeTab === "branding" && (
-        <BrandingPanelExt />
-      )}
-      {activeTab === "splitConfig" && ((canBranding && containerType === "partner" && !isRequestMode) || (isPlatform && isSuperadmin)) && (
-        <SplitConfigPanelExt />
-      )}
-      {activeTab === "applications" && isPlatform && isSuperadmin && (
-        <ApplicationsPanelExt />
-      )}
-      {activeTab === "partners" && isPlatform && isSuperadmin && (
-        <PartnerManagementPanelExt />
-      )}
+        )}
+        {activeTab === "integrations" && (
+          <IntegrationsPanel />
+        )}
+        {activeTab === "branding" && (
+          <BrandingPanelExt />
+        )}
+        {activeTab === "splitConfig" && ((canBranding && containerType === "partner" && !isRequestMode) || (isPlatform && isSuperadmin)) && (
+          <SplitConfigPanelExt />
+        )}
+        {activeTab === "applications" && isPlatform && isSuperadmin && (
+          <ApplicationsPanelExt />
+        )}
+        {activeTab === "partners" && isPlatform && isSuperadmin && (
+          <PartnerManagementPanelExt />
+        )}
 
-      {activeTab === "inventory" && (
-        <InventoryPanel />
-      )}
+        {activeTab === "inventory" && (
+          <InventoryPanel />
+        )}
 
-      {activeTab === "orders" && (
-        <OrdersPanel />
-      )}
+        {activeTab === "orders" && (
+          <OrdersPanel />
+        )}
 
-      {activeTab === "purchases" && (
-        <MyPurchasesPanelExt />
-      )}
+        {activeTab === "purchases" && (
+          <MyPurchasesPanelExt />
+        )}
 
-      {activeTab === "messages" && (
-        <MessagesPanelExt />
-      )}
-      {activeTab === "messages-buyer" && (
-        <MessagesPanelExt role="buyer" />
-      )}
-      {activeTab === "messages-merchant" && (
-        <MessagesPanelExt role="merchant" />
-      )}
-      {activeTab === "rewards" && (
-        <RewardsPanel />
-      )}
+        {activeTab === "messages" && (
+          <MessagesPanelExt />
+        )}
+        {activeTab === "messages-buyer" && (
+          <MessagesPanelExt role="buyer" />
+        )}
+        {activeTab === "messages-merchant" && (
+          <MessagesPanelExt role="merchant" />
+        )}
+        {activeTab === "rewards" && (
+          <RewardsPanel />
+        )}
 
-      {activeTab === "terminal" && (
-        <TerminalPanel />
-      )}
+        {activeTab === "terminal" && (
+          <TerminalPanel />
+        )}
 
-      {activeTab === "users" && (canMerchants || canBranding || isSuperadmin) && (
-        <UsersPanel />
-      )}
+        {activeTab === "users" && (canMerchants || canBranding || isSuperadmin) && (
+          <UsersPanel />
+        )}
 
-      {activeTab === "kitchen" && industryPack === 'restaurant' && (
-        <KitchenDisplayPanel />
-      )}
+        {activeTab === "kitchen" && industryPack === 'restaurant' && (
+          <KitchenDisplayPanel />
+        )}
 
-      {activeTab === "tables" && industryPack === 'restaurant' && (
-        <TablesPanel />
-      )}
+        {activeTab === "tables" && industryPack === 'restaurant' && (
+          <TablesPanel />
+        )}
 
-      {activeTab === "pms" && industryPack === 'hotel' && (
-        <PMSPanel />
-      )}
+        {activeTab === "pms" && industryPack === 'hotel' && (
+          <PMSPanel />
+        )}
 
-      {activeTab === "cannabisCompliance" && industryPack === 'cannabis' && (
-        <CannabisCompliancePanel />
-      )}
+        {activeTab === "cannabisCompliance" && industryPack === 'cannabis' && (
+          <CannabisCompliancePanel />
+        )}
 
-      {activeTab === "admins" && canAdmins && (
-        <AdminManagementPanel />
-      )}
+        {activeTab === "admins" && canAdmins && (
+          <AdminManagementPanel />
+        )}
 
-      {activeTab === "seoPages" && (canBranding || isSuperadmin) && (
-        <SEOLandingPagesPanel />
-      )}
-      {activeTab === "plugins" && (canBranding || isSuperadmin) && (
-        <PartnerPluginsPanel />
-      )}
-      {activeTab === "pluginStudio" && isPlatform && isSuperadmin && (
-        <PlatformPluginsPanel />
-      )}
+        {activeTab === "seoPages" && (canBranding || isSuperadmin) && (
+          <SEOLandingPagesPanel />
+        )}
+        {activeTab === "plugins" && (canBranding || isSuperadmin) && (
+          <PartnerPluginsPanel />
+        )}
+        {activeTab === "pluginStudio" && isPlatform && isSuperadmin && (
+          <PlatformPluginsPanel />
+        )}
 
-      {activeTab === "clientRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
-        <div className="admin-card p-6 admin-panel-enter">
-          <ClientRequestsPanel />
-        </div>
-      )}
-      {activeTab === "agentRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
-        <div className="admin-card p-6 admin-panel-enter">
-          <AgentRequestsPanel />
-        </div>
-      )}
-      {activeTab === "modules" && (canBranding || isSuperadmin) && (
-        <div className="admin-card p-6 admin-panel-enter">
-          <ModulesPanel />
-        </div>
-      )}
-      {activeTab === "support" && (
-        <div className="h-[calc(100vh-180px)] md:h-[calc(100vh-120px)] -mt-4 -mx-4">
-          <div className="h-full bg-background/50 backdrop-blur-sm border rounded-xl overflow-hidden p-6">
-            <GetSupportPanel />
+        {activeTab === "clientRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
+            <ClientRequestsPanel />
           </div>
-        </div>
-      )}
-      {activeTab === "supportAdmin" && canAdmins && (
-        <div className="h-[calc(100vh-180px)] md:h-[calc(100vh-120px)] -mt-4 -mx-4">
-          <div className="h-full bg-background/50 backdrop-blur-sm border rounded-xl overflow-hidden flex flex-col">
-            <div className="p-4 border-b bg-muted/20 shrink-0 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold">Support Admin</h2>
-                <span className="microtext text-muted-foreground">Manage support tickets</span>
+        )}
+        {activeTab === "agentRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
+            <AgentRequestsPanel />
+          </div>
+        )}
+        {activeTab === "modules" && (canBranding || isSuperadmin) && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
+            <ModulesPanel />
+          </div>
+        )}
+        {activeTab === "support" && (
+          <GetSupportPanel />
+        )}
+        {activeTab === "supportAdmin" && canAdmins && (
+          <div className="h-[calc(100vh-180px)] md:h-[calc(100vh-120px)] -mt-4 -mx-4 p-4 md:p-6">
+            <div className="h-full glass-pane rounded-2xl border overflow-hidden flex flex-col shadow-2xl relative">
+              {/* Subtle background glow for the container */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50 pointer-events-none" />
+              
+              <div className="p-5 border-b border-foreground/5 bg-foreground/[0.02] shrink-0 flex items-center justify-between relative z-10">
+                <div>
+                  <h2 className="text-xl font-bold tracking-tight">Support Admin</h2>
+                  <span className="text-xs font-medium text-muted-foreground/80 uppercase tracking-wide">Manage support tickets</span>
+                </div>
+              </div>
+              <div className="flex-1 overflow-hidden p-5 relative z-10">
+                <SupportAdminPanel />
               </div>
             </div>
-            <div className="flex-1 overflow-hidden p-4">
-              <SupportAdminPanel />
-            </div>
           </div>
-        </div>
-      )}
-      {activeTab === "globalArt" && (
-        <GlobalArtPanel />
-      )}
-      {activeTab === "contracts" && isPlatform && isSuperadmin && (
-        <ContractsPanel />
-      )}
-      {activeTab === "writersWorkshop" && (
-        <WritersWorkshopPanelExt />
-      )}
-      {activeTab === "publications" && (
-        <PublicationsPanelExt />
-      )}
-      {activeTab === "endpoints" && (
-        <EndpointsPanel />
-      )}
-      {activeTab === "team" && (
-        <TeamPanel />
-      )}
-      {activeTab === "subscriptions" && (
-        <SubscriptionsPanel />
-      )}
-      {activeTab === "reports" && (
-        <ReportsPanelMerchant />
-      )}
-      {activeTab === "reportsPartner" && (canBranding || isSuperadmin) && (
-        <ReportsPanelPartner />
-      )}
-      {activeTab === "reportsPlatform" && isPlatform && isSuperadmin && (
-        <ReportsPanelPlatform />
-      )}
-      {activeTab === "nodeOperators" && isPlatform && isSuperadmin && (
-        <div className="admin-card p-6 admin-panel-enter">
-          <NodeOperatorsPanel />
-        </div>
-      )}
-      {activeTab === "nodeDashboard" && isSuperadmin && (
-        <div className="admin-card p-6 admin-panel-enter">
-          <NodeDashboardPanel />
-        </div>
-      )}
-      {activeTab === "agentUniversity" && isPlatform && isSuperadmin && (
-        <div className="animate-in fade-in zoom-in-95 duration-300">
-           <AgentUniversityPanelExt />
-        </div>
-      )}
-    </div>
+        )}
+        {activeTab === "globalArt" && (
+          <GlobalArtPanel />
+        )}
+        {activeTab === "contracts" && isPlatform && isSuperadmin && (
+          <ContractsPanel />
+        )}
+        {activeTab === "writersWorkshop" && (
+          <WritersWorkshopPanelExt />
+        )}
+        {activeTab === "publications" && (
+          <PublicationsPanelExt />
+        )}
+        {activeTab === "endpoints" && (
+          <EndpointsPanel industryPack={industryPack} />
+        )}
+        {activeTab === "team" && (
+          <TeamPanel />
+        )}
+        {activeTab === "subscriptions" && (
+          <SubscriptionsPanel />
+        )}
+        {activeTab === "reports" && (
+          <ReportsPanelMerchant />
+        )}
+        {activeTab === "reportsPartner" && (canBranding || isSuperadmin) && (
+          <ReportsPanelPartner />
+        )}
+        {activeTab === "reportsPlatform" && isPlatform && isSuperadmin && (
+          <ReportsPanelPlatform />
+        )}
+        {activeTab === "nodeOperators" && isPlatform && isSuperadmin && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
+            <NodeOperatorsPanel />
+          </div>
+        )}
+        {activeTab === "nodeDashboard" && isSuperadmin && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
+            <NodeDashboardPanel />
+          </div>
+        )}
+        {activeTab === "agentUniversity" && isPlatform && isSuperadmin && (
+          <div className="animate-in fade-in zoom-in-95 duration-300">
+            <AgentUniversityPanelExt />
+          </div>
+        )}
+      </div>
     </>
   );
 }

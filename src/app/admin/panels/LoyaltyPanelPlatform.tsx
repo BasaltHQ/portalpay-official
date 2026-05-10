@@ -276,7 +276,7 @@ function GlobalDefaultsTab() {
     if (loading) return <div className="p-8 text-center text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>;
 
     return (
-        <div className="space-y-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
             <div className="p-4 border border-yellow-500/20 bg-yellow-500/5 rounded-lg flex gap-3">
                 <Settings className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <div>

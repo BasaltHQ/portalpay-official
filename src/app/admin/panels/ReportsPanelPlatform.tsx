@@ -445,44 +445,44 @@ export default function ReportsPanelPlatform() {
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+        <div className="w-full space-y-6 pb-24 px-4 sm:px-6 lg:px-8 animate-in fade-in slide-in-from-bottom-4">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="glass-pane rounded-xl border p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <div className="flex items-center gap-2 mb-1">
-                        <Globe className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground font-medium">Platform</span>
+                        <Globe className="w-4 h-4 text-muted-foreground/80" />
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground/80 font-semibold">Platform</span>
                     </div>
-                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2">
                         Platform Reports
-                        {loading && <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />}
+                        {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
                     </h2>
                 </div>
                 <div className="flex gap-2 flex-wrap items-center">
                     {viewMode === "dashboard" && (
                         <>
-                            <button onClick={exportPDF} disabled={loading || !data} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-sm text-[10px] font-bold uppercase tracking-wider">
+                            <button onClick={exportPDF} disabled={loading || !data} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-lg shadow-primary/20 transition-all text-[10px] font-bold uppercase tracking-wider">
                                 <FileText className="w-3.5 h-3.5" /> PDF
                             </button>
-                            <button onClick={exportExcel} disabled={loading || !data} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-sm text-[10px] font-bold uppercase tracking-wider">
+                            <button onClick={exportExcel} disabled={loading || !data} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-lg shadow-green-600/20 transition-all text-[10px] font-bold uppercase tracking-wider">
                                 <Table2 className="w-3.5 h-3.5" /> Excel
                             </button>
                         </>
                     )}
                     {viewMode === "transactions" && (
                         <>
-                            <button onClick={exportTxPDF} disabled={txLoading || allTransactions.length === 0} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-sm text-[10px] font-bold uppercase tracking-wider">
+                            <button onClick={exportTxPDF} disabled={txLoading || allTransactions.length === 0} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-lg shadow-primary/20 transition-all text-[10px] font-bold uppercase tracking-wider">
                                 <FileText className="w-3.5 h-3.5" /> PDF
                             </button>
-                            <button onClick={exportTxExcel} disabled={txLoading || allTransactions.length === 0} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-sm text-[10px] font-bold uppercase tracking-wider">
+                            <button onClick={exportTxExcel} disabled={txLoading || allTransactions.length === 0} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-lg shadow-green-600/20 transition-all text-[10px] font-bold uppercase tracking-wider">
                                 <Table2 className="w-3.5 h-3.5" /> Excel
                             </button>
                         </>
                     )}
-                    <button onClick={() => setViewMode("dashboard")} className={`h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${viewMode === "dashboard" ? "bg-primary text-primary-foreground shadow-sm" : "border bg-background text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}>
+                    <button onClick={() => setViewMode("dashboard")} className={`h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${viewMode === "dashboard" ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]" : "bg-foreground/[0.02] text-muted-foreground border-foreground/5 hover:bg-foreground/5 hover:text-foreground"}`}>
                         <BarChart3 className="w-3 h-3 inline mr-1.5" />Dashboard
                     </button>
-                    <button onClick={() => setViewMode("transactions")} className={`h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${viewMode === "transactions" ? "bg-primary text-primary-foreground shadow-sm" : "border bg-background text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}>
+                    <button onClick={() => setViewMode("transactions")} className={`h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${viewMode === "transactions" ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]" : "bg-foreground/[0.02] text-muted-foreground border-foreground/5 hover:bg-foreground/5 hover:text-foreground"}`}>
                         <Link2 className="w-3 h-3 inline mr-1.5" />Txns
                     </button>
                 </div>
@@ -491,66 +491,66 @@ export default function ReportsPanelPlatform() {
             {/* Controls Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Date Range */}
-                <div className="lg:col-span-2 p-4 border rounded-xl bg-card">
+                <div className="lg:col-span-2 p-5 border rounded-xl glass-pane">
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Date Range</span>
+                        <span className="text-[10px] uppercase font-semibold tracking-widest text-muted-foreground/70">Date Range</span>
                     </div>
                     <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex bg-muted/20 p-1 rounded-lg border flex-1">
+                        <div className="flex bg-foreground/[0.02] p-1 rounded-lg border border-foreground/10 flex-1">
                             {["today", "yesterday", "week", "month", "all", "custom"].map((r) => (
-                                <button key={r} onClick={() => setRange(r)} className={`flex-1 text-[11px] uppercase font-bold tracking-wide py-2 rounded-md transition-all ${range === r ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}>
+                                <button key={r} onClick={() => setRange(r)} className={`flex-1 text-[10px] uppercase font-bold tracking-wide py-2 rounded-md transition-all ${range === r ? "bg-primary text-black shadow-sm ring-1 ring-primary/50" : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"}`}>
                                     {r}
                                 </button>
                             ))}
                         </div>
                         {range === "custom" && (
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
-                                <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="h-[38px] px-3 rounded-lg border bg-background text-xs font-medium focus:ring-1 focus:ring-primary" />
-                                <span className="text-muted-foreground text-xs">to</span>
-                                <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="h-[38px] px-3 rounded-lg border bg-background text-xs font-medium focus:ring-1 focus:ring-primary" />
+                                <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="h-[38px] px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-colors" />
+                                <span className="text-muted-foreground text-xs font-semibold">to</span>
+                                <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="h-[38px] px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-colors" />
                             </div>
                         )}
                     </div>
                 </div>
 
                 {/* Partner Selector */}
-                <div className="p-4 border rounded-xl bg-card">
+                <div className="p-5 border rounded-xl glass-pane flex flex-col">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Partners ({selectedPartners.size})</span>
+                        <span className="text-[10px] uppercase font-semibold tracking-widest text-muted-foreground/70">Partners ({selectedPartners.size})</span>
                         <div className="flex gap-1">
-                            <button onClick={selectAllPartners} className="px-2 py-0.5 bg-muted/50 rounded text-[10px] font-bold hover:bg-muted">
+                            <button onClick={selectAllPartners} className="px-2 py-0.5 bg-foreground/[0.02] hover:bg-foreground/5 border border-foreground/10 rounded text-[10px] font-bold uppercase tracking-wider text-muted-foreground transition-colors">
                                 <Check className="w-3 h-3 inline mr-0.5" /> All
                             </button>
-                            <button onClick={deselectAllPartners} className="px-2 py-0.5 bg-muted/50 rounded text-[10px] font-bold hover:bg-muted">
+                            <button onClick={deselectAllPartners} className="px-2 py-0.5 bg-foreground/[0.02] hover:bg-foreground/5 border border-foreground/10 rounded text-[10px] font-bold uppercase tracking-wider text-muted-foreground transition-colors">
                                 <X className="w-3 h-3 inline mr-0.5" /> None
                             </button>
                         </div>
                     </div>
-                    <div className="relative mb-2">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <div className="relative mb-3">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/70" />
                         <input
                             type="text"
                             value={partnerSearch}
                             onChange={(e) => setPartnerSearch(e.target.value)}
                             placeholder="Search partners..."
-                            className="w-full h-8 pl-8 pr-3 rounded-lg border bg-background text-xs focus:ring-1 focus:ring-primary"
+                            className="w-full h-[34px] pl-8 pr-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-xs focus:outline-none focus:ring-1 focus:ring-primary/50 transition-colors"
                         />
                     </div>
-                    <div className="max-h-40 overflow-y-auto space-y-0.5">
+                    <div className="max-h-32 overflow-y-auto space-y-0.5 pr-1 custom-scrollbar">
                         {filteredPartners.map((p: any) => (
-                            <label key={p.brandKey} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted/30 cursor-pointer transition-colors">
+                            <label key={p.brandKey} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-foreground/[0.02] cursor-pointer transition-colors group">
                                 <input
                                     type="checkbox"
                                     checked={selectedPartners.has(p.brandKey)}
                                     onChange={() => togglePartner(p.brandKey)}
-                                    className="w-3.5 h-3.5 rounded border-border accent-primary"
+                                    className="w-3.5 h-3.5 rounded border-foreground/20 text-primary focus:ring-primary/50 bg-foreground/[0.02] cursor-pointer"
                                 />
-                                <span className="text-sm font-medium flex-1 truncate">{p.name}</span>
-                                <span className="text-xs text-muted-foreground">{p.merchantCount} merchants</span>
+                                <span className="text-sm font-medium flex-1 truncate group-hover:text-primary transition-colors">{p.name}</span>
+                                <span className="text-[10px] font-semibold text-muted-foreground/70">{p.merchantCount} merchants</span>
                             </label>
                         ))}
                         {filteredPartners.length === 0 && (
-                            <div className="text-xs text-muted-foreground text-center py-2">No partners found</div>
+                            <div className="text-xs text-muted-foreground/70 text-center py-2 font-medium">No partners found</div>
                         )}
                     </div>
                 </div>
@@ -573,8 +573,8 @@ export default function ReportsPanelPlatform() {
                     {/* Visualization Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {(data.aggregate.totalSales > 0) && (
-                            <div className="rounded-xl border bg-card p-5">
-                                <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                            <div className="rounded-xl border p-6 glass-pane">
+                                <h3 className="font-semibold tracking-tight text-sm flex items-center gap-2 mb-5">
                                     <BarChart3 className="h-4 w-4 text-primary" />
                                     Revenue Composition
                                 </h3>
@@ -586,8 +586,8 @@ export default function ReportsPanelPlatform() {
                             </div>
                         )}
                         {(data.aggregate.merchantEarned > 0 || data.aggregate.platformFee > 0) && (
-                            <div className="rounded-xl border bg-card p-5">
-                                <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                            <div className="rounded-xl border p-6 glass-pane">
+                                <h3 className="font-semibold tracking-tight text-sm flex items-center gap-2 mb-5">
                                     <PieChart className="h-4 w-4 text-primary" />
                                     Revenue Split
                                 </h3>
@@ -603,8 +603,8 @@ export default function ReportsPanelPlatform() {
 
                     {/* Partner Volume Comparison */}
                     {data?.partners?.length > 1 && (
-                        <div className="rounded-xl border bg-card p-5">
-                            <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                        <div className="rounded-xl border p-6 glass-pane">
+                            <h3 className="font-semibold tracking-tight text-sm flex items-center gap-2 mb-5">
                                 <Building2 className="h-4 w-4 text-primary" />
                                 Partner Volume Comparison
                             </h3>
@@ -617,8 +617,8 @@ export default function ReportsPanelPlatform() {
 
                     {/* Merchant Treemap */}
                     {data?.merchants?.length > 0 && (
-                        <div className="rounded-xl border bg-card p-5">
-                            <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                        <div className="rounded-xl border p-6 glass-pane">
+                            <h3 className="font-semibold tracking-tight text-sm flex items-center gap-2 mb-5">
                                 <Users className="h-4 w-4 text-primary" />
                                 Top Merchants by Volume
                             </h3>
@@ -630,32 +630,32 @@ export default function ReportsPanelPlatform() {
 
             {/* Partner Breakdown */}
             {viewMode === "dashboard" && data?.partners && data.partners.length > 0 && (
-                <div className="border rounded-xl bg-card overflow-hidden">
-                    <div className="p-4 border-b">
-                        <h3 className="text-lg font-bold">Partner Breakdown</h3>
+                <div className="border rounded-xl glass-pane overflow-hidden">
+                    <div className="p-5 border-b border-foreground/10">
+                        <h3 className="text-xl font-semibold tracking-tight">Partner Breakdown</h3>
                     </div>
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto bg-foreground/[0.01]">
                         <table className="w-full text-sm">
-                            <thead className="text-xs uppercase text-muted-foreground border-b bg-muted/20">
+                            <thead className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground/70 border-b border-foreground/10 bg-foreground/[0.03] sticky top-0 z-10 backdrop-blur-md">
                                 <tr>
-                                    <th className="text-left py-3 px-4">Partner</th>
-                                    <th className="text-right py-3 px-4">Merchants</th>
-                                    <th className="text-right py-3 px-4">Sales</th>
-                                    <th className="text-right py-3 px-4">Tips</th>
-                                    <th className="text-right py-3 px-4">Txns</th>
+                                    <th className="text-left py-3 px-5">Partner</th>
+                                    <th className="text-right py-3 px-5">Merchants</th>
+                                    <th className="text-right py-3 px-5">Sales</th>
+                                    <th className="text-right py-3 px-5">Tips</th>
+                                    <th className="text-right py-3 px-5">Txns</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y divide-foreground/5">
                                 {data.partners.map((p: any) => (
-                                    <tr key={p.brandKey} className="hover:bg-muted/10 transition-colors">
-                                        <td className="py-3 px-4">
-                                            <div className="font-medium">{p.name}</div>
-                                            <div className="text-xs text-muted-foreground">{p.brandKey}</div>
+                                    <tr key={p.brandKey} className="hover:bg-foreground/[0.02] transition-colors">
+                                        <td className="py-3 px-5">
+                                            <div className="font-semibold">{p.name}</div>
+                                            <div className="text-[10px] font-semibold text-muted-foreground/70">{p.brandKey}</div>
                                         </td>
-                                        <td className="py-3 px-4 text-right">{p.merchantCount}</td>
-                                        <td className="py-3 px-4 text-right font-mono font-semibold">{formatCurrency(p.totalSales, "USD")}</td>
-                                        <td className="py-3 px-4 text-right font-mono text-green-500">{formatCurrency(p.totalTips, "USD")}</td>
-                                        <td className="py-3 px-4 text-right">{p.transactionCount}</td>
+                                        <td className="py-3 px-5 text-right font-medium">{p.merchantCount}</td>
+                                        <td className="py-3 px-5 text-right font-mono font-medium">{formatCurrency(p.totalSales, "USD")}</td>
+                                        <td className="py-3 px-5 text-right font-mono font-medium text-green-500">{formatCurrency(p.totalTips, "USD")}</td>
+                                        <td className="py-3 px-5 text-right font-medium">{p.transactionCount}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -666,45 +666,45 @@ export default function ReportsPanelPlatform() {
 
             {/* Merchant Table */}
             {viewMode === "dashboard" && data && (
-                <div className="border rounded-xl bg-card overflow-hidden">
-                    <div className="p-4 border-b flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">
-                        <h3 className="text-lg font-bold">All Merchants ({filteredMerchants.length})</h3>
+                <div className="border rounded-xl glass-pane overflow-hidden">
+                    <div className="p-5 border-b border-foreground/10 flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">
+                        <h3 className="text-xl font-semibold tracking-tight flex items-center gap-2">All Merchants ({filteredMerchants.length})</h3>
                         <div className="relative w-full md:w-72">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
                             <input
                                 type="text"
                                 value={merchantSearch}
                                 onChange={(e) => setMerchantSearch(e.target.value)}
                                 placeholder="Search merchants..."
-                                className="w-full h-9 pl-10 pr-3 rounded-lg border bg-background text-sm focus:ring-1 focus:ring-primary"
+                                className="w-full h-[38px] pl-10 pr-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-colors"
                             />
                         </div>
                     </div>
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto bg-foreground/[0.01]">
                         <table className="w-full text-sm">
-                            <thead className="text-xs uppercase text-muted-foreground border-b bg-muted/20">
+                            <thead className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground/70 border-b border-foreground/10 bg-foreground/[0.03] sticky top-0 z-10 backdrop-blur-md">
                                 <tr>
-                                    <th className="text-left py-3 px-4 w-8" />
-                                    <th className="text-left py-3 px-4 cursor-pointer hover:text-foreground" onClick={() => toggleSort("name")}>
+                                    <th className="text-left py-3 px-5 w-8" />
+                                    <th className="text-left py-3 px-5 cursor-pointer hover:text-foreground transition-colors" onClick={() => toggleSort("name")}>
                                         Merchant {sortBy === "name" && (sortDir === "asc" ? "↑" : "↓")}
                                     </th>
-                                    <th className="text-left py-3 px-4 cursor-pointer hover:text-foreground" onClick={() => toggleSort("brandKey")}>
+                                    <th className="text-left py-3 px-5 cursor-pointer hover:text-foreground transition-colors" onClick={() => toggleSort("brandKey")}>
                                         Partner {sortBy === "brandKey" && (sortDir === "asc" ? "↑" : "↓")}
                                     </th>
-                                    <th className="text-right py-3 px-4 cursor-pointer hover:text-foreground" onClick={() => toggleSort("totalSales")}>
+                                    <th className="text-right py-3 px-5 cursor-pointer hover:text-foreground transition-colors" onClick={() => toggleSort("totalSales")}>
                                         Sales {sortBy === "totalSales" && (sortDir === "asc" ? "↑" : "↓")}
                                     </th>
-                                    <th className="text-right py-3 px-4">Tips</th>
-                                    <th className="text-right py-3 px-4 cursor-pointer hover:text-foreground" onClick={() => toggleSort("transactionCount")}>
+                                    <th className="text-right py-3 px-5">Tips</th>
+                                    <th className="text-right py-3 px-5 cursor-pointer hover:text-foreground transition-colors" onClick={() => toggleSort("transactionCount")}>
                                         Txns {sortBy === "transactionCount" && (sortDir === "asc" ? "↑" : "↓")}
                                     </th>
-                                    <th className="text-right py-3 px-4">Avg Order</th>
+                                    <th className="text-right py-3 px-5">Avg Order</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y divide-foreground/5">
                                 {filteredMerchants.map((m: any, idx: number) => (
                                     <React.Fragment key={`${m.wallet}-${idx}`}>
-                                        <tr className="hover:bg-muted/10 transition-colors cursor-pointer" onClick={() => loadMerchantDetail(m.wallet)}>
+                                        <tr className="hover:bg-foreground/[0.02] transition-colors cursor-pointer" onClick={() => loadMerchantDetail(m.wallet)}>
                                             <td className="py-3 px-4">
                                                 {expandedMerchant === m.wallet ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                                             </td>
@@ -896,16 +896,16 @@ export default function ReportsPanelPlatform() {
 
             {/* Transactions Tab */}
             {viewMode === "transactions" && (
-                <div className="border rounded-xl bg-card overflow-hidden">
-                    <div className="p-4 border-b space-y-3">
+                <div className="border rounded-xl glass-pane overflow-hidden">
+                    <div className="p-5 border-b border-foreground/10 space-y-4">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold flex items-center gap-2">
+                            <h3 className="text-xl font-semibold tracking-tight flex items-center gap-2">
                                 <Link2 className="w-5 h-5 text-primary" />
                                 On-Chain Transactions
                                 {txLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-                                {!txLoading && <span className="text-sm font-normal text-muted-foreground">({getFilteredTransactions().length})</span>}
+                                {!txLoading && <span className="text-sm font-medium text-muted-foreground/70">({getFilteredTransactions().length})</span>}
                             </h3>
-                            <button onClick={() => loadAllTransactions(true)} disabled={txLoading} className="h-8 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider hover:bg-muted/50 disabled:opacity-50 transition-colors">
+                            <button onClick={() => loadAllTransactions(true)} disabled={txLoading} className="h-8 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/5 bg-foreground/[0.02] border-foreground/10 disabled:opacity-50 transition-colors">
                                 Refresh
                             </button>
                         </div>
@@ -917,16 +917,16 @@ export default function ReportsPanelPlatform() {
                                 return (
                                     <button key={f} onClick={() => setTxTypeFilter(f)}
                                         className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${isActive
-                                            ? (f === "all" ? "bg-primary text-primary-foreground border-primary" : colors[f])
-                                            : "bg-background text-muted-foreground border-border hover:bg-muted/50"
+                                            ? (f === "all" ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]" : colors[f])
+                                            : "bg-foreground/[0.02] text-muted-foreground border-foreground/5 hover:bg-foreground/5"
                                             }`}>
                                         {labels[f]}
                                     </button>
                                 );
                             })}
-                            <div className="h-6 w-px bg-border mx-1" />
+                            <div className="h-6 w-px bg-foreground/10 mx-1" />
                             <select value={txMerchantFilter} onChange={e => setTxMerchantFilter(e.target.value)}
-                                className="h-[30px] px-2 rounded-lg border bg-background text-[10px] font-bold uppercase tracking-wider focus:ring-1 focus:ring-primary">
+                                className="h-[34px] px-2 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-[10px] font-bold uppercase tracking-wider focus:ring-1 focus:ring-primary/50 transition-colors">
                                 <option value="">All Merchants</option>
                                 {(data?.merchants || []).map((m: any) => (
                                     <option key={m.wallet} value={m.wallet.toLowerCase()}>{m.name || m.wallet.slice(0, 10)}</option>
@@ -979,15 +979,15 @@ export default function ReportsPanelPlatform() {
                         };
                         const hasAgent = agentUsd > 0 || Object.keys(agentByToken).length > 0;
                         return (
-                            <div className={`grid grid-cols-2 ${hasAgent ? 'md:grid-cols-7' : 'md:grid-cols-6'} gap-3 px-4 py-3 border-b bg-muted/5`}>
-                                <div className="p-3 rounded-xl border bg-background/60">
-                                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Active Merchants</div>
+                            <div className={`grid grid-cols-2 ${hasAgent ? 'md:grid-cols-7' : 'md:grid-cols-6'} gap-3 px-5 py-4 border-b border-foreground/10 bg-foreground/[0.01]`}>
+                                <div className="p-3 rounded-xl border bg-foreground/[0.02]">
+                                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-1">Active Merchants</div>
                                     <div className="text-2xl font-bold">{merchants.size}</div>
                                 </div>
-                                <div className="p-3 rounded-xl border bg-background/60">
-                                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Total Volume</div>
+                                <div className="p-3 rounded-xl border bg-foreground/[0.02]">
+                                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-1">Total Volume</div>
                                     <div className="text-lg font-bold font-mono">{formatCurrency(volumeUsd, "USD")}</div>
-                                    {renderTokenRows(volumeByToken, 'text-muted-foreground')}
+                                    {renderTokenRows(volumeByToken, 'text-muted-foreground/70')}
                                 </div>
                                 <div className="p-3 rounded-xl border bg-emerald-500/5 border-emerald-500/20">
                                     <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1">Merchant Share</div>
@@ -1014,7 +1014,7 @@ export default function ReportsPanelPlatform() {
                                 <div className="p-3 rounded-xl border bg-blue-500/5 border-blue-500/20">
                                     <div className="text-[10px] font-bold uppercase tracking-wider text-blue-400 mb-1">Total Transactions</div>
                                     <div className="text-2xl font-bold text-blue-400">{txs.length}</div>
-                                    <div className="text-[10px] text-muted-foreground">on-chain</div>
+                                    <div className="text-[10px] text-muted-foreground/70">on-chain</div>
                                 </div>
                             </div>
                         );
@@ -1022,58 +1022,58 @@ export default function ReportsPanelPlatform() {
                     {(() => {
                         const filtered = getFilteredTransactions();
                         return filtered.length > 0 ? (
-                            <div className="max-h-[600px] overflow-y-auto">
+                            <div className="max-h-[600px] overflow-y-auto bg-foreground/[0.01]">
                                 <table className="w-full text-sm">
-                                    <thead className="text-xs uppercase text-muted-foreground border-b bg-muted/20 sticky top-0">
+                                    <thead className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground/70 border-b border-foreground/10 bg-foreground/[0.03] sticky top-0 z-10 backdrop-blur-md">
                                         <tr>
-                                            <th className="text-left py-2.5 px-4">Date</th>
-                                            <th className="text-left py-2.5 px-4">Merchant</th>
-                                            <th className="text-left py-2.5 px-4">Tx Hash</th>
-                                            <th className="text-left py-2.5 px-4">Type</th>
-                                            <th className="text-left py-2.5 px-4">Token</th>
-                                            <th className="text-right py-2.5 px-4">Amount</th>
+                                            <th className="text-left py-3 px-5">Date</th>
+                                            <th className="text-left py-3 px-5">Merchant</th>
+                                            <th className="text-left py-3 px-5">Tx Hash</th>
+                                            <th className="text-left py-3 px-5">Type</th>
+                                            <th className="text-left py-3 px-5">Token</th>
+                                            <th className="text-right py-3 px-5">Amount</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-border/50">
+                                    <tbody className="divide-y divide-foreground/5">
                                         {filtered.map((tx: any, idx: number) => (
-                                            <tr key={`${tx.hash}-${idx}`} className="hover:bg-muted/10 transition-colors">
-                                                <td className="py-2 px-4 text-muted-foreground whitespace-nowrap">
+                                            <tr key={`${tx.hash}-${idx}`} className="hover:bg-foreground/[0.02] transition-colors">
+                                                <td className="py-3 px-5 text-muted-foreground/80 font-medium whitespace-nowrap">
                                                     {tx.timestamp ? new Date(tx.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }) : '\u2014'}
                                                 </td>
-                                                <td className="py-2 px-4">
+                                                <td className="py-3 px-5">
                                                     <div className="flex items-center gap-2">
                                                         {tx.merchantLogo && <img src={tx.merchantLogo} alt="" className="w-5 h-5 rounded-full" />}
                                                         <div>
-                                                            <span className="font-medium text-xs">{tx.merchantName}</span>
-                                                            {tx.brandKey && <span className="ml-1.5 text-[10px] text-muted-foreground">({tx.brandKey})</span>}
+                                                            <span className="font-semibold text-xs">{tx.merchantName}</span>
+                                                            {tx.brandKey && <span className="ml-1.5 text-[10px] font-semibold text-muted-foreground/70">({tx.brandKey})</span>}
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="py-2 px-4">
+                                                <td className="py-3 px-5">
                                                     <a href={`https://basescan.org/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono text-primary hover:underline text-xs">
                                                         {tx.hash.slice(0, 8)}…{tx.hash.slice(-4)}
                                                     </a>
                                                 </td>
-                                                <td className="py-2 px-4">
-                                                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${tx.type === 'payment' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20'
-                                                        : tx.releaseType === 'merchant' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                                                            : tx.releaseType === 'partner' ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20'
-                                                                : tx.releaseType === 'agent' ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/20'
-                                                                    : 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
+                                                <td className="py-3 px-5">
+                                                    <span className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest ${tx.type === 'payment' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                                        : tx.releaseType === 'merchant' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                                            : tx.releaseType === 'partner' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                                                                : tx.releaseType === 'agent' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                                                                    : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                                                         }`}>
                                                         {tx.type === 'release' ? `${tx.releaseType || ''} release` : tx.type}
                                                     </span>
                                                 </td>
-                                                <td className="py-2 px-4 font-medium">{tx.token}</td>
-                                                <td className="py-2 px-4 text-right font-mono">{Number(tx.value || 0).toFixed(6)}</td>
+                                                <td className="py-3 px-5 font-semibold text-xs">{tx.token}</td>
+                                                <td className="py-3 px-5 text-right font-mono font-medium">{Number(tx.value || 0).toFixed(6)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
                         ) : (
-                            <div className="p-12 text-center text-muted-foreground">
-                                {txLoading ? "Loading transactions..." : "No on-chain transactions found"}
+                            <div className="p-16 text-center text-sm font-medium text-muted-foreground/70">
+                                {txLoading ? "Loading transactions..." : "No on-chain transactions found for this period"}
                             </div>
                         );
                     })()}
@@ -1085,9 +1085,10 @@ export default function ReportsPanelPlatform() {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
     return (
-        <div className="p-4 rounded-xl border bg-card hover:bg-muted/10 transition-colors flex flex-col justify-between">
-            <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider leading-tight min-h-[1rem]">{label}</div>
-            <div className="text-xl font-bold mt-2 truncate">{value}</div>
+        <div className="glass-pane border rounded-xl p-5 relative overflow-hidden group">
+            <div className="text-[10px] text-muted-foreground/70 uppercase font-semibold tracking-wider">{label}</div>
+            <div className="text-2xl font-bold my-1 relative z-10 truncate">{value}</div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
         </div>
     );
 }

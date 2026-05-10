@@ -1799,7 +1799,7 @@ function SeriesManager({ items, load, account }: { items: BookInventoryItem[], l
     }
 
     return (
-        <div className="space-y-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
             <h3 className="font-bold text-lg">Your Series ({seriesList.length})</h3>
 
             {seriesList.length === 0 && (

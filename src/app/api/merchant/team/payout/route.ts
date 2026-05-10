@@ -20,45 +20,61 @@ export async function POST(req: NextRequest) {
         const now = Math.floor(Date.now() / 1000);
 
         // Find target sessions
-        let targetIds: string[] = [];
+        let targets: { id: string, wallet?: string, type: 'session' | 'receipt' }[] = [];
 
         if (Array.isArray(sessionIds) && sessionIds.length > 0) {
-            targetIds = sessionIds;
+            // Note: If exact sessionIds are passed, we query them to get their true partition key
+            const query = {
+                query: "SELECT c.id, c.wallet FROM c WHERE ARRAY_CONTAINS(@ids, c.id) AND c.type='terminal_session'",
+                parameters: [{ name: "@ids", value: sessionIds }]
+            };
+            const { resources } = await container.items.query(query).fetchAll();
+            targets.push(...resources.map(r => ({ id: r.id, wallet: r.wallet, type: 'session' as const })));
         } else if (staffId) {
             const query = {
-                query: "SELECT c.id FROM c WHERE c.type='terminal_session' AND c.merchantWallet=@w AND c.staffId=@sid AND (NOT IS_DEFINED(c.tipsPaid) OR c.tipsPaid=false) AND IS_DEFINED(c.endTime)",
+                query: "SELECT c.id, c.wallet FROM c WHERE c.type='terminal_session' AND c.merchantWallet=@w AND c.staffId=@sid AND (NOT IS_DEFINED(c.tipsPaid) OR c.tipsPaid=false) AND IS_DEFINED(c.endTime)",
                 parameters: [
                     { name: "@w", value: merchantWallet },
                     { name: "@sid", value: staffId }
                 ]
             };
             const { resources } = await container.items.query(query).fetchAll();
-            targetIds = resources.map((r: any) => r.id);
+            targets.push(...resources.map(r => ({ id: r.id, wallet: r.wallet, type: 'session' as const })));
         }
 
-        if (targetIds.length === 0) {
-            return NextResponse.json({ success: true, count: 0, message: "No unpaid sessions found" });
+        if (staffId && (!Array.isArray(sessionIds) || sessionIds.length === 0)) {
+            const strayQuery = {
+                query: "SELECT c.id, c.wallet FROM c WHERE c.type='receipt' AND c.wallet=@w AND (c.staffId=@sid OR c.employeeId=@sid) AND c.tipAmount > 0 AND (NOT IS_DEFINED(c.tipsPaid) OR c.tipsPaid=false)",
+                parameters: [
+                    { name: "@w", value: merchantWallet },
+                    { name: "@sid", value: staffId }
+                ]
+            };
+            const { resources } = await container.items.query(strayQuery).fetchAll();
+            targets.push(...resources.map(r => ({ id: r.id, wallet: r.wallet, type: 'receipt' as const })));
         }
 
-        // Execute patches concurrently (batching would be better but simple concurrency is OK for reasonable size)
-        // Cosmos patch requires partition key. Session ID is unique?
-        // Partition key for terminal_session is `merchantWallet` usually?
-        // Wait, in `session/route.ts` I used `container.item(sessionId, w).patch(...)`.
-        // So `merchantWallet` IS the partition key.
+        if (targets.length === 0) {
+            return NextResponse.json({ success: true, count: 0, message: "No unpaid sessions or receipts found" });
+        }
 
-        const promises = targetIds.map(id => {
-            return container.item(id, merchantWallet).patch([
+        const promises = targets.map(doc => {
+            // Fallback to undefined if missing, otherwise use the actual partition key value
+            const partitionKey = doc.wallet !== undefined ? doc.wallet : undefined;
+            return container.item(doc.id, partitionKey).patch([
                 { op: "set", path: "/tipsPaid", value: true },
                 { op: "set", path: "/tipsPaidAt", value: now }
             ]).catch(e => {
-                console.error(`Failed to pay out session ${id}`, e);
+                console.error(`Failed to pay out ${doc.type} ${doc.id} with PK ${partitionKey}:`, e);
                 return null;
             });
         });
 
         await Promise.all(promises);
 
-        return NextResponse.json({ success: true, count: targetIds.length });
+        return NextResponse.json({ success: true, count: targets.length });
+
+
 
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });

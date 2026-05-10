@@ -860,7 +860,7 @@ export function ShopPanel() {
   }
 
   return (
-    <div className={shopMode === 'advanced' || shopMode === 'portal' ? 'overflow-hidden flex flex-col -m-4 sm:-m-6' : 'w-full space-y-6'} style={shopMode === 'advanced' || shopMode === 'portal' ? { height: 'calc(100vh - 64px)' } : undefined}>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24" style={shopMode === 'advanced' || shopMode === 'portal' ? { height: 'calc(100vh - 64px)' } : undefined}>
       <ShopThemeAuditor expected={cfg.theme} />
       <div className={`flex items-center justify-between ${shopMode === 'advanced' || shopMode === 'portal' ? 'px-6 py-4 border-b border-white/5' : ''}`}>
         <div className="flex items-center gap-4">

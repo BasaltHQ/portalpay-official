@@ -277,7 +277,7 @@ export function UpdatesPanel({ brandKey }: { brandKey?: string }) {
   };
 
   return (
-    <div className="space-y-6 admin-panel-enter">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
       {/* Top Header */}
       <div className="flex flex-col gap-2">
         <h2 className="text-2xl font-bold tracking-tight text-foreground">Platform Communications</h2>

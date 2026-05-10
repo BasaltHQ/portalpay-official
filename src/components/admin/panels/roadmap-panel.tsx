@@ -53,7 +53,7 @@ export function RoadmapPanel({ brandKey }: { brandKey?: string }) {
   };
 
   return (
-    <div className="space-y-8 admin-panel-enter">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
       {/* Header */}
       <div className="flex flex-col gap-2 relative p-8 rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-md">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />

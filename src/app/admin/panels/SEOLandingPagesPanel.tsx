@@ -613,7 +613,7 @@ export function SEOLandingPagesPanel() {
   }, [editFormData, updateFormField]);
 
   return (
-    <div className="glass-pane rounded-xl border p-6 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

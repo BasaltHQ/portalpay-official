@@ -826,7 +826,7 @@ export default function RewardsPanel() {
 
     // Main List View continued...
     return (
-        <>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
             <div className="space-y-8 pb-10">
                 {/* Global Status Card - Redesigned */}
                 <div className="relative overflow-hidden rounded-3xl bg-black border border-white/10 shadow-2xl">
@@ -1272,6 +1272,6 @@ export default function RewardsPanel() {
                 merchantArtConfigs={merchantArtConfigs}
                 merchantLoyaltyConfigs={merchantLoyaltyConfigs}
             />
-        </>
+        </div>
     )
 }

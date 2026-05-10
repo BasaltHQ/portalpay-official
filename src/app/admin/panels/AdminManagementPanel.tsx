@@ -167,12 +167,12 @@ export default function AdminManagementPanel() {
     if (loading && admins.length === 0) return <div className="p-8 text-center text-muted-foreground">Loading admins...</div>;
 
     return (
-        <div className="space-y-6">
+        <div className="w-full px-4 sm:px-6 lg:px-8 space-y-6 pb-24">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-indigo-500" />
-                    Admin Management
-                </h2>
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">Admin Management</h1>
+                    <p className="text-sm text-muted-foreground mt-1">Manage global platform administrators and view audit logs.</p>
+                </div>
                 <div className="flex bg-muted rounded-lg p-1">
                     <button
                         onClick={() => setActiveTab("users")}
@@ -193,51 +193,52 @@ export default function AdminManagementPanel() {
             {success && <div className="bg-green-500/10 border border-green-500/20 text-green-500 p-3 rounded-md text-sm">{success}</div>}
 
             {/* Editor Card */}
-            <div id="admin-form" className="glass-pane p-4 border rounded-xl space-y-4 bg-muted/30">
-                <h3 className="text-sm font-medium flex items-center gap-2">
-                    {isEditing ? <Save className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-                    {isEditing ? "Edit Admin" : "Add New Admin"}
-                </h3>
+            <div id="admin-form" className="glass-pane rounded-xl border overflow-hidden">
+                <div className="px-5 py-4 border-b border-foreground/5 flex items-center gap-2">
+                    {isEditing ? <Save className="w-4 h-4 text-muted-foreground" /> : <UserPlus className="w-4 h-4 text-muted-foreground" />}
+                    <h4 className="text-sm font-semibold">{isEditing ? "Edit Admin" : "Add New Admin"}</h4>
+                </div>
+                <div className="p-5 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                        <label className="microtext text-muted-foreground block mb-1">Wallet Address</label>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1.5">Wallet Address</label>
                         <input
                             type="text"
                             placeholder="0x..."
-                            className={`w-full h-9 px-3 border rounded-md bg-background text-sm font-mono ${isEditing ? "opacity-50 cursor-not-allowed" : ""}`}
+                            className={`w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm font-mono focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors ${isEditing ? "opacity-50 cursor-not-allowed" : ""}`}
                             value={formWallet}
                             onChange={(e) => setFormWallet(e.target.value)}
                             disabled={isEditing}
                         />
                     </div>
                     <div>
-                        <label className="microtext text-muted-foreground block mb-1">Role</label>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1.5">Role</label>
                         <select
-                            className="w-full h-9 px-3 border rounded-md bg-background text-sm"
+                            className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                             value={formRole}
                             onChange={(e) => setFormRole(e.target.value as AdminRole)}
                         >
-                            <option value="platform_admin">General Admin</option>
-                            <option value="platform_super_admin">Master Admin</option>
-                            <option value="partner_admin">Partner Admin</option>
+                            <option className="bg-background text-foreground" value="platform_admin">General Admin</option>
+                            <option className="bg-background text-foreground" value="platform_super_admin">Master Admin</option>
+                            <option className="bg-background text-foreground" value="partner_admin">Partner Admin</option>
                         </select>
                     </div>
                     <div>
-                        <label className="microtext text-muted-foreground block mb-1">Name (Optional)</label>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1.5">Name (Optional)</label>
                         <input
                             type="text"
                             placeholder="e.g. John Doe"
-                            className="w-full h-9 px-3 border rounded-md bg-background text-sm"
+                            className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                             value={formName}
                             onChange={(e) => setFormName(e.target.value)}
                         />
                     </div>
                     <div>
-                        <label className="microtext text-muted-foreground block mb-1">Email (Optional)</label>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1.5">Email (Optional)</label>
                         <input
                             type="email"
                             placeholder="john@example.com"
-                            className="w-full h-9 px-3 border rounded-md bg-background text-sm"
+                            className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                             value={formEmail}
                             onChange={(e) => setFormEmail(e.target.value)}
                         />
@@ -247,7 +248,7 @@ export default function AdminManagementPanel() {
                     {isEditing && (
                         <button
                             onClick={resetForm}
-                            className="px-4 py-2 border hover:bg-muted text-sm rounded-md transition-colors"
+                            className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium"
                         >
                             Cancel
                         </button>
@@ -255,24 +256,26 @@ export default function AdminManagementPanel() {
                     <button
                         onClick={handleSubmit}
                         disabled={!formWallet}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isEditing ? "Update Admin" : "Add Admin"}
                     </button>
                 </div>
             </div>
 
-            {/* Admin List */}
-            <div className="border rounded-xl overflow-hidden">
-                <div className="bg-muted/50 px-4 py-3 border-b grid grid-cols-12 gap-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            </div>
+
+            {}
+            <div className="glass-pane rounded-xl border overflow-hidden">
+                <div className="border-b border-foreground/5 px-4 py-3 grid grid-cols-12 gap-4 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                     <div className="col-span-5">User Info</div>
                     <div className="col-span-3">Role</div>
                     <div className="col-span-3">Details</div>
                     <div className="col-span-1 text-right">Action</div>
                 </div>
-                <div className="divide-y">
+                <div>
                     {admins.map((admin) => (
-                        <div key={admin.wallet} className="px-4 py-3 grid grid-cols-12 gap-4 items-center hover:bg-muted/20 transition-colors">
+                        <div key={admin.wallet} className="px-4 py-3 grid grid-cols-12 gap-4 items-center hover:bg-foreground/5 transition-colors border-t border-foreground/5">
                             <div className="col-span-5 overflow-hidden">
                                 <div className="font-medium text-sm truncate">{admin.name || "Unknown"}</div>
                                 <div className="font-mono text-xs text-muted-foreground truncate" title={admin.wallet}>{admin.wallet}</div>

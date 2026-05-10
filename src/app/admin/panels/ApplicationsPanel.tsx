@@ -32,11 +32,11 @@ export default function ApplicationsPanel() {
   const containerType = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || "platform").toLowerCase();
   if (containerType === "partner") {
     return (
-      <div className="glass-pane rounded-xl border p-6 space-y-4">
+      <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Applications</h2>
+          <h2 className="text-xl font-bold tracking-tight">Applications</h2>
         </div>
-        <div className="microtext text-muted-foreground">
+        <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
           This section is available only in the Platform container. Partner containers do not include Applications or Partners admin panels.
         </div>
       </div>
@@ -275,15 +275,20 @@ export default function ApplicationsPanel() {
   }
 
   return (
-    <div className="glass-pane rounded-xl border p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Applications</h2>
-        <div className="flex items-center gap-2">
-          <button className="px-3 py-1.5 rounded-md border text-sm" onClick={load} disabled={loading}>
+    <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-6">
+      <div className="flex items-center justify-between border-b border-foreground/5 pb-4">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Applications</h2>
+          <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-1">
+            Review partner applications submitted from the public /partners page.
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="px-3 py-1.5 rounded-md border border-foreground/10 bg-foreground/5 hover:bg-foreground/10 text-xs font-bold transition-colors uppercase tracking-wider" onClick={load} disabled={loading}>
             {loading ? "Refreshing…" : "Refresh"}
           </button>
           <button
-            className="px-3 py-1.5 rounded-md border text-sm"
+            className="px-3 py-1.5 rounded-md border border-foreground/10 bg-foreground/5 hover:bg-foreground/10 text-xs font-bold transition-colors uppercase tracking-wider"
             onClick={async () => {
               try {
                 setError("");
@@ -316,21 +321,19 @@ export default function ApplicationsPanel() {
           </button>
         </div>
       </div>
-      <div className="microtext text-muted-foreground">
-        Review partner applications submitted from the public /partners page. Approving will create the brand key in the index and apply the provided config (branding, wallet, fees). Once approved, the brand appears in the Partners panel for container deployment.
-      </div>
-      {error && <div className="microtext text-red-500">{error}</div>}
-      {info && <div className="microtext text-green-600">{info}</div>}
+      
+      {error && <div className="text-[10px] uppercase font-bold text-red-500 tracking-wider">{error}</div>}
+      {info && <div className="text-[10px] uppercase font-bold text-emerald-500 tracking-wider">{info}</div>}
 
       {editApp && (
-        <div className="rounded-md border p-4 bg-foreground/5">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-semibold">
-              Edit Images — <span className="font-mono">{editApp.brandKey}</span>
+        <div className="rounded-xl border border-foreground/10 bg-foreground/[0.03] p-5 shadow-sm">
+          <div className="flex items-center justify-between border-b border-foreground/5 pb-3">
+            <div className="text-sm font-bold tracking-tight">
+              Edit Images — <span className="font-mono text-primary">{editApp.brandKey}</span>
             </div>
             <div className="flex items-center gap-2">
               <button
-                className="px-2 py-1 rounded-md border text-xs"
+                className="px-3 py-1 rounded-md border border-foreground/10 hover:bg-foreground/5 text-[10px] font-bold uppercase tracking-wider transition-colors"
                 onClick={() => setEditApp(null)}
                 disabled={editBusy}
                 title="Cancel image edits"
@@ -338,7 +341,7 @@ export default function ApplicationsPanel() {
                 Cancel
               </button>
               <button
-                className="px-2 py-1 rounded-md border text-xs"
+                className="px-3 py-1 rounded-md border border-primary/20 bg-primary/10 text-primary hover:bg-primary/20 text-[10px] font-bold uppercase tracking-wider transition-colors"
                 onClick={saveEdit}
                 disabled={editBusy}
                 title="Save image URLs to application"
@@ -347,20 +350,22 @@ export default function ApplicationsPanel() {
               </button>
             </div>
           </div>
-          {editError && <div className="microtext text-red-500 mt-2">{editError}</div>}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
-            <div className="rounded-md border p-2">
-              <div className="microtext text-muted-foreground">App</div>
+          {editError && <div className="text-[10px] uppercase font-bold text-red-500 tracking-wider mt-3">{editError}</div>}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+            <div className="rounded-lg border border-foreground/5 bg-background/50 p-3 hover:shadow-md transition-shadow">
+              <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">App</div>
               {editLogos?.app ? (
-                <div className="mt-1 space-y-1">
-                  <img src={editLogos.app} alt="App Logo" className="max-h-16 object-contain" />
-                  <div className="microtext font-mono truncate">{editLogos.app}</div>
+                <div className="space-y-2">
+                  <div className="h-16 flex items-center justify-center bg-white/5 rounded border border-foreground/5 p-1">
+                     <img src={editLogos.app} alt="App Logo" className="max-h-full object-contain" />
+                  </div>
+                  <div className="text-[10px] font-mono text-muted-foreground truncate">{editLogos.app}</div>
                 </div>
-              ) : <div className="microtext">—</div>}
+              ) : <div className="text-[10px] uppercase font-bold text-muted-foreground/50 tracking-wider">—</div>}
               <input
                 type="file"
                 accept="image/*"
-                className="mt-2 block w-full text-xs"
+                className="mt-3 block w-full text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-foreground/10 file:text-foreground hover:file:bg-foreground/20 cursor-pointer"
                 onChange={(e) => {
                   const f = (e.target as HTMLInputElement).files?.[0];
                   if (f) uploadLogo("app", f);
@@ -370,18 +375,20 @@ export default function ApplicationsPanel() {
                 title="Upload App Logo"
               />
             </div>
-            <div className="rounded-md border p-2">
-              <div className="microtext text-muted-foreground">Favicon</div>
+            <div className="rounded-lg border border-foreground/5 bg-background/50 p-3 hover:shadow-md transition-shadow">
+              <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">Favicon</div>
               {editLogos?.favicon ? (
-                <div className="mt-1 space-y-1">
-                  <img src={editLogos.favicon} alt="Favicon" className="max-h-16 object-contain" />
-                  <div className="microtext font-mono truncate">{editLogos.favicon}</div>
+                <div className="space-y-2">
+                  <div className="h-16 flex items-center justify-center bg-white/5 rounded border border-foreground/5 p-1">
+                    <img src={editLogos.favicon} alt="Favicon" className="max-h-full object-contain" />
+                  </div>
+                  <div className="text-[10px] font-mono text-muted-foreground truncate">{editLogos.favicon}</div>
                 </div>
-              ) : <div className="microtext">—</div>}
+              ) : <div className="text-[10px] uppercase font-bold text-muted-foreground/50 tracking-wider">—</div>}
               <input
                 type="file"
                 accept="image/*,.ico"
-                className="mt-2 block w-full text-xs"
+                className="mt-3 block w-full text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-foreground/10 file:text-foreground hover:file:bg-foreground/20 cursor-pointer"
                 onChange={(e) => {
                   const f = (e.target as HTMLInputElement).files?.[0];
                   if (f) uploadLogo("favicon", f);
@@ -391,18 +398,20 @@ export default function ApplicationsPanel() {
                 title="Upload Favicon"
               />
             </div>
-            <div className="rounded-md border p-2">
-              <div className="microtext text-muted-foreground">Symbol</div>
+            <div className="rounded-lg border border-foreground/5 bg-background/50 p-3 hover:shadow-md transition-shadow">
+              <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">Symbol</div>
               {editLogos?.symbol ? (
-                <div className="mt-1 space-y-1">
-                  <img src={editLogos.symbol} alt="Symbol" className="max-h-16 object-contain" />
-                  <div className="microtext font-mono truncate">{editLogos.symbol}</div>
+                <div className="space-y-2">
+                  <div className="h-16 flex items-center justify-center bg-white/5 rounded border border-foreground/5 p-1">
+                    <img src={editLogos.symbol} alt="Symbol" className="max-h-full object-contain" />
+                  </div>
+                  <div className="text-[10px] font-mono text-muted-foreground truncate">{editLogos.symbol}</div>
                 </div>
-              ) : <div className="microtext">—</div>}
+              ) : <div className="text-[10px] uppercase font-bold text-muted-foreground/50 tracking-wider">—</div>}
               <input
                 type="file"
                 accept="image/*"
-                className="mt-2 block w-full text-xs"
+                className="mt-3 block w-full text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-foreground/10 file:text-foreground hover:file:bg-foreground/20 cursor-pointer"
                 onChange={(e) => {
                   const f = (e.target as HTMLInputElement).files?.[0];
                   if (f) uploadLogo("symbol", f);
@@ -412,18 +421,20 @@ export default function ApplicationsPanel() {
                 title="Upload Symbol"
               />
             </div>
-            <div className="rounded-md border p-2">
-              <div className="microtext text-muted-foreground">Footer</div>
+            <div className="rounded-lg border border-foreground/5 bg-background/50 p-3 hover:shadow-md transition-shadow">
+              <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">Footer</div>
               {editLogos?.footer ? (
-                <div className="mt-1 space-y-1">
-                  <img src={editLogos.footer} alt="Footer" className="max-h-16 object-contain" />
-                  <div className="microtext font-mono truncate">{editLogos.footer}</div>
+                <div className="space-y-2">
+                  <div className="h-16 flex items-center justify-center bg-white/5 rounded border border-foreground/5 p-1">
+                    <img src={editLogos.footer} alt="Footer" className="max-h-full object-contain" />
+                  </div>
+                  <div className="text-[10px] font-mono text-muted-foreground truncate">{editLogos.footer}</div>
                 </div>
-              ) : <div className="microtext">—</div>}
+              ) : <div className="text-[10px] uppercase font-bold text-muted-foreground/50 tracking-wider">—</div>}
               <input
                 type="file"
                 accept="image/*"
-                className="mt-2 block w-full text-xs"
+                className="mt-3 block w-full text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-foreground/10 file:text-foreground hover:file:bg-foreground/20 cursor-pointer"
                 onChange={(e) => {
                   const f = (e.target as HTMLInputElement).files?.[0];
                   if (f) uploadLogo("footer", f);
@@ -434,7 +445,7 @@ export default function ApplicationsPanel() {
               />
             </div>
           </div>
-          <div className="microtext text-muted-foreground mt-2">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 mt-4">
             Favicon uploads accept ICO directly or PNG (PNG is converted to .ico automatically).
           </div>
         </div>
@@ -442,17 +453,17 @@ export default function ApplicationsPanel() {
 
       {/* Details viewer */}
       {detail && (
-        <div className="rounded-md border p-4 bg-foreground/5">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-semibold">
-              Application — <span className="font-mono">{detail.brandKey}</span>
+        <div className="rounded-xl border border-foreground/10 bg-foreground/[0.03] p-5 shadow-sm">
+          <div className="flex items-center justify-between border-b border-foreground/5 pb-3">
+            <div className="text-sm font-bold tracking-tight">
+              Application — <span className="font-mono text-primary">{detail.brandKey}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="microtext px-2 py-0.5 rounded-full border bg-foreground/10">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-foreground/10 bg-foreground/5">
                 {detail.status} • {new Date(Number(detail.createdAt || 0)).toLocaleString()}
               </span>
               <button
-                className="px-2 py-1 rounded-md border text-xs"
+                className="px-3 py-1 rounded-md border border-foreground/10 hover:bg-foreground/5 text-[10px] font-bold uppercase tracking-wider transition-colors"
                 onClick={() => setDetail(null)}
                 title="Close details"
               >
@@ -461,208 +472,228 @@ export default function ApplicationsPanel() {
             </div>
           </div>
           {detailLoading ? (
-            <div className="microtext text-muted-foreground mt-2">Loading…</div>
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-4">Loading…</div>
           ) : (
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <div className="microtext text-muted-foreground">Company</div>
-                <div className="text-sm">{detail.companyName || "—"}</div>
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Company</div>
+                <div className="text-sm font-medium">{detail.companyName || "—"}</div>
               </div>
-              <div>
-                <div className="microtext text-muted-foreground">Contact</div>
-                <div className="text-sm">
+              <div className="space-y-1">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Contact</div>
+                <div className="text-sm font-medium">
                   {[detail.contactName, detail.contactEmail].filter(Boolean).join(" • ") || "—"}
                 </div>
               </div>
-              <div>
-                <div className="microtext text-muted-foreground">App URL</div>
-                <div className="text-sm">
+              <div className="space-y-1">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">App URL</div>
+                <div className="text-sm font-medium">
                   {detail.appUrl ? (
-                    <a href={detail.appUrl} className="underline" target="_blank" rel="noopener noreferrer">
+                    <a href={detail.appUrl} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
                       {detail.appUrl}
                     </a>
                   ) : "—"}
                 </div>
               </div>
-              <div>
-                <div className="microtext text-muted-foreground">Fees (bps)</div>
-                <div className="text-sm">
-                  Partner: {typeof detail.partnerFeeBps === "number" ? detail.partnerFeeBps : 0} •
-                  Merchant: {typeof detail.defaultMerchantFeeBps === "number" ? detail.defaultMerchantFeeBps : 0}
+              <div className="space-y-1">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Fees (bps)</div>
+                <div className="text-sm font-medium">
+                  Partner: <span className="font-mono">{typeof detail.partnerFeeBps === "number" ? detail.partnerFeeBps : 0}</span> • 
+                  Merchant: <span className="font-mono">{typeof detail.defaultMerchantFeeBps === "number" ? detail.defaultMerchantFeeBps : 0}</span>
                 </div>
               </div>
-              <div>
-                <div className="microtext text-muted-foreground">Partner Wallet</div>
-                <div className="text-sm font-mono">{detail.partnerWallet || "—"}</div>
+              <div className="space-y-1">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Partner Wallet</div>
+                <div className="text-sm font-mono text-muted-foreground">{detail.partnerWallet || "—"}</div>
               </div>
-              <div>
-                <div className="microtext text-muted-foreground">Colors</div>
-                <div className="flex items-center gap-2">
+              <div className="space-y-1">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Colors</div>
+                <div className="flex items-center gap-3">
                   {detail.colors?.primary ? (
-                    <span className="inline-block w-5 h-5 rounded" style={{ backgroundColor: detail.colors.primary }} title={`Primary ${detail.colors.primary}`} />
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-block w-5 h-5 rounded-md shadow-sm border border-foreground/10" style={{ backgroundColor: detail.colors.primary }} title={`Primary ${detail.colors.primary}`} />
+                      <span className="text-[10px] font-mono text-muted-foreground">{detail.colors.primary}</span>
+                    </div>
                   ) : null}
                   {detail.colors?.accent ? (
-                    <span className="inline-block w-5 h-5 rounded" style={{ backgroundColor: detail.colors.accent }} title={`Accent ${detail.colors.accent}`} />
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-block w-5 h-5 rounded-md shadow-sm border border-foreground/10" style={{ backgroundColor: detail.colors.accent }} title={`Accent ${detail.colors.accent}`} />
+                      <span className="text-[10px] font-mono text-muted-foreground">{detail.colors.accent}</span>
+                    </div>
                   ) : null}
-                  {!detail.colors?.primary && !detail.colors?.accent ? <span className="microtext">—</span> : null}
+                  {!detail.colors?.primary && !detail.colors?.accent ? <span className="text-[10px] uppercase font-bold text-muted-foreground/50 tracking-wider">—</span> : null}
                 </div>
               </div>
-              <div className="md:col-span-2">
-                <div className="microtext text-muted-foreground">Logos</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-1">
-                  <div className="rounded-md border p-2">
-                    <div className="microtext text-muted-foreground">App</div>
+              
+              <div className="md:col-span-2 pt-2 border-t border-foreground/5">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-3">Logos</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="rounded-lg border border-foreground/5 bg-background/50 p-3">
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">App</div>
                     {detail.logos?.app ? (
-                      <div className="mt-1 space-y-1">
-                        <img src={detail.logos.app} alt="App Logo" className="max-h-16 object-contain" />
-                        <div className="microtext font-mono truncate">{detail.logos.app}</div>
+                      <div className="space-y-2">
+                        <div className="h-16 flex items-center justify-center bg-white/5 rounded border border-foreground/5 p-1">
+                          <img src={detail.logos.app} alt="App Logo" className="max-h-full object-contain" />
+                        </div>
+                        <div className="text-[10px] font-mono text-muted-foreground truncate">{detail.logos.app}</div>
                       </div>
-                    ) : <div className="microtext">—</div>}
+                    ) : <div className="text-[10px] uppercase font-bold text-muted-foreground/50 tracking-wider">—</div>}
                   </div>
-                  <div className="rounded-md border p-2">
-                    <div className="microtext text-muted-foreground">Favicon</div>
+                  <div className="rounded-lg border border-foreground/5 bg-background/50 p-3">
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">Favicon</div>
                     {detail.logos?.favicon ? (
-                      <div className="mt-1 space-y-1">
-                        <img src={detail.logos.favicon} alt="Favicon" className="max-h-16 object-contain" />
-                        <div className="microtext font-mono truncate">{detail.logos.favicon}</div>
+                      <div className="space-y-2">
+                        <div className="h-16 flex items-center justify-center bg-white/5 rounded border border-foreground/5 p-1">
+                          <img src={detail.logos.favicon} alt="Favicon" className="max-h-full object-contain" />
+                        </div>
+                        <div className="text-[10px] font-mono text-muted-foreground truncate">{detail.logos.favicon}</div>
                       </div>
-                    ) : <div className="microtext">—</div>}
+                    ) : <div className="text-[10px] uppercase font-bold text-muted-foreground/50 tracking-wider">—</div>}
                   </div>
-                  <div className="rounded-md border p-2">
-                    <div className="microtext text-muted-foreground">Symbol</div>
+                  <div className="rounded-lg border border-foreground/5 bg-background/50 p-3">
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">Symbol</div>
                     {detail.logos?.symbol ? (
-                      <div className="mt-1 space-y-1">
-                        <img src={detail.logos.symbol} alt="Symbol" className="max-h-16 object-contain" />
-                        <div className="microtext font-mono truncate">{detail.logos.symbol}</div>
+                      <div className="space-y-2">
+                        <div className="h-16 flex items-center justify-center bg-white/5 rounded border border-foreground/5 p-1">
+                          <img src={detail.logos.symbol} alt="Symbol" className="max-h-full object-contain" />
+                        </div>
+                        <div className="text-[10px] font-mono text-muted-foreground truncate">{detail.logos.symbol}</div>
                       </div>
-                    ) : <div className="microtext">—</div>}
+                    ) : <div className="text-[10px] uppercase font-bold text-muted-foreground/50 tracking-wider">—</div>}
                   </div>
-                  <div className="rounded-md border p-2">
-                    <div className="microtext text-muted-foreground">Footer</div>
+                  <div className="rounded-lg border border-foreground/5 bg-background/50 p-3">
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">Footer</div>
                     {detail.logos?.footer ? (
-                      <div className="mt-1 space-y-1">
-                        <img src={detail.logos.footer} alt="Footer" className="max-h-16 object-contain" />
-                        <div className="microtext font-mono truncate">{detail.logos.footer}</div>
+                      <div className="space-y-2">
+                        <div className="h-16 flex items-center justify-center bg-white/5 rounded border border-foreground/5 p-1">
+                          <img src={detail.logos.footer} alt="Footer" className="max-h-full object-contain" />
+                        </div>
+                        <div className="text-[10px] font-mono text-muted-foreground truncate">{detail.logos.footer}</div>
                       </div>
-                    ) : <div className="microtext">—</div>}
+                    ) : <div className="text-[10px] uppercase font-bold text-muted-foreground/50 tracking-wider">—</div>}
                   </div>
                 </div>
               </div>
-              <div className="md:col-span-2">
-                <div className="microtext text-muted-foreground">Meta</div>
-                <div className="text-sm">
+              
+              <div className="md:col-span-2 pt-2 border-t border-foreground/5">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Meta</div>
+                <div className="text-sm font-medium">
                   {detail.meta?.ogTitle || detail.meta?.ogDescription
                     ? [detail.meta?.ogTitle, detail.meta?.ogDescription].filter(Boolean).join(" • ")
                     : "—"}
                 </div>
               </div>
-              <div className="md:col-span-2">
-                <div className="microtext text-muted-foreground">Notes</div>
-                <div className="text-sm whitespace-pre-wrap">{detail.notes || "—"}</div>
+              <div className="md:col-span-2 pt-2 border-t border-foreground/5">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Notes</div>
+                <div className="text-sm font-medium whitespace-pre-wrap">{detail.notes || "—"}</div>
               </div>
             </div>
           )}
         </div>
       )}
 
-      <div className="overflow-auto rounded-md border">
-        <table className="min-w-full text-sm">
+      <div className="overflow-x-auto rounded-xl border border-foreground/10 bg-background/50">
+        <table className="w-full text-sm text-left">
           <thead>
-            <tr className="bg-foreground/5">
-              <th className="text-left px-3 py-2 font-medium">Brand Key</th>
-              <th className="text-left px-3 py-2 font-medium">Company</th>
-              <th className="text-left px-3 py-2 font-medium">Contact</th>
-              <th className="text-left px-3 py-2 font-medium">App URL</th>
-              <th className="text-left px-3 py-2 font-medium">Logo</th>
-              <th className="text-left px-3 py-2 font-medium">Favicon</th>
-              <th className="text-left px-3 py-2 font-medium">Partner Fee (bps)</th>
-              <th className="text-left px-3 py-2 font-medium">Partner Wallet</th>
-              <th className="text-left px-3 py-2 font-medium">Status</th>
-              <th className="text-left px-3 py-2 font-medium">Submitted</th>
-              <th className="text-left px-3 py-2 font-medium">Actions</th>
+            <tr className="border-b border-foreground/10 bg-foreground/5">
+              <th className="px-4 py-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider whitespace-nowrap">Brand Key</th>
+              <th className="px-4 py-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider whitespace-nowrap">Company</th>
+              <th className="px-4 py-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider whitespace-nowrap">Contact</th>
+              <th className="px-4 py-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider whitespace-nowrap">App URL</th>
+              <th className="px-4 py-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider whitespace-nowrap">Logo</th>
+              <th className="px-4 py-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider whitespace-nowrap">Favicon</th>
+              <th className="px-4 py-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider whitespace-nowrap">Fee (bps)</th>
+              <th className="px-4 py-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider whitespace-nowrap">Partner Wallet</th>
+              <th className="px-4 py-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider whitespace-nowrap">Status</th>
+              <th className="px-4 py-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider whitespace-nowrap">Submitted</th>
+              <th className="px-4 py-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider whitespace-nowrap text-right">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-foreground/5">
             {(items || []).map((app) => {
-              const submitted = new Date(Number(app.createdAt || 0)).toLocaleString();
+              const submitted = new Date(Number(app.createdAt || 0)).toLocaleDateString();
               const contact = [app.contactName, app.contactEmail].filter(Boolean).join(" • ");
               const statusBadgeClass = (() => {
                 switch (String(app.status || "").toLowerCase()) {
                   case "submitted":
-                    return "bg-gray-100 text-gray-700 border-gray-200";
+                    return "bg-slate-500/10 text-slate-500 border-slate-500/20";
                   case "reviewing":
-                    return "bg-blue-100 text-blue-700 border-blue-200";
+                    return "bg-blue-500/10 text-blue-500 border-blue-500/20";
                   case "approved":
-                    return "bg-green-100 text-green-700 border-green-200";
+                    return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
                   case "rejected":
-                    return "bg-red-100 text-red-700 border-red-200";
+                    return "bg-red-500/10 text-red-500 border-red-500/20";
                   default:
-                    return "bg-foreground/10 text-foreground/80 border-foreground/20";
+                    return "bg-foreground/10 text-foreground border-foreground/20";
                 }
               })();
               return (
-                <tr key={app.id} className="border-t">
-                  <td className="px-3 py-2 font-mono">{app.brandKey}</td>
-                  <td className="px-3 py-2">{app.companyName || "—"}</td>
-                  <td className="px-3 py-2">{contact || "—"}</td>
-                  <td className="px-3 py-2">
+                <tr key={app.id} className="hover:bg-foreground/[0.02] transition-colors group">
+                  <td className="px-4 py-3 font-mono text-xs whitespace-nowrap">{app.brandKey}</td>
+                  <td className="px-4 py-3 font-medium whitespace-nowrap">{app.companyName || "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{contact || "—"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
                     {app.appUrl ? (
-                      <a href={app.appUrl} className="underline" target="_blank" rel="noopener noreferrer">
-                        {app.appUrl}
+                      <a href={app.appUrl} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+                        {app.appUrl.replace(/^https?:\/\//, '')}
                       </a>
                     ) : (
-                      "—"
+                      <span className="text-muted-foreground/50">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     {app.logos?.app ? (
                       <div className="flex items-center gap-2">
-                        <img src={app.logos.app} alt="Logo" className="h-6 w-auto object-contain rounded border" />
-                        <span className="microtext font-mono truncate max-w-[160px]">{app.logos.app}</span>
+                        <div className="h-6 w-auto bg-white/5 rounded border border-foreground/5 flex items-center justify-center overflow-hidden">
+                           <img src={app.logos.app} alt="Logo" className="h-full object-contain" />
+                        </div>
                       </div>
-                    ) : "—"}
+                    ) : <span className="text-muted-foreground/50">—</span>}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     {app.logos?.favicon ? (
                       <div className="flex items-center gap-2">
-                        <img src={app.logos.favicon} alt="Favicon" className="h-6 w-6 object-contain rounded border" />
-                        <span className="microtext font-mono truncate max-w-[160px]">{app.logos.favicon}</span>
+                         <div className="h-6 w-6 bg-white/5 rounded border border-foreground/5 flex items-center justify-center overflow-hidden">
+                           <img src={app.logos.favicon} alt="Favicon" className="h-full object-contain" />
+                         </div>
                       </div>
-                    ) : "—"}
+                    ) : <span className="text-muted-foreground/50">—</span>}
                   </td>
-                  <td className="px-3 py-2">{typeof app.partnerFeeBps === "number" ? app.partnerFeeBps : 0}</td>
-                  <td className="px-3 py-2 font-mono">{app.partnerWallet || "—"}</td>
-                  <td className="px-3 py-2">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${statusBadgeClass}`}>
+                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">{typeof app.partnerFeeBps === "number" ? app.partnerFeeBps : 0}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                    {app.partnerWallet ? `${app.partnerWallet.slice(0, 6)}...${app.partnerWallet.slice(-4)}` : "—"}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusBadgeClass}`}>
                       {app.status}
                     </span>
                   </td>
-                  <td className="px-3 py-2">{submitted}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
+                  <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{submitted}</td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
                       <button
-                        className="px-2 py-1 rounded-md border text-xs"
+                        className="px-2 py-1 rounded-md border border-foreground/10 hover:bg-foreground/5 text-[10px] font-bold uppercase tracking-wider transition-colors"
                         onClick={() => startEdit(app)}
                         title="Edit application images"
                       >
-                        Edit
+                        Images
                       </button>
                       <button
-                        className="px-2 py-1 rounded-md border text-xs"
+                        className="px-2 py-1 rounded-md border border-foreground/10 hover:bg-foreground/5 text-[10px] font-bold uppercase tracking-wider transition-colors"
                         onClick={() => view(app.id)}
                         title="View application details"
                       >
                         View
                       </button>
                       <button
-                        className="px-2 py-1 rounded-md border text-xs"
+                        className="px-2 py-1 rounded-md border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 text-[10px] font-bold uppercase tracking-wider transition-colors"
                         onClick={() => syncBrandConfig(app.id)}
                         title="Sync branding from application into brand config"
                       >
                         Sync
                       </button>
                       <button
-                        className="px-2 py-1 rounded-md border text-xs"
+                        className="px-2 py-1 rounded-md border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-30"
                         onClick={() => approve(app.id)}
                         disabled={String(app.status || "").toLowerCase() === "approved"}
                         title="Approve application: create brand key and persist config"
@@ -670,7 +701,7 @@ export default function ApplicationsPanel() {
                         Approve
                       </button>
                       <button
-                        className="px-2 py-1 rounded-md border text-xs"
+                        className="px-2 py-1 rounded-md border border-red-500/20 bg-red-500/5 text-red-600 hover:bg-red-500/10 text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-30"
                         onClick={() => reject(app.id)}
                         disabled={String(app.status || "").toLowerCase() === "rejected"}
                         title="Reject application"
@@ -684,8 +715,8 @@ export default function ApplicationsPanel() {
             })}
             {(!items || items.length === 0) && (
               <tr>
-                <td className="px-3 py-6 text-center text-muted-foreground" colSpan={11}>
-                  No applications yet.
+                <td className="px-4 py-8 text-center" colSpan={11}>
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">No applications yet</div>
                 </td>
               </tr>
             )}
