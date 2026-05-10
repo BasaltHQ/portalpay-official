@@ -36,7 +36,7 @@ export function LinksEditor({ links, onChange }: LinksEditorProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium">Social Links</label>
+        <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Social Links</label>
         <button
           type="button"
           onClick={addLink}
@@ -75,7 +75,7 @@ export function LinksEditor({ links, onChange }: LinksEditorProps) {
             </div>
           ))
         ) : (
-          <p className="text-sm text-muted-foreground text-center py-4">
+          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed text-center py-4">
             No links added yet. Click "Add Link" to get started.
           </p>
         )}

@@ -262,56 +262,75 @@ export function TaxManagement() {
   }
 
   return (
-    <div className="glass-pane rounded-xl border p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Tax Management</h3>
-        <button className="px-2 py-1 rounded-md border text-xs" onClick={refresh} disabled={loading}>
-          {loading ? "Refreshing…" : "Refresh"}
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
+      {/* Header Area */}
+      <div className="md:col-span-12 flex items-center justify-between shrink-0 mb-2">
+        <div>
+           <h3 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+             <div className="w-1.5 h-1.5 rounded-full bg-[var(--pp-secondary)]" /> 
+             Tax Management
+           </h3>
+           <div className="text-[9px] text-muted-foreground/60 uppercase font-semibold tracking-wider mt-1">Configure automated routing or custom jurisdictions.</div>
+        </div>
+        <button className="px-5 py-2.5 rounded-xl bg-foreground/[0.03] border border-foreground/[0.05] hover:bg-foreground/[0.06] hover:border-foreground/10 text-[9px] uppercase font-bold tracking-wider transition-all shadow-sm" onClick={refresh} disabled={loading}>
+          {loading ? "Refreshing…" : "Refresh Config"}
         </button>
       </div>
-      <div className="microtext text-muted-foreground">
-        Provider: <input
-          className="inline-block h-7 px-2 py-1 border rounded-md bg-background text-xs ml-1"
-          placeholder="TaxJar / Avalara / Custom"
-          value={provider?.name || ""}
-          onChange={(e) => setProviderName(e.target.value)}
-        />
-        <span className="ml-2 badge-soft">{provider?.apiKeySet ? "API Key Set" : "No API Key"}</span>
+
+      <div className="md:col-span-12 rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm">
+        <div>
+          <label className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-2 block ml-1">Compliance Provider</label>
+          <div className="text-[8px] md:text-[9px] text-muted-foreground/60 uppercase font-semibold tracking-wider ml-1">TaxJar, Avalara, or Custom Integrations</div>
+        </div>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          <input
+            className="w-full sm:w-64 h-12 px-4 rounded-xl bg-foreground/[0.03] border border-foreground/5 focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none transition-all text-xs md:text-sm font-medium"
+            placeholder="TaxJar / Avalara / Custom"
+            value={provider?.name || ""}
+            onChange={(e) => setProviderName(e.target.value)}
+          />
+          <span className={`px-5 py-3.5 rounded-xl text-[9px] font-bold uppercase tracking-wider shrink-0 w-full sm:w-auto text-center ${provider?.apiKeySet ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-amber-500/10 text-amber-500 border border-amber-500/20"}`}>
+            {provider?.apiKeySet ? "API Linked" : "No API"}
+          </span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="rounded-md border p-3">
-          <div className="text-sm font-medium mb-2">Configured Jurisdictions</div>
-          <div className="space-y-2">
+      {/* Split View */}
+      <div className="md:col-span-12 lg:col-span-6 flex flex-col h-full min-h-[400px]">
+        <div className="rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 h-full shadow-sm flex flex-col">
+          <div className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-6">Configured Jurisdictions</div>
+          <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-2 -mr-2">
             {(configJurisdictions || []).map((j) => (
-              <div key={j.code} className="flex items-center justify-between rounded-md border p-2">
+              <div key={j.code} className="flex items-center justify-between rounded-2xl bg-foreground/[0.03] border border-foreground/[0.05] p-4 group hover:bg-foreground/[0.04] transition-colors">
                 <div>
-                  <div className="text-sm font-semibold">{j.name}</div>
-                  <div className="microtext text-muted-foreground">{j.code} • {Math.round(j.rate * 10000) / 100}%</div>
+                  <div className="text-sm font-semibold text-foreground/90">{j.name}</div>
+                  <div className="text-[9px] text-muted-foreground/60 uppercase font-bold tracking-wider mt-1.5">{j.code} • <span className="text-[var(--pp-secondary)]">{Math.round(j.rate * 10000) / 100}%</span></div>
                 </div>
-                <button className="px-2 py-1 rounded-md border text-xs" onClick={() => removeJurisdiction(j.code)}>Remove</button>
+                <button className="px-4 py-2 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-[9px] font-bold uppercase tracking-wider text-red-400 transition-colors opacity-80 group-hover:opacity-100" onClick={() => removeJurisdiction(j.code)}>Remove</button>
               </div>
             ))}
             {(configJurisdictions || []).length === 0 && (
-              <div className="microtext text-muted-foreground">No jurisdictions configured yet.</div>
+              <div className="text-[9px] text-muted-foreground/60 uppercase font-bold tracking-wider p-8 text-center rounded-2xl border border-dashed border-foreground/10 flex items-center justify-center h-32">No jurisdictions configured yet.</div>
             )}
           </div>
         </div>
+      </div>
 
-        <div className="rounded-md border p-3">
-          <div className="text-sm font-medium mb-2">Compact Tax Setup</div>
-          <div className="space-y-3">
+      <div className="md:col-span-12 lg:col-span-6 flex flex-col h-full">
+        <div className="rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 h-full shadow-sm">
+          <div className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-6">Compact Tax Setup</div>
+          <div className="space-y-8">
             <div>
-              <label className="microtext text-muted-foreground">ZIP/Postal Code Lookup</label>
-              <div className="mt-1 flex flex-col sm:flex-row items-stretch gap-2">
+              <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-2.5 block ml-1">ZIP/Postal Code Lookup</label>
+              <div className="flex flex-col sm:flex-row items-stretch gap-3">
                 <input
-                  className="flex-1 h-9 px-3 py-1 border rounded-md bg-background"
+                  className="flex-1 h-12 px-4 rounded-xl bg-foreground/[0.03] border border-foreground/5 focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none transition-all text-xs font-medium"
                   placeholder="e.g., 90210, SW1A 1AA"
                   value={zip}
                   onChange={(e) => setZip(e.target.value)}
                 />
                 <button
-                  className="px-3 py-1.5 rounded-md border text-sm w-full sm:w-auto"
+                  className="px-6 py-3 rounded-xl bg-foreground/[0.03] border border-foreground/[0.05] hover:bg-foreground/[0.06] text-[9px] font-bold uppercase tracking-wider transition-all w-full sm:w-auto shadow-sm"
                   onClick={lookupZipRate}
                   disabled={zipLoading}
                 >
@@ -319,10 +338,10 @@ export function TaxManagement() {
                 </button>
               </div>
               {zipRate !== null && (
-                <div className="microtext text-muted-foreground mt-1 flex flex-col sm:flex-row items-stretch gap-2">
-                  <span>Rate: {Math.round((zipRate || 0) * 10000) / 100}%</span>
+                <div className="mt-3 flex flex-col sm:flex-row items-stretch gap-3 p-3.5 bg-foreground/[0.03] rounded-2xl border border-foreground/[0.05]">
+                  <span className="flex-1 flex items-center text-[10px] uppercase font-bold tracking-wider text-muted-foreground/80 pl-2">Rate: <b className="ml-1 text-foreground">{Math.round((zipRate || 0) * 10000) / 100}%</b></span>
                   <button
-                    className="px-3 py-1.5 rounded-md border text-sm flex items-center w-full sm:w-auto"
+                    className="px-5 py-2.5 rounded-xl bg-[var(--pp-secondary)] hover:bg-[var(--pp-secondary)]/90 text-white text-[9px] font-bold uppercase tracking-wider transition-all flex items-center justify-center w-full sm:w-auto shadow-[0_0_15px_var(--pp-secondary)]/20"
                     onClick={() => {
                       const zipTrim = String(zip || "").trim();
                       const st = zipMeta?.state ? String(zipMeta.state).toUpperCase() : "";
@@ -334,22 +353,22 @@ export function TaxManagement() {
                       addJurisdiction({ code, name, rate: Math.max(0, Math.min(1, zipRate || 0)) });
                     }}
                   >
-                    <Plus className="h-4 w-4 mr-1" /> Add Jurisdiction
+                    <Plus className="h-3 w-3 mr-1.5" /> Add Jurisdiction
                   </button>
                 </div>
               )}
             </div>
 
             <div>
-              <label className="microtext text-muted-foreground">Popular Jurisdiction Presets</label>
-              <div className="mt-1 flex flex-col sm:flex-row items-stretch gap-2">
-                <select className="w-full sm:w-64 h-9 px-3 py-1 border rounded-md bg-background truncate" id="tax-preset-select">
+              <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-2.5 block ml-1">Popular Jurisdiction Presets</label>
+              <div className="flex flex-col sm:flex-row items-stretch gap-3">
+                <select className="flex-1 h-12 px-4 rounded-xl bg-foreground/[0.03] border border-foreground/5 focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none transition-all text-xs font-medium truncate" id="tax-preset-select">
                   {(catalog || []).map((j) => (
                     <option key={j.code} value={j.code}>{j.name} ({Math.round(j.rate * 10000) / 100}%)</option>
                   ))}
                 </select>
                 <button
-                  className="px-3 py-1.5 rounded-md border text-sm flex items-center w-full sm:w-auto"
+                  className="px-6 py-3 rounded-xl bg-[var(--pp-secondary)] hover:bg-[var(--pp-secondary)]/90 text-white text-[9px] font-bold uppercase tracking-wider shadow-[0_0_15px_var(--pp-secondary)]/20 flex items-center justify-center w-full sm:w-auto transition-all"
                   onClick={() => {
                     const sel = document.getElementById("tax-preset-select") as HTMLSelectElement | null;
                     const code = sel?.value || "";
@@ -357,26 +376,26 @@ export function TaxManagement() {
                     if (found) addJurisdiction(found);
                   }}
                 >
-                  <Plus className="h-4 w-4 mr-1" /> Add Selected
+                  <Plus className="h-3 w-3 mr-1.5" /> Add Selected
                 </button>
               </div>
               {(catalog || []).length === 0 && (
-                <div className="microtext text-muted-foreground mt-1">Presets unavailable</div>
+                <div className="text-[8px] md:text-[9px] text-muted-foreground/50 uppercase font-bold tracking-wider mt-2 ml-2">Presets unavailable</div>
               )}
             </div>
 
             <div>
-              <label className="microtext text-muted-foreground">Custom Jurisdiction Builder</label>
-              <div className="mt-1 flex flex-col sm:flex-row items-stretch gap-2">
+              <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-2.5 block ml-1">Custom Jurisdiction Builder</label>
+              <div className="flex flex-col sm:flex-row items-stretch gap-3">
                 <button
-                  className="px-3 py-1.5 rounded-md border text-sm flex items-center w-full sm:w-auto"
+                  className="px-6 py-3.5 rounded-xl bg-foreground/[0.03] border border-foreground/[0.05] hover:bg-foreground/[0.06] text-[9px] font-bold uppercase tracking-wider flex items-center justify-center w-full sm:w-auto transition-all text-foreground/80 shadow-sm"
                   onClick={() => setCustomOpen(true)}
                   type="button"
                 >
-                  <Wand2 className="h-4 w-4 mr-1" /> Build Custom Jurisdiction
+                  <Wand2 className="h-3.5 w-3.5 mr-2 text-[var(--pp-secondary)]" /> Build Custom Jurisdiction
                 </button>
               </div>
-              <div className="microtext text-muted-foreground mt-1">
+              <div className="text-[8px] md:text-[9px] text-muted-foreground/60 uppercase font-bold tracking-wider mt-2.5 ml-2 max-w-sm leading-relaxed">
                 Define a custom jurisdiction by combining multiple tax components (e.g., sales + excise).
               </div>
             </div>
@@ -384,14 +403,16 @@ export function TaxManagement() {
         </div>
       </div>
 
-      <div className="rounded-md border p-3">
-        <div className="text-sm font-medium mb-2">Default Jurisdiction</div>
-        <div className="microtext text-muted-foreground mb-2">
-          Current: {defaultJurisdictionCode ? defaultJurisdictionCode : "None"}
+      <div className="md:col-span-12 rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm">
+        <div>
+          <div className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-2 block ml-1">Default Jurisdiction</div>
+          <div className="text-[8px] md:text-[9px] text-muted-foreground/60 uppercase font-bold tracking-wider ml-1">
+            Current: <span className="text-[var(--pp-secondary)] ml-1">{defaultJurisdictionCode ? defaultJurisdictionCode : "None"}</span>
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch gap-3 w-full md:w-auto">
           <select
-            className="flex-1 h-9 px-3 py-1 border rounded-md bg-background"
+            className="w-full md:w-64 h-12 px-4 rounded-xl bg-foreground/[0.03] border border-foreground/5 focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none transition-all text-xs font-medium"
             value={defaultJurisdictionCode}
             onChange={(e) => setDefaultJurisdictionCode(e.target.value)}
           >
@@ -403,54 +424,54 @@ export function TaxManagement() {
             ))}
           </select>
           <button
-            className="px-3 py-1.5 rounded-md border text-sm w-full sm:w-auto"
+            className="px-6 py-3 rounded-xl bg-[var(--pp-secondary)] hover:bg-[var(--pp-secondary)]/90 text-white text-[9px] font-bold uppercase tracking-wider shadow-[0_0_15px_var(--pp-secondary)]/20 transition-all w-full sm:w-auto"
             onClick={() => setDefaultJurisdiction(defaultJurisdictionCode)}
             disabled={!defaultJurisdictionCode}
           >
             Save Default
           </button>
         </div>
-        <div className="microtext text-muted-foreground mt-1">
-          This sets your default tax jurisdiction used when generating orders.
-        </div>
       </div>
 
       {activeIndustryPack === 'cannabis' && (
-        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-4 mt-2">
-          <label className="text-[15px] font-bold text-emerald-400 block mb-1">Cannabis Compliance Taxation</label>
-          <div className="microtext text-emerald-500/80 mb-3">
+        <div className="md:col-span-12 rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.02] p-6 md:p-8 mt-2 relative overflow-hidden shadow-sm">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none" />
+          <label className="text-[10px] md:text-xs uppercase font-bold tracking-[0.2em] text-emerald-400 block mb-2 relative z-10 flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Cannabis Compliance Taxation
+          </label>
+          <div className="text-[8px] md:text-[9px] text-emerald-500/70 uppercase font-bold tracking-wider mb-6 relative z-10 max-w-3xl leading-relaxed">
             Your store is operating under the Cannabis Industry Pack. Tax policies are automatically configured to comply with state requirements. 
             Do NOT add excise taxes manually to your regular tax catalog.
           </div>
           {cannabisState === 'IL' ? (
-            <div className="bg-black/30 p-3 rounded-md">
-              <h4 className="text-sm font-semibold text-emerald-300 mb-2 border-b border-emerald-500/20 pb-1 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400" /> State Active: Illinois
+            <div className="bg-black/40 backdrop-blur-md p-6 rounded-2xl border border-emerald-500/10 relative z-10">
+              <h4 className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-emerald-300 mb-4 border-b border-emerald-500/20 pb-3 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> State Active: Illinois
               </h4>
-              <p className="text-xs text-white/70 mb-2">Automated item-level THC potency excise tracking is initialized.</p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="flex justify-between items-center"><span className="text-emerald-300/80">&lt; 35% THC Flower &amp; Extracts</span><span className="font-mono">10% Excise</span></div>
-                <div className="flex justify-between items-center"><span className="text-emerald-300/80">&ge; 35% THC Extracts</span><span className="font-mono">25% Excise</span></div>
-                <div className="flex justify-between items-center"><span className="text-emerald-300/80">Infused Edibles/Liquids</span><span className="font-mono">20% Excise</span></div>
+              <p className="text-[8px] md:text-[9px] uppercase font-bold tracking-wider text-emerald-100/50 mb-4">Automated item-level THC potency excise tracking is initialized.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex justify-between items-center bg-foreground/[0.02] p-3 rounded-xl border border-emerald-500/5"><span className="text-[9px] uppercase font-bold tracking-wider text-emerald-300/80">&lt; 35% THC Flower &amp; Extracts</span><span className="text-xs font-mono font-bold text-emerald-400">10% Excise</span></div>
+                <div className="flex justify-between items-center bg-foreground/[0.02] p-3 rounded-xl border border-emerald-500/5"><span className="text-[9px] uppercase font-bold tracking-wider text-emerald-300/80">&ge; 35% THC Extracts</span><span className="text-xs font-mono font-bold text-emerald-400">25% Excise</span></div>
+                <div className="flex justify-between items-center bg-foreground/[0.02] p-3 rounded-xl border border-emerald-500/5 md:col-span-2"><span className="text-[9px] uppercase font-bold tracking-wider text-emerald-300/80">Infused Edibles/Liquids</span><span className="text-xs font-mono font-bold text-emerald-400">20% Excise</span></div>
               </div>
             </div>
           ) : cannabisState ? (
-            <div className="bg-black/30 p-3 rounded-md">
-              <h4 className="text-sm font-semibold text-emerald-300 mb-2 border-b border-emerald-500/20 pb-1 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400" /> State Active: {cannabisState}
+            <div className="bg-black/40 backdrop-blur-md p-6 rounded-2xl border border-emerald-500/10 relative z-10">
+              <h4 className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-emerald-300 mb-4 border-b border-emerald-500/20 pb-3 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> State Active: {cannabisState}
               </h4>
-              <p className="text-xs text-white/70 mb-2">
+              <p className="text-[8px] md:text-[9px] uppercase font-bold tracking-wider text-emerald-100/50 leading-relaxed max-w-4xl">
                 Configure standard state-level cannabis excise taxes inside your jurisdictions catalog below. 
                 They will automatically apply uniformly at checkout for any items marked 'Cannabis'. 
                 Additional POS dynamic rate overrides are not strictly required for {cannabisState} standard operations.
               </p>
             </div>
           ) : (
-            <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-md mt-2">
-              <h4 className="text-sm font-semibold text-amber-500 mb-1 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-amber-500" /> Compliance Link Required
+            <div className="bg-amber-500/[0.03] border border-amber-500/20 p-6 rounded-2xl mt-4 relative z-10 shadow-sm">
+              <h4 className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-amber-500 mb-3 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" /> Compliance Link Required
               </h4>
-              <p className="text-xs text-amber-500/80">
+              <p className="text-[8px] md:text-[9px] uppercase font-bold tracking-wider text-amber-500/70 leading-relaxed max-w-3xl">
                 No active compliance provider is configured. Go to Cannabis Integrations in your site config and link METRC or BioTrack to designate your active state and initialize automated taxation.
               </p>
             </div>
@@ -459,43 +480,49 @@ export function TaxManagement() {
       )}
 
       {activeIndustryPack !== 'cannabis' && (
-        <div className="microtext text-muted-foreground mt-3 border-t border-white/10 pt-3">
+        <div className="md:col-span-12 text-[8px] md:text-[9px] text-muted-foreground/40 uppercase font-bold tracking-[0.15em] mt-4 border-t border-foreground/5 pt-6 text-center">
           Looking for automated compliant taxation? Switch your store to the Cannabis Industry Pack in Advanced Settings to activate METRC/BioTrack native tax routing.
         </div>
       )}
 
-      {error && <div className="microtext text-red-500">{error}</div>}
+      {error && <div className="md:col-span-12 text-[10px] uppercase font-bold tracking-wider text-red-500 mt-2">{error}</div>}
 
       {customOpen && typeof window !== "undefined"
         ? createPortal(
-          <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4">
-            <div className="w-full max-w-2xl rounded-md border bg-background p-4 relative">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl rounded-3xl border border-foreground/[0.05] bg-[#0a0a0a] p-8 relative shadow-2xl overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--pp-secondary)] opacity-10 blur-[80px] pointer-events-none" />
               <button
                 onClick={() => setCustomOpen(false)}
-                className="absolute right-2 top-2 h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                className="absolute right-6 top-6 h-10 w-10 rounded-full border border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/5 text-muted-foreground hover:text-foreground shadow-sm flex items-center justify-center transition-all z-10"
                 title="Close"
                 aria-label="Close custom jurisdiction builder"
               >
                 ✕
               </button>
-              <div className="text-lg font-semibold mb-2">Build Custom Jurisdiction</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="text-xs md:text-sm uppercase font-bold tracking-[0.2em] text-foreground mb-8 flex items-center gap-2 relative z-10">
+                 <div className="w-2 h-2 rounded-full bg-[var(--pp-secondary)]" />
+                 Build Custom Jurisdiction
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                 <div className="md:col-span-2">
-                  <label className="microtext text-muted-foreground">Name</label>
+                  <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-2 block ml-1">Name</label>
                   <input
                     id="custom-jurisdiction-name"
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="w-full h-12 px-4 rounded-xl bg-foreground/[0.03] border border-foreground/5 focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none transition-all text-xs font-medium"
                     placeholder="e.g., Springfield (IL) Cannabis"
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
                     autoFocus
                   />
                 </div>
+                
                 <div className="md:col-span-2">
-                  <label className="microtext text-muted-foreground">Code (optional)</label>
-                  <div className="mt-1 flex items-center gap-2">
+                  <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-2 block ml-1">Code (optional)</label>
+                  <div className="flex items-center gap-3">
                     <input
-                      className="flex-1 h-9 px-3 py-1 border rounded-md bg-background font-mono"
+                      className="flex-1 h-12 px-4 rounded-xl bg-foreground/[0.03] border border-foreground/5 focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none transition-all text-xs font-mono font-medium"
                       placeholder="Auto-generated if empty"
                       value={customCode}
                       onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
@@ -503,7 +530,7 @@ export function TaxManagement() {
                     />
                     <button
                       type="button"
-                      className="h-9 w-9 rounded-md border flex items-center justify-center hover:bg-foreground/5"
+                      className="h-12 w-12 rounded-xl border border-foreground/5 bg-foreground/[0.03] flex items-center justify-center hover:bg-foreground/[0.06] transition-all text-muted-foreground hover:text-foreground shrink-0 shadow-sm"
                       onClick={() => setCustomCode(genCodeFromName(customName))}
                       title="Auto-generate code from name"
                       aria-label="Auto-generate code"
@@ -511,26 +538,27 @@ export function TaxManagement() {
                       <Wand2 className="h-5 w-5" />
                     </button>
                   </div>
-                  <div className="microtext text-muted-foreground mt-1">Max 16 chars. Allowed: A-Z, 0-9, dash. Example: CUS-SPRINGFIELD</div>
+                  <div className="text-[8px] md:text-[9px] text-muted-foreground/60 uppercase font-bold tracking-wider mt-2 ml-1">Max 16 chars. Allowed: A-Z, 0-9, dash. Example: CUS-SPRINGFIELD</div>
                 </div>
-                <div className="md:col-span-2">
-                  <div className="flex items-center justify-between">
-                    <label className="microtext text-muted-foreground">Tax Components</label>
+                
+                <div className="md:col-span-2 mt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-muted-foreground ml-1">Tax Components</label>
                     <button
                       type="button"
-                      className="px-2 py-1 rounded-md border text-xs flex items-center"
+                      className="px-4 py-2 rounded-lg border border-foreground/[0.05] bg-foreground/[0.03] hover:bg-foreground/[0.06] text-[9px] font-bold uppercase tracking-wider flex items-center transition-all shadow-sm"
                       onClick={() =>
                         setCustomComponents((prev) => [...prev, { code: "", name: "", ratePct: "" }])
                       }
                     >
-                      <Plus className="h-4 w-4 mr-1" /> Add Component
+                      <Plus className="h-3 w-3 mr-1.5" /> Add Component
                     </button>
                   </div>
-                  <div className="mt-2 space-y-2">
+                  <div className="space-y-3">
                     {customComponents.map((c, idx) => (
-                      <div key={idx} className="rounded-md border p-2 grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                      <div key={idx} className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-center group">
                         <input
-                          className="md:col-span-2 h-8 px-2 py-1 border rounded-md bg-background font-mono"
+                          className="md:col-span-2 h-10 px-3 border-none rounded-xl bg-foreground/[0.03] focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none font-mono text-[10px] font-medium"
                           placeholder="Code"
                           value={c.code}
                           onChange={(e) =>
@@ -542,7 +570,7 @@ export function TaxManagement() {
                           title="Component code"
                         />
                         <input
-                          className="md:col-span-6 h-8 px-2 py-1 border rounded-md bg-background"
+                          className="md:col-span-6 h-10 px-3 border-none rounded-xl bg-foreground/[0.03] focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none text-[10px] font-medium"
                           placeholder="Component name"
                           value={c.name}
                           onChange={(e) =>
@@ -558,7 +586,7 @@ export function TaxManagement() {
                             min={0}
                             max={100}
                             step={0.01}
-                            className="h-8 w-full px-2 py-1 border rounded-md bg-background text-right"
+                            className="h-10 w-full px-3 border-none rounded-xl bg-foreground/[0.03] focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none text-right font-mono text-[10px] font-medium"
                             placeholder="%"
                             value={c.ratePct}
                             onChange={(e) =>
@@ -573,7 +601,7 @@ export function TaxManagement() {
                           <div className="col-span-12 md:col-span-2 flex md:justify-end justify-start mt-1 md:mt-0">
                             <button
                               type="button"
-                              className="h-8 px-2 rounded-md border text-xs"
+                              className="h-10 px-4 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-[9px] font-bold uppercase tracking-wider text-red-400 transition-colors opacity-80 group-hover:opacity-100"
                               onClick={() =>
                                 setCustomComponents((prev) => prev.filter((_x, i) => i !== idx))
                               }
@@ -589,24 +617,24 @@ export function TaxManagement() {
                       </div>
                     ))}
                     {customComponents.length === 0 && (
-                      <div className="microtext text-muted-foreground">No components yet. Add at least one.</div>
+                      <div className="text-[9px] text-muted-foreground/60 uppercase font-bold tracking-wider p-4 text-center rounded-2xl border border-dashed border-foreground/10">No components yet. Add at least one.</div>
                     )}
                   </div>
                 </div>
-                <div className="md:col-span-2 rounded-md border p-2">
-                  <div className="flex items-center justify-between">
-                    <span className="microtext text-muted-foreground">Total Rate</span>
-                    <span className="text-sm font-semibold">
-                      {Math.round(totalCustomRateFraction() * 10000) / 100}%
-                    </span>
+                
+                <div className="md:col-span-2 rounded-2xl border border-[var(--pp-secondary)]/20 bg-[var(--pp-secondary)]/[0.02] p-4 flex items-center justify-between mt-4 shadow-sm">
+                  <div className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-muted-foreground ml-1">Total Compound Rate</div>
+                  <div className="text-lg font-mono font-bold text-[var(--pp-secondary)]">
+                    {Math.round(totalCustomRateFraction() * 10000) / 100}%
                   </div>
-                  <div className="microtext text-muted-foreground">Computed as the sum of component rates, clamped to 100%.</div>
                 </div>
               </div>
-              {customError && <div className="microtext text-red-500 mt-2">{customError}</div>}
-              <div className="mt-3 flex items-center justify-end gap-2">
-                <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => setCustomOpen(false)}>Cancel</button>
-                <button className="px-3 py-1.5 rounded-md border text-sm" onClick={saveCustomJurisdiction}>
+              
+              {customError && <div className="text-[9px] uppercase font-bold tracking-wider text-red-500 mt-4 relative z-10">{customError}</div>}
+              
+              <div className="mt-8 flex items-center justify-end gap-3 relative z-10">
+                <button className="px-6 py-3 rounded-xl border border-foreground/[0.05] bg-foreground/[0.03] hover:bg-foreground/[0.06] text-[9px] font-bold uppercase tracking-wider transition-all" onClick={() => setCustomOpen(false)}>Cancel</button>
+                <button className="px-8 py-3 rounded-xl bg-[var(--pp-secondary)] hover:bg-[var(--pp-secondary)]/90 text-white text-[9px] font-bold uppercase tracking-wider shadow-[0_0_20px_var(--pp-secondary)]/30 transition-all" onClick={saveCustomJurisdiction}>
                   Save Jurisdiction
                 </button>
               </div>
@@ -617,26 +645,35 @@ export function TaxManagement() {
         : null}
 
       {/* ─── 1099-DA Digital Asset Tax Reporting ─── */}
-      <div className="h-px bg-border my-8" />
-      <div className="glass-pane rounded-xl border p-6 space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="md:col-span-12 my-6">
+        <div className="h-px bg-foreground/5 w-full" />
+      </div>
+      
+      <div className="md:col-span-12 rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-8 flex flex-col gap-6 shadow-sm overflow-hidden relative">
+        <div className="absolute -top-10 -right-10 w-48 h-48 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
+        <div className="flex items-center justify-between relative z-10">
           <div>
-            <h2 className="text-xl font-semibold">1099-DA Digital Asset Reporting</h2>
-            <p className="microtext text-muted-foreground">
+            <h2 className="text-[10px] md:text-xs uppercase font-bold tracking-[0.2em] text-foreground flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              1099-DA Digital Asset Reporting
+            </h2>
+            <p className="text-[8px] md:text-[9px] text-muted-foreground/60 uppercase font-bold tracking-wider mt-2 ml-1">
               IRS Form 1099-DA — Digital Asset Proceeds From Broker Transactions
             </p>
           </div>
-          <span className="px-2 py-0.5 rounded-full text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <span className="px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-sm shrink-0">
             PDAP Compliant
           </span>
         </div>
-        <Suspense fallback={
-          <div className="p-6 text-center text-muted-foreground">
-            Loading 1099-DA module…
-          </div>
-        }>
-          <Form1099DAPanel />
-        </Suspense>
+        <div className="relative z-10 mt-2">
+          <Suspense fallback={
+            <div className="p-8 text-center text-[10px] uppercase font-bold tracking-wider text-muted-foreground border border-dashed border-foreground/10 rounded-2xl">
+              Loading 1099-DA module…
+            </div>
+          }>
+            <Form1099DAPanel />
+          </Suspense>
+        </div>
       </div>
     </div>
   );

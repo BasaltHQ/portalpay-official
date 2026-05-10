@@ -400,63 +400,63 @@ function TerminalPanel() {
   })();
 
   return (
-    <div className="glass-pane rounded-xl border p-6 space-y-4" style={{ marginTop: "40px" }}>
+    <div className="w-full h-[calc(100vh-140px)] p-6 md:p-8 flex flex-col gap-6 pb-24 overflow-y-auto">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 ${theme.brandLogoShape === "round" || (theme.brandLogoShape as any) === "circle" ? "rounded-full" : (theme.brandLogoShape === "unmasked" ? "rounded-none" : "rounded-md")} bg-foreground/5 flex items-center justify-center overflow-hidden`}>
+        <div className="flex items-center gap-4">
+          <div className={`w-10 h-10 ${theme.brandLogoShape === "round" || (theme.brandLogoShape as any) === "circle" ? "rounded-full" : (theme.brandLogoShape === "unmasked" ? "rounded-none" : "rounded-xl")} bg-foreground/5 flex items-center justify-center overflow-hidden border border-foreground/10`}>
             <img src={terminalLogoUrl} alt="Logo" className="max-h-8 max-w-8 object-contain drop-shadow-md" />
           </div>
-          <h2 className={(isPricing ? "text-base md:text-xl " : "text-xl ") + "font-semibold"}>{theme.brandName || "Terminal"}</h2>
+          <h1 className="text-3xl font-bold">{theme.brandName || "Terminal"}</h1>
         </div>
-        <div className={isPricing ? "flex items-center ml-2 md:ml-3 px-1 md:px-2 microtext text-muted-foreground" : "flex items-center microtext text-muted-foreground"}>
-          <span className={isPricing ? "text-[10px] md:text-xs" : ""}>Wizard: amount → QR → pay → print</span>
+        <div className="flex items-center">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground badge-soft">Wizard: amount → QR → pay → print</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-md border p-3">
-          <div className="text-sm font-medium mb-2">Enter Details</div>
-          <div className="space-y-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="glass-pane rounded-xl border p-6">
+          <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-4">Enter Details</div>
+          <div className="space-y-4">
             <div>
-              <label className="microtext text-muted-foreground">Item name (optional)</label>
+              <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-1.5 block">Item name (optional)</label>
               <input
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="w-full h-10 px-3 py-2 border rounded-md bg-background/50 focus:bg-background transition-colors text-sm"
                 placeholder="e.g., Custom Charge"
                 value={itemLabel}
                 onChange={(e) => setItemLabel(e.target.value)}
               />
             </div>
             <div>
-              <label className="microtext text-muted-foreground">Amount ({terminalCurrency})</label>
-              <div className="mt-1 rounded-md border p-3">
-                <div className="text-2xl font-bold text-center">{formatCurrency(parseAmount(), terminalCurrency)}</div>
+              <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-1.5 block">Amount ({terminalCurrency})</label>
+              <div className="rounded-xl border p-4 bg-foreground/[0.02]">
+                <div className="text-3xl font-bold text-center mb-4 text-[var(--pp-secondary)]">{formatCurrency(parseAmount(), terminalCurrency)}</div>
                 <div className="grid grid-cols-3 gap-2 mt-3">
                   {["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ".", "⌫"].map((d, idx) => (
                     <button
                       key={idx}
                       type="button"
-                      className="h-10 rounded-md border text-sm hover:bg-foreground/5"
+                      className="h-12 rounded-lg border text-base font-medium bg-background/50 hover:bg-foreground/5 transition-all active:scale-95"
                       onClick={() => { if (d === "⌫") backspace(); else if (d === ".") appendDigit("."); else appendDigit(d); }}
                     >
                       {d}
                     </button>
                   ))}
-                  <button type="button" className="col-span-3 h-9 rounded-md border text-xs" onClick={clearAmount}>
+                  <button type="button" className="col-span-3 h-10 rounded-lg border text-xs font-semibold uppercase tracking-wider bg-background/50 hover:bg-foreground/5 transition-all mt-1" onClick={clearAmount}>
                     Clear
                   </button>
                 </div>
               </div>
-              <div className="microtext text-muted-foreground mt-1">Tap to enter quickly. Max 2 decimal places.</div>
+              <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mt-2 text-center">Tap to enter quickly. Max 2 decimal places.</div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-md border p-3">
-          <div className="text-sm font-medium mb-2">Summary</div>
-          <div>
-            <label className="microtext text-muted-foreground">Currency</label>
+        <div className="glass-pane rounded-xl border p-6 flex flex-col">
+          <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-4">Summary</div>
+          <div className="flex-1">
+            <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-1.5 block">Currency</label>
             <select
-              className="mt-1 mb-2 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-10 px-3 border rounded-md bg-background/50 focus:bg-background transition-colors text-sm mb-4"
               value={terminalCurrency}
               onChange={(e) => setTerminalCurrency(e.target.value)}
             >
@@ -468,37 +468,38 @@ function TerminalPanel() {
             </select>
           </div>
           {!siteMeta.hasDefault && (
-            <div className="microtext text-amber-600 mb-2">Set a default tax jurisdiction to apply taxes.</div>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-amber-600 mb-4">Set a default tax jurisdiction to apply taxes.</div>
           )}
-          <div className="space-y-2">
+          <div className="space-y-3 p-4 rounded-xl border bg-foreground/[0.02]">
             <div className="flex items-center justify-between">
-              <span className="microtext text-muted-foreground">Base</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Base</span>
               <span className="text-sm font-medium">{formatCurrency(baseConverted, terminalCurrency)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="microtext text-muted-foreground">Tax {siteMeta.hasDefault ? `(${(Math.round(taxRate * 10000) / 100).toFixed(2)}%)` : ""}</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Tax {siteMeta.hasDefault ? `(${(Math.round(taxRate * 10000) / 100).toFixed(2)}%)` : ""}</span>
               <span className="text-sm font-medium">{formatCurrency(taxConverted, terminalCurrency)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="microtext text-muted-foreground">Processing Fee</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Processing Fee</span>
               <span className="text-sm font-medium">{formatCurrency(processingFeeConverted, terminalCurrency)}</span>
             </div>
-            <div className="h-px bg-border my-1" />
+            <div className="h-px bg-border my-2" />
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold">Total</span>
-              <span className="text-sm font-semibold">{formatCurrency(totalConverted, terminalCurrency)}</span>
+              <span className="text-sm font-bold uppercase tracking-wider">Total</span>
+              <span className="text-sm font-bold text-[var(--pp-secondary)]">{formatCurrency(totalConverted, terminalCurrency)}</span>
             </div>
             {terminalCurrency !== "USD" && (
-              <div className="flex items-center justify-between">
-                <span className="microtext text-muted-foreground">Equivalent (USD)</span>
-                <span className="microtext text-muted-foreground">${totalUsd.toFixed(2)}</span>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Equivalent (USD)</span>
+                <span className="text-[10px] font-bold text-muted-foreground">${totalUsd.toFixed(2)}</span>
               </div>
             )}
           </div>
-          {error && <div className="microtext text-red-500 mt-2">{error}</div>}
-          <div className="mt-3">
+          {error && <div className="text-[10px] uppercase font-bold tracking-wider text-red-500 mt-3 text-center">{error}</div>}
+          <div className="mt-6">
             <button
-              className="w-full px-3 py-2 rounded-md border text-sm"
+              className="w-full h-12 rounded-lg text-sm font-bold uppercase tracking-wider text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 active:scale-95"
+              style={{ backgroundColor: "var(--pp-secondary)", borderColor: "transparent" }}
               onClick={generateTerminalReceipt}
               disabled={loading || !(baseUsd > 0)}
               title="Generate QR and receipt"
@@ -511,17 +512,17 @@ function TerminalPanel() {
 
       {qrOpen && selected && typeof window !== "undefined"
         ? createPortal(
-          <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4 print-no-bg print-static">
-            <div className="w-full max-w-sm rounded-md border bg-background p-4 relative">
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm grid place-items-center p-4 print-no-bg print-static">
+            <div className="w-full max-w-sm glass-pane rounded-xl border p-6 relative shadow-2xl">
               <button
                 onClick={() => { setQrOpen(false); }}
-                className="absolute right-2 top-2 h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                className="absolute right-4 top-4 h-8 w-8 rounded-full border bg-background/50 hover:bg-background text-foreground shadow-sm flex items-center justify-center transition-colors"
                 title="Close"
                 aria-label="Close terminal QR"
               >
                 ✕
               </button>
-              <div className="text-lg font-semibold mb-2">Present to Buyer</div>
+              <div className="text-lg font-bold uppercase tracking-wider mb-4">Present to Buyer</div>
               <div className="thermal-paper relative mx-auto">
                 <div className="grid place-items-center my-2">
                   <QRCodeCanvas value={portalUrl} size={140} includeMargin fgColor="#000000" bgColor="#ffffff" />
@@ -546,17 +547,17 @@ function TerminalPanel() {
                     })()}</span>
                   </div>
                   {selected.currency && selected.currency !== "USD" && (
-                    <div className="thermal-row microtext">
+                    <div className="thermal-row text-[10px] uppercase font-bold tracking-wider text-muted-foreground mt-2">
                       <span>Equivalent (USD)</span>
                       <span>${Number(selected.totalUsd || 0).toFixed(2)}</span>
                     </div>
                   )}
                 </div>
               </div>
-              <div className="thermal-actions print-hidden">
-                <button onClick={() => { try { window.print(); } catch { } }} className="receipt-button">Print Receipt</button>
-                <button onClick={() => { try { navigator.clipboard.writeText(portalUrl); } catch { } }} className="receipt-button">Copy Link</button>
-                <button onClick={() => { try { const w = window.open(portalUrl, "_blank", "noopener,noreferrer"); w?.focus(); } catch { } }} className="receipt-button">Open Portal</button>
+              <div className="thermal-actions print-hidden grid grid-cols-3 gap-2 mt-4">
+                <button onClick={() => { try { window.print(); } catch { } }} className="h-10 rounded-lg text-[10px] font-bold uppercase tracking-wider border bg-background/50 hover:bg-background transition-colors flex items-center justify-center">Print</button>
+                <button onClick={() => { try { navigator.clipboard.writeText(portalUrl); } catch { } }} className="h-10 rounded-lg text-[10px] font-bold uppercase tracking-wider border bg-background/50 hover:bg-background transition-colors flex items-center justify-center">Copy</button>
+                <button onClick={() => { try { const w = window.open(portalUrl, "_blank", "noopener,noreferrer"); w?.focus(); } catch { } }} className="h-10 rounded-lg text-[10px] font-bold uppercase tracking-wider border bg-background/50 hover:bg-background transition-colors flex items-center justify-center">Open</button>
               </div>
             </div>
           </div>,
@@ -566,28 +567,28 @@ function TerminalPanel() {
 
       {completeOpen && selected && typeof window !== "undefined"
         ? createPortal(
-          <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4">
-            <div className="w-full max-w-sm rounded-md border bg-background p-4 relative">
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm grid place-items-center p-4">
+            <div className="w-full max-w-sm glass-pane rounded-xl border p-6 relative shadow-2xl">
               <button
                 onClick={() => setCompleteOpen(false)}
-                className="absolute right-2 top-2 h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                className="absolute right-4 top-4 h-8 w-8 rounded-full border bg-background/50 hover:bg-background text-foreground shadow-sm flex items-center justify-center transition-colors"
                 title="Close"
                 aria-label="Close payment complete modal"
               >
                 ✕
               </button>
-              <div className="text-lg font-semibold mb-2">Payment Complete</div>
-              <div className="microtext text-muted-foreground mb-2">
+              <div className="text-lg font-bold uppercase tracking-wider mb-2 text-[var(--pp-secondary)]">Payment Complete</div>
+              <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-6">
                 Receipt {selected.receiptId} has been settled.
               </div>
-              <div className="flex items-center justify-end gap-2">
-                <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => { try { window.print(); } catch { } }}>
+              <div className="flex flex-col gap-2">
+                <button className="h-12 w-full rounded-lg border text-xs font-bold uppercase tracking-wider bg-background/50 hover:bg-background transition-colors" onClick={() => { try { window.print(); } catch { } }}>
                   Print Receipt
                 </button>
-                <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => { try { navigator.clipboard.writeText(portalUrl); } catch { } }}>
+                <button className="h-12 w-full rounded-lg border text-xs font-bold uppercase tracking-wider bg-background/50 hover:bg-background transition-colors" onClick={() => { try { navigator.clipboard.writeText(portalUrl); } catch { } }}>
                   Copy Link
                 </button>
-                <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => { try { const w = window.open(portalUrl, "_blank", "noopener,noreferrer"); w?.focus(); } catch { } }}>
+                <button className="h-12 w-full rounded-lg border text-xs font-bold uppercase tracking-wider bg-[var(--pp-secondary)] text-white transition-colors hover:brightness-110" onClick={() => { try { const w = window.open(portalUrl, "_blank", "noopener,noreferrer"); w?.focus(); } catch { } }}>
                   Open Portal
                 </button>
               </div>

@@ -324,7 +324,7 @@ export function AnalyticsPanel() {
   }, [metrics]);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
+    <div className="w-full h-[calc(100vh-140px)] p-6 md:p-8 flex flex-col gap-6 pb-24 overflow-y-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Analytics</h1>
         <span className="microtext badge-soft">Shop Performance</span>

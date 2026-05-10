@@ -119,7 +119,7 @@ export function ProfileHeader({
           </div>
 
           <div className="min-w-0">
-            <div className="text-2xl font-bold truncate text-white">
+            <div className="text-xl font-bold tracking-tight truncate text-white">
               {displayName || `${wallet.slice(0, 6)}…${wallet.slice(-4)}`}
             </div>
             <div className="font-mono text-xs text-gray-400 truncate">

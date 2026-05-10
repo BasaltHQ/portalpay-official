@@ -510,27 +510,27 @@ export default function PartnerPluginsPanel() {
       : 'grid grid-cols-1 sm:grid-cols-2 gap-3';
 
     return (
-      <div className="rounded-md border p-3">
+      <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md p-6">
         <div className="flex items-center justify-between mb-2">
           <div className="text-sm font-medium">Available Plugins</div>
           <div className="flex items-center gap-2">
             <button
-              className={`microtext px-2 py-1 rounded-md border ${viewMode === 'grid-full' ? 'bg-foreground/10 border-foreground/30' : 'hover:bg-foreground/5'}`}
+              className={`microtext px-2 py-1 rounded-md border ${viewMode === 'grid-full' ? 'bg-background shadow text-foreground border border-foreground/[0.05]' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.02]'}`}
               onClick={() => setViewMode('grid-full')}
             >Full Grid</button>
             <button
-              className={`microtext px-2 py-1 rounded-md border ${viewMode === 'grid-compact' ? 'bg-foreground/10 border-foreground/30' : 'hover:bg-foreground/5'}`}
+              className={`microtext px-2 py-1 rounded-md border ${viewMode === 'grid-compact' ? 'bg-background shadow text-foreground border border-foreground/[0.05]' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.02]'}`}
               onClick={() => setViewMode('grid-compact')}
             >Compact Grid</button>
             <button
-              className={`microtext px-2 py-1 rounded-md border ${isList(viewMode) ? 'bg-foreground/10 border-foreground/30' : 'hover:bg-foreground/5'}`}
+              className={`microtext px-2 py-1 rounded-md border ${isList(viewMode) ? 'bg-background shadow text-foreground border border-foreground/[0.05]' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.02]'}`}
               onClick={() => setViewMode('list')}
             >List</button>
           </div>
         </div>
 
         {isList(viewMode) ? (
-          <div className="rounded-md border">
+          <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md overflow-hidden">
             <div>
               {catalog.map((p) => {
                 let enabled = false;
@@ -581,8 +581,9 @@ export default function PartnerPluginsPanel() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
-      <div className="flex items-center justify-between">
+    <div className="w-full space-y-6 pb-24 admin-panel-enter">
+      <div className="flex flex-col gap-4 relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+        <div className="flex items-center justify-between">
         <div>
           <div className="text-lg font-semibold">Plugins</div>
           <div className="microtext text-muted-foreground">Manage plugins for your partner brand. Shopify may be enabled for your brand; other integrations can be activated upon request.</div>
@@ -591,15 +592,17 @@ export default function PartnerPluginsPanel() {
       </div>
 
       <div className="flex items-center gap-2">
-        <input className="h-9 px-3 border rounded-md bg-background w-60" placeholder="brandKey" value={brandKey} onChange={(e) => setBrandKey(e.target.value.toLowerCase())} />
-        <button className="px-3 py-1.5 border rounded-md text-sm" onClick={loadConfig} disabled={loading}>{loading ? "Loading…" : "Load"}</button>
+        <input className="h-10 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-sm transition-colors hover:bg-foreground/[0.04] focus:border-foreground/30 focus:outline-none placeholder-muted-foreground w-60" placeholder="brandKey" value={brandKey} onChange={(e) => setBrandKey(e.target.value.toLowerCase())} />
+        <button className="h-10 px-4 rounded-lg border border-foreground/[0.05] bg-background text-sm font-medium hover:bg-foreground/[0.02] transition-colors shadow-sm" onClick={loadConfig} disabled={loading}>{loading ? "Loading…" : "Load"}</button>
+      </div>
+
       </div>
 
       {/* Catalog with view mode controls */}
       {renderCatalog()}
 
       {selectedPlugin === 'xshopping' && (
-        <div className="rounded-md border p-4 space-y-3">
+        <div className="rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent backdrop-blur-md p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-xl">𝕏</span>
@@ -608,7 +611,7 @@ export default function PartnerPluginsPanel() {
             <div className="text-xs text-muted-foreground">State: {xshoppingEnabled ? 'Enabled' : 'Disabled'}</div>
           </div>
 
-          <div className="rounded-md border p-4 bg-background space-y-4">
+          <div className="rounded-xl border border-foreground/[0.05] bg-background p-6 space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Enable for Merchants</div>
@@ -641,7 +644,7 @@ export default function PartnerPluginsPanel() {
       )}
 
       {selectedPlugin === 'jira' && (
-        <div className="rounded-md border p-4 space-y-3">
+        <div className="rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent backdrop-blur-md p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-xl font-bold text-blue-600">J</span>
@@ -650,7 +653,7 @@ export default function PartnerPluginsPanel() {
             <div className="text-xs text-muted-foreground">State: {jiraEnabled ? 'Enabled' : 'Disabled'}</div>
           </div>
 
-          <div className="rounded-md border p-4 bg-background space-y-4">
+          <div className="rounded-xl border border-foreground/[0.05] bg-background p-6 space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Enable Integration</div>
@@ -727,7 +730,7 @@ export default function PartnerPluginsPanel() {
             )}
 
             <div className="flex justify-end">
-              <button type="button" className="px-3 py-1.5 border rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={saveJiraConfig} disabled={saving}>{saving ? "Saving…" : "Save Configuration"}</button>
+              <button type="button" className="px-4 py-2 border border-foreground/[0.05] rounded-lg text-sm bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-all shadow-sm" onClick={saveJiraConfig} disabled={saving}>{saving ? "Saving…" : "Save Configuration"}</button>
             </div>
 
             {(info || error) && (
@@ -738,7 +741,7 @@ export default function PartnerPluginsPanel() {
       )}
 
       {selectedPlugin === 'shopify' && (
-        <div className="rounded-md border p-4 space-y-3">
+        <div className="rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent backdrop-blur-md p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -757,19 +760,19 @@ export default function PartnerPluginsPanel() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="microtext">Plugin Name</label>
-                  <input className="mt-1 h-9 w-full px-3 border rounded-md bg-background" value={plugin.pluginName} onChange={(e) => setPlugin({ ...plugin, pluginName: e.target.value })} />
+                  <input className="mt-1 h-10 w-full px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-sm transition-colors hover:bg-foreground/[0.04] focus:border-foreground/30 focus:outline-none placeholder-muted-foreground" value={plugin.pluginName} onChange={(e) => setPlugin({ ...plugin, pluginName: e.target.value })} />
                 </div>
                 <div>
                   <label className="microtext">Tagline</label>
-                  <input className="mt-1 h-9 w-full px-3 border rounded-md bg-background" value={plugin.tagline} onChange={(e) => setPlugin({ ...plugin, tagline: e.target.value })} />
+                  <input className="mt-1 h-10 w-full px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-sm transition-colors hover:bg-foreground/[0.04] focus:border-foreground/30 focus:outline-none placeholder-muted-foreground" value={plugin.tagline} onChange={(e) => setPlugin({ ...plugin, tagline: e.target.value })} />
                 </div>
                 <div>
                   <label className="microtext">Short Description</label>
-                  <input className="mt-1 h-9 w-full px-3 border rounded-md bg-background" value={plugin.shortDescription} onChange={(e) => setPlugin({ ...plugin, shortDescription: e.target.value })} />
+                  <input className="mt-1 h-10 w-full px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-sm transition-colors hover:bg-foreground/[0.04] focus:border-foreground/30 focus:outline-none placeholder-muted-foreground" value={plugin.shortDescription} onChange={(e) => setPlugin({ ...plugin, shortDescription: e.target.value })} />
                 </div>
                 <div>
                   <label className="microtext">Features (comma separated)</label>
-                  <input className="mt-1 h-9 w-full px-3 border rounded-md bg-background" value={stringifyCsv(plugin.features)} onChange={(e) => setPlugin({ ...plugin, features: parseCsvInput(e.target.value) })} />
+                  <input className="mt-1 h-10 w-full px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-sm transition-colors hover:bg-foreground/[0.04] focus:border-foreground/30 focus:outline-none placeholder-muted-foreground" value={stringifyCsv(plugin.features)} onChange={(e) => setPlugin({ ...plugin, features: parseCsvInput(e.target.value) })} />
                 </div>
               </div>
               <div>
@@ -835,7 +838,7 @@ export default function PartnerPluginsPanel() {
 
               <div className="flex flex-wrap items-center gap-2">
                 <button type="button" className="px-3 py-1.5 border rounded-md text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" onClick={autoPopulateUrls}>Auto-populate URLs</button>
-                <button type="button" className="px-3 py-1.5 border rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90" onClick={saveConfig} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
+                <button type="button" className="px-4 py-2 border border-foreground/[0.05] rounded-lg text-sm bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-all shadow-sm" onClick={saveConfig} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
                 <button className="px-3 py-1.5 border rounded-md text-sm" onClick={generatePackage}>Generate Package</button>
                 <button className="px-3 py-1.5 border rounded-md text-sm" onClick={deploy}>Deploy</button>
                 <button className="px-3 py-1.5 border rounded-md text-sm" onClick={getStatus}>Status</button>

@@ -96,26 +96,33 @@ export function TransactionsViewer() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Transaction History</h3>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
+      {/* Header Area */}
+      <div className="md:col-span-12 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-4 mb-2">
+        <div>
+           <h3 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+             <div className="w-1.5 h-1.5 rounded-full bg-[var(--pp-secondary)]" /> 
+             Transaction History
+           </h3>
+           <div className="text-[9px] text-muted-foreground/60 uppercase font-semibold tracking-wider mt-1">Split contract activity and historical payouts.</div>
+        </div>
         <button
-          className="px-3 py-1.5 rounded-md border text-sm"
+          className="px-5 py-2.5 rounded-xl bg-foreground/[0.03] border border-foreground/[0.05] hover:bg-foreground/[0.06] hover:border-foreground/10 text-[9px] uppercase font-bold tracking-wider transition-all shadow-sm"
           onClick={fetchTransactions}
           disabled={loading}
         >
-          {loading ? "Refreshing…" : "Refresh"}
+          {loading ? "Refreshing…" : "Refresh History"}
         </button>
       </div>
 
       {splitAddress && (
-        <div className="microtext text-muted-foreground">
-          Split Contract:{" "}
+        <div className="md:col-span-12 rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-4 flex items-center justify-between shadow-sm">
+          <div className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground/80 ml-2">Active Split Contract</div>
           <a
             href={`https://base.blockscout.com/address/${splitAddress}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline"
+            className="text-xs font-mono font-medium text-[var(--pp-secondary)] hover:underline mr-2"
           >
             {splitAddress.slice(0, 10)}…{splitAddress.slice(-8)}
           </a>
@@ -123,55 +130,63 @@ export function TransactionsViewer() {
       )}
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="rounded-md border p-3 glass-pane">
-          <div className="text-xs font-medium text-muted-foreground mb-2">Payments Received</div>
-          {Object.entries(cumulative.payments).map(([token, amount]) => (
-            <div key={token} className="flex items-center justify-between text-sm">
-              <span>{token}</span>
-              <span className="font-semibold">{Number(amount || 0).toFixed(4)}</span>
-            </div>
-          ))}
-          {Object.keys(cumulative.payments).length === 0 && (
-            <div className="text-sm text-muted-foreground">No payments yet</div>
-          )}
+      <div className="md:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 shadow-sm h-full flex flex-col">
+          <div className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-6">Payments Received</div>
+          <div className="space-y-3 flex-1">
+            {Object.entries(cumulative.payments).map(([token, amount]) => (
+              <div key={token} className="flex items-center justify-between bg-foreground/[0.03] border border-foreground/[0.05] rounded-xl p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">{token}</span>
+                <span className="font-mono text-sm font-bold text-foreground/90">{Number(amount || 0).toFixed(4)}</span>
+              </div>
+            ))}
+            {Object.keys(cumulative.payments).length === 0 && (
+              <div className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground/40 text-center py-6 h-full flex items-center justify-center">No payments yet</div>
+            )}
+          </div>
         </div>
 
-        <div className="rounded-md border p-3 glass-pane">
-          <div className="text-xs font-medium text-muted-foreground mb-2">Merchant Releases</div>
-          {Object.entries(cumulative.merchantReleases).map(([token, amount]) => (
-            <div key={token} className="flex items-center justify-between text-sm">
-              <span>{token}</span>
-              <span className="font-semibold">{Number(amount || 0).toFixed(4)}</span>
-            </div>
-          ))}
-          {Object.keys(cumulative.merchantReleases).length === 0 && (
-            <div className="text-sm text-muted-foreground">No releases yet</div>
-          )}
+        <div className="rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 shadow-sm h-full flex flex-col relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/[0.05] blur-[40px] pointer-events-none rounded-full" />
+          <div className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-6 relative z-10">Merchant Releases</div>
+          <div className="space-y-3 flex-1 relative z-10">
+            {Object.entries(cumulative.merchantReleases).map(([token, amount]) => (
+              <div key={token} className="flex items-center justify-between bg-emerald-500/[0.03] border border-emerald-500/10 rounded-xl p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500/70">{token}</span>
+                <span className="font-mono text-sm font-bold text-emerald-500">{Number(amount || 0).toFixed(4)}</span>
+              </div>
+            ))}
+            {Object.keys(cumulative.merchantReleases).length === 0 && (
+              <div className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground/40 text-center py-6 h-full flex items-center justify-center">No releases yet</div>
+            )}
+          </div>
         </div>
 
-        <div className="rounded-md border p-3 glass-pane">
-          <div className="text-xs font-medium text-muted-foreground mb-2">Platform Releases</div>
-          {Object.entries(cumulative.platformReleases).map(([token, amount]) => (
-            <div key={token} className="flex items-center justify-between text-sm">
-              <span>{token}</span>
-              <span className="font-semibold">{Number(amount || 0).toFixed(4)}</span>
-            </div>
-          ))}
-          {Object.keys(cumulative.platformReleases).length === 0 && (
-            <div className="text-sm text-muted-foreground">No releases yet</div>
-          )}
+        <div className="rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 shadow-sm h-full flex flex-col relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/[0.05] blur-[40px] pointer-events-none rounded-full" />
+          <div className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-6 relative z-10">Platform Releases</div>
+          <div className="space-y-3 flex-1 relative z-10">
+            {Object.entries(cumulative.platformReleases).map(([token, amount]) => (
+              <div key={token} className="flex items-center justify-between bg-purple-500/[0.03] border border-purple-500/10 rounded-xl p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-500/70">{token}</span>
+                <span className="font-mono text-sm font-bold text-purple-500">{Number(amount || 0).toFixed(4)}</span>
+              </div>
+            ))}
+            {Object.keys(cumulative.platformReleases).length === 0 && (
+              <div className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground/40 text-center py-6 h-full flex items-center justify-center">No releases yet</div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Transaction List */}
-      <div className="rounded-md border glass-pane p-4">
-        <div className="text-sm font-medium mb-3">
-          Recent Transactions {transactions.length > 0 && `(${transactions.length})`}
+      <div className="md:col-span-12 rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 shadow-sm">
+        <div className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-6 block ml-1">
+          Recent Transactions {transactions.length > 0 && <span className="text-muted-foreground/50 ml-2">({transactions.length})</span>}
         </div>
         
         {transactions.length > 0 ? (
-          <div className="space-y-1 max-h-[600px] overflow-y-auto">
+          <div className="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar pr-2 -mr-2">
             {transactions.map((tx: any, idx: number) => {
               const txType = tx?.type || 'unknown';
               const releaseType = tx?.releaseType;
@@ -181,63 +196,67 @@ export function TransactionsViewer() {
               return (
                 <div 
                   key={idx} 
-                  className={`p-3 rounded border text-xs ${
+                  className={`p-4 md:p-5 rounded-2xl border transition-colors ${
                     isRelease 
-                      ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800' 
-                      : 'bg-background'
+                      ? releaseType === 'merchant'
+                        ? 'bg-emerald-500/[0.02] border-emerald-500/10 hover:bg-emerald-500/[0.03]'
+                        : 'bg-purple-500/[0.02] border-purple-500/10 hover:bg-purple-500/[0.03]'
+                      : 'bg-foreground/[0.02] border-foreground/[0.05] hover:bg-foreground/[0.04]'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="font-mono text-xs font-medium">
                         <a
                           href={`https://base.blockscout.com/tx/${tx.hash}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="underline hover:text-blue-600"
+                          className="text-foreground/80 hover:text-[var(--pp-secondary)] transition-colors"
                         >
                           {String(tx.hash || "").slice(0, 10)}…{String(tx.hash || "").slice(-8)}
                         </a>
                       </span>
                       {isPayment && (
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 font-medium">
+                        <span className="px-3 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-500 border border-blue-500/20">
                           Payment
                         </span>
                       )}
                       {isRelease && releaseType === 'merchant' && (
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 font-medium">
+                        <span className="px-3 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
                           Merchant Release
                         </span>
                       )}
                       {isRelease && releaseType === 'platform' && (
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 font-medium">
+                        <span className="px-3 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-500 border border-purple-500/20">
                           Platform Release
                         </span>
                       )}
                     </div>
-                    <span className="font-semibold text-sm">
-                      {Number(tx.value || 0).toFixed(4)} {String(tx.token || 'ETH').toUpperCase()}
+                    <span className="font-mono font-bold text-sm text-foreground/90 shrink-0">
+                      {Number(tx.value || 0).toFixed(4)} <span className="text-[10px] text-muted-foreground ml-1">{String(tx.token || 'ETH').toUpperCase()}</span>
                     </span>
                   </div>
-                  <div className="flex items-center justify-between microtext text-muted-foreground">
-                    <span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                    <span className="font-mono normal-case tracking-normal text-muted-foreground/80 text-xs">
                       {isPayment ? 'From' : 'To'}: {String(isPayment ? tx.from : tx.to || "").slice(0, 10)}…
                     </span>
-                    <span>{new Date(Number(tx.timestamp || 0)).toLocaleString()}</span>
-                  </div>
-                  {tx.blockNumber && (
-                    <div className="microtext text-muted-foreground mt-1">
-                      Block: {Number(tx.blockNumber || 0).toLocaleString()}
+                    <div className="flex items-center gap-4">
+                      {tx.blockNumber && (
+                        <span>
+                          Block {Number(tx.blockNumber || 0).toLocaleString()}
+                        </span>
+                      )}
+                      <span>{new Date(Number(tx.timestamp || 0)).toLocaleString()}</span>
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <div className="text-sm">No transactions found</div>
-            <div className="microtext mt-1">
+          <div className="text-center py-16 rounded-2xl border border-dashed border-foreground/10 bg-foreground/[0.01]">
+            <div className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-muted-foreground mb-3">No transactions found</div>
+            <div className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground/40 max-w-sm mx-auto leading-relaxed">
               Transactions will appear here once payments are received or withdrawals are made.
             </div>
           </div>

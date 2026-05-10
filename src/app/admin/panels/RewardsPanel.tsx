@@ -406,10 +406,10 @@ export default function RewardsPanel() {
                     merchantArtConfigs={merchantArtConfigs}
                     merchantLoyaltyConfigs={merchantLoyaltyConfigs}
                 />
-                <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="w-full h-[calc(100vh-140px)] p-6 md:p-8 flex flex-col gap-6 pb-24 overflow-y-auto animate-in fade-in slide-in-from-right-4">
                     <button
                         onClick={() => setSelectedShop(null)}
-                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        className="flex items-center gap-2 text-[10px] uppercase font-bold text-muted-foreground hover:text-foreground tracking-wider transition-colors shrink-0"
                     >
                         <MoveRight className="w-4 h-4 rotate-180" />
                         Back to All Rewards
@@ -540,7 +540,7 @@ export default function RewardsPanel() {
                                         console.log("Opening Profile Modal (Button)");
                                         setShowProfileModal(true);
                                     }}
-                                    className="px-6 py-3 bg-white/10 border border-white/10 text-white rounded-xl font-medium hover:bg-white/20 transition-all backdrop-blur-md flex items-center justify-center gap-2 cursor-pointer z-50"
+                                    className="px-6 py-3 border border-white/10 bg-white/5 text-white rounded-xl text-[10px] uppercase font-bold tracking-wider hover:bg-white/10 transition-all backdrop-blur-md flex items-center justify-center gap-2 cursor-pointer z-50"
                                 >
                                     <Settings className="w-4 h-4" />
                                     Customize Ring
@@ -552,18 +552,18 @@ export default function RewardsPanel() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2 space-y-6">
                             <h3 className="text-lg font-semibold">Merchant Rewards</h3>
-                            <div className="glass-pane rounded-xl border overflow-hidden min-h-[300px]">
+                            <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] overflow-hidden min-h-[300px]">
                                 {/* Tabs */}
                                 <div className="flex border-b border-white/10">
                                     <button
                                         onClick={() => setActiveDetailTab('rewards')}
-                                        className={`flex-1 py-3 text-sm font-medium transition-colors ${activeDetailTab === 'rewards' ? 'bg-muted/50 text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:bg-muted/20'}`}
+                                        className={`flex-1 py-3 text-[10px] uppercase font-bold tracking-wider transition-colors ${activeDetailTab === 'rewards' ? 'bg-foreground/[0.05] text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:bg-foreground/[0.02]'}`}
                                     >
                                         Level Rewards
                                     </button>
                                     <button
                                         onClick={() => setActiveDetailTab('coupons')}
-                                        className={`flex-1 py-3 text-sm font-medium transition-colors ${activeDetailTab === 'coupons' ? 'bg-muted/50 text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:bg-muted/20'}`}
+                                        className={`flex-1 py-3 text-[10px] uppercase font-bold tracking-wider transition-colors ${activeDetailTab === 'coupons' ? 'bg-foreground/[0.05] text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:bg-foreground/[0.02]'}`}
                                     >
                                         Coupons & Discounts
                                     </button>
@@ -587,7 +587,7 @@ export default function RewardsPanel() {
                                                         {rewards.map((r: any, idx: number) => {
                                                             const isUnlocked = currentLevel >= r.level;
                                                             return (
-                                                                <div key={idx} className={`p-4 rounded-lg border flex items-start gap-3 ${isUnlocked ? 'bg-green-500/10 border-green-500/20' : 'bg-muted/5 border-white/5 opacity-70'}`}>
+                                                                <div key={idx} className={`p-4 rounded-lg border flex items-start gap-3 ${isUnlocked ? 'bg-green-500/10 border-green-500/20' : 'bg-foreground/[0.01] border-white/5 opacity-70'}`}>
                                                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isUnlocked ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'}`}>
                                                                         {r.type === 'item' ? <Gift className="w-5 h-5" /> : <Tag className="w-5 h-5" />}
                                                                     </div>
@@ -655,9 +655,9 @@ export default function RewardsPanel() {
                             </div>
 
                             <h3 className="text-lg font-semibold">Transaction History</h3>
-                            <div className="glass-pane rounded-xl border overflow-hidden">
+                            <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] overflow-hidden">
                                 <table className="w-full text-sm text-left">
-                                    <thead className="bg-muted/50 text-muted-foreground border-b uppercase text-xs tracking-wider">
+                                    <thead className="bg-foreground/[0.02] text-muted-foreground border-b uppercase text-xs tracking-wider">
                                         <tr>
                                             <th className="p-4 font-medium">Date</th>
                                             <th className="p-4 font-medium">Items</th>
@@ -667,7 +667,7 @@ export default function RewardsPanel() {
                                     </thead>
                                     <tbody className="divide-y">
                                         {selectedShop.orders.map(order => (
-                                            <tr key={order.receiptId} className="hover:bg-muted/5 transition-colors">
+                                            <tr key={order.receiptId} className="hover:bg-foreground/[0.01] transition-colors">
                                                 <td className="p-4 text-muted-foreground">
                                                     {new Date(order.createdAt).toLocaleDateString()}
                                                     <div className="text-xs opacity-50">{new Date(order.createdAt).toLocaleTimeString()}</div>
@@ -699,23 +699,23 @@ export default function RewardsPanel() {
                         <div className="space-y-6">
                             <h3 className="text-lg font-semibold">Statistics</h3>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="glass-pane p-4 rounded-xl border bg-card/50">
-                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Spent</div>
+                                <div className="glass-pane p-4 rounded-xl border border-foreground/[0.1] bg-foreground/[0.02]">
+                                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Total Spent</div>
                                     <div className="text-xl font-mono font-bold" style={{ color: primaryColor }}>${selectedShop.totalPoints.toLocaleString()}</div>
                                 </div>
-                                <div className="glass-pane p-4 rounded-xl border bg-card/50">
-                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Orders</div>
+                                <div className="glass-pane p-4 rounded-xl border border-foreground/[0.1] bg-foreground/[0.02]">
+                                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Orders</div>
                                     <div className="text-xl font-mono font-bold">{selectedShop.orderCount}</div>
                                 </div>
-                                <div className="glass-pane p-4 rounded-xl border bg-card/50 col-span-2">
-                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Member Since</div>
+                                <div className="glass-pane p-4 rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] col-span-2">
+                                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Member Since</div>
                                     <div className="text-lg font-medium">{new Date(selectedShop.orders[selectedShop.orders.length - 1].createdAt).toLocaleDateString()}</div>
                                 </div>
                             </div>
 
                             {/* Prominent Solar System Art Container */}
                             {artConfig && (
-                                <div className="glass-pane rounded-xl border p-8 flex items-center justify-center relative overflow-hidden min-h-[300px] bg-black/40">
+                                <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-8 flex items-center justify-center relative overflow-hidden min-h-[300px] bg-black/40">
                                     {/* Ambient Background Glow */}
                                     <div
                                         className="absolute inset-0 opacity-20"
@@ -743,7 +743,7 @@ export default function RewardsPanel() {
                             )}
 
                             {/* Merchant XP Curve */}
-                            <div className="glass-pane rounded-xl border p-6 space-y-4">
+                            <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-4">
                                 <div className="flex items-center gap-2">
                                     <TrendingUp className="w-5 h-5 text-muted-foreground" />
                                     <h3 className="text-lg font-semibold">Level Progression</h3>
@@ -826,7 +826,7 @@ export default function RewardsPanel() {
 
     // Main List View continued...
     return (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
+        <div className="w-full h-[calc(100vh-140px)] p-6 md:p-8 flex flex-col gap-6 pb-24 overflow-y-auto">
             <div className="space-y-8 pb-10">
                 {/* Global Status Card - Redesigned */}
                 <div className="relative overflow-hidden rounded-3xl bg-black border border-white/10 shadow-2xl">
@@ -1074,9 +1074,9 @@ export default function RewardsPanel() {
                                 })}
                             </div>
                         ) : (
-                            <div className="glass-pane rounded-xl border overflow-hidden">
+                            <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] overflow-hidden">
                                 <table className="w-full text-sm text-left">
-                                    <thead className="bg-muted/50 text-muted-foreground border-b uppercase text-xs tracking-wider">
+                                    <thead className="bg-foreground/[0.02] text-muted-foreground border-b uppercase text-xs tracking-wider">
                                         <tr>
                                             <th className="p-4 font-medium">Merchant</th>
                                             <th className="p-4 font-medium">Level</th>
@@ -1091,7 +1091,7 @@ export default function RewardsPanel() {
                                             const primaryColor = shop.theme?.primaryColor || '#0ea5e9';
 
                                             return (
-                                                <tr key={shop.merchantWallet} className="hover:bg-muted/5 transition-colors group cursor-pointer" onClick={() => setSelectedShop(shop)}>
+                                                <tr key={shop.merchantWallet} className="hover:bg-foreground/[0.01] transition-colors group cursor-pointer" onClick={() => setSelectedShop(shop)}>
                                                     <td className="p-4 font-medium">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-8 h-8 rounded bg-muted flex items-center justify-center overflow-hidden">

@@ -60,7 +60,7 @@ export type ShopConfig = {
 function Input({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
-      <label className="microtext text-muted-foreground">{label}</label>
+      <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{label}</label>
       <input {...props} className={`mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background ${props.className || ""}`} />
     </div>
   );
@@ -69,7 +69,7 @@ function Input({ label, ...props }: { label: string } & React.InputHTMLAttribute
 function TextArea({ label, ...props }: { label: string } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <div>
-      <label className="microtext text-muted-foreground">{label}</label>
+      <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{label}</label>
       <textarea {...props} className={`mt-1 w-full h-24 px-3 py-2 border rounded-md bg-background ${props.className || ""}`} />
     </div>
   );
@@ -804,17 +804,17 @@ export function ShopPanel() {
 
   if (!isConnected && !loading) {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-10">
-        <div className="glass-pane rounded-xl border p-6">
+      <div className="w-full h-full p-6 md:p-8 space-y-8 pb-24">
+        <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6">
           <h1 className="text-2xl font-semibold mb-2">Shop</h1>
-          <p className="microtext text-muted-foreground">Connect your wallet to deploy your storefront.</p>
+          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Connect your wallet to deploy your storefront.</p>
           <div className="mt-3">
             <ConnectButton
               client={client}
               chain={chain}
               wallets={wallets}
               connectButton={{
-                label: <span className="microtext">Login</span>,
+                label: <span className="text-[10px] uppercase font-bold tracking-wider">Login</span>,
                 className: connectButtonClass,
                 style: getConnectButtonStyle(),
               }}
@@ -842,8 +842,8 @@ export function ShopPanel() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-10">
-        <div className="glass-pane rounded-xl border p-6">
+      <div className="w-full h-full p-6 md:p-8 space-y-8 pb-24">
+        <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6">
           <div className="animate-pulse">
             <div className="h-6 w-40 bg-foreground/10 rounded" />
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -860,13 +860,13 @@ export function ShopPanel() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24" style={shopMode === 'advanced' || shopMode === 'portal' ? { height: 'calc(100vh - 64px)' } : undefined}>
+    <div className="w-full h-full p-6 md:p-8 space-y-8 pb-24" style={shopMode === 'advanced' || shopMode === 'portal' ? { height: 'calc(100vh - 64px)' } : undefined}>
       <ShopThemeAuditor expected={cfg.theme} />
       <div className={`flex items-center justify-between ${shopMode === 'advanced' || shopMode === 'portal' ? 'px-6 py-4 border-b border-white/5' : ''}`}>
         <div className="flex items-center gap-4">
           <div>
             <h1 className={shopMode === 'advanced' || shopMode === 'portal' ? 'text-lg font-semibold' : 'text-3xl font-bold'}>Shop</h1>
-            {shopMode === 'basic' && <span className="microtext badge-soft">Merchant setup</span>}
+            {shopMode === 'basic' && <span className="text-[10px] uppercase font-bold tracking-wider badge-soft">Merchant setup</span>}
           </div>
           {/* Basic / Advanced / Portal Toggle */}
           <div className="flex gap-0.5 bg-black/20 p-0.5 rounded-lg">
@@ -993,10 +993,10 @@ export function ShopPanel() {
       {/* ==================== BASIC MODE ==================== */}
       {shopMode === 'basic' && (<>
       {/* Shop Design Section */}
-      <div className="glass-pane rounded-xl border p-6 space-y-6">
+      <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-6">
         <div>
           <h2 className="text-xl font-semibold">Shop Design</h2>
-          <p className="microtext text-muted-foreground mt-1">
+          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-1">
             Customize the look and feel of your storefront.
           </p>
         </div>
@@ -1045,7 +1045,7 @@ export function ShopPanel() {
             />
             
             <div className="mt-4">
-              <label className="microtext text-muted-foreground">Logo Shape</label>
+              <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Logo Shape</label>
               <div className="flex items-center gap-2 mt-1">
                 <button
                   type="button"
@@ -1085,7 +1085,7 @@ export function ShopPanel() {
           <div className="space-y-6 pt-4 border-t">
             <div>
               <h3 className="text-lg font-medium mb-1">Maximalist Layout Assets</h3>
-              <p className="microtext text-muted-foreground">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                 These images are used in the immersive maximalist layout mode.
               </p>
             </div>
@@ -1105,7 +1105,7 @@ export function ShopPanel() {
             {/* Rotating Gallery */}
             <div>
               <label className="text-sm font-medium block mb-2">Rotating Gallery (5 Slots)</label>
-              <p className="microtext text-muted-foreground mb-3">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-3">
                 These images rotate in the gallery section of your maximalist storefront.
               </p>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -1135,7 +1135,7 @@ export function ShopPanel() {
         {/* Colors & Fonts */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
           <div>
-            <label className="microtext text-muted-foreground">Primary Color</label>
+            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Primary Color</label>
             <div className="flex gap-2 mt-1">
               <input
                 type="color"
@@ -1154,7 +1154,7 @@ export function ShopPanel() {
             </div>
           </div>
           <div>
-            <label className="microtext text-muted-foreground">Secondary / Accent</label>
+            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Secondary / Accent</label>
             <div className="flex gap-2 mt-1">
               <input
                 type="color"
@@ -1173,7 +1173,7 @@ export function ShopPanel() {
             </div>
           </div>
           <div className="sm:col-span-1">
-            <label className="microtext text-muted-foreground">Font Family</label>
+            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Font Family</label>
             <select
               className="w-full mt-1 px-3 py-2 border rounded-md text-sm bg-background"
               value={cfg.theme.fontFamily || ""}
@@ -1186,7 +1186,7 @@ export function ShopPanel() {
           </div>
           
           <div className="sm:col-span-1">
-            <label className="microtext text-muted-foreground">Hero Text Size</label>
+            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Hero Text Size</label>
             <select
               className="w-full mt-1 px-3 py-2 border rounded-md text-sm bg-background"
               value={cfg.theme.heroFontSize || "medium"}
@@ -1206,11 +1206,11 @@ export function ShopPanel() {
       {/* Industry Pack Selector (Collapsed by default in new design, or below) */}
       {
         isConnected && !loading && (
-          <div className="glass-pane rounded-xl border p-6">
+          <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h2 className="text-xl font-semibold">Industry Packs</h2>
-                <p className="microtext text-muted-foreground mt-1">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-1">
                   Optimize your shop for a specific industry with pre-configured themes and sample inventory
                 </p>
               </div>
@@ -1250,7 +1250,7 @@ export function ShopPanel() {
                     })()}
                   </div>
                   {cfg.industryPackActivatedAt && (
-                    <div className="microtext text-muted-foreground">
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                       Activated {new Date(cfg.industryPackActivatedAt).toLocaleDateString()}
                     </div>
                   )}
@@ -1264,7 +1264,7 @@ export function ShopPanel() {
       {/* First-visit prompt */}
       {
         (!cfg.setupComplete) && !loading && (
-          <div className="glass-pane rounded-xl border p-6">
+          <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Deploy your storefront</h2>
               <div className="flex items-center gap-2">
@@ -1276,7 +1276,7 @@ export function ShopPanel() {
                 </button>
               </div>
             </div>
-            <p className="microtext text-muted-foreground mt-1">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-1">
               Start the shop builder wizard to configure name, branding, colors, images, bio, and inventory layout. Reserve your public link.
             </p>
           </div>
@@ -1298,7 +1298,7 @@ export function ShopPanel() {
                 ✕
               </button>
               <h2 className="text-xl font-semibold mb-2">Choose Your Industry Pack</h2>
-              <p className="microtext text-muted-foreground mb-2">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">
                 Each pack includes a tailored theme, sample inventory, and analytics configuration
               </p>
 
@@ -1312,7 +1312,7 @@ export function ShopPanel() {
                   />
                   <span>Apply pack color theme and font</span>
                 </label>
-                <div className="microtext text-muted-foreground mt-1">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-1">
                   When checked, activating a pack will update your shop colors and font. When unchecked, only the inventory pack will be set (your current branding will be preserved).
                 </div>
               </div>
@@ -1527,7 +1527,7 @@ export function ShopPanel() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="microtext text-muted-foreground">{`${typeof window !== "undefined" ? window.location.host : ""}/shop/${cfg.slug}`}</span>
+              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{`${typeof window !== "undefined" ? window.location.host : ""}/shop/${cfg.slug}`}</span>
               <button className="px-2 py-1 rounded-md border text-xs" onClick={copyShopUrl}>{copied ? "Copied" : "Copy"}</button>
               <a className="px-2 py-1 rounded-md border text-xs" href={`/shop/${encodeURIComponent(cfg.slug)}`} target="_blank" rel="noopener noreferrer">Open</a>
             </div>
@@ -1536,11 +1536,11 @@ export function ShopPanel() {
       }
 
       {/* Custom Domain */}
-      <div className="glass-pane rounded-xl border p-6">
+      <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold">Custom Domain</h2>
-            <p className="microtext text-muted-foreground">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
               Connect your own domain (e.g. shop.yourbrand.com) to your storefront.
             </p>
           </div>
@@ -1560,7 +1560,7 @@ export function ShopPanel() {
 
         <div className="flex items-start gap-3">
           <div className="flex-1">
-            <label className="microtext text-muted-foreground">Domain Name</label>
+            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Domain Name</label>
             <div className="flex gap-2 mt-1">
               <input
                 className="flex-1 h-9 px-3 py-1 border rounded-md bg-background"
@@ -1736,11 +1736,11 @@ export function ShopPanel() {
 
         {/* Bottom Row: Configuration Form */}
         <div className="w-full space-y-6">
-          <div className="glass-pane rounded-xl border p-6 space-y-4">
+          <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Input label="Shop Name" value={cfg.name} onChange={(e) => setCfg((prev) => ({ ...prev, name: e.target.value }))} />
               <div>
-                <label className="microtext text-muted-foreground">Public Link (slug)</label>
+                <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Public Link (slug)</label>
                 <div className="mt-1 flex items-center gap-2">
                   <input
                     className="h-9 flex-1 px-3 py-1 border rounded-md bg-background"
@@ -1761,7 +1761,7 @@ export function ShopPanel() {
                     {slugChecking ? "Checking…" : "Reserve"}
                   </button>
                 </div>
-                <div className="microtext text-muted-foreground mt-1">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-1">
                   {slugAvailable === false ? (<span className="text-red-500">Slug is taken</span>) : slugAvailable === true ? (<span className="text-green-600">Available</span>) : "Enter a slug to check availability"}
                 </div>
               </div>
@@ -1827,13 +1827,13 @@ export function ShopPanel() {
                   <option value="groups">Groups by Category</option>
                   <option value="carousel">Carousel</option>
                 </select>
-                <div className="microtext text-muted-foreground mt-1">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-1">
                   Featured First expects items tagged "featured" to show at the top. Groups displays items under their category headers. Carousel renders horizontal lists.
                 </div>
               </div>
             </div>
 
-            {error && <div className="microtext text-red-500">{error}</div>}
+            {error && <div className="text-[10px] uppercase font-bold tracking-wider text-red-500">{error}</div>}
             <div className="flex items-center justify-end gap-2">
               <button
                 className={`px-3 py-1.5 rounded-md border text-sm flex items-center gap-2 ${activeUploads > 0 ? "opacity-50 cursor-wait" : ""}`}
@@ -1861,9 +1861,9 @@ export function ShopPanel() {
       {/* Success & Link */}
       {
         deployOk && cfg.slug && (
-          <div className="glass-pane rounded-xl border p-6">
+          <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6">
             <div className="text-sm font-medium mb-2">Your storefront is live</div>
-            <div className="microtext text-muted-foreground">
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
               Public link: <a className="underline" href={`/shop/${encodeURIComponent(cfg.slug)}`}>{typeof window !== "undefined" ? window.location.host : ""}/shop/{cfg.slug}</a>
             </div>
           </div>

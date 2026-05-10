@@ -59,8 +59,8 @@ export function ContactSection({ contact }: ContactSectionProps) {
   if (!hasVisibleContact) return null;
 
   return (
-    <div className="glass-pane rounded-xl border p-6">
-      <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+    <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-4">
+      <h2 className="text-xl font-bold tracking-tight mb-3 flex items-center gap-2">
         <MailIcon size={18} />
         Contact
       </h2>

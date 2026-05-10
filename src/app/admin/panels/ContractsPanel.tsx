@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+
 import {
     FileSignature,
     Save,
@@ -155,25 +155,27 @@ export default function ContractsPanel() {
     }
 
     return (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold flex items-center gap-2">
-                        <FileSignature className="h-6 w-6" />
-                        Contract Management
-                    </h2>
-                    <p className="text-muted-foreground text-sm mt-1">
-                        Manage Adobe Sign widget IDs for /msa and /msas pages
-                    </p>
+        <div className="w-full space-y-6 pb-24 admin-panel-enter">
+            <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-bold flex items-center gap-2">
+                            <FileSignature className="h-6 w-6" />
+                            Contract Management
+                        </h2>
+                        <p className="text-muted-foreground text-sm mt-1">
+                            Manage Adobe Sign widget IDs for /msa and /msas pages
+                        </p>
+                    </div>
+                    <Button onClick={saveConfig} disabled={saving}>
+                        {saving ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                        Save Changes
+                    </Button>
                 </div>
-                <Button onClick={saveConfig} disabled={saving}>
-                    {saving ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                    Save Changes
-                </Button>
             </div>
 
             {saveStatus !== "idle" && (
-                <div className={`rounded-lg border p-4 ${saveStatus === "success" ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"}`}>
+                <div className={`rounded-2xl border p-4 ${saveStatus === "success" ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"}`}>
                     <div className="flex items-center gap-2">
                         {saveStatus === "success" ? (
                             <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -187,7 +189,7 @@ export default function ContractsPanel() {
                 </div>
             )}
 
-            <div className="rounded-lg border p-4 bg-amber-500/10 border-amber-500/30">
+            <div className="rounded-2xl border p-4 bg-amber-500/10 border-amber-500/30">
                 <div className="flex items-start gap-2">
                     <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
                     <div className="text-sm">
@@ -202,15 +204,15 @@ export default function ContractsPanel() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Standard MSA (/msa) */}
-                <Card>
-                    <CardHeader>
+                <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md overflow-hidden">
+                    <div className="p-6 border-b border-foreground/[0.05]">
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle className="flex items-center gap-2">
+                                <h3 className="text-lg font-semibold flex items-center gap-2">
                                     Standard MSA
-                                    <Badge variant="outline">/msa</Badge>
-                                </CardTitle>
-                                <CardDescription>Standard partner agreement for new partners</CardDescription>
+                                    <span className="text-xs font-mono px-2 py-0.5 rounded-full border border-foreground/[0.1] bg-foreground/[0.02]">/msa</span>
+                                </h3>
+                                <p className="text-sm text-muted-foreground mt-1">Standard partner agreement for new partners</p>
                             </div>
                             <Button variant="outline" size="sm" asChild>
                                 <a href="/msa" target="_blank" rel="noopener noreferrer">
@@ -219,8 +221,8 @@ export default function ContractsPanel() {
                                 </a>
                             </Button>
                         </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                    </div>
+                    <div className="p-6 space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="msa-title">Title</Label>
                             <Input
@@ -265,7 +267,7 @@ export default function ContractsPanel() {
                                 <Input
                                     readOnly
                                     value={getFullWidgetUrl(config.msa.widgetId)}
-                                    className="font-mono text-xs bg-muted"
+                                    className="font-mono text-xs bg-foreground/[0.02]"
                                 />
                                 <Button
                                     variant="outline"
@@ -279,19 +281,19 @@ export default function ContractsPanel() {
                         <div className="text-xs text-muted-foreground">
                             Last updated: {new Date(config.msa.lastUpdated).toLocaleString()}
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
                 {/* Financing MSA (/msas) */}
-                <Card>
-                    <CardHeader>
+                <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md overflow-hidden">
+                    <div className="p-6 border-b border-foreground/[0.05]">
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle className="flex items-center gap-2">
+                                <h3 className="text-lg font-semibold flex items-center gap-2">
                                     Financing MSA
-                                    <Badge variant="outline">/msas</Badge>
-                                </CardTitle>
-                                <CardDescription>Agreement with financing options for setup fees</CardDescription>
+                                    <span className="text-xs font-mono px-2 py-0.5 rounded-full border border-foreground/[0.1] bg-foreground/[0.02]">/msas</span>
+                                </h3>
+                                <p className="text-sm text-muted-foreground mt-1">Agreement with financing options for setup fees</p>
                             </div>
                             <Button variant="outline" size="sm" asChild>
                                 <a href="/msas" target="_blank" rel="noopener noreferrer">
@@ -300,8 +302,8 @@ export default function ContractsPanel() {
                                 </a>
                             </Button>
                         </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                    </div>
+                    <div className="p-6 space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="msas-title">Title</Label>
                             <Input
@@ -346,7 +348,7 @@ export default function ContractsPanel() {
                                 <Input
                                     readOnly
                                     value={getFullWidgetUrl(config.msas.widgetId)}
-                                    className="font-mono text-xs bg-muted"
+                                    className="font-mono text-xs bg-foreground/[0.02]"
                                 />
                                 <Button
                                     variant="outline"
@@ -360,25 +362,25 @@ export default function ContractsPanel() {
                         <div className="text-xs text-muted-foreground">
                             Last updated: {new Date(config.msas.lastUpdated).toLocaleString()}
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             </div>
 
             {/* Quick Reference */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Quick Reference</CardTitle>
-                    <CardDescription>How to update contract widgets</CardDescription>
-                </CardHeader>
-                <CardContent>
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md overflow-hidden">
+                <div className="p-6 border-b border-foreground/[0.05]">
+                    <h3 className="text-lg font-semibold">Quick Reference</h3>
+                    <p className="text-sm text-muted-foreground mt-1">How to update contract widgets</p>
+                </div>
+                <div className="p-6">
                     <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
                         <li>Log in to Adobe Sign and create or edit a web form</li>
                         <li>Get the embed code from "Share" → "Embed"</li>
-                        <li>Extract the <code className="px-1 py-0.5 bg-muted rounded">wid=</code> parameter from the URL</li>
+                        <li>Extract the <code className="px-1 py-0.5 bg-foreground/[0.04] rounded">wid=</code> parameter from the URL</li>
                         <li>Paste the widget ID in the corresponding field above</li>
                         <li>Click "Save Changes" to update the live pages</li>
                     </ol>
-                    <div className="mt-4 p-3 bg-muted rounded-lg">
+                    <div className="mt-4 p-3 bg-foreground/[0.02] border border-foreground/[0.05] rounded-lg">
                         <p className="text-xs font-mono">
                             Example iframe URL:<br />
                             https://na2.documents.adobe.com/public/esignWidget?<span className="text-primary">wid=WIDGET_ID</span>&hosted=false
@@ -387,8 +389,8 @@ export default function ContractsPanel() {
                             <strong>Tip:</strong> You can paste the entire iframe URL and it will automatically extract the widget ID.
                         </p>
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </div>
     );
 }

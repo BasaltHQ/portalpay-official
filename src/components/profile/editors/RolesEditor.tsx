@@ -18,12 +18,12 @@ export function RolesEditor({
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium block mb-2">Select Your Roles</label>
-        <p className="text-xs text-muted-foreground mb-3">
+        <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-2">Select Your Roles</label>
+        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-3">
           Choose the roles that best describe your activity on the platform
         </p>
         <div className="space-y-2">
-          <label className="flex items-start gap-3 p-3 border rounded-md cursor-pointer hover:bg-foreground/5 transition-colors">
+          <label className="flex items-start gap-3 p-4 glass-pane rounded-xl border border-foreground/10 cursor-pointer hover:bg-foreground/5 transition-all shadow-sm">
             <input
               type="checkbox"
               checked={merchant}
@@ -32,13 +32,13 @@ export function RolesEditor({
             />
             <div>
               <div className="font-medium text-sm">Merchant</div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                 You sell products or services on the platform
               </div>
             </div>
           </label>
 
-          <label className="flex items-start gap-3 p-3 border rounded-md cursor-pointer hover:bg-foreground/5 transition-colors">
+          <label className="flex items-start gap-3 p-4 glass-pane rounded-xl border border-foreground/10 cursor-pointer hover:bg-foreground/5 transition-all shadow-sm">
             <input
               type="checkbox"
               checked={buyer}
@@ -47,7 +47,7 @@ export function RolesEditor({
             />
             <div>
               <div className="font-medium text-sm">Buyer</div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                 You purchase products or services on the platform
               </div>
             </div>

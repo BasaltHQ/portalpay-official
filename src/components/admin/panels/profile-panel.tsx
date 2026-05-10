@@ -306,16 +306,16 @@ export function ProfilePanel() {
 
   if (!wallet) {
     return (
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="glass-pane rounded-xl border p-6">
-          <div className="text-lg font-semibold">Connect your wallet to edit your profile.</div>
+      <div className="w-full h-full">
+        <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-4">
+          <div className="text-xl font-bold tracking-tight">Connect your wallet to edit your profile.</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
+    <div className="w-full h-full p-6 md:p-8 space-y-8 pb-24">
       {/* Hidden file inputs */}
       <input
         ref={filePfpRef}
@@ -354,25 +354,25 @@ export function ProfilePanel() {
         }}
       />
 
-      <div className="max-w-4xl mx-auto px-4 space-y-6">
+      <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Your Profile</h1>
+          <h1 className="text-xl font-bold tracking-tight">Your Profile</h1>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{loading ? 'Loading…' : msg || ''}</span>
+            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{loading ? 'Loading…' : msg || ''}</span>
             {!editMode ? (
-              <button onClick={() => setEditMode(true)} className="px-3 py-1.5 rounded-md border hover:bg-foreground/5">
+              <button onClick={() => setEditMode(true)} className="px-4 py-2 border border-foreground/10 glass-pane rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/5 transition-colors">
                 Edit
               </button>
             ) : (
               <>
-                <button onClick={cancelEdits} className="px-3 py-1.5 rounded-md border hover:bg-foreground/5">
+                <button onClick={cancelEdits} className="px-4 py-2 border border-foreground/10 glass-pane rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/5 transition-colors">
                   Cancel
                 </button>
                 <button
                   onClick={save}
                   disabled={saving}
-                  className="px-3 py-1.5 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"
+                  className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors shadow-sm hover:shadow"
                 >
                   {saving ? 'Saving…' : 'Save'}
                 </button>
@@ -433,7 +433,7 @@ export function ProfilePanel() {
 
               <InterestsSection interests={interests} />
 
-              <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 <ContactSection contact={contact} />
                 <RelationshipSection relationship={relationship} />
                 <LinksSection links={links} />

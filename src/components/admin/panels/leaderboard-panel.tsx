@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import { DefaultAvatar } from "@/components/default-avatar";
-import { Ellipsis, Dot, Minus } from "lucide-react";
+import { Ellipsis, Dot, Minus, Trophy } from "lucide-react";
 
 type Row = {
   wallet: string;
@@ -19,7 +19,6 @@ type Row = {
   pfpUrl?: string;
   lastSeen?: number;
 };
-
 
 export function LeaderboardPanel() {
   const [rows, setRows] = useState<Row[]>([]);
@@ -51,77 +50,92 @@ export function LeaderboardPanel() {
   }, [merchant]);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Loyalty Leaderboard</h1>
-        <span className="microtext badge-soft">
-          {loading ? (<><span className="mr-1">Loading</span><Ellipsis className="inline h-3 w-3 align-[-2px]" /></>) : `${rows.length} players`}
+    <div className="w-full space-y-6 pb-24 admin-panel-enter">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Trophy className="w-6 h-6 text-primary" />
+            Loyalty Leaderboard
+          </h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Top buyers for your shop. XP = {xpPerDollar} per USD spent.
+          </p>
+        </div>
+        <span className="text-xs font-medium text-muted-foreground px-3 py-1.5 rounded-full bg-foreground/[0.03] flex items-center gap-2 border border-foreground/[0.05]">
+          {loading ? (<><LoaderDots /></>) : `${rows.length} players`}
         </span>
       </div>
-      <div className="glass-pane rounded-xl border p-6 max-w-full">
-        <ol className="divide-y">
+
+      <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6 max-w-full">
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
+        <ol className="divide-y divide-foreground/[0.05]">
           {loading ? (
             Array.from({ length: 8 }).map((_, i) => (
-              <li key={`skeleton-${i}`} className="flex items-center justify-between gap-3 py-2 animate-pulse">
-                <div className="inline-flex items-center gap-3 min-w-0">
-                  <span className="w-6 text-right font-semibold hidden xs:inline-block sm:inline-block">{i + 1}</span>
-                  <span className="w-8 h-8 rounded-full bg-foreground/10 flex-shrink-0" />
+              <li key={`skeleton-${i}`} className="flex items-center justify-between gap-3 py-4 animate-pulse">
+                <div className="inline-flex items-center gap-4 min-w-0">
+                  <span className="w-6 text-right font-semibold hidden xs:inline-block sm:inline-block text-muted-foreground/30">{i + 1}</span>
+                  <span className="w-10 h-10 rounded-full bg-foreground/10 flex-shrink-0" />
                   <div className="flex flex-col min-w-0">
-                    <span className="h-4 w-32 bg-foreground/10 rounded mb-1" />
+                    <span className="h-4 w-32 bg-foreground/10 rounded mb-2" />
                     <span className="h-3 w-24 bg-foreground/10 rounded" />
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <div className="h-4 w-12 bg-foreground/10 rounded mb-1" />
-                  <div className="h-3 w-24 bg-foreground/10 rounded mb-1" />
-                  <div className="h-3 w-40 bg-foreground/10 rounded mb-1" />
-                  <div className="h-3 w-16 bg-foreground/10 rounded" />
+                  <div className="h-4 w-16 bg-foreground/10 rounded ml-auto mb-2" />
+                  <div className="h-3 w-24 bg-foreground/10 rounded ml-auto" />
                 </div>
               </li>
             ))
           ) : rows.length === 0 ? (
-            <li className="py-8 text-center text-muted-foreground">
+            <li className="py-16 text-center text-muted-foreground">
+              <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Trophy className="w-6 h-6 text-muted-foreground" />
+              </div>
               <div className="text-lg font-medium mb-1">No buyers yet</div>
-              <div className="microtext">Share your shop link to start earning Loyalty XP from your buyers!</div>
+              <div className="text-sm">Share your shop link to start earning Loyalty XP from your buyers!</div>
             </li>
           ) : (
             rows.map((r, i) => {
               const name = r.displayName || `${r.wallet.slice(0,6)}...${r.wallet.slice(-4)}`;
               return (
-                <li key={`${r.wallet}-${i}`} className="flex items-center justify-between gap-3 py-2">
-                  <a href={`/u/${r.wallet}`} className="inline-flex items-center gap-3 min-w-0">
-                    <span className="w-6 text-right font-semibold hidden xs:inline-block sm:inline-block">{i+1}</span>
-                    <span className="w-8 h-8 rounded-full overflow-hidden bg-foreground/10 flex-shrink-0">
+                <li key={`${r.wallet}-${i}`} className="flex items-center justify-between gap-3 py-3 px-3 -mx-3 hover:bg-foreground/[0.02] transition-colors rounded-xl group">
+                  <a href={`/u/${r.wallet}`} className="inline-flex items-center gap-4 min-w-0">
+                    <span className="w-6 text-right font-semibold hidden xs:inline-block sm:inline-block text-muted-foreground group-hover:text-foreground transition-colors">{i+1}</span>
+                    <span className="w-10 h-10 rounded-full overflow-hidden bg-foreground/10 flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
                       {r.pfpUrl ? (
                         <img src={r.pfpUrl} alt={name} className="w-full h-full object-cover" />
                       ) : (
-                        <DefaultAvatar seed={r.wallet} size={32} className="w-8 h-8" />
+                        <DefaultAvatar seed={r.wallet} size={40} className="w-full h-full" />
                       )}
                     </span>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-medium leading-tight truncate">{name}</span>
-                      <span className="microtext text-muted-foreground truncate">
-                        {r.wallet.slice(0,10)}... <Dot className="inline h-3 w-3 mx-1" /> {r.lastSeen ? new Date(r.lastSeen).toLocaleDateString() : (<Minus className="inline h-3 w-3" />)}
+                      <span className="font-medium leading-tight truncate group-hover:text-primary transition-colors text-foreground">{name}</span>
+                      <span className="text-[11px] text-muted-foreground truncate mt-0.5 flex items-center">
+                        {r.wallet.slice(0,10)}... <Dot className="inline h-3 w-3 mx-0.5" /> {r.lastSeen ? new Date(r.lastSeen).toLocaleDateString() : (<Minus className="inline h-3 w-3" />)}
                       </span>
                     </div>
                   </a>
                   <div className="text-right flex-shrink-0">
-                    <div className="font-semibold whitespace-nowrap">{r.xp} XP</div>
-                    <div className="microtext text-muted-foreground whitespace-nowrap">
-                      Spent ${Number(r.amountSpentUsd || 0).toFixed(2)}
+                    <div className="font-bold whitespace-nowrap text-lg text-foreground">{r.xp.toLocaleString()} XP</div>
+                    <div className="text-[11px] text-muted-foreground whitespace-nowrap mt-0.5">
+                      Spent ${Number(r.amountSpentUsd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
-                    <div className="microtext text-muted-foreground whitespace-nowrap">
-                      Purch {r.purchasedHMS?.text || (<Minus className="inline h-3 w-3" />)} <Dot className="inline h-3 w-3 mx-1" /> Used {r.usedHMS?.text || (<Minus className="inline h-3 w-3" />)} <Dot className="inline h-3 w-3 mx-1" /> Bal {r.balanceHMS?.text || (<Minus className="inline h-3 w-3" />)}
-                    </div>
-                    <div className="microtext text-muted-foreground whitespace-nowrap">rank #{i+1}</div>
                   </div>
                 </li>
               );
             })
           )}
         </ol>
-        <p className="microtext text-muted-foreground mt-3">Top buyers for your shop. XP = {xpPerDollar} per USD spent.</p>
       </div>
     </div>
+  );
+}
+
+function LoaderDots() {
+  return (
+    <span className="flex items-center gap-1">
+      <span className="mr-1">Loading</span>
+      <Ellipsis className="inline h-3 w-3 animate-pulse" />
+    </span>
   );
 }

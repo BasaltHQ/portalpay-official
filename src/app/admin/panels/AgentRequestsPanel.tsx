@@ -123,54 +123,56 @@ export default function AgentRequestsPanel() {
                 <Clock className="h-3.5 w-3.5" />;
 
     return (
-        <div className="w-full px-4 sm:px-6 lg:px-8 space-y-6 pb-24">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">Agent Requests</h1>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        Manage agent applications for <span className="font-mono text-emerald-400">{brand?.key || "this brand"}</span>.
-                    </p>
+        <div className="w-full space-y-6 pb-24 admin-panel-enter">
+            <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-semibold tracking-tight">Agent Requests</h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Manage agent applications for <span className="font-mono text-emerald-400">{brand?.key || "this brand"}</span>.
+                        </p>
+                    </div>
+                    <button
+                        className="h-10 px-4 rounded-lg border border-foreground/[0.05] bg-background text-sm font-medium hover:bg-foreground/[0.02] transition-colors shadow-sm flex items-center gap-2"
+                        onClick={load}
+                        disabled={loading}
+                    >
+                        <RefreshCcw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+                        {loading ? "Loading…" : "Refresh"}
+                    </button>
                 </div>
-                <button
-                    className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium flex items-center gap-2"
-                    onClick={load}
-                    disabled={loading}
-                >
-                    <RefreshCcw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-                    {loading ? "Loading…" : "Refresh"}
-                </button>
             </div>
 
             {error && <div className="text-sm text-red-500 bg-red-500/10 p-3 rounded-lg border border-red-500/20">{error}</div>}
             {info && <div className="text-sm text-green-500 bg-green-500/10 p-3 rounded-lg border border-green-500/20">{info}</div>}
 
             {/* Filters */}
-            <div className="glass-pane rounded-xl border p-4 space-y-3">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md p-4 space-y-3">
                 <div className="flex flex-col md:flex-row gap-3 items-center">
                     <div className="relative w-full md:w-72">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <input
                             type="text"
                             placeholder="Search by name, email, wallet…"
-                            className="pl-9 pr-4 h-10 w-full text-sm rounded-lg border border-foreground/10 bg-foreground/[0.03] focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
+                            className="pl-9 pr-4 h-10 w-full text-sm rounded-lg border border-foreground/[0.05] bg-background focus:outline-none focus:border-foreground/30 transition-colors"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                 </div>
 
-                <div className="flex flex-wrap gap-1 border-b border-white/5">
+                <div className="flex flex-wrap gap-1 border-b border-foreground/[0.05] pb-2">
                     {(["all", "pending", "approved", "rejected"] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setStatusFilter(tab)}
                             className={`px-3 py-2 text-xs uppercase tracking-wide font-medium border-b-2 transition-all flex items-center gap-2 ${statusFilter === tab
-                                ? "border-primary text-primary bg-primary/5"
+                                ? "border-emerald-500 text-emerald-500 bg-emerald-500/10"
                                 : "border-transparent text-muted-foreground hover:text-foreground hover:border-foreground/10"
                                 }`}
                         >
                             {tab === "all" ? "All" : tab.charAt(0).toUpperCase() + tab.slice(1)}
-                            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono ${statusFilter === tab ? "bg-primary/20 text-primary" : "bg-foreground/10 text-muted-foreground"}`}>
+                            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono ${statusFilter === tab ? "bg-emerald-500/20 text-emerald-300" : "bg-foreground/10 text-muted-foreground"}`}>
                                 {counts[tab] || 0}
                             </span>
                         </button>
@@ -179,7 +181,7 @@ export default function AgentRequestsPanel() {
             </div>
 
             {/* Table */}
-            <div className="glass-pane rounded-xl border overflow-hidden">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md overflow-hidden">
                 <table className="min-w-full text-sm">
                     <thead>
                         <tr className="border-b border-foreground/5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

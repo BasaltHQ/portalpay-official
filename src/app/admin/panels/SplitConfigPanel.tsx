@@ -331,14 +331,14 @@ export default function SplitConfigPanel() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
-      <div className="glass-pane rounded-xl border p-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Split Config</h2>
-          <div className="flex items-center gap-2">
+    <div className="w-full space-y-6 pb-24 admin-panel-enter">
+      <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl font-semibold tracking-tight">Split Config</h2>
+          <div className="flex items-center gap-3">
             {isPlatform ? (
               <select
-                className="h-9 px-3 py-1 border rounded-md bg-background"
+                className="h-10 px-4 border border-foreground/10 rounded-lg bg-background text-sm shadow-sm transition-all hover:border-foreground/20 focus:border-foreground/30 focus:outline-none"
                 value={brandKey}
                 onChange={(e) => setBrandKey(e.target.value)}
                 title="Select deployed partner brand or portalpay"
@@ -349,14 +349,14 @@ export default function SplitConfigPanel() {
               </select>
             ) : (
               <span
-                className="h-9 px-3 py-1 rounded-md border bg-muted text-sm flex items-center"
+                className="h-10 px-4 rounded-lg border border-foreground/10 bg-foreground/[0.02] text-sm flex items-center font-medium"
                 title="Brand key (locked to current container)"
               >
                 {brandKey}
               </span>
             )}
             <button
-              className="px-3 py-1.5 rounded-md border text-sm"
+              className="px-4 py-2 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-sm font-medium transition-all shadow-sm"
               onClick={() => loadVersions(brandKey)}
               disabled={loading}
             >
@@ -364,7 +364,7 @@ export default function SplitConfigPanel() {
             </button>
           </div>
         </div>
-        <div className="microtext text-muted-foreground">
+        <div className="text-sm text-muted-foreground max-w-3xl">
           {isPlatform
             ? "Manage versioned splits for the main Platform split. Each version updates platform fee bps and notes."
             : "Manage versioned splits for partner brands. Each version freezes partner wallet and fee bps. New merchants bind to the current version."}
@@ -372,41 +372,41 @@ export default function SplitConfigPanel() {
       </div>
 
       {/* Reference Wallets */}
-      <div className="glass-pane rounded-xl border p-5 space-y-3">
-        <div className="text-sm font-medium">Reference Wallets</div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <div className="microtext text-muted-foreground mb-1">Platform Wallet</div>
+      <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6 space-y-4">
+        <div className="text-xs font-bold text-foreground/80 uppercase tracking-wider mb-2">Reference Wallets</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-xl border border-foreground/[0.05] bg-background p-4 flex flex-col justify-center">
+            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Platform Wallet</div>
             <div className="flex items-center gap-2">
-              <TruncatedAddress address={platformWalletRef as any} />
+              <span className="font-mono text-sm"><TruncatedAddress address={platformWalletRef as any} /></span>
               <button
-                className="microtext text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors p-1"
                 onClick={() => { try { navigator.clipboard.writeText(platformWalletRef); } catch { } }}
                 title="Copy full address"
               >
                 📋
               </button>
             </div>
-            <div className="microtext text-muted-foreground mt-0.5 font-mono select-all break-all">{platformWalletRef}</div>
+            <div className="text-[10px] text-muted-foreground mt-1 font-mono select-all break-all">{platformWalletRef}</div>
           </div>
           {!isPlatform && partnerWalletRef && (
-            <div>
-              <div className="microtext text-muted-foreground mb-1">Partner Wallet</div>
+            <div className="rounded-xl border border-foreground/[0.05] bg-background p-4 flex flex-col justify-center">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Partner Wallet</div>
               <div className="flex items-center gap-2">
-                <TruncatedAddress address={partnerWalletRef as any} />
+                <span className="font-mono text-sm"><TruncatedAddress address={partnerWalletRef as any} /></span>
                 <button
-                  className="microtext text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
                   onClick={() => { try { navigator.clipboard.writeText(partnerWalletRef); } catch { } }}
                   title="Copy full address"
                 >
                   📋
                 </button>
               </div>
-              <div className="microtext text-muted-foreground mt-0.5 font-mono select-all break-all">{partnerWalletRef}</div>
+              <div className="text-[10px] text-muted-foreground mt-1 font-mono select-all break-all">{partnerWalletRef}</div>
             </div>
           )}
         </div>
-        <div className="microtext text-muted-foreground">
+        <div className="text-xs text-muted-foreground mt-2">
           {isPlatform
             ? "The platform wallet receives the platform fee share from all merchant splits."
             : "These wallets receive fee shares from merchant payment splits on this container."}
@@ -414,90 +414,102 @@ export default function SplitConfigPanel() {
       </div>
 
       {/* Policy flags */}
-      <div className="glass-pane rounded-xl border p-5 space-y-3">
-        <div className="text-sm font-medium">Version Policy</div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <label className="flex items-center gap-2 text-sm">
+      <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6 space-y-4">
+        <div className="text-xs font-bold text-foreground/80 uppercase tracking-wider mb-2">Version Policy</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label className="flex items-center gap-3 text-sm p-3 rounded-xl border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] transition-colors cursor-pointer">
             <input
               type="checkbox"
               checked={forceRedeployOlder}
+              className="sr-only"
               onChange={(e) => {
                 const on = e.target.checked;
                 setForceRedeployOlder(on);
                 savePolicyFlags({ forceRedeployOlder: on });
               }}
             />
-            <span>Force redeploy older merchants to current version</span>
+            <div className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out ${forceRedeployOlder ? 'bg-emerald-500' : 'bg-foreground/20'}`}>
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ease-in-out ml-0.5 ${forceRedeployOlder ? 'translate-x-4' : 'translate-x-0'}`} />
+            </div>
+            <span className="font-medium">Force redeploy older merchants to current version</span>
           </label>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-3 text-sm p-3 rounded-xl border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] transition-colors cursor-pointer">
             <input
               type="checkbox"
               checked={requireRedeployOnWalletChange}
+              className="sr-only"
               onChange={(e) => {
                 const on = e.target.checked;
                 setRequireRedeployOnWalletChange(on);
                 savePolicyFlags({ requireRedeployOnWalletChange: on });
               }}
             />
-            <span>Require redeploy when partner wallet changes</span>
+            <div className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out ${requireRedeployOnWalletChange ? 'bg-emerald-500' : 'bg-foreground/20'}`}>
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ease-in-out ml-0.5 ${requireRedeployOnWalletChange ? 'translate-x-4' : 'translate-x-0'}`} />
+            </div>
+            <span className="font-medium">Require redeploy when partner wallet changes</span>
           </label>
         </div>
-        <div className="microtext text-muted-foreground">
+        <div className="text-xs text-muted-foreground mt-2">
           Defaults are off. Toggle as needed. When off, older merchants may continue on their existing split; they can withdraw fees from previous splits.
         </div>
       </div>
 
       {/* Versions list */}
-      <div className="glass-pane rounded-xl border p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="text-sm font-medium">Versions — {brandKey}</div>
-          <div className="microtext text-muted-foreground">
-            Current: {typeof currentVersion === "number" ? currentVersion : "None"}
+      <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6 space-y-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-xs font-bold text-foreground/80 uppercase tracking-wider">Versions — {brandKey}</div>
+          <div className="text-xs px-3 py-1 rounded-full bg-foreground/[0.05] border border-foreground/[0.05] text-muted-foreground font-medium">
+            Current: <span className="text-foreground">{typeof currentVersion === "number" ? currentVersion : "None"}</span>
           </div>
         </div>
         {versions.length === 0 ? (
-          <div className="microtext text-muted-foreground">No versions yet.</div>
+          <div className="text-sm text-muted-foreground italic py-4 text-center border rounded-xl border-dashed border-foreground/10">No versions yet.</div>
         ) : (
-          <div className="overflow-auto rounded-md border">
+          <div className="overflow-hidden rounded-xl border border-foreground/[0.05] bg-background">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="bg-foreground/5">
-                  <th className="text-left px-3 py-2 font-medium">Version</th>
-                  <th className="text-left px-3 py-2 font-medium">Partner Wallet</th>
-                  <th className="text-left px-3 py-2 font-medium">Platform bps</th>
-                  <th className="text-left px-3 py-2 font-medium">Partner bps</th>
-                  <th className="text-left px-3 py-2 font-medium">Merchant bps (derived)</th>
-                  <th className="text-left px-3 py-2 font-medium">Published</th>
-                  <th className="text-left px-3 py-2 font-medium">Created</th>
-                  <th className="text-left px-3 py-2 font-medium">Effective</th>
-                  <th className="text-left px-3 py-2 font-medium">Notes</th>
-                  <th className="text-left px-3 py-2 font-medium">Actions</th>
+                <tr className="bg-foreground/[0.02] border-b border-foreground/[0.05]">
+                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Version</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Partner Wallet</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Platform bps</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Partner bps</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Merchant bps</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Published</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Created</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Effective</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Notes</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-foreground/[0.05]">
                 {versions.map((v) => {
                   const plat = bps(v.platformFeeBps);
                   const part = bps(v.partnerFeeBps);
                   const merch = Math.max(0, 10000 - plat - part);
                   const isCurrent = currentVersion === v.version;
                   return (
-                    <tr key={v.versionId} className="border-t">
-                      <td className="px-3 py-2">{v.version}</td>
-                      <td className="px-3 py-2 font-mono">
+                    <tr key={v.versionId} className="hover:bg-foreground/[0.01] transition-colors">
+                      <td className="px-4 py-3 font-medium">{v.version}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                         {v.partnerWallet ? <TruncatedAddress address={String(v.partnerWallet).toLowerCase()} /> : "—"}
                       </td>
-                      <td className="px-3 py-2">{plat}</td>
-                      <td className="px-3 py-2">{part}</td>
-                      <td className="px-3 py-2">{merch}</td>
-                      <td className="px-3 py-2">{v.published ? "Yes" : "No"}</td>
-                      <td className="px-3 py-2">{formatDate(v.createdAt)}</td>
-                      <td className="px-3 py-2">{formatDate(v.effectiveAt)}</td>
-                      <td className="px-3 py-2">{v.notes || "—"}</td>
-                      <td className="px-3 py-2">
+                      <td className="px-4 py-3">{plat}</td>
+                      <td className="px-4 py-3">{part}</td>
+                      <td className="px-4 py-3">{merch}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${v.published ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-foreground/10 text-muted-foreground'}`}>
+                          {v.published ? "Yes" : "No"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(v.createdAt)}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(v.effectiveAt)}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground max-w-[150px] truncate" title={v.notes}>{v.notes || "—"}</td>
+                      <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {!isCurrent && (
                             <button
-                              className="px-2 py-1 rounded-md border text-xs"
+                              className="px-3 py-1.5 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-xs font-medium transition-all shadow-sm"
                               onClick={() => publishVersion(v.version)}
                               disabled={saving}
                               title="Publish this version"
@@ -506,7 +518,7 @@ export default function SplitConfigPanel() {
                             </button>
                           )}
                           {isCurrent && (
-                            <span className="px-2 py-1 rounded-md border text-xs bg-green-100 text-green-700">Current</span>
+                            <span className="px-3 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-bold tracking-wider uppercase">Current</span>
                           )}
                         </div>
                       </td>
@@ -517,63 +529,63 @@ export default function SplitConfigPanel() {
             </table>
           </div>
         )}
-        {error && <div className="microtext text-red-500">{error}</div>}
-        {info && <div className="microtext text-green-600">{info}</div>}
+        {error && <div className="text-xs text-red-500 p-3 rounded-lg bg-red-500/10 border border-red-500/20">{error}</div>}
+        {info && <div className="text-xs text-emerald-600 dark:text-emerald-400 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">{info}</div>}
       </div>
 
       {/* Create new version */}
-      <div className="glass-pane rounded-xl border p-5 space-y-3">
-        <div className="text-sm font-medium">Create New Version</div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label className="microtext text-muted-foreground">Partner Wallet (optional)</label>
+      <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6 space-y-4">
+        <div className="text-xs font-bold text-foreground/80 uppercase tracking-wider mb-4">Create New Version</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Partner Wallet (optional)</label>
             <input
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background font-mono"
+              className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-background font-mono text-sm transition-colors hover:border-foreground/20 focus:border-foreground/30 focus:outline-none"
               placeholder="0x…"
               value={newPartnerWallet}
               onChange={(e) => setNewPartnerWallet(e.target.value)}
             />
-            <div className="microtext text-muted-foreground mt-1">If provided, must be a valid 0x address.</div>
+            <div className="text-[10px] text-muted-foreground">If provided, must be a valid 0x address.</div>
           </div>
-          <div>
-            <label className="microtext text-muted-foreground">Platform Fee (bps)</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Platform Fee (bps)</label>
             <input
               type="number"
               min={0}
               max={10000}
               step={1}
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-background text-sm transition-colors hover:border-foreground/20 focus:border-foreground/30 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               value={newPlatformFeeBps}
               onChange={(e) => setNewPlatformFeeBps(Math.max(0, Math.min(10000, Math.floor(Number(e.target.value || 0)))))}
               disabled={!isPlatform}
               title={isPlatform ? "Editable on Platform" : "Locked to Platform bps (env) in Partner container"}
             />
             {!isPlatform && (
-              <div className="microtext text-muted-foreground mt-1">
+              <div className="text-[10px] text-muted-foreground">
                 Locked to Platform bps from this partner container&apos;s environment.
               </div>
             )}
           </div>
-          <div>
-            <label className="microtext text-muted-foreground">Partner Fee (bps)</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Partner Fee (bps)</label>
             <input
               type="number"
               min={0}
               max={10000}
               step={1}
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-background text-sm transition-colors hover:border-foreground/20 focus:border-foreground/30 focus:outline-none"
               value={newPartnerFeeBps}
               onChange={(e) => setNewPartnerFeeBps(Math.max(0, Math.min(10000, Math.floor(Number(e.target.value || 0)))))}
             />
           </div>
-          <div>
-            <label className="microtext text-muted-foreground">Default Merchant Fee (bps, optional)</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Default Merchant Fee (bps, optional)</label>
             <input
               type="number"
               min={0}
               max={10000}
               step={1}
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-background text-sm transition-colors hover:border-foreground/20 focus:border-foreground/30 focus:outline-none"
               value={newDefaultMerchantFeeBps as any}
               onChange={(e) => {
                 const v = e.target.value;
@@ -581,29 +593,33 @@ export default function SplitConfigPanel() {
                 else setNewDefaultMerchantFeeBps(Math.max(0, Math.min(10000, Math.floor(Number(v || 0)))));
               }}
             />
-            <div className="microtext text-muted-foreground mt-1">Optional field for metadata/reference.</div>
+            <div className="text-[10px] text-muted-foreground">Optional field for metadata/reference.</div>
           </div>
-          <div className="md:col-span-2">
-            <label className="microtext text-muted-foreground">Notes</label>
+          <div className="md:col-span-2 space-y-1.5">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Notes</label>
             <textarea
-              className="mt-1 w-full h-20 px-3 py-2 border rounded-md bg-background"
+              className="w-full h-24 p-3 rounded-lg border border-foreground/10 bg-background text-sm transition-colors hover:border-foreground/20 focus:border-foreground/30 focus:outline-none resize-none"
               placeholder="Describe changes in this split version…"
               value={newNotes}
               onChange={(e) => setNewNotes(e.target.value)}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-3 text-sm p-3 rounded-xl border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] transition-colors cursor-pointer w-fit">
             <input
               type="checkbox"
               checked={publishOnCreate}
+              className="sr-only"
               onChange={(e) => setPublishOnCreate(e.target.checked)}
             />
-            <span>Publish immediately</span>
+            <div className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out ${publishOnCreate ? 'bg-emerald-500' : 'bg-foreground/20'}`}>
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ease-in-out ml-0.5 ${publishOnCreate ? 'translate-x-4' : 'translate-x-0'}`} />
+            </div>
+            <span className="font-medium">Publish immediately</span>
           </label>
         </div>
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-foreground/[0.05]">
           <button
-            className="px-3 py-1.5 rounded-md border text-sm"
+            className="px-5 py-2.5 rounded-lg border border-emerald-500/20 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={createVersion}
             disabled={saving || !brandKey}
           >

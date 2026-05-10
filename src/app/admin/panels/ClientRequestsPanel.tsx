@@ -631,7 +631,8 @@ export default function ClientRequestsPanel() {
     };
 
     return (
-        <div className="glass-pane rounded-xl border p-6 space-y-4">
+        <div className="w-full space-y-6 pb-24 admin-panel-enter">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-xl font-semibold">Client Requests</h2>
@@ -639,7 +640,7 @@ export default function ClientRequestsPanel() {
                         Manage access requests for <span className="font-mono text-emerald-400">{brandKey}</span>.
                     </p>
                 </div>
-                <button className="px-3 py-1.5 rounded-md border text-sm" onClick={load} disabled={loading}>
+                <button className="h-10 px-4 rounded-lg border border-foreground/[0.05] bg-background text-sm font-medium hover:bg-foreground/[0.02] transition-colors shadow-sm" onClick={load} disabled={loading}>
                     {loading ? "Refreshing…" : "Refresh"}
                 </button>
             </div>
@@ -648,7 +649,7 @@ export default function ClientRequestsPanel() {
             {info && <div className="microtext text-green-600">{info}</div>}
 
             {/* Filters & Controls */}
-            <div className="flex flex-col space-y-4 bg-black/20 p-4 rounded-lg border border-white/5">
+            <div className="flex flex-col space-y-4 bg-foreground/[0.02] backdrop-blur-md p-4 rounded-2xl border border-foreground/[0.05]">
                 {/* Top Row: Search & Items Per Page */}
                 <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
                     {/* Search */}
@@ -661,7 +662,7 @@ export default function ClientRequestsPanel() {
                         <input
                             type="text"
                             placeholder="Search requests..."
-                            className="pl-9 pr-4 h-10 w-full text-sm rounded-lg border border-foreground/10 bg-foreground/[0.03] focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
+                            className="pl-9 pr-4 h-10 w-full text-sm rounded-lg border border-foreground/[0.05] bg-background focus:outline-none focus:border-foreground/30 transition-colors"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -670,31 +671,31 @@ export default function ClientRequestsPanel() {
                     {/* Controls */}
                     <div className="flex items-center gap-3">
                         <select
-                            className="h-9 text-sm bg-black/40 border border-white/10 rounded-lg px-2 focus:ring-1 focus:ring-emerald-500/50"
+                            className="h-10 text-sm bg-foreground/[0.02] border border-foreground/[0.05] rounded-lg px-2 focus:border-foreground/30 hover:bg-foreground/[0.04] transition-colors"
                             value={itemsPerPage}
                             onChange={(e) => setItemsPerPage(Number(e.target.value))}
                         >
-                            <option value={5} className="bg-zinc-900 text-white">5 per page</option>
-                            <option value={10} className="bg-zinc-900 text-white">10 per page</option>
-                            <option value={20} className="bg-zinc-900 text-white">20 per page</option>
-                            <option value={50} className="bg-zinc-900 text-white">50 per page</option>
+                            <option value={5} className="bg-background text-foreground">5 per page</option>
+                            <option value={10} className="bg-background text-foreground">10 per page</option>
+                            <option value={20} className="bg-background text-foreground">20 per page</option>
+                            <option value={50} className="bg-background text-foreground">50 per page</option>
                         </select>
 
                         <div className="h-6 w-px bg-white/10 hidden md:block" />
 
                         <select
-                            className="h-9 text-sm bg-black/40 border border-white/10 rounded-lg px-2 focus:ring-1 focus:ring-emerald-500/50"
+                            className="h-10 text-sm bg-foreground/[0.02] border border-foreground/[0.05] rounded-lg px-2 focus:border-foreground/30 hover:bg-foreground/[0.04] transition-colors"
                             value={sortField}
                             onChange={(e) => setSortField(e.target.value as any)}
                         >
-                            <option value="createdAt" className="bg-zinc-900 text-white">Date</option>
-                            <option value="shopName" className="bg-zinc-900 text-white">Name</option>
-                            <option value="status" className="bg-zinc-900 text-white">Status</option>
+                            <option value="createdAt" className="bg-background text-foreground">Date</option>
+                            <option value="shopName" className="bg-background text-foreground">Name</option>
+                            <option value="status" className="bg-background text-foreground">Status</option>
                         </select>
 
                         <button
                             onClick={() => setSortDirection(prev => prev === "asc" ? "desc" : "asc")}
-                            className="h-9 w-9 flex items-center justify-center rounded-lg bg-black/40 border border-white/10 hover:bg-white/5 transition-colors"
+                            className="h-10 w-10 flex items-center justify-center rounded-lg bg-foreground/[0.02] border border-foreground/[0.05] hover:bg-foreground/[0.04] transition-colors shadow-sm"
                             title={`Sort ${sortDirection === "asc" ? "Ascending" : "Descending"}`}
                         >
                             {sortDirection === "asc" ? "↑" : "↓"}
@@ -703,7 +704,7 @@ export default function ClientRequestsPanel() {
                 </div>
 
                 {/* Status Tabs */}
-                <div className="flex flex-wrap gap-1 border-b border-white/5">
+                <div className="flex flex-wrap gap-1 border-b border-foreground/[0.05] pb-2">
                     {[
                         { id: "all", label: "All Merchants" },
                         { id: "pending", label: "Pending" },
@@ -716,7 +717,7 @@ export default function ClientRequestsPanel() {
                             key={tab.id}
                             onClick={() => setStatusFilter(tab.id as any)}
                             className={`px-3 py-2 text-xs uppercase tracking-wide font-medium border-b-2 transition-all flex items-center gap-2 ${statusFilter === tab.id
-                                ? "border-emerald-500 text-emerald-400 bg-emerald-500/5"
+                                ? "border-emerald-500 text-emerald-500 bg-emerald-500/10"
                                 : "border-transparent text-muted-foreground hover:text-zinc-300 hover:border-white/10"
                                 }`}
                         >
@@ -730,7 +731,7 @@ export default function ClientRequestsPanel() {
                 </div>
             </div>
 
-            <div className="glass-pane rounded-xl border overflow-hidden">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md overflow-hidden">
                 <table className="min-w-full text-sm">
                     <thead>
                         <tr className="border-b border-foreground/5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -758,7 +759,7 @@ export default function ClientRequestsPanel() {
                                     <tr className={`hover:bg-foreground/5 transition-colors ${isExpanded ? "bg-foreground/5" : ""}`}>
                                         <td className="px-4 py-3 align-top">
                                             <div className="flex items-start gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
+                                                <div className="w-10 h-10 rounded-lg border border-foreground/[0.05] bg-background/50 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
                                                     {(req.shopLogoUrl || req.logoUrl || req.faviconUrl) ? (
                                                         <img src={req.shopLogoUrl || req.logoUrl || req.faviconUrl} className="w-full h-full object-contain" />
                                                     ) : (
@@ -788,7 +789,7 @@ export default function ClientRequestsPanel() {
                                                 </div>
                                                 <div className="text-xs">
                                                     <span className="text-muted-foreground">Type: </span>
-                                                    <span className="uppercase text-xs font-mono bg-white/5 px-1.5 py-0.5 rounded">{req.businessType || "?"}</span>
+                                                    <span className="uppercase text-xs font-mono bg-foreground/5 px-1.5 py-0.5 rounded">{req.businessType || "?"}</span>
                                                 </div>
                                                 {(req.deployedSplitAddress || (req.splitHistory && req.splitHistory.length > 0)) && (
                                                     <div className="text-xs flex items-center justify-between gap-2">
@@ -1623,6 +1624,7 @@ export default function ClientRequestsPanel() {
                     </div>
                 )
             }
+        </div>
         </div>
     );
 }

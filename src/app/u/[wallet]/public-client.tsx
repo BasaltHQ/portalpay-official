@@ -413,7 +413,7 @@ export default function PublicClient({ wallet }: { wallet: string }) {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-10 space-y-6">
+      <div className="w-full h-full p-6 md:p-8 space-y-8 pb-24">
         <div className="glass-pane rounded-xl border p-6 animate-pulse">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-foreground/10" />
@@ -428,11 +428,11 @@ export default function PublicClient({ wallet }: { wallet: string }) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10 space-y-6">
+    <div className="w-full h-full p-6 md:p-8 space-y-8 pb-24">
       {showHero && (
         <div className="rounded-xl border overflow-hidden">
           <div
-            className="w-full h-40 sm:h-48"
+            className="w-full h-56 sm:h-72 md:h-96 lg:h-[400px]"
             style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: "cover", backgroundPosition: "center" }}
           />
         </div>
@@ -565,7 +565,7 @@ export default function PublicClient({ wallet }: { wallet: string }) {
 
       <InterestsSection interests={profile.interests || []} />
 
-      <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <ContactSection contact={profile.contact || {}} />
         <RelationshipSection relationship={profile.relationship || {}} />
         <LinksSection links={profile.links || []} />

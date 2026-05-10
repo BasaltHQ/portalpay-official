@@ -18,6 +18,7 @@ import { RetailFields, type VariationGroup, type Variant } from "@/components/in
 import { HotelFields, type Room } from "@/components/inventory/HotelFields";
 import { FreelancerFields, type AddOn } from "@/components/inventory/FreelancerFields";
 import { PublishingFields } from "@/components/inventory/PublishingFields";
+import CannabisFields from "@/components/inventory/CannabisFields";
 import type { PublishingFormat, BookCondition } from "@/types/inventory";
 import { LegacyAttributeAlert } from "@/components/inventory/LegacyAttributeAlert";
 import { ToastImportModal } from "@/components/inventory/ToastImportModal";
@@ -89,7 +90,7 @@ function ResendTrackingBtn({ receipt, operatorWallet }: { receipt: any, operator
   if (!receipt.buyerEmail && !receipt.shippingAddress?.email) return null;
 
   return (
-    <div className="mt-2 text-center w-full flex flex-col gap-1">
+    <div className="w-full flex flex-col gap-1">
       <button
         onClick={async () => {
           setResending(true);
@@ -109,11 +110,12 @@ function ResendTrackingBtn({ receipt, operatorWallet }: { receipt: any, operator
           }
         }}
         disabled={resending || resendSuccess}
-        className="w-full px-2 py-1.5 rounded bg-muted/50 text-xs font-medium hover:bg-muted transition-colors disabled:opacity-50 border border-transparent shadow-sm hover:border-foreground/10 flex items-center justify-center gap-1"
+        className="w-full h-9 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-xs font-semibold hover:bg-foreground/[0.05] transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
       >
-        <span>{resending ? "Sending..." : resendSuccess ? "Email Sent ✓" : "Resend Email"}</span>
+        <RefreshCw className={`w-3.5 h-3.5 ${resending ? "animate-spin" : ""}`} />
+        <span>{resending ? "Sending..." : resendSuccess ? "Sent ✓" : "Resend"}</span>
       </button>
-      {resendError && <div className="text-[10px] text-red-500">{resendError}</div>}
+      {resendError && <div className="text-[10px] text-red-500 text-center">{resendError}</div>}
     </div>
   );
 }
@@ -969,42 +971,71 @@ function ShopSetupInstructionsPanel() {
 /** ---------------- Profile Setup Instructions ---------------- */
 function ProfileSetupInstructionsPanel() {
   return (
-    <div className="glass-pane rounded-xl border p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Profile Setup Instructions</h3>
-        <span className="microtext text-muted-foreground">Customize identity & roles</span>
+    <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-6">
+      <div className="flex items-center justify-between border-b border-foreground/10 pb-4">
+        <h3 className="text-xl font-bold tracking-tight">Profile Setup Instructions</h3>
+        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Customize Identity & Roles</span>
       </div>
 
-      <ol className="list-decimal pl-5 space-y-1 text-sm">
-        <li>
-          Open Profile to edit your identity.
-          <div className="microtext text-muted-foreground">
-            Visit <a href="/profile" className="underline">/profile</a> to set your display name, avatar/logo, and public details shown across your pages.
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">1</span>
+            <h4 className="text-sm font-semibold">Edit Your Identity</h4>
           </div>
-        </li>
-        <li>
-          Choose your role: merchant, buyer, or both.
-          <div className="microtext text-muted-foreground">
+          <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
+            Visit <a href="/profile" className="text-foreground hover:underline border-b border-foreground/30 pb-0.5">/profile</a> to set your display name, avatar/logo, and public details shown across your pages.
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">2</span>
+            <h4 className="text-sm font-semibold">Choose Your Role</h4>
+          </div>
+          <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
             Roles control surfaces and features you see:
           </div>
-          <ul className="list-disc pl-5 mt-1 text-sm">
-            <li><b>Merchant</b>: Access Admin, Inventory, Orders, Reserve, analytics, and shop management.</li>
-            <li><b>Buyer</b>: Focused purchasing flow and loyalty XP tracking.</li>
-            <li><b>Both</b>: Use the same wallet to operate a shop and buy from others.</li>
+          <ul className="ml-7 space-y-2 mt-2">
+            <li className="flex items-start gap-2">
+              <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+              <div>
+                <span className="text-xs font-bold text-foreground">Merchant:</span>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider ml-2">Access Admin, Inventory, Orders, Reserve, analytics, and shop management.</span>
+              </div>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+              <div>
+                <span className="text-xs font-bold text-foreground">Buyer:</span>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider ml-2">Focused purchasing flow and loyalty XP tracking.</span>
+              </div>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+              <div>
+                <span className="text-xs font-bold text-foreground">Both:</span>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider ml-2">Use the same wallet to operate a shop and buy from others.</span>
+              </div>
+            </li>
           </ul>
-        </li>
-        <li>
-          Verify your public profile page.
-          <div className="microtext text-muted-foreground">
-            Your public profile is accessible at <code className="text-xs">/u/&lt;wallet&gt;</code>. Share it to showcase your brand and receipts history.
-          </div>
-        </li>
-      </ol>
+        </div>
 
-      <div className="rounded-md border p-3 bg-foreground/5">
-        <div className="text-sm font-medium">Note</div>
-        <div className="microtext text-muted-foreground mt-1">
-          Admin visibility requires a connected wallet with merchant role. If you don’t see Admin tabs, confirm your role settings in Profile.
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">3</span>
+            <h4 className="text-sm font-semibold">Verify Public Profile</h4>
+          </div>
+          <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
+            Your public profile is accessible at <code className="px-1.5 py-0.5 rounded-md bg-foreground/10 text-foreground font-mono text-[9px] lowercase">/u/&lt;wallet&gt;</code>. Share it to showcase your brand and receipts history.
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] p-4 mt-6">
+        <div className="text-[10px] uppercase font-bold text-foreground tracking-wider mb-2">System Note</div>
+        <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
+          Admin visibility requires a connected wallet with merchant role. If you don't see Admin tabs, confirm your role settings in Profile.
         </div>
       </div>
     </div>
@@ -1366,7 +1397,7 @@ function TaxManagement() {
               <div className="mt-1 flex flex-col sm:flex-row items-stretch gap-2">
                 <select className="w-full sm:w-64 h-9 px-3 py-1 border rounded-md bg-background truncate" id="tax-preset-select">
                   {(catalog || []).map((j) => (
-                    <option key={j.code} value={j.code}>{j.name} ({Math.round(j.rate * 10000) / 100}%)</option>
+                    <option key={j.code} value={j.code} className="bg-background text-foreground">{j.name} ({Math.round(j.rate * 10000) / 100}%)</option>
                   ))}
                 </select>
                 <button
@@ -1416,9 +1447,9 @@ function TaxManagement() {
             value={defaultJurisdictionCode}
             onChange={(e) => setDefaultJurisdictionCode(e.target.value)}
           >
-            <option value="">Select jurisdiction…</option>
+            <option value="" className="bg-background text-foreground">Select jurisdiction…</option>
             {(configJurisdictions || []).map((j) => (
-              <option key={j.code} value={j.code}>
+              <option key={j.code} value={j.code} className="bg-background text-foreground">
                 {j.name} ({Math.round(j.rate * 10000) / 100}%)
               </option>
             ))}
@@ -1460,7 +1491,7 @@ function TaxManagement() {
                   <label className="microtext text-muted-foreground">Name</label>
                   <input
                     id="custom-jurisdiction-name"
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                     placeholder="e.g., Springfield (IL) Cannabis"
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
@@ -2057,9 +2088,9 @@ function ReserveAnalytics() {
                               {String(tx.hash || "").slice(0, 10)}…{String(tx.hash || "").slice(-8)}
                             </a>
                           </span>
-                          {isPayment && <span className="px-1 py-0.5 rounded text-[10px] bg-green-100 text-green-700">Payment</span>}
-                          {isRelease && releaseType === 'merchant' && <span className="px-1 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700">Merchant Release</span>}
-                          {isRelease && releaseType === 'platform' && <span className="px-1 py-0.5 rounded text-[10px] bg-purple-100 text-purple-700">Platform Release</span>}
+                          {isPayment && <span className="px-1.5 py-0.5 rounded-md border border-green-500/20 text-[10px] bg-green-500/10 text-green-500 font-semibold">Payment</span>}
+                          {isRelease && releaseType === 'merchant' && <span className="px-1.5 py-0.5 rounded-md border border-blue-500/20 text-[10px] bg-blue-500/10 text-blue-500 font-semibold">Merchant Release</span>}
+                          {isRelease && releaseType === 'platform' && <span className="px-1.5 py-0.5 rounded-md border border-purple-500/20 text-[10px] bg-purple-500/10 text-purple-500 font-semibold">Platform Release</span>}
                         </div>
                         <span className="font-semibold">{Number(tx.value || 0).toFixed(4)} {String(tx.token || 'ETH').toUpperCase()}</span>
                       </div>
@@ -2689,21 +2720,27 @@ function ReceiptsAdmin() {
     }
   }
   function statusClass(s?: string) {
-    const base = "inline-flex items-center px-2 py-0.5 rounded-full text-xs border";
+    const base = "inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold border transition-colors";
     const v = (s || "").toLowerCase();
-    if (v === "paid" || v === "reconciled" || v === "checkout_success" || v === "tx_mined" || v === "recipient_validated") {
-      return base + " bg-green-100 text-green-700 border-green-200";
-    }
-    if (v === "generated") {
-      return base + " bg-gray-100 text-gray-700 border-gray-200";
-    }
-    if (v === "link_opened" || v === "buyer_logged_in" || v === "checkout_initialized") {
-      return base + " bg-blue-100 text-blue-700 border-blue-200";
-    }
-    if (v === "tx_mismatch" || v === "failed") {
-      return base + " bg-red-100 text-red-700 border-red-200";
-    }
-    return base + " bg-foreground/5 text-foreground/80 border-foreground/10";
+
+    // Independent color coding for granular progression states
+    if (v === "generated") return base + " bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+    if (v === "checkout_ready") return base + " bg-blue-500/10 text-blue-500 border-blue-500/20";
+    if (v === "checkout_initialized") return base + " bg-sky-500/10 text-sky-500 border-sky-500/20";
+    if (v === "link_opened") return base + " bg-cyan-500/10 text-cyan-500 border-cyan-500/20";
+    if (v === "buyer_logged_in") return base + " bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
+
+    // Success States
+    if (v === "checkout_success" || v === "paid") return base + " bg-green-500/10 text-green-500 border-green-500/20";
+    if (v === "tx_mined") return base + " bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+    if (v === "recipient_validated") return base + " bg-teal-500/10 text-teal-500 border-teal-500/20";
+    if (v === "reconciled") return base + " bg-lime-500/10 text-lime-500 border-lime-500/20";
+
+    // Error States
+    if (v === "tx_mismatch") return base + " bg-orange-500/10 text-orange-500 border-orange-500/20";
+    if (v === "failed") return base + " bg-red-500/10 text-red-500 border-red-500/20";
+
+    return base + " bg-foreground/5 text-foreground/70 border-foreground/10";
   }
 
   function isBlockedStatus(s?: string) {
@@ -2835,19 +2872,19 @@ function ReceiptsAdmin() {
         <div className="flex items-center gap-2">
           {isSuperadminRecipient && (
             <>
-              <button onClick={seed} disabled={seeding || (receipts && receipts.length > 0)} className="px-3 py-1.5 rounded-md border text-sm">
+              <button onClick={seed} disabled={seeding || (receipts && receipts.length > 0)} className="h-10 px-4 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-sm">
                 {seeding ? "Seeding…" : "Seed Receipt"}
               </button>
-              <button onClick={purge} disabled={purging || loading} className="px-3 py-1.5 rounded-md border text-sm">
+              <button onClick={purge} disabled={purging || loading} className="h-10 px-4 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-sm">
                 {purging ? "Purging…" : "Purge Receipts"}
               </button>
             </>
           )}
-          <button onClick={loadReceipts} disabled={loading} className="px-3 py-1.5 rounded-md border text-sm">
+          <button onClick={loadReceipts} disabled={loading} className="h-10 px-4 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-sm">
             {loading ? "Refreshing…" : "Refresh"}
           </button>
           {testHidden && (
-            <button onClick={() => setTestHidden(false)} className="px-3 py-1.5 rounded-md border text-sm" title="Restore TEST receipt to list">
+            <button onClick={() => setTestHidden(false)} className="h-10 px-4 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-sm" title="Restore TEST receipt to list">
               Restore TEST
             </button>
           )}
@@ -2872,93 +2909,167 @@ function ReceiptsAdmin() {
       {receiptsTab === "shipping" ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
           {/* To Ship Column */}
-          <div className="rounded-lg border bg-foreground/5 p-4 space-y-3 min-h-[400px]">
-            <h3 className="font-semibold flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-500"></span> To Ship
-            </h3>
-            {(receipts || []).filter((r: any) => r.shippingAddress && r.status !== "shipped" && r.status !== "delivered" && r.status !== "completed" && !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST")).map((rec: any) => (
-              <div key={rec.receiptId} className="rounded-md border bg-background p-3 space-y-2 shadow-sm">
-                <div className="flex justify-between items-start">
-                  <span className="font-mono text-xs">{rec.receiptId.slice(0, 15)}...</span>
-                  <span className="text-sm font-medium">${Number(rec.totalUsd || 0).toFixed(2)}</span>
+          <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.01] p-4 space-y-4 min-h-[400px]">
+            <div className="flex items-center justify-between pb-2 border-b border-foreground/[0.05]">
+              <h3 className="font-semibold flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></span>
+                <span className="text-sm tracking-wide">To Ship</span>
+              </h3>
+              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 rounded-full bg-foreground/[0.03]">
+                {(receipts || []).filter((r: any) => r.shippingAddress && r.status !== "shipped" && r.status !== "delivered" && r.status !== "completed" && !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST")).length}
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {(receipts || []).filter((r: any) => r.shippingAddress && r.status !== "shipped" && r.status !== "delivered" && r.status !== "completed" && !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST")).map((rec: any) => (
+                <div key={rec.receiptId} className="relative overflow-hidden rounded-xl border border-amber-500/10 bg-gradient-to-b from-amber-500/[0.02] to-transparent p-4 space-y-3 hover:border-amber-500/20 transition-all duration-300 group">
+                  <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-amber-500/40 to-transparent"></div>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="text-xs font-medium text-foreground">{rec.shippingAddress.name}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">{rec.shippingAddress.line1}</div>
+                      {rec.shippingAddress.line2 && <div className="text-[11px] text-muted-foreground">{rec.shippingAddress.line2}</div>}
+                      <div className="text-[11px] text-muted-foreground">{rec.shippingAddress.city}, {rec.shippingAddress.state} {rec.shippingAddress.zip}</div>
+                    </div>
+                    <span className="text-sm font-semibold">${Number(rec.totalUsd || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-foreground/[0.05]">
+                    <span className="font-mono text-[10px] text-muted-foreground" title={rec.receiptId}>{rec.receiptId.slice(0, 12)}...</span>
+                    <span className="text-[10px] text-muted-foreground">{new Date(Number(rec.createdAt || 0)).toLocaleDateString()}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelected(rec);
+                      setTrackCarrier("");
+                      setTrackNumber("");
+                      setTrackUrl("");
+                      setTrackError("");
+                      setTrackingOpen(true);
+                    }}
+                    className="w-full h-10 mt-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-semibold hover:bg-amber-500/20 transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Tracking
+                  </button>
                 </div>
-                <div className="microtext text-muted-foreground">
-                  <div>{rec.shippingAddress.name}</div>
-                  <div>{rec.shippingAddress.city}, {rec.shippingAddress.state} {rec.shippingAddress.zip}</div>
-                </div>
-                <button
-                  onClick={() => {
-                    setSelected(rec);
-                    setTrackCarrier("");
-                    setTrackNumber("");
-                    setTrackUrl("");
-                    setTrackError("");
-                    setTrackingOpen(true);
-                  }}
-                  className="w-full mt-2 px-2 py-1.5 rounded bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
-                >
-                  Add Tracking
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* Shipped Column */}
-          <div className="rounded-lg border bg-foreground/5 p-4 space-y-3 min-h-[400px]">
-            <h3 className="font-semibold flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-sky-500"></span> Shipped
-            </h3>
-            {(receipts || []).filter((r: any) => r.tracking?.trackingNumber && r.status === "shipped" && !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST")).map((rec: any) => (
-              <div key={rec.receiptId} className="rounded-md border bg-background p-3 space-y-2 shadow-sm">
-                <div className="flex justify-between items-start">
-                  <span className="font-mono text-xs">{rec.receiptId.slice(0, 15)}...</span>
-                  <span className="text-sm font-medium">${Number(rec.totalUsd || 0).toFixed(2)}</span>
+          <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.01] p-4 space-y-4 min-h-[400px]">
+            <div className="flex items-center justify-between pb-2 border-b border-foreground/[0.05]">
+              <h3 className="font-semibold flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]"></span>
+                <span className="text-sm tracking-wide">Shipped</span>
+              </h3>
+              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 rounded-full bg-foreground/[0.03]">
+                {(receipts || []).filter((r: any) => r.tracking?.trackingNumber && r.status === "shipped" && !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST")).length}
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {(receipts || []).filter((r: any) => r.tracking?.trackingNumber && r.status === "shipped" && !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST")).map((rec: any) => (
+                <div key={rec.receiptId} className="relative overflow-hidden rounded-xl border border-sky-500/10 bg-gradient-to-b from-sky-500/[0.02] to-transparent p-4 space-y-3 hover:border-sky-500/20 transition-all duration-300 group">
+                  <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-sky-500/40 to-transparent"></div>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="text-xs font-medium text-foreground">{rec.shippingAddress?.name || "Customer"}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">{rec.shippingAddress?.line1}</div>
+                      {rec.shippingAddress?.line2 && <div className="text-[11px] text-muted-foreground">{rec.shippingAddress?.line2}</div>}
+                      <div className="text-[11px] text-muted-foreground">{rec.shippingAddress?.city}, {rec.shippingAddress?.state} {rec.shippingAddress?.zip}</div>
+                    </div>
+                    <span className="text-sm font-semibold">${Number(rec.totalUsd || 0).toFixed(2)}</span>
+                  </div>
+
+                  <div className="p-2 rounded-lg bg-sky-500/[0.05] border border-sky-500/10">
+                    <div className="text-[10px] text-sky-600/70 dark:text-sky-400/70 font-medium uppercase tracking-wider mb-0.5">{rec.tracking?.carrier}</div>
+                    <div className="font-mono text-xs text-sky-700 dark:text-sky-300 flex items-center justify-between">
+                      {rec.tracking?.trackingNumber}
+                      <button onClick={() => { try { navigator.clipboard.writeText(rec.tracking?.trackingNumber || ""); } catch { } }} className="hover:text-sky-500 transition-colors" title="Copy tracking number">
+                        <Copy className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-foreground/[0.05]">
+                    <span className="font-mono text-[10px] text-muted-foreground" title={rec.receiptId}>{rec.receiptId.slice(0, 12)}...</span>
+                    <span className="text-[10px] text-muted-foreground">{new Date(Number(rec.createdAt || 0)).toLocaleDateString()}</span>
+                  </div>
+
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={async () => {
+                        try {
+                          const r = await fetch(`/api/receipts/${encodeURIComponent(rec.receiptId)}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json", "x-wallet": operatorWallet },
+                            body: JSON.stringify({ status: "delivered" }),
+                          });
+                          if (r.ok) await loadReceipts();
+                        } catch { }
+                      }}
+                      className="flex-1 h-9 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" /> Delivered
+                    </button>
+                    <div className="flex-1">
+                      <ResendTrackingBtn receipt={rec} operatorWallet={operatorWallet} />
+                    </div>
+                  </div>
                 </div>
-                <div className="microtext text-muted-foreground">
-                  <div>{rec.shippingAddress?.name || "Customer"}</div>
-                  <div className="font-mono text-sky-600 dark:text-sky-400 mt-1">{rec.tracking?.carrier}: {rec.tracking?.trackingNumber}</div>
-                </div>
-                <button
-                  onClick={async () => {
-                    try {
-                      const r = await fetch(`/api/receipts/${encodeURIComponent(rec.receiptId)}`, {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json", "x-wallet": operatorWallet },
-                        body: JSON.stringify({ status: "delivered" }),
-                      });
-                      if (r.ok) await loadReceipts();
-                    } catch { }
-                  }}
-                  className="w-full mt-2 px-2 py-1.5 rounded border text-xs font-medium hover:bg-muted transition-colors"
-                >
-                  Mark Delivered
-                </button>
-                <ResendTrackingBtn receipt={rec} operatorWallet={operatorWallet} />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* Delivered Column */}
-          <div className="rounded-lg border bg-foreground/5 p-4 space-y-3 min-h-[400px]">
-            <h3 className="font-semibold flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span> Delivered
-            </h3>
-            {(receipts || []).filter((r: any) => (r.status === "delivered" || r.status === "completed") && r.shippingAddress && !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST")).map((rec: any) => (
-              <div key={rec.receiptId} className="rounded-md border bg-background p-3 shadow-sm opacity-70">
-                <div className="flex justify-between items-start mb-1">
-                  <span className="font-mono text-xs">{rec.receiptId.slice(0, 15)}...</span>
-                  <span className="text-xs">{new Date(Number(rec.createdAt || 0)).toLocaleDateString()}</span>
+          <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.01] p-4 space-y-4 min-h-[400px]">
+            <div className="flex items-center justify-between pb-2 border-b border-foreground/[0.05]">
+              <h3 className="font-semibold flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                <span className="text-sm tracking-wide text-muted-foreground">Delivered</span>
+              </h3>
+              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 rounded-full bg-foreground/[0.03]">
+                {(receipts || []).filter((r: any) => (r.status === "delivered" || r.status === "completed") && r.shippingAddress && !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST")).length}
+              </span>
+            </div>
+
+            <div className="space-y-3 opacity-60 hover:opacity-100 transition-opacity duration-300">
+              {(receipts || []).filter((r: any) => (r.status === "delivered" || r.status === "completed") && r.shippingAddress && !(testHidden && String(r?.receiptId || "").toUpperCase() === "TEST")).map((rec: any) => (
+                <div key={rec.receiptId} className="relative overflow-hidden rounded-xl border border-emerald-500/10 bg-gradient-to-b from-emerald-500/[0.02] to-transparent p-4 space-y-3 group">
+                  <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-emerald-500/40 to-transparent"></div>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="text-xs font-medium text-foreground">{rec.shippingAddress?.name}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">{rec.shippingAddress?.line1}</div>
+                      {rec.shippingAddress?.line2 && <div className="text-[11px] text-muted-foreground">{rec.shippingAddress?.line2}</div>}
+                      <div className="text-[11px] text-muted-foreground">{rec.shippingAddress?.city}, {rec.shippingAddress?.state} {rec.shippingAddress?.zip}</div>
+                    </div>
+                    <span className="text-sm font-semibold">${Number(rec.totalUsd || 0).toFixed(2)}</span>
+                  </div>
+
+                  {rec.tracking?.trackingNumber && (
+                    <div className="text-[10px] text-muted-foreground font-mono bg-foreground/[0.02] p-1.5 rounded-md border border-foreground/[0.05] flex items-center justify-between w-full">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 flex-shrink-0"></span>
+                        <span className="truncate">{rec.tracking.carrier}: {rec.tracking.trackingNumber}</span>
+                      </div>
+                      <button onClick={() => { try { navigator.clipboard.writeText(rec.tracking?.trackingNumber || ""); } catch { } }} className="hover:text-emerald-500 transition-colors pl-2" title="Copy tracking number">
+                        <Copy className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-foreground/[0.05]">
+                    <span className="font-mono text-[10px] text-muted-foreground" title={rec.receiptId}>{rec.receiptId.slice(0, 12)}...</span>
+                    <span className="text-[10px] text-muted-foreground">{new Date(Number(rec.createdAt || 0)).toLocaleDateString()}</span>
+                  </div>
                 </div>
-                <div className="microtext text-muted-foreground">{rec.shippingAddress?.name}</div>
-                {rec.tracking?.trackingNumber && (
-                  <div className="microtext font-mono mt-1" title={rec.tracking.trackingNumber}>Trk: {rec.tracking.trackingNumber.slice(0, 10)}...</div>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       ) : (
-        <div className="overflow-auto rounded-md border">
+        <div className="overflow-auto rounded-2xl border border-foreground/[0.05]">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="bg-foreground/5">
@@ -3012,7 +3123,7 @@ function ReceiptsAdmin() {
                           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                             <button
                               onClick={() => openQR(rec)}
-                              className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                              className="h-8 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-xs"
                               disabled={isBlockedStatus(rec.status)}
                               title={isBlockedStatus(rec.status) ? "QR disabled for settled/refunded receipts" : "QR Code"}
                             >
@@ -3024,7 +3135,7 @@ function ReceiptsAdmin() {
                                   openPortalWindow(getPortalLink(rec.receiptId));
                                 } catch { }
                               }}
-                              className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                              className="h-8 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-xs"
                               title="Open portal in a new window"
                             >
                               Open Portal
@@ -3035,21 +3146,21 @@ function ReceiptsAdmin() {
                                   navigator.clipboard.writeText(getPortalLink(rec.receiptId));
                                 } catch { }
                               }}
-                              className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                              className="h-8 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-xs"
                               title="Copy portal link"
                             >
                               Copy Link
                             </button>
                             <button
                               onClick={() => openEdit(rec)}
-                              className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                              className="h-8 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-xs"
                               title="Edit Order"
                             >
                               ✎ Edit
                             </button>
                             <button
                               onClick={() => openRefund(rec)}
-                              className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                              className="h-8 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-xs"
                               title="Refund"
                             >
                               ↺ Refund
@@ -3057,7 +3168,7 @@ function ReceiptsAdmin() {
                             {String(rec.receiptId || "").toUpperCase() === "TEST" ? (
                               <button
                                 onClick={() => setTestHidden(true)}
-                                className="px-2 py-1 rounded-md border text-xs bg-background hover:bg-foreground/5"
+                                className="h-8 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-xs"
                                 title="Hide TEST receipt from list"
                               >
                                 🙈 Hide
@@ -3079,7 +3190,7 @@ function ReceiptsAdmin() {
                                     }
                                   } catch { }
                                 }}
-                                className="px-2 py-1 rounded-md border text-xs text-red-500 bg-background hover:bg-red-500/10 hover:border-red-500/50"
+                                className="h-8 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-500 transition-colors font-semibold text-xs"
                                 title="Delete"
                                 disabled={isBlockedStatus(rec.status)}
                               >
@@ -3095,7 +3206,7 @@ function ReceiptsAdmin() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
                               <div className="space-y-3">
                                 <h4 className="font-semibold text-muted-foreground uppercase text-xs tracking-wide">Line Items</h4>
-                                <div className="bg-background rounded-md border p-3 space-y-2">
+                                <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.01] p-4 space-y-3">
                                   {recItems.length > 0 ? recItems.map((it: any, i: number) => (
                                     <div key={i} className="flex justify-between items-center text-xs">
                                       <span className="truncate">{it.qty ? `${it.qty}x ` : ""}{it.label}</span>
@@ -3114,7 +3225,7 @@ function ReceiptsAdmin() {
                               <div className="space-y-4">
                                 <div className="space-y-3">
                                   <h4 className="font-semibold text-muted-foreground uppercase text-xs tracking-wide">Payment Details</h4>
-                                  <div className="bg-background rounded-md border p-3 text-xs space-y-1.5 font-mono">
+                                  <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.01] p-4 text-xs space-y-2 font-mono">
                                     <div className="flex justify-between items-end gap-2 overflow-hidden">
                                       <span className="text-muted-foreground min-w-[70px]">Wallet:</span>
                                       <span className="truncate flex-1 text-right" title={rec.buyerWallet}>{rec.buyerWallet || "—"}</span>
@@ -3133,7 +3244,7 @@ function ReceiptsAdmin() {
                                 {rec.shippingAddress && (
                                   <div className="space-y-3">
                                     <h4 className="font-semibold text-muted-foreground uppercase text-xs tracking-wide">Shipping Info</h4>
-                                    <div className="bg-background rounded-md border p-3 text-xs space-y-1">
+                                    <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.01] p-4 text-xs space-y-2">
                                       <div className="font-medium">{rec.shippingAddress.name}</div>
                                       <div className="text-muted-foreground">{rec.shippingAddress.email}</div>
                                       <div className="text-muted-foreground">{rec.shippingAddress.line1}</div>
@@ -3175,7 +3286,7 @@ function ReceiptsAdmin() {
               <div className="thermal-paper relative mx-auto">
                 <button
                   onClick={closeQR}
-                  className="print-hidden absolute -right-3 -top-3 h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                  className="print-hidden absolute -right-3 -top-3 h-8 w-8 rounded-full border border-foreground/[0.05] bg-background hover:bg-foreground/[0.05] transition-colors shadow-xl flex items-center justify-center z-50"
                   title="Close"
                   aria-label="Close receipt modal"
                 >
@@ -3317,10 +3428,10 @@ function ReceiptsAdmin() {
       {trackingOpen && selected && typeof window !== "undefined"
         ? createPortal(
           <div className="fixed inset-0 z-[100001] bg-black/50 grid place-items-center p-4">
-            <div className="w-full max-w-sm rounded-md border bg-background p-4 relative">
+            <div className="w-full max-w-sm rounded-3xl border border-foreground/[0.05] bg-background/80 backdrop-blur-xl shadow-2xl p-6 relative">
               <button
                 onClick={() => setTrackingOpen(false)}
-                className="absolute right-2 top-2 h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                className="absolute right-4 top-4 h-8 w-8 rounded-full border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors flex items-center justify-center"
                 title="Close"
                 aria-label="Close tracking modal"
               >
@@ -3335,7 +3446,7 @@ function ReceiptsAdmin() {
                 <div>
                   <label className="microtext text-muted-foreground">Carrier *</label>
                   <input
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background text-sm"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 text-sm"
                     placeholder="e.g., USPS, UPS, FedEx"
                     value={trackCarrier}
                     onChange={(e) => setTrackCarrier(e.target.value)}
@@ -3344,7 +3455,7 @@ function ReceiptsAdmin() {
                 <div>
                   <label className="microtext text-muted-foreground">Tracking Number *</label>
                   <input
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background text-sm"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 text-sm"
                     placeholder="e.g., 9400111899999999999"
                     value={trackNumber}
                     onChange={(e) => setTrackNumber(e.target.value)}
@@ -3353,7 +3464,7 @@ function ReceiptsAdmin() {
                 <div>
                   <label className="microtext text-muted-foreground">Tracking URL (optional)</label>
                   <input
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background text-sm"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 text-sm"
                     placeholder="https://tools.usps.com/go/TrackConfirmAction?tLabels=..."
                     value={trackUrl}
                     onChange={(e) => setTrackUrl(e.target.value)}
@@ -3367,9 +3478,9 @@ function ReceiptsAdmin() {
                 </div>
               )}
               <div className="flex items-center justify-end gap-2 mt-3">
-                <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => setTrackingOpen(false)}>Cancel</button>
+                <button className="h-10 px-4 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-sm" onClick={() => setTrackingOpen(false)}>Cancel</button>
                 <button
-                  className="px-3 py-1.5 rounded-md bg-foreground text-background text-sm font-semibold disabled:opacity-40"
+                  className="h-10 px-4 rounded-xl bg-foreground text-background hover:bg-foreground/90 transition-colors font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={!trackCarrier.trim() || !trackNumber.trim() || trackSaving}
                   onClick={async () => {
                     try {
@@ -3411,10 +3522,10 @@ function ReceiptsAdmin() {
       {editOpen && selected && typeof window !== "undefined"
         ? createPortal(
           <div className="fixed inset-0 z-[100000] bg-black/50 grid place-items-center p-4">
-            <div className="w-full max-w-lg rounded-md border bg-background p-4 relative">
+            <div className="w-full max-w-lg rounded-3xl border border-foreground/[0.05] bg-background/80 backdrop-blur-xl shadow-2xl p-6 relative">
               <button
                 onClick={closeEdit}
-                className="absolute right-2 top-2 h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                className="absolute right-4 top-4 h-8 w-8 rounded-full border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors flex items-center justify-center"
                 title="Close"
                 aria-label="Close edit modal"
               >
@@ -3423,7 +3534,7 @@ function ReceiptsAdmin() {
               <div className="text-lg font-semibold mb-2">Edit Order — {selected.receiptId}</div>
               <div className="space-y-2">
                 {(editDraft?.items || []).map((it, idx) => (
-                  <div key={idx} className="flex items-center justify-between rounded-md border p-2">
+                  <div key={idx} className="flex items-center justify-between rounded-xl border border-foreground/[0.05] p-3 bg-foreground/[0.02]">
                     <div className="flex items-center gap-2 min-w-0">
                       <Thumbnail src={(it as any)?.thumb} alt="" size={32} />
                       <div className="min-w-0">
@@ -3435,7 +3546,7 @@ function ReceiptsAdmin() {
                         type="number"
                         min={0}
                         step={1}
-                        className="h-8 w-16 px-2 py-1 border rounded-md bg-background text-sm text-center"
+                        className="h-10 w-16 px-3 border border-foreground/[0.05] rounded-xl bg-background hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 text-center font-mono text-sm"
                         value={Number(it.qty || 1)}
                         onChange={(e) => {
                           const q = Math.max(0, Math.floor(Number(e.target.value || 0)));
@@ -3452,7 +3563,7 @@ function ReceiptsAdmin() {
                         type="number"
                         min={0}
                         step={0.01}
-                        className="h-8 w-24 px-2 py-1 border rounded-md bg-background text-sm text-center"
+                        className="h-10 w-24 px-3 border border-foreground/[0.05] rounded-xl bg-background hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 text-center font-mono text-sm"
                         value={Number(it.priceUsd || 0)}
                         onChange={(e) => {
                           const p = Math.max(0, Number(e.target.value || 0));
@@ -3473,7 +3584,7 @@ function ReceiptsAdmin() {
                 <div>
                   <label className="microtext text-muted-foreground">Jurisdiction (optional)</label>
                   <select
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                     value={editJurisdictionCode}
                     onChange={(e) => {
                       const code = e.target.value;
@@ -3483,9 +3594,9 @@ function ReceiptsAdmin() {
                       setEditSelectedComponents(comps.map(c => c.code));
                     }}
                   >
-                    <option value="">Use default/inferred</option>
+                    <option value="" className="bg-background text-foreground">Use default/inferred</option>
                     {(editJurisdictions || []).map((j) => (
-                      <option key={j.code} value={j.code}>
+                      <option key={j.code} value={j.code} className="bg-background text-foreground">
                         {j.name} ({Math.round((j.rate || 0) * 10000) / 100}%)
                       </option>
                     ))}
@@ -3544,7 +3655,7 @@ function ReceiptsAdmin() {
                     min={0}
                     max={100}
                     step={0.01}
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                     placeholder="e.g., 8.4 for 8.4%"
                     value={editTaxOverridePct}
                     onChange={(e) => setEditTaxOverridePct(e.target.value)}
@@ -3561,13 +3672,13 @@ function ReceiptsAdmin() {
                   ) : (
                     <>
                       <select
-                        className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background font-mono text-xs"
+                        className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 font-mono text-sm"
                         value={editTransactionHash}
                         onChange={(e) => setEditTransactionHash(e.target.value)}
                       >
-                        <option value="">No transaction assigned</option>
+                        <option value="" className="bg-background text-foreground">No transaction assigned</option>
                         {editTransactionHash && !(splitTransactions || []).some((tx: any) => tx.hash === editTransactionHash) && (
-                          <option value={editTransactionHash}>
+                          <option value={editTransactionHash} className="bg-background text-foreground">
                             {editTransactionHash.slice(0, 10)}...{editTransactionHash.slice(-8)} (Current)
                           </option>
                         )}
@@ -3609,7 +3720,7 @@ function ReceiptsAdmin() {
                               const isRecommended = idx === 0 && (tx.score || 0) > 50;
                               const label = `${String(tx.hash || "").slice(0, 10)}...${String(tx.hash || "").slice(-8)} • $${Number(tx.value || 0).toFixed(4)} ETH • ${new Date(Number(tx.timestamp || 0)).toLocaleString()}${isRecommended ? " ⭐ RECOMMENDED" : ""}`;
                               return (
-                                <option key={tx.hash} value={tx.hash}>
+                                <option key={tx.hash} value={tx.hash} className="bg-background text-foreground">
                                   {label}
                                 </option>
                               );
@@ -3656,13 +3767,13 @@ function ReceiptsAdmin() {
                 <div>
                   <label className="microtext text-muted-foreground">Assigned Employee</label>
                   <select
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                     value={editEmployeeId}
                     onChange={(e) => setEditEmployeeId(e.target.value)}
                   >
-                    <option value="">(None)</option>
+                    <option value="" className="bg-background text-foreground">(None)</option>
                     {(team || []).map((mem) => (
-                      <option key={mem.id} value={mem.id}>{mem.name} ({mem.role})</option>
+                      <option key={mem.id} value={mem.id} className="bg-background text-foreground">{mem.name} ({mem.role})</option>
                     ))}
                   </select>
                 </div>
@@ -3673,7 +3784,7 @@ function ReceiptsAdmin() {
                     type="number"
                     min={0}
                     step={0.01}
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                     value={editTipAmount}
                     onChange={(e) => setEditTipAmount(Math.max(0, Number(e.target.value)))}
                   />
@@ -3681,8 +3792,8 @@ function ReceiptsAdmin() {
               </div>
               {editError && <div className="microtext text-red-500 mt-2">{editError}</div>}
               <div className="mt-3 flex items-center justify-end gap-2">
-                <button onClick={closeEdit} className="px-3 py-1.5 rounded-md border text-sm">Cancel</button>
-                <button onClick={saveEdit} disabled={editLoading} className="px-3 py-1.5 rounded-md border text-sm">
+                <button onClick={closeEdit} className="h-10 px-4 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-sm">Cancel</button>
+                <button onClick={saveEdit} disabled={editLoading} className="h-10 px-4 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-sm">
                   {editLoading ? "Saving…" : "Save Changes"}
                 </button>
               </div>
@@ -3694,10 +3805,10 @@ function ReceiptsAdmin() {
       {refundOpen && selected && typeof window !== "undefined"
         ? createPortal(
           <div className="fixed inset-0 z-[100000] bg-black/50 grid place-items-center p-4">
-            <div className="w-full max-w-lg rounded-md border bg-background p-4 relative">
+            <div className="w-full max-w-lg rounded-3xl border border-foreground/[0.05] bg-background/80 backdrop-blur-xl shadow-2xl p-6 relative">
               <button
                 onClick={closeRefund}
-                className="absolute right-2 top-2 h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                className="absolute right-4 top-4 h-8 w-8 rounded-full border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors flex items-center justify-center"
                 title="Close"
                 aria-label="Close refund modal"
               >
@@ -3711,7 +3822,7 @@ function ReceiptsAdmin() {
                     .map((it: any, idx: number) => {
                       const checked = !!refundDraft.selected[idx];
                       return (
-                        <label key={idx} className="flex items-center justify-between rounded-md border p-2 text-sm">
+                        <label key={idx} className="flex items-center justify-between rounded-xl border border-foreground/[0.05] p-3 bg-foreground/[0.02] text-sm">
                           <div className="flex items-center gap-2">
                             <input
                               type="checkbox"
@@ -3744,7 +3855,7 @@ function ReceiptsAdmin() {
               <div className="mt-3">
                 <label className="microtext text-muted-foreground">Buyer Wallet (0x…)</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                   placeholder="0x…"
                   value={refundDraft.buyerWallet}
                   onChange={(e) => setRefundDraft((prev) => ({ ...prev, buyerWallet: e.target.value }))}
@@ -3756,8 +3867,8 @@ function ReceiptsAdmin() {
               </div>
               {refundError && <div className="microtext text-red-500 mt-2">{refundError}</div>}
               <div className="mt-3 flex items-center justify-end gap-2">
-                <button onClick={closeRefund} className="px-3 py-1.5 rounded-md border text-sm">Cancel</button>
-                <button onClick={initiateRefund} disabled={refundLoading} className="px-3 py-1.5 rounded-md border text-sm">
+                <button onClick={closeRefund} className="h-10 px-4 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-sm">Cancel</button>
+                <button onClick={initiateRefund} disabled={refundLoading} className="h-10 px-4 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-sm">
                   {refundLoading ? "Refunding…" : "Initiate Refund"}
                 </button>
               </div>
@@ -3905,7 +4016,7 @@ function BrandingPanel() {
             <div>
               <label className="microtext text-muted-foreground">App URL</label>
               <input
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                 placeholder="https://partner.example.com"
                 value={appUrl}
                 onChange={(e) => setAppUrl(e.target.value)}
@@ -3921,7 +4032,7 @@ function BrandingPanel() {
                 min={0}
                 max={10000}
                 step={1}
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                 value={partnerFeeBps}
                 onChange={(e) => setPartnerFeeBps(Math.max(0, Math.min(10000, Math.floor(Number(e.target.value || 0)))))}
               />
@@ -3936,7 +4047,7 @@ function BrandingPanel() {
                 min={0}
                 max={10000}
                 step={1}
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                 value={defaultMerchantFeeBps}
                 onChange={(e) => setDefaultMerchantFeeBps(Math.max(0, Math.min(10000, Math.floor(Number(e.target.value || 0)))))}
               />
@@ -3961,7 +4072,7 @@ function BrandingPanel() {
             <div>
               <label className="microtext text-muted-foreground">Brand Name</label>
               <input
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                 placeholder="e.g., Acme Pay"
                 value={brandDisplayName}
                 onChange={(e) => setBrandDisplayName(e.target.value)}
@@ -3975,7 +4086,7 @@ function BrandingPanel() {
                 <label className="microtext text-muted-foreground">Primary Color</label>
                 <input
                   type="color"
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                   value={primaryColor}
                   onChange={(e) => setPrimaryColor(e.target.value)}
                 />
@@ -3984,7 +4095,7 @@ function BrandingPanel() {
                 <label className="microtext text-muted-foreground">Accent Color</label>
                 <input
                   type="color"
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                   value={accentColor}
                   onChange={(e) => setAccentColor(e.target.value)}
                 />
@@ -3993,7 +4104,7 @@ function BrandingPanel() {
             <div>
               <label className="microtext text-muted-foreground">App Logo URL</label>
               <input
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                 placeholder="/brands/acme/logo.png"
                 value={logoAppUrl}
                 onChange={(e) => setLogoAppUrl(e.target.value)}
@@ -4005,7 +4116,7 @@ function BrandingPanel() {
             <div>
               <label className="microtext text-muted-foreground">Favicon URL</label>
               <input
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                 placeholder="/brands/acme/favicon.png"
                 value={logoFaviconUrl}
                 onChange={(e) => setLogoFaviconUrl(e.target.value)}
@@ -4017,7 +4128,7 @@ function BrandingPanel() {
             <div>
               <label className="microtext text-muted-foreground">OG Title</label>
               <input
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                 placeholder="Acme Pay"
                 value={ogTitle}
                 onChange={(e) => setOgTitle(e.target.value)}
@@ -4026,7 +4137,7 @@ function BrandingPanel() {
             <div>
               <label className="microtext text-muted-foreground">OG Description</label>
               <input
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                 placeholder="High‑risk payments & portals"
                 value={ogDescription}
                 onChange={(e) => setOgDescription(e.target.value)}
@@ -4210,7 +4321,7 @@ function PartnerManagementPanel() {
               title="Select partner brand"
             >
               {brandsList.map((k) => (
-                <option key={k} value={k}>
+                <option key={k} value={k} className="bg-background text-foreground">
                   {k}
                 </option>
               ))}
@@ -4276,7 +4387,7 @@ function PartnerManagementPanel() {
           <div>
             <label className="microtext text-muted-foreground">App URL</label>
             <input
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={String(config?.appUrl || "")}
               onChange={(e) => setConfig((prev: any) => ({ ...prev, appUrl: e.target.value }))}
             />
@@ -4288,7 +4399,7 @@ function PartnerManagementPanel() {
               min={0}
               max={10000}
               step={1}
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={Number(config?.partnerFeeBps || 0)}
               onChange={(e) => setConfig((prev: any) => ({ ...prev, partnerFeeBps: Math.max(0, Math.min(10000, Math.floor(Number(e.target.value || 0)))) }))}
             />
@@ -4300,7 +4411,7 @@ function PartnerManagementPanel() {
               min={0}
               max={10000}
               step={1}
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={Number(config?.defaultMerchantFeeBps || 0)}
               onChange={(e) => setConfig((prev: any) => ({ ...prev, defaultMerchantFeeBps: Math.max(0, Math.min(10000, Math.floor(Number(e.target.value || 0)))) }))}
             />
@@ -4318,7 +4429,7 @@ function PartnerManagementPanel() {
           <div>
             <label className="microtext text-muted-foreground">Brand Name</label>
             <input
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={String(config?.name || "")}
               onChange={(e) => setConfig((prev: any) => ({ ...prev, name: e.target.value }))}
             />
@@ -4328,7 +4439,7 @@ function PartnerManagementPanel() {
               <label className="microtext text-muted-foreground">Primary</label>
               <input
                 type="color"
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                 value={String(config?.colors?.primary || "#0ea5e9")}
                 onChange={(e) => setConfig((prev: any) => ({ ...prev, colors: { ...(prev?.colors || {}), primary: e.target.value } }))}
               />
@@ -4337,7 +4448,7 @@ function PartnerManagementPanel() {
               <label className="microtext text-muted-foreground">Accent</label>
               <input
                 type="color"
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                 value={String(config?.colors?.accent || "#22c55e")}
                 onChange={(e) => setConfig((prev: any) => ({ ...prev, colors: { ...(prev?.colors || {}), accent: e.target.value } }))}
               />
@@ -4346,7 +4457,7 @@ function PartnerManagementPanel() {
           <div>
             <label className="microtext text-muted-foreground">Logo URL</label>
             <input
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={String(config?.logos?.app || "")}
               onChange={(e) => setConfig((prev: any) => ({ ...prev, logos: { ...(prev?.logos || {}), app: e.target.value } }))}
             />
@@ -4354,7 +4465,7 @@ function PartnerManagementPanel() {
           <div>
             <label className="microtext text-muted-foreground">Favicon URL</label>
             <input
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={String(config?.logos?.favicon || "")}
               onChange={(e) => setConfig((prev: any) => ({ ...prev, logos: { ...(prev?.logos || {}), favicon: e.target.value } }))}
             />
@@ -5325,51 +5436,51 @@ function UsersPanel() {
   }, [sortedItems, limit]);
 
   return (
-    <div className="glass-pane rounded-xl border p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Merchants</h2>
+    <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6 space-y-6 admin-panel-enter">
+      <div className="flex items-center justify-between border-b border-foreground/[0.05] pb-4">
+        <h2 className="text-sm font-bold text-foreground/80 uppercase tracking-wider">Merchants</h2>
         <div className="flex items-center gap-2">
           {indexing && (
-            <span className="microtext text-muted-foreground animate-pulse flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-              Indexing in background…
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground animate-pulse flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+              Indexing
             </span>
           )}
-          <button className="px-3 py-1.5 rounded-md border text-sm" onClick={reindexAll} disabled={loading || indexing}>
+          <button className="h-8 px-3 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-xs font-medium transition-all" onClick={reindexAll} disabled={loading || indexing}>
             {loading ? "Loading…" : indexing ? "Indexing…" : "Reindex"}
           </button>
         </div>
       </div>
 
       {/* Controls: search/filter/sort/pagination */}
-      <div className="mb-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-        <div>
-          <label className="microtext text-muted-foreground">Search</label>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Search</label>
           <input
-            className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+            className="w-full h-10 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-sm transition-colors hover:bg-foreground/[0.04] focus:border-foreground/30 focus:outline-none"
             placeholder="Wallet or display name…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
 
-        <div>
-          <label className="microtext text-muted-foreground">Tag Filter</label>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Tag Filter</label>
           <select
-            className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+            className="w-full h-10 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-sm transition-colors hover:bg-foreground/[0.04] focus:border-foreground/30 focus:outline-none"
             value={tagFilter}
             onChange={(e) => setTagFilter(e.target.value as any)}
           >
             <option value="any">Any</option>
-            <option value="merchant">merchant</option>
-            <option value="buyer">buyer</option>
+            <option value="merchant">Merchant</option>
+            <option value="buyer">Buyer</option>
             <option value="connected">Connected</option>
           </select>
         </div>
-        <div>
-          <label className="microtext text-muted-foreground">Sort Field</label>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Sort Field</label>
           <select
-            className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+            className="w-full h-10 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-sm transition-colors hover:bg-foreground/[0.04] focus:border-foreground/30 focus:outline-none"
             value={sortField}
             onChange={(e) => setSortField(e.target.value as any)}
           >
@@ -5381,10 +5492,10 @@ function UsersPanel() {
             <option value="wallet">Wallet</option>
           </select>
         </div>
-        <div>
-          <label className="microtext text-muted-foreground">Order</label>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Order</label>
           <select
-            className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+            className="w-full h-10 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-sm transition-colors hover:bg-foreground/[0.04] focus:border-foreground/30 focus:outline-none"
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as any)}
           >
@@ -5392,34 +5503,35 @@ function UsersPanel() {
             <option value="asc">Asc</option>
           </select>
         </div>
-        <div>
-          <label className="microtext text-muted-foreground">Page Size</label>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Page Size</label>
           <input
             type="number"
             min={1}
             step={1}
-            className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+            className="w-full h-10 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-sm transition-colors hover:bg-foreground/[0.04] focus:border-foreground/30 focus:outline-none"
             value={limit}
             onChange={(e) => setLimit(Math.max(1, Math.floor(Number(e.target.value || 1))))}
           />
         </div>
-        <div className="flex items-end">
-          <button
-            type="button"
-            className="w-full h-9 rounded-md border text-sm"
-            onClick={() => {
-              setQ("");
-              setTagFilter("any");
-              setSortField("earned");
-              setSortOrder("desc");
-              setLimit(50);
-              setPage(0);
-              setBrandKeyFilter("__none__");
-            }}
-          >
-            Reset Filters
-          </button>
-        </div>
+      </div>
+      
+      <div className="flex justify-end">
+        <button
+          type="button"
+          className="h-8 px-4 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-xs font-medium transition-all"
+          onClick={() => {
+            setQ("");
+            setTagFilter("any");
+            setSortField("earned");
+            setSortOrder("desc");
+            setLimit(50);
+            setPage(0);
+            setBrandKeyFilter("__none__");
+          }}
+        >
+          Reset Filters
+        </button>
       </div>
 
       {error && <div className="microtext text-amber-600">{error}</div>}
@@ -5430,22 +5542,23 @@ function UsersPanel() {
           <div className="h-3 w-32 bg-foreground/10 rounded animate-pulse" />
         </div>
       )}
-      <div className="overflow-auto rounded-md border">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="bg-foreground/5">
-              <th className="text-left px-3 py-2 font-medium">Merchant Wallet</th>
-              <th className="text-left px-3 py-2 font-medium">Split</th>
-              <th className="text-left px-3 py-2 font-medium">Display Name</th>
-              <th className="text-left px-3 py-2 font-medium">Tags</th>
-              <th className="text-left px-3 py-2 font-medium">Total Earned (USD)</th>
-              <th className="text-left px-3 py-2 font-medium">Customers</th>
-              <th className="text-left px-3 py-2 font-medium">Total Customer XP</th>
-              <th className="text-left px-3 py-2 font-medium">Platform Fee (USD)</th>
-              <th className="text-left px-3 py-2 font-medium">Mode</th>
-              <th className="text-left px-3 py-2 font-medium">Links</th>
-            </tr>
-          </thead>
+      <div className="overflow-hidden rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-foreground/[0.05] bg-transparent">
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Merchant Wallet</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Split</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Display Name</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Tags</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Earned (USD)</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Customers</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Customer XP</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Platform Fee (USD)</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Mode</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Links</th>
+              </tr>
+            </thead>
           <tbody>
             {(paginatedItems || []).map((it) => {
               const w = String(it.merchant || "").toLowerCase();
@@ -5462,11 +5575,11 @@ function UsersPanel() {
               const txErr = String(txError[w] || "");
               return (
                 <React.Fragment key={it.merchant}>
-                  <tr className="border-t">
-                    <td className="px-3 py-2"><TruncatedAddress address={it.merchant} /></td>
-                    <td className="px-3 py-2">
+                  <tr className="border-t border-foreground/[0.02] hover:bg-foreground/[0.01] transition-colors">
+                    <td className="px-4 py-3"><TruncatedAddress address={it.merchant} /></td>
+                    <td className="px-4 py-3">
                       {(() => {
-                        if (!b || !b.splitAddressUsed) return <span className="microtext text-muted-foreground">—</span>;
+                        if (!b || !b.splitAddressUsed) return <span className="text-xs text-muted-foreground">—</span>;
                         const hist = Array.isArray(b.splitHistory) ? b.splitHistory : [];
                         // History is ascending (oldest first).
                         const idx = hist.findIndex(h => String(h.address).toLowerCase() === String(b.splitAddressUsed).toLowerCase());
@@ -5474,19 +5587,19 @@ function UsersPanel() {
                         return (
                           <div className="flex flex-col">
                             <span className="text-xs font-mono">{ver}</span>
-                            <span className="microtext text-muted-foreground font-mono">
+                            <span className="text-[10px] text-muted-foreground font-mono">
                               {b.splitAddressUsed.slice(0, 6)}...{b.splitAddressUsed.slice(-4)}
                             </span>
                           </div>
                         );
                       })()}
                     </td>
-                    <td className="px-3 py-2">{it.displayName || "—"}</td>
-                    <td className="px-3 py-2">{Array.isArray(it.tags) && it.tags.length ? it.tags.join(", ") : "—"}</td>
-                    <td className="px-3 py-2">${Number(it.totalEarnedUsd || 0).toFixed(2)}</td>
-                    <td className="px-3 py-2">{Number(it.customers || 0)}</td>
-                    <td className="px-3 py-2">{Number(it.totalCustomerXp || 0)}</td>
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-3 text-sm">{it.displayName || "—"}</td>
+                    <td className="px-4 py-3 text-sm">{Array.isArray(it.tags) && it.tags.length ? it.tags.join(", ") : "—"}</td>
+                    <td className="px-4 py-3 text-sm">${Number(it.totalEarnedUsd || 0).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-sm">{Number(it.customers || 0)}</td>
+                    <td className="px-4 py-3 text-sm">{Number(it.totalCustomerXp || 0)}</td>
+                    <td className="px-4 py-3 text-sm">
                       {(() => {
                         const receiptFee = Number(it.platformFeeUsd || 0);
                         if (receiptFee > 0) return `$${receiptFee.toFixed(2)}`;
@@ -5499,68 +5612,62 @@ function UsersPanel() {
                         return "$0.00";
                       })()}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-4">
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col gap-1.5">
                           <div className="flex items-center gap-2">
                             <button
                               role="switch"
                               aria-checked={!!it.kioskEnabled}
                               onClick={() => toggleMerchantFeature(it.merchant, 'kioskEnabled', !it.kioskEnabled)}
-                              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${it.kioskEnabled ? "bg-emerald-500" : "bg-neutral-200 dark:bg-neutral-700"
-                                }`}
+                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${it.kioskEnabled ? "bg-emerald-500" : "bg-foreground/20"}`}
                             >
-                              <span
-                                className={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform ${it.kioskEnabled ? "translate-x-4" : "translate-x-0.5"
-                                  }`}
-                              />
+                              <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ml-0.5 ${it.kioskEnabled ? "translate-x-4" : "translate-x-0"}`} />
                             </button>
-                            <span className="text-xs font-medium">Kiosk</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Kiosk</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <button
                               role="switch"
                               aria-checked={!!it.terminalEnabled}
                               onClick={() => toggleMerchantFeature(it.merchant, 'terminalEnabled', !it.terminalEnabled)}
-                              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${it.terminalEnabled ? "bg-blue-500" : "bg-neutral-200 dark:bg-neutral-700"
-                                }`}
+                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${it.terminalEnabled ? "bg-blue-500" : "bg-foreground/20"}`}
                             >
-                              <span
-                                className={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform ${it.terminalEnabled ? "translate-x-4" : "translate-x-0.5"
-                                  }`}
-                              />
+                              <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ml-0.5 ${it.terminalEnabled ? "translate-x-4" : "translate-x-0"}`} />
                             </button>
-                            <span className="text-xs font-medium">Term</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Term</span>
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <a href={`/u/${encodeURIComponent(it.merchant)}`} className="underline">Profile</a>
+                        <a href={`/u/${encodeURIComponent(it.merchant)}`} className="text-[10px] font-bold uppercase tracking-wider text-blue-500 hover:text-blue-400 transition-colors underline decoration-blue-500/30 underline-offset-2">Profile</a>
+                        <span className="text-foreground/20">•</span>
                         {(() => {
                           try {
                             const slug = shopSlugs.get(String(it.merchant || "").toLowerCase());
                             return slug
-                              ? <a href={`/shop/${encodeURIComponent(slug)}`} className="underline">Shop</a>
-                              : <span className="microtext text-muted-foreground">Shop —</span>;
+                              ? <a href={`/shop/${encodeURIComponent(slug)}`} className="text-[10px] font-bold uppercase tracking-wider text-blue-500 hover:text-blue-400 transition-colors underline decoration-blue-500/30 underline-offset-2">Shop</a>
+                              : <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/30">Shop</span>;
                           } catch {
-                            return <span className="microtext text-muted-foreground">Shop —</span>;
+                            return <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/30">Shop</span>;
                           }
                         })()}
+                        <span className="text-foreground/20">•</span>
                         <button
-                          className="px-2 py-1 rounded-md border text-xs"
+                          className="px-2 py-1 rounded-md border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap"
                           onClick={() => toggleAccordion(w)}
                           title={isExpanded ? "Hide Reserve" : "Show Reserve"}
                         >
-                          {isExpanded ? "Hide Reserve" : "Show Reserve"}
+                          {isExpanded ? "Hide" : "Reserve"}
                         </button>
                       </div>
                     </td>
                   </tr>
 
                   {isExpanded && (
-                    <tr className="border-t bg-foreground/5">
+                    <tr className="border-t border-foreground/[0.05] bg-foreground/[0.02]">
                       <td className="px-3 py-3" colSpan={10}>
                         <div className="rounded-md border p-3 space-y-3">
                           <div className="flex items-center justify-between">
@@ -5615,12 +5722,12 @@ function UsersPanel() {
                                         onClick={(e) => e.stopPropagation()}
                                       >
                                         {/* Current active split — always present */}
-                                        <option value={canonicalCurrent}>
+                                        <option value={canonicalCurrent} className="bg-background text-foreground">
                                           Current ({canonicalCurrent.slice(0, 6)}...{canonicalCurrent.slice(-4)})
                                         </option>
                                         {/* Archived old splits */}
                                         {historicalEntries.map((h: any, i: number) => (
-                                          <option key={h.address} value={String(h.address || "").toLowerCase()}>
+                                          <option key={h.address} value={String(h.address || "").toLowerCase()} className="bg-background text-foreground">
                                             v{historicalEntries.length - i} ({String(h.address || "").slice(0, 6)}...{String(h.address || "").slice(-4)})
                                           </option>
                                         ))}
@@ -5822,9 +5929,9 @@ function UsersPanel() {
                                                       {String(tx.hash || "").slice(0, 10)}…{String(tx.hash || "").slice(-8)}
                                                     </a>
                                                   </span>
-                                                  {isPayment && <span className="px-1 py-0.5 rounded text-[10px] bg-green-100 text-green-700">Payment</span>}
-                                                  {isRelease && releaseType === 'merchant' && <span className="px-1 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700">Merchant Release</span>}
-                                                  {isRelease && releaseType === 'platform' && <span className="px-1 py-0.5 rounded text-[10px] bg-purple-100 text-purple-700">Platform Release</span>}
+                                                  {isPayment && <span className="px-1.5 py-0.5 rounded-md border border-green-500/20 text-[10px] bg-green-500/10 text-green-500 font-semibold">Payment</span>}
+                                                  {isRelease && releaseType === 'merchant' && <span className="px-1.5 py-0.5 rounded-md border border-blue-500/20 text-[10px] bg-blue-500/10 text-blue-500 font-semibold">Merchant Release</span>}
+                                                  {isRelease && releaseType === 'platform' && <span className="px-1.5 py-0.5 rounded-md border border-purple-500/20 text-[10px] bg-purple-500/10 text-purple-500 font-semibold">Platform Release</span>}
                                                 </div>
                                                 <span className="font-semibold">{Number(tx.value || 0).toFixed(4)} {String(tx.token || 'ETH').toUpperCase()}</span>
                                               </div>
@@ -5897,9 +6004,10 @@ function UsersPanel() {
           </tbody>
         </table>
       </div>
+      </div>
 
       {/* Pagination summary and controls */}
-      <div className="microtext text-muted-foreground mt-2 flex items-center justify-between">
+      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-4 flex items-center justify-between">
         <span>
           {(() => {
             const start = page * limit + (paginatedItems.length ? 1 : 0);
@@ -5909,7 +6017,7 @@ function UsersPanel() {
         </span>
         <div className="flex items-center gap-2">
           <button
-            className="px-2 py-1 rounded-md border text-xs"
+            className="h-8 px-3 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-xs font-medium transition-all"
             onClick={() => {
               const np = Math.max(0, page - 1);
               setPage(np);
@@ -5920,7 +6028,7 @@ function UsersPanel() {
           </button>
           <span>Page {page + 1}</span>
           <button
-            className="px-2 py-1 rounded-md border text-xs"
+            className="h-8 px-3 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-xs font-medium transition-all"
             onClick={() => setPage(page + 1)}
             disabled={(page + 1) * limit >= total || loading}
           >
@@ -6385,6 +6493,19 @@ function InventoryPanel() {
   const [requirements, setRequirements] = useState<string[]>([]);
   const [addOns, setAddOns] = useState<Array<{ id: string; name: string; price: number; description: string }>>([]);
 
+  // Cannabis
+  const [metrcTag, setMetrcTag] = useState<string>("");
+  const [biotrackId, setBiotrackId] = useState<string>("");
+  const [complianceBatchNumber, setComplianceBatchNumber] = useState<string>("");
+  const [isNonCannabis, setIsNonCannabis] = useState<boolean>(false);
+  const [strain, setStrain] = useState<string>("");
+  const [strainType, setStrainType] = useState<string>("");
+  const [thcPercent, setThcPercent] = useState<number>(0);
+  const [cbdPercent, setCbdPercent] = useState<number>(0);
+  const [weight, setWeight] = useState<number>(0);
+  const [weightUnit, setWeightUnit] = useState<string>("g");
+  const [categoryTag, setCategoryTag] = useState<string>("");
+
   // Industry-specific state for Edit modal
   // Restaurant
   const [editModifierGroups, setEditModifierGroups] = useState<Array<{
@@ -6467,6 +6588,20 @@ function InventoryPanel() {
   const [editPubDownloadUrl, setEditPubDownloadUrl] = useState("");
   const [editPubPreviewUrl, setEditPubPreviewUrl] = useState("");
   const [editPubDrm, setEditPubDrm] = useState(false);
+
+  // Cannabis
+  const [editMetrcTag, setEditMetrcTag] = useState<string>("");
+  const [editBiotrackId, setEditBiotrackId] = useState<string>("");
+  const [editComplianceBatchNumber, setEditComplianceBatchNumber] = useState<string>("");
+  const [editIsNonCannabis, setEditIsNonCannabis] = useState<boolean>(false);
+  const [editStrain, setEditStrain] = useState<string>("");
+  const [editStrainType, setEditStrainType] = useState<string>("");
+  const [editThcPercent, setEditThcPercent] = useState<number>(0);
+  const [editCbdPercent, setEditCbdPercent] = useState<number>(0);
+  const [editWeight, setEditWeight] = useState<number>(0);
+  const [editWeightUnit, setEditWeightUnit] = useState<string>("g");
+  const [editCategoryTag, setEditCategoryTag] = useState<string>("");
+
   const [editIsBook, setEditIsBook] = useState(false);
 
   // Edit modal: industry pack override
@@ -6672,6 +6807,19 @@ function InventoryPanel() {
       setEditPubDownloadUrl(typeof pubAttrs.downloadUrl === 'string' ? pubAttrs.downloadUrl : ((item as any).bookFileUrl || ""));
       setEditPubPreviewUrl(typeof pubAttrs.previewUrl === 'string' ? pubAttrs.previewUrl : ((item as any).previewUrl || ""));
       setEditPubDrm(pubAttrs.drmEnabled === true || details.drmEnabled === true);
+    } else if (item.industryPack === 'cannabis') {
+      const canAttrs = item.attributes || {};
+      setEditMetrcTag(typeof canAttrs.metrcTag === 'string' ? canAttrs.metrcTag : "");
+      setEditBiotrackId(typeof canAttrs.biotrackId === 'string' ? canAttrs.biotrackId : "");
+      setEditComplianceBatchNumber(typeof canAttrs.complianceBatchNumber === 'string' ? canAttrs.complianceBatchNumber : "");
+      setEditIsNonCannabis(canAttrs.isNonCannabis === true);
+      setEditStrain(typeof canAttrs.strain === 'string' ? canAttrs.strain : "");
+      setEditStrainType(typeof canAttrs.strainType === 'string' ? canAttrs.strainType : "");
+      setEditThcPercent(typeof canAttrs.thcPercent === 'number' ? canAttrs.thcPercent : 0);
+      setEditCbdPercent(typeof canAttrs.cbdPercent === 'number' ? canAttrs.cbdPercent : 0);
+      setEditWeight(typeof canAttrs.weight === 'number' ? canAttrs.weight : 0);
+      setEditWeightUnit(typeof canAttrs.weightUnit === 'string' ? canAttrs.weightUnit : "g");
+      setEditCategoryTag(typeof canAttrs.categoryTag === 'string' ? canAttrs.categoryTag : "");
     }
 
     setEditIsBook((item as any).isBook === true);
@@ -6768,6 +6916,18 @@ function InventoryPanel() {
         if (editPubDownloadUrl) industryAttrs.downloadUrl = editPubDownloadUrl;
         if (editPubPreviewUrl) industryAttrs.previewUrl = editPubPreviewUrl;
         industryAttrs.drmEnabled = editPubDrm;
+      } else if (itemPack === 'cannabis') {
+        if (editMetrcTag) industryAttrs.metrcTag = editMetrcTag;
+        if (editBiotrackId) industryAttrs.biotrackId = editBiotrackId;
+        if (editComplianceBatchNumber) industryAttrs.complianceBatchNumber = editComplianceBatchNumber;
+        industryAttrs.isNonCannabis = editIsNonCannabis;
+        if (editStrain) industryAttrs.strain = editStrain;
+        if (editStrainType) industryAttrs.strainType = editStrainType;
+        if (editThcPercent > 0) industryAttrs.thcPercent = editThcPercent;
+        if (editCbdPercent > 0) industryAttrs.cbdPercent = editCbdPercent;
+        if (editWeight > 0) industryAttrs.weight = editWeight;
+        if (editWeightUnit) industryAttrs.weightUnit = editWeightUnit;
+        if (editCategoryTag) industryAttrs.categoryTag = editCategoryTag;
       }
 
       const payload = {
@@ -7231,6 +7391,18 @@ function InventoryPanel() {
         if (pubDownloadUrl) industryAttrs.downloadUrl = pubDownloadUrl;
         if (pubPreviewUrl) industryAttrs.previewUrl = pubPreviewUrl;
         industryAttrs.drmEnabled = pubDrm;
+      } else if (activeIndustryPack === 'cannabis') {
+        if (metrcTag) industryAttrs.metrcTag = metrcTag;
+        if (biotrackId) industryAttrs.biotrackId = biotrackId;
+        if (complianceBatchNumber) industryAttrs.complianceBatchNumber = complianceBatchNumber;
+        industryAttrs.isNonCannabis = isNonCannabis;
+        if (strain) industryAttrs.strain = strain;
+        if (strainType) industryAttrs.strainType = strainType;
+        if (thcPercent > 0) industryAttrs.thcPercent = thcPercent;
+        if (cbdPercent > 0) industryAttrs.cbdPercent = cbdPercent;
+        if (weight > 0) industryAttrs.weight = weight;
+        if (weightUnit) industryAttrs.weightUnit = weightUnit;
+        if (categoryTag) industryAttrs.categoryTag = categoryTag;
       }
 
       const payload = {
@@ -7330,11 +7502,11 @@ function InventoryPanel() {
           </div>
           <div>
             <label className="microtext text-muted-foreground">Name</label>
-            <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={name} onChange={(e) => setName(e.target.value)} />
+            <input className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
             <label className="microtext text-muted-foreground">Price (USD)</label>
-            <input type="number" min={0} step={0.01} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={priceUsd} onChange={(e) => setPriceUsd(Number(e.target.value || 0))} />
+            <input type="number" min={0} step={0.01} className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={priceUsd} onChange={(e) => setPriceUsd(Number(e.target.value || 0))} />
           </div>
           <div>
             <label className="microtext text-muted-foreground">Stock Qty</label>
@@ -7343,7 +7515,7 @@ function InventoryPanel() {
                 type="number"
                 min={0}
                 step={1}
-                className="h-9 w-40 px-3 py-1 border rounded-md bg-background"
+                className="h-12 w-40 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                 value={infiniteStock ? "" : Number(stockQty || 0)}
                 onChange={(e) => setStockQty(Math.max(0, Math.floor(Number(e.target.value || 0))))}
                 disabled={infiniteStock}
@@ -7355,19 +7527,19 @@ function InventoryPanel() {
           </div>
           <div>
             <label className="microtext text-muted-foreground">Category</label>
-            <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={category} onChange={(e) => setCategory(e.target.value)} />
+            <input className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={category} onChange={(e) => setCategory(e.target.value)} />
           </div>
           <div>
             <label className="microtext text-muted-foreground">Tags (comma‑separated)</label>
-            <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={tags} onChange={(e) => setTags(e.target.value)} />
+            <input className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={tags} onChange={(e) => setTags(e.target.value)} />
           </div>
           <div className="md:col-span-2">
             <label className="microtext text-muted-foreground">Description</label>
-            <textarea className="mt-1 w-full h-20 px-3 py-2 border rounded-md bg-background" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <textarea className="mt-1 w-full h-24 p-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="md:col-span-2">
             <label className="microtext text-muted-foreground">Attributes (JSON)</label>
-            <textarea className="mt-1 w-full h-24 px-3 py-2 border rounded-md bg-background font-mono text-xs" value={attributesJson} onChange={(e) => setAttributesJson(e.target.value)} />
+            <textarea className="mt-1 w-full h-28 p-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors font-mono text-xs" value={attributesJson} onChange={(e) => setAttributesJson(e.target.value)} />
             <div className="microtext text-muted-foreground mt-1">Include analytics‑ready fields (e.g., {`{"size":"L","color":"Blue","bundle":"B1"}`})</div>
           </div>
           <div className="md:col-span-2">
@@ -7395,7 +7567,7 @@ function InventoryPanel() {
               </button>
               <div className="flex items-center gap-1">
                 <input
-                  className="h-9 w-56 px-3 py-1 border rounded-md bg-background"
+                  className="h-12 w-56 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                   placeholder="Paste image URL…"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
@@ -7467,7 +7639,7 @@ function InventoryPanel() {
           </div>
           <div>
             <label className="microtext text-muted-foreground">Cost (USD)</label>
-            <input type="number" min={0} step={0.01} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof costUsd === "number" ? costUsd : "" as any} onChange={(e) => setCostUsd(e.target.value === "" ? undefined : Number(e.target.value || 0))} />
+            <input type="number" min={0} step={0.01} className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof costUsd === "number" ? costUsd : "" as any} onChange={(e) => setCostUsd(e.target.value === "" ? undefined : Number(e.target.value || 0))} />
           </div>
           <div>
             <label className="microtext text-muted-foreground">Taxable</label>
@@ -7496,41 +7668,70 @@ function InventoryPanel() {
         </div>
       </div>
 
-      <div className="glass-pane rounded-xl border p-5">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xl font-semibold">Inventory</h2>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-muted/20 rounded-lg border p-1 mr-2">
+      <div className="rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+          <div>
+            <h3 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--pp-secondary)]" />
+              Inventory Management
+            </h3>
+            <div className="text-[9px] text-muted-foreground/60 uppercase font-semibold tracking-wider mt-1">Manage items, categories, and industry packs</div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Layout Toggle (Only show if not in categories view) */}
+            {viewMode !== "categories" && (
+              <div className="flex items-center bg-foreground/[0.03] rounded-xl border border-foreground/[0.05] p-1 mr-2">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-2 rounded-lg transition-all ${viewMode === "grid" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"}`}
+                  title="Grid View"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-2 rounded-lg transition-all ${viewMode === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"}`}
+                  title="List View"
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* View Context Switcher */}
+            <div className="flex items-center bg-foreground/[0.03] rounded-xl border border-foreground/[0.05] p-1 mr-2 relative">
+              <div
+                className="absolute inset-y-1 bg-[var(--pp-secondary)] rounded-lg transition-all duration-300 ease-in-out shadow-sm"
+                style={{
+                  left: viewMode === "categories" ? "calc(50% + 2px)" : "4px",
+                  width: "calc(50% - 6px)",
+                  zIndex: 0
+                }}
+              />
               <button
-                onClick={() => setViewMode("grid")}
-                className={`p-1.5 rounded-md transition-all ${viewMode === "grid" ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
-                title="Grid View"
+                onClick={() => {
+                  if (viewMode === "categories") setViewMode("list");
+                }}
+                className={`h-8 px-4 text-[9px] uppercase font-bold tracking-wider rounded-lg flex items-center justify-center gap-2 transition-all relative z-10 w-28 ${viewMode !== "categories" ? "text-white" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <LayoutGrid className="w-4 h-4" />
+                Inventory
               </button>
               <button
-                onClick={() => setViewMode("list")}
-                className={`p-1.5 rounded-md transition-all ${viewMode === "list" ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
-                title="List View"
+                onClick={() => setViewMode("categories")}
+                className={`h-8 px-4 text-[9px] uppercase font-bold tracking-wider rounded-lg flex items-center justify-center gap-2 transition-all relative z-10 w-28 ${viewMode === "categories" ? "text-white" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <List className="w-4 h-4" />
+                Categories
               </button>
             </div>
             <button
-              onClick={() => setViewMode("categories")}
-              className={`h-9 px-3 text-sm font-medium rounded-md border flex items-center gap-2 transition-all ${viewMode === "categories" ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground hover:bg-muted"}`}
-            >
-              <Folder className="w-4 h-4" />
-              Manage Categories
-            </button>
-            <button
               type="button"
               onClick={openAdd}
-              className="h-9 w-9 rounded-md border flex items-center justify-center hover:bg-foreground/5"
+              className="h-10 px-4 text-[9px] uppercase font-bold tracking-wider rounded-xl border flex items-center gap-2 transition-all bg-[var(--pp-secondary)]/10 text-[var(--pp-secondary)] border-[var(--pp-secondary)]/20 hover:bg-[var(--pp-secondary)]/20"
               title="Add item"
               aria-label="Add item"
             >
-              <Plus className="h-5 w-5" />
+              <Plus className="h-4 w-4" />
+              Add Item
             </button>
             {activeIndustryPack === 'restaurant' && (
               siteConfig?.integrations?.toast?.clientId ? (
@@ -7541,7 +7742,7 @@ function InventoryPanel() {
                       setToastModalMode('sync');
                       setToastImportOpen(true);
                     }}
-                    className="px-3 py-1.5 rounded-md border border-primary text-primary text-sm flex items-center gap-2 hover:bg-primary/5"
+                    className="h-10 px-4 text-[9px] uppercase font-bold tracking-wider rounded-xl border border-[var(--pp-secondary)] text-[var(--pp-secondary)] flex items-center gap-2 hover:bg-[var(--pp-secondary)]/5 transition-all"
                     title="Sync Menu from Toast POS"
                   >
                     <RefreshCw className="h-4 w-4" />
@@ -7553,7 +7754,7 @@ function InventoryPanel() {
                       setToastModalMode('edit');
                       setToastImportOpen(true);
                     }}
-                    className="px-3 py-1.5 rounded-md border text-sm flex items-center gap-2 hover:bg-foreground/5"
+                    className="h-10 px-4 text-[9px] uppercase font-bold tracking-wider rounded-xl border bg-foreground/[0.02] border-foreground/[0.05] text-muted-foreground flex items-center gap-2 hover:bg-foreground/[0.04] transition-all"
                     title="Toast Settings"
                   >
                     <Settings className="h-4 w-4" />
@@ -7567,7 +7768,7 @@ function InventoryPanel() {
                     setToastModalMode('edit');
                     setToastImportOpen(true);
                   }}
-                  className="px-3 py-1.5 rounded-md border text-sm flex items-center gap-2 hover:bg-foreground/5"
+                  className="h-10 px-4 text-[9px] uppercase font-bold tracking-wider rounded-xl border bg-[var(--pp-secondary)]/10 text-[var(--pp-secondary)] border-[var(--pp-secondary)]/20 flex items-center gap-2 hover:bg-[var(--pp-secondary)]/20 transition-all"
                   title="Import from Toast POS"
                 >
                   <Download className="h-4 w-4" />
@@ -7575,148 +7776,153 @@ function InventoryPanel() {
                 </button>
               )
             )}
-            <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => refresh()} disabled={loading}>
+            <button
+              className="h-10 px-4 text-[9px] uppercase font-bold tracking-wider rounded-xl border bg-foreground/[0.02] border-foreground/[0.05] text-muted-foreground hover:bg-foreground/[0.04] transition-all"
+              onClick={() => refresh()}
+              disabled={loading}
+            >
               {loading ? "Refreshing…" : "Refresh"}
             </button>
           </div>
         </div>
 
         {/* Search / Filter / Sort controls */}
-        <div className="mb-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="microtext text-muted-foreground">Search</label>
+            <label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mb-2 ml-1 block">Search</label>
             <input
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               placeholder="SKU, name, description, tag…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
           <div>
-            <label className="microtext text-muted-foreground">Category</label>
+            <label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mb-2 ml-1 block">Category</label>
             <input
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               placeholder="e.g., Apparel"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             />
           </div>
           <div>
-            <label className="microtext text-muted-foreground">Taxable</label>
+            <label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mb-2 ml-1 block">Taxable</label>
             <select
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={taxableFilter}
               onChange={(e) => setTaxableFilter(e.target.value as any)}
             >
-              <option value="any">Any</option>
-              <option value="true">Yes</option>
-              <option value="false">No</option>
+              <option value="any" className="bg-background text-foreground">Any</option>
+              <option value="true" className="bg-background text-foreground">Yes</option>
+              <option value="false" className="bg-background text-foreground">No</option>
             </select>
           </div>
           <div>
-            <label className="microtext text-muted-foreground">Stock</label>
+            <label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mb-2 ml-1 block">Stock</label>
             <select
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={stockFilter}
               onChange={(e) => setStockFilter(e.target.value as any)}
             >
-              <option value="any">Any</option>
-              <option value="in">In Stock</option>
-              <option value="out">Out of Stock</option>
+              <option value="any" className="bg-background text-foreground">Any</option>
+              <option value="in" className="bg-background text-foreground">In Stock</option>
+              <option value="out" className="bg-background text-foreground">Out of Stock</option>
             </select>
           </div>
           <div>
-            <label className="microtext text-muted-foreground">Industry Pack</label>
+            <label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mb-2 ml-1 block">Industry Pack</label>
             <select
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={packFilter}
               onChange={(e) => setPackFilter(e.target.value)}
             >
-              <option value="any">Any</option>
-              <option value="general">General</option>
-              <option value="restaurant">Restaurant</option>
-              <option value="retail">Retail</option>
-              <option value="hotel">Hotel</option>
-              <option value="freelancer">Freelancer</option>
-              <option value="publishing">Publishing</option>
+              <option value="any" className="bg-background text-foreground">Any</option>
+              <option value="general" className="bg-background text-foreground">General</option>
+              <option value="restaurant" className="bg-background text-foreground">Restaurant</option>
+              <option value="retail" className="bg-background text-foreground">Retail</option>
+              <option value="hotel" className="bg-background text-foreground">Hotel</option>
+              <option value="freelancer" className="bg-background text-foreground">Freelancer</option>
+              <option value="publishing" className="bg-background text-foreground">Publishing</option>
+              <option value="cannabis" className="bg-background text-foreground">Cannabis</option>
             </select>
           </div>
           <div>
-            <label className="microtext text-muted-foreground">Price Min</label>
+            <label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mb-2 ml-1 block">Price Min</label>
             <input
               type="number"
               min={0}
               step={0.01}
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={priceMin}
               onChange={(e) => setPriceMin(e.target.value)}
             />
           </div>
           <div>
-            <label className="microtext text-muted-foreground">Price Max</label>
+            <label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mb-2 ml-1 block">Price Max</label>
             <input
               type="number"
               min={0}
               step={0.01}
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={priceMax}
               onChange={(e) => setPriceMax(e.target.value)}
             />
           </div>
           <div>
-            <label className="microtext text-muted-foreground">Tags</label>
+            <label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mb-2 ml-1 block">Tags</label>
             <input
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               placeholder="comma-separated (e.g., blue,summer)"
               value={tagsFilter}
               onChange={(e) => setTagsFilter(e.target.value)}
             />
           </div>
           <div>
-            <label className="microtext text-muted-foreground">Tags Mode</label>
+            <label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mb-2 ml-1 block">Tags Mode</label>
             <select
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={tagsMode}
               onChange={(e) => setTagsMode(e.target.value as any)}
             >
-              <option value="any">Any match</option>
-              <option value="all">Require all</option>
+              <option value="any" className="bg-background text-foreground">Any match</option>
+              <option value="all" className="bg-background text-foreground">Require all</option>
             </select>
           </div>
           <div>
-            <label className="microtext text-muted-foreground">Sort Field</label>
+            <label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mb-2 ml-1 block">Sort Field</label>
             <select
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={sortField}
               onChange={(e) => setSortField(e.target.value)}
             >
-              <option value="updatedAt">Updated</option>
-              <option value="createdAt">Created</option>
-              <option value="priceUsd">Price</option>
-              <option value="stockQty">Stock</option>
-              <option value="name">Name</option>
-              <option value="sku">SKU</option>
-              <option value="category">Category</option>
+              <option value="updatedAt" className="bg-background text-foreground">Updated</option>
+              <option value="createdAt" className="bg-background text-foreground">Created</option>
+              <option value="priceUsd" className="bg-background text-foreground">Price</option>
+              <option value="stockQty" className="bg-background text-foreground">Stock</option>
+              <option value="name" className="bg-background text-foreground">Name</option>
+              <option value="sku" className="bg-background text-foreground">SKU</option>
+              <option value="category" className="bg-background text-foreground">Category</option>
             </select>
           </div>
           <div>
-            <label className="microtext text-muted-foreground">Order</label>
+            <label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mb-2 ml-1 block">Order</label>
             <select
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as any)}
             >
-              <option value="desc">Desc</option>
-              <option value="asc">Asc</option>
+              <option value="desc" className="bg-background text-foreground">Desc</option>
+              <option value="asc" className="bg-background text-foreground">Asc</option>
             </select>
           </div>
           <div>
-            <label className="microtext text-muted-foreground">Page Size</label>
+            <label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mb-2 ml-1 block">Page Size</label>
             <input
               type="number"
               min={1}
               step={1}
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
               value={limit}
               onChange={(e) => setLimit(Math.max(1, Math.floor(Number(e.target.value || 1))))}
             />
@@ -7724,7 +7930,7 @@ function InventoryPanel() {
           <div className="flex items-end">
             <button
               type="button"
-              className="w-full h-9 rounded-md border text-sm"
+              className="w-full h-12 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.06] text-[9px] uppercase font-bold tracking-wider transition-all"
               onClick={() => {
                 setQ("");
                 setCategoryFilter("");
@@ -7747,7 +7953,7 @@ function InventoryPanel() {
         </div>
 
         {/* Pagination summary and controls */}
-        <div className="microtext text-muted-foreground mb-2 flex items-center justify-between">
+        <div className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mb-4 flex items-center justify-between">
           <span>
             {(() => {
               const start = page * limit + (items.length ? 1 : 0);
@@ -7755,17 +7961,17 @@ function InventoryPanel() {
               return `Showing ${items.length ? `${start}-${end}` : "0"} of ${total}`;
             })()}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
-              className="px-2 py-1 rounded-md border text-xs"
+              className="px-3 py-1.5 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors disabled:opacity-50"
               onClick={() => goToPage(Math.max(0, page - 1))}
               disabled={page <= 0 || loading}
             >
               Prev
             </button>
-            <span>Page {page + 1}</span>
+            <span className="text-foreground">Page {page + 1}</span>
             <button
-              className="px-2 py-1 rounded-md border text-xs"
+              className="px-3 py-1.5 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors disabled:opacity-50"
               onClick={() => goToPage(page + 1)}
               disabled={(page + 1) * limit >= total || loading}
             >
@@ -7803,87 +8009,86 @@ function InventoryPanel() {
             }}
           />
         ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
             {(items || []).map((it) => (
-              <div key={it.id} className="group relative bg-muted/40 backdrop-blur-md rounded-xl border p-3 hover:shadow-lg hover:border-primary/20 transition-all flex flex-col">
-                <div className="aspect-square w-full bg-muted/20 rounded-lg mb-2 overflow-hidden relative border flex items-center justify-center">
-                  <Thumbnail src={(Array.isArray(it.images) && it.images.length ? it.images[0] : undefined)} alt="" size={400} style={{ width: "100%", height: "100%" }} className="w-full h-full object-contain transition-transform group-hover:scale-105" />
+              <div key={it.id} className="group relative bg-foreground/[0.02] backdrop-blur-md rounded-2xl border border-foreground/[0.05] p-3 hover:bg-foreground/[0.04] hover:border-foreground/[0.1] transition-all flex flex-col shadow-sm">
+                <div className="aspect-square w-full bg-foreground/[0.03] rounded-xl mb-3 overflow-hidden relative flex items-center justify-center">
+                  <Thumbnail src={(Array.isArray(it.images) && it.images.length ? it.images[0] : undefined)} alt="" size={400} style={{ width: "100%", height: "100%" }} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   {Number(it.stockQty) === 0 && !Number(it.stockQty) && (
-                    <div className="absolute top-2 right-2 px-2 py-0.5 bg-red-500/90 text-white text-xs font-bold rounded-full">Out of Stock</div>
+                    <div className="absolute top-2 right-2 px-2 py-1 bg-red-500/20 border border-red-500/30 text-red-500 text-[9px] uppercase font-bold tracking-wider rounded-lg backdrop-blur-sm shadow-sm">Out of Stock</div>
                   )}
                 </div>
-                <div className="flex justify-between items-start mb-1">
-                  <div>
+                <div className="flex justify-between items-start mb-2">
+                  <div className="pr-2">
                     <h3 className="font-bold text-sm line-clamp-1" title={it.name}>{it.name}</h3>
-                    <p className="text-xs text-muted-foreground font-mono">{it.sku}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{it.sku}</p>
                   </div>
                   <button
                     onClick={() => openEditItem(it)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-background border rounded-md shadow-sm hover:text-primary"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-foreground/[0.05] border border-foreground/[0.1] rounded-lg shadow-sm hover:text-[var(--pp-secondary)] shrink-0"
                     title="Edit"
                   >
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <div className="mt-auto pt-2 border-t flex justify-between items-center text-sm">
-                  <span className="font-bold">
+                <div className="mt-auto pt-3 border-t border-foreground/[0.05] flex justify-between items-center">
+                  <span className="font-bold text-base">
                     {(() => {
                       const usdPrice = Number(it.priceUsd || 0);
                       const itemCurrency = it.currency || storeCurrency;
                       if (itemCurrency === "USD") return `$${usdPrice.toFixed(2)}`;
-                      // ... simpler conversion display for grid
                       return `$${usdPrice.toFixed(2)}`;
                     })()}
                   </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${Number(it.stockQty) > 0 || Number(it.stockQty) === -1 ? "bg-green-500/10 text-green-600 border-green-500/20" : "bg-red-500/10 text-red-600 border-red-500/20"}`}>
+                  <span className={`text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded-lg border ${Number(it.stockQty) > 0 || Number(it.stockQty) === -1 ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"}`}>
                     {Number(it.stockQty) === -1 ? "∞" : `${it.stockQty} Left`}
                   </span>
                 </div>
               </div>
             ))}
             {(items || []).length === 0 && (
-              <div className="col-span-full py-20 text-center text-muted-foreground">
+              <div className="col-span-full py-20 text-center text-[10px] uppercase font-bold tracking-wider text-muted-foreground border border-dashed border-foreground/10 rounded-2xl">
                 No items found.
               </div>
             )}
           </div>
         ) : (
-          <div className="overflow-auto rounded-md border">
+          <div className="overflow-x-auto rounded-3xl border border-foreground/[0.05] bg-foreground/[0.02]">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b bg-background/40 backdrop-blur-md transition-colors hover:bg-muted/60 data-[state=selected]:bg-muted">
-                  <th className="text-left px-3 py-2 font-medium">SKU</th>
-                  <th className="text-left px-3 py-2 font-medium">Name</th>
-                  <th className="text-left px-3 py-2 font-medium">Type</th>
-                  <th className="text-left px-3 py-2 font-medium">Price ({storeCurrency})</th>
-                  <th className="text-left px-3 py-2 font-medium">Stock</th>
-                  <th className="text-left px-3 py-2 font-medium">Category</th>
-                  <th className="text-left px-3 py-2 font-medium">Pack</th>
-                  <th className="text-left px-3 py-2 font-medium">Taxable</th>
-                  <th className="text-left px-3 py-2 font-medium">Actions</th>
+                <tr className="border-b border-foreground/[0.05] bg-foreground/[0.03] backdrop-blur-md">
+                  <th className="text-left px-4 py-4 text-[9px] uppercase font-bold tracking-wider text-muted-foreground">SKU</th>
+                  <th className="text-left px-4 py-4 text-[9px] uppercase font-bold tracking-wider text-muted-foreground">Name</th>
+                  <th className="text-left px-4 py-4 text-[9px] uppercase font-bold tracking-wider text-muted-foreground">Type</th>
+                  <th className="text-left px-4 py-4 text-[9px] uppercase font-bold tracking-wider text-muted-foreground">Price ({storeCurrency})</th>
+                  <th className="text-left px-4 py-4 text-[9px] uppercase font-bold tracking-wider text-muted-foreground">Stock</th>
+                  <th className="text-left px-4 py-4 text-[9px] uppercase font-bold tracking-wider text-muted-foreground">Category</th>
+                  <th className="text-left px-4 py-4 text-[9px] uppercase font-bold tracking-wider text-muted-foreground">Pack</th>
+                  <th className="text-left px-4 py-4 text-[9px] uppercase font-bold tracking-wider text-muted-foreground">Taxable</th>
+                  <th className="text-left px-4 py-4 text-[9px] uppercase font-bold tracking-wider text-muted-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {(items || []).map((it) => (
-                  <tr key={it.id} className="border-b transition-colors hover:bg-primary/5 data-[state=selected]:bg-muted group">
-                    <td className="px-3 py-2 font-mono">{it.sku}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-2">
+                  <tr key={it.id} className="border-b border-foreground/[0.05] transition-colors hover:bg-foreground/[0.04] group">
+                    <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground">{it.sku}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
                         <Thumbnail src={(Array.isArray(it.images) && it.images.length ? it.images[0] : undefined)} alt="" size={40} />
-                        <span>{it.name}</span>
+                        <span className="font-semibold text-sm">{it.name}</span>
                       </div>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-3">
                       {it.isSubscription ? (
-                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border bg-purple-500/10 text-purple-600 border-purple-500/20 text-xs font-medium">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border bg-purple-500/10 text-purple-500 border-purple-500/20 text-[9px] uppercase font-bold tracking-wider">
                           <Repeat className="w-3 h-3" />
                           <span>Subscription</span>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground text-xs">Item</span>
+                        <span className="text-muted-foreground text-[9px] uppercase font-bold tracking-wider">Item</span>
                       )}
                     </td>
-                    <td className="px-3 py-2">{(() => {
+                    <td className="px-4 py-3 font-semibold">{(() => {
                       const usdPrice = Number(it.priceUsd || 0);
                       const itemCurrency = it.currency || storeCurrency;
                       if (itemCurrency === "USD") return `$${usdPrice.toFixed(2)}`;
@@ -7896,39 +8101,39 @@ function InventoryPanel() {
                         <span title={`USD equivalent: $${usdPrice.toFixed(2)}`}>{display}</span>
                       ) : display;
                     })()}</td>
-                    <td className="px-3 py-2">{Number(it.stockQty) === -1 ? "∞" : Number(it.stockQty || 0)}</td>
-                    <td className="px-3 py-2">{it.category || "—"}</td>
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-3 font-mono text-xs">{Number(it.stockQty) === -1 ? "∞" : Number(it.stockQty || 0)}</td>
+                    <td className="px-4 py-3 text-xs">{it.category || "—"}</td>
+                    <td className="px-4 py-3">
                       {(() => {
                         const pack = String(it.industryPack || "general");
                         const colors: Record<string, string> = {
-                          general: "bg-gray-100 text-gray-700 border-gray-200",
-                          restaurant: "bg-orange-100 text-orange-700 border-orange-200",
-                          retail: "bg-blue-100 text-blue-700 border-blue-200",
-                          hotel: "bg-purple-100 text-purple-700 border-purple-200",
-                          freelancer: "bg-green-100 text-green-700 border-green-200",
-                          publishing: "bg-pink-100 text-pink-700 border-pink-200",
+                          general: "bg-foreground/[0.05] text-foreground border-foreground/[0.1]",
+                          restaurant: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+                          retail: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+                          hotel: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+                          freelancer: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+                          publishing: "bg-pink-500/10 text-pink-500 border-pink-500/20",
                         };
                         const colorClass = colors[pack] || colors.general;
                         return (
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${colorClass}`}>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-lg text-[9px] uppercase font-bold tracking-wider border ${colorClass}`}>
                             {pack}
                           </span>
                         );
                       })()}
                     </td>
-                    <td className="px-3 py-2">{it.taxable ? "Yes" : "No"}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <button className="px-2 py-1 rounded-md border text-xs" onClick={() => openEditItem(it)}>Edit</button>
-                        <button className="px-2 py-1 rounded-md border text-xs" onClick={() => deleteItem(it.id)}>Delete</button>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{it.taxable ? "Yes" : "No"}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button className="px-3 py-1.5 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-[9px] uppercase font-bold tracking-wider transition-colors" onClick={() => openEditItem(it)}>Edit</button>
+                        <button className="px-3 py-1.5 rounded-lg border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] uppercase font-bold tracking-wider transition-colors" onClick={() => deleteItem(it.id)}>Delete</button>
                       </div>
                     </td>
                   </tr>
                 ))}
                 {(!items || items.length === 0) && (
                   <tr>
-                    <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
+                    <td colSpan={9} className="px-4 py-8 text-center text-[10px] uppercase font-bold tracking-wider text-muted-foreground border-t border-dashed border-foreground/10">
                       No inventory items yet. Use the form above to add items.
                     </td>
                   </tr>
@@ -7940,30 +8145,33 @@ function InventoryPanel() {
       </div>
       {addOpen && typeof window !== "undefined"
         ? createPortal(
-          <div className="fixed inset-0 z-[100000] bg-black/50 grid place-items-center p-4">
-            <div className="w-full max-w-3xl md:max-w-4xl max-h-[90vh] overflow-y-auto rounded-md border bg-background p-4 relative z-[100001]">
+          <div className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-sm grid place-items-center p-4 md:p-8">
+            <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border border-foreground/[0.05] bg-background/95 backdrop-blur-3xl shadow-2xl p-6 md:p-8 relative z-[100001]">
               <button
                 onClick={closeAdd}
-                className="absolute right-2 top-2 h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                className="absolute right-4 top-4 md:right-6 md:top-6 h-10 w-10 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.06] text-foreground flex items-center justify-center transition-all"
                 title="Close"
                 aria-label="Close add item modal"
               >
                 ✕
               </button>
-              <div className="text-lg font-semibold mb-2">Add Inventory Item</div>
-              <div className="mb-2 rounded-md border p-2 bg-foreground/5">
-                <div className="text-sm font-medium">Industry Pack: <span className="text-blue-600">{activeIndustryPack || 'general'}</span></div>
-                <div className="microtext text-muted-foreground">Fields below are tailored for the {activeIndustryPack || 'general'} industry pack</div>
+              <h2 className="text-xl font-bold tracking-tight mb-4 flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-[var(--pp-secondary)]" />
+                Add Inventory Item
+              </h2>
+              <div className="mb-6 rounded-2xl border border-foreground/[0.05] p-4 bg-foreground/[0.02]">
+                <div className="text-[10px] uppercase font-bold tracking-wider flex items-center gap-2">Industry Pack: <span className="text-[var(--pp-secondary)] bg-[var(--pp-secondary)]/10 px-2 py-0.5 rounded-lg border border-[var(--pp-secondary)]/20">{activeIndustryPack || 'general'}</span></div>
+                <div className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mt-2">Fields below are tailored for the {activeIndustryPack || 'general'} industry pack</div>
               </div>
               <div className="mb-2">
                 <label className="microtext text-muted-foreground">Currency</label>
                 <select
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
                 >
                   {SUPPORTED_CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code}>
+                    <option key={c.code} value={c.code} className="bg-background text-foreground">
                       {c.code} — {c.name}
                     </option>
                   ))}
@@ -7987,11 +8195,11 @@ function InventoryPanel() {
                 </div>
                 <div>
                   <label className="microtext text-muted-foreground">Name</label>
-                  <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={name} onChange={(e) => setName(e.target.value)} />
+                  <input className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={name} onChange={(e) => setName(e.target.value)} />
                 </div>
                 <div>
                   <label className="microtext text-muted-foreground">Price (USD)</label>
-                  <input type="number" min={0} step={0.01} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={priceUsd} onChange={(e) => setPriceUsd(Number(e.target.value || 0))} />
+                  <input type="number" min={0} step={0.01} className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={priceUsd} onChange={(e) => setPriceUsd(Number(e.target.value || 0))} />
                 </div>
                 <div>
                   <label className="microtext text-muted-foreground">Stock Qty</label>
@@ -8000,7 +8208,7 @@ function InventoryPanel() {
                       type="number"
                       min={0}
                       step={1}
-                      className="h-9 w-40 px-3 py-1 border rounded-md bg-background"
+                      className="h-12 w-40 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                       value={infiniteStock ? "" as any : Number(stockQty || 0)}
                       onChange={(e) => setStockQty(Math.max(0, Math.floor(Number(e.target.value || 0))))}
                       disabled={infiniteStock}
@@ -8012,19 +8220,19 @@ function InventoryPanel() {
                 </div>
                 <div>
                   <label className="microtext text-muted-foreground">Category</label>
-                  <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={category} onChange={(e) => setCategory(e.target.value)} />
+                  <input className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={category} onChange={(e) => setCategory(e.target.value)} />
                 </div>
                 <div>
                   <label className="microtext text-muted-foreground">Tags (comma‑separated)</label>
-                  <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={tags} onChange={(e) => setTags(e.target.value)} />
+                  <input className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={tags} onChange={(e) => setTags(e.target.value)} />
                 </div>
                 <div className="md:col-span-2">
                   <label className="microtext text-muted-foreground">Description</label>
-                  <textarea className="mt-1 w-full h-20 px-3 py-2 border rounded-md bg-background" value={description} onChange={(e) => setDescription(e.target.value)} />
+                  <textarea className="mt-1 w-full h-24 p-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={description} onChange={(e) => setDescription(e.target.value)} />
                 </div>
                 <div className="md:col-span-2">
                   <label className="microtext text-muted-foreground">Attributes (JSON)</label>
-                  <textarea className="mt-1 w-full h-24 px-3 py-2 border rounded-md bg-background font-mono text-xs" value={attributesJson} onChange={(e) => setAttributesJson(e.target.value)} />
+                  <textarea className="mt-1 w-full h-28 p-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors font-mono text-xs" value={attributesJson} onChange={(e) => setAttributesJson(e.target.value)} />
                   <div className="microtext text-muted-foreground mt-1">Include analytics‑ready fields (e.g., {"{"}"size":"L","color":"Blue","bundle":"B1"{"}"})</div>
                 </div>
                 <div className="md:col-span-2">
@@ -8051,7 +8259,7 @@ function InventoryPanel() {
                     </button>
                     <div className="flex items-center gap-1">
                       <input
-                        className="h-9 w-56 px-3 py-1 border rounded-md bg-background"
+                        className="h-12 w-56 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                         placeholder="Paste image URL…"
                         value={imageUrl}
                         onChange={(e) => setImageUrl(e.target.value)}
@@ -8121,7 +8329,7 @@ function InventoryPanel() {
                 </div>
                 <div>
                   <label className="microtext text-muted-foreground">Cost (USD)</label>
-                  <input type="number" min={0} step={0.01} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof costUsd === "number" ? costUsd : "" as any} onChange={(e) => setCostUsd(e.target.value === "" ? undefined : Number(e.target.value || 0))} />
+                  <input type="number" min={0} step={0.01} className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof costUsd === "number" ? costUsd : "" as any} onChange={(e) => setCostUsd(e.target.value === "" ? undefined : Number(e.target.value || 0))} />
                 </div>
                 <div>
                   <label className="microtext text-muted-foreground">Taxable</label>
@@ -8152,29 +8360,29 @@ function InventoryPanel() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="microtext text-muted-foreground">Weight (lbs)</label>
-                          <input type="number" min={0} step={0.1} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof shippingWeightLbs === "number" ? shippingWeightLbs : ""} onChange={(e) => setShippingWeightLbs(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2.5" />
+                          <input type="number" min={0} step={0.1} className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof shippingWeightLbs === "number" ? shippingWeightLbs : ""} onChange={(e) => setShippingWeightLbs(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2.5" />
                         </div>
                         <div>
                           <label className="microtext text-muted-foreground">Shipping Class</label>
-                          <select className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={shippingClass} onChange={(e) => setShippingClass(e.target.value as any)}>
-                            <option value="standard">Standard</option>
-                            <option value="oversized">Oversized</option>
-                            <option value="fragile">Fragile</option>
-                            <option value="hazardous">Hazardous</option>
+                          <select className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={shippingClass} onChange={(e) => setShippingClass(e.target.value as any)}>
+                            <option value="standard" className="bg-background text-foreground">Standard</option>
+                            <option value="oversized" className="bg-background text-foreground">Oversized</option>
+                            <option value="fragile" className="bg-background text-foreground">Fragile</option>
+                            <option value="hazardous" className="bg-background text-foreground">Hazardous</option>
                           </select>
                         </div>
                       </div>
                       <div>
                         <label className="microtext text-muted-foreground">Dimensions</label>
                         <div className="mt-1 flex items-center gap-2">
-                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof shippingLength === "number" ? shippingLength : ""} onChange={(e) => setShippingLength(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="L" title="Length" />
+                          <input type="number" min={0} step={0.1} className="h-12 w-24 px-3 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof shippingLength === "number" ? shippingLength : ""} onChange={(e) => setShippingLength(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="L" title="Length" />
                           <span className="text-muted-foreground">×</span>
-                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof shippingWidth === "number" ? shippingWidth : ""} onChange={(e) => setShippingWidth(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="W" title="Width" />
+                          <input type="number" min={0} step={0.1} className="h-12 w-24 px-3 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof shippingWidth === "number" ? shippingWidth : ""} onChange={(e) => setShippingWidth(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="W" title="Width" />
                           <span className="text-muted-foreground">×</span>
-                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof shippingHeight === "number" ? shippingHeight : ""} onChange={(e) => setShippingHeight(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="H" title="Height" />
-                          <select className="h-9 px-2 py-1 border rounded-md bg-background" value={shippingDimUnit} onChange={(e) => setShippingDimUnit(e.target.value as any)}>
-                            <option value="in">in</option>
-                            <option value="cm">cm</option>
+                          <input type="number" min={0} step={0.1} className="h-12 w-24 px-3 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof shippingHeight === "number" ? shippingHeight : ""} onChange={(e) => setShippingHeight(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="H" title="Height" />
+                          <select className="h-12 px-3 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={shippingDimUnit} onChange={(e) => setShippingDimUnit(e.target.value as any)}>
+                            <option value="in" className="bg-background text-foreground">in</option>
+                            <option value="cm" className="bg-background text-foreground">cm</option>
                           </select>
                         </div>
                       </div>
@@ -8210,16 +8418,16 @@ function InventoryPanel() {
                       </div>
                       <div>
                         <label className="microtext text-muted-foreground">Free Shipping Threshold (USD)</label>
-                        <input type="number" min={0} step={0.01} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof freeShippingThreshold === "number" ? freeShippingThreshold : ""} onChange={(e) => setFreeShippingThreshold(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="Orders above this amount ship free" />
+                        <input type="number" min={0} step={0.01} className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof freeShippingThreshold === "number" ? freeShippingThreshold : ""} onChange={(e) => setFreeShippingThreshold(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="Orders above this amount ship free" />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="microtext text-muted-foreground">Handling Time (business days)</label>
-                          <input type="number" min={0} step={1} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof handlingTimeDays === "number" ? handlingTimeDays : ""} onChange={(e) => setHandlingTimeDays(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2" />
+                          <input type="number" min={0} step={1} className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof handlingTimeDays === "number" ? handlingTimeDays : ""} onChange={(e) => setHandlingTimeDays(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2" />
                         </div>
                         <div>
                           <label className="microtext text-muted-foreground">Origin Country</label>
-                          <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={originCountry} onChange={(e) => setOriginCountry(e.target.value.toUpperCase().slice(0, 2))} placeholder="US" maxLength={2} />
+                          <input className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={originCountry} onChange={(e) => setOriginCountry(e.target.value.toUpperCase().slice(0, 2))} placeholder="US" maxLength={2} />
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-4">
@@ -8258,7 +8466,7 @@ function InventoryPanel() {
                     <div className="mt-2 ml-6">
                       <label className="microtext text-muted-foreground">Select Plan</label>
                       <select
-                        className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                        className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                         value={subscriptionPlanId}
                         onChange={(e) => {
                           const pid = e.target.value;
@@ -8270,9 +8478,9 @@ function InventoryPanel() {
                           }
                         }}
                       >
-                        <option value="">-- Select a Plan --</option>
+                        <option value="" className="bg-background text-foreground">-- Select a Plan --</option>
                         {plans.map(p => (
-                          <option key={p.planId} value={p.planId}>
+                          <option key={p.planId} value={p.planId} className="bg-background text-foreground">
                             {p.name} ({formatCurrency(p.priceUsd, "USD")} / {p.period})
                           </option>
                         ))}
@@ -8372,6 +8580,32 @@ function InventoryPanel() {
                     drmEnabled={pubDrm} setDrmEnabled={setPubDrm}
                   />
                 )}
+                {activeIndustryPack === 'cannabis' && (
+                  <CannabisFields
+                    metrcTag={metrcTag}
+                    setMetrcTag={setMetrcTag}
+                    biotrackId={biotrackId}
+                    setBiotrackId={setBiotrackId}
+                    complianceBatchNumber={complianceBatchNumber}
+                    setComplianceBatchNumber={setComplianceBatchNumber}
+                    isNonCannabis={isNonCannabis}
+                    setIsNonCannabis={setIsNonCannabis}
+                    strain={strain}
+                    setStrain={setStrain}
+                    strainType={strainType}
+                    setStrainType={setStrainType}
+                    thcPercent={thcPercent}
+                    setThcPercent={setThcPercent}
+                    cbdPercent={cbdPercent}
+                    setCbdPercent={setCbdPercent}
+                    weight={weight}
+                    setWeight={setWeight}
+                    weightUnit={weightUnit}
+                    setWeightUnit={setWeightUnit}
+                    categoryTag={categoryTag}
+                    setCategoryTag={setCategoryTag}
+                  />
+                )}
               </div>
               {(() => {
                 const price = Math.max(0, Number(priceUsd || 0));
@@ -8463,44 +8697,48 @@ function InventoryPanel() {
         : null}
       {editOpenInv && editTarget && typeof window !== "undefined"
         ? createPortal(
-          <div className="fixed inset-0 z-[100000] bg-black/50 grid place-items-center p-4">
-            <div className="w-full max-w-3xl md:max-w-4xl max-h-[90vh] overflow-y-auto rounded-md border bg-background p-4 relative z-[100001]">
+          <div className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-sm grid place-items-center p-4 md:p-8">
+            <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border border-foreground/[0.05] bg-background/95 backdrop-blur-3xl shadow-2xl p-6 md:p-8 relative z-[100001]">
               <button
                 onClick={closeEditItem}
-                className="absolute right-2 top-2 h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                className="absolute right-4 top-4 md:right-6 md:top-6 h-10 w-10 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.06] text-foreground flex items-center justify-center transition-all"
                 title="Close"
                 aria-label="Close edit item modal"
               >
                 ✕
               </button>
-              <div className="text-lg font-semibold mb-2">Edit Inventory Item — {editSku}</div>
-              <div className="mb-2">
-                <label className="microtext text-muted-foreground">Industry Pack</label>
+              <h2 className="text-xl font-bold tracking-tight mb-4 flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-[var(--pp-secondary)]" />
+                Edit Inventory Item — <span className="text-muted-foreground font-mono ml-2 text-lg">{editSku}</span>
+              </h2>
+              <div className="mb-6 rounded-2xl border border-foreground/[0.05] p-4 bg-foreground/[0.02]">
+                <label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground block mb-2">Industry Pack</label>
                 <select
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                   value={editIndustryPack}
                   onChange={(e) => setEditIndustryPack(e.target.value as any)}
                 >
-                  <option value="general">General</option>
-                  <option value="restaurant">Restaurant</option>
-                  <option value="retail">Retail</option>
-                  <option value="hotel">Hotel</option>
-                  <option value="freelancer">Freelancer</option>
-                  <option value="publishing">Publishing</option>
+                  <option value="general" className="bg-background text-foreground">General</option>
+                  <option value="restaurant" className="bg-background text-foreground">Restaurant</option>
+                  <option value="retail" className="bg-background text-foreground">Retail</option>
+                  <option value="hotel" className="bg-background text-foreground">Hotel</option>
+                  <option value="freelancer" className="bg-background text-foreground">Freelancer</option>
+                  <option value="publishing" className="bg-background text-foreground">Publishing</option>
+                  <option value="cannabis" className="bg-background text-foreground">Cannabis</option>
                 </select>
-                <div className="microtext text-muted-foreground mt-1">
+                <div className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mt-2">
                   Change the industry pack to reclassify this item. Fields below will update accordingly.
                 </div>
               </div>
               <div className="mb-2">
                 <label className="microtext text-muted-foreground">Currency</label>
                 <select
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                   value={editCurrency}
                   onChange={(e) => setEditCurrency(e.target.value)}
                 >
                   {SUPPORTED_CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code}>
+                    <option key={c.code} value={c.code} className="bg-background text-foreground">
                       {c.code} — {c.name}
                     </option>
                   ))}
@@ -8510,7 +8748,7 @@ function InventoryPanel() {
                 <div>
                   <label className="microtext text-muted-foreground">SKU</label>
                   <input
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                     value={editSku}
                     onChange={(e) => setEditSku(String(e.target.value || "").toUpperCase().slice(0, 16))}
                   />
@@ -8518,7 +8756,7 @@ function InventoryPanel() {
                 <div>
                   <label className="microtext text-muted-foreground">Name</label>
                   <input
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                   />
@@ -8529,7 +8767,7 @@ function InventoryPanel() {
                     type="number"
                     min={0}
                     step={0.01}
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                     value={editPriceUsd}
                     onChange={(e) => setEditPriceUsd(Math.max(0, Number(e.target.value || 0)))}
                   />
@@ -8541,7 +8779,7 @@ function InventoryPanel() {
                       type="number"
                       min={0}
                       step={1}
-                      className="h-9 w-40 px-3 py-1 border rounded-md bg-background"
+                      className="h-12 w-40 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                       value={editInfinite ? ("" as any) : Number(editStockQty || 0)}
                       onChange={(e) => setEditStockQty(Math.max(0, Math.floor(Number(e.target.value || 0))))}
                       disabled={editInfinite}
@@ -8554,7 +8792,7 @@ function InventoryPanel() {
                 <div>
                   <label className="microtext text-muted-foreground">Category</label>
                   <input
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                     value={editCategory}
                     onChange={(e) => setEditCategory(e.target.value)}
                   />
@@ -8562,7 +8800,7 @@ function InventoryPanel() {
                 <div>
                   <label className="microtext text-muted-foreground">Tags (comma‑separated)</label>
                   <input
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                     value={editTags}
                     onChange={(e) => setEditTags(e.target.value)}
                   />
@@ -8580,7 +8818,7 @@ function InventoryPanel() {
                 <div className="md:col-span-2">
                   <label className="microtext text-muted-foreground">Description</label>
                   <textarea
-                    className="mt-1 w-full h-20 px-3 py-2 border rounded-md bg-background"
+                    className="mt-1 w-full h-24 p-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
                   />
@@ -8588,7 +8826,7 @@ function InventoryPanel() {
                 <div className="md:col-span-2">
                   <label className="microtext text-muted-foreground">Attributes (JSON)</label>
                   <textarea
-                    className="mt-1 w-full h-24 px-3 py-2 border rounded-md bg-background font-mono text-xs"
+                    className="mt-1 w-full h-28 p-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors font-mono text-xs"
                     value={editAttributesJson}
                     onChange={(e) => setEditAttributesJson(e.target.value)}
                   />
@@ -8619,7 +8857,7 @@ function InventoryPanel() {
                     </button>
                     <div className="flex items-center gap-1">
                       <input
-                        className="h-9 w-56 px-3 py-1 border rounded-md bg-background"
+                        className="h-12 w-56 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                         placeholder="Paste image URL…"
                         value={editImageUrl}
                         onChange={(e) => setEditImageUrl(e.target.value)}
@@ -8694,7 +8932,7 @@ function InventoryPanel() {
                     type="number"
                     min={0}
                     step={0.01}
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                     value={typeof editCostUsd === "number" ? editCostUsd : "" as any}
                     onChange={(e) => setEditCostUsd(e.target.value === "" ? undefined : Number(e.target.value || 0))}
                   />
@@ -8736,29 +8974,29 @@ function InventoryPanel() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="microtext text-muted-foreground">Weight (lbs)</label>
-                          <input type="number" min={0} step={0.1} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof editShippingWeightLbs === "number" ? editShippingWeightLbs : ""} onChange={(e) => setEditShippingWeightLbs(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2.5" />
+                          <input type="number" min={0} step={0.1} className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof editShippingWeightLbs === "number" ? editShippingWeightLbs : ""} onChange={(e) => setEditShippingWeightLbs(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2.5" />
                         </div>
                         <div>
                           <label className="microtext text-muted-foreground">Shipping Class</label>
-                          <select className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={editShippingClass} onChange={(e) => setEditShippingClass(e.target.value as any)}>
-                            <option value="standard">Standard</option>
-                            <option value="oversized">Oversized</option>
-                            <option value="fragile">Fragile</option>
-                            <option value="hazardous">Hazardous</option>
+                          <select className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={editShippingClass} onChange={(e) => setEditShippingClass(e.target.value as any)}>
+                            <option value="standard" className="bg-background text-foreground">Standard</option>
+                            <option value="oversized" className="bg-background text-foreground">Oversized</option>
+                            <option value="fragile" className="bg-background text-foreground">Fragile</option>
+                            <option value="hazardous" className="bg-background text-foreground">Hazardous</option>
                           </select>
                         </div>
                       </div>
                       <div>
                         <label className="microtext text-muted-foreground">Dimensions</label>
                         <div className="mt-1 flex items-center gap-2">
-                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof editShippingLength === "number" ? editShippingLength : ""} onChange={(e) => setEditShippingLength(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="L" title="Length" />
+                          <input type="number" min={0} step={0.1} className="h-12 w-24 px-3 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof editShippingLength === "number" ? editShippingLength : ""} onChange={(e) => setEditShippingLength(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="L" title="Length" />
                           <span className="text-muted-foreground">×</span>
-                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof editShippingWidth === "number" ? editShippingWidth : ""} onChange={(e) => setEditShippingWidth(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="W" title="Width" />
+                          <input type="number" min={0} step={0.1} className="h-12 w-24 px-3 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof editShippingWidth === "number" ? editShippingWidth : ""} onChange={(e) => setEditShippingWidth(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="W" title="Width" />
                           <span className="text-muted-foreground">×</span>
-                          <input type="number" min={0} step={0.1} className="h-9 w-20 px-2 py-1 border rounded-md bg-background" value={typeof editShippingHeight === "number" ? editShippingHeight : ""} onChange={(e) => setEditShippingHeight(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="H" title="Height" />
-                          <select className="h-9 px-2 py-1 border rounded-md bg-background" value={editShippingDimUnit} onChange={(e) => setEditShippingDimUnit(e.target.value as any)}>
-                            <option value="in">in</option>
-                            <option value="cm">cm</option>
+                          <input type="number" min={0} step={0.1} className="h-12 w-24 px-3 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof editShippingHeight === "number" ? editShippingHeight : ""} onChange={(e) => setEditShippingHeight(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="H" title="Height" />
+                          <select className="h-12 px-3 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={editShippingDimUnit} onChange={(e) => setEditShippingDimUnit(e.target.value as any)}>
+                            <option value="in" className="bg-background text-foreground">in</option>
+                            <option value="cm" className="bg-background text-foreground">cm</option>
                           </select>
                         </div>
                       </div>
@@ -8794,16 +9032,16 @@ function InventoryPanel() {
                       </div>
                       <div>
                         <label className="microtext text-muted-foreground">Free Shipping Threshold (USD)</label>
-                        <input type="number" min={0} step={0.01} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof editFreeShippingThreshold === "number" ? editFreeShippingThreshold : ""} onChange={(e) => setEditFreeShippingThreshold(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="Orders above this amount ship free" />
+                        <input type="number" min={0} step={0.01} className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof editFreeShippingThreshold === "number" ? editFreeShippingThreshold : ""} onChange={(e) => setEditFreeShippingThreshold(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="Orders above this amount ship free" />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="microtext text-muted-foreground">Handling Time (business days)</label>
-                          <input type="number" min={0} step={1} className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={typeof editHandlingTimeDays === "number" ? editHandlingTimeDays : ""} onChange={(e) => setEditHandlingTimeDays(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2" />
+                          <input type="number" min={0} step={1} className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={typeof editHandlingTimeDays === "number" ? editHandlingTimeDays : ""} onChange={(e) => setEditHandlingTimeDays(e.target.value === "" ? undefined : Number(e.target.value))} placeholder="e.g. 2" />
                         </div>
                         <div>
                           <label className="microtext text-muted-foreground">Origin Country</label>
-                          <input className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background" value={editOriginCountry} onChange={(e) => setEditOriginCountry(e.target.value.toUpperCase().slice(0, 2))} placeholder="US" maxLength={2} />
+                          <input className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors" value={editOriginCountry} onChange={(e) => setEditOriginCountry(e.target.value.toUpperCase().slice(0, 2))} placeholder="US" maxLength={2} />
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-4">
@@ -8842,7 +9080,7 @@ function InventoryPanel() {
                     <div className="mt-2 ml-6">
                       <label className="microtext text-muted-foreground">Select Plan</label>
                       <select
-                        className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                        className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                         value={editSubscriptionPlanId}
                         onChange={(e) => {
                           const pid = e.target.value;
@@ -8854,9 +9092,9 @@ function InventoryPanel() {
                           }
                         }}
                       >
-                        <option value="">-- Select a Plan --</option>
+                        <option value="" className="bg-background text-foreground">-- Select a Plan --</option>
                         {plans.map(p => (
-                          <option key={p.planId} value={p.planId}>
+                          <option key={p.planId} value={p.planId} className="bg-background text-foreground">
                             {p.name} ({formatCurrency(p.priceUsd, "USD")} / {p.period})
                           </option>
                         ))}
@@ -8967,6 +9205,34 @@ function InventoryPanel() {
                 </>
                 )}
               </div>
+              {editIndustryPack === 'cannabis' && (
+                <div className="mb-6 rounded-2xl border border-foreground/[0.05] p-4 bg-foreground/[0.02]">
+                  <CannabisFields
+                    metrcTag={editMetrcTag}
+                    setMetrcTag={setEditMetrcTag}
+                    biotrackId={editBiotrackId}
+                    setBiotrackId={setEditBiotrackId}
+                    complianceBatchNumber={editComplianceBatchNumber}
+                    setComplianceBatchNumber={setEditComplianceBatchNumber}
+                    isNonCannabis={editIsNonCannabis}
+                    setIsNonCannabis={setEditIsNonCannabis}
+                    strain={editStrain}
+                    setStrain={setEditStrain}
+                    strainType={editStrainType}
+                    setStrainType={setEditStrainType}
+                    thcPercent={editThcPercent}
+                    setThcPercent={setEditThcPercent}
+                    cbdPercent={editCbdPercent}
+                    setCbdPercent={setEditCbdPercent}
+                    weight={editWeight}
+                    setWeight={setEditWeight}
+                    weightUnit={editWeightUnit}
+                    setWeightUnit={setEditWeightUnit}
+                    categoryTag={editCategoryTag}
+                    setCategoryTag={setEditCategoryTag}
+                  />
+                </div>
+              )}
 
               {(() => {
                 const price = Math.max(0, Number(editPriceUsd || 0));
@@ -9274,35 +9540,48 @@ function TerminalPanel() {
   }
 
   return (
-    <div className="glass-pane rounded-xl border p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Terminal</h2>
-        <span className="microtext text-muted-foreground">Wizard: amount → QR → pay → print</span>
+    <div className="-mt-6 w-full h-[calc(100vh-116px)] p-4 md:p-8 flex flex-col gap-2 md:gap-6 overflow-hidden relative z-20">
+      {/* Sleek background glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-[var(--pp-secondary)] opacity-10 blur-[100px] pointer-events-none" />
+
+      <div className="flex items-center justify-between relative z-10 shrink-0">
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="w-8 h-8 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br from-foreground/10 to-transparent flex items-center justify-center overflow-hidden shadow-lg border border-foreground/5 backdrop-blur-md">
+            <svg className="w-4 h-4 md:w-6 md:h-6 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+          </div>
+          <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-transparent">Terminal</h1>
+        </div>
+        <div className="flex items-center">
+          <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground px-3 py-1.5 rounded-full bg-foreground/[0.03] border border-foreground/[0.05] hidden md:block">Wizard: Amount → QR → Pay → Print</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-md border p-3">
-          <div className="text-sm font-medium mb-2">Enter Details</div>
-          <div className="space-y-2">
-            <div>
-              <label className="microtext text-muted-foreground">Item name (optional)</label>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 md:gap-8 relative z-10 flex-1 min-h-0">
+        <div className="lg:col-span-7 rounded-2xl md:rounded-3xl bg-foreground/[0.02] border border-foreground/[0.04] p-3 md:p-8 backdrop-blur-sm shadow-2xl flex flex-col min-h-0">
+          <div className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground mb-2 md:mb-6 flex items-center gap-2 md:gap-3 shrink-0">
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--pp-secondary)]" />
+            Enter Details
+          </div>
+          <div className="flex flex-col gap-2 md:gap-6 flex-1 min-h-0">
+            <div className="hidden md:block shrink-0">
+              <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-1 md:mb-2 block ml-1">Item name (optional)</label>
               <input
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="w-full h-10 md:h-12 px-4 py-2 rounded-xl bg-foreground/[0.03] border-none focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/50"
                 placeholder="e.g., Custom Charge"
                 value={itemLabel}
                 onChange={(e) => setItemLabel(e.target.value)}
               />
             </div>
-            <div>
-              <label className="microtext text-muted-foreground">Amount ({terminalCurrency})</label>
-              <div className="mt-1 rounded-md border p-3">
-                <div className="text-2xl font-bold text-center">{formatCurrency(parseAmount(), terminalCurrency)}</div>
-                <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="flex flex-col flex-1 min-h-0">
+              <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-1 md:mb-2 block ml-1 shrink-0">Amount ({terminalCurrency})</label>
+              <div className="rounded-xl md:rounded-2xl p-2 md:p-6 bg-gradient-to-b from-foreground/[0.01] to-transparent border border-foreground/[0.03] flex flex-col flex-1 min-h-0">
+                <div className="text-4xl md:text-5xl font-extrabold text-center mb-2 md:mb-6 text-[var(--pp-secondary)] tracking-tighter drop-shadow-sm shrink-0">{formatCurrency(parseAmount(), terminalCurrency)}</div>
+                <div className="grid grid-cols-3 gap-1 md:gap-3 flex-1 min-h-0">
                   {["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ".", "⌫"].map((d, idx) => (
                     <button
                       key={idx}
                       type="button"
-                      className="h-10 rounded-md border text-sm hover:bg-foreground/5"
+                      className="h-full min-h-[2.5rem] md:min-h-[3.5rem] rounded-lg md:rounded-xl border-none text-lg md:text-xl font-medium bg-foreground/[0.03] hover:bg-foreground/[0.06] active:bg-foreground/[0.1] active:scale-95 transition-all text-foreground/90 shadow-sm flex items-center justify-center"
                       onClick={() => {
                         if (d === "⌫") backspace();
                         else if (d === ".") appendDigit(".");
@@ -9312,69 +9591,144 @@ function TerminalPanel() {
                       {d}
                     </button>
                   ))}
-                  <button type="button" className="col-span-3 h-9 rounded-md border text-xs" onClick={clearAmount}>
-                    Clear
+                  <button type="button" className="col-span-3 h-8 md:h-12 shrink-0 rounded-lg md:rounded-xl border-none text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground bg-foreground/[0.02] hover:bg-foreground/[0.05] hover:text-foreground active:scale-[0.98] transition-all mt-1 md:mt-2" onClick={clearAmount}>
+                    Clear Amount
                   </button>
                 </div>
               </div>
-              <div className="microtext text-muted-foreground mt-1">Tap to enter quickly. Max 2 decimal places.</div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-md border p-3">
-          <div className="text-sm font-medium mb-2">Summary</div>
-          <div>
-            <label className="microtext text-muted-foreground">Currency</label>
+        <div className="lg:col-span-5 rounded-2xl md:rounded-3xl bg-foreground/[0.02] border border-foreground/[0.04] p-3 md:p-8 backdrop-blur-sm shadow-2xl flex flex-col relative overflow-hidden min-h-0">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--pp-secondary)] opacity-5 blur-[80px] pointer-events-none" />
+
+          <div className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground mb-4 md:mb-6 flex items-center gap-2 md:gap-3 relative z-10 shrink-0">
+            <div className="w-1.5 h-1.5 rounded-full bg-foreground/30" />
+            Summary
+          </div>
+
+          <div className="shrink-0 relative z-10 mb-2 md:mb-6">
+            <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-1 md:mb-2 block ml-1">Currency</label>
             <select
-              className="mt-1 mb-2 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-10 md:h-12 px-4 rounded-xl bg-foreground/[0.03] border-none focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none transition-all text-xs md:text-sm appearance-none cursor-pointer text-foreground"
               value={terminalCurrency}
               onChange={(e) => setTerminalCurrency(e.target.value)}
             >
               {SUPPORTED_CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>
+                <option key={c.code} value={c.code} className="bg-background text-foreground">
                   {c.code} — {c.name}
                 </option>
               ))}
             </select>
           </div>
+
           {!siteMeta.hasDefault && (
-            <div className="microtext text-amber-600 mb-2">Set a default tax jurisdiction to apply taxes.</div>
+            <div className="text-[8px] md:text-[10px] uppercase font-bold tracking-wider text-amber-500/80 mb-2 md:mb-6 px-2 md:px-4 py-1.5 md:py-3 rounded-lg md:rounded-xl bg-amber-500/10 border border-amber-500/20 text-center relative z-10 shrink-0">
+              Set default tax jurisdiction to apply taxes.
+            </div>
           )}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="microtext text-muted-foreground">Base</span>
-              <span className="text-sm font-medium">{formatCurrency(baseConverted, terminalCurrency)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="microtext text-muted-foreground">Tax {siteMeta.hasDefault ? `(${(Math.round(taxRate * 10000) / 100).toFixed(2)}%)` : ""}</span>
-              <span className="text-sm font-medium">{formatCurrency(taxConverted, terminalCurrency)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="microtext text-muted-foreground">Processing Fee ({(Number(siteMeta.basePlatformFeePct || 0.5) + Number(siteMeta.processingFeePct || 0)).toFixed(2)}%)</span>
-              <span className="text-sm font-medium">{formatCurrency(processingFeeConverted, terminalCurrency)}</span>
-            </div>
-            <div className="h-px bg-border my-1" />
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold">Total</span>
-              <span className="text-sm font-semibold">{formatCurrency(totalConverted, terminalCurrency)}</span>
-            </div>
-            {terminalCurrency !== "USD" && (
-              <div className="flex items-center justify-between">
-                <span className="microtext text-muted-foreground">Equivalent (USD)</span>
-                <span className="microtext text-muted-foreground">${totalUsd.toFixed(2)}</span>
+
+          <div className="group flex-1 min-h-0 flex flex-col p-4 md:p-8 rounded-xl md:rounded-3xl bg-foreground/[0.01] border border-foreground/[0.03] relative z-10 overflow-hidden">
+
+            {/* Generative Interactive Geometric Pattern */}
+            <div className="flex-1 min-h-[60px] w-full relative hidden md:flex items-center justify-center opacity-40 group-hover:opacity-100 transition-all duration-700 mb-4 md:mb-8 pointer-events-none">
+              {/* Background Grid that illuminates on hover */}
+              <svg className="absolute inset-0 w-full h-full transition-transform duration-1000 group-hover:scale-[1.02]" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <rect width="1.5" height="1.5" fill="currentColor" className="text-foreground/20 transition-all duration-500 group-hover:text-[var(--pp-secondary)] group-hover:opacity-70" />
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-foreground/5 transition-all duration-700 group-hover:text-[var(--pp-secondary)] group-hover:opacity-20" />
+                  </pattern>
+                  <linearGradient id="fadeGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="white" stopOpacity="0" />
+                    <stop offset="20%" stopColor="white" stopOpacity="1" />
+                    <stop offset="80%" stopColor="white" stopOpacity="1" />
+                    <stop offset="100%" stopColor="white" stopOpacity="0" />
+                  </linearGradient>
+                  <mask id="gridMask">
+                    <rect width="100%" height="100%" fill="url(#fadeGradient)" />
+                  </mask>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#gridPattern)" mask="url(#gridMask)" />
+              </svg>
+
+              {/* Interactive Concentric Rings */}
+              <div className="absolute w-48 h-48 rounded-full flex items-center justify-center transition-all duration-700 group-hover:shadow-[0_0_80px_var(--pp-secondary)]/30">
+                {/* Outer Radar Sweep */}
+                <div className="absolute inset-0 rounded-full border border-foreground/5 bg-gradient-to-tr from-transparent via-transparent to-[var(--pp-secondary)]/10 animate-spin transition-all duration-500 group-hover:to-[var(--pp-secondary)]/40 group-hover:border-[var(--pp-secondary)]/20" style={{ animationDuration: '8s' }} />
+
+                {/* Middle Dashed Ring */}
+                <div className="absolute w-36 h-36 rounded-full border-[2px] border-dashed border-foreground/10 animate-spin transition-all duration-500 group-hover:border-[var(--pp-secondary)]/50 group-hover:scale-110" style={{ animationDuration: '15s', animationDirection: 'reverse' }} />
+
+                {/* Inner Core */}
+                <div className="w-20 h-20 rounded-full border border-[var(--pp-secondary)]/30 flex items-center justify-center relative transition-all duration-700 group-hover:scale-125 bg-background/50 backdrop-blur-md">
+                  <div className="absolute inset-0 bg-[var(--pp-secondary)] opacity-10 rounded-full blur-md group-hover:opacity-40 transition-opacity duration-700" />
+
+                  {/* Targeting Reticle */}
+                  <div className="absolute inset-0 flex items-center justify-center group-hover:rotate-90 transition-transform duration-1000 ease-in-out">
+                    <div className="w-full h-[1px] bg-[var(--pp-secondary)]/30" />
+                    <div className="h-full w-[1px] bg-[var(--pp-secondary)]/30 absolute" />
+                  </div>
+
+                  <div className="w-8 h-8 rounded-full border border-foreground/20 bg-[var(--pp-secondary)]/20 flex items-center justify-center transition-all duration-500 group-hover:bg-[var(--pp-secondary)]/50 group-hover:scale-50 shadow-[0_0_15px_var(--pp-secondary)]/50 relative z-10">
+                    <div className="absolute w-2 h-2 rounded-full bg-white opacity-80 animate-ping" />
+                    <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_10px_white]" />
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
+
+            <div className="shrink-0 flex flex-col justify-end space-y-1 md:space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[8px] md:text-sm uppercase font-bold tracking-wider text-muted-foreground">Base</span>
+                <span className="text-[10px] md:text-2xl font-medium">{formatCurrency(baseConverted, terminalCurrency)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[8px] md:text-sm uppercase font-bold tracking-wider text-muted-foreground">Tax {siteMeta.hasDefault ? `(${(Math.round(taxRate * 10000) / 100).toFixed(2)}%)` : ""}</span>
+                <span className="text-[10px] md:text-2xl font-medium">{formatCurrency(taxConverted, terminalCurrency)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[8px] md:text-sm uppercase font-bold tracking-wider text-muted-foreground">Platform ({(Number(siteMeta.basePlatformFeePct || 0.5) + Number(siteMeta.processingFeePct || 0)).toFixed(2)}%)</span>
+                <span className="text-[10px] md:text-2xl font-medium">{formatCurrency(processingFeeConverted, terminalCurrency)}</span>
+              </div>
+              <div className="h-px bg-foreground/5 my-1 md:my-6" />
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] md:text-lg font-extrabold uppercase tracking-[0.2em] text-foreground">Total</span>
+                <span className="text-base md:text-5xl lg:text-6xl font-extrabold tracking-tight text-[var(--pp-secondary)]">{formatCurrency(totalConverted, terminalCurrency)}</span>
+              </div>
+              {terminalCurrency !== "USD" && (
+                <div className="flex items-center justify-between mt-1 pt-1 border-t border-foreground/5">
+                  <span className="text-[8px] md:text-sm uppercase font-bold tracking-wider text-muted-foreground/60">Equivalent (USD)</span>
+                  <span className="text-[8px] md:text-xl font-bold text-muted-foreground/60">${totalUsd.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
           </div>
-          {error && <div className="microtext text-red-500 mt-2">{error}</div>}
-          <div className="mt-3">
+
+          {error && (
+            <div className="text-[8px] md:text-[10px] uppercase font-bold tracking-wider text-red-400 mt-2 md:mt-4 px-2 md:px-4 py-1.5 md:py-3 rounded-lg md:rounded-xl bg-red-400/10 border border-red-400/20 text-center relative z-10 shrink-0">
+              {error}
+            </div>
+          )}
+
+          <div className="mt-2 md:mt-8 relative z-10 shrink-0">
             <button
-              className="w-full px-3 py-2 rounded-md border text-sm"
+              className="w-full h-10 md:h-14 rounded-xl md:rounded-2xl text-[10px] md:text-sm font-extrabold uppercase tracking-[0.2em] text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-[var(--pp-secondary)]/20 hover:brightness-110 active:scale-95 flex items-center justify-center gap-2"
+              style={{ backgroundColor: "var(--pp-secondary)", borderColor: "transparent" }}
+
               onClick={generateTerminalReceipt}
               disabled={loading || !(baseUsd > 0) || !operatorWallet}
               title="Generate QR and receipt"
             >
-              {loading ? "Generating…" : "Next — Generate QR"}
+              {loading ? (
+                <span className="opacity-80 animate-pulse">Generating…</span>
+              ) : (
+                <>
+                  Generate QR
+                  <svg className="w-4 h-4 ml-1 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -9382,18 +9736,18 @@ function TerminalPanel() {
 
       {qrOpen && selected && typeof window !== "undefined"
         ? createPortal(
-          <div className="fixed inset-0 z-[100000] bg-black/50 grid place-items-center p-4 print-no-bg print-static">
-            <div className="w-full max-w-sm rounded-md border bg-background p-4 relative">
+          <div className="fixed inset-0 z-[100000] bg-black/80 backdrop-blur-md grid place-items-center p-4 print-no-bg print-static">
+            <div className="w-full max-w-sm rounded-3xl bg-background border border-foreground/[0.05] p-8 relative shadow-2xl">
               <button
                 onClick={() => { setQrOpen(false); }}
-                className="absolute right-2 top-2 h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                className="absolute right-5 top-5 h-8 w-8 rounded-full border-none bg-foreground/[0.03] hover:bg-foreground/[0.08] text-foreground flex items-center justify-center transition-colors"
                 title="Close"
                 aria-label="Close terminal QR"
               >
                 ✕
               </button>
-              <div className="text-lg font-semibold mb-2">Present to Buyer</div>
-              <div className="thermal-paper relative mx-auto">
+              <div className="text-lg font-bold uppercase tracking-wider mb-6">Present to Buyer</div>
+              <div className="thermal-paper relative mx-auto scale-105 origin-top mb-6">
                 <div className="grid place-items-center my-2">
                   <QRCode value={portalUrl} size={140} quietZone={10} fgColor="#000000" bgColor="#ffffff" />
                 </div>
@@ -9417,17 +9771,17 @@ function TerminalPanel() {
                     })()}</span>
                   </div>
                   {selected.currency && selected.currency !== "USD" && (
-                    <div className="thermal-row microtext">
+                    <div className="thermal-row text-[10px] uppercase font-bold tracking-wider text-muted-foreground mt-2">
                       <span>Equivalent (USD)</span>
                       <span>${Number(selected.totalUsd || 0).toFixed(2)}</span>
                     </div>
                   )}
                 </div>
               </div>
-              <div className="thermal-actions print-hidden">
-                <button onClick={() => { try { window.print(); } catch { } }} className="receipt-button">Print Receipt</button>
-                <button onClick={() => { try { navigator.clipboard.writeText(portalUrl); } catch { } }} className="receipt-button">Copy Link</button>
-                <button onClick={() => { try { const w = window.open(portalUrl, "_blank", "noopener,noreferrer"); w?.focus(); } catch { } }} className="receipt-button">Open Portal</button>
+              <div className="thermal-actions print-hidden grid grid-cols-3 gap-3 mt-8">
+                <button onClick={() => { try { window.print(); } catch { } }} className="h-12 rounded-xl text-[10px] font-bold uppercase tracking-wider border-none bg-foreground/[0.03] hover:bg-foreground/[0.08] transition-colors flex items-center justify-center active:scale-95">Print</button>
+                <button onClick={() => { try { navigator.clipboard.writeText(portalUrl); } catch { } }} className="h-12 rounded-xl text-[10px] font-bold uppercase tracking-wider border-none bg-foreground/[0.03] hover:bg-foreground/[0.08] transition-colors flex items-center justify-center active:scale-95">Copy</button>
+                <button onClick={() => { try { const w = window.open(portalUrl, "_blank", "noopener,noreferrer"); w?.focus(); } catch { } }} className="h-12 rounded-xl text-[10px] font-bold uppercase tracking-wider border-none bg-foreground/[0.03] hover:bg-foreground/[0.08] transition-colors flex items-center justify-center active:scale-95">Open</button>
               </div>
             </div>
           </div>,
@@ -9437,28 +9791,28 @@ function TerminalPanel() {
 
       {completeOpen && selected && typeof window !== "undefined"
         ? createPortal(
-          <div className="fixed inset-0 z-[100000] bg-black/50 grid place-items-center p-4">
-            <div className="w-full max-w-sm rounded-md border bg-background p-4 relative">
+          <div className="fixed inset-0 z-[100000] bg-black/80 backdrop-blur-md grid place-items-center p-4">
+            <div className="w-full max-w-sm rounded-3xl bg-background border border-foreground/[0.05] p-8 relative shadow-2xl">
               <button
                 onClick={() => setCompleteOpen(false)}
-                className="absolute right-2 top-2 h-8 w-8 rounded-full border bg-white text-black shadow-sm flex items-center justify-center"
+                className="absolute right-5 top-5 h-8 w-8 rounded-full border-none bg-foreground/[0.03] hover:bg-foreground/[0.08] text-foreground flex items-center justify-center transition-colors"
                 title="Close"
                 aria-label="Close payment complete modal"
               >
                 ✕
               </button>
-              <div className="text-lg font-semibold mb-2">Payment Complete</div>
-              <div className="microtext text-muted-foreground mb-2">
+              <div className="text-xl font-extrabold uppercase tracking-tight mb-2 text-[var(--pp-secondary)]">Payment Complete</div>
+              <div className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground mb-8">
                 Receipt {selected.receiptId} has been settled.
               </div>
-              <div className="flex items-center justify-end gap-2">
-                <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => { try { window.print(); } catch { } }}>
+              <div className="flex flex-col gap-3">
+                <button className="h-14 w-full rounded-xl border-none text-xs font-bold uppercase tracking-wider bg-foreground/[0.03] hover:bg-foreground/[0.08] transition-colors active:scale-95" onClick={() => { try { window.print(); } catch { } }}>
                   Print Receipt
                 </button>
-                <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => { try { navigator.clipboard.writeText(portalUrl); } catch { } }}>
+                <button className="h-14 w-full rounded-xl border-none text-xs font-bold uppercase tracking-wider bg-foreground/[0.03] hover:bg-foreground/[0.08] transition-colors active:scale-95" onClick={() => { try { navigator.clipboard.writeText(portalUrl); } catch { } }}>
                   Copy Link
                 </button>
-                <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => { try { const w = window.open(portalUrl, "_blank", "noopener,noreferrer"); w?.focus(); } catch { } }}>
+                <button className="h-14 w-full rounded-xl border-none text-xs font-extrabold uppercase tracking-wider text-white transition-all active:scale-95 shadow-lg shadow-[var(--pp-secondary)]/20 hover:brightness-110" style={{ backgroundColor: "var(--pp-secondary)" }} onClick={() => { try { const w = window.open(portalUrl, "_blank", "noopener,noreferrer"); w?.focus(); } catch { } }}>
                   Open Portal
                 </button>
               </div>
@@ -9494,7 +9848,8 @@ function OrdersPanel() {
   const [stockFilter, setStockFilter] = useState<"all" | "in" | "out">("all");
   const [sortBy, setSortBy] = useState<"name" | "price" | "stock">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [viewMode, setViewMode] = useState<"list" | "details" | "categories">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid" | "categories">("list");
+  const [selectedCategoryView, setSelectedCategoryView] = useState<string | null>(null);
 
   // Filtered and sorted available items
   const availableItems = useMemo(() => {
@@ -9670,21 +10025,21 @@ function OrdersPanel() {
       <div className="glass-pane rounded-xl border p-5">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-semibold">Build Order</h2>
-          <button className="px-3 py-1.5 rounded-md border text-sm" onClick={loadInventory}>
+          <button className="h-10 px-4 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-sm" onClick={loadInventory}>
             Refresh Inventory
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Left: Inventory list with enhanced controls */}
-          <div className="rounded-md border p-3">
+          <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.01] p-4">
             {/* Header with view mode toggles */}
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm font-medium">Inventory</div>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => setViewMode("list")}
-                  className={`h-8 w-8 rounded-md border flex items-center justify-center ${viewMode === "list" ? "bg-foreground/10" : "hover:bg-foreground/5"}`}
+                  onClick={() => { setViewMode("list"); setSelectedCategoryView(null); }}
+                  className={`h-10 w-10 rounded-xl border border-foreground/[0.05] flex items-center justify-center transition-colors ${viewMode === "list" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" : "bg-foreground/[0.02] hover:bg-foreground/[0.05]"}`}
                   title="List view"
                   aria-label="List view"
                 >
@@ -9694,19 +10049,19 @@ function OrdersPanel() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setViewMode("details")}
-                  className={`h-8 w-8 rounded-md border flex items-center justify-center ${viewMode === "details" ? "bg-foreground/10" : "hover:bg-foreground/5"}`}
-                  title="Details view"
-                  aria-label="Details view"
+                  onClick={() => { setViewMode("grid"); setSelectedCategoryView(null); }}
+                  className={`h-10 w-10 rounded-xl border border-foreground/[0.05] flex items-center justify-center transition-colors ${viewMode === "grid" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" : "bg-foreground/[0.02] hover:bg-foreground/[0.05]"}`}
+                  title="Grid view"
+                  aria-label="Grid view"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                   </svg>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setViewMode("categories")}
-                  className={`h-8 w-8 rounded-md border flex items-center justify-center ${viewMode === "categories" ? "bg-foreground/10" : "hover:bg-foreground/5"}`}
+                  onClick={() => { setViewMode("categories"); setSelectedCategoryView(null); }}
+                  className={`h-10 w-10 rounded-xl border border-foreground/[0.05] flex items-center justify-center transition-colors ${viewMode === "categories" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" : "bg-foreground/[0.02] hover:bg-foreground/[0.05]"}`}
                   title="Categories view"
                   aria-label="Categories view"
                 >
@@ -9722,48 +10077,48 @@ function OrdersPanel() {
               <input
                 type="text"
                 placeholder="Search items..."
-                className="w-full h-9 px-3 py-1 border rounded-md bg-background text-sm"
+                className="w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <div className="grid grid-cols-3 gap-2">
                 <select
-                  className="h-9 px-2 py-1 border rounded-md bg-background text-xs"
+                  className="h-12 px-3 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 text-sm"
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                   title="Filter by category"
                 >
-                  <option value="">All Categories</option>
+                  <option value="" className="bg-background text-foreground">All Categories</option>
                   {categories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
+                    <option key={cat} value={cat} className="bg-background text-foreground">{cat}</option>
                   ))}
                 </select>
                 <select
-                  className="h-9 px-2 py-1 border rounded-md bg-background text-xs"
+                  className="h-12 px-3 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 text-sm"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
                   title="Sort by"
                 >
-                  <option value="name">Name</option>
-                  <option value="price">Price</option>
-                  <option value="stock">Stock</option>
+                  <option value="name" className="bg-background text-foreground">Name</option>
+                  <option value="price" className="bg-background text-foreground">Price</option>
+                  <option value="stock" className="bg-background text-foreground">Stock</option>
                 </select>
                 <select
-                  className="h-9 px-2 py-1 border rounded-md bg-background text-xs"
+                  className="h-12 px-3 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 text-sm"
                   value={stockFilter}
                   onChange={(e) => setStockFilter(e.target.value as any)}
                   title="Stock filter"
                 >
-                  <option value="all">All Stock</option>
-                  <option value="in">In Stock</option>
-                  <option value="out">Out of Stock</option>
+                  <option value="all" className="bg-background text-foreground">All Stock</option>
+                  <option value="in" className="bg-background text-foreground">In Stock</option>
+                  <option value="out" className="bg-background text-foreground">Out of Stock</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                  className="h-8 px-2 rounded-md border text-xs hover:bg-foreground/5"
+                  className="h-10 px-4 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-xs flex items-center justify-center gap-2"
                   title={sortOrder === "asc" ? "Sort descending" : "Sort ascending"}
                 >
                   {sortOrder === "asc" ? "↑" : "↓"}
@@ -9776,7 +10131,7 @@ function OrdersPanel() {
                       setCategoryFilter("");
                       setStockFilter("all");
                     }}
-                    className="h-8 px-2 rounded-md border text-xs hover:bg-foreground/5"
+                    className="h-10 px-4 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] transition-colors font-semibold text-xs flex items-center justify-center gap-2"
                   >
                     Clear filters
                   </button>
@@ -9785,15 +10140,16 @@ function OrdersPanel() {
             </div>
 
             {/* Scrollable inventory list with height limit */}
-            <div className="max-h-[500px] overflow-y-auto space-y-2">
+            <div className="max-h-[500px] overflow-y-auto overflow-x-hidden p-1 space-y-2">
               {viewMode === "list" && (
-                <>
+                <div className="space-y-2">
                   {availableItems.map((it) => {
+
                     const rawStock = Number(it.stockQty);
                     const maxQty = rawStock === -1 ? 999999 : Math.max(0, rawStock);
                     const disabled = maxQty === 0;
                     return (
-                      <div key={it.id} className="flex items-center justify-between rounded-md border p-2 hover:bg-foreground/5">
+                      <div key={it.id} className="flex items-center justify-between rounded-xl border border-foreground/[0.05] p-3 bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors">
                         <div className="flex items-center gap-2 min-w-0">
                           <Thumbnail src={(Array.isArray(it.images) && it.images.length ? it.images[0] : undefined)} alt="" size={40} />
                           <div className="min-w-0">
@@ -9808,56 +10164,115 @@ function OrdersPanel() {
                           min={0}
                           max={maxQty}
                           step={1}
-                          className="h-8 w-20 px-2 py-1 border rounded-md bg-background text-sm"
+                          className="h-10 w-20 px-3 border border-foreground/[0.05] rounded-xl bg-background hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 text-center font-mono"
                           disabled={disabled}
                           placeholder="0"
                           onChange={(e) => toggleItem(it.id, Number(e.target.value || 0))}
                         />
                       </div>
                     );
+
                   })}
-                </>
+                </div>
               )}
 
-              {viewMode === "details" && (
-                <>
+              {viewMode === "grid" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {availableItems.map((it) => {
-                    const rawStock = Number(it.stockQty);
 
+                    const rawStock = Number(it.stockQty);
                     const maxQty = rawStock === -1 ? 999999 : Math.max(0, rawStock);
                     const disabled = maxQty === 0;
                     return (
-                      <div key={it.id} className="flex items-center justify-between rounded-md border p-2 hover:bg-foreground/5">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Thumbnail src={(Array.isArray(it.images) && it.images.length ? it.images[0] : undefined)} alt="" size={32} />
-                          <div className="min-w-0">
-                            <div className="text-sm font-semibold truncate">{it.name}</div>
-                            <div className="microtext text-muted-foreground">
+                      <div key={it.id} className="flex flex-col rounded-xl border border-foreground/[0.05] p-3 bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Thumbnail src={(Array.isArray(it.images) && it.images.length ? it.images[0] : undefined)} alt="" size={48} />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-semibold truncate" title={it.name}>{it.name}</div>
+                            <div className="microtext text-muted-foreground truncate">
                               ${Number(it.priceUsd || 0).toFixed(2)} • Stock: {rawStock === -1 ? "∞" : maxQty}
                             </div>
                           </div>
                         </div>
-                        <input
-                          type="number"
-                          min={0}
-                          max={maxQty}
-                          step={1}
-                          className="h-8 w-16 px-2 py-1 border rounded-md bg-background text-sm"
-                          disabled={disabled}
-                          placeholder="0"
-                          onChange={(e) => toggleItem(it.id, Number(e.target.value || 0))}
-                        />
+                        <div className="mt-auto pt-2 border-t border-foreground/5 flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Qty:</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={maxQty}
+                            step={1}
+                            className="h-9 w-20 px-2 border border-foreground/[0.05] rounded-lg bg-background hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 text-center font-mono text-sm"
+                            disabled={disabled}
+                            placeholder="0"
+                            onChange={(e) => toggleItem(it.id, Number(e.target.value || 0))}
+                          />
+                        </div>
                       </div>
                     );
-                  })}
 
-                </>
+                  })}
+                </div>
+              )}
+
+              {viewMode === "categories" && !selectedCategoryView && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {Array.from(itemsByCategory.keys()).map((cat) => (
+                    <button key={cat} onClick={() => setSelectedCategoryView(cat)} className="flex items-center justify-between rounded-xl border border-foreground/[0.05] p-4 bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors text-left">
+                      <div className="font-semibold text-sm truncate pr-2">{cat}</div>
+                      <div className="text-xs text-muted-foreground shrink-0 bg-foreground/5 px-2 py-1 rounded-md">{itemsByCategory.get(cat)?.length || 0} items</div>
+                    </button>
+                  ))}
+                  {itemsByCategory.size === 0 && (
+                    <div className="col-span-full text-center text-sm text-muted-foreground py-4">No categories</div>
+                  )}
+                </div>
+              )}
+
+              {viewMode === "categories" && selectedCategoryView && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 sticky top-0 bg-background/95 backdrop-blur-sm p-2 z-10 rounded-lg border border-foreground/[0.05] shadow-sm">
+                    <button onClick={() => setSelectedCategoryView(null)} className="h-8 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-xs font-semibold transition-colors">← Back</button>
+                    <div className="text-sm font-semibold truncate">{selectedCategoryView}</div>
+                  </div>
+                  <div className="space-y-2">
+                    {(itemsByCategory.get(selectedCategoryView) || []).map((it) => {
+
+                      const rawStock = Number(it.stockQty);
+                      const maxQty = rawStock === -1 ? 999999 : Math.max(0, rawStock);
+                      const disabled = maxQty === 0;
+                      return (
+                        <div key={it.id} className="flex items-center justify-between rounded-xl border border-foreground/[0.05] p-3 bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Thumbnail src={(Array.isArray(it.images) && it.images.length ? it.images[0] : undefined)} alt="" size={40} />
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold truncate">{it.name}</div>
+                              <div className="microtext text-muted-foreground">
+                                {it.sku} • ${Number(it.priceUsd || 0).toFixed(2)} • Stock: {rawStock === -1 ? "∞" : maxQty}
+                              </div>
+                            </div>
+                          </div>
+                          <input
+                            type="number"
+                            min={0}
+                            max={maxQty}
+                            step={1}
+                            className="h-10 w-20 px-3 border border-foreground/[0.05] rounded-xl bg-background hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 text-center font-mono"
+                            disabled={disabled}
+                            placeholder="0"
+                            onChange={(e) => toggleItem(it.id, Number(e.target.value || 0))}
+                          />
+                        </div>
+                      );
+
+                    })}
+                  </div>
+                </div>
               )}
 
               {availableItems.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <div className="text-sm">No items found</div>
-                  <div className="microtext mt-1">
+                <div className="text-center py-8 text-muted-foreground border border-dashed border-foreground/10 rounded-xl bg-foreground/[0.01]">
+                  <div className="text-sm font-medium">No items found</div>
+                  <div className="microtext mt-1 opacity-70">
                     {searchQuery || categoryFilter || stockFilter !== "all"
                       ? "Try adjusting your filters"
                       : "No inventory items available"}
@@ -9878,7 +10293,7 @@ function OrdersPanel() {
           </div>
 
           {/* Right: Cart */}
-          <div className="rounded-md border p-3">
+          <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.01] p-4">
             <div className="text-sm font-medium mb-2">Cart</div>
             <div className="space-y-2">
               {(cartItems || []).map((it) => {
@@ -9887,7 +10302,7 @@ function OrdersPanel() {
                 const maxQty = rawStock === -1 ? 999999 : Math.max(0, Number(it.stockQty || 0));
                 const lineTotal = Number(it.priceUsd || 0) * qty;
                 return (
-                  <div key={it.id} className="flex items-center justify-between rounded-md border p-2">
+                  <div key={it.id} className="flex items-center justify-between rounded-xl border border-foreground/[0.05] p-3 bg-foreground/[0.02]">
                     <div className="flex items-center gap-2 min-w-0">
                       <Thumbnail src={(Array.isArray(it.images) && it.images.length ? it.images[0] : undefined)} alt="" size={40} />
                       <div className="min-w-0">
@@ -9899,7 +10314,7 @@ function OrdersPanel() {
                     </div>
                     <div className="flex items-center gap-2">
                       <button
-                        className="h-8 w-8 rounded-md border"
+                        className="h-10 w-10 rounded-xl border border-foreground/[0.05] bg-background hover:bg-foreground/[0.04] transition-colors flex items-center justify-center font-bold"
                         onClick={() => toggleItem(it.id, qty - 1)}
                         aria-label="Decrease quantity"
                       >
@@ -9910,12 +10325,12 @@ function OrdersPanel() {
                         min={0}
                         max={maxQty}
                         step={1}
-                        className="h-8 w-16 px-2 py-1 border rounded-md bg-background text-sm text-center"
+                        className="h-10 w-16 px-2 border border-foreground/[0.05] rounded-xl bg-background hover:bg-foreground/[0.04] transition-colors focus:ring-blue-500 text-center font-mono"
                         value={qty}
                         onChange={(e) => toggleItem(it.id, Number(e.target.value || 0))}
                       />
                       <button
-                        className="h-8 w-8 rounded-md border"
+                        className="h-10 w-10 rounded-xl border border-foreground/[0.05] bg-background hover:bg-foreground/[0.04] transition-colors flex items-center justify-center font-bold"
                         onClick={() => toggleItem(it.id, qty + 1)}
                         aria-label="Increase quantity"
                         disabled={qty >= maxQty}
@@ -9923,7 +10338,7 @@ function OrdersPanel() {
                         +
                       </button>
                       <button
-                        className="h-8 px-2 rounded-md border text-xs"
+                        className="h-10 px-3 rounded-xl border border-foreground/[0.05] bg-background hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-500 transition-colors text-xs font-semibold"
                         onClick={() => toggleItem(it.id, 0)}
                         aria-label="Remove from cart"
                       >
@@ -9948,18 +10363,18 @@ function OrdersPanel() {
       <div className="glass-pane rounded-xl border p-5">
         <div className="text-sm font-medium mb-2">Taxes & Checkout</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="rounded-md border p-3">
+          <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.01] p-4">
             <div className="space-y-2">
               <div>
                 <label className="microtext text-muted-foreground">Jurisdiction</label>
                 <select
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                   value={jurisdictionCode}
                   onChange={(e) => setJurisdictionCode(e.target.value)}
                 >
-                  <option value="">Use Default</option>
+                  <option value="" className="bg-background text-foreground">Use Default</option>
                   {(jurisdictions || []).map((j) => (
-                    <option key={j.code} value={j.code}>
+                    <option key={j.code} value={j.code} className="bg-background text-foreground">
                       {j.name} ({Math.round((j.rate || 0) * 10000) / 100}%)
                     </option>
                   ))}
@@ -10011,7 +10426,7 @@ function OrdersPanel() {
                   min={0}
                   max={1}
                   step={0.0001}
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="mt-1 w-full h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                   placeholder="Leave empty to use preset"
                   value={taxRateOverride}
                   onChange={(e) => setTaxRateOverride(e.target.value)}
@@ -10023,7 +10438,7 @@ function OrdersPanel() {
             </div>
           </div>
 
-          <div className="rounded-md border p-3 flex flex-col">
+          <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.01] p-4 flex flex-col">
             <div className="text-sm font-medium mb-2">Summary</div>
             {(() => {
               try {
@@ -10075,7 +10490,7 @@ function OrdersPanel() {
             })()}
             <div className="mt-3">
               <button
-                className="w-full px-3 py-2 rounded-md border text-sm"
+                className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 onClick={generateOrder}
                 disabled={
                   loading ||
@@ -10096,7 +10511,7 @@ function OrdersPanel() {
             <h2 className="text-xl font-semibold">Generated Receipt</h2>
             <span className="microtext text-muted-foreground">Brand: {brandName}</span>
           </div>
-          <div className="rounded-md border p-3">
+          <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.01] p-4">
             <div className="text-sm font-medium mb-1">Receipt #{result?.receiptId}</div>
             <div className="microtext text-muted-foreground">Total: ${Number(result?.totalUsd || 0).toFixed(2)}</div>
             <div className="h-px bg-border my-2" />
@@ -10480,17 +10895,7 @@ export default function AdminPage() {
 
         {/* Tabs Content */}
         {activeTab === "devices" && (
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Installer Packages</h2>
-              <span className="microtext text-muted-foreground">
-                Download branded installer ZIPs; first run registers installs
-              </span>
-            </div>
-            <div className="microtext text-muted-foreground">
-              Download the ZIP for your brand, run the included Windows .bat (adb install -r), then launch the app.
-              The APK phones home on first launch to record the install in Devices.
-            </div>
+          <div className="w-full space-y-6 pb-24 admin-panel-enter">
             <TouchpointMonitoringPanel />
             <div className="h-px bg-border my-6" />
             <DeviceInstallerPanel />
@@ -10525,15 +10930,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {activeTab === "profileSetup" && (
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Profile Setup</h2>
-              <span className="microtext text-muted-foreground">Customize identity & roles</span>
-            </div>
-            <ProfileSetupInstructionsPanel />
-          </div>
-        )}
+
 
         {activeTab === "whitelabel" && (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
@@ -10546,23 +10943,16 @@ export default function AdminPage() {
         )}
 
         {activeTab === "loyalty" && (
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Loyalty</h2>
-              <span className="microtext text-muted-foreground">Manage Rewards</span>
-            </div>
+          <div className="w-full space-y-6 pb-24 admin-panel-enter">
             <LoyaltyPanel />
           </div>
         )}
 
         {activeTab === "analytics" && <AnalyticsPanel />}
         {activeTab === "leaderboard" && <LeaderboardPanel />}
+
         {activeTab === "loyaltyConfig" && (
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Loyalty Configuration</h2>
-              <span className="microtext text-muted-foreground">{isPlatform ? 'Platform Admin' : 'Partner Admin'}</span>
-            </div>
+          <div className="w-full space-y-6 pb-24 admin-panel-enter">
             {isPartner ? (
               <LoyaltyPanelPartner />
             ) : (
@@ -10650,19 +11040,13 @@ export default function AdminPage() {
         )}
 
         {activeTab === "clientRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
-            <ClientRequestsPanel />
-          </div>
+          <ClientRequestsPanel />
         )}
         {activeTab === "agentRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
-            <AgentRequestsPanel />
-          </div>
+          <AgentRequestsPanel />
         )}
         {activeTab === "modules" && (canBranding || isSuperadmin) && (
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
-            <ModulesPanel />
-          </div>
+          <ModulesPanel />
         )}
         {activeTab === "support" && (
           <GetSupportPanel />
@@ -10672,7 +11056,7 @@ export default function AdminPage() {
             <div className="h-full glass-pane rounded-2xl border overflow-hidden flex flex-col shadow-2xl relative">
               {/* Subtle background glow for the container */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50 pointer-events-none" />
-              
+
               <div className="p-5 border-b border-foreground/5 bg-foreground/[0.02] shrink-0 flex items-center justify-between relative z-10">
                 <div>
                   <h2 className="text-xl font-bold tracking-tight">Support Admin</h2>
@@ -10716,14 +11100,10 @@ export default function AdminPage() {
           <ReportsPanelPlatform />
         )}
         {activeTab === "nodeOperators" && isPlatform && isSuperadmin && (
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
-            <NodeOperatorsPanel />
-          </div>
+          <NodeOperatorsPanel />
         )}
         {activeTab === "nodeDashboard" && isSuperadmin && (
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
-            <NodeDashboardPanel />
-          </div>
+          <NodeDashboardPanel />
         )}
         {activeTab === "agentUniversity" && isPlatform && isSuperadmin && (
           <div className="animate-in fade-in zoom-in-95 duration-300">

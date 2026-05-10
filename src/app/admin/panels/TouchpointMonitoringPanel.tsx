@@ -617,42 +617,47 @@ export default function TouchpointMonitoringPanel() {
     }
 
     return (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
+        <div className="w-full space-y-6 pb-24 admin-panel-enter">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Smartphone className="h-5 w-5 text-emerald-500" />
-                    <div>
-                        <h3 className="text-sm font-semibold">Touchpoint Devices</h3>
-                        <p className="microtext text-muted-foreground">
-                            Monitor and manage configured Terminal/Kiosk devices
-                        </p>
+            <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
+                <div className="flex items-center justify-between relative z-10">
+                    <div className="flex items-center gap-4">
+                        <div className="shrink-0 h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                            <Smartphone className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-foreground">Touchpoint Devices</h2>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                Monitor and manage configured Terminal/Kiosk devices
+                            </p>
+                        </div>
                     </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={fetchDevices}
-                        disabled={loading}
-                        className="h-8 px-3 rounded-md border text-xs flex items-center gap-2 hover:bg-foreground/5 disabled:opacity-50"
-                        title="Refresh"
-                    >
-                        <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-                        Refresh
-                    </button>
-                    <button
-                        onClick={() => setShowProvisionForm(true)}
-                        className="h-8 px-3 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs flex items-center gap-2 font-medium"
-                    >
-                        <Plus className="h-3.5 w-3.5" />
-                        Provision Device
-                    </button>
-                    <button
-                        onClick={() => setShowBuildForm(true)}
-                        className="h-8 px-3 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-xs flex items-center gap-2 font-medium"
-                    >
-                        <Smartphone className="h-3.5 w-3.5" />
-                        Build APK
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={fetchDevices}
+                            disabled={loading}
+                            className="h-10 px-4 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-xs flex items-center gap-2 font-medium transition-colors disabled:opacity-50"
+                            title="Refresh"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                            Refresh
+                        </button>
+                        <button
+                            onClick={() => setShowProvisionForm(true)}
+                            className="h-10 px-4 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 text-xs flex items-center gap-2 font-bold transition-colors"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Provision Device
+                        </button>
+                        <button
+                            onClick={() => setShowBuildForm(true)}
+                            className="h-10 px-4 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 text-xs flex items-center gap-2 font-bold transition-colors"
+                        >
+                            <Smartphone className="h-4 w-4" />
+                            Build APK
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1280,60 +1285,62 @@ export default function TouchpointMonitoringPanel() {
                     <p className="text-xs text-muted-foreground mt-1">Click "Provision Device" to get started</p>
                 </div>
             ) : (
-                <div className="border rounded-lg overflow-hidden">
+                <div className="rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-foreground/5 border-b">
-                                <tr className="text-xs text-muted-foreground">
-                                    <th className="text-left p-3 font-medium">Installation ID</th>
-                                    <th className="text-left p-3 font-medium">Mode</th>
-                                    <th className="text-left p-3 font-medium">Merchant Wallet</th>
-                                    <th className="text-left p-3 font-medium">Brand</th>
-                                    <th className="text-left p-3 font-medium">Lockdown</th>
-                                    <th className="text-left p-3 font-medium">Last Seen</th>
-                                    <th className="text-left p-3 font-medium">Configured</th>
-                                    <th className="text-center p-3 font-medium">Actions</th>
+                            <thead className="bg-foreground/[0.03] border-b border-foreground/[0.05]">
+                                <tr className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
+                                    <th className="text-left p-4">Installation ID</th>
+                                    <th className="text-left p-4">Mode</th>
+                                    <th className="text-left p-4">Merchant Wallet</th>
+                                    <th className="text-left p-4">Brand</th>
+                                    <th className="text-left p-4">Lockdown</th>
+                                    <th className="text-left p-4">Last Seen</th>
+                                    <th className="text-left p-4">Configured</th>
+                                    <th className="text-center p-4">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y divide-foreground/[0.05]">
                                 {devices.map((device) => (
-                                    <tr key={device.id} className="hover:bg-foreground/5">
-                                        <td className="p-3 font-mono text-xs">{device.installationId.slice(0, 24)}...</td>
-                                        <td className="p-3">
-                                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${device.mode === "terminal"
-                                                ? "bg-blue-500/10 text-blue-400"
+                                    <tr key={device.id} className="hover:bg-foreground/[0.03] transition-colors group">
+                                        <td className="p-4 font-mono text-xs">{device.installationId.slice(0, 24)}...</td>
+                                        <td className="p-4">
+                                            <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider ${device.mode === "terminal"
+                                                ? "bg-blue-500/10 text-blue-500"
                                                 : device.mode === "handheld"
-                                                    ? "bg-orange-500/10 text-orange-400"
-                                                    : "bg-purple-500/10 text-purple-400"
+                                                    ? "bg-orange-500/10 text-orange-500"
+                                                    : "bg-purple-500/10 text-purple-500"
                                                 }`}>
                                                 {device.mode}
                                             </span>
                                         </td>
-                                        <td className="p-3 font-mono text-xs">{device.merchantWallet.slice(0, 10)}...{device.merchantWallet.slice(-8)}</td>
-                                        <td className="p-3 text-xs">{device.brandKey}</td>
-                                        <td className="p-3">
-                                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${device.lockdownMode === "device_owner"
-                                                ? "bg-red-500/10 text-red-400"
+                                        <td className="p-4 font-mono text-xs text-foreground/80">{device.merchantWallet.slice(0, 10)}...{device.merchantWallet.slice(-8)}</td>
+                                        <td className="p-4 text-xs font-semibold">{device.brandKey}</td>
+                                        <td className="p-4">
+                                            <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider ${device.lockdownMode === "device_owner"
+                                                ? "bg-red-500/10 text-red-500"
                                                 : device.lockdownMode === "standard"
-                                                    ? "bg-yellow-500/10 text-yellow-400"
+                                                    ? "bg-yellow-500/10 text-yellow-500"
                                                     : "bg-neutral-500/10 text-neutral-400"
                                                 }`}>
                                                 {device.lockdownMode === "device_owner" ? "Owner" : device.lockdownMode === "standard" ? "Standard" : "None"}
                                             </span>
                                         </td>
-                                        <td className="p-3 text-xs text-muted-foreground flex items-center gap-1">
-                                            {device.lastSeen && <Clock className="h-3 w-3" />}
-                                            {formatTimeSince(device.lastSeen)}
+                                        <td className="p-4 text-xs text-muted-foreground">
+                                            <div className="flex items-center gap-1.5">
+                                                {device.lastSeen && <Clock className="h-3 w-3" />}
+                                                {formatTimeSince(device.lastSeen)}
+                                            </div>
                                         </td>
-                                        <td className="p-3 text-xs text-muted-foreground">{formatDate(device.configuredAt)}</td>
-                                        <td className="p-3 text-center relative">
+                                        <td className="p-4 text-xs text-muted-foreground">{formatDate(device.configuredAt)}</td>
+                                        <td className="p-4 text-center relative">
                                             <div className="relative inline-block">
                                                 <button
                                                     onClick={() => {
                                                         setSelectedDevice(device);
                                                         setOpenDropdownId(openDropdownId === device.id ? null : device.id);
                                                     }}
-                                                    className="h-7 px-2 rounded-md hover:bg-foreground/10 flex items-center justify-center gap-1 text-xs"
+                                                    className="h-8 px-2 rounded-lg hover:bg-foreground/[0.05] border border-transparent hover:border-foreground/[0.1] flex items-center justify-center gap-1 text-xs opacity-0 group-hover:opacity-100 transition-all"
                                                     title="Device Actions"
                                                 >
                                                     <MoreVertical className="h-4 w-4" />
@@ -1343,8 +1350,8 @@ export default function TouchpointMonitoringPanel() {
                                                 </button>
 
                                                 {openDropdownId === device.id && (
-                                                    <div className="absolute right-0 mt-1 w-48 rounded-md shadow-lg bg-neutral-800 border z-50">
-                                                        <div className="py-1">
+                                                    <div className="absolute right-0 mt-1 w-48 rounded-xl shadow-xl bg-background border border-foreground/[0.1] z-50 overflow-hidden">
+                                                        <div className="p-1">
                                                             {/* Update Unlock Code */}
                                                             {device.lockdownMode !== "none" && (
                                                                 <button
@@ -1352,7 +1359,7 @@ export default function TouchpointMonitoringPanel() {
                                                                         setShowDeviceActionsModal(true);
                                                                         setOpenDropdownId(null);
                                                                     }}
-                                                                    className="w-full px-3 py-2 text-left text-sm hover:bg-foreground/10 flex items-center gap-2"
+                                                                    className="w-full px-3 py-2 text-left text-xs font-semibold rounded-lg hover:bg-foreground/5 flex items-center gap-2 text-foreground"
                                                                 >
                                                                     <Key className="h-3.5 w-3.5" />
                                                                     Update Unlock Code
@@ -1365,7 +1372,7 @@ export default function TouchpointMonitoringPanel() {
                                                                     <button
                                                                         onClick={() => handleDeviceCommand("clearDeviceOwner")}
                                                                         disabled={deviceActionLoading}
-                                                                        className="w-full px-3 py-2 text-left text-sm hover:bg-foreground/10 flex items-center gap-2 text-yellow-400"
+                                                                        className="w-full px-3 py-2 text-left text-xs font-semibold rounded-lg hover:bg-yellow-500/10 flex items-center gap-2 text-yellow-500"
                                                                     >
                                                                         <Unlock className="h-3.5 w-3.5" />
                                                                         Remove Device Owner
@@ -1373,7 +1380,7 @@ export default function TouchpointMonitoringPanel() {
                                                                     <button
                                                                         onClick={() => handleDeviceCommand("wipeDevice")}
                                                                         disabled={deviceActionLoading}
-                                                                        className="w-full px-3 py-2 text-left text-sm hover:bg-foreground/10 flex items-center gap-2 text-red-400"
+                                                                        className="w-full px-3 py-2 text-left text-xs font-semibold rounded-lg hover:bg-red-500/10 flex items-center gap-2 text-red-500"
                                                                     >
                                                                         <AlertTriangle className="h-3.5 w-3.5" />
                                                                         Factory Reset
@@ -1381,7 +1388,7 @@ export default function TouchpointMonitoringPanel() {
                                                                 </>
                                                             )}
 
-                                                            <div className="border-t my-1" />
+                                                            {device.lockdownMode !== "none" && <div className="border-t border-foreground/[0.05] my-1 mx-2" />}
 
                                                             {/* Delete */}
                                                             <button
@@ -1389,7 +1396,7 @@ export default function TouchpointMonitoringPanel() {
                                                                     handleDelete(device.installationId);
                                                                     setOpenDropdownId(null);
                                                                 }}
-                                                                className="w-full px-3 py-2 text-left text-sm hover:bg-red-500/10 flex items-center gap-2 text-red-400"
+                                                                className="w-full px-3 py-2 text-left text-xs font-semibold rounded-lg hover:bg-red-500/10 flex items-center gap-2 text-red-500"
                                                             >
                                                                 <Trash2 className="h-3.5 w-3.5" />
                                                                 Reset Device

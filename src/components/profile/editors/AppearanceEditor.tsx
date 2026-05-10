@@ -26,7 +26,7 @@ export function AppearanceEditor({
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium block mb-2">Theme Color</label>
+        <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-2">Theme Color</label>
         <div className="flex gap-2">
           <input
             type="color"
@@ -45,10 +45,10 @@ export function AppearanceEditor({
       </div>
 
       <div>
-        <label className="text-sm font-medium block mb-2">Cover Photo</label>
+        <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-2">Cover Photo</label>
         <div className="space-y-2">
           <input
-            className="w-full h-9 px-3 py-1 border rounded-md bg-background text-sm"
+            className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] focus:bg-foreground/[0.05] transition-all outline-none focus:ring-1 focus:ring-foreground/20 text-sm font-medium"
             value={backgroundUrl}
             onChange={(e) => onBackgroundUrlChange(e.target.value)}
             placeholder="https://..."
@@ -77,14 +77,14 @@ export function AppearanceEditor({
       </div>
 
       <div>
-        <label className="text-sm font-medium block mb-2">Custom HTML Box</label>
+        <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-2">Custom HTML Box</label>
         <textarea
           className="w-full min-h-[120px] px-3 py-2 border rounded-md bg-background text-sm font-mono"
           value={htmlBox}
           onChange={(e) => onHtmlBoxChange(e.target.value)}
           placeholder="<marquee>Welcome to my profile!</marquee>"
         />
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-1">
           Basic HTML only. No scripts. Limited tags and attributes allowed for safety.
         </p>
       </div>

@@ -52,19 +52,19 @@ function getSocialIcon(url: string, label: string) {
 export function LinksSection({ links }: LinksSectionProps) {
   if (!links || links.length === 0) {
     return (
-      <div className="glass-pane rounded-xl border p-6">
-        <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+      <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-4">
+        <h2 className="text-xl font-bold tracking-tight mb-2 flex items-center gap-2">
           <LinkIcon size={18} />
           Links
         </h2>
-        <p className="text-sm text-muted-foreground">No links added yet.</p>
+        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">No links added yet.</p>
       </div>
     );
   }
 
   return (
-    <div className="glass-pane rounded-xl border p-6">
-      <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+    <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-4">
+      <h2 className="text-xl font-bold tracking-tight mb-2 flex items-center gap-2">
         <LinkIcon size={18} />
         Links
       </h2>

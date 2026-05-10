@@ -159,45 +159,57 @@ export function TipSettings({ walletOverride }: TipSettingsProps) {
     allowCustom !== lastSaved.allowCustom;
 
   return (
-    <div className="space-y-6">
-      {/* Save confirmation pulse */}
-      <div className="flex justify-end">
-        {savedPulse && (
-          <div className="rounded-full bg-green-600/90 text-white px-3 py-1.5 text-xs inline-flex items-center gap-1 shadow">
-            <CheckCircle className="h-3 w-3" /> Saved
-          </div>
-        )}
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
+      {/* Header Area */}
+      <div className="md:col-span-12 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-4 mb-2">
+        <div>
+           <h3 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+             <div className="w-1.5 h-1.5 rounded-full bg-[var(--pp-secondary)]" /> 
+             Tip Settings
+           </h3>
+           <div className="text-[9px] text-muted-foreground/60 uppercase font-semibold tracking-wider mt-1">Configure tip presets and default gratuity options.</div>
+        </div>
+        <div className="flex justify-end h-8">
+          {savedPulse && (
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-500 px-4 py-1.5 text-[9px] font-bold uppercase tracking-wider inline-flex items-center gap-2 shadow-sm animate-in fade-in zoom-in duration-300">
+              <CheckCircle className="h-3 w-3" /> Saved successfully
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Tip Presets */}
-      <div>
-        <label className="text-sm font-medium">Tip Presets</label>
-        <div className="microtext text-muted-foreground mt-1 mb-3">
-          Configure the tip percentage options shown to customers. Up to 6 presets allowed.
+      {/* Tip Presets Panel */}
+      <div className="md:col-span-12 rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 flex flex-col gap-6 shadow-sm">
+        <div>
+          <label className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-2 block ml-1">Tip Presets</label>
+          <div className="text-[8px] md:text-[9px] text-muted-foreground/60 uppercase font-bold tracking-wider ml-1">
+            Configure the tip percentage options shown to customers. Up to 6 presets allowed.
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        
+        <div className="flex flex-wrap items-center gap-3">
           {presets.map((p) => (
             <div
               key={p}
-              className={`group flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+              className={`group flex items-center gap-2 h-12 px-5 rounded-xl border text-xs font-bold transition-all shadow-sm ${
                 defaultTip === p
                   ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500"
-                  : "bg-foreground/[0.03] border-foreground/10"
+                  : "bg-foreground/[0.03] border-foreground/[0.05] text-foreground/90 hover:bg-foreground/[0.05] hover:border-foreground/10"
               }`}
             >
-              <span className="tabular-nums">{p}%</span>
+              <span className="tabular-nums tracking-wide">{p}%</span>
               <button
                 type="button"
                 onClick={() => removePreset(p)}
-                className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity"
+                className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity ml-1 -mr-2 p-1"
                 title={`Remove ${p}%`}
               >
-                <X className="h-3 w-3" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
           ))}
           {presets.length < 6 && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <input
                 type="number"
                 min={0}
@@ -212,28 +224,32 @@ export function TipSettings({ walletOverride }: TipSettingsProps) {
                   }
                 }}
                 placeholder="%"
-                className="h-9 px-3 rounded-lg border bg-background text-sm w-20 tabular-nums"
+                className="h-12 px-4 rounded-xl border border-foreground/5 bg-foreground/[0.03] focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none text-xs font-bold w-20 tabular-nums transition-all"
                 title="New preset percentage"
               />
               <button
                 type="button"
                 onClick={addPreset}
                 disabled={!newPreset}
-                className="h-9 w-9 rounded-lg border flex items-center justify-center hover:bg-foreground/5 transition-colors disabled:opacity-30"
+                className="h-12 px-5 rounded-xl border border-foreground/5 bg-foreground/[0.03] hover:bg-foreground/[0.06] flex items-center justify-center transition-all disabled:opacity-30 text-[9px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground shadow-sm"
                 title="Add preset"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4 mr-1.5" /> Add
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Default Tip */}
-      <div>
-        <label className="text-sm font-medium">Default Tip</label>
+      <div className="md:col-span-12 lg:col-span-6 rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 flex flex-col gap-4 shadow-sm">
+        <div>
+          <label className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-2 block ml-1">Default Tip</label>
+          <div className="text-[8px] md:text-[9px] text-muted-foreground/60 uppercase font-bold tracking-wider ml-1 mb-4 leading-relaxed">
+            Pre-selects this tip percentage for buyers when they open the payment portal.
+          </div>
+        </div>
         <select
-          className="w-full h-9 px-3 py-1 border rounded-md bg-background mt-1"
+          className="w-full h-12 px-4 rounded-xl bg-foreground/[0.03] border border-foreground/5 focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none transition-all text-xs font-medium"
           value={defaultTip === null ? "none" : String(defaultTip)}
           onChange={(e) => handleDefaultChange(e.target.value)}
         >
@@ -244,51 +260,54 @@ export function TipSettings({ walletOverride }: TipSettingsProps) {
             </option>
           ))}
         </select>
-        <div className="microtext text-muted-foreground mt-1">
-          Pre-selects this tip percentage for buyers when they open the payment portal.
-        </div>
       </div>
 
-      {/* Allow Custom Tip */}
-      <div className="flex items-center justify-between">
+      <div className="md:col-span-12 lg:col-span-6 rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden">
+        {allowCustom && <div className="absolute top-0 right-0 w-48 h-48 bg-[var(--pp-secondary)] opacity-5 blur-[60px] pointer-events-none" />}
         <div>
-          <label className="text-sm font-medium">Allow Custom Tip</label>
-          <div className="microtext text-muted-foreground">
-            Lets buyers enter their own tip percentage.
+          <label className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-2 block ml-1 relative z-10">Allow Custom Tip</label>
+          <div className="text-[8px] md:text-[9px] text-muted-foreground/60 uppercase font-bold tracking-wider ml-1 leading-relaxed relative z-10">
+            Lets buyers enter their own tip percentage during checkout.
           </div>
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={allowCustom}
-          onClick={() => handleCustomToggle(!allowCustom)}
-          className={`relative w-11 h-6 rounded-full transition-colors ${
-            allowCustom ? "bg-emerald-500" : "bg-foreground/20"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-              allowCustom ? "translate-x-5" : "translate-x-0"
+        <div className="flex justify-end mt-4 md:mt-0 relative z-10">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={allowCustom}
+            onClick={() => handleCustomToggle(!allowCustom)}
+            className={`relative w-14 h-7 rounded-full transition-colors ${
+              allowCustom ? "bg-[var(--pp-secondary)] shadow-[0_0_15px_var(--pp-secondary)]/30" : "bg-foreground/20"
             }`}
-          />
-        </button>
+          >
+            <span
+              className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                allowCustom ? "translate-x-7" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
-      {error && <div className="microtext text-red-500">{error}</div>}
+      {error && (
+        <div className="md:col-span-12 text-[10px] uppercase font-bold tracking-wider text-red-500 mt-2 px-2">
+          {error}
+        </div>
+      )}
 
       {/* Actions */}
-      <div className="flex items-center justify-between pt-4 border-t border-white/5">
+      <div className="md:col-span-12 flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-foreground/5 gap-4">
         <button
           type="button"
           onClick={resetToDefaults}
-          className="px-3 py-1.5 rounded-md border text-xs hover:bg-foreground/5 transition-colors text-muted-foreground"
+          className="px-6 py-3 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-[9px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-all w-full sm:w-auto"
         >
           Reset to Defaults
         </button>
         <button
           onClick={() => saveTipConfig({ presets, defaultTip, allowCustom })}
           disabled={saving || !hasChanges}
-          className="px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-50"
+          className="px-8 py-3 bg-[var(--pp-secondary)] hover:bg-[var(--pp-secondary)]/90 text-white rounded-xl text-[9px] md:text-[10px] font-bold uppercase tracking-[0.15em] shadow-[0_0_20px_var(--pp-secondary)]/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:shadow-none w-full sm:w-auto"
         >
           {saving ? "Saving..." : "Save Tip Settings"}
         </button>

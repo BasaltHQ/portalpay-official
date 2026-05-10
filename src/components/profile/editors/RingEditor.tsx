@@ -49,7 +49,7 @@ export function RingEditor({
                 </div>
                 <div>
                     <h3 className="font-bold text-lg">Profile Ring</h3>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                         Showcase your loyalty status with a prestigious ring around your avatar
                     </p>
                 </div>
@@ -106,7 +106,7 @@ export function RingEditor({
                         <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
                             Currently Equipped
                         </div>
-                        <div className="text-2xl font-bold mb-2">{getRingTypeName()}</div>
+                        <div className="text-xl font-bold tracking-tight mb-2">{getRingTypeName()}</div>
                         {showRing && (
                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-sm">
                                 <span
@@ -122,7 +122,7 @@ export function RingEditor({
                             </div>
                         )}
                         {!showRing && (
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
                                 Your avatar is displayed without any loyalty ring decoration.
                             </p>
                         )}
@@ -157,7 +157,7 @@ export function RingEditor({
                         </div>
                         <div className="text-left">
                             <div className="font-semibold">Customize Your Ring</div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                                 Choose from your earned loyalty rings
                             </div>
                         </div>

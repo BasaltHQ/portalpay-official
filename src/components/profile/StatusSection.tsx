@@ -27,7 +27,7 @@ export function StatusSection({ message, updatedAt }: StatusSectionProps) {
         <div className="flex-1">
           <p className="text-sm">{message}</p>
           {updatedAt && (
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-1">
               Updated {minutesAgo < 60 ? `${minutesAgo} minutes ago` : `${Math.floor(minutesAgo / 60)} hours ago`}
             </p>
           )}

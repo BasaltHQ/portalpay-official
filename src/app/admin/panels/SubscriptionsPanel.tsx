@@ -239,17 +239,19 @@ export default function SubscriptionsPanel() {
 
     if (loading) {
         return (
-            <div className="glass-pane rounded-xl border p-6 flex items-center justify-center min-h-[400px]">
+            <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6 flex items-center justify-center min-h-[400px]">
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         );
     }
 
     return (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
+        <div className="w-full space-y-6 pb-24 admin-panel-enter">
             {/* Header */}
-            <div className="glass-pane rounded-xl border p-6">
-                <div className="flex items-center justify-between mb-6">
+            <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
+                <div className="flex items-center justify-between mb-6 relative z-10">
                     <div>
                         <h2 className="text-xl font-semibold text-foreground">Subscription Plans</h2>
                         <p className="text-sm text-muted-foreground mt-1">
@@ -258,7 +260,7 @@ export default function SubscriptionsPanel() {
                     </div>
                     <button
                         onClick={showCreateForm ? () => setShowCreateForm(false) : openCreate}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--pp-secondary)] text-white font-medium hover:opacity-90 transition-opacity"
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors shadow-sm ring-1 ring-primary/50"
                     >
                         {showCreateForm ? <XCircle className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                         {showCreateForm ? "Cancel" : "New Plan"}
@@ -266,14 +268,14 @@ export default function SubscriptionsPanel() {
                 </div>
 
                 {/* Metrics */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
                     {[
                         { label: "Monthly Recurring Revenue", value: fmtCurrency(mrr), icon: TrendingUp, color: "text-emerald-500" },
                         { label: "Active Subscribers", value: String(activeSubscriptions.length), icon: Users, color: "text-blue-500" },
                         { label: "Total Revenue", value: fmtCurrency(totalRevenue), icon: DollarSign, color: "text-violet-500" },
                         { label: "Past Due", value: String(pastDue), icon: AlertCircle, color: pastDue > 0 ? "text-amber-500" : "text-zinc-400" },
                     ].map((m) => (
-                        <div key={m.label} className="rounded-lg border p-4 bg-background/50">
+                        <div key={m.label} className="rounded-xl border border-foreground/[0.05] p-4 bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors">
                             <div className="flex items-center gap-2 mb-1">
                                 <m.icon className={`w-4 h-4 ${m.color}`} />
                                 <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{m.label}</span>
@@ -285,7 +287,8 @@ export default function SubscriptionsPanel() {
             </div>
 
             {showCreateForm && (
-                <div className="glass-pane rounded-xl border p-6 animate-in slide-in-from-top-2 duration-200">
+                <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6 animate-in slide-in-from-top-2 duration-200">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
                     <h3 className="text-lg font-semibold text-foreground mb-4">{editingPlan ? "Edit Plan" : "Create New Plan"}</h3>
                     <form onSubmit={handleSavePlan} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -296,7 +299,7 @@ export default function SubscriptionsPanel() {
                                 onChange={(e) => setNewPlanName(e.target.value)}
                                 placeholder="e.g., Gold Membership"
                                 required
-                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                                className="w-full rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] px-3 py-2 text-sm text-foreground focus:border-primary/50 outline-none transition-colors"
                             />
                         </div>
                         <div>
@@ -309,7 +312,7 @@ export default function SubscriptionsPanel() {
                                 onChange={(e) => setNewPlanPrice(e.target.value)}
                                 placeholder="29.99"
                                 required
-                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                                className="w-full rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] px-3 py-2 text-sm text-foreground focus:border-primary/50 outline-none transition-colors"
                             />
                         </div>
                         <div>
@@ -317,10 +320,10 @@ export default function SubscriptionsPanel() {
                             <select
                                 value={newPlanPeriod}
                                 onChange={(e) => setNewPlanPeriod(e.target.value)}
-                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                                className="w-full rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] px-3 py-2 text-sm text-foreground focus:border-primary/50 outline-none transition-colors appearance-none"
                             >
                                 {Object.entries(PERIOD_LABELS).map(([k, v]) => (
-                                    <option key={k} value={k}>{v}</option>
+                                    <option key={k} value={k} className="bg-background">{v}</option>
                                 ))}
                             </select>
                         </div>
@@ -331,14 +334,14 @@ export default function SubscriptionsPanel() {
                                 value={newPlanDesc}
                                 onChange={(e) => setNewPlanDesc(e.target.value)}
                                 placeholder="Optional plan description"
-                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                                className="w-full rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] px-3 py-2 text-sm text-foreground focus:border-primary/50 outline-none transition-colors"
                             />
                         </div>
                         <div className="md:col-span-2 flex gap-3 pt-2">
                             <button
                                 type="submit"
                                 disabled={creating}
-                                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[var(--pp-secondary)] text-white font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+                                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm ring-1 ring-primary/50"
                             >
                                 {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingPlan ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
                                 {creating ? "Saving..." : (editingPlan ? "Save Changes" : "Create Plan")}
@@ -346,7 +349,7 @@ export default function SubscriptionsPanel() {
                             <button
                                 type="button"
                                 onClick={() => setShowCreateForm(false)}
-                                className="px-5 py-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                className="px-5 py-2 rounded-lg border border-foreground/[0.05] text-muted-foreground hover:text-foreground hover:bg-foreground/[0.02] transition-colors"
                             >
                                 Cancel
                             </button>
@@ -356,32 +359,33 @@ export default function SubscriptionsPanel() {
             )}
 
             {/* Plans List */}
-            <div className="glass-pane rounded-xl border p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <Repeat className="w-5 h-5 text-[var(--pp-secondary)]" />
+            <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
+                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2 relative z-10">
+                    <Repeat className="w-5 h-5 text-primary" />
                     Your Plans ({plans.length})
                 </h3>
                 {plans.length === 0 ? (
-                    <div className="rounded-lg border border-dashed p-10 text-center">
+                    <div className="rounded-xl border border-dashed border-foreground/[0.05] p-10 text-center relative z-10">
                         <Repeat className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-50" />
                         <p className="text-muted-foreground">No subscription plans yet.</p>
                         <p className="text-sm text-muted-foreground mt-1">Create your first plan to start earning recurring revenue.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
                         {plans.map((plan) => {
                             const planSubs = subscriptions.filter((s) => s.planId === plan.planId && s.status === "active");
                             return (
-                                <div key={plan.planId} className="rounded-lg border p-5 bg-background/50 hover:border-[var(--pp-secondary)]/30 transition-colors">
+                                <div key={plan.planId} className="rounded-xl border border-foreground/[0.05] p-5 bg-foreground/[0.02] hover:border-primary/30 hover:bg-foreground/[0.03] transition-colors group">
                                     <div className="flex items-start justify-between mb-3">
-                                        <h4 className="font-semibold text-foreground">{plan.name}</h4>
-                                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-medium">
+                                        <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">{plan.name}</h4>
+                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold uppercase tracking-wider">
                                             Active
                                         </span>
-                                        <div className="flex items-center gap-1 ml-auto pl-2">
+                                        <div className="flex items-center gap-1 ml-auto pl-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
                                                 onClick={() => openEdit(plan)}
-                                                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                                className="p-1.5 rounded-md hover:bg-foreground/[0.05] text-muted-foreground hover:text-foreground transition-colors"
                                                 title="Edit"
                                             >
                                                 <Pencil className="w-4 h-4" />
@@ -400,14 +404,14 @@ export default function SubscriptionsPanel() {
                                     )}
                                     <div className="flex items-baseline gap-1 mb-4">
                                         <span className="text-2xl font-bold text-foreground">{fmtCurrency(plan.priceUsd)}</span>
-                                        <span className="text-sm text-muted-foreground">/ {PERIOD_LABELS[plan.period]?.toLowerCase() || plan.period}</span>
+                                        <span className="text-xs text-muted-foreground uppercase font-medium">/ {PERIOD_LABELS[plan.period]?.toLowerCase() || plan.period}</span>
                                     </div>
-                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                        <span className="flex items-center gap-1">
+                                    <div className="flex items-center gap-4 text-xs text-muted-foreground border-t border-foreground/[0.05] pt-4 mt-2">
+                                        <span className="flex items-center gap-1.5">
                                             <Users className="w-3.5 h-3.5" />
                                             {planSubs.length} subscriber{planSubs.length !== 1 ? "s" : ""}
                                         </span>
-                                        <span className="flex items-center gap-1">
+                                        <span className="flex items-center gap-1.5">
                                             <Calendar className="w-3.5 h-3.5" />
                                             Created {formatDate(plan.createdAt)}
                                         </span>
@@ -421,55 +425,56 @@ export default function SubscriptionsPanel() {
 
             {/* Subscribers Table */}
             {subscriptions.length > 0 && (
-                <div className="glass-pane rounded-xl border p-6">
-                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                        <Users className="w-5 h-5 text-[var(--pp-secondary)]" />
+                <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2 relative z-10">
+                        <Users className="w-5 h-5 text-primary" />
                         Subscribers ({subscriptions.length})
                     </h3>
-                    <div className="overflow-x-auto rounded-lg border">
+                    <div className="overflow-x-auto rounded-xl border border-foreground/[0.05] relative z-10">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-border bg-muted/30">
-                                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Customer</th>
-                                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Plan</th>
-                                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
-                                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
-                                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Next Charge</th>
-                                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Charged</th>
-                                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
+                                <tr className="border-b border-foreground/[0.05] bg-foreground/[0.02]">
+                                    <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Customer</th>
+                                    <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Plan</th>
+                                    <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Status</th>
+                                    <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Amount</th>
+                                    <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Next Charge</th>
+                                    <th className="text-left px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Charged</th>
+                                    <th className="text-right px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-border">
+                            <tbody className="divide-y divide-foreground/[0.05]">
                                 {subscriptions.map((sub) => {
                                     const plan = plans.find((p) => p.planId === sub.planId);
                                     return (
-                                        <tr key={sub.subscriptionId} className="hover:bg-muted/20 transition-colors">
-                                            <td className="px-4 py-3 font-mono text-xs text-foreground">
+                                        <tr key={sub.subscriptionId} className="hover:bg-foreground/[0.02] transition-colors group">
+                                            <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground group-hover:text-foreground transition-colors">
                                                 {sub.customerWallet.slice(0, 6)}...{sub.customerWallet.slice(-4)}
                                             </td>
-                                            <td className="px-4 py-3 text-foreground">
+                                            <td className="px-4 py-3 text-[13px] font-medium text-foreground">
                                                 {plan?.name || sub.planId.slice(0, 8)}
                                             </td>
                                             <td className="px-4 py-3">
-                                                <span className="flex items-center gap-1.5">
+                                                <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider">
                                                     {statusIcon(sub.status)}
-                                                    <span className="capitalize text-foreground">{sub.status.replace("_", " ")}</span>
+                                                    <span className={`capitalize ${sub.status === 'active' ? 'text-emerald-500' : 'text-muted-foreground'}`}>{sub.status.replace("_", " ")}</span>
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-foreground">
-                                                {fmtCurrency(sub.priceUsd)}/{PERIOD_SHORT[sub.period] || "mo"}
+                                            <td className="px-4 py-3 text-[13px] text-foreground font-medium">
+                                                {fmtCurrency(sub.priceUsd)}<span className="text-[11px] text-muted-foreground font-normal">/{PERIOD_SHORT[sub.period] || "mo"}</span>
                                             </td>
-                                            <td className="px-4 py-3 text-muted-foreground">
+                                            <td className="px-4 py-3 text-[11px] text-muted-foreground">
                                                 {sub.status === "active" ? formatDate(sub.nextChargeAt) : "—"}
                                             </td>
-                                            <td className="px-4 py-3 text-foreground font-medium">
+                                            <td className="px-4 py-3 text-[13px] text-foreground font-bold">
                                                 {fmtCurrency(sub.totalChargedUsd)}
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 {sub.status === "active" && (
                                                     <button
                                                         onClick={() => handleCancelSubscription(sub.subscriptionId)}
-                                                        className="text-xs px-2 py-1 rounded bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                                                        className="text-[10px] uppercase font-bold tracking-wider px-3 py-1.5 rounded bg-red-500/10 text-red-500 hover:bg-red-500 text-white transition-colors opacity-0 group-hover:opacity-100"
                                                     >
                                                         Cancel
                                                     </button>

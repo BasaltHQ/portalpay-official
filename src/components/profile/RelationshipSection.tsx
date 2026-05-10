@@ -23,15 +23,15 @@ export function RelationshipSection({ relationship }: RelationshipSectionProps) 
   if (!relationship?.status) return null;
 
   return (
-    <div className="glass-pane rounded-xl border p-6">
-      <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+    <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-4">
+      <h2 className="text-xl font-bold tracking-tight mb-3 flex items-center gap-2">
         <HeartIcon size={18} />
         Relationship
       </h2>
       <div className="space-y-2">
         <div className="text-sm">{relationship.status}</div>
         {relationship.partner && (
-          <div className="text-xs text-muted-foreground font-mono">
+          <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider font-mono">
             Partner: {relationship.partner.slice(0,6)}…{relationship.partner.slice(-4)}
           </div>
         )}

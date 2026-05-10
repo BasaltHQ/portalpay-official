@@ -155,8 +155,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     // Fetch messages by conversationId (cross-partition)
     const msgSpec = {
       query:
-        "SELECT m.id, m.wallet, m.conversationId, m.senderWallet, m.body, m.attachments, m.createdAt, m.readBy " +
-        "FROM m WHERE m.type='message' AND m.conversationId=@cid ORDER BY m.createdAt DESC",
+        "SELECT * FROM c WHERE c.type='message' AND c.conversationId=@cid ORDER BY c.createdAt DESC",
       parameters: [{ name: "@cid", value: conversationId }],
     } as { query: string; parameters: { name: string; value: any }[] };
 

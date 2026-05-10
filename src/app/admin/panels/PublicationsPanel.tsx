@@ -374,38 +374,40 @@ export default function PublicationsPanel() {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between border-b pb-4">
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Publications Review</h2>
-                    <p className="text-muted-foreground">Approve or reject book submissions and manage contracts</p>
-                </div>
-                <div className="flex bg-muted p-1 rounded-lg">
-                    <button
-                        onClick={() => setActiveTab("submissions")}
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'submissions' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
-                        Submissions ({items.length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("catalog")}
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'catalog' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
-                        <Library className="w-4 h-4 inline-block mr-1 -mt-0.5" />
-                        Catalog ({approvedItems.length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("contracts")}
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'contracts' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
-                        USBN Contracts
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("revisions")}
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'revisions' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
-                        Revisions ({revisionItems.length})
-                    </button>
+        <div className="w-full space-y-6 pb-24 admin-panel-enter">
+            <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight">Publications Review</h2>
+                        <p className="text-muted-foreground">Approve or reject book submissions and manage contracts</p>
+                    </div>
+                    <div className="flex gap-1 border-b border-foreground/[0.05] pb-1">
+                        <button
+                            onClick={() => setActiveTab("submissions")}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'submissions' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.02]'}`}
+                        >
+                            Submissions ({items.length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("catalog")}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'catalog' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.02]'}`}
+                        >
+                            <Library className="w-4 h-4 inline-block mr-1 -mt-0.5" />
+                            Catalog ({approvedItems.length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("contracts")}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'contracts' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.02]'}`}
+                        >
+                            USBN Contracts
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("revisions")}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'revisions' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.02]'}`}
+                        >
+                            Revisions ({revisionItems.length})
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -421,7 +423,7 @@ export default function PublicationsPanel() {
                             {revisionItems.map(item => {
                                 const rev = item.contentDetails?.pendingRevision || {};
                                 return (
-                                    <div key={item.id} className="p-6 rounded-xl border bg-card/50">
+                                    <div key={item.id} className="p-6 rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md">
                                         <div className="flex justify-between items-start mb-6">
                                             <div>
                                                 <h3 className="text-xl font-bold">{item.name}</h3>
@@ -512,7 +514,7 @@ export default function PublicationsPanel() {
                                     key={item.id}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="p-4 rounded-xl border bg-card flex gap-6 items-start"
+                                    className="p-4 rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md flex gap-6 items-start"
                                 >
                                     {/* Cover Preview (Small) */}
                                     <div className="w-24 h-auto min-h-[6rem] bg-muted rounded overflow-hidden shrink-0 border shadow-sm relative self-start">
@@ -597,7 +599,7 @@ export default function PublicationsPanel() {
                 activeTab === "catalog" && (
                     <div className="space-y-6">
                         {/* Controls Bar */}
-                        <div className="flex flex-col md:flex-row gap-4 justify-between bg-card p-4 rounded-xl border">
+                        <div className="flex flex-col md:flex-row gap-4 justify-between rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md p-4">
                             {/* Search */}
                             <div className="relative w-full md:w-96">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -606,7 +608,7 @@ export default function PublicationsPanel() {
                                     placeholder="Search by title, author, or ISBN..."
                                     value={catalogSearch}
                                     onChange={(e) => setCatalogSearch(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 rounded-lg border bg-background focus:ring-2 ring-primary/20 outline-none"
+                                    className="w-full pl-9 pr-4 h-10 rounded-lg border border-foreground/[0.05] bg-background focus:outline-none focus:border-foreground/30 transition-colors"
                                 />
                             </div>
 
@@ -617,7 +619,7 @@ export default function PublicationsPanel() {
                                     <select
                                         value={catalogSort}
                                         onChange={(e) => setCatalogSort(e.target.value as SortField)}
-                                        className="px-3 py-2 rounded-lg border bg-background"
+                                        className="h-10 px-3 rounded-lg border border-foreground/[0.05] bg-background text-sm"
                                     >
                                         <option value="updatedAt">Date Updated</option>
                                         <option value="createdAt">Date Created</option>
@@ -627,7 +629,7 @@ export default function PublicationsPanel() {
                                     </select>
                                     <button
                                         onClick={() => setCatalogOrder(prev => prev === "asc" ? "desc" : "asc")}
-                                        className="p-2 border rounded-lg hover:bg-muted"
+                                        className="h-10 w-10 border border-foreground/[0.05] rounded-lg hover:bg-foreground/[0.02] flex items-center justify-center transition-colors"
                                     >
                                         <ArrowUpDown className="w-4 h-4" />
                                     </button>
@@ -637,7 +639,7 @@ export default function PublicationsPanel() {
                                 <select
                                     value={catalogPageSize}
                                     onChange={(e) => setCatalogPageSize(Number(e.target.value))}
-                                    className="px-3 py-2 rounded-lg border bg-background"
+                                    className="h-10 px-3 rounded-lg border border-foreground/[0.05] bg-background text-sm"
                                 >
                                     <option value={10}>10 items</option>
                                     <option value={20}>20 items</option>
@@ -661,7 +663,7 @@ export default function PublicationsPanel() {
                                         key={item.id}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="p-4 rounded-xl border bg-card flex gap-6 items-center"
+                                        className="p-4 rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md flex gap-6 items-center"
                                     >
                                         {/* Cover */}
                                         <div className="w-16 h-auto min-h-[4rem] bg-muted rounded overflow-hidden shrink-0 border shadow-sm relative self-start">
@@ -1187,10 +1189,10 @@ function ContractsManager({
     const chainContracts = contracts.filter(c => c.chainId === selectedChainId);
 
     return (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
+        <div className="w-full space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Deployment Card */}
-                <div className="p-6 border rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl relative overflow-hidden">
+                <div className="p-6 rounded-2xl border border-foreground/[0.05] bg-gradient-to-br from-foreground/[0.04] to-foreground/[0.01] backdrop-blur-md relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10">
                         <Rocket className="w-32 h-32" />
                     </div>
@@ -1204,7 +1206,7 @@ function ContractsManager({
                         <select
                             value={selectedChainId}
                             onChange={(e) => setSelectedChainId(Number(e.target.value))}
-                            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
+                            className="w-full h-10 px-4 bg-foreground/[0.03] border border-foreground/[0.05] rounded-lg transition-colors"
                         >
                             {SUPPORTED_CHAINS.map(c => (
                                 <option key={c.id} value={c.id}>{c.name} ({c.id})</option>
@@ -1233,15 +1235,15 @@ function ContractsManager({
                 </div>
 
                 {/* Logs Console */}
-                <div className="p-6 border rounded-xl bg-black text-green-400 font-mono text-xs overflow-y-auto max-h-[350px] shadow-inner">
-                    <div className="flex items-center gap-2 border-b border-green-900/50 pb-2 mb-2">
+                <div className="p-6 rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] font-mono text-xs overflow-y-auto max-h-[350px]">
+                    <div className="flex items-center gap-2 border-b border-foreground/[0.05] pb-2 mb-2 text-emerald-500">
                         <Terminal className="w-4 h-4" /> Deployment Logs
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1 text-muted-foreground">
                         {deployLogs.length === 0 && <span className="opacity-50">Waiting for commands...</span>}
                         {deployLogs.map((log: string, i: number) => (
                             <div key={i} className="break-words">
-                                <span className="text-green-600 mr-2">[{new Date().toLocaleTimeString()}]</span>
+                                <span className="text-emerald-600 mr-2">[{new Date().toLocaleTimeString()}]</span>
                                 {log}
                             </div>
                         ))}
@@ -1250,7 +1252,7 @@ function ContractsManager({
             </div>
 
             {/* Deployed Contracts List */}
-            <div className="border rounded-xl p-6 bg-card">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md p-6">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 text-primary" />
                     Deployed Contracts
@@ -1264,7 +1266,7 @@ function ContractsManager({
                         {contracts.map((c, i) => {
                             const chainInfo = SUPPORTED_CHAINS.find(ch => ch.id === c.chainId);
                             return (
-                                <div key={i} className="p-4 border rounded-lg flex items-center justify-between gap-4 bg-muted/20">
+                                <div key={i} className="p-4 rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] flex items-center justify-between gap-4">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className="text-xs font-medium px-2 py-0.5 rounded bg-primary/10 text-primary">{c.chainName}</span>
@@ -1300,7 +1302,7 @@ function ContractsManager({
             </div>
 
             {/* Manual Verify Utility */}
-            <div className="border rounded-xl p-6 bg-card">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md p-6">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                     <ShieldAlert className="w-5 h-5 text-amber-500" /> Manual Verification
                 </h3>
@@ -1308,7 +1310,7 @@ function ContractsManager({
                     <select
                         value={selectedChainId}
                         onChange={(e) => setSelectedChainId(Number(e.target.value))}
-                        className="px-4 py-2 border rounded-lg bg-background"
+                        className="h-10 px-4 border border-foreground/[0.05] rounded-lg bg-background text-sm"
                     >
                         {SUPPORTED_CHAINS.map(c => (
                             <option key={c.id} value={c.id}>{c.name}</option>
@@ -1319,7 +1321,7 @@ function ContractsManager({
                         placeholder="Contract Address (0x...)"
                         value={verifyAddress}
                         onChange={(e) => setVerifyAddress(e.target.value)}
-                        className="flex-1 px-4 py-2 border rounded-lg bg-background font-mono"
+                        className="flex-1 h-10 px-4 border border-foreground/[0.05] rounded-lg bg-background font-mono text-sm"
                     />
                     <button
                         onClick={() => {
