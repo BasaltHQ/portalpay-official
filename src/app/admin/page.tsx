@@ -40,7 +40,7 @@ import MessagesPanelExt from "@/app/admin/panels/MessagesPanel";
 import TeamPanel from "@/app/admin/panels/TeamPanel";
 import MyPurchasesPanelExt from "@/app/admin/panels/MyPurchasesPanel";
 import { SEOLandingPagesPanel } from "@/app/admin/panels/SEOLandingPagesPanel";
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminSidebar, type AdminTabKey } from "@/components/admin/admin-sidebar";
 import AdminHero from "@/components/admin/admin-hero";
 import InstallerPackagesPanel from "@/app/admin/panels/InstallerPackagesPanel";
 import DeviceInstallerPanel from "@/app/admin/panels/DeviceInstallerPanel";
@@ -582,9 +582,14 @@ function WithdrawalInstructionsPanel() {
     return () => { cancelled = true; };
   }, [account?.address]);
   return (
-    <div className="glass-pane rounded-xl border p-4 space-y-4">
+    <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-6">
+      <div className="flex items-center justify-between border-b border-foreground/10 pb-4">
+        <h3 className="text-xl font-bold tracking-tight">Withdrawal Instructions</h3>
+        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">How funds flow and how to cash out</span>
+      </div>
+
       <div>
-        <h3 className="text-lg font-semibold">Overview: How money flows</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">Overview: How money flows</h3>
         <div className="microtext text-muted-foreground mt-1">
           Money flows on-chain on Base (Coinbase L2). Each purchase is paid into your Payment Splitter (“Split”) which records shares for each recipient. Your portion is instantly releasable from the Split to your wallet. You can verify on‑chain any time:&nbsp;
           <span className="whitespace-nowrap">
@@ -619,14 +624,27 @@ function WithdrawalInstructionsPanel() {
             )}
           </span>
         </div>
-        <div className="mt-2 rounded-md border p-3">
-          <ol className="list-decimal pl-5 space-y-1 text-sm">
-            <li>Buyer opens a receipt/portal and pays using the token configured for that order (Fixed = Default token, Dynamic = rotating token).</li>
-            <li>
+        <div className="mt-4 space-y-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">1</span>
+              <h4 className="text-sm font-semibold">Payment Initiated</h4>
+            </div>
+            <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
+              Buyer opens a receipt/portal and pays using the token configured for that order (Fixed = Default token, Dynamic = rotating token).
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">2</span>
+              <h4 className="text-sm font-semibold">Funds Land in Split Contract</h4>
+            </div>
+            <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
               Funds land in your Split contract{" "}
               {splitAddress ? (
                 <a
-                  className="underline"
+                  className="text-foreground hover:underline border-b border-foreground/30 pb-0.5"
                   href={`https://base.blockscout.com/address/${splitAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -635,12 +653,19 @@ function WithdrawalInstructionsPanel() {
                 </a>
               ) : null}
               . Balances accrue per token (ETH, USDC, USDT, cbBTC, cbXRP).
-            </li>
-            <li>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">3</span>
+              <h4 className="text-sm font-semibold">Release to Wallet</h4>
+            </div>
+            <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
               Your share is instantly releasable. Use Reserve Analytics to release; tokens move from Split to your wallet{" "}
               {merchantWallet ? (
                 <a
-                  className="underline"
+                  className="text-foreground hover:underline border-b border-foreground/30 pb-0.5"
                   href={`https://base.blockscout.com/address/${merchantWallet}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -649,15 +674,24 @@ function WithdrawalInstructionsPanel() {
                 </a>
               ) : null}
               .
-            </li>
-            <li>After release, assets are in your custody and can be sent to Coinbase or spent directly from your wallet.</li>
-          </ol>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">4</span>
+              <h4 className="text-sm font-semibold">Self-Custody</h4>
+            </div>
+            <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
+              After release, assets are in your custody and can be sent to Coinbase or spent directly from your wallet.
+            </div>
+          </div>
         </div>
-        <div className="mt-2 rounded-md border p-3 bg-foreground/5">
-          <div className="text-sm font-medium">Addresses on Base</div>
-          <div className="microtext text-muted-foreground mt-1">Use these to verify activity on Blockscout and to share addresses when needed.</div>
-          <div className="mt-2 space-y-2">
-            <div className="flex items-center justify-between rounded-md border p-2">
+        <div className="mt-6 rounded-lg border border-foreground/10 bg-foreground/[0.02] p-4">
+          <div className="text-[10px] uppercase font-bold text-foreground tracking-wider mb-2">Addresses on Base</div>
+          <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed mb-4">Use these to verify activity on Blockscout and to share addresses when needed.</div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-md border border-foreground/10 bg-black/20 p-3">
               <div className="text-sm">
                 <div className="microtext text-muted-foreground">Your Wallet</div>
                 {merchantWallet ? (
@@ -724,19 +758,28 @@ function WithdrawalInstructionsPanel() {
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold">Where to release funds</h3>
-        <div className="microtext text-muted-foreground mt-1">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">Where to release funds</h3>
+        <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
           Use the Reserve Analytics panel on the Reserve tab:
         </div>
-        <ul className="list-disc pl-5 mt-1 text-sm">
-          <li>Click “Withdraw to Wallet” to batch-release all tokens due to you.</li>
-          <li>Or use the per-token “Withdraw {"<SYMBOL>"}” buttons to release specific assets.</li>
-          <li>Status will indicate Submitted / Skipped / Failed. Skipped often means “not due payment” for that token right now.</li>
+        <ul className="space-y-2 mt-4">
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">Click “Withdraw to Wallet” to batch-release all tokens due to you.</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">Or use the per-token “Withdraw {"<SYMBOL>"}” buttons to release specific assets.</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">Status will indicate Submitted / Skipped / Failed. Skipped often means “not due payment” for that token right now.</div>
+          </li>
         </ul>
-        <div className="mt-2 rounded-md border p-3 bg-foreground/5">
-          <div className="text-sm font-medium">Addresses & Explorer</div>
-          <div className="mt-2 space-y-2">
-            <div className="flex items-center justify-between rounded-md border p-2">
+        <div className="mt-6 rounded-lg border border-foreground/10 bg-foreground/[0.02] p-4">
+          <div className="text-[10px] uppercase font-bold text-foreground tracking-wider mb-4">Addresses & Explorer</div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-md border border-foreground/10 bg-black/20 p-3">
               <div className="text-sm">
                 <div className="microtext text-muted-foreground">Your Wallet</div>
                 {merchantWallet ? (
@@ -803,68 +846,145 @@ function WithdrawalInstructionsPanel() {
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold">Best practices before cashing out</h3>
-        <ul className="list-disc pl-5 mt-1 text-sm">
-          <li>USDC on Base is recommended for low volatility and broad exchange support.</li>
-          <li>If you received mixed tokens, consider swapping to USDC in your wallet or a DEX on Base before sending to Coinbase.</li>
-          <li>Always verify the network and token standard when sending to an exchange deposit address.</li>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">Best practices before cashing out</h3>
+        <ul className="space-y-2 mt-4">
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">USDC on Base is recommended for low volatility and broad exchange support.</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">If you received mixed tokens, consider swapping to USDC in your wallet or a DEX on Base before sending to Coinbase.</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">Always verify the network and token standard when sending to an exchange deposit address.</div>
+          </li>
         </ul>
       </div>
 
-      <div>
-        <h3 className="text-lg font-semibold">Transfer to Coinbase (deposit)</h3>
-        <ol className="list-decimal pl-5 mt-1 text-sm space-y-1">
-          <li>Open the Coinbase app or web, go to “Receive”.</li>
-          <li>Select the asset you plan to deposit (e.g., USDC). For the network, select Base if prompted.</li>
-          <li>Copy your Coinbase deposit address for that asset on the Base network.</li>
-          <li>From your wallet (the one connected to Admin), send the asset on Base to the copied address.</li>
-          <li>Wait for confirmation; the funds will appear in your Coinbase account balance.</li>
-        </ol>
-        {/* Highlighted callout: Network must match & asset support (dark mode) */}
-        <div className="rounded-md border p-3 mt-2 bg-foreground/5 border-amber-500/40">
-          <div className="text-sm font-bold text-amber-300">NETWORK MUST MATCH</div>
-          <div className="microtext text-foreground mt-1">
+      <div className="space-y-6">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">Transfer to Coinbase (deposit)</h3>
+        
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">1</span>
+            <h4 className="text-sm font-semibold">Open Coinbase</h4>
+          </div>
+          <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">Open the Coinbase app or web, go to “Receive”.</div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">2</span>
+            <h4 className="text-sm font-semibold">Select Asset and Network</h4>
+          </div>
+          <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">Select the asset you plan to deposit (e.g., USDC). For the network, select Base if prompted.</div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">3</span>
+            <h4 className="text-sm font-semibold">Copy Address</h4>
+          </div>
+          <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">Copy your Coinbase deposit address for that asset on the Base network.</div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">4</span>
+            <h4 className="text-sm font-semibold">Send from Admin Wallet</h4>
+          </div>
+          <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">From your wallet (the one connected to Admin), send the asset on Base to the copied address.</div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">5</span>
+            <h4 className="text-sm font-semibold">Confirm Deposit</h4>
+          </div>
+          <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">Wait for confirmation; the funds will appear in your Coinbase account balance.</div>
+        </div>
+        
+        <div className="rounded-lg border p-4 mt-6 bg-foreground/[0.02] border-amber-500/30">
+          <div className="text-[10px] uppercase font-bold text-amber-500 tracking-wider mb-2">Network Must Match</div>
+          <div className="text-[10px] uppercase font-bold text-foreground tracking-wider leading-relaxed mb-4">
             Always send assets on the Base network to a Base deposit address. Mismatched networks can result in permanent loss of funds.
           </div>
-          <ul className="list-disc pl-5 mt-2 text-sm text-foreground">
-            <li>USDC, USDT, and ETH on Base are broadly supported across exchanges — always verify the deposit network.</li>
-            <li>cbBTC and cbXRP are Coinbase‑wrapped assets on Base. When sent to a Coinbase wallet, they convert to native BTC/XRP.</li>
-            <li className="text-red-400 font-semibold">Do NOT send cbBTC or cbXRP to exchanges that do not support these wrapped assets. Use Coinbase for deposits or swap to USDC first.</li>
+          <ul className="space-y-2">
+            <li className="flex items-start gap-2">
+              <span className="w-1 h-1 rounded-full bg-amber-500/50 mt-1.5 shrink-0" />
+              <div className="text-[10px] uppercase font-bold text-foreground tracking-wider">USDC, USDT, and ETH on Base are broadly supported across exchanges — always verify the deposit network.</div>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="w-1 h-1 rounded-full bg-amber-500/50 mt-1.5 shrink-0" />
+              <div className="text-[10px] uppercase font-bold text-foreground tracking-wider">cbBTC and cbXRP are Coinbase‑wrapped assets on Base. When sent to a Coinbase wallet, they convert to native BTC/XRP.</div>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="w-1 h-1 rounded-full bg-red-500 mt-1.5 shrink-0" />
+              <div className="text-[10px] uppercase font-bold text-red-400 tracking-wider">Do NOT send cbBTC or cbXRP to exchanges that do not support these wrapped assets. Use Coinbase for deposits or swap to USDC first.</div>
+            </li>
           </ul>
         </div>
       </div>
 
-      {/* Smart Accounts & Gas (highlighted, dark mode) */}
-      <div className="rounded-md border p-3 bg-foreground/5 border-green-500/40">
-        <div className="text-sm font-bold text-green-300">SMART ACCOUNTS & GAS COVERAGE</div>
-        <div className="microtext text-foreground mt-1">
+      <div className="rounded-lg border p-4 bg-foreground/[0.02] border-green-500/30">
+        <div className="text-[10px] uppercase font-bold text-green-500 tracking-wider mb-2">Smart Accounts & Gas Coverage</div>
+        <div className="text-[10px] uppercase font-bold text-foreground tracking-wider leading-relaxed mb-4">
           Accounts created using social login use smart accounts (Account Abstraction). Gas fees for contract releases and Admin‑initiated transfers are covered, so you do not need to hold ETH for gas when withdrawing your split.
         </div>
-        <ul className="list-disc pl-5 mt-1 text-sm text-foreground">
-          <li>Releases from the Split and Admin transfer actions are sponsored; gas is covered.</li>
-          <li>You can withdraw right away even if your wallet has zero ETH balance.</li>
+        <ul className="space-y-2">
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-green-500/50 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-foreground tracking-wider">Releases from the Split and Admin transfer actions are sponsored; gas is covered.</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-green-500/50 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-foreground tracking-wider">You can withdraw right away even if your wallet has zero ETH balance.</div>
+          </li>
         </ul>
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold">Withdraw to bank or spend with Coinbase Card</h3>
-        <ul className="list-disc pl-5 mt-1 text-sm">
-          <li>Once funds are in Coinbase, you can initiate a fiat withdrawal to your linked bank account.</li>
-          <li>Alternatively, you can apply for a Coinbase debit card and spend crypto from your Coinbase balance with no additional card fees where supported.</li>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">Withdraw to bank or spend with Coinbase Card</h3>
+        <ul className="space-y-2 mt-4">
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">Once funds are in Coinbase, you can initiate a fiat withdrawal to your linked bank account.</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">Alternatively, you can apply for a Coinbase debit card and spend crypto from your Coinbase balance with no additional card fees where supported.</div>
+          </li>
         </ul>
-        <div className="microtext text-muted-foreground mt-2">
+        <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-4">
           See Coinbase help center for region availability and the latest fee schedule.
         </div>
       </div>
 
-      <div className="rounded-md border p-3">
-        <div className="text-sm font-medium mb-1">Quick checklist</div>
-        <ul className="list-disc pl-5 text-sm space-y-1">
-          <li>Release your due funds in Reserve Analytics.</li>
-          <li>Consolidate to USDC on Base if needed.</li>
-          <li>Use Coinbase “Receive” to get a Base deposit address for USDC.</li>
-          <li>Send USDC (Base) from your wallet to Coinbase deposit address.</li>
-          <li>Withdraw to bank or spend via Coinbase Card.</li>
+      <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] p-4 mt-6">
+        <div className="text-[10px] uppercase font-bold text-foreground tracking-wider mb-2">Quick checklist</div>
+        <ul className="space-y-2 mt-2">
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-[var(--primary)] mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Release your due funds in Reserve Analytics.</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-[var(--primary)] mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Consolidate to USDC on Base if needed.</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-[var(--primary)] mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Use Coinbase “Receive” to get a Base deposit address for USDC.</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-[var(--primary)] mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Send USDC (Base) from your wallet to Coinbase deposit address.</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-[var(--primary)] mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Withdraw to bank or spend via Coinbase Card.</div>
+          </li>
         </ul>
       </div>
     </div>
@@ -902,66 +1022,91 @@ function ShopSetupInstructionsPanel() {
   const shopUrl = slug ? `${origin}/shop/${encodeURIComponent(slug)}` : "";
 
   return (
-    <div className="glass-pane rounded-xl border p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Shop Setup Instructions</h3>
-        <span className="microtext text-muted-foreground">Claim slug → add inventory → share link</span>
+    <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-6">
+      <div className="flex items-center justify-between border-b border-foreground/10 pb-4">
+        <h3 className="text-xl font-bold tracking-tight">Shop Setup Instructions</h3>
+        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Claim slug → add inventory → share link</span>
       </div>
 
-      <ol className="list-decimal pl-5 space-y-1 text-sm">
-        <li>
-          Claim your shop slug to get a friendly URL.
-          <div className="microtext text-muted-foreground">
-            Open the Profile page and set your display name and shop slug. Your public shop will be accessible at /shop/&lt;slug&gt;.
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">1</span>
+            <h4 className="text-sm font-semibold">Claim your shop slug</h4>
+          </div>
+          <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
+            Open the Profile page and set your display name and shop slug. Your public shop will be accessible at <code className="px-1.5 py-0.5 rounded-md bg-foreground/10 text-foreground font-mono text-[9px] lowercase">/shop/&lt;slug&gt;</code>.
             <span className="ml-2">
-              <a href="/profile" className="underline">Go to Profile</a>
+              <a href="/profile" className="text-foreground hover:underline border-b border-foreground/30 pb-0.5">Go to Profile</a>
             </span>
           </div>
-        </li>
-        <li>
-          Add inventory from the Inventory tab.
-          <div className="microtext text-muted-foreground">
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">2</span>
+            <h4 className="text-sm font-semibold">Add inventory</h4>
+          </div>
+          <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
             Use Add Item to upload images, set price, stock, category, tags, and attributes. Mark items as taxable if applicable.
           </div>
-        </li>
-        <li>
-          Share your shop link to start earning.
-          <div className="rounded-md border p-2 mt-1 microtext">
-            <div className="text-sm font-medium">Your Shop Link</div>
-            <div className="mt-1">
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">3</span>
+            <h4 className="text-sm font-semibold">Share your shop link</h4>
+          </div>
+          <div className="ml-7 rounded-lg border border-foreground/10 bg-foreground/[0.02] p-4 mt-2">
+            <div className="text-[10px] uppercase font-bold text-foreground tracking-wider mb-2">Your Shop Link</div>
+            <div>
               {shopUrl ? (
                 <div className="flex items-center justify-between gap-2">
-                  <a href={shopUrl} className="underline truncate" title={shopUrl}>{shopUrl}</a>
+                  <a href={shopUrl} className="text-foreground hover:underline border-b border-foreground/30 pb-0.5 truncate" title={shopUrl}>{shopUrl}</a>
                   <button
-                    className="px-2 py-1 rounded-md border text-xs"
+                    className="px-2 py-1 rounded-md border border-foreground/10 hover:bg-white/5 transition-all text-xs"
                     onClick={() => { try { navigator.clipboard.writeText(shopUrl); } catch { } }}
                   >
                     Copy
                   </button>
                 </div>
               ) : (
-                <span className="text-muted-foreground">
-                  No slug set yet. Visit <a href="/profile" className="underline">Profile</a> to claim a slug.
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                  No slug set yet. Visit <a href="/profile" className="text-foreground hover:underline border-b border-foreground/30 pb-0.5">Profile</a> to claim a slug.
                 </span>
               )}
             </div>
           </div>
-        </li>
-        <li>
-          Optionally create quick orders or terminal payments.
-          <div className="microtext text-muted-foreground">
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">4</span>
+            <h4 className="text-sm font-semibold">Create quick orders or terminal payments</h4>
+          </div>
+          <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
             Use Orders to generate a receipt from selected items or Terminal to create a one‑off charge with QR.
           </div>
-        </li>
-      </ol>
+        </div>
+      </div>
 
-      {error && <div className="microtext text-red-500">{error}</div>}
-      <div className="rounded-md border p-3 bg-foreground/5">
-        <div className="text-sm font-medium">Tips</div>
-        <ul className="list-disc pl-5 mt-1 text-sm">
-          <li>Use high‑quality images (WebP) and clear names/descriptions for higher conversion.</li>
-          <li>Group items with tags and attributes for analytics and easy filtering.</li>
-          <li>Enable taxes by setting your default jurisdiction in Reserve → Tax Management.</li>
+      {error && <div className="text-[10px] uppercase font-bold text-red-500 tracking-wider">{error}</div>}
+      
+      <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] p-4 mt-6">
+        <div className="text-[10px] uppercase font-bold text-foreground tracking-wider mb-2">Tips</div>
+        <ul className="space-y-2 mt-2">
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Use high‑quality images (WebP) and clear names/descriptions for higher conversion.</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Group items with tags and attributes for analytics and easy filtering.</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Enable taxes by setting your default jurisdiction in Reserve → Tax Management.</div>
+          </li>
         </ul>
       </div>
     </div>
@@ -1045,38 +1190,57 @@ function ProfileSetupInstructionsPanel() {
 /** ---------------- Whitelabel Instructions ---------------- */
 function WhitelabelInstructionsPanel() {
   return (
-    <div className="glass-pane rounded-xl border p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Whitelabel Instructions</h3>
-        <span className="microtext text-muted-foreground">Customize the entire experience</span>
+    <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 space-y-6">
+      <div className="flex items-center justify-between border-b border-foreground/10 pb-4">
+        <h3 className="text-xl font-bold tracking-tight">Whitelabel Instructions</h3>
+        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Customize the entire experience</span>
       </div>
 
-      <div className="microtext text-muted-foreground">
+      <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
         The Shop page lets you configure theme and branding to fully whitelabel the buyer and merchant experience.
       </div>
 
-      <ol className="list-decimal pl-5 space-y-1 text-sm">
-        <li>
-          Configure your shop.
-          <div className="microtext">
-            Visit <a href="/shop" className="underline">/shop</a> to configure your branding, upload logos, set colors, and preview changes live.
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">1</span>
+            <h4 className="text-sm font-semibold">Configure Your Shop</h4>
           </div>
-        </li>
-        <li>
-          Set brand and theme.
-          <div className="microtext">
+          <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
+            Visit <a href="/shop" className="text-foreground hover:underline border-b border-foreground/30 pb-0.5">/shop</a> to configure your branding, upload logos, set colors, and preview changes live.
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">2</span>
+            <h4 className="text-sm font-semibold">Set Brand and Theme</h4>
+          </div>
+          <div className="ml-7 text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">
             Configure brand name, logo, and theme colors. Branding propagates to Receipts, Portal, Shop, and Admin surfaces.
           </div>
-        </li>
-      </ol>
+        </div>
+      </div>
 
-      <div className="rounded-md border p-3 bg-foreground/5">
-        <div className="text-sm font-medium">Where branding is used</div>
-        <ul className="list-disc pl-5 mt-1 text-sm">
-          <li>Receipt headers, QR modals, and print views</li>
-          <li>Portal checkout pages</li>
-          <li>Shop pages and profile surfaces</li>
-          <li>Admin navigation and tables (logos, names)</li>
+      <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] p-4 mt-6">
+        <div className="text-[10px] uppercase font-bold text-foreground tracking-wider mb-2">Where Branding is Used</div>
+        <ul className="space-y-2 mt-2">
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Receipt headers, QR modals, and print views</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Portal checkout pages</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Shop pages and profile surfaces</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="w-1 h-1 rounded-full bg-foreground/30 mt-1.5 shrink-0" />
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Admin navigation and tables (logos, names)</div>
+          </li>
         </ul>
       </div>
     </div>
@@ -10567,63 +10731,7 @@ export default function AdminPage() {
   const canPartners = canAccessPanel("partners", wallet);
   const canBranding = canAccessPanel("branding", wallet);
   const canAdmins = canAccessPanel("admins", wallet);
-  const [activeTab, setActiveTab] = useState<
-    | "reserve"
-    | "inventory"
-    | "orders"
-    | "purchases"
-    | "messages"
-    | "messages-buyer"
-    | "messages-merchant"
-    | "rewards"
-    | "terminal"
-    | "devices"
-    | "kitchen"
-    | "tables"
-    | "pms"
-    | "shopSetup"
-    | "profileSetup"
-    | "whitelabel"
-    | "withdrawal"
-    | "loyalty"
-    | "loyaltyConfig"
-    | "users"
-    | "branding"
-    | "splitConfig"
-    | "applications"
-    | "partners"
-    | "contracts"
-    | "admins"
-    | "seoPages"
-    | "integrations"
-    | "shopifyPartner"
-    | "shopifyPlatform"
-    | "support"
-    | "supportAdmin"
-    | "globalArt"
-    | "delivery"
-    | "writersWorkshop"
-    | "publications"
-    | "endpoints"
-    | "team"
-    | "reports"
-    | "reportsPartner"
-    | "reportsPlatform"
-    | "clientRequests"
-    | "agentRequests"
-    | "plugins"
-    | "pluginStudio"
-    | "subscriptions"
-    | "modules"
-    | "nodeOperators"
-    | "nodeDashboard"
-    | "roadmap"
-    | "updates"
-    | "analytics"
-    | "leaderboard"
-    | "agentUniversity"
-    | "cannabisCompliance"
-  >("reserve");
+  const [activeTab, setActiveTab] = useState<AdminTabKey>("reserve");
   const [industryPack, setIndustryPack] = useState<string | null>(null);
   const containerType = String(process.env.NEXT_PUBLIC_CONTAINER_TYPE || "platform").toLowerCase();
 
@@ -10862,29 +10970,29 @@ export default function AdminPage() {
             <div className="mt-2 flex items-center gap-2">
               <span className="microtext text-muted-foreground">Manuals:</span>
               <button
-                className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "shopSetup" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-                onClick={() => setActiveTab("shopSetup")}
+                className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "manualShop" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("manualShop")}
                 title="Shop Setup Instructions"
               >
                 Shop Setup
               </button>
               <button
-                className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "profileSetup" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-                onClick={() => setActiveTab("profileSetup")}
+                className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "manualProfile" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("manualProfile")}
                 title="Profile Setup Instructions"
               >
                 Profile Setup
               </button>
               <button
-                className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "whitelabel" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-                onClick={() => setActiveTab("whitelabel")}
+                className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "manualWhitelabel" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("manualWhitelabel")}
                 title="Whitelabel Instructions"
               >
                 Whitelabel
               </button>
               <button
-                className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "withdrawal" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
-                onClick={() => setActiveTab("withdrawal")}
+                className={`px-3 py-1.5 min-h-[28px] whitespace-nowrap rounded-md border microtext text-muted-foreground ${activeTab === "manualWithdrawal" ? "bg-foreground/10 border-foreground/20" : "hover:bg-foreground/5"}`}
+                onClick={() => setActiveTab("manualWithdrawal")}
                 title="Withdrawal Instructions"
               >
                 Withdrawal Instructions
@@ -10910,34 +11018,26 @@ export default function AdminPage() {
         {activeTab === "roadmap" && <RoadmapPanel brandKey={getEffectiveBrandKey()} />}
         {activeTab === "updates" && <UpdatesPanel brandKey={getEffectiveBrandKey()} />}
 
-        {activeTab === "withdrawal" && (
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Withdrawal Instructions</h2>
-              <span className="microtext text-muted-foreground">How funds flow and how to cash out</span>
-            </div>
+        {activeTab === "manualWithdrawal" && (
+          <div className="w-full space-y-6 pb-24 admin-panel-enter">
             <WithdrawalInstructionsPanel />
           </div>
         )}
 
-        {activeTab === "shopSetup" && (
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Shop Setup</h2>
-              <span className="microtext text-muted-foreground">Claim slug → add inventory → share link</span>
-            </div>
+        {activeTab === "manualShop" && (
+          <div className="w-full space-y-6 pb-24 admin-panel-enter">
             <ShopSetupInstructionsPanel />
           </div>
         )}
 
+        {activeTab === "manualProfile" && (
+          <div className="w-full space-y-6 pb-24 admin-panel-enter">
+            <ProfileSetupInstructionsPanel />
+          </div>
+        )}
 
-
-        {activeTab === "whitelabel" && (
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24 admin-panel-enter">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Whitelabel</h2>
-              <span className="microtext text-muted-foreground">Customize the entire experience</span>
-            </div>
+        {activeTab === "manualWhitelabel" && (
+          <div className="w-full space-y-6 pb-24 admin-panel-enter">
             <WhitelabelInstructionsPanel />
           </div>
         )}

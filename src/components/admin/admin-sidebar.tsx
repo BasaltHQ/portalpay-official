@@ -64,7 +64,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { cachedFetch } from '@/lib/client-api-cache';
 import { getDefaultBrandSymbol, resolveBrandSymbol, getEffectiveBrandKey, resolveBrandAppLogo } from '@/lib/branding';
 
-type AdminTabKey =
+export type AdminTabKey =
   | 'terminal'
   | 'devices'
   | 'kitchen'
@@ -93,8 +93,10 @@ type AdminTabKey =
   | 'contracts'
   | 'shopSetup'
   | 'profileSetup'
-  | 'whitelabel'
-  | 'withdrawal'
+  | 'manualShop'
+  | 'manualProfile'
+  | 'manualWhitelabel'
+  | 'manualWithdrawal'
   | 'admins'
   | 'seoPages'
   | 'integrations'
@@ -489,10 +491,10 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
       title: 'Manuals',
       icon: <BookOpen className="w-4 h-4" />,
       items: [
-        { title: 'Shop Setup', key: 'shopSetup' as AdminTabKey, icon: <BookOpen className="w-4 h-4" /> },
-        { title: 'Profile Setup', key: 'profileSetup' as AdminTabKey },
-        { title: 'Whitelabel', key: 'whitelabel' as AdminTabKey, icon: <BookOpen className="w-4 h-4" /> },
-        { title: 'Withdrawal', key: 'withdrawal' as AdminTabKey, icon: <BookOpen className="w-4 h-4" /> },
+        { title: 'Shop Setup', key: 'manualShop' as AdminTabKey, icon: <BookOpen className="w-4 h-4" /> },
+        { title: 'Profile Setup', key: 'manualProfile' as AdminTabKey, icon: <BookOpen className="w-4 h-4" /> },
+        { title: 'Whitelabel', key: 'manualWhitelabel' as AdminTabKey, icon: <BookOpen className="w-4 h-4" /> },
+        { title: 'Withdrawal', key: 'manualWithdrawal' as AdminTabKey, icon: <BookOpen className="w-4 h-4" /> },
       ],
     },
   ];

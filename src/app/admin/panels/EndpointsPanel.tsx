@@ -353,8 +353,14 @@ export default function EndpointsPanel({ industryPack }: { industryPack?: string
         <div className="w-full space-y-8 pb-24 admin-panel-enter">
             {/* Hero Section */}
             <div className="relative p-8 md:p-12 rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-md">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-transparent pointer-events-none" />
-                <div className="absolute -top-32 -right-32 w-96 h-96 bg-primary/30 rounded-full blur-[100px] pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-transparent pointer-events-none z-0" />
+                <div className="absolute -top-32 -right-32 w-96 h-96 bg-primary/30 rounded-full blur-[100px] pointer-events-none z-0" />
+                
+                {/* Seamlessly blended image on the right */}
+                <div className="absolute inset-y-0 right-0 w-full md:w-2/3 pointer-events-none opacity-30 md:opacity-60 mix-blend-screen [mask-image:linear-gradient(to_right,transparent_10%,black_80%)] z-0">
+                    <img src="/surge_pattern.png" alt="" className="absolute inset-0 w-full h-full object-cover object-left grayscale" />
+                    <div className="absolute inset-0 bg-primary mix-blend-color" />
+                </div>
                 
                 <div className="relative z-10 max-w-2xl">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6">
@@ -368,7 +374,7 @@ export default function EndpointsPanel({ industryPack }: { industryPack?: string
                         Deploy, configure, and launch the physical touchpoints that power your business. Connect iPads and mobile devices instantly using the secure URLs below.
                     </p>
 
-                    <div className="bg-primary/10 border border-primary/20 rounded-xl p-5 flex gap-4 items-start">
+                    <div className="bg-primary/10 border border-primary/20 rounded-xl p-5 flex gap-4 items-start backdrop-blur-md">
                         <div className="p-2 bg-primary/20 rounded-lg text-primary shrink-0 mt-0.5 shadow-inner">
                             <Info className="w-5 h-5" />
                         </div>
