@@ -809,6 +809,7 @@ export function ShopPanel() {
           <h1 className="text-2xl font-semibold mb-2">Shop</h1>
           <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Connect your wallet to deploy your storefront.</p>
           <div className="mt-3">
+            {wallets.length > 0 ? (
             <ConnectButton
               client={client}
               chain={chain}
@@ -834,6 +835,9 @@ export function ShopPanel() {
               }}
               theme={twTheme}
             />
+            ) : (
+              <div className="w-[140px] h-[40px] bg-white/5 animate-pulse rounded-[10px]" />
+            )}
           </div>
         </div>
       </div>

@@ -975,6 +975,7 @@ export default function AgentDashboard() {
                         Connect the wallet associated with your agent role to view commission reports, earnings analytics, and withdraw funds across all your assigned merchants.
                     </p>
                     <div className="flex justify-center">
+                        {wallets.length > 0 ? (
                         <ConnectButton 
                             client={client} 
                             chain={chain} 
@@ -986,6 +987,9 @@ export default function AgentDashboard() {
                                 showThirdwebBranding: false
                             }}
                         />
+                        ) : (
+                            <div className="w-[140px] h-[40px] bg-white/5 animate-pulse rounded-[10px]" />
+                        )}
                     </div>
                     <div className="pt-4 border-t border-border/50 space-y-2 text-xs text-muted-foreground">
                         <p>Your agent wallet was set by the partner when configuring merchant splits.</p>

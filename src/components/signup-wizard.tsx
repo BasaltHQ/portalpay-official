@@ -1170,7 +1170,7 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
                                                     >
                                                         {isPrivate ? "Continue to Application" : "Get Started"}
                                                     </button>
-                                                ) : (
+                                                ) : wallets.length > 0 ? (
                                                     <ConnectButton
                                                         client={client}
                                                         chain={chain}
@@ -1197,6 +1197,8 @@ export function SignupWizard({ isOpen, onClose, onComplete, inline = false }: Si
                                                             if (w) await handleWalletConnected(w);
                                                         }}
                                                     />
+                                                ) : (
+                                                    <div className="w-full h-12 bg-white/5 animate-pulse rounded-xl" />
                                                 )}
                                             </div>
                                         </div>

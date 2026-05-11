@@ -172,7 +172,7 @@ export default function EndpointsPanel({ industryPack }: { industryPack?: string
     const industryApps = [
         { key: "kds", label: "Kitchen Display (KDS)", desc: "Real-time order management screen for the kitchen processing station.", icon: ChefHat, url: `${origin}/kitchen/${slug}`, pack: "restaurant", hasConfig: true, isCore: false, bgImg: '/touchpoint-bg/bg_kitchen_1778359617065.png', iconColor: 'text-emerald-400', packIcon: UtensilsCrossed, packColor: 'text-emerald-400', packBg: 'bg-emerald-500/10 border-emerald-500/20', layoutClass: 'md:col-span-2 lg:col-span-2 lg:row-span-2' },
         { key: "tables", label: "Table Management", desc: "Visual floor plan and table status tracking for hosts and servers.", icon: Armchair, url: `${origin}/tables/${slug}`, pack: "restaurant", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_tables_1778359637650.png', iconColor: 'text-orange-400', packIcon: UtensilsCrossed, packColor: 'text-emerald-400', packBg: 'bg-emerald-500/10 border-emerald-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
-        { key: "delivery", label: "Delivery Dispatch", desc: "Courier routing and delivery order management system.", icon: Truck, url: `${origin}/delivery/${slug}`, pack: "restaurant", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_delivery_1778359658581.png', iconColor: 'text-rose-400', packIcon: UtensilsCrossed, packColor: 'text-emerald-400', packBg: 'bg-emerald-500/10 border-emerald-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
+        { key: "delivery", label: "Delivery Dispatch", desc: "Manage UberEats, Doordash, and GrubHub integrations.", icon: Truck, url: `${origin}/delivery/${slug}`, pack: "restaurant", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_delivery_1778359658581.png', iconColor: 'text-rose-400', packIcon: UtensilsCrossed, packColor: 'text-emerald-400', packBg: 'bg-emerald-500/10 border-emerald-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
         { key: "pms", label: "Hotel PMS", desc: "Property Management System for bookings, rooms, and guest services.", icon: Hotel, url: `${origin}/pms/${slug}`, pack: "hotel", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_pms_1778359679059.png', iconColor: 'text-indigo-400', packIcon: Hotel, packColor: 'text-indigo-400', packBg: 'bg-indigo-500/10 border-indigo-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
         { key: "writersWorkshop", label: "Writer's Workshop", desc: "Publishing and editorial suite for authors and journalists.", icon: PenTool, url: `${origin}/writer/${slug}`, pack: "publishing", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_writers_1778359694234.png', iconColor: 'text-pink-400', packIcon: Newspaper, packColor: 'text-pink-400', packBg: 'bg-pink-500/10 border-pink-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
         { key: "cannabisCompliance", label: "Compliance Engine", desc: "Seed-to-sale tracking and state regulatory compliance integration.", icon: ShieldCheck, url: `${origin}/compliance/${slug}`, pack: "cannabis", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_cannabis_1778359712354.png', iconColor: 'text-green-500', packIcon: ShieldCheck, packColor: 'text-green-500', packBg: 'bg-green-500/10 border-green-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
@@ -370,7 +370,7 @@ export default function EndpointsPanel({ industryPack }: { industryPack?: string
                     <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4 drop-shadow-md">
                         Your Platform Ecosystem
                     </h1>
-                    <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
+                    <p className="text-lg text-white/70 mb-8 leading-relaxed">
                         Deploy, configure, and launch the physical touchpoints that power your business. Connect iPads and mobile devices instantly using the secure URLs below.
                     </p>
 
@@ -380,8 +380,8 @@ export default function EndpointsPanel({ industryPack }: { industryPack?: string
                         </div>
                         <div>
                             <h4 className="text-sm font-semibold text-white mb-1">How it Works</h4>
-                            <p className="text-sm text-primary-foreground/70 leading-relaxed">
-                                Each touchpoint acts as an independent application running on the BasaltSurge engine. To deploy a kiosk or terminal, simply copy its specific <strong>Device URL</strong> and open it on the target physical device. The device will automatically sync with your shop's inventory and theme.
+                            <p className="text-sm text-white/60 leading-relaxed">
+                                Each touchpoint acts as an independent application running on the BasaltSurge engine. To deploy a kiosk or terminal, simply copy its specific <strong className="text-white">Device URL</strong> and open it on the target physical device. The device will automatically sync with your shop's inventory and theme.
                             </p>
                         </div>
                     </div>
