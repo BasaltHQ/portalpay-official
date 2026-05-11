@@ -13,7 +13,7 @@ import { parseKioskConfig } from "@/lib/themes";
 import type { TouchpointType, KioskTouchpointConfig, ColorMode, KioskLayout } from "@/lib/themes";
 import { ThemeSwatchPreview, ThemePickerModal } from "@/components/admin/TouchpointThemePicker";
 
-export default function EndpointsPanel({ industryPack }: { industryPack?: string | null }) {
+export default function EndpointsPanel({ industryPack, onNavigateToTab }: { industryPack?: string | null; onNavigateToTab?: (tab: string) => void }) {
     const account = useActiveAccount();
     const brand = useBrand();
     const searchParams = useSearchParams();
@@ -171,11 +171,11 @@ export default function EndpointsPanel({ industryPack }: { industryPack?: string
 
     const industryApps = [
         { key: "kds", label: "Kitchen Display (KDS)", desc: "Real-time order management screen for the kitchen processing station.", icon: ChefHat, url: `${origin}/kitchen/${slug}`, pack: "restaurant", hasConfig: true, isCore: false, bgImg: '/touchpoint-bg/bg_kitchen_1778359617065.png', iconColor: 'text-emerald-400', packIcon: UtensilsCrossed, packColor: 'text-emerald-400', packBg: 'bg-emerald-500/10 border-emerald-500/20', layoutClass: 'md:col-span-2 lg:col-span-2 lg:row-span-2' },
-        { key: "tables", label: "Table Management", desc: "Visual floor plan and table status tracking for hosts and servers.", icon: Armchair, url: `${origin}/tables/${slug}`, pack: "restaurant", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_tables_1778359637650.png', iconColor: 'text-orange-400', packIcon: UtensilsCrossed, packColor: 'text-emerald-400', packBg: 'bg-emerald-500/10 border-emerald-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
-        { key: "delivery", label: "Delivery Hub", desc: "Manage UberEats, Doordash, and GrubHub integrations.", icon: Truck, url: `${origin}/delivery/${slug}`, pack: "restaurant", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_delivery_1778359658581.png', iconColor: 'text-rose-400', packIcon: UtensilsCrossed, packColor: 'text-emerald-400', packBg: 'bg-emerald-500/10 border-emerald-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
-        { key: "pms", label: "Hotel PMS", desc: "Property Management System for bookings, rooms, and guest services.", icon: Hotel, url: `${origin}/pms/${slug}`, pack: "hotel", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_pms_1778359679059.png', iconColor: 'text-indigo-400', packIcon: Hotel, packColor: 'text-indigo-400', packBg: 'bg-indigo-500/10 border-indigo-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
-        { key: "writersWorkshop", label: "Writer's Workshop", desc: "Publishing and editorial suite for authors and journalists.", icon: PenTool, url: `${origin}/writer/${slug}`, pack: "publishing", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_writers_1778359694234.png', iconColor: 'text-pink-400', packIcon: Newspaper, packColor: 'text-pink-400', packBg: 'bg-pink-500/10 border-pink-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
-        { key: "cannabisCompliance", label: "Compliance Engine", desc: "Seed-to-sale tracking and state regulatory compliance integration.", icon: ShieldCheck, url: `${origin}/compliance/${slug}`, pack: "cannabis", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_cannabis_1778359712354.png', iconColor: 'text-green-500', packIcon: ShieldCheck, packColor: 'text-green-500', packBg: 'bg-green-500/10 border-green-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
+        { key: "tables", label: "Table Management", desc: "Visual floor plan and table status tracking for hosts and servers.", icon: Armchair, adminTabKey: "tables", pack: "restaurant", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_tables_1778359637650.png', iconColor: 'text-orange-400', packIcon: UtensilsCrossed, packColor: 'text-emerald-400', packBg: 'bg-emerald-500/10 border-emerald-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
+        { key: "delivery", label: "Delivery Hub", desc: "Manage UberEats, Doordash, and GrubHub integrations.", icon: Truck, adminTabKey: "delivery", pack: "restaurant", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_delivery_1778359658581.png', iconColor: 'text-rose-400', packIcon: UtensilsCrossed, packColor: 'text-emerald-400', packBg: 'bg-emerald-500/10 border-emerald-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
+        { key: "pms", label: "Hotel PMS", desc: "Property Management System for bookings, rooms, and guest services.", icon: Hotel, adminTabKey: "pms", pack: "hotel", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_pms_1778359679059.png', iconColor: 'text-indigo-400', packIcon: Hotel, packColor: 'text-indigo-400', packBg: 'bg-indigo-500/10 border-indigo-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
+        { key: "writersWorkshop", label: "Writer's Workshop", desc: "Publishing and editorial suite for authors and journalists.", icon: PenTool, adminTabKey: "writersWorkshop", pack: "publishing", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_writers_1778359694234.png', iconColor: 'text-pink-400', packIcon: Newspaper, packColor: 'text-pink-400', packBg: 'bg-pink-500/10 border-pink-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
+        { key: "cannabisCompliance", label: "Compliance Engine", desc: "Seed-to-sale tracking and state regulatory compliance integration.", icon: ShieldCheck, adminTabKey: "cannabisCompliance", pack: "cannabis", hasConfig: false, isCore: false, bgImg: '/touchpoint-bg/bg_cannabis_1778359712354.png', iconColor: 'text-green-500', packIcon: ShieldCheck, packColor: 'text-green-500', packBg: 'bg-green-500/10 border-green-500/20', layoutClass: 'md:col-span-1 lg:col-span-1' },
     ];
 
     const renderAppCard = (app: any) => {
@@ -242,19 +242,29 @@ export default function EndpointsPanel({ industryPack }: { industryPack?: string
                 </div>
 
                 <div className="px-6 pb-6 pt-2 relative z-10 mt-auto">
-                    <button 
-                        onClick={() => window.open(app.url, "_blank")}
-                        className="w-full py-2.5 rounded-xl font-bold text-sm transition-all duration-300 shadow-[0_0_20px_rgba(var(--primary),0.3)] bg-primary text-primary-foreground hover:bg-primary hover:-translate-y-0.5 flex justify-center items-center gap-2 backdrop-blur-sm"
-                    >
-                        Launch App <ExternalLink size={16} />
-                    </button>
+                    {app.adminTabKey && onNavigateToTab ? (
+                        <button 
+                            onClick={() => onNavigateToTab(app.adminTabKey)}
+                            className="w-full py-2.5 rounded-xl font-bold text-sm transition-all duration-300 shadow-[0_0_20px_rgba(var(--primary),0.3)] bg-primary text-primary-foreground hover:bg-primary hover:-translate-y-0.5 flex justify-center items-center gap-2 backdrop-blur-sm"
+                        >
+                            Open Module <ExternalLink size={16} />
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={() => window.open(app.url, "_blank")}
+                            className="w-full py-2.5 rounded-xl font-bold text-sm transition-all duration-300 shadow-[0_0_20px_rgba(var(--primary),0.3)] bg-primary text-primary-foreground hover:bg-primary hover:-translate-y-0.5 flex justify-center items-center gap-2 backdrop-blur-sm"
+                        >
+                            Launch App <ExternalLink size={16} />
+                        </button>
+                    )}
                 </div>
 
                 {/* Expanded Settings Section */}
                 <div className={`overflow-hidden transition-all duration-500 ease-in-out relative z-10 ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
                     <div className="p-6 pt-0 border-t border-white/10 bg-black/80 backdrop-blur-xl">
                         <div className="space-y-6 mt-4">
-                            {/* URL Section */}
+                            {/* URL Section — only for touchpoints with a device URL */}
+                            {app.url && !app.adminTabKey && (
                             <div className="space-y-2">
                                 <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Device URL</label>
                                 <div className="flex gap-2">
@@ -269,6 +279,7 @@ export default function EndpointsPanel({ industryPack }: { industryPack?: string
                                     </button>
                                 </div>
                             </div>
+                            )}
 
                             {/* Configuration Options */}
                             {app.hasConfig && (

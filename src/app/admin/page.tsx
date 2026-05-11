@@ -11113,15 +11113,15 @@ export default function AdminPage() {
           <KitchenDisplayPanel />
         )}
 
-        {activeTab === "tables" && industryPack === 'restaurant' && (
+        {activeTab === "tables" && (
           <TablesPanel />
         )}
 
-        {activeTab === "pms" && industryPack === 'hotel' && (
+        {activeTab === "pms" && (
           <PMSPanel />
         )}
 
-        {activeTab === "cannabisCompliance" && industryPack === 'cannabis' && (
+        {activeTab === "cannabisCompliance" && (
           <CannabisCompliancePanel />
         )}
 
@@ -11182,7 +11182,7 @@ export default function AdminPage() {
           <PublicationsPanelExt />
         )}
         {activeTab === "endpoints" && (
-          <EndpointsPanel industryPack={industryPack} />
+          <EndpointsPanel industryPack={industryPack} onNavigateToTab={(tab) => setActiveTab(tab as any)} />
         )}
         {activeTab === "team" && (
           <TeamPanel />
