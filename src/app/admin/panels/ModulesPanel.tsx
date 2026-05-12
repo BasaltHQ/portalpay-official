@@ -134,36 +134,38 @@ export default function ModulesPanel() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="w-full space-y-6 pb-24 admin-panel-enter">
             {/* Header */}
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                    <h2 className="text-xl font-bold flex items-center gap-2">
-                        <Boxes className="h-5 w-5 text-primary" />
-                        Merchant Modules
-                    </h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        Control which panels are visible to merchants in the Admin dashboard.
-                        Disabled modules will be hidden from the Merchant section sidebar.
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                        {enabledCount}/{MERCHANT_MODULES.length} enabled
-                    </span>
-                    <button
-                        onClick={saveConfig}
-                        disabled={saving || !dirty}
-                        className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:brightness-110 transition disabled:opacity-50 inline-flex items-center gap-2 shadow-sm"
-                    >
-                        {saving ? (
-                            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…</>
-                        ) : saved ? (
-                            <><CheckCircle className="h-3.5 w-3.5" /> Saved</>
-                        ) : (
-                            <><Save className="h-3.5 w-3.5" /> Save Changes</>
-                        )}
-                    </button>
+            <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div>
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                            <Boxes className="h-5 w-5 text-primary" />
+                            Merchant Modules
+                        </h2>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Control which panels are visible to merchants in the Admin dashboard.
+                            Disabled modules will be hidden from the Merchant section sidebar.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                            {enabledCount}/{MERCHANT_MODULES.length} enabled
+                        </span>
+                        <button
+                            onClick={saveConfig}
+                            disabled={saving || !dirty}
+                            className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:brightness-110 transition disabled:opacity-50 inline-flex items-center gap-2 shadow-sm"
+                        >
+                            {saving ? (
+                                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…</>
+                            ) : saved ? (
+                                <><CheckCircle className="h-3.5 w-3.5" /> Saved</>
+                            ) : (
+                                <><Save className="h-3.5 w-3.5" /> Save Changes</>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -178,14 +180,14 @@ export default function ModulesPanel() {
             <div className="flex gap-2">
                 <button
                     onClick={enableAll}
-                    className="px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-muted/50 transition inline-flex items-center gap-1.5"
+                    className="h-10 px-4 rounded-lg border border-foreground/[0.05] bg-background text-xs font-semibold hover:bg-foreground/[0.02] transition-colors shadow-sm inline-flex items-center gap-1.5"
                 >
                     <ToggleRight className="h-3.5 w-3.5 text-green-500" />
                     Enable All
                 </button>
                 <button
                     onClick={disableAll}
-                    className="px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-muted/50 transition inline-flex items-center gap-1.5"
+                    className="h-10 px-4 rounded-lg border border-foreground/[0.05] bg-background text-xs font-semibold hover:bg-foreground/[0.02] transition-colors shadow-sm inline-flex items-center gap-1.5"
                 >
                     <ToggleLeft className="h-3.5 w-3.5 text-muted-foreground" />
                     Disable All
@@ -201,14 +203,14 @@ export default function ModulesPanel() {
                         <button
                             key={mod.key}
                             onClick={() => toggle(mod.key)}
-                            className={`group relative text-left rounded-xl border p-4 transition-all hover:shadow-md ${isEnabled
-                                    ? "bg-card border-primary/20 hover:border-primary/40"
-                                    : "bg-muted/10 border-border/50 opacity-60 hover:opacity-80"
+                            className={`group relative text-left rounded-2xl border p-5 transition-all ${isEnabled
+                                    ? "border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md hover:bg-foreground/[0.04] hover:border-primary/20"
+                                    : "border-foreground/[0.02] bg-transparent opacity-50 hover:opacity-70 border-dashed"
                                 }`}
                         >
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-start gap-3">
-                                    <div className={`h-9 w-9 rounded-lg grid place-items-center flex-shrink-0 transition ${isEnabled ? "bg-primary/10" : "bg-muted/30"
+                                    <div className={`h-9 w-9 rounded-lg grid place-items-center flex-shrink-0 transition border ${isEnabled ? "bg-primary/10 border-primary/20" : "bg-foreground/[0.02] border-foreground/[0.05]"
                                         }`}>
                                         <Icon className={`h-4.5 w-4.5 ${isEnabled ? "text-primary" : "text-muted-foreground"}`} />
                                     </div>
@@ -233,7 +235,7 @@ export default function ModulesPanel() {
             </div>
 
             {/* Info */}
-            <div className="rounded-xl border bg-muted/5 p-4 text-xs text-muted-foreground space-y-1.5">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md p-5 text-xs text-muted-foreground space-y-1.5">
                 <p className="font-semibold text-foreground text-sm">How it works</p>
                 <p>When you disable a module, it will be hidden from the Merchant section in the admin sidebar for all merchants under your partner container.</p>
                 <p>Merchants will not be able to access disabled panels. This does not affect their underlying data — re-enabling a module will restore full access.</p>

@@ -332,7 +332,7 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
                     <div className="max-w-2xl mx-auto glass-pane border rounded-xl p-6 space-y-6">
                         {/* Request Type Selection */}
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">What can we help with?</label>
+                            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">What can we help with?</label>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {REQUEST_TYPES.map((type) => {
                                     const Icon = type.icon;
@@ -342,12 +342,12 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
                                             key={type.key}
                                             onClick={() => setRequestType(type.key)}
                                             className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-center ${isSelected
-                                                ? 'bg-primary/5 border-primary ring-1 ring-primary/20'
-                                                : 'hover:bg-foreground/5'
+                                                ? 'bg-primary/5 border-primary ring-1 ring-primary/20 shadow-md'
+                                                : 'glass-pane border-foreground/10 hover:bg-foreground/5'
                                                 }`}
                                         >
                                             <Icon className={`w-6 h-6 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
-                                            <span className={`text-sm font-medium ${isSelected ? 'text-primary' : ''}`}>{type.label}</span>
+                                            <span className={`text-[10px] uppercase font-bold tracking-wider ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>{type.label}</span>
                                         </button>
                                     );
                                 })}
@@ -356,31 +356,31 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
 
                         {/* Role Selection */}
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">I am a...</label>
+                            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">I am a...</label>
                             <div className="grid grid-cols-3 gap-3">
                                 {brandKey ? (
                                     <button
                                         onClick={() => setRole('partner')}
-                                        className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${role === 'partner' ? 'bg-primary/5 border-primary ring-1 ring-primary/20' : 'hover:bg-foreground/5'}`}
+                                        className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${role === 'partner' ? 'bg-primary/5 border-primary ring-1 ring-primary/20 shadow-md' : 'glass-pane border-foreground/10 hover:bg-foreground/5'}`}
                                     >
                                         <Briefcase className={`w-5 h-5 ${role === 'partner' ? 'text-primary' : 'text-muted-foreground'}`} />
-                                        <span className={`text-sm font-medium ${role === 'partner' ? 'text-primary' : ''}`}>Partner</span>
+                                        <span className={`text-[10px] uppercase font-bold tracking-wider ${role === 'partner' ? 'text-primary' : 'text-muted-foreground'}`}>Partner</span>
                                     </button>
                                 ) : (
                                     <>
                                         <button
                                             onClick={() => setRole('merchant')}
-                                            className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${role === 'merchant' ? 'bg-primary/5 border-primary ring-1 ring-primary/20' : 'hover:bg-foreground/5'}`}
+                                            className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${role === 'merchant' ? 'bg-primary/5 border-primary ring-1 ring-primary/20 shadow-md' : 'glass-pane border-foreground/10 hover:bg-foreground/5'}`}
                                         >
                                             <Store className={`w-5 h-5 ${role === 'merchant' ? 'text-primary' : 'text-muted-foreground'}`} />
-                                            <span className={`text-sm font-medium ${role === 'merchant' ? 'text-primary' : ''}`}>Merchant</span>
+                                            <span className={`text-[10px] uppercase font-bold tracking-wider ${role === 'merchant' ? 'text-primary' : 'text-muted-foreground'}`}>Merchant</span>
                                         </button>
                                         <button
                                             onClick={() => setRole('buyer')}
-                                            className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${role === 'buyer' ? 'bg-primary/5 border-primary ring-1 ring-primary/20' : 'hover:bg-foreground/5'}`}
+                                            className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${role === 'buyer' ? 'bg-primary/5 border-primary ring-1 ring-primary/20 shadow-md' : 'glass-pane border-foreground/10 hover:bg-foreground/5'}`}
                                         >
                                             <User className={`w-5 h-5 ${role === 'buyer' ? 'text-primary' : 'text-muted-foreground'}`} />
-                                            <span className={`text-sm font-medium ${role === 'buyer' ? 'text-primary' : ''}`}>Buyer</span>
+                                            <span className={`text-[10px] uppercase font-bold tracking-wider ${role === 'buyer' ? 'text-primary' : 'text-muted-foreground'}`}>Buyer</span>
                                         </button>
                                     </>
                                 )}
@@ -388,9 +388,9 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Subject</label>
+                            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Subject</label>
                             <input
-                                className="w-full h-10 px-3 rounded-lg border bg-background/50 focus:bg-background transition-all outline-none focus:ring-2 focus:ring-primary/20"
+                                className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] focus:bg-foreground/[0.05] transition-all outline-none focus:ring-1 focus:ring-foreground/20 text-sm font-medium"
                                 value={subject}
                                 onChange={e => setSubject(e.target.value)}
                                 placeholder="Brief summary of the issue"
@@ -399,24 +399,24 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Priority</label>
+                            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Priority</label>
                             <div className="flex gap-2">
                                 {['low', 'medium', 'high'].map(p => (
                                     <button
                                         key={p}
                                         onClick={() => setPriority(p)}
-                                        className={`px-4 py-2 rounded-lg text-sm border transition-all ${priority === p ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-foreground/5'}`}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${priority === p ? 'bg-primary text-primary-foreground border-primary shadow-md' : 'glass-pane border-foreground/10 hover:bg-foreground/5'}`}
                                     >
-                                        {p.charAt(0).toUpperCase() + p.slice(1)}
+                                        {p}
                                     </button>
                                 ))}
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Message</label>
+                            <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Message</label>
                             <textarea
-                                className="w-full h-32 px-3 py-3 rounded-lg border bg-background/50 focus:bg-background transition-all outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                                className="w-full h-32 px-3 py-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] focus:bg-foreground/[0.05] transition-all outline-none focus:ring-1 focus:ring-foreground/20 resize-none text-sm leading-relaxed"
                                 value={message}
                                 onChange={e => setMessage(e.target.value)}
                                 placeholder="Describe your issue in detail..."
@@ -462,7 +462,7 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
                                         />
                                         <button
                                             onClick={() => fileInputRef.current?.click()}
-                                            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90 transition-colors"
+                                            className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors"
                                             disabled={uploading}
                                         >
                                             {uploading ? "Uploading..." : "Choose Files"}
@@ -474,7 +474,7 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
                                         <div className="relative flex-1">
                                             <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                             <input
-                                                className="w-full h-10 pl-9 pr-3 rounded-lg border bg-background/50 focus:bg-background transition-all outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                                                className="w-full h-10 pl-9 pr-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] focus:bg-foreground/[0.05] transition-all outline-none focus:ring-1 focus:ring-foreground/20 text-sm"
                                                 placeholder="Or paste image URL..."
                                                 value={imageUrl}
                                                 onChange={(e) => setImageUrl(e.target.value)}
@@ -483,7 +483,7 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
                                         <button
                                             onClick={() => handleUrlUpload(imageUrl)}
                                             disabled={!imageUrl.trim() || uploading}
-                                            className="px-4 py-2 border rounded-lg hover:bg-foreground/5 disabled:opacity-50 transition-colors"
+                                            className="px-4 py-2 border border-foreground/10 glass-pane rounded-lg hover:bg-foreground/5 disabled:opacity-50 transition-colors text-[10px] font-bold uppercase tracking-wider"
                                         >
                                             Add
                                         </button>
@@ -536,26 +536,26 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
     // DETAIL VIEW
     if (view === 'detail' && selectedTicket) {
         return (
-            <div className="flex flex-col h-full min-h-[600px]">
-                <div className="flex items-center justify-between mb-4 pb-4 border-b shrink-0">
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => setView('list')} className="p-2 hover:bg-foreground/5 rounded-full transition-colors">
+            <div className="flex flex-col h-full min-h-[600px] glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6">
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-foreground/5 shrink-0">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => setView('list')} className="p-2 hover:bg-foreground/5 border border-transparent hover:border-foreground/10 rounded-lg transition-colors">
                             <ChevronLeft className="w-5 h-5" />
                         </button>
                         <div>
-                            <h2 className="font-semibold text-lg">{selectedTicket.subject}</h2>
-                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border flex items-center gap-1 ${statusColor(selectedTicket.status)}`}>
+                            <h2 className="font-bold tracking-tight text-xl">{selectedTicket.subject}</h2>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border flex items-center gap-1 ${statusColor(selectedTicket.status)}`}>
                                     {statusIcon(selectedTicket.status)}
-                                    {selectedTicket.status.replace('_', ' ').toUpperCase()}
+                                    {selectedTicket.status.replace('_', ' ')}
                                 </span>
-                                <span className="text-xs text-muted-foreground">#{selectedTicket.id.slice(0, 8)}</span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium border bg-muted/50">
-                                    {selectedTicket.source?.toUpperCase() || 'MERCHANT'}
+                                <span className="text-[10px] font-mono text-muted-foreground">#{selectedTicket.id.slice(0, 8)}</span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border border-foreground/10 bg-foreground/5 text-muted-foreground">
+                                    {selectedTicket.source || 'MERCHANT'}
                                 </span>
                                 {selectedTicket.requestType && (
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium border bg-primary/10 text-primary">
-                                        {selectedTicket.requestType.toUpperCase()}
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border border-primary/20 bg-primary/10 text-primary">
+                                        {selectedTicket.requestType}
                                     </span>
                                 )}
                             </div>
@@ -566,22 +566,22 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
                 <div className="flex-1 overflow-y-auto space-y-6 pr-2 mb-4">
                     {/* Original Message */}
                     <div className="flex gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                            <span className="text-xs font-bold text-primary">ME</span>
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+                            <span className="text-[10px] font-bold text-primary uppercase">ME</span>
                         </div>
                         <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">You</span>
-                                <span className="text-xs text-muted-foreground">{new Date(selectedTicket.createdAt).toLocaleString()}</span>
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">You</span>
+                                <span className="text-[10px] font-mono text-muted-foreground/60">{new Date(selectedTicket.createdAt).toLocaleString()}</span>
                             </div>
-                            <div className="p-4 rounded-2xl rounded-tl-none bg-muted/30 border text-sm whitespace-pre-wrap">
+                            <div className="p-4 rounded-2xl rounded-tl-none glass-pane border border-foreground/10 text-sm whitespace-pre-wrap leading-relaxed shadow-sm">
                                 {selectedTicket.message}
                             </div>
                             {/* Original attachments */}
                             {selectedTicket.attachments?.length > 0 && (
                                 <div className="flex gap-2 mt-2 flex-wrap">
                                     {selectedTicket.attachments.map((url: string, i: number) => (
-                                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block w-20 h-20 rounded-lg border overflow-hidden hover:ring-2 ring-primary transition-all">
+                                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block w-20 h-20 rounded-xl border border-foreground/10 overflow-hidden hover:ring-1 hover:ring-primary transition-all shadow-sm">
                                             <img src={url} alt="" className="w-full h-full object-cover" />
                                         </a>
                                     ))}
@@ -593,19 +593,19 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
                     {/* Responses */}
                     {selectedTicket.responses?.map((r: any, i: number) => (
                         <div key={i} className={`flex gap-3 ${r.isAdmin ? 'flex-row-reverse' : ''}`}>
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${r.isAdmin ? 'bg-blue-600 text-white' : 'bg-primary/10 text-primary'}`}>
-                                <span className="text-xs font-bold">{r.isAdmin ? 'SP' : 'ME'}</span>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${r.isAdmin ? 'bg-primary text-primary-foreground border-primary' : 'bg-primary/10 text-primary border-primary/20'}`}>
+                                <span className="text-[10px] font-bold uppercase tracking-wider">{r.isAdmin ? 'SP' : 'ME'}</span>
                             </div>
                             <div className={`flex-1 space-y-1 flex flex-col ${r.isAdmin ? 'items-end' : 'items-start'}`}>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium">{r.isAdmin ? 'Support Agent' : 'You'}</span>
-                                    <span className="text-xs text-muted-foreground">{new Date(r.createdAt).toLocaleString()}</span>
+                                    <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{r.isAdmin ? 'Support Agent' : 'You'}</span>
+                                    <span className="text-[10px] font-mono text-muted-foreground/60">{new Date(r.createdAt).toLocaleString()}</span>
                                 </div>
                                 {/* Only show message bubble if there's text */}
                                 {r.message && r.message.trim() && (
-                                    <div className={`p-4 rounded-2xl text-sm whitespace-pre-wrap max-w-[85%] ${r.isAdmin
-                                        ? 'bg-blue-600 text-white rounded-tr-none shadow-md shadow-blue-900/10'
-                                        : 'bg-muted/30 border rounded-tl-none'
+                                    <div className={`p-4 rounded-2xl text-sm whitespace-pre-wrap max-w-[85%] leading-relaxed shadow-sm border ${r.isAdmin
+                                        ? 'bg-primary text-primary-foreground rounded-tr-none border-primary'
+                                        : 'glass-pane border-foreground/10 rounded-tl-none'
                                         }`}>
                                         {r.message}
                                     </div>
@@ -614,7 +614,7 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
                                 {r.attachments?.length > 0 && (
                                     <div className={`flex gap-2 ${r.message?.trim() ? 'mt-2' : ''} flex-wrap ${r.isAdmin ? 'justify-end' : ''}`}>
                                         {r.attachments.map((url: string, j: number) => (
-                                            <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="block w-20 h-20 rounded-xl border-2 border-white/20 overflow-hidden hover:ring-2 ring-primary transition-all shadow-lg">
+                                            <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="block w-20 h-20 rounded-xl border border-foreground/10 overflow-hidden hover:ring-1 hover:ring-primary transition-all shadow-sm">
                                                 <img src={url} alt="" className="w-full h-full object-cover" />
                                             </a>
                                         ))}
@@ -627,7 +627,7 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
                 </div>
 
                 {/* Reply Area */}
-                <div className="pt-4 border-t bg-background shrink-0 space-y-3">
+                <div className="pt-4 border-t border-foreground/5 bg-foreground/[0.01] shrink-0 space-y-3">
                     {/* Reply attachments preview */}
                     {replyAttachments.length > 0 && (
                         <AttachmentGrid
@@ -640,7 +640,7 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
 
                     <div className="relative">
                         <textarea
-                            className="w-full h-24 pl-4 pr-24 py-3 rounded-xl border bg-muted/30 focus:bg-background transition-all outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                            className="w-full h-24 pl-4 pr-24 py-3 rounded-xl border border-foreground/10 bg-foreground/[0.02] focus:bg-foreground/[0.04] transition-all focus:outline-none focus:ring-1 focus:ring-foreground/20 resize-none text-sm leading-relaxed"
                             placeholder="Type your reply..."
                             value={reply}
                             onChange={e => setReply(e.target.value)}
@@ -651,7 +651,7 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
                                 }
                             }}
                         />
-                        <div className="absolute right-3 bottom-3 flex items-center gap-1">
+                        <div className="absolute right-3 bottom-3 flex items-center gap-2">
                             <input
                                 ref={replyFileInputRef}
                                 type="file"
@@ -663,26 +663,26 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
                             <button
                                 onClick={() => replyFileInputRef.current?.click()}
                                 disabled={replyAttachments.length >= 3 || replyUploading}
-                                className="p-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
+                                className="p-2 text-muted-foreground hover:bg-foreground/5 border border-transparent hover:border-foreground/10 rounded-lg transition-colors disabled:opacity-50"
                                 title="Attach image"
                             >
-                                <ImagePlus className="w-4 h-4" />
+                                <ImagePlus className="w-5 h-5" />
                             </button>
                             <button
-                                className="p-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-all shadow-lg shadow-primary/20"
+                                className="p-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
                                 onClick={sendReply}
                                 disabled={sending || (!reply && replyAttachments.length === 0)}
                             >
                                 {sending ? (
-                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                                 ) : (
-                                    <Send className="w-4 h-4" />
+                                    <Send className="w-5 h-5" />
                                 )}
                             </button>
                         </div>
                     </div>
-                    <div className="flex justify-between items-center px-1">
-                        <span className="text-xs text-muted-foreground">Press Enter to send, Shift+Enter for new line</span>
+                    <div className="flex justify-between items-center px-2 pb-2">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Press Enter to send, Shift+Enter for new line</span>
                     </div>
                 </div>
 
@@ -700,14 +700,14 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
 
     // LIST VIEW
     return (
-        <div className="space-y-6 h-full">
+        <div className="space-y-6 h-full glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Support Center</h2>
-                    <p className="text-muted-foreground">Track your requests and get help from our team.</p>
+                    <h2 className="text-xl font-bold tracking-tight">Support Center</h2>
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-1">Track your requests and get help from our team.</div>
                 </div>
                 <button
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors flex items-center gap-2"
                     onClick={() => setView('create')}
                 >
                     <Plus className="w-4 h-4" />
@@ -718,67 +718,67 @@ export default function GetSupportPanel({ brandKey }: { brandKey?: string }) {
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                     <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-                    <p>Loading your tickets...</p>
+                    <p className="text-[10px] uppercase font-bold tracking-wider">Loading your tickets...</p>
                 </div>
             ) : tickets.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-xl bg-muted/5">
-                    <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mb-4 text-muted-foreground">
+                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-foreground/10 rounded-xl bg-foreground/[0.02]">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 text-primary">
                         <MessageSquare className="w-8 h-8" />
                     </div>
-                    <h3 className="text-lg font-semibold mb-1">No tickets yet</h3>
-                    <p className="text-muted-foreground mb-6 text-center max-w-sm">
+                    <h3 className="text-lg font-bold tracking-tight mb-1">No tickets yet</h3>
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-6 text-center max-w-sm leading-relaxed">
                         Have a question or run into an issue? Create a support ticket and we'll get back to you shortly.
                     </p>
                     <button
-                        className="px-4 py-2 border rounded-lg font-medium hover:bg-foreground/5 transition-colors"
+                        className="px-4 py-2 border border-foreground/10 glass-pane rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/5 transition-colors"
                         onClick={() => setView('create')}
                     >
                         Create your first ticket
                     </button>
                 </div>
             ) : (
-                <div className="grid gap-3">
+                <div className="grid gap-4">
                     {tickets.map(ticket => (
                         <button
                             key={ticket.id}
-                            className="w-full text-left p-4 rounded-xl border bg-card hover:bg-accent/50 hover:border-primary/30 transition-all group shadow-sm"
+                            className="w-full text-left p-4 glass-pane rounded-xl border border-foreground/10 hover:bg-foreground/5 hover:border-foreground/20 transition-all group shadow-sm"
                             onClick={() => { setSelectedTicket(ticket); setView('detail'); }}
                         >
                             <div className="flex items-start justify-between mb-2">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <div className="font-semibold text-base group-hover:text-primary transition-colors">{ticket.subject}</div>
-                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium border bg-muted/50 text-muted-foreground">
-                                        {ticket.source?.toUpperCase() || 'MERCHANT'}
+                                    <div className="font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">{ticket.subject}</div>
+                                    <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider border border-foreground/10 bg-foreground/5 text-muted-foreground">
+                                        {ticket.source || 'MERCHANT'}
                                     </span>
                                     {ticket.requestType && (
-                                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium border bg-primary/10 text-primary">
-                                            {ticket.requestType.toUpperCase()}
+                                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider border border-primary/20 bg-primary/10 text-primary">
+                                            {ticket.requestType}
                                         </span>
                                     )}
                                 </div>
-                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1.5 ${statusColor(ticket.status)}`}>
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border flex items-center gap-1.5 ${statusColor(ticket.status)}`}>
                                     {statusIcon(ticket.status)}
-                                    {ticket.status.replace('_', ' ').toUpperCase()}
+                                    {ticket.status.replace('_', ' ')}
                                 </span>
                             </div>
-                            <p className="text-sm text-muted-foreground line-clamp-2 mb-3 pr-10">
+                            <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed pr-10">
                                 {ticket.message}
                             </p>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
+                            <div className="flex items-center gap-4 text-[10px] uppercase font-bold tracking-wider text-muted-foreground/80">
+                                <span className="flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5" />
                                     {new Date(ticket.createdAt).toLocaleDateString()}
                                 </span>
                                 <span>#{ticket.id.slice(0, 8)}</span>
                                 {ticket.attachments?.length > 0 && (
-                                    <span className="flex items-center gap-1">
-                                        <ImagePlus className="w-3 h-3" />
+                                    <span className="flex items-center gap-1.5">
+                                        <ImagePlus className="w-3.5 h-3.5" />
                                         {ticket.attachments.length} images
                                     </span>
                                 )}
                                 {ticket.responses?.length > 0 && (
-                                    <span className="flex items-center gap-1 text-primary font-medium">
-                                        <MessageSquare className="w-3 h-3" />
+                                    <span className="flex items-center gap-1.5 text-primary">
+                                        <MessageSquare className="w-3.5 h-3.5" />
                                         {ticket.responses.length} responses
                                     </span>
                                 )}

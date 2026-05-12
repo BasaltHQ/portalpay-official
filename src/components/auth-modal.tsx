@@ -382,6 +382,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, onError, isSocialLogin =
           ) : (
             <>
               <div className="w-full h-11">
+                {wallets.length > 0 ? (
                 <ConnectButton
                   client={client}
                   chain={chain}
@@ -414,6 +415,9 @@ export function AuthModal({ isOpen, onClose, onSuccess, onError, isSocialLogin =
                   connectModal={{ size: "compact", showThirdwebBranding: false }}
                   theme={twTheme}
                 />
+                ) : (
+                  <div className="w-full h-11 bg-white/5 animate-pulse rounded-[10px]" />
+                )}
               </div>
               <button
                 onClick={onClose}

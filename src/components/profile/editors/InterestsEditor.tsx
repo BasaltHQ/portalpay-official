@@ -41,7 +41,7 @@ export function InterestsEditor({ interests, onAdd, onRemove }: InterestsEditorP
   return (
     <div className="space-y-4">
       <div className="space-y-3">
-        <label className="text-sm font-medium block">Add Interest</label>
+        <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-2">Add Interest</label>
         <div className="flex flex-col sm:flex-row gap-2">
           <input
             className="flex-1 h-9 px-3 py-1 border rounded-md bg-background text-sm"
@@ -70,7 +70,7 @@ export function InterestsEditor({ interests, onAdd, onRemove }: InterestsEditorP
       </div>
 
       <div>
-        <label className="text-sm font-medium block mb-2">
+        <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-2">
           Your Interests ({interests.length}/25)
         </label>
         {interests.length > 0 ? (
@@ -94,7 +94,7 @@ export function InterestsEditor({ interests, onAdd, onRemove }: InterestsEditorP
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No interests added yet.</p>
+          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-relaxed">No interests added yet.</p>
         )}
       </div>
     </div>

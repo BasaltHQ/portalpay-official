@@ -905,6 +905,7 @@ export function PortalPreviewEmbedded({
           )}
         </div>
         <div className="ml-auto flex items-center gap-2 relative z-20">
+          {wallets.length > 0 ? (
           <ConnectButton
             client={client}
             chain={chain}
@@ -963,6 +964,9 @@ export function PortalPreviewEmbedded({
               },
             })}
           />
+          ) : (
+            <div className="w-[80px] h-[28px] bg-white/5 animate-pulse rounded-[10px]" />
+          )}
         </div>
       </div>
 

@@ -107,7 +107,7 @@ export default function TablesPanel() {
     if (!account?.address) return <div className="p-4">Please connect your wallet.</div>;
 
     return (
-        <div className="glass-pane rounded-xl border p-6 space-y-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
             <div>
                 <h2 className="text-xl font-semibold">Restaurant Tables</h2>
                 <p className="text-sm text-muted-foreground mt-1">

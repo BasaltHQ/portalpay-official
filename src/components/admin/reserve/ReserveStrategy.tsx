@@ -239,20 +239,27 @@ export function ReserveStrategy() {
   if (accumulationMode !== "dynamic") return null;
 
   return (
-    <div className="glass-pane rounded-xl border p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Strategy Modulator</h3>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 mt-6 md:mt-8">
+      <div className="md:col-span-12 flex items-center justify-between shrink-0">
+        <h3 className="text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-[var(--pp-secondary)]" /> 
+          Strategy Modulator
+        </h3>
         {recommendation?.recommendedToken ? (
-          <span className="microtext text-muted-foreground">
-            Suggested settle: <b>{recommendation.recommendedToken}</b> · cadence every {recommendation.frequency}
+          <span className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-muted-foreground bg-foreground/[0.03] px-3 py-1.5 rounded-xl border border-foreground/5 shadow-sm">
+            Suggested Settle: <b className="text-[var(--pp-secondary)]">{recommendation.recommendedToken}</b> <span className="mx-1 opacity-40">|</span> Cadence {recommendation.frequency}
           </span>
         ) : (
-          <span className="microtext text-muted-foreground">Recommendations auto‑calculated from reserve deficits</span>
+          <span className="text-[8px] md:text-[9px] uppercase font-bold tracking-wider text-muted-foreground/60">Recommendations auto‑calculated from deficits</span>
         )}
       </div>
-      <div>
-        <label className="text-sm font-medium">Risk Appetite</label>
-        <div className="relative pb-5">
+
+      <div className="md:col-span-12 rounded-2xl md:rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-10 flex flex-col justify-center relative overflow-hidden shadow-sm">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--pp-secondary)] opacity-5 blur-[60px] pointer-events-none" />
+        
+        <label className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-4 md:mb-8 block relative z-10">Risk Appetite</label>
+        
+        <div className="relative pb-10 md:pb-12 pt-2 z-10">
           <input
             type="range"
             min={0}
@@ -274,13 +281,13 @@ export function ReserveStrategy() {
                 setModulator(0.5);
               }
             }}
-            className="w-full glass-range"
+            className="w-full glass-range h-2 md:h-3"
           />
-          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-4 w-[2px] bg-foreground/30 rounded-sm" />
-          <div className="absolute left-1/2 top-full -translate-x-1/2 mt-1">
+          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-6 md:h-8 w-[2px] bg-foreground/20 rounded-sm" />
+          <div className="absolute left-1/2 top-full -translate-x-1/2 mt-3 md:mt-4">
             <button
               type="button"
-              className="px-2 py-0.5 rounded border text-[10px] leading-4"
+              className="px-4 md:px-5 py-1.5 md:py-2 rounded-full border border-foreground/10 text-[9px] md:text-[10px] uppercase font-bold tracking-wider hover:bg-foreground/5 hover:border-foreground/20 transition-all text-muted-foreground hover:text-foreground shadow-sm"
               onClick={() => { modUpdateRef.current = true; setModulator(0.5); }}
               title="Set to Balanced (0.5)"
             >
@@ -288,22 +295,30 @@ export function ReserveStrategy() {
             </button>
           </div>
         </div>
-        <div className="flex items-center justify-between microtext text-muted-foreground">
+        <div className="flex items-center justify-between text-[8px] md:text-[9px] uppercase font-bold tracking-wider text-muted-foreground/60 mt-2 relative z-10">
           <span>Stablecoin-heavy</span>
           <span>Growth tilt</span>
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <button className="px-3 py-1.5 rounded-md border text-xs" onClick={() => preset("balanced")}>Balanced</button>
-        <button className="px-3 py-1.5 rounded-md border text-xs" onClick={() => preset("stable")}>Stable Focus</button>
-        <button className="px-3 py-1.5 rounded-md border text-xs" onClick={() => preset("btc_hedge")}>BTC Hedge</button>
-        <button className="px-3 py-1.5 rounded-md border text-xs" onClick={() => preset("xrp_focus")}>XRP Focus</button>
-        <span className="microtext text-muted-foreground ml-auto">
+
+      <div className="md:col-span-12 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 md:gap-6 pt-2">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <button className="px-4 md:px-5 py-2 md:py-2.5 rounded-xl bg-foreground/[0.03] border border-foreground/[0.05] hover:bg-foreground/[0.06] hover:border-foreground/10 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all text-foreground/80 shadow-sm" onClick={() => preset("balanced")}>Balanced</button>
+          <button className="px-4 md:px-5 py-2 md:py-2.5 rounded-xl bg-foreground/[0.03] border border-foreground/[0.05] hover:bg-foreground/[0.06] hover:border-foreground/10 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all text-foreground/80 shadow-sm" onClick={() => preset("stable")}>Stable Focus</button>
+          <button className="px-4 md:px-5 py-2 md:py-2.5 rounded-xl bg-foreground/[0.03] border border-foreground/[0.05] hover:bg-foreground/[0.06] hover:border-foreground/10 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all text-foreground/80 shadow-sm" onClick={() => preset("btc_hedge")}>BTC Hedge</button>
+          <button className="px-4 md:px-5 py-2 md:py-2.5 rounded-xl bg-foreground/[0.03] border border-foreground/[0.05] hover:bg-foreground/[0.06] hover:border-foreground/10 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all text-foreground/80 shadow-sm" onClick={() => preset("xrp_focus")}>XRP Focus</button>
+        </div>
+        <span className="text-[8px] md:text-[9px] text-muted-foreground/60 uppercase font-semibold tracking-wider leading-relaxed lg:text-right max-w-sm">
           Applying a preset writes reserveRatios to your config. Adjust sliders above for fine‑tuning.
         </span>
       </div>
-      {error && <div className="microtext text-red-500">{error}</div>}
-      {applyLoading && <div className="microtext text-muted-foreground">Applying strategy…</div>}
+
+      {(error || applyLoading) && (
+        <div className="md:col-span-12 flex items-center justify-end">
+          {error && <div className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-red-500">{error}</div>}
+          {applyLoading && <div className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-[var(--pp-secondary)] flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[var(--pp-secondary)] animate-ping" /> Applying strategy…</div>}
+        </div>
+      )}
     </div>
   );
 }

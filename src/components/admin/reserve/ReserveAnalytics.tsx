@@ -380,16 +380,23 @@ export function ReserveAnalytics() {
   const { balances, totalUsd, merchantWallet, sourceWallet, splitAddressUsed } = data;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="text-lg font-semibold">Reserve Analytics</h3>
-        <div className="flex items-center gap-2">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
+      {/* Header Area */}
+      <div className="md:col-span-12 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-4 mb-2">
+        <div>
+           <h3 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+             <div className="w-1.5 h-1.5 rounded-full bg-[var(--pp-secondary)]" /> 
+             Reserve Analytics
+           </h3>
+           <div className="text-[9px] text-muted-foreground/60 uppercase font-semibold tracking-wider mt-1">Live balances and multi-asset distributions.</div>
+        </div>
+        <div className="flex items-center gap-3">
           {/* Version Selector */}
           {(data?.splitAddressUsed || (data?.splitHistory && data.splitHistory.length > 0)) && (
             <select
               value={selectedSplitVersion}
               onChange={(e) => fetchBalances(e.target.value)}
-              className="bg-black/20 border border-white/10 rounded px-2 py-1 text-xs font-mono outline-none focus:border-white/30"
+              className="h-10 px-4 rounded-xl bg-foreground/[0.03] border border-foreground/5 focus:bg-foreground/[0.05] focus:ring-1 focus:ring-[var(--pp-secondary)] focus:outline-none transition-all text-xs font-mono font-medium"
             >
               {data?.splitAddressUsed && (
                 <option value={data.splitAddressUsed}>
@@ -404,153 +411,181 @@ export function ReserveAnalytics() {
             </select>
           )}
 
-          {indexing && <span className="microtext text-muted-foreground animate-pulse">Indexing…</span>}
+          {indexing && <span className="text-[9px] uppercase font-bold tracking-wider text-[var(--pp-secondary)] animate-pulse hidden sm:inline-block">Indexing…</span>}
           <button
             onClick={() => fetchBalances(selectedSplitVersion)}
             disabled={loading}
-            className="px-2 py-1 rounded-md border text-xs"
+            className="px-5 py-2.5 rounded-xl bg-foreground/[0.03] border border-foreground/[0.05] hover:bg-foreground/[0.06] hover:border-foreground/10 text-[9px] uppercase font-bold tracking-wider transition-all shadow-sm"
           >
             {loading ? "Refreshing…" : "Refresh"}
           </button>
         </div>
       </div>
 
-      <div className="microtext text-muted-foreground">
-        Merchant wallet: <TruncatedAddress address={merchantWallet || ""} />
-        {sourceWallet && sourceWallet !== merchantWallet ? (
-          <>
-            {" "}
-            • Source wallet: <TruncatedAddress address={sourceWallet || ""} />
-          </>
-        ) : null}
-      </div>
-      <div className="flex items-center gap-2 mt-1">
-        <button
-          onClick={() => withdrawMerchant()}
-          disabled={withdrawLoading || !splitAddressUsed}
-          className="px-2 py-1 rounded-md border text-xs"
-          title={splitAddressUsed ? "Withdraw from split to your wallet" : "Split address not configured"}
-        >
-          {withdrawLoading ? "Withdrawing…" : "Withdraw to Wallet"}
-        </button>
-        {withdrawError && <span className="microtext text-red-500">{withdrawError}</span>}
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {Object.entries(balances).map(([symbol, info]: [string, any]) => (
-          <div key={symbol} className="p-3 rounded-md border glass-pane">
-            <div className="text-xs font-medium text-muted-foreground">{symbol}</div>
-            <div className="text-sm font-semibold mt-1">{Number(info.units || 0).toFixed(6)}</div>
-            <div className="microtext text-muted-foreground mt-1">
-              ${Number(info.usd || 0).toFixed(2)}
-            </div>
-
-            <div className="mt-2">
-              <button
-                onClick={() => withdrawMerchant(symbol)}
-                disabled={withdrawLoading || !splitAddressUsed}
-                className="px-2 py-1 rounded-md border text-xs"
-                title={splitAddressUsed ? `Withdraw ${symbol} to your wallet` : "Split address not configured"}
-              >
-                {withdrawLoading ? "Working…" : `Withdraw ${symbol}`}
-              </button>
-              {(() => {
-                try {
-                  const rr = (withdrawResults || []).find((x: any) => String(x?.symbol || "") === String(symbol));
-                  return rr ? (
-                    <div className={`microtext mt-1 ${statusClassFor(rr)}`}>
-                      {formatReleaseMessage(rr)}
-                    </div>
-                  ) : null;
-                } catch {
-                  return null;
-                }
-              })()}
-            </div>
+      <div className="md:col-span-12 lg:col-span-8 rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden min-h-[240px]">
+        <div className="absolute -top-20 -right-20 w-80 h-80 bg-[var(--pp-secondary)] opacity-[0.07] blur-[100px] pointer-events-none" />
+        <div className="relative z-10">
+          <div className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-1 block ml-1">Total Reserve Value (USD)</div>
+          <div className="text-4xl md:text-5xl font-bold mt-2 ml-1 tracking-tight text-foreground/90">${Number(totalUsd || 0).toFixed(2)}</div>
+        </div>
+        
+        <div className="mt-8 md:mt-12 relative z-10">
+          <div className="text-[9px] md:text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-3 ml-1">Reserve Distribution</div>
+          <div className="h-4 w-full rounded-full overflow-hidden flex shadow-inner bg-foreground/5 border border-foreground/[0.02]">
+            {Object.entries(balances).map(([symbol, info]: [string, any]) => {
+              const pct = totalUsd ? (Number(info.usd || 0) / Number(totalUsd || 1)) : 0;
+              const colors: Record<string, string> = {
+                USDC: "#3b82f6",
+                USDT: "#10b981",
+                cbBTC: "#f59e0b",
+                cbXRP: "#6366f1",
+                SOL: "#14f195",
+                ETH: "#8b5cf6",
+              };
+              const bg = colors[symbol] || "#999999";
+              return (
+                <div
+                  key={symbol}
+                  title={`${symbol} • ${Math.round(pct * 1000) / 10}%`}
+                  style={{ width: `${Math.max(0, pct * 100)}%`, backgroundColor: bg }}
+                  className="h-full transition-all duration-500 hover:opacity-80 border-r border-background/20 last:border-r-0"
+                />
+              );
+            })}
           </div>
-        ))}
-      </div>
-
-      <div className="p-4 rounded-md border glass-pane">
-        <div className="text-sm font-medium">Total Reserve Value (USD)</div>
-        <div className="text-2xl font-bold mt-1">${Number(totalUsd || 0).toFixed(2)}</div>
-      </div>
-
-      <div className="rounded-md border glass-pane p-4">
-        <div className="text-sm font-medium mb-2">Reserve Distribution</div>
-        <div className="h-4 w-full rounded-full overflow-hidden flex">
-          {Object.entries(balances).map(([symbol, info]: [string, any]) => {
-            const pct = totalUsd ? (Number(info.usd || 0) / Number(totalUsd || 1)) : 0;
-            const colors: Record<string, string> = {
-              USDC: "#3b82f6",
-              USDT: "#10b981",
-              cbBTC: "#f59e0b",
-              cbXRP: "#6366f1",
-              SOL: "#14f195",
-              ETH: "#8b5cf6",
-            };
-            const bg = colors[symbol] || "#999999";
-            return (
-              <div
-                key={symbol}
-                title={`${symbol} • ${Math.round(pct * 1000) / 10}%`}
-                style={{ width: `${Math.max(0, pct * 100)}%`, backgroundColor: bg }}
-                className="h-4"
-              />
-            );
-          })}
-        </div>
-        <div className="microtext text-muted-foreground mt-1 flex flex-wrap gap-2">
-          {Object.entries(balances).map(([symbol, info]: [string, any]) => {
-            const pct = totalUsd ? (Number(info.usd || 0) / Number(totalUsd || 1)) : 0;
-            return (
-              <span key={symbol}>
-                {symbol}: {Math.round(pct * 1000) / 10}%
-              </span>
-            );
-          })}
+          <div className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground/80 mt-4 flex flex-wrap gap-4 ml-1">
+            {Object.entries(balances).map(([symbol, info]: [string, any]) => {
+              const pct = totalUsd ? (Number(info.usd || 0) / Number(totalUsd || 1)) : 0;
+              if (pct < 0.001) return null;
+              const colors: Record<string, string> = {
+                USDC: "#3b82f6", USDT: "#10b981", cbBTC: "#f59e0b", cbXRP: "#6366f1", SOL: "#14f195", ETH: "#8b5cf6",
+              };
+              return (
+                <span key={symbol} className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: colors[symbol] || "#999999" }} />
+                  {symbol}: <span className="text-foreground/80">{Math.round(pct * 1000) / 10}%</span>
+                </span>
+              );
+            })}
+          </div>
         </div>
       </div>
 
+      <div className="md:col-span-12 lg:col-span-4 rounded-3xl border border-foreground/[0.04] bg-foreground/[0.02] p-6 md:p-8 flex flex-col justify-between shadow-sm min-h-[240px]">
+        <div>
+          <div className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-4 block ml-1">Wallet Configuration</div>
+          
+          <div className="space-y-4">
+            <div className="bg-foreground/[0.03] rounded-2xl border border-foreground/[0.05] p-4 flex flex-col gap-1">
+              <div className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground/60">Merchant Wallet</div>
+              <div className="text-xs font-mono font-medium text-foreground/90"><TruncatedAddress address={merchantWallet || ""} /></div>
+            </div>
+            
+            {sourceWallet && sourceWallet !== merchantWallet && (
+              <div className="bg-foreground/[0.03] rounded-2xl border border-foreground/[0.05] p-4 flex flex-col gap-1">
+                <div className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground/60">Source Wallet</div>
+                <div className="text-xs font-mono font-medium text-foreground/90"><TruncatedAddress address={sourceWallet || ""} /></div>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="mt-6 pt-6 border-t border-foreground/5">
+          <button
+            onClick={() => withdrawMerchant()}
+            disabled={withdrawLoading || !splitAddressUsed}
+            className="w-full px-6 py-4 rounded-xl bg-[var(--pp-secondary)] hover:bg-[var(--pp-secondary)]/90 text-white text-[10px] font-bold uppercase tracking-wider shadow-[0_0_20px_var(--pp-secondary)]/30 transition-all disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+            title={splitAddressUsed ? "Withdraw from split to your wallet" : "Split address not configured"}
+          >
+            {withdrawLoading ? "Withdrawing…" : "Withdraw All to Wallet"}
+          </button>
+          {withdrawError && <div className="text-[9px] uppercase font-bold tracking-wider text-red-500 mt-3 text-center">{withdrawError}</div>}
+        </div>
+      </div>
 
-      {error && <div className="microtext text-amber-500">Warning: {error}</div>}
+      <div className="md:col-span-12">
+        <div className="text-[10px] md:text-xs uppercase font-bold tracking-wider text-foreground mb-4 ml-2">Asset Balances</div>
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          {Object.entries(balances).map(([symbol, info]: [string, any]) => (
+            <div key={symbol} className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-5 shadow-sm group hover:bg-foreground/[0.03] transition-colors relative overflow-hidden flex flex-col justify-between h-full min-h-[140px]">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 blur-[40px] rounded-full pointer-events-none group-hover:bg-[var(--pp-secondary)]/10 transition-colors" />
+              <div className="relative z-10">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 mb-2">{symbol}</div>
+                <div className="text-lg font-bold text-foreground/90 font-mono tracking-tight">{Number(info.units || 0).toFixed(4)}</div>
+                <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60 mt-1">
+                  ${Number(info.usd || 0).toFixed(2)}
+                </div>
+              </div>
+
+              <div className="mt-5 relative z-10">
+                <button
+                  onClick={() => withdrawMerchant(symbol)}
+                  disabled={withdrawLoading || !splitAddressUsed}
+                  className="w-full px-3 py-2 rounded-lg border border-foreground/[0.05] bg-foreground/[0.03] hover:bg-[var(--pp-secondary)]/10 hover:border-[var(--pp-secondary)]/30 hover:text-[var(--pp-secondary)] text-[8px] font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+                  title={splitAddressUsed ? `Withdraw ${symbol} to your wallet` : "Split address not configured"}
+                >
+                  {withdrawLoading ? "Working…" : `Withdraw`}
+                </button>
+                {(() => {
+                  try {
+                    const rr = (withdrawResults || []).find((x: any) => String(x?.symbol || "") === String(symbol));
+                    return rr ? (
+                      <div className={`text-[8px] font-bold uppercase tracking-wider mt-2 text-center ${statusClassFor(rr)}`}>
+                        {formatReleaseMessage(rr)}
+                      </div>
+                    ) : null;
+                  } catch {
+                    return null;
+                  }
+                })()}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {error && <div className="md:col-span-12 text-[10px] uppercase font-bold tracking-wider text-amber-500 mt-2 ml-2">Warning: {error}</div>}
 
       {withdrawModalOpen && typeof window !== "undefined"
         ? createPortal(
           <div
-            className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4"
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
             onKeyDown={(e) => { if (e.key === "Escape") setWithdrawModalOpen(false); }}
             role="dialog"
             aria-modal="true"
             tabIndex={-1}
           >
-            <div className="w-full max-w-sm rounded-md border bg-background p-4">
-              <div className="text-sm font-medium mb-2">Withdrawing to Wallet</div>
-              <div className="microtext text-muted-foreground mb-2">
+            <div className="w-full max-w-sm rounded-3xl border border-foreground/[0.05] bg-[#0a0a0a] p-8 relative shadow-2xl overflow-hidden">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-[var(--pp-secondary)] opacity-10 blur-[60px] pointer-events-none" />
+              <div className="text-xs uppercase font-bold tracking-[0.2em] text-foreground mb-4 flex items-center gap-2 relative z-10">
+                <div className="w-2 h-2 rounded-full bg-[var(--pp-secondary)]" />
+                Withdrawing to Wallet
+              </div>
+              <div className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground/80 mb-3 ml-1 relative z-10">
                 {withdrawProcessed} / {Math.max(0, withdrawQueue.length)} processed
               </div>
-              <div className="h-2 w-full bg-foreground/10 rounded">
+              <div className="h-2 w-full bg-foreground/10 rounded-full overflow-hidden relative z-10">
                 <div
-                  className="h-2 bg-green-500 rounded"
+                  className="h-full bg-[var(--pp-secondary)] rounded-full transition-all duration-300"
                   style={{
                     width: `${Math.min(100, Math.floor((withdrawProcessed / Math.max(1, withdrawQueue.length)) * 100))}%`,
                   }}
                 />
               </div>
-              <div className="mt-3 max-h-40 overflow-auto microtext">
+              <div className="mt-6 max-h-48 overflow-y-auto custom-scrollbar pr-2 relative z-10 space-y-2">
                 {withdrawQueue.map((sym) => {
                   const st = withdrawStatuses[sym];
                   const cls = st
                     ? st.status === "failed"
-                      ? "text-red-500"
+                      ? "text-red-500 bg-red-500/5 border-red-500/10"
                       : st.status === "skipped"
-                        ? "text-amber-600"
-                        : "text-muted-foreground"
-                    : "text-muted-foreground";
+                        ? "text-amber-500 bg-amber-500/5 border-amber-500/10"
+                        : "text-emerald-500 bg-emerald-500/5 border-emerald-500/10"
+                    : "text-muted-foreground bg-foreground/[0.02] border-foreground/5";
                   const fallback =
                     withdrawProcessed <= withdrawQueue.indexOf(sym) ? "queued" : "working…";
                   return (
-                    <div key={sym} className={cls}>
+                    <div key={sym} className={`text-[9px] font-bold uppercase tracking-wider p-3 rounded-xl border ${cls}`}>
                       {sym}: {st?.status || fallback}
                       {st?.tx ? ` • ${String(st.tx).slice(0, 10)}…` : ""}
                       {st?.reason ? ` • ${st.reason}` : ""}
@@ -558,9 +593,9 @@ export function ReserveAnalytics() {
                   );
                 })}
               </div>
-              <div className="mt-3 flex justify-end gap-2">
+              <div className="mt-8 flex justify-end gap-3 relative z-10">
                 <button
-                  className="px-3 py-1.5 rounded-md border text-sm"
+                  className="px-6 py-3 rounded-xl border border-foreground/[0.05] bg-foreground/[0.03] hover:bg-foreground/[0.06] text-[9px] font-bold uppercase tracking-wider transition-all"
                   onClick={() => setWithdrawModalOpen(false)}
                 >
                   Close

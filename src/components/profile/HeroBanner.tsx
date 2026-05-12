@@ -23,7 +23,7 @@ export function HeroBanner({ backgroundUrl, editMode, onBgUpload }: HeroBannerPr
   return (
     <div className="rounded-xl border overflow-hidden relative group">
       <div 
-        className="w-full h-40 sm:h-48" 
+        className="w-full h-56 sm:h-72 md:h-96 lg:h-[400px]" 
         style={{ 
           backgroundImage: `url(${backgroundUrl})`, 
           backgroundSize: 'cover', 

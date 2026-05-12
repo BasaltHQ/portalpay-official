@@ -3513,7 +3513,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
               ✕
             </button>
           )}
-          {isMobileViewport && !isEmbedded && (
+          {isMobileViewport && !isEmbedded && wallets.length > 0 && (
             <div className="ml-2">
               <ConnectButton
                 client={client}
@@ -3550,6 +3550,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         </div>
 
         {/* Floating login button (top-right, hidden when embedded) */}
+        {wallets.length > 0 && (
         <div className="hidden sm:block fixed top-2 right-2 z-[20002]" style={{ display: isEmbedded ? "none" : undefined }}>
           <ConnectButton
             client={client}
@@ -3582,6 +3583,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
             theme={twTheme}
           />
         </div>
+        )}
 
         {/* Scrollable content (centered) */}
         <div
@@ -3857,6 +3859,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                     <div className={`text-xs mb-3 max-w-[240px] ${isLightText ? 'text-white/60' : 'text-black/60'}`}>
                                       Connect your wallet to link this purchase and earn rewards.
                                     </div>
+                                    {wallets.length > 0 && (
                                     <ConnectButton
                                       client={client}
                                       chain={chain}
@@ -3887,6 +3890,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                       }}
                                       theme={twTheme}
                                     />
+                                    )}
                                   </>
                                 ) : (
                                   <div className="text-center">
@@ -3970,6 +3974,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                         {!account?.address ? (
                                           <div className={`flex flex-col items-center gap-3 py-6 text-center`}>
                                             <div className={`text-sm ${isLightText ? 'text-white/70' : 'text-black/70'}`}>Please log in to continue with shipping</div>
+                                            {wallets.length > 0 && (
                                             <ConnectButton
                                               client={client}
                                               chain={chain}
@@ -3986,6 +3991,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                               }}
                                               theme={twTheme}
                                             />
+                                            )}
                                           </div>
                                         ) : (
                                           <>
@@ -4494,6 +4500,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                   <div className={`text-xs mb-3 max-w-[240px] text-center ${isLightText ? 'text-white/60' : 'text-black/60'}`}>
                                     Connect your wallet to link this purchase and earn rewards.
                                   </div>
+                                  {wallets.length > 0 && (
                                   <ConnectButton
                                     client={client}
                                     chain={chain}
@@ -4524,6 +4531,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                     }}
                                     theme={twTheme}
                                   />
+                                  )}
                                 </>
                               ) : (
                                 <div className="text-center w-full">
@@ -4605,6 +4613,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                       {!account?.address ? (
                                         <div className="flex flex-col items-center gap-3 py-6 text-center">
                                           <div className={`text-sm ${isLightText ? 'text-white/70' : 'text-black/70'}`}>Please log in to continue with shipping</div>
+                                          {wallets.length > 0 && (
                                           <ConnectButton
                                             client={client}
                                             chain={chain}
@@ -4621,6 +4630,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                             }}
                                             theme={twTheme}
                                           />
+                                          )}
                                         </div>
                                       ) : (
                                         <>
@@ -4996,6 +5006,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                   <div className="text-xs text-white/60 mb-3 max-w-[240px] text-center">
                     Connect your wallet to link this purchase and earn rewards.
                   </div>
+                  {wallets.length > 0 && (
                   <ConnectButton
                     client={client}
                     chain={chain}
@@ -5026,6 +5037,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                     }}
                     theme={twTheme}
                   />
+                  )}
                 </>
               ) : (
                 <div className="text-center w-full">

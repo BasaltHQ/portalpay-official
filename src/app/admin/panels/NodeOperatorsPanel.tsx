@@ -107,67 +107,88 @@ export function NodeOperatorsPanel() {
   const totalActive = Object.values(regionStats).reduce((s, r) => s + r.active, 0);
   const totalCapacity = Object.values(regionStats).reduce((s, r) => s + r.maxNodes, 0);
 
-  const tabStyle = (t: TabView) => ({
-    padding: '8px 16px',
-    borderRadius: 8,
-    border: 'none',
-    background: tab === t ? 'var(--pp-secondary, #f59e0b)' : 'transparent',
-    color: tab === t ? '#fff' : 'var(--muted-foreground, #a1a1aa)',
-    fontWeight: tab === t ? 700 : 400,
-    fontSize: 13,
-    cursor: 'pointer' as const,
-    transition: 'all 0.15s',
-  });
+  const tabs: [TabView, string][] = [
+    ['overview', 'Overview'],
+    ['applications', 'Applications'],
+    ['active', 'Active Nodes'],
+    ['decommissions', 'Decommissions'],
+    ['rewards', 'Rewards'],
+    ['staking', 'Staking'],
+  ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Node Operators</h2>
-      <p style={{ color: 'var(--muted-foreground, #a1a1aa)', fontSize: 14, marginBottom: 20 }}>
-        Manage the BasaltSurge decentralized node network
-      </p>
+    <div className="w-full space-y-6 pb-24 admin-panel-enter">
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+        <h2 className="text-lg font-semibold">Node Operators</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Manage the BasaltSurge decentralized node network
+        </p>
+      </div>
 
       {/* Tab Navigation */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 24, flexWrap: 'wrap' }}>
-        {([
-          ['overview', 'Overview'],
-          ['applications', 'Applications'],
-          ['active', 'Active Nodes'],
-          ['decommissions', 'Decommissions'],
-          ['rewards', 'Rewards'],
-          ['staking', 'Staking'],
-        ] as [TabView, string][]).map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)} style={tabStyle(key)}>{label}</button>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {tabs.map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
+              tab === key
+                ? 'bg-amber-500 text-white shadow-sm'
+                : 'text-muted-foreground hover:bg-foreground/[0.04] border border-foreground/[0.05]'
+            }`}
+          >
+            {label}
+          </button>
         ))}
       </div>
 
       {/* Alerts */}
-      {error && <div style={{ background: '#7f1d1d', color: '#fca5a5', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 13 }}>{error}</div>}
-      {actionResult && <div style={{ background: '#14532d', color: '#86efac', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 13, wordBreak: 'break-all' }}>{actionResult}</div>}
+      {error && (
+        <div className="rounded-2xl border border-red-500/20 bg-red-950/20 text-red-400 px-4 py-3 text-[13px]">
+          {error}
+        </div>
+      )}
+      {actionResult && (
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/20 text-emerald-400 px-4 py-3 text-[13px] break-all">
+          {actionResult}
+        </div>
+      )}
 
-      {loading && <p style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>Loading...</p>}
+      {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
 
       {/* Overview */}
       {!loading && tab === 'overview' && (
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <StatCard label="Active Nodes" value={totalActive} />
             <StatCard label="Total Capacity" value={totalCapacity} />
             <StatCard label="All Applications" value={nodes.length} />
             <StatCard label="Regions" value={Object.keys(regionStats).length} />
           </div>
-          <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Region Utilization</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8 }}>
-            {Object.entries(regionStats).map(([regionId, stat]) => (
-              <div key={regionId} style={{ background: 'var(--card, #18181b)', borderRadius: 8, padding: 12, border: '1px solid var(--border, #27272a)' }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{regionId}</div>
-                <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-                  {stat.active}/{stat.maxNodes} active · {stat.total} total
+          <div>
+            <h3 className="text-base font-semibold mb-3">Region Utilization</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+              {Object.entries(regionStats).map(([regionId, stat]) => (
+                <div
+                  key={regionId}
+                  className="rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] p-3"
+                >
+                  <div className="text-[13px] font-semibold truncate">{regionId}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {stat.active}/{stat.maxNodes} active · {stat.total} total
+                  </div>
+                  <div className="mt-2 h-1 bg-foreground/[0.06] rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        stat.active >= stat.maxNodes ? 'bg-red-500' : 'bg-amber-500'
+                      }`}
+                      style={{ width: `${Math.min((stat.active / stat.maxNodes) * 100, 100)}%` }}
+                    />
+                  </div>
                 </div>
-                <div style={{ marginTop: 6, height: 4, background: 'var(--border, #27272a)', borderRadius: 2 }}>
-                  <div style={{ height: '100%', width: `${(stat.active / stat.maxNodes) * 100}%`, background: stat.active >= stat.maxNodes ? '#ef4444' : '#f59e0b', borderRadius: 2, transition: 'width 0.3s' }} />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -177,9 +198,19 @@ export function NodeOperatorsPanel() {
         <NodeTable
           nodes={nodes}
           actions={(node) => (
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button onClick={() => handleProvision(node.nodeId, 'approve')} style={{ padding: '4px 12px', borderRadius: 6, border: 'none', background: '#16a34a', color: '#fff', fontSize: 12, cursor: 'pointer' }}>Approve</button>
-              <button onClick={() => handleProvision(node.nodeId, 'reject')} style={{ padding: '4px 12px', borderRadius: 6, border: 'none', background: '#dc2626', color: '#fff', fontSize: 12, cursor: 'pointer' }}>Reject</button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => handleProvision(node.nodeId, 'approve')}
+                className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-500 transition"
+              >
+                Approve
+              </button>
+              <button
+                onClick={() => handleProvision(node.nodeId, 'reject')}
+                className="px-3 py-1 rounded-lg bg-red-600 text-white text-xs font-medium hover:bg-red-500 transition"
+              >
+                Reject
+              </button>
             </div>
           )}
         />
@@ -190,7 +221,12 @@ export function NodeOperatorsPanel() {
         <NodeTable
           nodes={nodes}
           actions={(node) => (
-            <button onClick={() => handleDecommission(node.nodeId)} style={{ padding: '4px 12px', borderRadius: 6, border: '1px solid #dc2626', background: 'transparent', color: '#dc2626', fontSize: 12, cursor: 'pointer' }}>Decommission</button>
+            <button
+              onClick={() => handleDecommission(node.nodeId)}
+              className="px-3 py-1 rounded-lg border border-red-500/40 text-red-400 text-xs font-medium hover:bg-red-500/10 transition"
+            >
+              Decommission
+            </button>
           )}
         />
       )}
@@ -213,57 +249,63 @@ export function NodeOperatorsPanel() {
 
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
-    <div style={{ background: 'var(--card, #18181b)', borderRadius: 12, padding: 20, border: '1px solid var(--border, #27272a)', textAlign: 'center' }}>
-      <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--foreground, #fff)' }}>{typeof value === 'number' ? value.toLocaleString() : value}</div>
-      <div style={{ fontSize: 12, color: 'var(--muted-foreground, #a1a1aa)', marginTop: 4 }}>{label}</div>
+    <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md p-5 text-center">
+      <div className="text-[28px] font-extrabold">{typeof value === 'number' ? value.toLocaleString() : value}</div>
+      <div className="text-xs text-muted-foreground mt-1">{label}</div>
     </div>
   );
 }
 
 function NodeTable({ nodes, actions }: { nodes: NodeEntry[]; actions?: (node: NodeEntry) => React.ReactNode }) {
-  if (nodes.length === 0) return <p style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>No nodes found.</p>;
+  if (nodes.length === 0) return <p className="text-sm text-muted-foreground">No nodes found.</p>;
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-        <thead>
-          <tr style={{ borderBottom: '1px solid var(--border, #27272a)' }}>
-            <th style={thStyle}>Node ID</th>
-            <th style={thStyle}>Operator</th>
-            <th style={thStyle}>Region</th>
-            <th style={thStyle}>Status</th>
-            <th style={thStyle}>Applied</th>
-            {actions && <th style={thStyle}>Actions</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {nodes.map((n) => (
-            <tr key={n.nodeId} style={{ borderBottom: '1px solid var(--border, #27272a)' }}>
-              <td style={tdStyle}><code style={{ fontSize: 12 }}>{n.nodeId}</code></td>
-              <td style={tdStyle}>{n.operatorName}</td>
-              <td style={tdStyle}>{n.regionName || n.regionId}</td>
-              <td style={tdStyle}><StatusBadge status={n.status} /></td>
-              <td style={tdStyle}>{n.appliedAt ? new Date(n.appliedAt).toLocaleDateString() : '—'}</td>
-              {actions && <td style={tdStyle}>{actions(n)}</td>}
+    <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="border-b border-foreground/[0.05]">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Node ID</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Operator</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Region</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Applied</th>
+              {actions && <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {nodes.map((n) => (
+              <tr key={n.nodeId} className="border-b border-foreground/[0.03] hover:bg-foreground/[0.02] transition">
+                <td className="px-4 py-3"><code className="text-xs font-mono bg-foreground/[0.04] px-1.5 py-0.5 rounded">{n.nodeId}</code></td>
+                <td className="px-4 py-3">{n.operatorName}</td>
+                <td className="px-4 py-3">{n.regionName || n.regionId}</td>
+                <td className="px-4 py-3"><StatusBadge status={n.status} /></td>
+                <td className="px-4 py-3 text-muted-foreground">{n.appliedAt ? new Date(n.appliedAt).toLocaleDateString() : '—'}</td>
+                {actions && <td className="px-4 py-3">{actions(n)}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, { bg: string; text: string }> = {
-    active: { bg: '#14532d', text: '#86efac' },
-    pending_review: { bg: '#713f12', text: '#fde68a' },
-    provisioning: { bg: '#1e3a5f', text: '#93c5fd' },
-    degraded: { bg: '#7c2d12', text: '#fdba74' },
-    decommissioning: { bg: '#7f1d1d', text: '#fca5a5' },
-    decommissioned: { bg: '#3f3f46', text: '#a1a1aa' },
-    rejected: { bg: '#3f3f46', text: '#a1a1aa' },
+  const map: Record<string, string> = {
+    active: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
+    pending_review: 'bg-amber-500/15 text-amber-400 border-amber-500/20',
+    provisioning: 'bg-blue-500/15 text-blue-400 border-blue-500/20',
+    degraded: 'bg-orange-500/15 text-orange-400 border-orange-500/20',
+    decommissioning: 'bg-red-500/15 text-red-400 border-red-500/20',
+    decommissioned: 'bg-foreground/[0.06] text-muted-foreground border-foreground/[0.08]',
+    rejected: 'bg-foreground/[0.06] text-muted-foreground border-foreground/[0.08]',
   };
-  const c = colors[status] || colors.rejected;
-  return <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: c.bg, color: c.text }}>{status.replace(/_/g, ' ')}</span>;
+  const cls = map[status] || map.rejected;
+  return (
+    <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold border ${cls}`}>
+      {status.replace(/_/g, ' ')}
+    </span>
+  );
 }
 
 function RewardsView() {
@@ -273,40 +315,42 @@ function RewardsView() {
     fetch('/api/nodes/rewards').then(r => r.json()).then(setManifest).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>Loading rewards...</p>;
-  if (!manifest) return <p style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>No reward data.</p>;
+  if (loading) return <p className="text-sm text-muted-foreground">Loading rewards...</p>;
+  if (!manifest) return <p className="text-sm text-muted-foreground">No reward data.</p>;
 
   return (
-    <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <StatCard label="Total Pending" value={`$${manifest.summary?.totalPending?.toFixed(2) || '0.00'}`} />
         <StatCard label="Eligible for Airdrop" value={manifest.summary?.eligibleForAirdrop || 0} />
         <StatCard label="Total Nodes" value={manifest.summary?.totalNodes || 0} />
       </div>
       {manifest.manifest?.length > 0 && (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border, #27272a)' }}>
-                <th style={thStyle}>Node ID</th>
-                <th style={thStyle}>Wallet</th>
-                <th style={thStyle}>Pending ($)</th>
-                <th style={thStyle}>Transactions</th>
-                <th style={thStyle}>Eligible</th>
-              </tr>
-            </thead>
-            <tbody>
-              {manifest.manifest.map((m: any) => (
-                <tr key={m.nodeId} style={{ borderBottom: '1px solid var(--border, #27272a)' }}>
-                  <td style={tdStyle}><code style={{ fontSize: 12 }}>{m.nodeId}</code></td>
-                  <td style={tdStyle}><code style={{ fontSize: 11 }}>{m.walletAddress?.slice(0, 6)}...{m.walletAddress?.slice(-4)}</code></td>
-                  <td style={tdStyle}>${m.pendingPayout?.toFixed(2)}</td>
-                  <td style={tdStyle}>{m.transactionCount}</td>
-                  <td style={tdStyle}>{m.meetsThreshold ? '✅' : '—'}</td>
+        <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-foreground/[0.05]">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Node ID</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Wallet</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pending ($)</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Transactions</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Eligible</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {manifest.manifest.map((m: any) => (
+                  <tr key={m.nodeId} className="border-b border-foreground/[0.03] hover:bg-foreground/[0.02] transition">
+                    <td className="px-4 py-3"><code className="text-xs font-mono bg-foreground/[0.04] px-1.5 py-0.5 rounded">{m.nodeId}</code></td>
+                    <td className="px-4 py-3"><code className="text-[11px] font-mono text-muted-foreground">{m.walletAddress?.slice(0, 6)}...{m.walletAddress?.slice(-4)}</code></td>
+                    <td className="px-4 py-3">${m.pendingPayout?.toFixed(2)}</td>
+                    <td className="px-4 py-3">{m.transactionCount}</td>
+                    <td className="px-4 py-3">{m.meetsThreshold ? '✅' : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -328,41 +372,47 @@ function StakingView() {
   };
 
   return (
-    <div>
+    <div className="w-full space-y-6">
       <button
         onClick={runSnapshot}
         disabled={running}
-        style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: running ? '#3f3f46' : '#f59e0b', color: '#fff', fontWeight: 600, fontSize: 14, cursor: running ? 'default' : 'pointer', marginBottom: 20 }}
+        className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition ${
+          running
+            ? 'bg-foreground/[0.06] text-muted-foreground cursor-default'
+            : 'bg-amber-500 text-white hover:bg-amber-400 shadow-sm'
+        }`}
       >
         {running ? 'Running Snapshot...' : 'Run Staking Snapshot'}
       </button>
       {result && (
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginBottom: 20 }}>
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <StatCard label="Total Checked" value={result.total || 0} />
             <StatCard label="Compliant" value={result.compliant || 0} />
             <StatCard label="Non-Compliant" value={result.nonCompliant || 0} />
           </div>
           {result.snapshots?.length > 0 && (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border, #27272a)' }}>
-                    <th style={thStyle}>Node ID</th>
-                    <th style={thStyle}>BSURGE Balance</th>
-                    <th style={thStyle}>Compliant</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.snapshots.map((s: any) => (
-                    <tr key={s.nodeId} style={{ borderBottom: '1px solid var(--border, #27272a)' }}>
-                      <td style={tdStyle}><code style={{ fontSize: 12 }}>{s.nodeId}</code></td>
-                      <td style={tdStyle}>{s.bsurgeBalance?.toLocaleString()}</td>
-                      <td style={tdStyle}>{s.isCompliant ? '✅' : '❌'}</td>
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr className="border-b border-foreground/[0.05]">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Node ID</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">BSURGE Balance</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Compliant</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {result.snapshots.map((s: any) => (
+                      <tr key={s.nodeId} className="border-b border-foreground/[0.03] hover:bg-foreground/[0.02] transition">
+                        <td className="px-4 py-3"><code className="text-xs font-mono bg-foreground/[0.04] px-1.5 py-0.5 rounded">{s.nodeId}</code></td>
+                        <td className="px-4 py-3">{s.bsurgeBalance?.toLocaleString()}</td>
+                        <td className="px-4 py-3">{s.isCompliant ? '✅' : '❌'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
@@ -370,7 +420,3 @@ function StakingView() {
     </div>
   );
 }
-
-// Shared styles
-const thStyle: React.CSSProperties = { textAlign: 'left', padding: '8px 12px', fontWeight: 600, color: 'var(--muted-foreground, #a1a1aa)' };
-const tdStyle: React.CSSProperties = { padding: '8px 12px' };

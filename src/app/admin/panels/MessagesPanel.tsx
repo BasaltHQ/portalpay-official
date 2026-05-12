@@ -670,9 +670,9 @@ export default function MessagesPanel({ role }: { role?: 'buyer' | 'merchant' })
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
+    <div className="w-full h-[calc(100vh-140px)] p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-6 pb-24">
       {/* Conversations list */}
-      <div className="md:col-span-1 rounded-md border p-3 glass-pane flex flex-col h-full">
+      <div className="md:col-span-1 glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 flex flex-col h-full">
         <div className="flex items-center justify-between mb-3 shrink-0">
           <div className="text-sm font-semibold">
             {role === 'buyer' ? 'My Messages' : role === 'merchant' ? 'Customer Messages' : 'Messages'}
@@ -723,7 +723,7 @@ export default function MessagesPanel({ role }: { role?: 'buyer' | 'merchant' })
           </div>
         </div>
 
-        {convoError && <div className="microtext text-red-500 mb-2 shrink-0">{convoError}</div>}
+        {convoError && <div className="text-[10px] uppercase font-bold tracking-wider text-red-500 mb-2 shrink-0">{convoError}</div>}
 
         <div
           className="flex-1 overflow-y-auto space-y-2 min-h-0"
@@ -770,11 +770,11 @@ export default function MessagesPanel({ role }: { role?: 'buyer' | 'merchant' })
                       />
                     )}
                     {lastStr && (
-                      <span className="microtext text-muted-foreground">{lastStr}</span>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{lastStr}</span>
                     )}
                   </div>
                 </div>
-                <div className="microtext text-muted-foreground truncate">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider truncate">
                   {(c.participants || []).map(truncateWallet).join(", ")}
                 </div>
               </button>
@@ -782,13 +782,13 @@ export default function MessagesPanel({ role }: { role?: 'buyer' | 'merchant' })
           })}
 
           {filteredConversations.length === 0 && !loadingConvos && (
-            <div className="microtext text-muted-foreground">No conversations found.</div>
+            <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">No conversations found.</div>
           )}
         </div>
       </div>
 
       {/* Thread + Composer */}
-      <div className="md:col-span-2 rounded-md border p-3 glass-pane flex flex-col h-full">
+      <div className="md:col-span-2 glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 flex flex-col h-full">
         {activeConvoId ? (
           <>
             {/* Header */}
@@ -803,7 +803,7 @@ export default function MessagesPanel({ role }: { role?: 'buyer' | 'merchant' })
                     <PfpCircle key={p} wallet={p} size={24} className="h-6 w-6" />
                   ))}
                   {participants.length > 3 && (
-                    <span className="microtext text-muted-foreground">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                       +{participants.length - 3}
                     </span>
                   )}
@@ -883,7 +883,7 @@ export default function MessagesPanel({ role }: { role?: 'buyer' | 'merchant' })
               </div>
             </div>
 
-            {msgError && <div className="microtext text-red-500 mb-2 shrink-0">{msgError}</div>}
+            {msgError && <div className="text-[10px] uppercase font-bold tracking-wider text-red-500 mb-2 shrink-0">{msgError}</div>}
 
             {/* Thread */}
             <div
@@ -926,12 +926,12 @@ export default function MessagesPanel({ role }: { role?: 'buyer' | 'merchant' })
                         mine ? "bg-foreground/10" : "bg-background"
                       )}
                     >
-                      <div className="microtext text-muted-foreground mb-1 flex items-center gap-2">
+                      <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1 flex items-center gap-2">
                         {!mine && <span>{truncateWallet(m.senderWallet)}</span>}
                         <span>{new Date(Number(m.createdAt || 0)).toLocaleString()}</span>
                         {mine && (
                           <span className="inline-flex items-center gap-1" aria-label="Read receipt">
-                            <span className="microtext">{getReadReceiptLabel(m)}</span>
+                            <span className="text-[10px] uppercase font-bold tracking-wider">{getReadReceiptLabel(m)}</span>
                           </span>
                         )}
                       </div>
@@ -955,7 +955,7 @@ export default function MessagesPanel({ role }: { role?: 'buyer' | 'merchant' })
               })}
 
               {(messages || []).length === 0 && !loadingMsgs && (
-                <div className="microtext text-muted-foreground">No messages yet.</div>
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">No messages yet.</div>
               )}
             </div>
 
@@ -1054,14 +1054,14 @@ export default function MessagesPanel({ role }: { role?: 'buyer' | 'merchant' })
                   </button>
                 </div>
               </div>
-              <div className="microtext text-muted-foreground flex items-center justify-between">
+              <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider flex items-center justify-between">
                 <span>Press Ctrl/Cmd+Enter to send</span>
                 <span>{composerBody.trim().length} chars</span>
               </div>
             </div>
           </>
         ) : (
-          <div className="microtext text-muted-foreground m-auto">
+          <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider m-auto">
             Select a conversation to view messages.
           </div>
         )}

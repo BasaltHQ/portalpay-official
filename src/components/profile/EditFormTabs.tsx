@@ -73,7 +73,7 @@ export function EditFormTabs(props: EditFormTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('ring');
 
   return (
-    <div className="glass-pane rounded-xl border overflow-hidden">
+    <div className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] overflow-hidden shadow-sm">
       {/* Tabs Navigation */}
       <div className="border-b overflow-x-auto">
         <div className="flex min-w-max">
@@ -83,7 +83,7 @@ export function EditFormTabs(props: EditFormTabsProps) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
+                className={`flex items-center gap-2 px-4 py-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider transition-colors whitespace-nowrap ${activeTab === tab.id
                   ? 'border-b-2 border-primary text-primary'
                   : 'text-muted-foreground hover:text-foreground'
                   }`}

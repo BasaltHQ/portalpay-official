@@ -125,10 +125,10 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px] z-[100] mt-8 max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] z-[100] mt-8 max-h-[85vh] overflow-y-auto rounded-3xl border border-foreground/[0.05] bg-background/95 backdrop-blur-3xl shadow-2xl p-6 md:p-8">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
+          <DialogTitle className="flex items-center gap-3 text-xl font-bold tracking-tight">
+            <div className="w-2 h-2 rounded-full bg-[var(--pp-secondary)]" />
             {mode === 'sync' ? 'Syncing Menu from Toast...' : 'Toast Settings & Sync'}
           </DialogTitle>
           <DialogDescription>
@@ -149,6 +149,7 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
                     <Label htmlFor="restaurantGuid">Restaurant GUID</Label>
                     <Input
                       id="restaurantGuid"
+                      className="h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                       placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                       value={restaurantGuid}
                       onChange={(e) => setRestaurantGuid(e.target.value)}
@@ -163,6 +164,7 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
                     <Label htmlFor="clientId">Client ID</Label>
                     <Input
                       id="clientId"
+                      className="h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                       placeholder="Your Toast Client ID"
                       value={clientId}
                       onChange={(e) => setClientId(e.target.value)}
@@ -175,6 +177,7 @@ export function ToastImportModal({ open, onClose, onImport, toastConfig, mode = 
                     <Input
                       id="clientSecret"
                       type="password"
+                      className="h-12 px-4 border border-foreground/[0.05] rounded-xl bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-colors"
                       placeholder="Your Toast Client Secret"
                       value={clientSecret}
                       onChange={(e) => setClientSecret(e.target.value)}

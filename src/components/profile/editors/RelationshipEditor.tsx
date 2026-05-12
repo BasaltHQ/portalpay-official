@@ -30,7 +30,7 @@ export function RelationshipEditor({ relationship, onChange }: RelationshipEdito
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium block mb-2">Relationship Status</label>
+        <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-2">Relationship Status</label>
         <select
           className="w-full h-9 px-3 border rounded-md bg-background text-sm"
           value={relationship.status || ''}
@@ -45,7 +45,7 @@ export function RelationshipEditor({ relationship, onChange }: RelationshipEdito
 
       {relationship.status && relationship.status !== 'Single' && relationship.status !== 'Prefer not to say' && (
         <div>
-          <label className="text-sm font-medium block mb-2">
+          <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-2">
             Partner's Wallet Address (Optional)
           </label>
           <input
@@ -55,7 +55,7 @@ export function RelationshipEditor({ relationship, onChange }: RelationshipEdito
             onChange={(e) => updateField('partner', e.target.value)}
             placeholder="0x..."
           />
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-1">
             Enter your partner's wallet address to link profiles
           </p>
         </div>

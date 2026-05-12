@@ -71,11 +71,11 @@ export default function BookshelfView({ books }: BookshelfViewProps) {
                         placeholder="Search your library..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 rounded-lg border bg-background/50 focus:ring-2 ring-primary/20 transition-all font-mono text-sm"
+                        className="w-full pl-9 pr-4 py-2 rounded-lg border border-foreground/[0.1] bg-background/50 focus:ring-2 ring-primary/20 transition-all text-xs uppercase font-bold tracking-wider placeholder:text-[10px]"
                     />
                 </div>
 
-                <div className="flex items-center gap-2 bg-background/50 p-1 rounded-lg border">
+                <div className="flex items-center gap-2 bg-foreground/[0.02] p-1 rounded-lg border border-foreground/[0.1] shadow-sm">
                     <button
                         onClick={() => setLayout("shelf")}
                         className={`p-2 rounded-md transition-all ${layout === "shelf" ? "bg-primary text-primary-foreground shadow-lg" : "hover:bg-foreground/10 text-muted-foreground"}`}
@@ -101,12 +101,12 @@ export default function BookshelfView({ books }: BookshelfViewProps) {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 min-h-[400px] rounded-xl border bg-gradient-to-br from-background via-background to-foreground/5 p-6 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 min-h-[400px] glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] p-6 overflow-y-auto custom-scrollbar">
                 {filteredBooks.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-60">
                         <BookOpen className="w-16 h-16 mb-4 stroke-1" />
-                        <p className="text-lg font-light">Your bookshelf is empty</p>
-                        <p className="text-sm">Purchased books will appear here</p>
+                        <p className="text-sm uppercase tracking-widest text-muted-foreground">Your bookshelf is empty</p>
+                        <p className="text-xs">Purchased books will appear here</p>
                     </div>
                 ) : (
                     <div className={`
@@ -161,7 +161,7 @@ export default function BookshelfView({ books }: BookshelfViewProps) {
 
                                                 {/* Hover Specs */}
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                                                    <h4 className="text-white text-sm font-bold leading-tight line-clamp-2">{book.item.label}</h4>
+                                                    <h4 className="text-white text-xs font-bold leading-tight line-clamp-2">{book.item.label}</h4>
                                                     <span className="text-[10px] text-white/60 mt-1 uppercase tracking-wider">
                                                         {isPreorder ? "Coming Soon" : "Read Now"}
                                                     </span>
@@ -188,11 +188,11 @@ export default function BookshelfView({ books }: BookshelfViewProps) {
                                                         {isPreorder && <span className="text-amber-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Releases {new Date(book.item.releaseDate!).toLocaleDateString()}</span>}
                                                     </div>
                                                 </div>
-                                                <div className="text-sm font-medium">
+                                                <div className="text-xs font-medium">
                                                     {isPreorder ? (
                                                         <span className="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-xs">Pre-Order</span>
                                                     ) : (
-                                                        <button className="px-4 py-1.5 bg-primary text-primary-foreground rounded-full text-xs font-medium hover:shadow-lg hover:shadow-primary/20 transition-all">
+                                                        <button className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-[10px] uppercase font-bold tracking-wider hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:shadow-primary/20 transition-all">
                                                             Read
                                                         </button>
                                                     )}

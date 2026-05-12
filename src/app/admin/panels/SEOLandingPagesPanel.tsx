@@ -613,15 +613,16 @@ export function SEOLandingPagesPanel() {
   }, [editFormData, updateFormField]);
 
   return (
-    <div className="glass-pane rounded-xl border p-6 space-y-6">
+    <div className="w-full space-y-6 pb-24 admin-panel-enter">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">SEO Landing Pages</h2>
-          <p className="microtext text-muted-foreground mt-1">
-            Manage programmatic SEO pages for industries, competitors, and locations
-          </p>
-        </div>
+      <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight">SEO Landing Pages</h2>
+            <p className="microtext text-muted-foreground mt-1">
+              Manage programmatic SEO pages for industries, competitors, and locations
+            </p>
+          </div>
         <div className="flex items-center gap-4">
           {/* Save status indicator */}
           {lastSaved && !persistError && (
@@ -648,6 +649,7 @@ export function SEOLandingPagesPanel() {
           </div>
         </div>
       </div>
+      </div>
 
       {/* Loading state */}
       {loading && (
@@ -669,17 +671,17 @@ export function SEOLandingPagesPanel() {
 
       {/* View Mode Toggle */}
       {!loading && (
-        <div className="flex gap-2 p-1 bg-muted/30 rounded-lg w-fit">
+        <div className="flex gap-2 p-1 border border-foreground/[0.05] bg-foreground/[0.02] rounded-xl w-fit">
           <button
             onClick={() => setViewMode('pages')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'pages' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'pages' ? 'bg-background shadow text-foreground border border-foreground/[0.05]' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.02]'
               }`}
           >
             <FileText className="h-4 w-4" />Pages
           </button>
           <button
             onClick={() => setViewMode('templates')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'templates' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'templates' ? 'bg-background shadow text-foreground border border-foreground/[0.05]' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.02]'
               }`}
           >
             <Layout className="h-4 w-4" />Base Templates
@@ -692,7 +694,7 @@ export function SEOLandingPagesPanel() {
 
       {/* Category Tabs - always show all tabs in admin panel */}
       {!loading && (
-        <div className="flex gap-2 border-b border-border">
+        <div className="flex gap-2 border-b border-foreground/[0.05]">
           {(['industries', 'comparisons', 'locations'] as PageCategory[]).map((category) => {
             const isAllDisabled = categoryAllDisabled[category];
 
@@ -724,7 +726,7 @@ export function SEOLandingPagesPanel() {
 
       {!loading && viewMode === 'templates' ? (
         <div className="space-y-4">
-          <div className="rounded-lg border p-4 bg-muted/20">
+          <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md p-6">
             <h3 className="font-medium mb-3 flex items-center gap-2">
               <Layout className="h-4 w-4" />
               {activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)} Templates
@@ -804,13 +806,13 @@ export function SEOLandingPagesPanel() {
                 placeholder={`Search ${activeCategory}...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 h-9 border rounded-md bg-background text-sm placeholder-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full pl-10 pr-4 h-10 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-sm transition-colors hover:bg-foreground/[0.04] focus:border-foreground/30 focus:outline-none placeholder-muted-foreground"
               />
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="h-9 px-3 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="h-10 px-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-sm transition-colors hover:bg-foreground/[0.04] focus:border-foreground/30 focus:outline-none"
             >
               <option value="all">All Status</option>
               <option value="enabled">Enabled</option>
@@ -819,7 +821,7 @@ export function SEOLandingPagesPanel() {
           </div>
 
           {/* Bulk Actions Bar */}
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border">
+          <div className="flex items-center justify-between p-4 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleSelectAll}
@@ -842,21 +844,21 @@ export function SEOLandingPagesPanel() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={enableSelectedPages}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-green-600 text-white text-sm hover:bg-green-700"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-sm hover:bg-emerald-500/20 transition-all font-medium"
                 >
                   <Eye className="h-4 w-4" />
                   Enable Selected
                 </button>
                 <button
                   onClick={disableSelectedPages}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-600 text-white text-sm hover:bg-red-700"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 text-sm hover:bg-red-500/20 transition-all font-medium"
                 >
                   <EyeOff className="h-4 w-4" />
                   Disable Selected
                 </button>
                 <button
                   onClick={clearSelection}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-foreground/[0.05] bg-background text-sm hover:bg-foreground/[0.02] transition-all font-medium"
                 >
                   <X className="h-4 w-4" />
                   Clear
@@ -883,7 +885,7 @@ export function SEOLandingPagesPanel() {
                 const isSelected = selectedPages.has(page.id);
 
                 return (
-                  <div key={page.id} className={`border rounded-lg overflow-hidden transition-colors ${isEnabled ? 'border-border bg-background' : 'border-border bg-muted/30 opacity-75'} ${isSelected ? 'ring-2 ring-primary' : ''}`}>
+                  <div key={page.id} className={`border rounded-xl overflow-hidden transition-colors ${isEnabled ? 'border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md' : 'border-foreground/[0.02] bg-transparent opacity-75'} ${isSelected ? 'ring-2 ring-primary' : ''}`}>
                     <div className="flex items-center gap-4 p-4">
                       <button onClick={() => toggleSelectPage(page.id)} className="text-muted-foreground hover:text-foreground">
                         {isSelected ? <CheckSquare className="h-5 w-5 text-primary" /> : <Square className="h-5 w-5" />}
@@ -914,7 +916,7 @@ export function SEOLandingPagesPanel() {
                     </div>
 
                     {isExpanded && (
-                      <div className="px-4 pb-4 pt-2 border-t border-border bg-muted/20">
+                      <div className="px-4 pb-4 pt-2 border-t border-foreground/[0.02] bg-foreground/[0.01]">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="col-span-full">
                             <label className="microtext text-muted-foreground mb-1 block">Meta Description</label>

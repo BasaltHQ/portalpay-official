@@ -512,7 +512,7 @@ function PFPRingPreview({ glowIntensity, isAnimating }: { glowIntensity: number;
   };
 
   return (
-    <div className="space-y-4 border-t border-border pt-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
       <div>
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <User className="w-5 h-5" />

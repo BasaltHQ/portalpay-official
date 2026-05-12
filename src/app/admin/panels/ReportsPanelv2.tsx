@@ -343,43 +343,43 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glass-pane rounded-xl border p-5">
                 <div>
                     {/* Simplified Header since Dashboard has main header */}
                     <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm text-muted-foreground font-medium">Merchant Report</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Merchant Report</span>
                     </div>
-                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2">
                         Reporting Dashboard
-                        {reportLoading && <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />}
+                        {reportLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
                     </h2>
                 </div>
                 <div className="flex gap-2">
                     <button
                         onClick={printReceiptAction}
                         disabled={reportLoading || !dashboardStats}
-                        className="h-8 flex items-center gap-2 px-3 bg-card border hover:bg-muted text-foreground rounded-lg disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all"
+                        className="h-9 flex items-center gap-2 px-4 rounded-lg border border-foreground/10 hover:bg-foreground/5 text-foreground disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider transition-all"
                     >
                         <Printer className="w-3.5 h-3.5" /> Print
                     </button>
                     <button
                         onClick={() => setEmailDialogOpen(true)}
                         disabled={reportLoading}
-                        className="h-8 flex items-center gap-2 px-3 bg-secondary text-secondary-foreground rounded-lg hover:brightness-95 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider border border-secondary"
+                        className="h-9 flex items-center gap-2 px-4 rounded-lg bg-foreground/[0.02] hover:bg-foreground/[0.04] text-foreground border border-foreground/10 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider transition-all"
                     >
                         <FileText className="w-3.5 h-3.5" /> Email
                     </button>
                     <button
                         onClick={() => downloadReportAction("pdf")}
                         disabled={reportLoading}
-                        className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider"
+                        className="h-9 flex items-center gap-2 px-4 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-lg shadow-primary/20 transition-all text-[10px] font-bold uppercase tracking-wider"
                     >
                         <FileText className="w-3.5 h-3.5" /> PDF
                     </button>
                     <button
                         onClick={() => downloadReportAction("zip")}
                         disabled={reportLoading}
-                        className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider shadow-sm opacity-80"
+                        className="h-9 flex items-center gap-2 px-4 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-primary/20 transition-all opacity-90"
                     >
                         <Download className="w-3.5 h-3.5" /> ZIP
                     </button>
@@ -429,7 +429,7 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
             </Dialog>
 
             {/* Controls */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-xl bg-card">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 glass-pane border rounded-xl">
                 <div>
                     <div className="flex items-center gap-2 mb-2">
                         <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Report Type</span>
@@ -445,8 +445,8 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
                                 key={t.id}
                                 onClick={() => setReportType(t.id)}
                                 className={`flex-1 min-w-[80px] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${reportType === t.id
-                                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                    : "bg-background text-muted-foreground border-border hover:bg-muted/50 hover:text-foreground"
+                                    ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
+                                    : "bg-foreground/[0.02] text-muted-foreground border-foreground/10 hover:bg-foreground/5 hover:text-foreground"
                                     }`}
                             >
                                 {t.label}
@@ -464,7 +464,7 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
                     <select
                         value={employeeFilter}
                         onChange={e => setEmployeeFilter(e.target.value)}
-                        className="w-full h-[38px] px-3 rounded-lg border bg-background text-xs font-medium focus:ring-1 focus:ring-primary"
+                        className="w-full h-[38px] px-3 rounded-lg border border-foreground/10 bg-foreground/[0.02] text-xs font-medium focus:ring-1 focus:ring-primary focus:outline-none transition-colors"
                     >
                         <option value="">All Staff</option>
                         {employees.map(emp => (
@@ -478,14 +478,14 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
                         <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Date Range</span>
                     </div>
                     <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex bg-muted/20 p-1 rounded-lg border flex-1">
+                        <div className="flex bg-foreground/[0.02] p-1 rounded-lg border border-foreground/10 flex-1">
                             {["today", "yesterday", "week", "month", "custom"].map(r => (
                                 <button
                                     key={r}
                                     onClick={() => setRange(r)}
-                                    className={`flex-1 text-[11px] uppercase font-bold tracking-wide py-2 rounded-md transition-all ${range === r
-                                        ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
-                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
+                                    className={`flex-1 text-[10px] uppercase font-bold tracking-wider py-2 rounded-md transition-all ${range === r
+                                        ? "bg-foreground/5 text-foreground shadow-sm border border-foreground/10"
+                                        : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground border border-transparent"}`}
                                 >
                                     {r}
                                 </button>
@@ -498,14 +498,14 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
                                     type="date"
                                     value={customStart}
                                     onChange={e => setCustomStart(e.target.value)}
-                                    className="h-[38px] px-3 rounded-lg border bg-background text-xs font-medium focus:ring-1 focus:ring-primary"
+                                    className="h-[38px] px-3 rounded-lg border border-foreground/10 bg-foreground/[0.02] text-xs font-medium focus:ring-1 focus:ring-primary focus:outline-none transition-colors"
                                 />
-                                <span className="text-muted-foreground text-xs">to</span>
+                                <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">to</span>
                                 <input
                                     type="date"
                                     value={customEnd}
                                     onChange={e => setCustomEnd(e.target.value)}
-                                    className="h-[38px] px-3 rounded-lg border bg-background text-xs font-medium focus:ring-1 focus:ring-primary"
+                                    className="h-[38px] px-3 rounded-lg border border-foreground/10 bg-foreground/[0.02] text-xs font-medium focus:ring-1 focus:ring-primary focus:outline-none transition-colors"
                                 />
                             </div>
                         )}
@@ -544,37 +544,37 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
                     </div>
 
                     {/* Report Specific View */}
-                    <div className="md:col-span-4 border rounded-xl p-6 bg-card min-h-[300px]">
-                        <h3 className="text-lg font-bold mb-4 capitalize">{reportType.replace("-", " ")} Details</h3>
+                    <div className="md:col-span-4 glass-pane border rounded-xl p-6 min-h-[300px]">
+                        <h3 className="text-lg font-bold mb-6 capitalize tracking-tight">{reportType.replace("-", " ")} Details</h3>
 
                         {/* Dynamic Content based on Type */}
                         {reportType === "employee" && dashboardStats.employees && (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm text-left">
-                                    <thead className="text-xs uppercase text-muted-foreground border-b">
+                                    <thead className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground border-b border-foreground/10">
                                         <tr>
-                                            <th className="py-3">Staff</th>
-                                            <th className="py-3 text-right">Sales</th>
-                                            <th className="py-3 text-right">Tips</th>
-                                            <th className="py-3 text-right">Orders</th>
-                                            <th className="py-3 text-right">Avg Ticket</th>
-                                            <th className="py-3 text-right">Sessions</th>
-                                            <th className="py-3 text-right">Active</th>
+                                            <th className="py-3 px-2">Staff</th>
+                                            <th className="py-3 px-2 text-right">Sales</th>
+                                            <th className="py-3 px-2 text-right">Tips</th>
+                                            <th className="py-3 px-2 text-right">Orders</th>
+                                            <th className="py-3 px-2 text-right">Avg Ticket</th>
+                                            <th className="py-3 px-2 text-right">Sessions</th>
+                                            <th className="py-3 px-2 text-right">Active</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y">
+                                    <tbody className="divide-y divide-foreground/5">
                                         {dashboardStats.employees.map((e: any) => (
-                                            <tr key={e.id} className="hover:bg-muted/20 transition-colors">
-                                                <td className="py-3">
-                                                    <div className="font-medium">{e.name || e.id}</div>
-                                                    {e.name && e.name !== e.id && <div className="text-xs text-muted-foreground">{e.id}</div>}
+                                            <tr key={e.id} className="hover:bg-foreground/[0.02] transition-colors group">
+                                                <td className="py-3 px-2">
+                                                    <div className="font-semibold">{e.name || e.id}</div>
+                                                    {e.name && e.name !== e.id && <div className="text-[10px] text-muted-foreground mt-0.5">{e.id}</div>}
                                                 </td>
-                                                <td className="py-3 text-right font-mono">{formatCurrency(e.sales, "USD")}</td>
-                                                <td className="py-3 text-right font-mono text-green-500">{formatCurrency(e.tips, "USD")}</td>
-                                                <td className="py-3 text-right">{e.count}</td>
-                                                <td className="py-3 text-right font-mono">{formatCurrency(e.aov, "USD")}</td>
-                                                <td className="py-3 text-right">{e.sessionCount || 1}</td>
-                                                <td className="py-3 text-right text-muted-foreground">{e.activeHours ? `${e.activeHours}h` : "-"}</td>
+                                                <td className="py-3 px-2 text-right font-mono text-sm">{formatCurrency(e.sales, "USD")}</td>
+                                                <td className="py-3 px-2 text-right font-mono text-sm text-green-500 group-hover:text-green-400 transition-colors">{formatCurrency(e.tips, "USD")}</td>
+                                                <td className="py-3 px-2 text-right font-medium">{e.count}</td>
+                                                <td className="py-3 px-2 text-right font-mono text-sm text-muted-foreground">{formatCurrency(e.aov, "USD")}</td>
+                                                <td className="py-3 px-2 text-right">{e.sessionCount || 1}</td>
+                                                <td className="py-3 px-2 text-right text-[10px] font-bold text-muted-foreground uppercase">{e.activeHours ? `${e.activeHours}h` : "-"}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -583,14 +583,16 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
                         )}
 
                         {(reportType === "z-report" || reportType === "x-report") && dashboardStats.paymentMethods && (
-                            <div className="space-y-6">
+                            <div className="space-y-8">
                                 <div>
-                                    <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-3">Payment Breakdown</h4>
-                                    <div className="space-y-2">
+                                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                                        Payment Breakdown <div className="h-px bg-foreground/10 flex-1" />
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {dashboardStats.paymentMethods.map((m: any) => (
-                                            <div key={m.method} className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
-                                                <span className="font-medium">{m.method}</span>
-                                                <span className="font-mono">{formatCurrency(m.total, "USD")}</span>
+                                            <div key={m.method} className="flex justify-between items-center p-4 rounded-lg bg-foreground/[0.02] border border-foreground/5 hover:border-foreground/10 transition-colors">
+                                                <span className="font-semibold text-sm">{m.method}</span>
+                                                <span className="font-mono font-medium">{formatCurrency(m.total, "USD")}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -599,29 +601,33 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
                                 {/* Session Details */}
                                 {dashboardStats.sessions && dashboardStats.sessions.length > 0 && (
                                     <div>
-                                        <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-3">Session History</h4>
-                                        <div className="space-y-2">
+                                        <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                                            Session History <div className="h-px bg-foreground/10 flex-1" />
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {dashboardStats.sessions.map((s: any) => (
-                                                <div key={s.id} className="p-3 rounded-lg bg-muted/20 border border-border/50">
-                                                    <div className="flex justify-between items-start mb-2">
+                                                <div key={s.id} className="p-5 rounded-xl bg-foreground/[0.01] border border-foreground/10 hover:bg-foreground/[0.02] transition-colors">
+                                                    <div className="flex justify-between items-start mb-4">
                                                         <div>
-                                                            <span className="font-medium">{s.staffName || "Unknown Staff"}</span>
-                                                            {s.isActive && <span className="ml-2 text-xs bg-green-500/20 text-green-500 px-2 py-0.5 rounded-full">Active</span>}
+                                                            <div className="font-semibold flex items-center gap-2">
+                                                                {s.staffName || "Unknown Staff"}
+                                                                {s.isActive && <span className="text-[9px] bg-green-500/10 text-green-500 border border-green-500/20 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Active</span>}
+                                                            </div>
                                                         </div>
-                                                        <span className="text-xs text-muted-foreground">{s.durationFormatted || "-"}</span>
+                                                        <span className="text-[10px] font-mono text-muted-foreground bg-foreground/5 px-2 py-1 rounded-md">{s.durationFormatted || "-"}</span>
                                                     </div>
-                                                    <div className="grid grid-cols-3 gap-4 text-sm">
+                                                    <div className="grid grid-cols-3 gap-4 border-t border-foreground/5 pt-4">
                                                         <div>
-                                                            <span className="text-muted-foreground text-xs">Started</span>
-                                                            <div className="font-mono">{new Date(s.startTime * 1000).toLocaleTimeString()}</div>
+                                                            <span className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Started</span>
+                                                            <div className="font-mono text-sm mt-1">{new Date(s.startTime * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                                                         </div>
                                                         <div>
-                                                            <span className="text-muted-foreground text-xs">Sales</span>
-                                                            <div className="font-mono">{formatCurrency(s.totalSales || 0, "USD")}</div>
+                                                            <span className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Sales</span>
+                                                            <div className="font-mono text-sm mt-1">{formatCurrency(s.totalSales || 0, "USD")}</div>
                                                         </div>
                                                         <div>
-                                                            <span className="text-muted-foreground text-xs">Tips</span>
-                                                            <div className="font-mono text-green-500">{formatCurrency(s.totalTips || 0, "USD")}</div>
+                                                            <span className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Tips</span>
+                                                            <div className="font-mono text-sm mt-1 text-green-500">{formatCurrency(s.totalTips || 0, "USD")}</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -633,18 +639,18 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
                         )}
 
                         {reportType === "hourly" && (
-                            <div className="h-64 flex items-end gap-1 pt-4 pb-0 px-2 overflow-x-auto">
+                            <div className="h-64 flex items-end gap-2 pt-4 pb-0 px-4 overflow-x-auto bg-foreground/[0.01] rounded-xl border border-foreground/5 mt-4">
                                 {dashboardStats.hourly?.map((h: any) => (
-                                    <div key={h.hour} className="flex-1 flex flex-col justify-end items-center group min-w-[20px]">
+                                    <div key={h.hour} className="flex-1 flex flex-col justify-end items-center group min-w-[24px]">
                                         <div
-                                            className="w-full bg-primary/80 rounded-t-sm hover:bg-primary transition-all relative"
+                                            className="w-full bg-primary/20 rounded-t-sm group-hover:bg-primary/40 border-t border-primary/50 transition-all relative"
                                             style={{ height: `${Math.max(4, (h.amount / (Math.max(...dashboardStats.hourly.map((x: any) => x.amount) || 1)) * 100))}%` }}
                                         >
-                                            <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-10">
+                                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] font-bold px-2 py-1 rounded shadow-xl opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-10 transition-opacity">
                                                 {formatCurrency(h.amount, "USD")}
                                             </div>
                                         </div>
-                                        <div className="text-[10px] text-muted-foreground mt-1">{h.hour}:00</div>
+                                        <div className="text-[10px] text-muted-foreground mt-2 font-mono">{h.hour}:00</div>
                                     </div>
                                 ))}
                             </div>
@@ -659,10 +665,13 @@ export default function ReportsPanel({ merchantWallet, theme }: { merchantWallet
 
 function StatCard({ label, value, sub }: { label: string, value: string | number, sub: string }) {
     return (
-        <div className="p-4 rounded-xl border bg-card hover:bg-muted/10 transition-colors">
-            <div className="text-xs text-muted-foreground uppercase font-semibold">{label}</div>
-            <div className="text-2xl font-bold my-1">{value}</div>
-            <div className="text-xs text-muted-foreground">{sub}</div>
+        <div className="glass-pane rounded-xl border p-5 relative overflow-hidden group hover:bg-foreground/[0.02] transition-colors">
+            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            </div>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground group-hover:text-primary transition-colors">{label}</div>
+            <div className="text-2xl font-bold mt-2 mb-1 tracking-tight">{value}</div>
+            <div className="text-xs text-muted-foreground/70">{sub}</div>
         </div>
     );
 }

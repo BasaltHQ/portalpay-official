@@ -2205,6 +2205,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                             <div className="flex items-center gap-3">
                                 <div className="hidden md:block w-[140px]">
                                     <ClientOnly fallback={<div style={{ height: "36px" }} />}>
+                                        {wallets.length > 0 ? (
                                         <ConnectButton
                                             client={client}
                                             chain={chain}
@@ -2231,6 +2232,9 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                 showThirdwebBranding: false,
                                             }}
                                         />
+                                        ) : (
+                                            <div style={{ height: "36px", width: "100px" }} className="bg-white/5 animate-pulse rounded-[10px]" />
+                                        )}
                                     </ClientOnly>
                                 </div>
                             </div>
@@ -2352,6 +2356,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                             <div className="hidden md:flex flex-col items-end gap-3 relative z-[1200]">
                                                 <div className="min-h-8 relative z-[1200]">
                                                     <ClientOnly fallback={<div style={{ height: "32px", width: "165px" }} />}>
+                                                        {wallets.length > 0 ? (
                                                         <ConnectButton
                                                             client={client}
                                                             chain={chain}
@@ -2378,6 +2383,9 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                                 showThirdwebBranding: false,
                                                             }}
                                                         />
+                                                        ) : (
+                                                            <div style={{ height: "32px", width: "165px" }} className="bg-white/5 animate-pulse rounded-[10px]" />
+                                                        )}
                                                     </ClientOnly>
                                                 </div>
                                                 <ShopLanguageDropdown />
@@ -2462,6 +2470,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                         <div className="md:hidden relative z-[1200] mt-3 mb-1 flex flex-row items-center gap-2">
                                             <div className="flex-1">
                                                 <ClientOnly fallback={<div style={{ height: "36px", width: "100%" }} />}>
+                                                    {wallets.length > 0 ? (
                                                     <ConnectButton
                                                         client={client}
                                                         chain={chain}
@@ -2488,6 +2497,9 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
                                                             showThirdwebBranding: false,
                                                         }}
                                                     />
+                                                    ) : (
+                                                        <div style={{ height: "36px", width: "100%" }} className="bg-white/5 animate-pulse rounded-[10px]" />
+                                                    )}
                                                 </ClientOnly>
                                             </div>
                                             <ShopLanguageDropdown />

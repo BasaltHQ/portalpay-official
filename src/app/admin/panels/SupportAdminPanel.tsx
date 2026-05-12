@@ -191,57 +191,64 @@ export default function SupportAdminPanel() {
     return (
         <div className="flex flex-col md:flex-row h-full gap-6">
             {/* Sidebar List */}
-            <div className={`flex flex-col gap-4 shrink-0 ${selectedTicket ? 'hidden md:flex w-full md:w-80' : 'w-full md:w-80'}`}>
-                <div className="flex items-center gap-2 px-1">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
-                        <input
-                            className="w-full h-9 pl-9 pr-3 rounded-lg border bg-background text-sm"
-                            placeholder="Search tickets..."
-                        />
-                    </div>
-                    <button
-                        onClick={fetchTickets}
-                        className="p-2 hover:bg-foreground/5 rounded-lg transition-colors"
-                        title="Refresh"
-                    >
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                    </button>
-                </div>
-
-                <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
-                    {['all', 'open', 'in_progress', 'resolved'].map(f => (
+            <div className={`flex flex-col glass-pane rounded-xl border overflow-hidden shrink-0 ${selectedTicket ? 'hidden md:flex w-full md:w-80' : 'w-full md:w-80'}`}>
+                {/* Sidebar Header & Filters */}
+                <div className="p-4 border-b border-foreground/5 bg-foreground/[0.02] space-y-4">
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <input
+                                className="w-full h-10 pl-9 pr-3 rounded-lg border border-foreground/10 bg-background text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
+                                placeholder="Search tickets..."
+                            />
+                        </div>
                         <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            className={`px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap transition-colors ${filter === f
-                                ? 'bg-primary text-primary-foreground border-primary'
-                                : 'bg-background hover:bg-muted'
-                                }`}
+                            onClick={fetchTickets}
+                            className="p-2.5 hover:bg-foreground/5 border border-foreground/10 bg-background rounded-lg transition-colors"
+                            title="Refresh"
                         >
-                            {f.replace('_', ' ').toUpperCase()}
+                            <Clock className="w-4 h-4 text-muted-foreground" />
                         </button>
-                    ))}
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5">
+                        {['all', 'open', 'in_progress', 'resolved'].map(f => (
+                            <button
+                                key={f}
+                                onClick={() => setFilter(f)}
+                                className={`px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-bold whitespace-nowrap transition-colors ${filter === f
+                                    ? 'bg-primary text-primary-foreground shadow-sm'
+                                    : 'bg-background border border-foreground/10 text-muted-foreground hover:bg-foreground/5'
+                                    }`}
+                            >
+                                {f.replace('_', ' ').toUpperCase()}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+                {/* Ticket List */}
+                <div className="flex-1 overflow-y-auto divide-y divide-foreground/5 bg-background/50">
                     {filteredTickets.map(ticket => (
                         <button
                             key={ticket.id}
-                            className={`w-full text-left p-3 rounded-xl border transition-all ${selectedTicket?.id === ticket.id
-                                ? 'bg-primary/5 border-primary/50 ring-1 ring-primary/20'
-                                : 'bg-card hover:bg-accent/50'
+                            className={`w-full text-left p-4 transition-all relative ${selectedTicket?.id === ticket.id
+                                ? 'bg-primary/5'
+                                : 'hover:bg-foreground/[0.02]'
                                 }`}
                             onClick={() => setSelectedTicket(ticket)}
                         >
-                            <div className="flex items-center justify-between mb-1.5">
+                            {selectedTicket?.id === ticket.id && (
+                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
+                            )}
+                            <div className="flex items-center justify-between mb-1.5 pl-2">
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusColor(ticket.status)}`}>
                                     {ticket.status.toUpperCase()}
                                 </span>
                                 <span className="text-[10px] text-muted-foreground">{new Date(ticket.createdAt).toLocaleDateString()}</span>
                             </div>
-                            <div className="font-semibold text-sm truncate mb-0.5">{ticket.subject}</div>
-                            <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                            <div className="font-semibold text-sm truncate mb-0.5 pl-2">{ticket.subject}</div>
+                            <div className="text-xs text-muted-foreground truncate flex items-center gap-1 pl-2">
                                 <User className="w-3 h-3" />
                                 {ticket.user.slice(0, 6)}...{ticket.user.slice(-4)}
                             </div>
@@ -256,11 +263,11 @@ export default function SupportAdminPanel() {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col bg-card border rounded-xl overflow-hidden shadow-sm">
+            <div className="flex-1 flex flex-col glass-pane rounded-xl border overflow-hidden bg-foreground/[0.01]">
                 {selectedTicket ? (
                     <>
                         {/* Header */}
-                        <div className="p-4 md:p-6 border-b bg-muted/10 flex flex-row items-start justify-between gap-4">
+                        <div className="px-5 py-4 border-b border-foreground/5 bg-foreground/[0.02] flex flex-row items-start justify-between gap-4">
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2 mb-1">
                                     <button
@@ -310,24 +317,24 @@ export default function SupportAdminPanel() {
                             </div>
                             <div className="flex items-center gap-3">
                                 <select
-                                    className="h-9 px-3 rounded-lg border bg-background text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                                    className="h-9 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm font-medium focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                                     value={selectedTicket.status}
                                     onChange={(e) => updateStatus(e.target.value)}
                                 >
-                                    <option value="open">Open</option>
-                                    <option value="in_progress">In Progress</option>
-                                    <option value="resolved">Resolved</option>
-                                    <option value="closed">Closed</option>
+                                    <option className="bg-background text-foreground" value="open">Open</option>
+                                    <option className="bg-background text-foreground" value="in_progress">In Progress</option>
+                                    <option className="bg-background text-foreground" value="resolved">Resolved</option>
+                                    <option className="bg-background text-foreground" value="closed">Closed</option>
                                 </select>
                                 <div className="relative" ref={menuRef}>
                                     <button
-                                        className="p-2 hover:bg-foreground/5 rounded-lg transition-colors"
+                                        className="p-2 hover:bg-foreground/5 border border-transparent hover:border-foreground/10 rounded-lg transition-colors"
                                         onClick={() => setShowMenu(!showMenu)}
                                     >
                                         <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
                                     </button>
                                     {showMenu && (
-                                        <div className="absolute right-0 top-full mt-1 w-56 bg-background border rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
+                                        <div className="absolute right-0 top-full mt-1 w-56 glass-pane border rounded-xl shadow-2xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
                                             <a
                                                 href={getMerchantUrl('profile')}
                                                 target="_blank"
@@ -367,7 +374,7 @@ export default function SupportAdminPanel() {
                         </div>
 
                         {/* Chat Area */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-slate-900/10">
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-background/50 relative">
                             {/* Original Request */}
                             <div className="flex gap-4">
                                 <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center shrink-0">
@@ -378,7 +385,7 @@ export default function SupportAdminPanel() {
                                         <span className="font-semibold text-sm">User</span>
                                         <span className="text-xs text-muted-foreground">{new Date(selectedTicket.createdAt).toLocaleString()}</span>
                                     </div>
-                                    <div className="p-4 rounded-2xl rounded-tl-none bg-background border shadow-sm text-sm whitespace-pre-wrap">
+                                    <div className="p-4 rounded-2xl rounded-tl-none glass-pane border border-foreground/10 shadow-sm text-sm whitespace-pre-wrap leading-relaxed">
                                         {selectedTicket.message}
                                     </div>
                                     {/* Original attachments */}
@@ -431,7 +438,7 @@ export default function SupportAdminPanel() {
                         </div>
 
                         {/* Reply Area */}
-                        <div className="p-4 border-t bg-background space-y-3">
+                        <div className="px-5 py-4 border-t border-foreground/5 bg-foreground/[0.01] space-y-3">
                             {/* Reply attachments preview */}
                             {replyAttachments.length > 0 && (
                                 <div className="flex gap-2 flex-wrap">
@@ -451,7 +458,7 @@ export default function SupportAdminPanel() {
                             )}
                             <div className="relative">
                                 <textarea
-                                    className="w-full h-24 pl-4 pr-24 py-3 rounded-xl border bg-muted/30 focus:bg-background transition-all outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                                    className="w-full h-24 pl-4 pr-24 py-3 rounded-xl border border-foreground/10 bg-foreground/[0.02] focus:bg-foreground/[0.04] transition-all focus:outline-none focus:ring-1 focus:ring-foreground/20 resize-none text-sm"
                                     placeholder="Type your response..."
                                     value={reply}
                                     onChange={e => setReply(e.target.value)}
@@ -498,11 +505,15 @@ export default function SupportAdminPanel() {
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
-                        <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mb-4">
-                            <MessageSquare className="w-8 h-8 opacity-50" />
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-foreground/[0.01]">
+                        <div className="w-20 h-20 rounded-2xl glass-pane border border-foreground/10 flex items-center justify-center mb-6 shadow-xl relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50" />
+                            <MessageSquare className="w-8 h-8 text-muted-foreground relative z-10" />
                         </div>
-                        <p className="font-medium">Select a ticket to view details</p>
+                        <h3 className="text-xl font-bold tracking-tight mb-2">Support Inbox</h3>
+                        <p className="text-sm text-muted-foreground/80 max-w-sm">
+                            Select a ticket from the sidebar to view details, add internal notes, and communicate directly with the merchant.
+                        </p>
                     </div>
                 )}
             </div>

@@ -334,43 +334,43 @@ export default function ReportsPanelMerchant() {
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+        <div className="w-full space-y-6 pb-24 px-4 sm:px-6 lg:px-8 animate-in fade-in slide-in-from-bottom-4">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="glass-pane rounded-xl border p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm text-muted-foreground font-medium">Merchant Report</span>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground/80 font-semibold">Merchant Report</span>
                     </div>
-                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2">
                         Reporting Dashboard
-                        {reportLoading && <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />}
+                        {reportLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
                     </h2>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                     {reportType === "transactions" ? (
                         <>
-                            <button onClick={exportTransactionsPDF} disabled={splitTxLoading || !splitTransactions.length} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider">
+                            <button onClick={exportTransactionsPDF} disabled={splitTxLoading || !splitTransactions.length} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-lg shadow-primary/20 transition-all text-[10px] font-bold uppercase tracking-wider">
                                 <FileText className="w-3.5 h-3.5" /> PDF
                             </button>
-                            <button onClick={exportTransactionsExcel} disabled={splitTxLoading || !splitTransactions.length} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider">
+                            <button onClick={exportTransactionsExcel} disabled={splitTxLoading || !splitTransactions.length} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-lg shadow-green-600/20 transition-all text-[10px] font-bold uppercase tracking-wider">
                                 <Table2 className="w-3.5 h-3.5" /> Excel
                             </button>
                         </>
                     ) : (
                         <>
-                            <button onClick={printReport} disabled={reportLoading || !dashboardStats} className="h-8 flex items-center gap-2 px-3 bg-card border hover:bg-muted text-foreground rounded-lg disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all">
+                            <button onClick={printReport} disabled={reportLoading || !dashboardStats} className="h-8 flex items-center gap-2 px-3 bg-foreground/5 border border-foreground/10 hover:bg-foreground/10 text-foreground rounded-lg disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider transition-all">
                                 <Printer className="w-3.5 h-3.5" /> Print
                             </button>
-                            <button onClick={() => setEmailDialogOpen(true)} disabled={reportLoading} className="h-8 flex items-center gap-2 px-3 bg-secondary text-secondary-foreground rounded-lg hover:brightness-95 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider border border-secondary">
+                            <button onClick={() => setEmailDialogOpen(true)} disabled={reportLoading} className="h-8 flex items-center gap-2 px-3 bg-secondary text-secondary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-secondary/10 transition-all">
                                 <FileText className="w-3.5 h-3.5" /> Email
                             </button>
-                            <button onClick={() => downloadReport("pdf")} disabled={reportLoading} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider">
+                            <button onClick={() => downloadReport("pdf")} disabled={reportLoading} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 shadow-lg shadow-primary/20 transition-all text-[10px] font-bold uppercase tracking-wider">
                                 <FileText className="w-3.5 h-3.5" /> PDF
                             </button>
-                            <button onClick={exportExcel} disabled={reportLoading || !dashboardStats} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider">
+                            <button onClick={exportExcel} disabled={reportLoading || !dashboardStats} className="h-8 flex items-center gap-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-lg shadow-green-600/20 transition-all text-[10px] font-bold uppercase tracking-wider">
                                 <Table2 className="w-3.5 h-3.5" /> Excel
                             </button>
-                            <button onClick={() => downloadReport("zip")} disabled={reportLoading} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider shadow-sm opacity-80">
+                            <button onClick={() => downloadReport("zip")} disabled={reportLoading} className="h-8 flex items-center gap-2 px-3 bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-50 text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-primary/20 opacity-90 transition-all">
                                 <Download className="w-3.5 h-3.5" /> ZIP
                             </button>
                         </>
@@ -386,7 +386,7 @@ export default function ReportsPanelMerchant() {
                         <DialogDescription>Send the {reportType.replace("-", " ")} ({range}) to recipient(s).</DialogDescription>
                     </DialogHeader>
                     <div className="py-2">
-                        <Input placeholder="Enter email addresses (comma separated)" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} />
+                        <Input placeholder="Enter email addresses (comma separated)" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="bg-foreground/[0.03] border-foreground/10 focus-visible:ring-primary/50" />
                     </div>
                     <DialogFooter>
                         <button onClick={() => setEmailDialogOpen(false)} className="px-4 py-2 text-sm rounded hover:bg-muted">Cancel</button>
@@ -409,14 +409,14 @@ export default function ReportsPanelMerchant() {
             </Dialog>
 
             {/* Controls */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-xl bg-card">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 border rounded-xl glass-pane">
                 <div>
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Report Type</span>
+                        <span className="text-[10px] uppercase font-semibold tracking-widest text-muted-foreground/70">Report Type</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {[{ id: "z-report", label: "Z-Report" }, { id: "x-report", label: "X-Report" }, { id: "employee", label: "Staff" }, { id: "hourly", label: "Hourly" }, { id: "transactions", label: "Txns" }].map((t) => (
-                            <button key={t.id} onClick={() => setReportType(t.id)} className={`flex-1 min-w-[80px] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${reportType === t.id ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-background text-muted-foreground border-border hover:bg-muted/50 hover:text-foreground"}`}>
+                            <button key={t.id} onClick={() => setReportType(t.id)} className={`flex-1 min-w-[80px] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${reportType === t.id ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]" : "bg-foreground/[0.02] text-muted-foreground border-foreground/5 hover:bg-foreground/5 hover:text-foreground"}`}>
                                 {t.label}
                             </button>
                         ))}
@@ -426,10 +426,10 @@ export default function ReportsPanelMerchant() {
                 {reportType !== "transactions" && (
                     <div>
                         <div className="flex items-center gap-2 mb-2">
-                            <User className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Staff Filter</span>
+                            <User className="w-3 h-3 text-muted-foreground/70" />
+                            <span className="text-[10px] uppercase font-semibold tracking-widest text-muted-foreground/70">Staff Filter</span>
                         </div>
-                        <select value={employeeFilter} onChange={(e) => setEmployeeFilter(e.target.value)} className="w-full h-[38px] px-3 rounded-lg border bg-background text-xs font-medium focus:ring-1 focus:ring-primary">
+                        <select value={employeeFilter} onChange={(e) => setEmployeeFilter(e.target.value)} className="w-full h-[38px] px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-colors">
                             <option value="">All Staff</option>
                             {employees.map((emp) => (
                                 <option key={emp.id} value={emp.id}>{emp.name}</option>
@@ -440,21 +440,21 @@ export default function ReportsPanelMerchant() {
 
                 <div className="md:col-span-2">
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Date Range</span>
+                        <span className="text-[10px] uppercase font-semibold tracking-widest text-muted-foreground/70">Date Range</span>
                     </div>
                     <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex bg-muted/20 p-1 rounded-lg border flex-1">
+                        <div className="flex bg-foreground/[0.02] p-1 rounded-lg border border-foreground/10 flex-1">
                             {["today", "yesterday", "week", "month", "all", "custom"].map((r) => (
-                                <button key={r} onClick={() => setRange(r)} className={`flex-1 text-[11px] uppercase font-bold tracking-wide py-2 rounded-md transition-all ${range === r ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}>
+                                <button key={r} onClick={() => setRange(r)} className={`flex-1 text-[10px] uppercase font-bold tracking-wide py-2 rounded-md transition-all ${range === r ? "bg-primary text-black shadow-sm ring-1 ring-primary/50" : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"}`}>
                                     {r}
                                 </button>
                             ))}
                         </div>
                         {range === "custom" && (
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
-                                <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="h-[38px] px-3 rounded-lg border bg-background text-xs font-medium focus:ring-1 focus:ring-primary" />
-                                <span className="text-muted-foreground text-xs">to</span>
-                                <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="h-[38px] px-3 rounded-lg border bg-background text-xs font-medium focus:ring-1 focus:ring-primary" />
+                                <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="h-[38px] px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-colors" />
+                                <span className="text-muted-foreground text-xs font-semibold">to</span>
+                                <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="h-[38px] px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-colors" />
                             </div>
                         )}
                     </div>
@@ -475,8 +475,8 @@ export default function ReportsPanelMerchant() {
 
                     {/* Analytics Row */}
                     {(dashboardStats.summary?.totalSales > 0 || dashboardStats.summary?.totalTips > 0) && (
-                        <div className="md:col-span-4 rounded-xl border bg-card p-5">
-                            <h3 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                        <div className="md:col-span-4 rounded-xl border p-6 glass-pane">
+                            <h3 className="font-semibold tracking-tight text-sm flex items-center gap-2 mb-5">
                                 <BarChart3 className="h-4 w-4 text-primary" />
                                 Revenue Breakdown
                             </h3>
@@ -487,36 +487,39 @@ export default function ReportsPanelMerchant() {
                         </div>
                     )}
 
-                    <div className="md:col-span-4 border rounded-xl p-6 bg-card min-h-[300px]">
-                        <h3 className="text-lg font-bold mb-4 capitalize">{reportType.replace("-", " ")} Details</h3>
+                    <div className="md:col-span-4 border rounded-xl p-6 glass-pane min-h-[300px]">
+                        <h3 className="text-lg font-semibold tracking-tight mb-5 capitalize flex items-center gap-2">
+                            <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+                            {reportType.replace("-", " ")} Details
+                        </h3>
 
                         {reportType === "employee" && dashboardStats.employees && (
-                            <div className="overflow-x-auto">
+                            <div className="overflow-x-auto rounded-xl border border-foreground/5">
                                 <table className="w-full text-sm text-left">
-                                    <thead className="text-xs uppercase text-muted-foreground border-b">
+                                    <thead className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground/70 bg-foreground/[0.02] border-b border-foreground/5">
                                         <tr>
-                                            <th className="py-3">Staff</th>
-                                            <th className="py-3 text-right">Sales</th>
-                                            <th className="py-3 text-right">Tips</th>
-                                            <th className="py-3 text-right">Orders</th>
-                                            <th className="py-3 text-right">Avg Ticket</th>
-                                            <th className="py-3 text-right">Sessions</th>
-                                            <th className="py-3 text-right">Active</th>
+                                            <th className="py-3 px-4">Staff</th>
+                                            <th className="py-3 px-4 text-right">Sales</th>
+                                            <th className="py-3 px-4 text-right">Tips</th>
+                                            <th className="py-3 px-4 text-right">Orders</th>
+                                            <th className="py-3 px-4 text-right">Avg Ticket</th>
+                                            <th className="py-3 px-4 text-right">Sessions</th>
+                                            <th className="py-3 px-4 text-right">Active</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y">
+                                    <tbody className="divide-y divide-foreground/5 bg-foreground/[0.01]">
                                         {dashboardStats.employees.map((e: any) => (
-                                            <tr key={e.id} className="hover:bg-muted/20 transition-colors">
-                                                <td className="py-3">
-                                                    <div className="font-medium">{e.name || e.id}</div>
-                                                    {e.name && e.name !== e.id && <div className="text-xs text-muted-foreground">{e.id}</div>}
+                                            <tr key={e.id} className="hover:bg-foreground/[0.02] transition-colors">
+                                                <td className="py-3 px-4">
+                                                    <div className="font-semibold">{e.name || e.id}</div>
+                                                    {e.name && e.name !== e.id && <div className="text-[10px] text-muted-foreground mt-0.5">{e.id}</div>}
                                                 </td>
-                                                <td className="py-3 text-right font-mono">{formatCurrency(e.sales, "USD")}</td>
-                                                <td className="py-3 text-right font-mono text-green-500">{formatCurrency(e.tips, "USD")}</td>
-                                                <td className="py-3 text-right">{e.count}</td>
-                                                <td className="py-3 text-right font-mono">{formatCurrency(e.aov, "USD")}</td>
-                                                <td className="py-3 text-right">{e.sessionCount || 1}</td>
-                                                <td className="py-3 text-right text-muted-foreground">{e.activeHours ? `${e.activeHours}h` : "-"}</td>
+                                                <td className="py-3 px-4 text-right font-mono">{formatCurrency(e.sales, "USD")}</td>
+                                                <td className="py-3 px-4 text-right font-mono text-green-500">{formatCurrency(e.tips, "USD")}</td>
+                                                <td className="py-3 px-4 text-right">{e.count}</td>
+                                                <td className="py-3 px-4 text-right font-mono">{formatCurrency(e.aov, "USD")}</td>
+                                                <td className="py-3 px-4 text-right">{e.sessionCount || 1}</td>
+                                                <td className="py-3 px-4 text-right text-muted-foreground/70 font-semibold">{e.activeHours ? `${e.activeHours}h` : "-"}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -545,26 +548,26 @@ export default function ReportsPanelMerchant() {
                                         <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-3">Session History</h4>
                                         <div className="space-y-2">
                                             {dashboardStats.sessions.map((s: any) => (
-                                                <div key={s.id} className="p-3 rounded-lg bg-muted/20 border border-border/50">
-                                                    <div className="flex justify-between items-start mb-2">
+                                                <div key={s.id} className="p-4 rounded-xl bg-foreground/[0.02] border border-foreground/5 hover:border-foreground/10 transition-colors">
+                                                    <div className="flex justify-between items-start mb-3">
                                                         <div>
-                                                            <span className="font-medium">{s.staffName || "Unknown Staff"}</span>
-                                                            {s.isActive && <span className="ml-2 text-xs bg-green-500/20 text-green-500 px-2 py-0.5 rounded-full">Active</span>}
+                                                            <span className="font-semibold">{s.staffName || "Unknown Staff"}</span>
+                                                            {s.isActive && <span className="ml-2 text-[10px] bg-green-500/10 text-green-500 border border-green-500/20 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Active</span>}
                                                         </div>
-                                                        <span className="text-xs text-muted-foreground">{s.durationFormatted || "-"}</span>
+                                                        <span className="text-[10px] text-muted-foreground/70 font-semibold uppercase tracking-widest">{s.durationFormatted || "-"}</span>
                                                     </div>
                                                     <div className="grid grid-cols-3 gap-4 text-sm">
                                                         <div>
-                                                            <span className="text-muted-foreground text-xs">Started</span>
-                                                            <div className="font-mono">{new Date(s.startTime * 1000).toLocaleTimeString()}</div>
+                                                            <span className="text-[10px] text-muted-foreground/70 uppercase tracking-widest font-semibold">Started</span>
+                                                            <div className="font-mono mt-0.5">{new Date(s.startTime * 1000).toLocaleTimeString()}</div>
                                                         </div>
                                                         <div>
-                                                            <span className="text-muted-foreground text-xs">Sales</span>
-                                                            <div className="font-mono">{formatCurrency(s.totalSales || 0, "USD")}</div>
+                                                            <span className="text-[10px] text-muted-foreground/70 uppercase tracking-widest font-semibold">Sales</span>
+                                                            <div className="font-mono mt-0.5">{formatCurrency(s.totalSales || 0, "USD")}</div>
                                                         </div>
                                                         <div>
-                                                            <span className="text-muted-foreground text-xs">Tips</span>
-                                                            <div className="font-mono text-green-500">{formatCurrency(s.totalTips || 0, "USD")}</div>
+                                                            <span className="text-[10px] text-muted-foreground/70 uppercase tracking-widest font-semibold">Tips</span>
+                                                            <div className="font-mono mt-0.5 text-green-500">{formatCurrency(s.totalTips || 0, "USD")}</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -576,7 +579,7 @@ export default function ReportsPanelMerchant() {
                         )}
 
                         {reportType === "hourly" && (
-                            <div className="rounded-xl border bg-muted/5 p-4">
+                            <div className="rounded-xl border border-foreground/5 bg-foreground/[0.01] p-4">
                                 <VerticalBarChart
                                     data={(dashboardStats.hourly || []).map((h: any) => ({ label: `${h.hour}:00`, value: h.amount }))}
                                     height={240}
@@ -590,14 +593,14 @@ export default function ReportsPanelMerchant() {
 
             {/* On-Chain Transactions Tab */}
             {reportType === "transactions" && (
-                <div className="border rounded-xl bg-card overflow-hidden">
-                    <div className="p-4 border-b space-y-3">
+                <div className="border rounded-xl glass-pane overflow-hidden">
+                    <div className="p-5 border-b border-foreground/10 space-y-4">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold flex items-center gap-2">
+                            <h3 className="text-xl font-semibold tracking-tight flex items-center gap-2">
                                 <Link2 className="w-5 h-5 text-primary" />
                                 On-Chain Transactions
                                 {splitTxLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-                                {!splitTxLoading && <span className="text-sm font-normal text-muted-foreground">({splitTransactions.filter((tx: any) => {
+                                {!splitTxLoading && <span className="text-sm font-medium text-muted-foreground/70">({splitTransactions.filter((tx: any) => {
                                     if (txTypeFilter === "all") return true;
                                     if (txTypeFilter === "payment") return tx.type === "payment";
                                     if (txTypeFilter === "merchant") return tx.type === "release" && tx.releaseType === "merchant";
@@ -614,8 +617,8 @@ export default function ReportsPanelMerchant() {
                                 return (
                                     <button key={f} onClick={() => setTxTypeFilter(f)}
                                         className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${isActive
-                                                ? (f === "all" ? "bg-primary text-primary-foreground border-primary" : colors[f])
-                                                : "bg-background text-muted-foreground border-border hover:bg-muted/50"
+                                                ? (f === "all" ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]" : colors[f])
+                                                : "bg-foreground/[0.02] text-muted-foreground border-foreground/5 hover:bg-foreground/5"
                                             }`}>
                                         {labels[f]}
                                     </button>
@@ -630,19 +633,19 @@ export default function ReportsPanelMerchant() {
                         if (txTypeFilter === "platform") return tx.type === "release" && tx.releaseType === "platform";
                         return true;
                     }).length > 0 ? (
-                        <div className="max-h-[600px] overflow-y-auto">
+                        <div className="max-h-[600px] overflow-y-auto bg-foreground/[0.01]">
                             <table className="w-full text-sm">
-                                <thead className="text-xs uppercase text-muted-foreground border-b bg-muted/20 sticky top-0">
+                                <thead className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground/70 border-b border-foreground/10 bg-foreground/[0.03] sticky top-0 z-10 backdrop-blur-md">
                                     <tr>
-                                        <th className="text-left py-2.5 px-4">Date</th>
-                                        <th className="text-left py-2.5 px-4">Tx Hash</th>
-                                        <th className="text-left py-2.5 px-4">Type</th>
-                                        <th className="text-left py-2.5 px-4">Token</th>
-                                        <th className="text-right py-2.5 px-4">Amount</th>
-                                        <th className="text-left py-2.5 px-4">From / To</th>
+                                        <th className="text-left py-3 px-5">Date</th>
+                                        <th className="text-left py-3 px-5">Tx Hash</th>
+                                        <th className="text-left py-3 px-5">Type</th>
+                                        <th className="text-left py-3 px-5">Token</th>
+                                        <th className="text-right py-3 px-5">Amount</th>
+                                        <th className="text-left py-3 px-5">From / To</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border/50">
+                                <tbody className="divide-y divide-foreground/5">
                                     {splitTransactions.filter((tx: any) => {
                                         if (txTypeFilter === "all") return true;
                                         if (txTypeFilter === "payment") return tx.type === "payment";
@@ -650,26 +653,26 @@ export default function ReportsPanelMerchant() {
                                         if (txTypeFilter === "platform") return tx.type === "release" && tx.releaseType === "platform";
                                         return true;
                                     }).map((tx: any, txIdx: number) => (
-                                        <tr key={`${tx.hash}-${txIdx}`} className="hover:bg-muted/10 transition-colors">
-                                            <td className="py-2 px-4 text-muted-foreground whitespace-nowrap">
+                                        <tr key={`${tx.hash}-${txIdx}`} className="hover:bg-foreground/[0.02] transition-colors">
+                                            <td className="py-3 px-5 text-muted-foreground/80 font-medium whitespace-nowrap">
                                                 {tx.timestamp ? new Date(tx.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }) : '\u2014'}
                                             </td>
-                                            <td className="py-2 px-4">
+                                            <td className="py-3 px-5">
                                                 <a href={`https://basescan.org/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono text-primary hover:underline text-xs">
                                                     {tx.hash?.slice(0, 10)}\u2026{tx.hash?.slice(-6)}
                                                 </a>
                                             </td>
-                                            <td className="py-2 px-4">
-                                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${tx.type === 'payment' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20'
-                                                        : tx.releaseType === 'merchant' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                                                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
+                                            <td className="py-3 px-5">
+                                                <span className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest ${tx.type === 'payment' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                                        : tx.releaseType === 'merchant' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                                                     }`}>
                                                     {tx.type === 'release' ? `${tx.releaseType || ''} release` : tx.type}
                                                 </span>
                                             </td>
-                                            <td className="py-2 px-4 font-medium">{tx.token}</td>
-                                            <td className="py-2 px-4 text-right font-mono">{Number(tx.value || 0).toFixed(6)}</td>
-                                            <td className="py-2 px-4 font-mono text-muted-foreground text-xs">
+                                            <td className="py-3 px-5 font-semibold text-xs">{tx.token}</td>
+                                            <td className="py-3 px-5 text-right font-mono font-medium">{Number(tx.value || 0).toFixed(6)}</td>
+                                            <td className="py-3 px-5 font-mono text-muted-foreground/80 text-xs">
                                                 {tx.type === 'payment'
                                                     ? `From: ${(tx.from || '').slice(0, 6)}\u2026${(tx.from || '').slice(-4)}`
                                                     : `To: ${(tx.to || tx.releaseTo || '').slice(0, 6)}\u2026${(tx.to || tx.releaseTo || '').slice(-4)}`
@@ -681,7 +684,7 @@ export default function ReportsPanelMerchant() {
                             </table>
                         </div>
                     ) : !splitTxLoading ? (
-                        <div className="text-sm text-muted-foreground text-center py-12">No on-chain transactions found for this period</div>
+                        <div className="text-sm text-muted-foreground/70 font-medium text-center py-16">No on-chain transactions found for this period</div>
                     ) : (
                         <div className="flex items-center justify-center py-12">
                             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -696,10 +699,11 @@ export default function ReportsPanelMerchant() {
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub: string }) {
     return (
-        <div className="p-4 rounded-xl border bg-card hover:bg-muted/10 transition-colors">
-            <div className="text-xs text-muted-foreground uppercase font-semibold">{label}</div>
-            <div className="text-2xl font-bold my-1">{value}</div>
-            <div className="text-xs text-muted-foreground">{sub}</div>
+        <div className="glass-pane border rounded-xl p-5 relative overflow-hidden group">
+            <div className="text-[10px] text-muted-foreground/70 uppercase font-semibold tracking-wider">{label}</div>
+            <div className="text-2xl font-bold my-1 relative z-10">{value}</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider relative z-10">{sub}</div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
         </div>
     );
 }

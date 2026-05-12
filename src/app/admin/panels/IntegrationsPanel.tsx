@@ -181,38 +181,41 @@ export default function IntegrationsPanel() {
     const published = isShopify && statusLower === "published";
 
     return (
-      <div key={p.key} className={`relative rounded-lg border p-4 bg-background`}>
-        {/* Corner badges - show only one of each type; inline badges removed */}
-        <span className={`absolute top-2 right-2 microtext ${enabled ? "text-emerald-700" : "text-rose-700"} font-semibold`}>
-          {enabled ? "Enabled" : "Disabled"}
-        </span>
-        <span className={`absolute top-6 right-2 microtext ${configured ? "text-purple-700" : "text-orange-700"} font-semibold`}>
-          {configured ? "Configured" : "Not Configured"}
-        </span>
+      <div key={p.key} className={`relative overflow-hidden rounded-xl border border-foreground/[0.05] p-5 bg-foreground/[0.02] hover:bg-foreground/[0.03] transition-all group hover:border-primary/30`}>
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
+        {/* Corner badges */}
+        <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+          <span className={`text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-full ${enabled ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+            {enabled ? "Enabled" : "Disabled"}
+          </span>
+          <span className={`text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-full ${configured ? "bg-purple-500/10 text-purple-500" : "bg-orange-500/10 text-orange-500"}`}>
+            {configured ? "Configured" : "Not Configured"}
+          </span>
+        </div>
 
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-4">
           {/* Icon */}
-          <div className="shrink-0 h-12 w-12 rounded-md border bg-white grid place-items-center overflow-hidden" aria-label={p.name}>
+          <div className="shrink-0 h-16 w-16 rounded-xl border border-foreground/[0.05] bg-white grid place-items-center overflow-hidden shadow-sm p-2" aria-label={p.name}>
             {p.key === 'xshopping' ? (
-              <span className="text-3xl font-bold text-black dark:text-black">𝕏</span>
+              <span className="text-4xl font-bold text-black dark:text-black">𝕏</span>
             ) : (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={p.icon} alt={p.name} className={`h-9 w-9 object-contain ${enabled ? "" : "grayscale"}`} />
+              <img src={p.icon} alt={p.name} className={`w-full h-full object-contain ${enabled ? "" : "opacity-70 grayscale group-hover:grayscale-0 transition-all"}`} />
             )}
           </div>
           {/* Text */}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 pr-32">
             <div className="flex items-center gap-2">
-              <div className="text-base font-semibold truncate">{p.name}</div>
+              <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{p.name}</h3>
             </div>
-            <div className="microtext text-muted-foreground truncate">{tagline}</div>
-            <div className="mt-3 flex items-center gap-2">
+            <div className="text-sm text-muted-foreground mt-1 line-clamp-2 pr-4">{tagline}</div>
+            <div className="mt-4 flex items-center gap-2">
               {isShopify && published && tile?.listingUrl ? (
                 <a
                   href={tile.listingUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-md border text-sm"
+                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm ring-1 ring-primary/50 inline-flex items-center gap-2"
                   title="Open listing to install"
                 >
                   Install on Shopify
@@ -220,38 +223,39 @@ export default function IntegrationsPanel() {
               ) : isXShopping ? (
                 <Dialog open={showXSetup} onOpenChange={setShowXSetup}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8">
+                    <Button variant="outline" size="sm" className="h-9 px-4 rounded-lg border-foreground/[0.1] bg-foreground/[0.02] hover:bg-foreground/[0.05]">
                       Setup Feed
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                      <DialogTitle>X Shopping Feed Setup</DialogTitle>
+                      <DialogTitle className="text-xl">X Shopping Feed Setup</DialogTitle>
                       <DialogDescription>
                         Connect your product catalog to X Shopping Manager.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                      <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-md border text-sm">
-                        <strong>Instructions:</strong>
-                        <ol className="list-decimal list-inside space-y-1 mt-2 text-muted-foreground">
-                          <li>Log in to <a href="https://ads.twitter.com/" target="_blank" className="underline text-blue-500">X Ads Manager</a></li>
+                      <div className="bg-foreground/[0.02] border border-foreground/[0.05] p-4 rounded-xl text-sm">
+                        <strong className="text-foreground">Instructions:</strong>
+                        <ol className="list-decimal list-inside space-y-2 mt-3 text-muted-foreground">
+                          <li>Log in to <a href="https://ads.twitter.com/" target="_blank" className="text-primary hover:underline font-medium">X Ads Manager</a></li>
                           <li>Navigate to Tools {'>'} Shopping Manager</li>
                           <li>Create a new Catalog and select "Scheduled Feed"</li>
                           <li>Paste the Feed URL below as your data source</li>
                         </ol>
                       </div>
                       <div className="space-y-2">
-                        <Label>Your Product Feed URL</Label>
+                        <Label className="text-foreground font-semibold">Your Product Feed URL</Label>
                         <div className="flex items-center space-x-2">
                           <Input
                             readOnly
                             value={`${typeof window !== 'undefined' ? window.location.origin : ''}/api/integrations/xshopping/${shopSlug || 'YOUR_SHOP_SLUG'}/products.csv`}
-                            className="font-mono text-xs"
+                            className="font-mono text-xs bg-foreground/[0.02] border-foreground/[0.05] h-10"
                           />
                           <Button
                             size="icon"
-                            variant="ghost"
+                            variant="outline"
+                            className="h-10 w-10 shrink-0 border-foreground/[0.05] bg-foreground/[0.02] hover:bg-foreground/[0.05]"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -264,7 +268,7 @@ export default function IntegrationsPanel() {
                               });
                             }}
                           >
-                            {copied ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                            {copied ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                           </Button>
                         </div>
                       </div>
@@ -272,7 +276,7 @@ export default function IntegrationsPanel() {
                   </DialogContent>
                 </Dialog>
               ) : (
-                <button className="px-3 py-1.5 rounded-md border text-sm text-muted-foreground" disabled>
+                <button className="px-4 py-2 rounded-lg border border-foreground/[0.05] bg-foreground/[0.02] text-sm text-muted-foreground cursor-not-allowed font-medium">
                   Coming soon
                 </button>
               )}
@@ -284,25 +288,42 @@ export default function IntegrationsPanel() {
   }
 
   return (
-    <div className="glass-pane rounded-xl border p-5 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Integrations</h2>
-        <span className="microtext text-muted-foreground">Brand: {normalizedKey || "—"}</span>
+    <div className="w-full space-y-6 pb-24 admin-panel-enter">
+      <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6 mb-6">
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
+        <div className="flex items-center justify-between relative z-10">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Integrations</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Connect your store and channels. Browse available plugins and manage external connections.
+            </p>
+          </div>
+          <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-3 py-1.5 rounded-full bg-foreground/[0.03] border border-foreground/[0.05]">
+            Brand: {normalizedKey || "—"}
+          </span>
+        </div>
       </div>
 
-      <div className="microtext text-muted-foreground">Connect your store and channels. Browse available plugins; Shopify supports brand-specific configuration.</div>
+      {loading && <div className="text-sm font-medium text-muted-foreground animate-pulse px-2">Loading integrations…</div>}
+      {error && <div className="text-sm font-medium text-rose-500 bg-rose-500/10 px-4 py-3 rounded-lg border border-rose-500/20">{error}</div>}
 
-      {loading && <div className="microtext text-muted-foreground">Loading…</div>}
-      {error && <div className="microtext text-red-500">{error}</div>}
-
-      {/* Catalog of all available plugins - long list, one card per row with extra details */}
-      <div className="space-y-3">
-        {catalog.map((p) => {
+      {/* Catalog of all available plugins */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[...catalog]
+          .sort((a, b) => {
+            const statusLower = String(tile?.status || "").toLowerCase();
+            const aEnabled = a.key === "shopify" ? (statusLower === "published") : (a.key === "xshopping" ? xEnabled : false);
+            const bEnabled = b.key === "shopify" ? (statusLower === "published") : (b.key === "xshopping" ? xEnabled : false);
+            if (aEnabled && !bEnabled) return -1;
+            if (!aEnabled && bEnabled) return 1;
+            return 0;
+          })
+          .map((p) => {
           // Early return for X Shopping if disabled
           if (p.key === "xshopping" && !xEnabled) return null;
 
           // Directly render the card; renderCard returns the full wrapper
-          return <div key={p.key}>{renderCard(p)}</div>;
+          return <React.Fragment key={p.key}>{renderCard(p)}</React.Fragment>;
         })}
       </div >
     </div >

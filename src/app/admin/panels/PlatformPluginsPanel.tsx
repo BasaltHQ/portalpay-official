@@ -225,8 +225,8 @@ export default function PlatformPluginsPanel() {
     switch (section) {
       case 'overview':
         return (
-          <div className="space-y-4 max-w-2xl">
-            <div className="rounded-md border p-6 space-y-4">
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-6 space-y-4">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center text-3xl font-bold text-white">𝕏</div>
                 <div>
@@ -253,8 +253,8 @@ export default function PlatformPluginsPanel() {
         );
       case 'configuration':
         return (
-          <div className="space-y-6 animate-in fade-in duration-300 max-w-3xl">
-            <div className="glass-pane border p-6 rounded-xl space-y-6">
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="bg-foreground/[0.02] backdrop-blur-md border border-foreground/[0.05] p-6 rounded-2xl space-y-6">
               <div className="border-b pb-4">
                 <h3 className="font-semibold text-lg">Configuration</h3>
                 <p className="text-sm text-muted-foreground">Manage X Shopping integration status.</p>
@@ -308,8 +308,8 @@ export default function PlatformPluginsPanel() {
     switch (section) {
       case 'overview':
         return (
-          <div className="space-y-4 max-w-2xl">
-            <div className="rounded-md border p-6 space-y-4">
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-6 space-y-4">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-3xl font-bold text-white">J</div>
                 <div>
@@ -336,8 +336,8 @@ export default function PlatformPluginsPanel() {
         );
       case 'configuration':
         return (
-          <div className="space-y-6 animate-in fade-in duration-300 max-w-3xl">
-            <div className="glass-pane border p-6 rounded-xl space-y-6">
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="bg-foreground/[0.02] backdrop-blur-md border border-foreground/[0.05] p-6 rounded-2xl space-y-6">
               <div className="border-b pb-4">
                 <h3 className="font-semibold text-lg">Configuration</h3>
                 <p className="text-sm text-muted-foreground">Manage Jira credentials for this brand.</p>
@@ -456,8 +456,8 @@ export default function PlatformPluginsPanel() {
     switch (section) {
       case 'overview':
         return (
-          <div className="space-y-4 max-w-2xl">
-            <div className="rounded-md border p-6 space-y-4">
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-6 space-y-4">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center text-2xl font-bold text-green-500">UE</div>
                 <div>
@@ -482,7 +482,7 @@ export default function PlatformPluginsPanel() {
         );
       case 'configuration':
         return (
-          <div className="space-y-6 animate-in fade-in duration-300 max-w-3xl">
+          <div className="space-y-6 animate-in fade-in duration-300">
             {/* Header / Context */}
             <div className="flex items-start gap-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-full text-blue-600 dark:text-blue-400">
@@ -497,13 +497,13 @@ export default function PlatformPluginsPanel() {
               </div>
             </div>
 
-            <div className="glass-pane border p-6 rounded-xl space-y-6">
+            <div className="bg-foreground/[0.02] backdrop-blur-md border border-foreground/[0.05] p-6 rounded-2xl space-y-6">
               <div className="flex items-center justify-between border-b pb-4">
                 <div>
                   <h3 className="font-semibold text-lg">Configuration</h3>
                   <p className="text-sm text-muted-foreground">Manage your platform-level keys.</p>
                 </div>
-                <div className="flex items-center bg-muted/50 p-1 rounded-lg border">
+                <div className="flex items-center bg-foreground/[0.02] p-1 rounded-lg border border-foreground/[0.05]">
                   <button
                     onClick={() => setUberConfig({ ...uberConfig, environment: 'sandbox' })}
                     className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${uberConfig.environment === 'sandbox' ? 'bg-white dark:bg-gray-800 shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
@@ -617,7 +617,7 @@ export default function PlatformPluginsPanel() {
             </div>
 
             {/* Webhook & Auth Info for Uber Dashboard */}
-            <div className="glass-pane border p-6 rounded-xl space-y-6">
+            <div className="bg-foreground/[0.02] backdrop-blur-md border border-foreground/[0.05] p-6 rounded-2xl space-y-6">
               <div className="border-b pb-4">
                 <h3 className="font-semibold text-lg">Uber Developer Dashboard Setup</h3>
                 <p className="text-sm text-muted-foreground">Copy these values into your Uber Direct Application settings.</p>
@@ -660,14 +660,14 @@ export default function PlatformPluginsPanel() {
                   <div>
                     <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Webhook Delivery URL</label>
                     <div className="flex items-center gap-2">
-                      <code className="text-xs bg-muted p-2 rounded border font-mono flex-1 overflow-x-auto whitespace-nowrap">
+                      <code className="text-xs bg-foreground/[0.04] p-2 rounded border border-foreground/[0.05] font-mono flex-1 overflow-x-auto whitespace-nowrap">
                         {(() => {
                           if (typeof window === 'undefined') return '/api/integrations/delivery/webhooks';
                           const origin = window.location.origin.includes('localhost') ? 'https://surge.basalthq.com' : window.location.origin;
                           return `${origin}/api/integrations/delivery/webhooks`;
                         })()}
                       </code>
-                      <button className="p-2 hover:bg-muted rounded text-muted-foreground hover:text-foreground" onClick={() => {
+                      <button className="p-2 hover:bg-foreground/[0.04] rounded text-muted-foreground hover:text-foreground" onClick={() => {
                         const origin = window.location.origin.includes('localhost') ? 'https://surge.basalthq.com' : window.location.origin;
                         navigator.clipboard.writeText(`${origin}/api/integrations/delivery/webhooks`);
                       }}>
@@ -678,14 +678,14 @@ export default function PlatformPluginsPanel() {
                   <div>
                     <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Token URL (OAuth 2.0)</label>
                     <div className="flex items-center gap-2">
-                      <code className="text-xs bg-muted p-2 rounded border font-mono flex-1 overflow-x-auto whitespace-nowrap">
+                      <code className="text-xs bg-foreground/[0.04] p-2 rounded border border-foreground/[0.05] font-mono flex-1 overflow-x-auto whitespace-nowrap">
                         {(() => {
                           if (typeof window === 'undefined') return '/api/integrations/delivery/auth/token';
                           const origin = window.location.origin.includes('localhost') ? 'https://surge.basalthq.com' : window.location.origin;
                           return `${origin}/api/integrations/delivery/auth/token`;
                         })()}
                       </code>
-                      <button className="p-2 hover:bg-muted rounded text-muted-foreground hover:text-foreground" onClick={() => {
+                      <button className="p-2 hover:bg-foreground/[0.04] rounded text-muted-foreground hover:text-foreground" onClick={() => {
                         const origin = window.location.origin.includes('localhost') ? 'https://surge.basalthq.com' : window.location.origin;
                         navigator.clipboard.writeText(`${origin}/api/integrations/delivery/auth/token`);
                       }}>
@@ -696,11 +696,11 @@ export default function PlatformPluginsPanel() {
                   <div>
                     <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Client ID (Generated)</label>
                     <div className="flex items-center gap-2">
-                      <code className="text-xs bg-muted p-2 rounded border font-mono flex-1 overflow-x-auto whitespace-nowrap">
+                      <code className="text-xs bg-foreground/[0.04] p-2 rounded border border-foreground/[0.05] font-mono flex-1 overflow-x-auto whitespace-nowrap">
                         {uberConfig.webhookClientId || "Not generated"}
                       </code>
                       {uberConfig.webhookClientId && (
-                        <button className="p-2 hover:bg-muted rounded text-muted-foreground hover:text-foreground" onClick={() => navigator.clipboard.writeText(uberConfig.webhookClientId || "")}>
+                        <button className="p-2 hover:bg-foreground/[0.04] rounded text-muted-foreground hover:text-foreground" onClick={() => navigator.clipboard.writeText(uberConfig.webhookClientId || "")}>
                           <CopyIcon className="w-3.5 h-3.5" />
                         </button>
                       )}
@@ -709,7 +709,7 @@ export default function PlatformPluginsPanel() {
                   <div>
                     <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Client Secret (Generated)</label>
                     <div className="flex items-center gap-2">
-                      <code className="text-xs bg-muted p-2 rounded border font-mono flex-1 overflow-x-auto whitespace-nowrap text-muted-foreground">
+                      <code className="text-xs bg-foreground/[0.04] p-2 rounded border border-foreground/[0.05] font-mono flex-1 overflow-x-auto whitespace-nowrap text-muted-foreground">
                         {uberConfig.hasWebhookClientSecret ? "••••••••••••••••••••••••" : "Not generated"}
                       </code>
                       {/* Secret is write-only after generation; cannot copy from here */}
@@ -728,7 +728,7 @@ export default function PlatformPluginsPanel() {
 
                 <div>
                   <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Required Scopes</label>
-                  <div className="p-3 bg-muted/50 rounded-md border text-xs font-mono text-muted-foreground leading-relaxed break-all">
+                  <div className="p-3 bg-foreground/[0.02] rounded-md border border-foreground/[0.05] text-xs font-mono text-muted-foreground leading-relaxed break-all">
                     eats.store eats.store.status.write eats.order eats.store.orders.read eats.report eats.pos_provisioning
                   </div>
                 </div>
@@ -749,7 +749,7 @@ export default function PlatformPluginsPanel() {
                     Your Uber Eats integration will stop working until you update the Uber Dashboard with the new keys.
                   </p>
                   <div className="flex justify-end gap-2 pt-2">
-                    <button onClick={() => setShowWarningModal(false)} className="px-3 py-2 text-sm font-medium hover:bg-muted rounded-md">Cancel</button>
+                    <button onClick={() => setShowWarningModal(false)} className="px-3 py-2 text-sm font-medium hover:bg-foreground/[0.04] rounded-md">Cancel</button>
                     <button
                       onClick={async () => {
                         setShowWarningModal(false);
@@ -789,8 +789,8 @@ export default function PlatformPluginsPanel() {
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase">Client ID</label>
                       <div className="flex items-center gap-2 mt-1">
-                        <code className="text-sm bg-muted p-2.5 rounded border font-mono flex-1 break-all select-all">{tempCredentials.clientId}</code>
-                        <button className="p-2 hover:bg-muted rounded text-muted-foreground hover:text-foreground" onClick={() => navigator.clipboard.writeText(tempCredentials.clientId)}>
+                        <code className="text-sm bg-foreground/[0.04] p-2.5 rounded border border-foreground/[0.05] font-mono flex-1 break-all select-all">{tempCredentials.clientId}</code>
+                        <button className="p-2 hover:bg-foreground/[0.04] rounded text-muted-foreground hover:text-foreground" onClick={() => navigator.clipboard.writeText(tempCredentials.clientId)}>
                           <CopyIcon className="w-4 h-4" />
                         </button>
                       </div>
@@ -798,8 +798,8 @@ export default function PlatformPluginsPanel() {
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase">Client Secret</label>
                       <div className="flex items-center gap-2 mt-1">
-                        <code className="text-sm bg-muted p-2.5 rounded border font-mono flex-1 break-all select-all text-emerald-600 font-bold">{tempCredentials.clientSecret}</code>
-                        <button className="p-2 hover:bg-muted rounded text-muted-foreground hover:text-foreground" onClick={() => navigator.clipboard.writeText(tempCredentials.clientSecret)}>
+                        <code className="text-sm bg-foreground/[0.04] p-2.5 rounded border border-foreground/[0.05] font-mono flex-1 break-all select-all text-emerald-600 font-bold">{tempCredentials.clientSecret}</code>
+                        <button className="p-2 hover:bg-foreground/[0.04] rounded text-muted-foreground hover:text-foreground" onClick={() => navigator.clipboard.writeText(tempCredentials.clientSecret)}>
                           <CopyIcon className="w-4 h-4" />
                         </button>
                       </div>
@@ -1344,7 +1344,7 @@ export default function PlatformPluginsPanel() {
     return (
       <div className="flex items-center gap-2 flex-wrap">
         <button
-          className="px-3 py-1.5 rounded-md border text-sm"
+          className="px-3 py-1.5 rounded-lg border border-foreground/[0.05] text-sm hover:bg-foreground/[0.04] transition"
           onClick={() => { setSelectedPlugin(null); setWorkspaceSection('overview'); }}
         >
           ← Back to Catalog
@@ -1352,7 +1352,7 @@ export default function PlatformPluginsPanel() {
         {tabs.map(t => (
           <button
             key={t.key}
-            className={`px-3 py-1.5 rounded-md border text-sm ${borderClassFor(t.key)} ${workspaceSection === t.key ? 'bg-foreground/10 border-foreground/30' : 'hover:bg-foreground/5'}`}
+            className={`px-3 py-1.5 rounded-lg border text-sm ${borderClassFor(t.key)} ${workspaceSection === t.key ? 'bg-foreground/[0.06] border-foreground/[0.15]' : 'border-foreground/[0.05] hover:bg-foreground/[0.04]'} transition`}
             onClick={() => setWorkspaceSection(t.key)}
           >
             {t.label}
@@ -1369,7 +1369,7 @@ export default function PlatformPluginsPanel() {
           <div className="space-y-2">
             <div className="microtext text-muted-foreground">Brand: {brandKey}</div>
             <div className="microtext text-muted-foreground">State: {shopifyEnabled ? 'Enabled' : 'Disabled'}</div>
-            <div className="rounded-md border p-3">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-3">
               <div className="text-sm font-medium mb-1">Summary</div>
               <div className="microtext">Name: {plugin.pluginName || '—'}</div>
               <div className="microtext">Tagline: {plugin.tagline || '—'}</div>
@@ -1572,7 +1572,7 @@ export default function PlatformPluginsPanel() {
             </div>
 
             {/* OAuth Documentation Banner */}
-            <div className="rounded-md border bg-blue-50 dark:bg-blue-950/20 p-3">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-blue-50/50 dark:bg-blue-950/20 p-3">
               <div className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">OAuth Setup Requirements</div>
               <div className="microtext text-blue-700 dark:text-blue-300 space-y-1">
                 <div>• Redirect URLs must match your app's callback endpoints exactly</div>
@@ -1589,7 +1589,7 @@ export default function PlatformPluginsPanel() {
                   <label className="microtext font-medium">OAuth Redirect URLs</label>
                   <button
                     type="button"
-                    className="px-2 py-1 border rounded-md text-xs hover:bg-foreground/5"
+                    className="px-2 py-1 border rounded-md text-xs hover:bg-foreground/[0.04]"
                     onClick={async () => {
                       try {
                         // Fetch container URL
@@ -1633,7 +1633,7 @@ export default function PlatformPluginsPanel() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
-                      className="px-2 py-1 border rounded-md text-xs hover:bg-foreground/5"
+                      className="px-2 py-1 border rounded-md text-xs hover:bg-foreground/[0.04]"
                       onClick={() => {
                         const allScopes = [
                           'read_orders', 'write_orders', 'read_all_orders', 'read_draft_orders', 'write_draft_orders',
@@ -1659,7 +1659,7 @@ export default function PlatformPluginsPanel() {
                     </button>
                     <button
                       type="button"
-                      className="px-2 py-1 border rounded-md text-xs hover:bg-foreground/5"
+                      className="px-2 py-1 border rounded-md text-xs hover:bg-foreground/[0.04]"
                       onClick={() => {
                         const paymentScopes = [
                           'write_payment_gateways',
@@ -1677,7 +1677,7 @@ export default function PlatformPluginsPanel() {
                     </button>
                     <button
                       type="button"
-                      className="px-2 py-1 border rounded-md text-xs hover:bg-foreground/5"
+                      className="px-2 py-1 border rounded-md text-xs hover:bg-foreground/[0.04]"
                       onClick={() => {
                         const checkoutScopes = [
                           'read_products',
@@ -1697,7 +1697,7 @@ export default function PlatformPluginsPanel() {
                     </button>
                     <button
                       type="button"
-                      className="px-2 py-1 border rounded-md text-xs hover:bg-foreground/5"
+                      className="px-2 py-1 border rounded-md text-xs hover:bg-foreground/[0.04]"
                       onClick={() => {
                         const orderScopes = [
                           'read_orders',
@@ -1726,7 +1726,7 @@ export default function PlatformPluginsPanel() {
               </div>
 
               {/* Scope Reference */}
-              <details className="rounded-md border p-3">
+              <details className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-3">
                 <summary className="text-sm font-medium cursor-pointer hover:text-primary">▼ Available Shopify Scopes Reference (click to add/remove)</summary>
                 <div className="mt-2 space-y-3 text-xs">
 
@@ -1739,7 +1739,7 @@ export default function PlatformPluginsPanel() {
                           key={scope}
                           type="button"
                           disabled={!editOAuth}
-                          className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-blue-100 dark:bg-blue-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`}
+                          className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-blue-100 dark:bg-blue-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`}
                           onClick={() => {
                             const current = plugin.oauth.scopes || [];
                             const updated = current.includes(scope)
@@ -1756,7 +1756,7 @@ export default function PlatformPluginsPanel() {
                         <button
                           type="button"
                           disabled={!editOAuth}
-                          className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes('read_all_orders') ? 'bg-blue-100 dark:bg-blue-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`}
+                          className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes('read_all_orders') ? 'bg-blue-100 dark:bg-blue-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`}
                           onClick={() => {
                             const current = plugin.oauth.scopes || [];
                             const scope = 'read_all_orders';
@@ -1776,7 +1776,7 @@ export default function PlatformPluginsPanel() {
                             key={scope}
                             type="button"
                             disabled={!editOAuth}
-                            className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-blue-100 dark:bg-blue-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`}
+                            className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-blue-100 dark:bg-blue-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`}
                             onClick={() => {
                               const current = plugin.oauth.scopes || [];
                               const updated = current.includes(scope)
@@ -1796,7 +1796,7 @@ export default function PlatformPluginsPanel() {
                             key={scope}
                             type="button"
                             disabled={!editOAuth}
-                            className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-blue-100 dark:bg-blue-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`}
+                            className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-blue-100 dark:bg-blue-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`}
                             onClick={() => {
                               const current = plugin.oauth.scopes || [];
                               const updated = current.includes(scope)
@@ -1816,7 +1816,7 @@ export default function PlatformPluginsPanel() {
                             key={scope}
                             type="button"
                             disabled={!editOAuth}
-                            className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-blue-100 dark:bg-blue-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`}
+                            className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-blue-100 dark:bg-blue-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`}
                             onClick={() => {
                               const current = plugin.oauth.scopes || [];
                               const updated = current.includes(scope)
@@ -1839,19 +1839,19 @@ export default function PlatformPluginsPanel() {
                     <div className="space-y-1 ml-2">
                       <div>
                         {['read_products', 'write_products'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-purple-100 dark:bg-purple-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-purple-100 dark:bg-purple-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Products, variants, collections</span>
                       </div>
                       <div>
                         {['read_inventory', 'write_inventory'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-purple-100 dark:bg-purple-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-purple-100 dark:bg-purple-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Inventory levels</span>
                       </div>
                       <div>
                         {['read_locations', 'write_locations'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-purple-100 dark:bg-purple-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-purple-100 dark:bg-purple-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Store locations</span>
                       </div>
@@ -1864,17 +1864,17 @@ export default function PlatformPluginsPanel() {
                     <div className="space-y-1 ml-2">
                       <div>
                         {['read_customers', 'write_customers'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-green-100 dark:bg-green-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-green-100 dark:bg-green-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Customer data & companies</span>
                       </div>
                       <div>
-                        <button type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes('read_customer_payment_methods') ? 'bg-green-100 dark:bg-green-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const scope = 'read_customer_payment_methods'; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>read_customer_payment_methods</code></button>
+                        <button type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes('read_customer_payment_methods') ? 'bg-green-100 dark:bg-green-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const scope = 'read_customer_payment_methods'; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>read_customer_payment_methods</code></button>
                         <span className="text-muted-foreground">- Payment methods (requires permission)</span>
                       </div>
                       <div>
                         {['read_customer_merge', 'write_customer_merge'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-green-100 dark:bg-green-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-green-100 dark:bg-green-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Merge customers</span>
                       </div>
@@ -1887,28 +1887,28 @@ export default function PlatformPluginsPanel() {
                     <div className="space-y-1 ml-2">
                       <div>
                         {['read_payment_gateways', 'write_payment_gateways'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-orange-100 dark:bg-orange-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-orange-100 dark:bg-orange-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Payment gateway config</span>
                       </div>
                       <div>
-                        <button type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes('write_payment_sessions') ? 'bg-orange-100 dark:bg-orange-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const scope = 'write_payment_sessions'; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>write_payment_sessions</code></button>
+                        <button type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes('write_payment_sessions') ? 'bg-orange-100 dark:bg-orange-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const scope = 'write_payment_sessions'; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>write_payment_sessions</code></button>
                         <span className="text-muted-foreground">- Process payments (Payments Apps)</span>
                       </div>
                       <div>
                         {['read_payment_customizations', 'write_payment_customizations'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-orange-100 dark:bg-orange-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-orange-100 dark:bg-orange-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Hide/reorder payment methods</span>
                       </div>
                       <div>
                         {['read_checkout_branding_settings', 'write_checkout_branding_settings'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-orange-100 dark:bg-orange-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-orange-100 dark:bg-orange-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Checkout branding</span>
                       </div>
                       <div>
-                        <button type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes('unauthenticated_write_checkouts') ? 'bg-orange-100 dark:bg-orange-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const scope = 'unauthenticated_write_checkouts'; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>unauthenticated_write_checkouts</code></button>
+                        <button type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes('unauthenticated_write_checkouts') ? 'bg-orange-100 dark:bg-orange-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const scope = 'unauthenticated_write_checkouts'; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>unauthenticated_write_checkouts</code></button>
                         <span className="text-muted-foreground">- Cart & checkout (Storefront API)</span>
                       </div>
                     </div>
@@ -1920,13 +1920,13 @@ export default function PlatformPluginsPanel() {
                     <div className="space-y-1 ml-2">
                       <div>
                         {['read_discounts', 'write_discounts'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-pink-100 dark:bg-pink-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-pink-100 dark:bg-pink-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Discounts & automatic discounts</span>
                       </div>
                       <div>
                         {['read_price_rules', 'write_price_rules'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-pink-100 dark:bg-pink-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-pink-100 dark:bg-pink-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Price rules</span>
                       </div>
@@ -1939,13 +1939,13 @@ export default function PlatformPluginsPanel() {
                     <div className="space-y-1 ml-2">
                       <div>
                         {['read_own_subscription_contracts', 'write_own_subscription_contracts'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-teal-100 dark:bg-teal-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-teal-100 dark:bg-teal-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Subscription contracts</span>
                       </div>
                       <div>
                         {['read_purchase_options', 'write_purchase_options'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-teal-100 dark:bg-teal-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-teal-100 dark:bg-teal-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Selling plans</span>
                       </div>
@@ -1958,18 +1958,18 @@ export default function PlatformPluginsPanel() {
                     <div className="space-y-1 ml-2">
                       <div>
                         {['read_content', 'write_content'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-indigo-100 dark:bg-indigo-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-indigo-100 dark:bg-indigo-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Blogs, articles, pages</span>
                       </div>
                       <div>
                         {['read_themes', 'write_themes'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-indigo-100 dark:bg-indigo-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-indigo-100 dark:bg-indigo-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Theme files</span>
                       </div>
                       <div>
-                        <button type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes('write_script_tags') ? 'bg-indigo-100 dark:bg-indigo-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const scope = 'write_script_tags'; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>write_script_tags</code></button>
+                        <button type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes('write_script_tags') ? 'bg-indigo-100 dark:bg-indigo-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const scope = 'write_script_tags'; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>write_script_tags</code></button>
                         <span className="text-muted-foreground">- Script tags for storefront</span>
                       </div>
                     </div>
@@ -1981,17 +1981,17 @@ export default function PlatformPluginsPanel() {
                     <div className="space-y-1 ml-2">
                       <div>
                         {['read_marketing_events', 'write_marketing_events'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-yellow-100 dark:bg-yellow-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-yellow-100 dark:bg-yellow-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Marketing activities</span>
                       </div>
                       <div>
-                        <button type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes('read_shopify_payments_payouts') ? 'bg-yellow-100 dark:bg-yellow-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const scope = 'read_shopify_payments_payouts'; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>read_shopify_payments_payouts</code></button>
+                        <button type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes('read_shopify_payments_payouts') ? 'bg-yellow-100 dark:bg-yellow-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const scope = 'read_shopify_payments_payouts'; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>read_shopify_payments_payouts</code></button>
                         <span className="text-muted-foreground">- Payment payouts & disputes</span>
                       </div>
                       <div>
                         {['read_customer_events', 'write_pixels'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-yellow-100 dark:bg-yellow-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-yellow-100 dark:bg-yellow-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Customer behavior (Web Pixels)</span>
                       </div>
@@ -2004,13 +2004,13 @@ export default function PlatformPluginsPanel() {
                     <div className="space-y-1 ml-2">
                       <div>
                         {['read_metaobjects', 'write_metaobjects'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-violet-100 dark:bg-violet-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-violet-100 dark:bg-violet-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- Custom data entries</span>
                       </div>
                       <div>
                         {['read_files', 'write_files'].map((scope: string) => (
-                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-violet-100 dark:bg-violet-900' : 'bg-muted'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
+                          <button key={scope} type="button" disabled={!editOAuth} className={`mr-2 px-1 rounded text-xs ${plugin.oauth.scopes.includes(scope) ? 'bg-violet-100 dark:bg-violet-900' : 'bg-foreground/[0.04]'} hover:opacity-80 disabled:opacity-50`} onClick={() => { const current = plugin.oauth.scopes || []; const updated = current.includes(scope) ? current.filter((s: string) => s !== scope) : [...current, scope]; setPlugin({ ...plugin, oauth: { ...plugin.oauth, scopes: updated } }); }}><code>{scope}</code></button>
                         ))}
                         <span className="text-muted-foreground">- File management</span>
                       </div>
@@ -2087,7 +2087,7 @@ export default function PlatformPluginsPanel() {
               </div>
             </div>
 
-            <div className="rounded-md border bg-amber-50 dark:bg-amber-950/20 p-3">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-amber-50/50 dark:bg-amber-950/20 p-3">
               <div className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-1">App Verification Required</div>
               <div className="microtext text-amber-700 dark:text-amber-300">
                 Before your app can be published to the Shopify App Store, you must complete the verification process.
@@ -2219,7 +2219,7 @@ export default function PlatformPluginsPanel() {
             <div className="microtext text-muted-foreground">Brand: {brandKey}</div>
 
             {/* Instructions */}
-            <div className="rounded-md border bg-slate-50 dark:bg-slate-950/20 p-3">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-3">
               <div className="text-sm font-medium mb-2">Deployment Steps</div>
               <ol className="microtext text-muted-foreground space-y-1 ml-4 list-decimal">
                 <li>Save your configuration changes</li>
@@ -2237,7 +2237,7 @@ export default function PlatformPluginsPanel() {
 
             {/* Package URL Display */}
             {packageUrl && (
-              <div className="rounded-md border bg-emerald-50 dark:bg-emerald-950/20 p-3">
+              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20 p-3">
                 <div className="text-sm font-medium text-emerald-900 dark:text-emerald-100 mb-2">Package Ready</div>
                 <div className="microtext text-emerald-700 dark:text-emerald-300 mb-2">
                   Download this package and upload it to your Shopify Partners account under App Extensions.
@@ -2249,7 +2249,7 @@ export default function PlatformPluginsPanel() {
                     className="flex-1 h-9 px-3 border rounded-md bg-background font-mono text-xs"
                   />
                   <button
-                    className="px-3 py-1.5 border rounded-md text-sm hover:bg-foreground/5"
+                    className="px-3 py-1.5 border rounded-md text-sm hover:bg-foreground/[0.04]"
                     onClick={() => {
                       navigator.clipboard.writeText(packageUrl);
                       setInfo('Package URL copied to clipboard');
@@ -2261,7 +2261,7 @@ export default function PlatformPluginsPanel() {
                     href={packageUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1.5 border rounded-md text-sm hover:bg-foreground/5"
+                    className="px-3 py-1.5 border rounded-md text-sm hover:bg-foreground/[0.04]"
                   >
                     Download
                   </a>
@@ -2281,7 +2281,7 @@ export default function PlatformPluginsPanel() {
               <button className="px-3 py-1.5 border rounded-md text-sm" onClick={getStatus}>Refresh Status</button>
             </div>
             {statusDoc ? (
-              <div className="rounded-md border p-3 bg-foreground/5">
+              <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-3">
                 <div className="text-sm font-medium mb-2">Deployment Status</div>
                 <pre className="text-xs whitespace-pre-wrap break-words">{JSON.stringify(statusDoc, null, 2)}</pre>
               </div>
@@ -2294,7 +2294,7 @@ export default function PlatformPluginsPanel() {
         return (
           <div className="space-y-3">
             {/* Publishing Instructions */}
-            <div className="rounded-md border bg-purple-50 dark:bg-purple-950/20 p-3">
+            <div className="rounded-2xl border border-purple-500/20 bg-purple-50/50 dark:bg-purple-950/20 p-3">
               <div className="text-sm font-medium text-purple-900 dark:text-purple-100 mb-2">How to Publish Your Shopify App</div>
               <ol className="microtext text-purple-700 dark:text-purple-300 space-y-2 ml-4 list-decimal">
                 <li>
@@ -2319,7 +2319,7 @@ export default function PlatformPluginsPanel() {
                   <div className="ml-2 mt-0.5">• Go to Deploy tab and click "Generate Package"</div>
                   <div className="ml-2">• Download the generated ZIP file</div>
                   <div className="ml-2">• In Partners Dashboard → Extensions → Create extension</div>
-                  <div className="ml-2">• Upload the ZIP or use Shopify CLI: <code className="bg-muted px-1 rounded">shopify app deploy</code></div>
+                  <div className="ml-2">• Upload the ZIP or use Shopify CLI: <code className="bg-foreground/[0.04] px-1 rounded">shopify app deploy</code></div>
                 </li>
                 <li>
                   <strong>Get App Identifiers</strong>
@@ -2346,7 +2346,7 @@ export default function PlatformPluginsPanel() {
                 );
               };
               return (
-                <div className="rounded-md border p-3">
+                <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-3">
                   <div className="text-sm font-medium mb-1">Configuration Checklist</div>
                   <ul className="space-y-1">
                     {row('Configuration', st.config)}
@@ -2403,19 +2403,19 @@ export default function PlatformPluginsPanel() {
 
             {/* Dynamic Deep Links */}
             {plugin.partnerOrgId && plugin.shopifyAppId && (
-              <div className="rounded-md border p-3 bg-background">
+              <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-3">
                 <div className="text-sm font-medium mb-2">Quick Links to Partner Dashboard</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <a href={`https://partners.shopify.com/${plugin.partnerOrgId}/apps/${plugin.shopifyAppId}`} target="_blank" rel="noopener noreferrer" className="px-3 py-2 border rounded-md text-xs text-center hover:bg-foreground/5">
+                  <a href={`https://partners.shopify.com/${plugin.partnerOrgId}/apps/${plugin.shopifyAppId}`} target="_blank" rel="noopener noreferrer" className="px-3 py-2 border rounded-md text-xs text-center hover:bg-foreground/[0.04]">
                     App Overview
                   </a>
-                  <a href={`https://partners.shopify.com/${plugin.partnerOrgId}/apps/${plugin.shopifyAppId}/edit`} target="_blank" rel="noopener noreferrer" className="px-3 py-2 border rounded-md text-xs text-center hover:bg-foreground/5">
+                  <a href={`https://partners.shopify.com/${plugin.partnerOrgId}/apps/${plugin.shopifyAppId}/edit`} target="_blank" rel="noopener noreferrer" className="px-3 py-2 border rounded-md text-xs text-center hover:bg-foreground/[0.04]">
                     App Configuration
                   </a>
-                  <a href={`https://partners.shopify.com/${plugin.partnerOrgId}/apps/${plugin.shopifyAppId}/extensions`} target="_blank" rel="noopener noreferrer" className="px-3 py-2 border rounded-md text-xs text-center hover:bg-foreground/5">
+                  <a href={`https://partners.shopify.com/${plugin.partnerOrgId}/apps/${plugin.shopifyAppId}/extensions`} target="_blank" rel="noopener noreferrer" className="px-3 py-2 border rounded-md text-xs text-center hover:bg-foreground/[0.04]">
                     Extensions
                   </a>
-                  <a href={`https://partners.shopify.com/${plugin.partnerOrgId}/apps/${plugin.shopifyAppId}/distribution`} target="_blank" rel="noopener noreferrer" className="px-3 py-2 border rounded-md text-xs text-center hover:bg-foreground/5">
+                  <a href={`https://partners.shopify.com/${plugin.partnerOrgId}/apps/${plugin.shopifyAppId}/distribution`} target="_blank" rel="noopener noreferrer" className="px-3 py-2 border rounded-md text-xs text-center hover:bg-foreground/[0.04]">
                     Distribution
                   </a>
                 </div>
@@ -2432,7 +2432,7 @@ export default function PlatformPluginsPanel() {
     return (
       <div className="space-y-2">
         <div className="microtext text-muted-foreground">Brand: {brandKey}</div>
-        <div className="rounded-md border p-3">
+        <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-3">
           <div className="text-sm font-medium">{pluginName} — {section[0].toUpperCase() + section.slice(1)}</div>
           <div className="microtext text-muted-foreground mt-1">Coming soon. This workspace will use the same layout, with configuration components specific to {pluginName}.</div>
         </div>
@@ -2448,7 +2448,7 @@ export default function PlatformPluginsPanel() {
       <button
         key={p.key}
         type="button"
-        className={`text-left rounded-lg border p-4 flex items-start gap-3 hover:bg-foreground/5 transition`}
+        className={`text-left rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-4 flex items-start gap-3 hover:bg-foreground/[0.04] transition`}
         onClick={() => { setSelectedPlugin(p.key); setWorkspaceSection('overview'); }}
         title={p.name}
       >
@@ -2482,7 +2482,7 @@ export default function PlatformPluginsPanel() {
       <button
         key={p.key}
         type="button"
-        className={`text-left rounded-md border p-2 flex items-center gap-2 hover:bg-foreground/5 transition`}
+        className={`text-left rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] p-2 flex items-center gap-2 hover:bg-foreground/[0.04] transition`}
         onClick={() => { setSelectedPlugin(p.key); setWorkspaceSection('overview'); }}
         title={p.name}
       >
@@ -2515,7 +2515,7 @@ export default function PlatformPluginsPanel() {
       <button
         key={p.key}
         type="button"
-        className={`w-full text-left border-b py-2 px-2 flex items-center gap-3 hover:bg-foreground/5 transition`}
+        className={`w-full text-left border-b border-foreground/[0.05] py-2 px-2 flex items-center gap-3 hover:bg-foreground/[0.04] transition`}
         onClick={() => { setSelectedPlugin(p.key); setWorkspaceSection('overview'); }}
         title={p.name}
       >
@@ -2547,20 +2547,20 @@ export default function PlatformPluginsPanel() {
   function renderCatalog() {
     if (viewMode === 'list') {
       return (
-        <div className="rounded-md border">
-          <div className="flex items-center justify-between p-3 border-b">
+        <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02]">
+          <div className="flex items-center justify-between p-3 border-b border-foreground/[0.05]">
             <div className="text-sm font-medium">Available Plugins</div>
             <div className="flex items-center gap-2">
               <button
-                className="microtext px-2 py-1 rounded-md border hover:bg-foreground/5"
+                className="microtext px-2 py-1 rounded-md border hover:bg-foreground/[0.04]"
                 onClick={() => setViewMode('grid-full')}
               >Full Grid</button>
               <button
-                className="microtext px-2 py-1 rounded-md border hover:bg-foreground/5"
+                className="microtext px-2 py-1 rounded-md border hover:bg-foreground/[0.04]"
                 onClick={() => setViewMode('grid-compact')}
               >Compact Grid</button>
               <button
-                className={`microtext px-2 py-1 rounded-md border ${isList(viewMode) ? 'bg-foreground/10 border-foreground/30' : 'hover:bg-foreground/5'}`}
+                className={`microtext px-2 py-1 rounded-md border ${isList(viewMode) ? 'bg-foreground/[0.06] border-foreground/[0.15]' : 'border-foreground/[0.05] hover:bg-foreground/[0.04]'} transition`}
                 onClick={() => setViewMode('list')}
               >List</button>
             </div>
@@ -2580,21 +2580,21 @@ export default function PlatformPluginsPanel() {
       : 'grid grid-cols-1 sm:grid-cols-2 gap-4';
 
     return (
-      <div className="rounded-md border p-3">
+      <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-3">
         <div className="flex items-center justify-between mb-2">
           <div className="text-sm font-medium">Available Plugins</div>
           {/* View mode controls */}
           <div className="flex items-center gap-2">
             <button
-              className={`microtext px-2 py-1 rounded-md border ${viewMode === 'grid-full' ? 'bg-foreground/10 border-foreground/30' : 'hover:bg-foreground/5'}`}
+              className={`microtext px-2 py-1 rounded-md border ${viewMode === 'grid-full' ? 'bg-foreground/[0.06] border-foreground/[0.15]' : 'border-foreground/[0.05] hover:bg-foreground/[0.04]'} transition`}
               onClick={() => setViewMode('grid-full')}
             >Full Grid</button>
             <button
-              className={`microtext px-2 py-1 rounded-md border ${viewMode === 'grid-compact' ? 'bg-foreground/10 border-foreground/30' : 'hover:bg-foreground/5'}`}
+              className={`microtext px-2 py-1 rounded-md border ${viewMode === 'grid-compact' ? 'bg-foreground/[0.06] border-foreground/[0.15]' : 'border-foreground/[0.05] hover:bg-foreground/[0.04]'} transition`}
               onClick={() => setViewMode('grid-compact')}
             >Compact Grid</button>
             <button
-              className={`microtext px-2 py-1 rounded-md border ${isList(viewMode) ? 'bg-foreground/10 border-foreground/30' : 'hover:bg-foreground/5'}`}
+              className={`microtext px-2 py-1 rounded-md border ${isList(viewMode) ? 'bg-foreground/[0.06] border-foreground/[0.15]' : 'border-foreground/[0.05] hover:bg-foreground/[0.04]'} transition`}
               onClick={() => setViewMode('list')}
             >List</button>
           </div>
@@ -2611,20 +2611,22 @@ export default function PlatformPluginsPanel() {
   }
 
   return (
-    <div className="rounded-md border p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-lg font-semibold">Plugin Studio</div>
-          <div className="microtext text-muted-foreground">Configure plugins per partner brand or the platform brand (portalpay).</div>
+    <div className="w-full space-y-6 pb-24 admin-panel-enter">
+      <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-lg font-semibold">Plugin Studio</div>
+            <div className="microtext text-muted-foreground">Configure plugins per partner brand or the platform brand (portalpay).</div>
+          </div>
+          <div className="text-xs text-muted-foreground">Admin Wallet: {account?.address || "(not connected)"}</div>
         </div>
-        <div className="text-xs text-muted-foreground">Admin Wallet: {account?.address || "(not connected)"}</div>
       </div>
 
       {/* Brand Key dropdown */}
       <div className="flex items-center gap-2">
         <label className="microtext text-muted-foreground">Brand</label>
         <select
-          className="h-9 px-3 border rounded-md bg-background w-60"
+          className="h-9 px-3 border border-foreground/[0.05] rounded-lg bg-background w-60"
           value={brandKey}
           onChange={(e) => setBrandKey(e.target.value.toLowerCase())}
         >
@@ -2639,7 +2641,7 @@ export default function PlatformPluginsPanel() {
 
       {/* Workspace shell */}
       {selectedPlugin && (
-        <div className="rounded-md border p-4 space-y-4">
+        <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md p-6 space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

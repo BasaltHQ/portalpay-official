@@ -29,9 +29,9 @@ export default function AdminDevicesPage() {
   if (!(isSuperadmin || canBranding)) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-10">
-        <div className="glass-pane rounded-xl border p-6">
-          <h2 className="text-xl font-semibold">Access Denied</h2>
-          <div className="microtext text-muted-foreground mt-1">
+        <div className="admin-card p-6">
+          <h2 className="text-xl font-semibold text-white/90">Access Denied</h2>
+          <div className="text-[10px] text-white/40 uppercase tracking-widest font-medium mt-1">
             Android Device Installer is restricted to Admin and Superadmin.
           </div>
         </div>
@@ -40,7 +40,7 @@ export default function AdminDevicesPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 space-y-6 md:pl-64 pt-[204px] md:pt-[148px] pb-10">
+    <div className="max-w-6xl mx-auto px-4 space-y-6 md:pl-64 pt-[144px] md:pt-[88px] pb-10">
       <AdminHero />
       {/* Render sidebar for consistent admin chrome; we don't wire onChange here since this page is standalone */}
       <AdminSidebar
@@ -51,7 +51,7 @@ export default function AdminDevicesPage() {
         canMerchants={canMerchants}
         isSuperadmin={isSuperadmin}
       />
-      <div className="glass-pane rounded-xl border p-6 space-y-3">
+      <div className="admin-card p-6 space-y-3 admin-panel-enter">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Installer Packages</h2>
           <span className="microtext text-muted-foreground">

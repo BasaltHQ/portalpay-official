@@ -383,8 +383,8 @@ export default function MyPurchasesPanel() {
   }), [items]);
 
   return (
-    <div className="glass-pane rounded-xl border p-6 space-y-4 min-h-[600px] flex flex-col">
-      <div className="flex items-center justify-between border-b pb-4">
+    <div className="w-full h-[calc(100vh-140px)] p-6 md:p-8 flex flex-col gap-6 pb-24">
+      <div className="flex items-center justify-between border-b border-foreground/10 pb-4 shrink-0">
         <div className="flex items-center gap-6">
           <button
             onClick={() => setActiveTab("purchases")}
@@ -406,7 +406,7 @@ export default function MyPurchasesPanel() {
         {activeTab === "purchases" && (
           <div className="flex items-center gap-2">
             <button
-              className="px-3 py-1.5 rounded-md border text-sm hover:bg-foreground/5 transition-colors"
+              className="px-4 py-2 rounded-lg border border-foreground/[0.1] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-[10px] uppercase font-bold tracking-wider transition-all"
               onClick={reindex}
               disabled={reindexing || loading}
               title="Scan on-chain transactions to recover missing purchases"
@@ -414,7 +414,7 @@ export default function MyPurchasesPanel() {
               {reindexing ? "ReIndexing…" : "ReIndex"}
             </button>
             <button
-              className="px-3 py-1.5 rounded-md border text-sm hover:bg-foreground/5 transition-colors"
+              className="px-4 py-2 rounded-lg border border-foreground/[0.1] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-[10px] uppercase font-bold tracking-wider transition-all"
               onClick={load}
               disabled={loading || reindexing}
             >
@@ -430,10 +430,10 @@ export default function MyPurchasesPanel() {
           <BookshelfView books={myBooks} />
         ) : (
           <div className="space-y-2">
-            {error && <div className="microtext text-red-500">{error}</div>}
-            {reindexError && <div className="microtext text-red-500">ReIndex Error: {reindexError}</div>}
+            {error && <div className="text-[10px] uppercase font-bold tracking-wider text-red-500">{error}</div>}
+            {reindexError && <div className="text-[10px] uppercase font-bold tracking-wider text-red-500">ReIndex Error: {reindexError}</div>}
             {reindexResult && (
-              <div className="rounded-md border bg-green-50 dark:bg-green-950/20 p-3 microtext">
+              <div className="rounded-lg border bg-emerald-500/10 border-emerald-500/20 p-4 text-[10px] uppercase font-bold tracking-wider">
                 <div className="font-medium text-green-700 dark:text-green-400">ReIndex Complete</div>
                 <div className="text-muted-foreground mt-1">
                   Scanned {reindexResult.merchantsProcessed} merchants • Found {reindexResult.transactionsFound} on-chain payments
@@ -449,7 +449,7 @@ export default function MyPurchasesPanel() {
               return (
                 <div
                   key={rec.receiptId}
-                  className="rounded-md border"
+                  className="glass-pane rounded-xl border border-foreground/[0.1] bg-foreground/[0.02] shadow-sm overflow-hidden"
                   style={{ borderColor: receiptReviews[rec.receiptId]?.config?.theme?.primaryColor }}
                 >
                   <button
@@ -458,14 +458,14 @@ export default function MyPurchasesPanel() {
                   >
                     <div className="flex items-center gap-3">
                       <span className="font-mono">{rec.receiptId}</span>
-                      <span className="microtext text-muted-foreground">
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                         {new Date(Number(rec.createdAt || 0)).toLocaleString()}
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-medium">{formatUsd(rec.totalUsd)}</span>
                       {rec.tokenSymbol && Number(rec.tokenAmount || 0) > 0 && (
-                        <span className="microtext text-muted-foreground">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                           Settled {formatToken(rec.tokenAmount || 0, rec.tokenSymbol)}
                         </span>
                       )}
@@ -477,7 +477,7 @@ export default function MyPurchasesPanel() {
                   </button>
                   {isOpen && (
                     <div className="px-3 py-3 border-t space-y-3">
-                      <div className="microtext text-muted-foreground flex items-center gap-2">
+                      <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider flex items-center gap-2">
                         {(() => {
                           const cfg = receiptReviews[rec.receiptId]?.config;
                           const logo = cfg?.theme?.brandLogoUrl;
@@ -499,7 +499,7 @@ export default function MyPurchasesPanel() {
                         })()}
                       </div>
                       {rec.shopSlug && (
-                        <div className="microtext text-muted-foreground">
+                        <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                           Shop:{" "}
                           <a
                             href={`/shop/${encodeURIComponent(rec.shopSlug)}`}
@@ -510,7 +510,7 @@ export default function MyPurchasesPanel() {
                         </div>
                       )}
                       {(rec.tokenSymbol || rec.transactionHash) && (
-                        <div className="microtext text-muted-foreground">
+                        <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                           {rec.tokenSymbol && Number(rec.tokenAmount || 0) > 0 && (
                             <>Settled: <span className="font-mono">{formatToken(rec.tokenAmount || 0, rec.tokenSymbol)}</span></>
                           )}
@@ -526,12 +526,12 @@ export default function MyPurchasesPanel() {
                       )}
                       {/* Tracking info for shipped orders */}
                       {(rec as any).tracking?.trackingNumber && (
-                        <div className="rounded-md border p-3 bg-sky-50/50 dark:bg-sky-950/20 border-sky-200/60 dark:border-sky-800/40">
+                        <div className="rounded-lg border p-4 bg-sky-50/50 dark:bg-sky-950/20 border-sky-200/60 dark:border-sky-800/40">
                           <div className="text-sm font-medium flex items-center gap-2">
                             <span>📦</span>
                             <span>Shipment Tracking</span>
                             {(rec as any).tracking?.carrier && (
-                              <span className="microtext bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 px-1.5 py-0.5 rounded">{(rec as any).tracking.carrier}</span>
+                              <span className="text-[10px] uppercase font-bold tracking-wider bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 px-1.5 py-0.5 rounded">{(rec as any).tracking.carrier}</span>
                             )}
                           </div>
                           <div className="mt-1.5 microtext text-muted-foreground space-y-0.5">
@@ -552,21 +552,21 @@ export default function MyPurchasesPanel() {
                         </div>
                       )}
                       {(rec as any).shippingAddress && !(rec as any).tracking?.trackingNumber && (
-                        <div className="rounded-md border p-3 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40">
+                        <div className="rounded-lg border p-4 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40">
                           <div className="text-sm font-medium flex items-center gap-2">
                             <span>📦</span>
                             <span>Awaiting Shipment</span>
                           </div>
-                          <div className="microtext text-muted-foreground mt-1">Your order is being prepared for shipping.</div>
+                          <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-1">Your order is being prepared for shipping.</div>
                         </div>
                       )}
                       {/* Reviews summary for this purchase */}
-                      <div className="rounded-md border p-3 bg-foreground/5">
+                      <div className="rounded-lg border border-foreground/[0.1] bg-foreground/[0.02] p-4">
                         <div className="text-sm font-medium">Reviews for this purchase</div>
-                        <div className="microtext text-muted-foreground mb-2">Verified purchase: you can leave reviews.</div>
+                        <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">Verified purchase: you can leave reviews.</div>
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="microtext">Merchant</span>
+                            <span className="text-[10px] uppercase font-bold tracking-wider">Merchant</span>
                             {(() => {
                               const rv = receiptReviews[rec.receiptId]?.merchant;
                               if (rv) {
@@ -575,13 +575,13 @@ export default function MyPurchasesPanel() {
                                     {Array.from({ length: 5 }).map((_, i) => (
                                       <span key={i} className={i < Math.round(Number(rv.rating || 0)) ? "text-amber-500" : "text-muted-foreground"}>★</span>
                                     ))}
-                                    <span className="microtext text-muted-foreground">({Number(rv.rating || 0).toFixed(2)})</span>
+                                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">({Number(rv.rating || 0).toFixed(2)})</span>
                                   </div>
                                 );
                               }
                               return (
                                 <button
-                                  className="px-2 py-1 rounded-md border text-xs"
+                                  className="px-3 py-1.5 rounded-lg border border-foreground/[0.1] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-[10px] uppercase font-bold tracking-wider transition-colors"
                                   onClick={() => openReview(rec, { type: "merchant" })}
                                   title="Write merchant review"
                                 >
@@ -592,7 +592,7 @@ export default function MyPurchasesPanel() {
                           </div>
                           {rec.shopSlug && (
                             <div className="flex items-center justify-between">
-                              <span className="microtext">Shop</span>
+                              <span className="text-[10px] uppercase font-bold tracking-wider">Shop</span>
                               {(() => {
                                 const rv = receiptReviews[rec.receiptId]?.shop;
                                 if (rv) {
@@ -601,13 +601,13 @@ export default function MyPurchasesPanel() {
                                       {Array.from({ length: 5 }).map((_, i) => (
                                         <span key={i} className={i < Math.round(Number(rv.rating || 0)) ? "text-amber-500" : "text-muted-foreground"}>★</span>
                                       ))}
-                                      <span className="microtext text-muted-foreground">({Number(rv.rating || 0).toFixed(2)})</span>
+                                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">({Number(rv.rating || 0).toFixed(2)})</span>
                                     </div>
                                   );
                                 }
                                 return (
                                   <button
-                                    className="px-2 py-1 rounded-md border text-xs"
+                                    className="px-3 py-1.5 rounded-lg border border-foreground/[0.1] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-[10px] uppercase font-bold tracking-wider transition-colors"
                                     onClick={() => openReview(rec, { type: "shop" })}
                                     title="Write shop review"
                                   >
@@ -634,12 +634,12 @@ export default function MyPurchasesPanel() {
                             : baseItems;
 
                           return liList.map((li, idx) => (
-                            <div key={idx} className="flex items-center justify-between rounded-md border p-2">
+                            <div key={idx} className="flex items-center justify-between rounded-lg border border-foreground/[0.1] bg-background/50 p-3">
                               <div className="min-w-0">
                                 <div className="text-sm font-semibold truncate">
                                   {li.label}{typeof li.qty === "number" && li.qty > 1 ? ` × ${li.qty}` : ""}
                                 </div>
-                                {li.sku && <div className="microtext text-muted-foreground">SKU: {li.sku}</div>}
+                                {li.sku && <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">SKU: {li.sku}</div>}
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="text-sm">{formatUsd(li.priceUsd)}</span>
@@ -651,13 +651,13 @@ export default function MyPurchasesPanel() {
                                         {Array.from({ length: 5 }).map((_, i) => (
                                           <span key={i} className={i < Math.round(Number(rv.rating || 0)) ? "text-amber-500" : "text-muted-foreground"}>★</span>
                                         ))}
-                                        <span className="microtext text-muted-foreground">({Number(rv.rating || 0).toFixed(2)})</span>
+                                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">({Number(rv.rating || 0).toFixed(2)})</span>
                                       </div>
                                     );
                                   }
                                   return (
                                     <button
-                                      className="px-2 py-1 rounded-md border text-xs"
+                                      className="px-3 py-1.5 rounded-lg border border-foreground/[0.1] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-[10px] uppercase font-bold tracking-wider transition-colors"
                                       onClick={() => openReview(rec, { type: "inventory", id: li.itemId })}
                                       title="Review this item"
                                     >
@@ -672,7 +672,7 @@ export default function MyPurchasesPanel() {
                       </div>
                       <div className="flex items-center gap-2">
                         <button
-                          className="px-2 py-1 rounded-md border text-xs"
+                          className="px-3 py-1.5 rounded-lg border border-foreground/[0.1] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-[10px] uppercase font-bold tracking-wider transition-colors"
                           onClick={() => openReview(rec, { type: "merchant" })}
                           title="Review merchant"
                         >
@@ -680,7 +680,7 @@ export default function MyPurchasesPanel() {
                         </button>
                         {rec.shopSlug && (
                           <button
-                            className="px-2 py-1 rounded-md border text-xs"
+                            className="px-3 py-1.5 rounded-lg border border-foreground/[0.1] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-[10px] uppercase font-bold tracking-wider transition-colors"
                             onClick={() => openReview(rec, { type: "shop" })}
                             title="Review shop"
                           >
@@ -689,7 +689,7 @@ export default function MyPurchasesPanel() {
                         )}
                         <a
                           href={`/u/${encodeURIComponent(rec.merchantWallet)}`}
-                          className="px-2 py-1 rounded-md border text-xs underline"
+                          className="px-3 py-1.5 rounded-lg border border-foreground/[0.1] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-[10px] uppercase font-bold tracking-wider transition-colors"
                           title="Visit merchant profile"
                         >
                           Visit Profile
@@ -697,13 +697,13 @@ export default function MyPurchasesPanel() {
                         {rec.shopSlug && (
                           <a
                             href={`/shop/${encodeURIComponent(rec.shopSlug)}`}
-                            className="px-2 py-1 rounded-md border text-xs underline"
+                            className="px-3 py-1.5 rounded-lg border border-foreground/[0.1] bg-foreground/[0.02] hover:bg-foreground/[0.05] text-[10px] uppercase font-bold tracking-wider transition-colors"
                             title="Visit shop"
                           >
                             Visit Shop
                           </a>
                         )}
-                        <span className="microtext text-muted-foreground ml-auto">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider ml-auto">
                           Follow up in Admin → Messages panel for replies
                         </span>
                       </div>
@@ -713,7 +713,7 @@ export default function MyPurchasesPanel() {
               );
             })}
             {(displayItems || []).length === 0 && !loading && (
-              <div className="microtext text-muted-foreground">No purchases found.</div>
+              <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">No purchases found.</div>
             )}
           </div>
         )}
@@ -733,12 +733,12 @@ export default function MyPurchasesPanel() {
                   ✕
                 </button>
                 <div className="text-lg font-semibold mb-2">Write a Review</div>
-                <div className="microtext text-muted-foreground mb-2">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">
                   Subject: {reviewTarget.subjectType} • {reviewTarget.subjectId}
                 </div>
                 <div className="space-y-2">
                   <div>
-                    <label className="microtext text-muted-foreground">Rating</label>
+                    <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Rating</label>
                     <div className="flex items-center gap-2 mt-1">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <button
@@ -752,11 +752,11 @@ export default function MyPurchasesPanel() {
                           <span className={i < reviewRating ? "text-amber-500" : "text-muted-foreground"}>★</span>
                         </button>
                       ))}
-                      <span className="microtext text-muted-foreground">({Number(reviewRating).toFixed(2)})</span>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">({Number(reviewRating).toFixed(2)})</span>
                     </div>
                   </div>
                   <div>
-                    <label className="microtext text-muted-foreground">Title (optional)</label>
+                    <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Title (optional)</label>
                     <input
                       className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
                       value={reviewTitle}
@@ -765,7 +765,7 @@ export default function MyPurchasesPanel() {
                     />
                   </div>
                   <div>
-                    <label className="microtext text-muted-foreground">Review</label>
+                    <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Review</label>
                     <textarea
                       className="mt-1 w-full h-24 px-3 py-2 border rounded-md bg-background"
                       value={reviewBody}
@@ -773,7 +773,7 @@ export default function MyPurchasesPanel() {
                       placeholder="Share details about your experience…"
                     />
                   </div>
-                  {reviewError && <div className="microtext text-red-500">{reviewError}</div>}
+                  {reviewError && <div className="text-[10px] uppercase font-bold tracking-wider text-red-500">{reviewError}</div>}
                 </div>
                 <div className="mt-3 flex items-center justify-end gap-2">
                   <button className="px-3 py-1.5 rounded-md border text-sm" onClick={() => setReviewOpen(false)}>Cancel</button>
@@ -781,7 +781,7 @@ export default function MyPurchasesPanel() {
                     {reviewSaving ? "Submitting…" : "Submit Review"}
                   </button>
                 </div>
-                <div className="microtext text-muted-foreground mt-2">
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-2">
                   Your review will appear on the merchant’s profile/shop and in Admin → My Purchases.
                 </div>
               </div>

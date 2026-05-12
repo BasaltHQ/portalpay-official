@@ -19,7 +19,7 @@ export default function PartnerManagementPanel() {
     return (
       <div className="glass-pane rounded-xl border p-6 space-y-3">
         <div className="text-sm font-semibold">Partner Management</div>
-        <div className="microtext text-muted-foreground">
+        <div className="text-xs text-muted-foreground/70">
           This section is available only in the Platform container. Partner containers do not include the Partners admin panel.
         </div>
       </div>
@@ -1446,35 +1446,35 @@ export default function PartnerManagementPanel() {
           <div className="flex items-center gap-2 flex-wrap">
             {/* Clean selector: exclude 'portalpay' */}
             <select
-              className="h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
               value={isPortalPaySelected && hasPartnerBrands ? brandsList[0] : brandKey}
               onChange={(e) => setBrandKey(e.target.value)}
               title="Select partner brand"
             >
               {hasPartnerBrands ? (
                 brandsList.map((k: string) => (
-                  <option key={k} value={k}>
+                  <option className="bg-background text-foreground" key={k} value={k}>
                     {k}
                   </option>
                 ))
               ) : (
-                <option value="">No partner brands</option>
+                <option className="bg-background text-foreground" value="">No partner brands</option>
               )}
             </select>
-            <button className="px-3 py-1.5 rounded-md border text-sm" onClick={load} disabled={loading}>
+            <button className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium" onClick={load} disabled={loading}>
               {loading ? "Refreshing…" : "Refresh"}
             </button>
 
             {/* Add new partner brand inline */}
             <input
-              className="h-9 px-3 py-1 border rounded-md bg-background font-mono"
+              className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors font-mono"
               placeholder="new brand key…"
               value={newBrandKey}
               onChange={(e) => setNewBrandKey(e.target.value.toLowerCase())}
               title="Enter a new partner brand key"
             />
             <button
-              className="px-3 py-1.5 rounded-md border text-sm"
+              className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium"
               onClick={async () => {
                 try {
                   const key = String(newBrandKey || "").toLowerCase().trim();
@@ -1507,7 +1507,7 @@ export default function PartnerManagementPanel() {
 
             {/* Remove selected partner brand */}
             <button
-              className="px-3 py-1.5 rounded-md border text-sm"
+              className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium"
               onClick={async () => {
                 try {
                   const key = String(brandKey || "").toLowerCase();
@@ -1540,26 +1540,28 @@ export default function PartnerManagementPanel() {
             </button>
           </div>
         </div>
-        <div className="microtext text-muted-foreground">Manage partner fees and brand settings; view merchants and release Platform Fee.</div>
       </div>
 
       {!hasPartnerBrands ? (
         // Empty-state primed to deploy first brand
-        <div className="glass-pane rounded-xl border p-5 space-y-3">
-          <div className="text-sm font-medium">No partner brands found</div>
-          <div className="microtext text-muted-foreground">
+        <div className="glass-pane rounded-xl border overflow-hidden">
+            <div className="px-5 py-4 border-b border-foreground/5 flex items-center justify-between">
+              <h4 className="text-sm font-semibold">No partner brands found</h4>
+            </div>
+            <div className="p-5 space-y-4">
+          <div className="text-xs text-muted-foreground/70">
             Create your first partner brand to deploy a branded container using the existing image. Platform settings (PortalPay) are managed from the Branding tab.
           </div>
           <div className="flex items-center gap-2">
             <input
-              className="h-9 px-3 py-1 border rounded-md bg-background font-mono"
+              className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors font-mono"
               placeholder="enter brand key… e.g., acme"
               value={brandKey}
               onChange={(e) => setBrandKey(e.target.value.toLowerCase())}
               title="Partner brand key"
             />
             <button
-              className="px-3 py-1.5 rounded-md border text-sm"
+              className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium"
               onClick={async () => {
                 try {
                   const r = await fetch("/api/platform/brands", {
@@ -1582,9 +1584,9 @@ export default function PartnerManagementPanel() {
             </button>
           </div>
           <div>
-            <label className="microtext text-muted-foreground">Navbar Logo Mode</label>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Navbar Logo Mode</label>
             <select
-              className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+              className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
               value={String(config?.logos?.navbarMode || "symbol")}
               onChange={(e) =>
                 setConfig((prev: any) => ({
@@ -1594,44 +1596,48 @@ export default function PartnerManagementPanel() {
               }
               title="Choose how the brand appears in the navbar and portal preview"
             >
-              <option value="symbol">Symbol + Text (compact)</option>
-              <option value="logo">Full Logo (auto width)</option>
+              <option className="bg-background text-foreground" value="symbol">Symbol + Text (compact)</option>
+              <option className="bg-background text-foreground" value="logo">Full Logo (auto width)</option>
             </select>
-            <div className="microtext text-muted-foreground mt-1">
+            <div className="text-[11px] text-muted-foreground/70 mt-1.5">
               Controls navbar presentation for landing previews and /portal: compact symbol with text, or full-width logo sized to the navbar height.
             </div>
           </div>
-          {error && <div className="microtext text-red-500">{error}</div>}
-          {info && <div className="microtext text-green-600">{info}</div>}
+          {error && <div className="text-xs text-red-500">{error}</div>}
+          {info && <div className="text-xs text-green-600">{info}</div>}
+          </div>
         </div>
       ) : isPortalPaySelected ? (
         <div className="glass-pane rounded-xl border p-5">
-          <div className="microtext text-amber-600">
+          <div className="text-xs text-amber-600">
             The main Platform brand (PortalPay) is not managed here. Use the Branding tab to adjust Platform theme and settings.
           </div>
         </div>
       ) : (
         <>
           {/* Brand config controls */}
-          <div className="glass-pane rounded-xl border p-5 space-y-3">
-            <div className="text-sm font-medium">Brand Settings — {brandKey}</div>
+          <div className="glass-pane rounded-xl border overflow-hidden">
+            <div className="px-5 py-4 border-b border-foreground/5 flex items-center justify-between">
+              <h4 className="text-sm font-semibold">Brand Settings — {brandKey}</h4>
+            </div>
+            <div className="p-5 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="microtext text-muted-foreground">App URL</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">App URL</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   value={String(config?.appUrl || "")}
                   onChange={(e) => setConfig((prev: any) => ({ ...prev, appUrl: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Partner Fee (bps)</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Partner Fee (bps)</label>
                 <input
                   type="number"
                   min={0}
                   max={10000}
                   step={1}
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   value={Number(config?.partnerFeeBps || 0)}
                   onChange={(e) =>
                     setConfig((prev: any) => ({ ...prev, partnerFeeBps: Math.max(0, Math.min(10000, Math.floor(Number(e.target.value || 0)))) }))
@@ -1639,7 +1645,7 @@ export default function PartnerManagementPanel() {
                   disabled={Boolean(containerAppName) || Boolean(containerFqdn) || Boolean(containerState)}
                   title={Boolean(containerAppName) || Boolean(containerFqdn) || Boolean(containerState) ? "Fees locked after partner container deploy" : undefined}
                 />
-                <div className="microtext text-muted-foreground mt-1">
+                <div className="text-[11px] text-muted-foreground/70 mt-1.5">
                   Partner share in basis points (e.g., 25 = 0.25%).
                   {Boolean(containerAppName) || Boolean(containerFqdn) || Boolean(containerState) ? (
                     <span className="text-amber-600"> • Locked after partner container deploy</span>
@@ -1647,13 +1653,13 @@ export default function PartnerManagementPanel() {
                 </div>
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Platform Fee (bps)</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Platform Fee (bps)</label>
                 <input
                   type="number"
                   min={0}
                   max={10000}
                   step={1}
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   value={Number(config?.platformFeeBps || 50)}
                   onChange={(e) =>
                     setConfig((prev: any) => ({ ...prev, platformFeeBps: Math.max(0, Math.min(10000, Math.floor(Number(e.target.value || 0)))) }))
@@ -1661,7 +1667,7 @@ export default function PartnerManagementPanel() {
                   disabled={Boolean(containerAppName) || Boolean(containerFqdn) || Boolean(containerState)}
                   title={Boolean(containerAppName) || Boolean(containerFqdn) || Boolean(containerState) ? "Fees locked after partner container deploy" : undefined}
                 />
-                <div className="microtext text-muted-foreground mt-1">
+                <div className="text-[11px] text-muted-foreground/70 mt-1.5">
                   Platform share in basis points (e.g., 50 = 0.5%). Defaults to 50 bps unless overridden here.
                   {Boolean(containerAppName) || Boolean(containerFqdn) || Boolean(containerState) ? (
                     <span className="text-amber-600"> • Locked after partner container deploy</span>
@@ -1669,13 +1675,13 @@ export default function PartnerManagementPanel() {
                 </div>
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Default Merchant Fee (bps)</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Default Merchant Fee (bps)</label>
                 <input
                   type="number"
                   min={0}
                   max={10000}
                   step={1}
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   value={Number(config?.defaultMerchantFeeBps || 0)}
                   onChange={(e) =>
                     setConfig((prev: any) => ({ ...prev, defaultMerchantFeeBps: Math.max(0, Math.min(10000, Math.floor(Number(e.target.value || 0)))) }))
@@ -1683,9 +1689,9 @@ export default function PartnerManagementPanel() {
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Partner Wallet</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Partner Wallet</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background font-mono"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors font-mono"
                   value={String(config?.partnerWallet || "")}
                   onChange={(e) => setConfig((prev: any) => ({ ...prev, partnerWallet: e.target.value }))}
                 />
@@ -1693,52 +1699,54 @@ export default function PartnerManagementPanel() {
 
               {/* Lightweight theme preview/edit */}
               <div>
-                <label className="microtext text-muted-foreground">Brand Name</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Brand Name</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   value={String(config?.name || "")}
                   onChange={(e) => setConfig((prev: any) => ({ ...prev, name: e.target.value }))}
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="microtext text-muted-foreground">Primary</label>
+                  <label className="text-xs font-medium text-muted-foreground block mb-1.5">Primary</label>
                   <input
                     type="color"
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                     value={String(config?.colors?.primary || "#0ea5e9")}
                     onChange={(e) => setConfig((prev: any) => ({ ...prev, colors: { ...(prev?.colors || {}), primary: e.target.value } }))}
                   />
                 </div>
                 <div>
-                  <label className="microtext text-muted-foreground">Accent</label>
+                  <label className="text-xs font-medium text-muted-foreground block mb-1.5">Accent</label>
                   <input
                     type="color"
-                    className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                    className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                     value={String(config?.colors?.accent || "#22c55e")}
                     onChange={(e) => setConfig((prev: any) => ({ ...prev, colors: { ...(prev?.colors || {}), accent: e.target.value } }))}
                   />
                 </div>
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Logo URL</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Logo URL</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   value={String(config?.logos?.app || "")}
                   onChange={(e) => setConfig((prev: any) => ({ ...prev, logos: { ...(prev?.logos || {}), app: e.target.value } }))}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Favicon URL</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Favicon URL</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   value={String(config?.logos?.favicon || "")}
                   onChange={(e) => setConfig((prev: any) => ({ ...prev, logos: { ...(prev?.logos || {}), favicon: e.target.value } }))}
                 />
-                <div className="mt-2 flex items-center gap-2">
-                  <input
-                    type="file"
-                    accept="image/*"
+                <div className="mt-3">
+                  <div className="relative group rounded-xl border border-dashed border-foreground/20 hover:border-foreground/40 bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-all overflow-hidden flex flex-col items-center justify-center py-6 px-4 text-center cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
@@ -1779,8 +1787,16 @@ export default function PartnerManagementPanel() {
                     }}
                   />
 
+
+                    <div className="w-10 h-10 rounded-full bg-foreground/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <svg className="w-5 h-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    </div>
+                    <div className="text-sm font-medium">Click to upload brand logo</div>
+                    <div className="text-xs text-muted-foreground mt-1">PNG, JPG up to 5MB</div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-end">
                   <button
-                    className="px-3 py-1.5 rounded-md border text-sm"
+                    className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium"
                     title="Generate favicon from existing logo"
                     onClick={async () => {
                       try {
@@ -1817,15 +1833,15 @@ export default function PartnerManagementPanel() {
                     Generate Favicon from Logo
                   </button>
                 </div>
-                <div className="microtext text-muted-foreground mt-1">
+                <div className="text-[11px] text-muted-foreground/70 mt-1.5">
                   Upload a logo and auto-generate favicon; or generate favicon from existing logo if missing.
                 </div>
               </div>
             </div>
             <div>
-              <label className="microtext text-muted-foreground">Navbar Logo Mode</label>
+              <label className="text-xs font-medium text-muted-foreground block mb-1.5">Navbar Logo Mode</label>
               <select
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                 value={String(config?.logos?.navbarMode || "symbol")}
                 onChange={(e) =>
                   setConfig((prev: any) => ({
@@ -1835,17 +1851,17 @@ export default function PartnerManagementPanel() {
                 }
                 title="Choose how the brand appears in the navbar and portal preview"
               >
-                <option value="symbol">Symbol + Text (compact)</option>
-                <option value="logo">Full Logo (auto width)</option>
+                <option className="bg-background text-foreground" value="symbol">Symbol + Text (compact)</option>
+                <option className="bg-background text-foreground" value="logo">Full Logo (auto width)</option>
               </select>
-              <div className="microtext text-muted-foreground mt-1">
+              <div className="text-[11px] text-muted-foreground/70 mt-1.5">
                 Controls navbar presentation for landing previews and /portal: compact symbol with text, or full-width logo sized to the navbar height.
               </div>
             </div>
             <div>
-              <label className="microtext text-muted-foreground">Access Mode</label>
+              <label className="text-xs font-medium text-muted-foreground block mb-1.5">Access Mode</label>
               <select
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                 value={String(config?.accessMode || "open")}
                 onChange={(e) =>
                   setConfig((prev: any) => ({
@@ -1855,27 +1871,27 @@ export default function PartnerManagementPanel() {
                 }
                 title="Choose access mode: Open (anyone can join) or Request (requires approval)"
               >
-                <option value="open">Open (Public)</option>
-                <option value="request">Request Only (Approval Required)</option>
+                <option className="bg-background text-foreground" value="open">Open (Public)</option>
+                <option className="bg-background text-foreground" value="request">Request Only (Approval Required)</option>
               </select>
-              <div className="microtext text-muted-foreground mt-1">
+              <div className="text-[11px] text-muted-foreground/70 mt-1.5">
                 "Request" mode requires new merchants to submit an access request waiting for admin approval. "Open" allows instant access.
               </div>
             </div>
             <div>
-              <label className="microtext text-muted-foreground">Symbol Logo URL</label>
+              <label className="text-xs font-medium text-muted-foreground block mb-1.5">Symbol Logo URL</label>
               <input
-                className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                 placeholder="/brands/acme/symbol.png"
                 value={String(config?.logos?.symbol || "")}
                 onChange={(e) => setConfig((prev: any) => ({ ...prev, logos: { ...(prev?.logos || {}), symbol: e.target.value } }))}
               />
-              <div className="microtext text-muted-foreground mt-1">
+              <div className="text-[11px] text-muted-foreground/70 mt-1.5">
                 Compact glyph used in sidebars, docs, and footers. Defaults to App Logo if not set.
               </div>
               <div className="mt-2">
                 <button
-                  className="px-3 py-1.5 rounded-md border text-xs"
+                  className="px-3 py-1.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-xs font-medium"
                   title="Use App Logo as Symbol"
                   onClick={() =>
                     setConfig((prev: any) => ({
@@ -1888,21 +1904,22 @@ export default function PartnerManagementPanel() {
                 </button>
               </div>
             </div>
-            {error && <div className="microtext text-red-500">{error}</div>}
-            {info && <div className="microtext text-green-600">{info}</div>}
+            {error && <div className="text-xs text-red-500">{error}</div>}
+            {info && <div className="text-xs text-green-600">{info}</div>}
             <div className="flex items-center justify-end">
-              <button className="px-3 py-1.5 rounded-md border text-sm" onClick={saveConfig} disabled={saving}>
+              <button className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium" onClick={saveConfig} disabled={saving}>
                 {saving ? "Saving…" : "Save Partner Brand"}
               </button>
+            </div>
             </div>
           </div>
 
 
 
           {/* Email Sender Configuration */}
-          <div className="glass-pane rounded-xl border p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-medium">Email Sender</div>
+          <div className="glass-pane rounded-xl border overflow-hidden">
+            <div className="px-5 py-4 border-b border-foreground/5 flex items-center justify-between">
+              <h4 className="text-sm font-semibold">Email Sender</h4>
               <button
                 onClick={async () => {
                   try {
@@ -1927,115 +1944,121 @@ export default function PartnerManagementPanel() {
                     alert("Error: " + e.message);
                   }
                 }}
-                className="text-xs px-3 py-1.5 rounded-md border hover:bg-white/5"
+                className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium"
               >
                 Send Test Email
               </button>
             </div>
-            <div className="microtext text-muted-foreground">
-              Configure the sender identity for terminal reports. Requires domain verification in Resend.
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div className="p-5 space-y-4">
+              <div className="text-xs text-muted-foreground/70">
+                Configure the sender identity for terminal reports. Requires domain verification in Resend.
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Sender Name</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Sender Name</label>
                 <input
                   type="text"
                   value={config?.email?.senderName || ""}
                   onChange={(e) => setConfig({ ...config, email: { ...(config?.email || {}), senderName: e.target.value } })}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500/50"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   placeholder="e.g. BasaltSurge Reports"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Sender Email</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Sender Email</label>
                 <input
                   type="email"
                   value={config?.email?.senderEmail || ""}
                   onChange={(e) => setConfig({ ...config, email: { ...(config?.email || {}), senderEmail: e.target.value } })}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500/50"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   placeholder="e.g. reports@basaltsurge.com"
                 />
               </div>
             </div>
             <div className="flex items-center justify-end pt-2">
-              <button className="px-3 py-1.5 rounded-md border text-sm" onClick={saveConfig} disabled={saving}>
+              <button className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium" onClick={saveConfig} disabled={saving}>
                 {saving ? "Saving…" : "Save Email Settings"}
               </button>
+            </div>
+            </div>
             </div>
           </div>
 
           {/* Container Deployment */}
-          <div className="glass-pane rounded-xl border p-5 space-y-3">
-            <div className="text-sm font-medium">Container Deployment — {brandKey}</div>
-            <div className="microtext text-muted-foreground">
+          <div className="glass-pane rounded-xl border overflow-hidden">
+            <div className="px-5 py-4 border-b border-foreground/5 flex items-center justify-between">
+              <h4 className="text-sm font-semibold">Container Deployment — {brandKey}</h4>
+            </div>
+            <div className="p-5 space-y-4">
+            <div className="text-xs text-muted-foreground/70">
               Generate an actionable plan to deploy a branded container using the existing image. This returns steps and sample Azure CLI commands.
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="microtext text-muted-foreground">Target</label>
-                <div className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background flex items-center">
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Target</label>
+                <div className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors flex items-center">
                   Azure App Service (locked)
                 </div>
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Image</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Image</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background font-mono"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors font-mono"
                   placeholder="myregistry.azurecr.io/portalpay:latest"
                   value={provImage}
                   onChange={(e) => setProvImage(e.target.value)}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Resource Group</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Resource Group</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   placeholder="rg-portalpay"
                   value={provResourceGroup}
                   onChange={(e) => setProvResourceGroup(e.target.value)}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">App/Container Name</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">App/Container Name</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   placeholder={`pp-${brandKey}`}
                   value={provName}
                   onChange={(e) => setProvName(e.target.value)}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Location (optional)</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Location (optional)</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   placeholder="westus2"
                   value={provLocation}
                   onChange={(e) => setProvLocation(e.target.value)}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Domains (comma‑separated)</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Domains (comma‑separated)</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   placeholder="https://partner.example.com, https://brand.example.com"
                   value={provDomainsText}
                   onChange={(e) => setProvDomainsText(e.target.value)}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Container Port</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Container Port</label>
                 <input
                   type="number"
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   placeholder="3001"
                   value={Number(containerPort)}
                   onChange={(e) => setContainerPort(Math.max(1, Number(e.target.value || 3001)))}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">APIM API Base</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">APIM API Base</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background font-mono"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors font-mono"
                   placeholder="https://apim-portalpay-prod.azure-api.net"
                   value={portalpayApiBase}
                   onChange={(e) => setPortalpayApiBase(e.target.value)}
@@ -2045,9 +2068,9 @@ export default function PartnerManagementPanel() {
 
 
               <div>
-                <label className="microtext text-muted-foreground">APIM Subscription Key</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">APIM Subscription Key</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background font-mono"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors font-mono"
                   placeholder="paste key (saved to app settings)"
                   value={portalpaySubscriptionKey}
                   onChange={(e) => setPortalpaySubscriptionKey(e.target.value)}
@@ -2055,80 +2078,80 @@ export default function PartnerManagementPanel() {
               </div>
 
               <div>
-                <label className="microtext text-muted-foreground">Azure Subscription ID</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Azure Subscription ID</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background font-mono"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors font-mono"
                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                   value={azureSubscriptionId}
                   onChange={(e) => setAzureSubscriptionId(e.target.value)}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Azure Resource Group (APIM/AFD/App)</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Azure Resource Group (APIM/AFD/App)</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   placeholder="rg-portalpay-prod"
                   value={azureResourceGroup}
                   onChange={(e) => setAzureResourceGroup(e.target.value)}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Azure APIM Name</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Azure APIM Name</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   placeholder="apim-portalpay-prod"
                   value={azureApimName}
                   onChange={(e) => setAzureApimName(e.target.value)}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Azure AFD Profile Name</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Azure AFD Profile Name</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors"
                   placeholder="afd-portalpay-prod"
                   value={azureAfdProfileName}
                   onChange={(e) => setAzureAfdProfileName(e.target.value)}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">Azure Container Apps Env ID (optional)</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">Azure Container Apps Env ID (optional)</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background font-mono"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors font-mono"
                   placeholder="/subscriptions/.../resourceGroups/.../providers/Microsoft.App/managedEnvironments/..."
                   value={azureContainerAppsEnvId}
                   onChange={(e) => setAzureContainerAppsEnvId(e.target.value)}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">ACR Username (optional)</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">ACR Username (optional)</label>
                 <input
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background font-mono"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors font-mono"
                   placeholder="azurecr username"
                   value={acrUsername}
                   onChange={(e) => setAcrUsername(e.target.value)}
                 />
               </div>
               <div>
-                <label className="microtext text-muted-foreground">ACR Password (optional)</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">ACR Password (optional)</label>
                 <input
                   type="password"
-                  className="mt-1 w-full h-9 px-3 py-1 border rounded-md bg-background font-mono"
+                  className="w-full h-10 px-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-colors font-mono"
                   placeholder="********"
                   value={acrPassword}
                   onChange={(e) => setAcrPassword(e.target.value)}
                 />
-                <div className="microtext text-muted-foreground mt-1">
+                <div className="text-[11px] text-muted-foreground/70 mt-1.5">
                   If using theutilityco.azurecr.io, provide ACR credentials or grant AcrPull to the web app's managed identity.
                 </div>
               </div>
             </div>
-            {provError && <div className="microtext text-red-500">{provError}</div>}
+            {provError && <div className="text-xs text-red-500">{provError}</div>}
             <div className="flex items-center justify-end gap-2">
-              <button className="px-3 py-1.5 rounded-md border text-sm" onClick={generateProvisionPlan} disabled={provLoading || deployLoading}>
+              <button className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium" onClick={generateProvisionPlan} disabled={provLoading || deployLoading}>
                 {provLoading ? "Generating…" : "Generate Provision Plan"}
               </button>
               <button
-                className="px-3 py-1.5 rounded-md border text-sm"
+                className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium"
                 onClick={oneClickDeploy}
                 disabled={deployLoading || provLoading}
                 title="Runs server-side provisioning using your Azure credentials"
@@ -2136,7 +2159,7 @@ export default function PartnerManagementPanel() {
                 {deployLoading ? "Deploying…" : "Deploy Now"}
               </button>
               <button
-                className="px-3 py-1.5 rounded-md border text-sm"
+                className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium"
                 onClick={retryAfd}
                 disabled={retryLoading}
                 title="Retry Azure Front Door configuration after global block is lifted"
@@ -2146,12 +2169,12 @@ export default function PartnerManagementPanel() {
             </div>
             {provPlan ? (
               <div className="mt-3 rounded-md border p-3">
-                <div className="microtext text-muted-foreground">
+                <div className="text-xs text-muted-foreground/70">
                   Brand: {provPlan.brandKey} • Target: {provPlan.target} • Name: {provPlan.name}
                 </div>
                 <div className="mt-2">
                   <div className="text-sm font-semibold">Steps</div>
-                  <ul className="list-disc pl-5 microtext">
+                  <ul className="list-disc pl-5 text-[11px] text-muted-foreground/80">
                     {(provPlan.steps || []).map((s: string, i: number) => (
                       <li key={i}>{s}</li>
                     ))}
@@ -2159,13 +2182,13 @@ export default function PartnerManagementPanel() {
                 </div>
                 <div className="mt-2">
                   <div className="text-sm font-semibold">Azure CLI Examples</div>
-                  <pre className="microtext whitespace-pre-wrap bg-foreground/5 rounded-md p-2 border">
+                  <pre className="text-xs whitespace-pre-wrap bg-foreground/5 rounded-md p-2 border">
                     {(provPlan.azExamples || []).join("\n")}
                   </pre>
                 </div>
               </div>
             ) : null}
-            {deployError && <div className="microtext text-red-500 mt-2">{deployError}</div>}
+            {deployError && <div className="text-xs text-red-500 mt-2">{deployError}</div>}
             {deployProgress && deployProgress.length > 0 ? (
               <div className="mt-3 rounded-md border p-3">
                 <div className="text-sm font-semibold">Deployment Progress</div>
@@ -2182,10 +2205,10 @@ export default function PartnerManagementPanel() {
                       <div className="h-2 bg-foreground/10 rounded">
                         <div className="h-2 bg-[var(--primary)] rounded" style={{ width: `${pct}%` }} />
                       </div>
-                      <div className="microtext text-muted-foreground mt-1">{pct}% complete</div>
+                      <div className="text-[11px] text-muted-foreground/70 mt-1.5">{pct}% complete</div>
                       <ul className="mt-2 space-y-1">
                         {steps.map((s, i) => (
-                          <li key={i} className="flex items-center gap-2 microtext">
+                          <li key={i} className="flex items-center gap-2 text-[11px] text-muted-foreground/80">
                             <span className={`w-2 h-2 rounded-full ${s.ok ? "bg-[var(--primary)]" : "bg-foreground/20"}`} />
                             <span>{s.step}</span>
                             {s.info ? <span className="text-muted-foreground">• {JSON.stringify(s.info)}</span> : null}
@@ -2195,11 +2218,11 @@ export default function PartnerManagementPanel() {
                       {deploymentInfo ? (
                         <div className="mt-3 space-y-1">
                           <div className="text-sm font-semibold">Web App</div>
-                          <div className="microtext">Name: {deploymentInfo?.name}</div>
-                          <div className="microtext">URL: <a className="underline" href={deploymentInfo?.url} target="_blank" rel="noreferrer">{deploymentInfo?.url}</a></div>
-                          <div className="microtext">Image: {deploymentInfo?.containerImage}</div>
+                          <div className="text-xs">Name: {deploymentInfo?.name}</div>
+                          <div className="text-xs">URL: <a className="underline" href={deploymentInfo?.url} target="_blank" rel="noreferrer">{deploymentInfo?.url}</a></div>
+                          <div className="text-xs">Image: {deploymentInfo?.containerImage}</div>
                           {deploymentInfo?.health ? (
-                            <div className="microtext">Health: {deploymentInfo?.health?.reachable ? "Reachable" : "Unreachable"} (status {deploymentInfo?.health?.status})</div>
+                            <div className="text-xs">Health: {deploymentInfo?.health?.reachable ? "Reachable" : "Unreachable"} (status {deploymentInfo?.health?.status})</div>
                           ) : null}
                         </div>
                       ) : null}
@@ -2208,15 +2231,16 @@ export default function PartnerManagementPanel() {
                 })()}
               </div>
             ) : null}
+            </div>
           </div>
 
           {/* Split Versions overview */}
-          <div className="glass-pane rounded-xl border p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-medium">Split Versions — {brandKey}</div>
+          <div className="glass-pane rounded-xl border overflow-hidden">
+            <div className="px-5 py-4 border-b border-foreground/5 flex items-center justify-between">
+              <h4 className="text-sm font-semibold">Split Versions — {brandKey}</h4>
               <div className="flex items-center gap-2">
                 <button
-                  className="px-3 py-1.5 rounded-md border text-sm"
+                  className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium"
                   onClick={() => {
                     const k = String(brandKey || "").toLowerCase();
                     if (!k || k === "portalpay" || k === "basaltsurge") { setVersions([]); setVersionMap({}); return; }
@@ -2227,7 +2251,7 @@ export default function PartnerManagementPanel() {
                   {versionsLoading ? "Refreshing…" : "Refresh Versions"}
                 </button>
                 <button
-                  className="px-3 py-1.5 rounded-md border text-sm"
+                  className="px-4 py-2.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-sm font-medium"
                   onClick={async () => { await computeMerchantVersionMapping(); }}
                   disabled={versionsLoading || users.length === 0 || versions.length === 0}
                   title="Infer merchants per version by matching partner wallet in split recipients"
@@ -2236,57 +2260,62 @@ export default function PartnerManagementPanel() {
                 </button>
               </div>
             </div>
-            {versionsError && <div className="microtext text-red-500">{versionsError}</div>}
+            <div className="p-5 space-y-4">
+            {versionsError && <div className="text-xs text-red-500">{versionsError}</div>}
             {versions.length === 0 ? (
-              <div className="microtext text-muted-foreground">No versions found for this brand.</div>
+              <div className="text-xs text-muted-foreground/70">No versions found for this brand.</div>
             ) : (
-              <div className="overflow-auto rounded-md border">
+              <div className="glass-pane rounded-xl border overflow-hidden">
                 <table className="min-w-full text-sm">
                   <thead>
-                    <tr className="bg-foreground/5">
-                      <th className="text-left px-3 py-2 font-medium">Version</th>
-                      <th className="text-left px-3 py-2 font-medium">Partner Wallet</th>
-                      <th className="text-left px-3 py-2 font-medium">Platform bps</th>
-                      <th className="text-left px-3 py-2 font-medium">Partner bps</th>
-                      <th className="text-left px-3 py-2 font-medium">Published</th>
-                      <th className="text-left px-3 py-2 font-medium">Created</th>
-                      <th className="text-left px-3 py-2 font-medium">Effective</th>
-                      <th className="text-left px-3 py-2 font-medium">Merchants</th>
+                    <tr className="border-b border-foreground/5">
+                      <th className="text-left px-4 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Version</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Partner Wallet</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Platform bps</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Partner bps</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Published</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Created</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Effective</th>
+                      <th className="text-left px-4 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Merchants</th>
                     </tr>
                   </thead>
                   <tbody>
                     {versions.map((v) => (
                       <tr key={v.versionId} className="border-t">
-                        <td className="px-3 py-2">{v.version}</td>
-                        <td className="px-3 py-2 font-mono">
+                        <td className="px-4 py-3 text-sm">{v.version}</td>
+                        <td className="px-4 py-3 text-sm font-mono">
                           {v.partnerWallet ? <TruncatedAddress address={String(v.partnerWallet).toLowerCase()} /> : "—"}
                         </td>
-                        <td className="px-3 py-2">{v.platformFeeBps}</td>
-                        <td className="px-3 py-2">{v.partnerFeeBps}</td>
-                        <td className="px-3 py-2">{v.published ? "Yes" : "No"}</td>
-                        <td className="px-3 py-2">{(() => { try { return new Date(Number(v.createdAt || 0)).toLocaleString(); } catch { return "—"; } })()}</td>
-                        <td className="px-3 py-2">{(() => { try { return new Date(Number(v.effectiveAt || 0)).toLocaleString(); } catch { return "—"; } })()}</td>
-                        <td className="px-3 py-2">{Array.isArray(versionMap[v.version]) ? versionMap[v.version].length : 0}</td>
+                        <td className="px-4 py-3 text-sm">{v.platformFeeBps}</td>
+                        <td className="px-4 py-3 text-sm">{v.partnerFeeBps}</td>
+                        <td className="px-4 py-3 text-sm">{v.published ? "Yes" : "No"}</td>
+                        <td className="px-4 py-3 text-sm">{(() => { try { return new Date(Number(v.createdAt || 0)).toLocaleString(); } catch { return "—"; } })()}</td>
+                        <td className="px-4 py-3 text-sm">{(() => { try { return new Date(Number(v.effectiveAt || 0)).toLocaleString(); } catch { return "—"; } })()}</td>
+                        <td className="px-4 py-3 text-sm">{Array.isArray(versionMap[v.version]) ? versionMap[v.version].length : 0}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             )}
+            </div>
           </div>
 
           {/* Merchants list with reserve accordion ergonomics */}
-          <div className="glass-pane rounded-xl border p-5 space-y-3">
-            <div className="text-sm font-medium">Merchants under {brandKey}</div>
-            <div className="overflow-auto rounded-md border">
+          <div className="glass-pane rounded-xl border overflow-hidden">
+            <div className="px-5 py-4 border-b border-foreground/5 flex items-center justify-between">
+              <h4 className="text-sm font-semibold">Merchants under {brandKey}</h4>
+            </div>
+            <div className="p-5 space-y-4">
+            <div className="glass-pane rounded-xl border overflow-hidden">
               <table className="min-w-full text-sm">
                 <thead>
-                  <tr className="bg-foreground/5">
-                    <th className="text-left px-3 py-2 font-medium">Merchant Wallet</th>
-                    <th className="text-left px-3 py-2 font-medium">Split</th>
-                    <th className="text-center px-3 py-2 font-medium">Kiosk</th>
-                    <th className="text-center px-3 py-2 font-medium">Terminal</th>
-                    <th className="text-left px-3 py-2 font-medium">Actions</th>
+                  <tr className="border-b border-foreground/5">
+                    <th className="text-left px-4 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Merchant Wallet</th>
+                    <th className="text-left px-4 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Split</th>
+                    <th className="text-center px-4 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Kiosk</th>
+                    <th className="text-center px-4 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Terminal</th>
+                    <th className="text-left px-4 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2306,11 +2335,11 @@ export default function PartnerManagementPanel() {
                     return (
                       <React.Fragment key={u.merchant}>
                         <tr className="border-t">
-                          <td className="px-3 py-2 font-mono">
+                          <td className="px-4 py-3 text-sm font-mono">
                             <TruncatedAddress address={u.merchant} />
                           </td>
-                          <td className="px-3 py-2 font-mono">{u.splitAddress || "—"}</td>
-                          <td className="px-3 py-2 text-center">
+                          <td className="px-4 py-3 text-sm font-mono">{u.splitAddress || "—"}</td>
+                          <td className="px-4 py-3 text-sm text-center">
                             <input
                               type="checkbox"
                               className="h-4 w-4"
@@ -2318,7 +2347,7 @@ export default function PartnerManagementPanel() {
                               onChange={(e) => toggleMerchantFeature(u.merchant, 'kioskEnabled', e.target.checked)}
                             />
                           </td>
-                          <td className="px-3 py-2 text-center">
+                          <td className="px-4 py-3 text-sm text-center">
                             <input
                               type="checkbox"
                               className="h-4 w-4"
@@ -2326,17 +2355,17 @@ export default function PartnerManagementPanel() {
                               onChange={(e) => toggleMerchantFeature(u.merchant, 'terminalEnabled', e.target.checked)}
                             />
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-4 py-3 text-sm">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <button
-                                className="microtext px-2 py-0.5 rounded border border-foreground/20 hover:border-foreground/40 hover:bg-foreground/5 transition-colors text-muted-foreground hover:text-foreground"
+                                className="text-xs px-2 py-0.5 rounded border border-foreground/20 hover:border-foreground/40 hover:bg-foreground/5 transition-colors text-muted-foreground hover:text-foreground"
                                 onClick={() => toggleAccordion(w, u.splitAddress)}
                                 title={isExpanded ? "Hide Reserve" : "Show Reserve"}
                               >
                                 {isExpanded ? "▲ Hide" : "▼ Reserve"}
                               </button>
                               <button
-                                className="microtext px-2 py-0.5 rounded border border-purple-300/50 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-colors text-purple-600 dark:text-purple-400 disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="text-xs px-2 py-0.5 rounded border border-purple-300/50 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-colors text-purple-600 dark:text-purple-400 disabled:opacity-40 disabled:cursor-not-allowed"
                                 onClick={() => releasePlatformShare(w)}
                                 disabled={
                                   relLoad ||
@@ -2360,7 +2389,7 @@ export default function PartnerManagementPanel() {
                                 {relLoad ? "…" : "⚡ Platform"}
                               </button>
                               <button
-                                className="microtext px-2 py-0.5 rounded border border-blue-300/50 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors text-blue-600 dark:text-blue-400 disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="text-xs px-2 py-0.5 rounded border border-blue-300/50 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors text-blue-600 dark:text-blue-400 disabled:opacity-40 disabled:cursor-not-allowed"
                                 onClick={() => releasePartnerShare(w)}
                                 disabled={
                                   relLoad ||
@@ -2383,17 +2412,17 @@ export default function PartnerManagementPanel() {
                               >
                                 {relLoad ? "…" : "⚡ Partner"}
                               </button>
-                              {relErr && <span className="microtext text-red-500 ml-1">{relErr}</span>}
+                              {relErr && <span className="text-xs text-red-500 ml-1">{relErr}</span>}
                             </div>
                           </td>
                         </tr>
 
                         {isExpanded && (
                           <tr className="border-t bg-foreground/5">
-                            <td className="px-3 py-3" colSpan={5}>
+                            <td className="px-4 py-4" colSpan={5}>
                               <div className="rounded-md border p-3 space-y-3">
                                 <div className="flex items-center justify-between">
-                                  <div className="microtext text-muted-foreground">
+                                  <div className="text-xs text-muted-foreground/70">
                                     Split: {b && b.splitAddressUsed ? (
                                       <div className="flex items-center gap-2 inline-flex">
                                         <a className="underline" href={`https://base.blockscout.com/address/${b.splitAddressUsed}`} target="_blank" rel="noopener noreferrer">
@@ -2401,7 +2430,7 @@ export default function PartnerManagementPanel() {
                                         </a>
                                         {b.splitHistory && b.splitHistory.length > 0 && (
                                           <select
-                                            className="ml-2 h-6 text-xs border rounded bg-background px-1"
+                                            className="ml-2 h-6 text-xs border border-foreground/10 rounded bg-foreground/[0.03] text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 px-1"
                                             value={b.splitAddressUsed}
                                             onChange={(e) => {
                                               const val = e.target.value;
@@ -2414,7 +2443,7 @@ export default function PartnerManagementPanel() {
                                             {/* Usually history includes all past. Current might be the latest. let's assume history is complete or we add current */}
                                             {/* The API returns splitHistory which usually includes all deployed splits. */}
                                             {b.splitHistory.map((h, i) => (
-                                              <option key={h.address} value={h.address}>
+                                              <option className="bg-background text-foreground" key={h.address} value={h.address}>
                                                 {i === 0 ? "Latest" : `v${b.splitHistory!.length - i}`} ({h.address.slice(0, 6)}...)
                                               </option>
                                             ))}
@@ -2426,7 +2455,7 @@ export default function PartnerManagementPanel() {
                                 </div>
 
                                 {relResults.length > 0 && (
-                                  <div className="microtext">
+                                  <div className="text-xs">
                                     {relResults.map((rr: any, idx: number) => (
                                       <div key={idx} className={statusClassPlatform(rr)}>
                                         {formatPlatformMessage(rr)}
@@ -2436,9 +2465,9 @@ export default function PartnerManagementPanel() {
                                 )}
 
                                 {resLoad ? (
-                                  <div className="microtext text-muted-foreground">Loading balances…</div>
+                                  <div className="text-xs text-muted-foreground/70">Loading balances…</div>
                                 ) : resErr ? (
-                                  <div className="microtext text-red-500">Error: {resErr}</div>
+                                  <div className="text-xs text-red-500">Error: {resErr}</div>
                                 ) : b && b.balances ? (
                                   <>
                                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -2456,7 +2485,7 @@ export default function PartnerManagementPanel() {
                                             <div>
                                               <div className="text-xs font-medium text-muted-foreground">{symbol}</div>
                                               <div className="text-sm font-semibold">{Number(info.units || 0).toFixed(6)}</div>
-                                              <div className="microtext text-muted-foreground">${Number(info.usd || 0).toFixed(2)}</div>
+                                              <div className="text-xs text-muted-foreground/70">${Number(info.usd || 0).toFixed(2)}</div>
                                             </div>
                                             {totalGenerated > 0 && (
                                               <div className="text-xs text-sky-500 dark:text-sky-400 font-medium border-t border-foreground/10 pt-1">
@@ -2471,7 +2500,7 @@ export default function PartnerManagementPanel() {
                                                   const unitVal = Number(rel.units || 0);
                                                   if (unitVal > 0) {
                                                     return (
-                                                      <div className="microtext text-amber-500 dark:text-amber-400 border-t border-foreground/10 pt-1">
+                                                      <div className="text-xs text-amber-500 dark:text-amber-400 border-t border-foreground/10 pt-1">
                                                         ⚡ {unitVal.toFixed(4)} releasable
                                                       </div>
                                                     );
@@ -2488,7 +2517,7 @@ export default function PartnerManagementPanel() {
                                                   const unitValP = Number(relP.units || 0);
                                                   if (unitValP > 0) {
                                                     return (
-                                                      <div className="microtext text-violet-500 dark:text-violet-400 border-t border-foreground/10 pt-1">
+                                                      <div className="text-xs text-violet-500 dark:text-violet-400 border-t border-foreground/10 pt-1">
                                                         ⚡ {unitValP.toFixed(4)} partner releasable
                                                       </div>
                                                     );
@@ -2499,7 +2528,7 @@ export default function PartnerManagementPanel() {
                                             })()}
                                             <div className="flex flex-wrap gap-1 mt-1">
                                               <button
-                                                className="microtext px-1.5 py-0.5 rounded border border-purple-300/50 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-colors text-purple-600 dark:text-purple-400 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                className="text-xs px-1.5 py-0.5 rounded border border-purple-300/50 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-colors text-purple-600 dark:text-purple-400 disabled:opacity-40 disabled:cursor-not-allowed"
                                                 onClick={() => releasePlatformShare(w, symbol)}
                                                 disabled={
                                                   relLoad ||
@@ -2518,7 +2547,7 @@ export default function PartnerManagementPanel() {
                                                 {relLoad ? "…" : "⚡ Plat"}
                                               </button>
                                               <button
-                                                className="microtext px-1.5 py-0.5 rounded border border-blue-300/50 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors text-blue-600 dark:text-blue-400 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                className="text-xs px-1.5 py-0.5 rounded border border-blue-300/50 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors text-blue-600 dark:text-blue-400 disabled:opacity-40 disabled:cursor-not-allowed"
                                                 onClick={() => releasePartnerShare(w, symbol)}
                                                 disabled={
                                                   relLoad ||
@@ -2541,7 +2570,7 @@ export default function PartnerManagementPanel() {
                                                   const arr = releaseResults.get(w) || [];
                                                   const rr = (arr || []).find((x: any) => String(x?.symbol || "") === String(symbol));
                                                   return rr ? (
-                                                    <div className={`microtext mt-1 ${statusClassPlatform(rr)}`}>
+                                                    <div className={`text-xs mt-1 ${statusClassPlatform(rr)}`}>
                                                       {formatPlatformMessage(rr)}
                                                     </div>
                                                   ) : null;
@@ -2552,7 +2581,7 @@ export default function PartnerManagementPanel() {
                                         );
                                       })}
                                     </div>
-                                    <div className="microtext text-muted-foreground">
+                                    <div className="text-xs text-muted-foreground/70">
                                       Total Reserve Value (USD): ${Number(b.totalUsd || 0).toFixed(2)}
                                     </div>
 
@@ -2562,7 +2591,7 @@ export default function PartnerManagementPanel() {
                                         <div className="flex items-center justify-between mb-2">
                                           <div className="text-sm font-medium">Recent Transactions</div>
                                           <button
-                                            className="px-2 py-1 rounded-md border text-xs"
+                                            className="px-3 py-1.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-colors text-xs font-medium"
                                             onClick={() => fetchMerchantTransactions(w)}
                                             disabled={txLoad}
                                           >
@@ -2570,12 +2599,12 @@ export default function PartnerManagementPanel() {
                                           </button>
                                         </div>
                                         {txLoad ? (
-                                          <div className="microtext text-muted-foreground">Loading transactions…</div>
+                                          <div className="text-xs text-muted-foreground/70">Loading transactions…</div>
                                         ) : txErr ? (
-                                          <div className="microtext text-red-500">{txErr}</div>
+                                          <div className="text-xs text-red-500">{txErr}</div>
                                         ) : transactions.length > 0 ? (
                                           <>
-                                            <div className="microtext text-muted-foreground mb-2">
+                                            <div className="text-[11px] text-muted-foreground/70 mb-2">
                                               Showing last {transactions.length} transactions to split
                                             </div>
                                             <div className="max-h-60 overflow-y-auto space-y-1">
@@ -2604,7 +2633,7 @@ export default function PartnerManagementPanel() {
                                                       </div>
                                                       <span className="font-semibold">{Number(tx.value || 0).toFixed(4)} {String(tx.token || 'ETH').toUpperCase()}</span>
                                                     </div>
-                                                    <div className="flex items-center justify-between microtext text-muted-foreground">
+                                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
                                                       <span>{isPayment ? 'From' : 'To'}: {String(isPayment ? tx.from : tx.to || "").slice(0, 8)}…</span>
                                                       <span>{new Date(Number(tx.timestamp || 0)).toLocaleString()}</span>
                                                     </div>
@@ -2613,21 +2642,21 @@ export default function PartnerManagementPanel() {
                                               })}
                                             </div>
                                             <div className="mt-2 space-y-1">
-                                              <div className="microtext text-muted-foreground">
+                                              <div className="text-xs text-muted-foreground/70">
                                                 Payments: {(() => {
                                                   const payments = transactions.filter((tx: any) => tx?.type === 'payment');
                                                   const tokens = new Set(payments.map((tx: any) => tx.token || 'ETH'));
                                                   return `${payments.length} tx • ${Array.from(tokens).join(', ')}`;
                                                 })()}
                                               </div>
-                                              <div className="microtext text-muted-foreground">
+                                              <div className="text-xs text-muted-foreground/70">
                                                 Merchant Releases: {(() => {
                                                   const releases = transactions.filter((tx: any) => tx?.type === 'release' && tx?.releaseType === 'merchant');
                                                   const tokens = new Set(releases.map((tx: any) => tx.token || 'ETH'));
                                                   return `${releases.length} tx • ${Array.from(tokens).join(', ')}`;
                                                 })()}
                                               </div>
-                                              <div className="microtext text-muted-foreground">
+                                              <div className="text-xs text-muted-foreground/70">
                                                 Platform Releases: {(() => {
                                                   const releases = transactions.filter((tx: any) => tx?.type === 'release' && tx?.releaseType === 'platform');
                                                   const tokens = new Set(releases.map((tx: any) => tx.token || 'ETH'));
@@ -2639,7 +2668,7 @@ export default function PartnerManagementPanel() {
                                               </p>
                                             </div>
 
-                                            <div className="microtext text-muted-foreground">
+                                            <div className="text-xs text-muted-foreground/70">
                                               View on{" "}
                                               <a
                                                 href={`https://base.blockscout.com/address/${b.splitAddressUsed}`}
@@ -2653,13 +2682,13 @@ export default function PartnerManagementPanel() {
 
                                           </>
                                         ) : (
-                                          <div className="microtext text-muted-foreground">No transactions found</div>
+                                          <div className="text-xs text-muted-foreground/70">No transactions found</div>
                                         )}
                                       </div>
                                     )}
                                   </>
                                 ) : (
-                                  <div className="microtext text-muted-foreground">No balance data</div>
+                                  <div className="text-xs text-muted-foreground/70">No balance data</div>
                                 )}
                               </div>
                             </td>
@@ -2671,13 +2700,14 @@ export default function PartnerManagementPanel() {
                   })}
                   {users.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-3 py-6 text-center text-muted-foreground">
+                      <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
                         No merchants found for this brand.
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
+            </div>
             </div>
           </div>
         </>

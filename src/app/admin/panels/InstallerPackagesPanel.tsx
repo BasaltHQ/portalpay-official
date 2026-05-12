@@ -320,11 +320,10 @@ export default function InstallerPackagesPanel() {
   return (
     <div className="space-y-4">
       {/* Info about APK generation */}
-      <div className="rounded-md border p-3 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-        <div className="text-sm text-blue-700 dark:text-blue-400">
-          <strong>Note:</strong> Each partner brand gets their own APK with their custom endpoint URL embedded.
-          When generating a package, specify the partner&apos;s URL (e.g., xoinpay.azurewebsites.net) and the APK
-          will be modified to load that site instead of the default.
+      <div className="relative overflow-hidden rounded-2xl border border-blue-500/20 bg-gradient-to-b from-blue-500/5 to-transparent p-6">
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-blue-500/20 to-transparent"></div>
+        <div className="relative z-10 text-sm text-blue-600 dark:text-blue-400">
+          <strong className="text-blue-700 dark:text-blue-300">Architecture Note:</strong> Each partner brand gets their own isolated APK with their custom endpoint URL embedded at build time. When generating a package, specify the partner&apos;s URL (e.g., <span className="font-mono">xoinpay.azurewebsites.net</span>) and the APK will be compiled to explicitly load that specific site endpoint natively.
         </div>
       </div>
     </div>

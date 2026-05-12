@@ -274,12 +274,13 @@ export default function LoyaltyPanel() {
 
                 {/* Prominent Opt-In Banner */}
                 {!platformOptIn && !loadingOptIn && (
-                    <div className="mb-8 rounded-xl border border-primary/20 bg-primary/5 p-6 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <div className="mb-8 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-6 relative overflow-hidden group">
+                        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-primary/40 to-transparent"></div>
+                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 group-hover:opacity-20 transition-all duration-500">
                             <Globe className="w-32 h-32 text-primary" />
                         </div>
                         <div className="relative z-10 max-w-2xl">
-                            <h3 className="text-lg font-bold flex items-center gap-2 text-primary">
+                            <h3 className="text-lg font-bold flex items-center gap-2 text-primary drop-shadow-[0_0_10px_rgba(var(--primary),0.3)]">
                                 <Globe className="w-5 h-5" />
                                 Join the Global Platform Network
                             </h3>
@@ -289,7 +290,7 @@ export default function LoyaltyPanel() {
                             </p>
                             <button
                                 onClick={toggleOptIn}
-                                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
+                                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm ring-1 ring-primary/50"
                             >
                                 Activate Platform Rewards
                             </button>
@@ -808,7 +809,8 @@ export function LoyaltyConfigTab({ maxLevelOverride, isPlatformProgram = false }
                 </div>
 
                 {activeSubTab === 'recommend' ? (
-                    <div className="glass-pane rounded-xl border p-6 space-y-6 animate-in fade-in">
+                    <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6 space-y-6 animate-in fade-in">
+                        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
                         <div>
                             <h3 className="text-lg font-semibold flex items-center gap-2">
                                 <Shuffle className="w-5 h-5 text-primary" />
@@ -860,7 +862,8 @@ export function LoyaltyConfigTab({ maxLevelOverride, isPlatformProgram = false }
                         </div>
                     </div>
                 ) : activeSubTab === 'curve' ? (
-                    <div className="glass-pane rounded-xl border p-6 space-y-6 animate-in fade-in">
+                    <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6 space-y-6 animate-in fade-in">
+                        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
                         <div>
                             <h3 className="text-lg font-semibold">XP Curve Logic</h3>
                             <p className="text-sm text-muted-foreground">Control how difficult it is for users to level up.</p>
@@ -928,7 +931,8 @@ export function LoyaltyConfigTab({ maxLevelOverride, isPlatformProgram = false }
                         </div>
                     </div>
                 ) : (
-                    <div className="glass-pane rounded-xl border p-6 space-y-6 animate-in fade-in">
+                    <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6 space-y-6 animate-in fade-in">
+                        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
                         <div>
                             <h3 className="text-lg font-semibold">Program Simulator</h3>
                             <p className="text-sm text-muted-foreground">Model customer behavior to see progression speed.</p>
@@ -993,7 +997,8 @@ export function LoyaltyConfigTab({ maxLevelOverride, isPlatformProgram = false }
 
             {/* Right Column: Visualizer */}
             <div className="space-y-6">
-                <div className="glass-pane rounded-xl border p-4 h-[300px] flex flex-col">
+                <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-4 h-[300px] flex flex-col">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
                     <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-4">Level Curve Visualization</h4>
                     <div className="flex-1 w-full min-h-0">
                         <ResponsiveContainer width="100%" height="100%">
@@ -1038,7 +1043,8 @@ export function LoyaltyConfigTab({ maxLevelOverride, isPlatformProgram = false }
                     </div>
                 </div>
 
-                <div className="glass-pane rounded-xl border p-4">
+                <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-4">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-foreground/[0.05] to-transparent"></div>
                     <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Milestone Check</h4>
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between py-1 border-b border-dashed">
@@ -2206,7 +2212,7 @@ export function LevelRewardsTab({ inventory, isPlatform = false }: { inventory: 
     }
 
     return (
-        <div className="glass-pane rounded-xl border p-6 space-y-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6 pb-24">
             <div className="flex items-center justify-between">
                 <div>
                     <h3 className="text-lg font-semibold">Level Rewards Map</h3>

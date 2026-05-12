@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
         // Get distinct conversationIds from messages sent by or read by this wallet
         const specMsgs = {
           query:
-            "SELECT DISTINCT VALUE m.conversationId FROM m WHERE m.type='message' AND (m.senderWallet=@me OR ARRAY_CONTAINS(m.readBy, @me))",
+            "SELECT DISTINCT VALUE c.conversationId FROM c WHERE c.type='message' AND (c.senderWallet=@me OR ARRAY_CONTAINS(c.readBy, @me))",
           parameters: [{ name: "@me", value: me }],
         } as { query: string; parameters: { name: string; value: any }[] };
         const { resources: msgIds } = await container.items.query(specMsgs).fetchAll();

@@ -306,9 +306,9 @@ export function ThemeLoader() {
           (t as any).primaryColor = "#35ff7c";
           (t as any).secondaryColor = "#FF6B35";
           if ((t as any).logos) {
-            (t as any).logos.symbol = "/BasaltSurgeD.png";
+            (t as any).logos.symbol = "/Surge.png";
             (t as any).logos.app = "/BasaltSurgeWideD.png";
-            (t as any).logos.navbarMode = "logo";
+            (t as any).logos.navbarMode = "symbol";
           }
         }
 
@@ -392,10 +392,15 @@ export function ThemeLoader() {
         }
 
         // Update favicon and apple-touch icons from site config
+        // IMPORTANT: Use the resolved brandFaviconUrl from the config when available.
+        // Only fall back to /api/favicon when no merchant-specific icon exists.
+        // This prevents overwriting merchant favicons that FaviconUpdater will set from ThemeContext.
         try {
           const icon32 = (t as any)?.brandFaviconUrl;
           const icon16 = icon32; // fallback use same icon
           const apple = (t as any)?.appleTouchIconUrl;
+          // Determine the effective favicon: prefer the config's resolved favicon over the generic endpoint
+          const effectiveFavicon = (typeof icon32 === "string" && icon32.trim()) ? icon32 : "/api/favicon";
           const upsertLink = (query: string, attrs: Record<string, string>) => {
             let el = document.head.querySelector(query) as HTMLLinkElement | null;
             if (!el) {
@@ -406,22 +411,14 @@ export function ThemeLoader() {
               el.setAttribute(k, v);
             }
           };
-          // Always advertise the dynamic favicon endpoint so browsers pick partner icon consistently
-          upsertLink('link[rel="icon"]:not([sizes])', { rel: "icon", href: "/api/favicon" });
-          upsertLink('link[rel="shortcut icon"]', { rel: "shortcut icon", href: "/api/favicon" });
+          // Use the effective favicon (merchant-specific or /api/favicon fallback)
+          upsertLink('link[rel="icon"]:not([sizes])', { rel: "icon", href: effectiveFavicon });
+          upsertLink('link[rel="shortcut icon"]', { rel: "shortcut icon", href: effectiveFavicon });
           // The portal defaults are now safely overwritten in-place by the upsertLink calls below.
           // We no longer manually remove them using removeChild, as that crashes React's App Router during navigation.
           // Add sizes-specific icons to aid platforms that prefer sized links
-          if (typeof icon32 === "string" && icon32) {
-            upsertLink('link[rel="icon"][sizes="32x32"]', { rel: "icon", type: "image/png", sizes: "32x32", href: icon32 });
-          } else {
-            upsertLink('link[rel="icon"][sizes="32x32"]', { rel: "icon", type: "image/png", sizes: "32x32", href: "/api/favicon" });
-          }
-          if (typeof icon16 === "string" && icon16) {
-            upsertLink('link[rel="icon"][sizes="16x16"]', { rel: "icon", type: "image/png", sizes: "16x16", href: icon16 });
-          } else {
-            upsertLink('link[rel="icon"][sizes="16x16"]', { rel: "icon", type: "image/png", sizes: "16x16", href: "/api/favicon" });
-          }
+          upsertLink('link[rel="icon"][sizes="32x32"]', { rel: "icon", type: "image/png", sizes: "32x32", href: effectiveFavicon });
+          upsertLink('link[rel="icon"][sizes="16x16"]', { rel: "icon", type: "image/png", sizes: "16x16", href: effectiveFavicon });
           if (typeof apple === "string" && apple) {
             upsertLink('link[rel="apple-touch-icon"]', { rel: "apple-touch-icon", sizes: "180x180", href: apple });
           }

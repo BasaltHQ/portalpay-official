@@ -1667,7 +1667,7 @@ export default function DeviceInstallerPanel() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="w-full space-y-6">
       {!supported && (
         <div className="rounded-md border p-3 bg-foreground/5 microtext">
           Your browser does not support WebUSB. Use Chrome/Edge on HTTPS (or localhost).
@@ -1681,16 +1681,21 @@ export default function DeviceInstallerPanel() {
       )}
 
       {/* Touchpoint Provisioning Section */}
-      <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-sm font-semibold flex items-center gap-2 text-emerald-500">
-              <Download className="h-4 w-4" />
-              Touchpoint Provisioning
-            </h3>
-            <p className="microtext text-muted-foreground mt-1">
-              Download the {touchpointApkName} APK to convert any Android device into a locked Terminal or Kiosk.
-            </p>
+      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/5 to-transparent p-6 space-y-4">
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-emerald-500/20 to-transparent"></div>
+        <div className="flex items-start justify-between relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="shrink-0 h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+              <Download className="h-6 w-6 text-emerald-500" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-emerald-500">
+                Touchpoint Provisioning
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Download the {touchpointApkName} APK to convert any Android device into a locked Terminal or Kiosk.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -1726,9 +1731,9 @@ export default function DeviceInstallerPanel() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] p-4 flex flex-wrap items-center gap-3">
         <button
-          className="px-3 py-1.5 rounded-md border text-sm"
+          className="px-4 py-2 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-sm font-medium transition-all shadow-sm"
           onClick={scanAuthorizedDevices}
           disabled={!supported || connecting}
           title="Scan authorized Android devices"
@@ -1736,7 +1741,7 @@ export default function DeviceInstallerPanel() {
           {connecting ? "Scanning…" : "Scan Devices"}
         </button>
         <button
-          className="px-3 py-1.5 rounded-md border text-sm"
+          className="px-4 py-2 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-sm font-medium transition-all shadow-sm"
           onClick={connectDevice}
           disabled={!supported || connecting}
           title="Add a new Android device (WebUSB request)"
@@ -1744,7 +1749,7 @@ export default function DeviceInstallerPanel() {
           {connecting ? "Requesting…" : "Add Device"}
         </button>
         <button
-          className="px-3 py-1.5 rounded-md border text-sm"
+          className="px-4 py-2 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-sm font-medium transition-all shadow-sm"
           onClick={openInterfacePicker}
           disabled={!supported || connecting}
           title="Manually choose USB interface/alternate for a device"
@@ -1752,31 +1757,32 @@ export default function DeviceInstallerPanel() {
           Pick Interface
         </button>
         <button
-          className="px-3 py-1.5 rounded-md border text-sm"
+          className="px-4 py-2 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-sm font-medium transition-all shadow-sm"
           onClick={toggleSelectAll}
           disabled={connectedDevices.length === 0}
           title="Toggle select all devices"
         >
           {selectAll ? "Unselect All" : "Select All"}
         </button>
-        <span className="microtext text-muted-foreground">
+        <span className="microtext text-muted-foreground ml-2">
           {connectedDevices.length > 0 ? `${connectedDevices.length} device(s) connected` : "No devices connected"}
         </span>
       </div>
 
       {connectedDevices.length > 0 && (
-        <div className="rounded-md border p-3 bg-foreground/5">
-          <div className="text-sm font-medium mb-1">Devices</div>
-          <ul className="text-xs space-y-1">
+        <div className="rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] p-5">
+          <div className="text-xs font-bold text-foreground/80 mb-3 uppercase tracking-wider">Connected Devices</div>
+          <ul className="text-sm space-y-2">
             {connectedDevices.map((d) => (
-              <li key={d.id} className="flex items-center gap-2">
+              <li key={d.id} className="flex items-center gap-3">
                 <input
                   type="checkbox"
                   checked={!!d.selected}
                   onChange={() => toggleSelect(d.id)}
                   title="Select device"
+                  className="rounded border-foreground/20"
                 />
-                <span>{d.label}</span>
+                <span className="font-mono text-muted-foreground">{d.label}</span>
               </li>
             ))}
           </ul>
@@ -1840,21 +1846,19 @@ export default function DeviceInstallerPanel() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] p-4 flex flex-wrap items-center gap-3">
         {containerType === "partner" ? (
           <>
             <button
-              className="px-3 py-1.5 rounded-md border text-sm"
+              className="px-4 py-2 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-sm font-medium transition-all shadow-sm"
               onClick={() => pushAndInstall(targetApp)}
               disabled={!connected}
               title={`Install ${targetApp === "portalpay" ? "PortalPay" : "Paynex"} APK to the connected device`}
             >
               {`Install ${targetApp === "portalpay" ? "PortalPay" : "Paynex"}`}
             </button>
-            <span className="microtext text-muted-foreground">{`Installs: ${installTotals[targetApp] ?? 0}`}</span>
-            <span className="microtext text-muted-foreground">{`App Installs: ${appInstallTotals[targetApp] ?? 0}`}</span>
             <a
-              className="px-3 py-1.5 rounded-md border text-sm"
+              className="px-4 py-2 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-sm font-medium transition-all shadow-sm"
               href={`/api/admin/apk/zips/${targetApp}`}
               target="_blank"
               rel="noreferrer"
@@ -1862,22 +1866,25 @@ export default function DeviceInstallerPanel() {
             >
               {`Download ${targetApp === "portalpay" ? "PortalPay" : "Paynex"} ZIP`}
             </a>
+            <div className="ml-auto flex items-center gap-3 microtext text-muted-foreground border-l border-foreground/[0.05] pl-4">
+              <span>{`Installs: ${installTotals[targetApp] ?? 0}`}</span>
+              <span className="opacity-50">•</span>
+              <span>{`App Installs: ${appInstallTotals[targetApp] ?? 0}`}</span>
+            </div>
           </>
         ) : (
-          <>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-3 w-full">
+            <div className="flex flex-wrap items-center gap-3">
               <button
-                className="px-3 py-1.5 rounded-md border text-sm"
+                className="px-4 py-2 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-sm font-medium transition-all shadow-sm"
                 onClick={() => pushAndInstall("portalpay")}
                 disabled={!connected}
                 title="Install PortalPay APK to the connected device"
               >
                 Install PortalPay
               </button>
-              <span className="microtext text-muted-foreground">{`Installs: ${installTotals.portalpay ?? 0}`}</span>
-              <span className="microtext text-muted-foreground">{`App Installs: ${appInstallTotals.portalpay ?? 0}`}</span>
               <a
-                className="px-3 py-1.5 rounded-md border text-sm"
+                className="px-4 py-2 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-sm font-medium transition-all shadow-sm"
                 href="/api/admin/apk/zips/portalpay"
                 target="_blank"
                 rel="noreferrer"
@@ -1885,20 +1892,24 @@ export default function DeviceInstallerPanel() {
               >
                 Download PortalPay ZIP
               </a>
+              <div className="ml-auto flex items-center gap-3 microtext text-muted-foreground border-l border-foreground/[0.05] pl-4">
+                <span>{`Installs: ${installTotals.portalpay ?? 0}`}</span>
+                <span className="opacity-50">•</span>
+                <span>{`App Installs: ${appInstallTotals.portalpay ?? 0}`}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            
+            <div className="flex flex-wrap items-center gap-3">
               <button
-                className="px-3 py-1.5 rounded-md border text-sm"
+                className="px-4 py-2 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-sm font-medium transition-all shadow-sm"
                 onClick={() => pushAndInstall("paynex")}
                 disabled={!connected}
                 title="Install Paynex APK to the connected device"
               >
                 Install Paynex
               </button>
-              <span className="microtext text-muted-foreground">{`Installs: ${installTotals.paynex ?? 0}`}</span>
-              <span className="microtext text-muted-foreground">{`App Installs: ${appInstallTotals.paynex ?? 0}`}</span>
               <a
-                className="px-3 py-1.5 rounded-md border text-sm"
+                className="px-4 py-2 rounded-lg border border-foreground/[0.05] bg-background hover:bg-foreground/[0.02] text-sm font-medium transition-all shadow-sm"
                 href="/api/admin/apk/zips/paynex"
                 target="_blank"
                 rel="noreferrer"
@@ -1906,8 +1917,13 @@ export default function DeviceInstallerPanel() {
               >
                 Download Paynex ZIP
               </a>
+              <div className="ml-auto flex items-center gap-3 microtext text-muted-foreground border-l border-foreground/[0.05] pl-4">
+                <span>{`Installs: ${installTotals.paynex ?? 0}`}</span>
+                <span className="opacity-50">•</span>
+                <span>{`App Installs: ${appInstallTotals.paynex ?? 0}`}</span>
+              </div>
             </div>
-          </>
+          </div>
         )}
       </div>
 
@@ -1974,16 +1990,16 @@ export default function DeviceInstallerPanel() {
         );
       })}
 
-      <div className="rounded-md border p-3 bg-foreground/5">
-        <div className="text-sm font-medium mb-1">Logs</div>
-        <pre className="text-xs whitespace-pre-wrap break-words max-h-60 overflow-auto m-0">
+      <div className="rounded-xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-5">
+        <div className="text-xs font-bold text-foreground/80 mb-3 uppercase tracking-wider">Logs</div>
+        <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-words max-h-60 overflow-auto m-0 font-mono">
           {logs || "—"}
         </pre>
       </div>
 
-      <div className="rounded-md border p-3 bg-foreground/5 microtext">
-        <div className="text-sm font-semibold">Requirements</div>
-        <ul className="list-disc pl-5 mt-1 space-y-1">
+      <div className="rounded-xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-5 microtext">
+        <div className="text-xs font-bold text-foreground/80 mb-3 uppercase tracking-wider">Requirements</div>
+        <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground">
           <li>Use Chrome/Edge over HTTPS (or localhost).</li>
           <li>Enable Developer Options and USB debugging on the device.</li>
           <li>Allow the computer to access the device when prompted.</li>

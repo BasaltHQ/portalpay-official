@@ -26,10 +26,10 @@ export default function LoyaltyPanelPlatform() {
     }, [activeTab, account?.address]);
 
     return (
-        <div className="space-y-6">
+        <div className="w-full space-y-6 pb-24 admin-panel-enter">
             {/* Header & Tabs */}
-            <div>
-                <div className="mb-6">
+            <div className="relative overflow-hidden rounded-2xl border border-foreground/[0.05] bg-gradient-to-b from-foreground/[0.02] to-transparent p-6">
+                <div className="mb-4">
                     <h2 className="text-2xl font-bold flex items-center gap-2">
                         <Globe className="w-6 h-6 text-primary" />
                         Platform Loyalty Management
@@ -39,28 +39,26 @@ export default function LoyaltyPanelPlatform() {
                     </p>
                 </div>
 
-                <div className="border-b">
-                    <nav className="-mb-px flex space-x-6 overflow-x-auto" aria-label="Tabs">
-                        {[
-                            { id: 'program', label: 'Global Program' },
-                            { id: 'defaults', label: 'Global Defaults' },
-                            { id: 'merchants', label: 'Participants' },
-                            { id: 'rewards', label: 'Global Rewards' },
-                            { id: 'discounts', label: 'Global Offers' },
-                            { id: 'coupons', label: 'Global Coupons' },
-                            { id: 'art', label: 'Global Art Style' },
-                            { id: 'roles', label: 'Global Roles' },
-                            { id: 'compliance', label: 'Rules & Limits' },
-                        ].map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'}`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
-                    </nav>
+                <div className="flex flex-wrap gap-1 border-t border-foreground/[0.05] pt-3">
+                    {[
+                        { id: 'program', label: 'Global Program' },
+                        { id: 'defaults', label: 'Global Defaults' },
+                        { id: 'merchants', label: 'Participants' },
+                        { id: 'rewards', label: 'Global Rewards' },
+                        { id: 'discounts', label: 'Global Offers' },
+                        { id: 'coupons', label: 'Global Coupons' },
+                        { id: 'art', label: 'Global Art Style' },
+                        { id: 'roles', label: 'Global Roles' },
+                        { id: 'compliance', label: 'Rules & Limits' },
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={`px-3 py-2 text-xs uppercase tracking-wide font-medium rounded-lg transition-all ${activeTab === tab.id ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.02]'}`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -68,7 +66,7 @@ export default function LoyaltyPanelPlatform() {
             <div className="min-h-[400px]">
                 {activeTab === 'program' && (
                     <div className="space-y-6">
-                        <div className="p-4 border border-blue-500/20 bg-blue-500/5 rounded-lg flex gap-3">
+                        <div className="p-4 border border-blue-500/20 bg-blue-500/5 rounded-2xl flex gap-3">
                             <Globe className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                             <div>
                                 <div className="font-semibold text-blue-600 mb-1">Global Platform Program</div>
@@ -92,11 +90,11 @@ export default function LoyaltyPanelPlatform() {
                 {activeTab === 'roles' && <RoleConfigTab isPlatform={true} />}
 
                 {activeTab === 'merchants' && (
-                    <div className="glass-pane rounded-xl border overflow-hidden">
-                        <div className="p-4 border-b bg-muted/50 flex justify-between items-center">
+                    <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md overflow-hidden">
+                        <div className="p-4 border-b border-foreground/[0.05] flex justify-between items-center">
                             <h3 className="font-semibold text-sm">Participating Merchants</h3>
                             <div className="flex gap-2">
-                                <select className="h-8 rounded-md border bg-background text-sm px-2">
+                                <select className="h-10 rounded-lg border border-foreground/[0.05] bg-background text-sm px-3">
                                     <option value="all">All Industries</option>
                                     <option value="retail">Retail</option>
                                     <option value="food">Restaurant(Food)</option>
@@ -106,7 +104,7 @@ export default function LoyaltyPanelPlatform() {
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-muted/30 text-muted-foreground">
+                                <thead className="bg-foreground/[0.02] text-muted-foreground">
                                     <tr>
                                         <th className="p-3 font-medium">Merchant Name</th>
                                         <th className="p-3 font-medium">Industry Pack</th>
@@ -115,7 +113,7 @@ export default function LoyaltyPanelPlatform() {
                                         <th className="p-3 font-medium text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y">
+                                <tbody className="divide-y divide-foreground/[0.05]">
                                     {loadingMerchants ? (
                                         <tr>
                                             <td colSpan={5} className="p-8 text-center text-muted-foreground">
@@ -131,7 +129,7 @@ export default function LoyaltyPanelPlatform() {
                                         </tr>
                                     ) : (
                                         merchants.map((m, i) => (
-                                            <tr key={i} className="hover:bg-muted/10">
+                                            <tr key={i} className="hover:bg-foreground/[0.02] transition-colors">
                                                 <td className="p-3 font-medium flex items-center gap-2">
                                                     {m.logo ? <img src={m.logo} className="w-6 h-6 rounded-full object-cover" /> : <div className="w-6 h-6 rounded-full bg-muted" />}
                                                     {m.name || 'Unnamed Shop'}
@@ -171,17 +169,17 @@ export default function LoyaltyPanelPlatform() {
                 )}
 
                 {activeTab === 'compliance' && (
-                    <div className="glass-pane rounded-xl border p-6 space-y-6">
+                    <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md p-6 space-y-6">
                         <h3 className="text-lg font-semibold">Platform Limits</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Max XP Multiplier Cap</label>
-                                <input type="number" className="w-full h-10 px-3 border rounded-md" defaultValue={2.5} />
+                                <input type="number" className="w-full h-10 px-3 border border-foreground/[0.05] rounded-lg bg-background" defaultValue={2.5} />
                                 <p className="text-xs text-muted-foreground">Prevent merchants from creating impossible curves.</p>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Max Prestige Tiers</label>
-                                <input type="number" className="w-full h-10 px-3 border rounded-md" defaultValue={10} />
+                                <input type="number" className="w-full h-10 px-3 border border-foreground/[0.05] rounded-lg bg-background" defaultValue={10} />
                             </div>
                         </div>
                         <div className="pt-4">
@@ -276,8 +274,8 @@ function GlobalDefaultsTab() {
     if (loading) return <div className="p-8 text-center text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>;
 
     return (
-        <div className="space-y-6">
-            <div className="p-4 border border-yellow-500/20 bg-yellow-500/5 rounded-lg flex gap-3">
+        <div className="w-full space-y-6">
+            <div className="p-4 border border-yellow-500/20 bg-yellow-500/5 rounded-2xl flex gap-3">
                 <Settings className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <div>
                     <div className="font-semibold text-yellow-600 mb-1">Global Default Settings</div>
@@ -288,7 +286,7 @@ function GlobalDefaultsTab() {
                 </div>
             </div>
 
-            <div className="glass-pane rounded-xl border p-6 space-y-8">
+            <div className="rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] backdrop-blur-md p-6 space-y-8">
                 {/* XP Earn Rate */}
                 <div className="space-y-4">
                     <h4 className="text-sm font-semibold uppercase text-muted-foreground tracking-wider">XP Earning</h4>
@@ -306,7 +304,7 @@ function GlobalDefaultsTab() {
                                     max="100"
                                     value={config.defaultXpPerDollar}
                                     onChange={e => setConfig({ ...config, defaultXpPerDollar: Number(e.target.value) })}
-                                    className="w-24 h-10 px-3 border rounded-md text-lg font-mono bg-background"
+                                    className="w-24 h-10 px-3 border border-foreground/[0.05] rounded-lg text-lg font-mono bg-background"
                                 />
                                 <span className="text-sm text-foreground">XP / $1</span>
                             </div>
@@ -318,7 +316,7 @@ function GlobalDefaultsTab() {
                 </div>
 
                 {/* Curve Configuration */}
-                <div className="space-y-4 border-t pt-6">
+                <div className="space-y-4 border-t border-foreground/[0.05] pt-6">
                     <h4 className="text-sm font-semibold uppercase text-muted-foreground tracking-wider">Default XP Curve</h4>
                     <p className="text-xs text-muted-foreground -mt-2">
                         Configure the default leveling difficulty curve that merchants will inherit.
@@ -368,7 +366,7 @@ function GlobalDefaultsTab() {
                 </div>
 
                 {/* Level Caps */}
-                <div className="space-y-4 border-t pt-6">
+                <div className="space-y-4 border-t border-foreground/[0.05] pt-6">
                     <h4 className="text-sm font-semibold uppercase text-muted-foreground tracking-wider">Level Caps & Prestige</h4>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -384,7 +382,7 @@ function GlobalDefaultsTab() {
                                     max="100"
                                     value={config.defaultMaxLevel}
                                     onChange={e => setConfig({ ...config, defaultMaxLevel: Number(e.target.value) })}
-                                    className="w-24 h-10 px-3 border rounded-md text-lg font-mono bg-background"
+                                    className="w-24 h-10 px-3 border border-foreground/[0.05] rounded-lg text-lg font-mono bg-background"
                                 />
                                 <span className="text-sm text-foreground">Levels</span>
                             </div>
@@ -402,7 +400,7 @@ function GlobalDefaultsTab() {
                                     max="20"
                                     value={config.defaultMaxPrestige}
                                     onChange={e => setConfig({ ...config, defaultMaxPrestige: Number(e.target.value) })}
-                                    className="w-24 h-10 px-3 border rounded-md text-lg font-mono bg-background"
+                                    className="w-24 h-10 px-3 border border-foreground/[0.05] rounded-lg text-lg font-mono bg-background"
                                 />
                                 <span className="text-sm text-foreground">Tiers</span>
                             </div>
@@ -424,7 +422,7 @@ function GlobalDefaultsTab() {
                 </div>
 
                 {/* Level Curve Visualization */}
-                <div className="space-y-4 border-t pt-6">
+                <div className="space-y-4 border-t border-foreground/[0.05] pt-6">
                     <h4 className="text-sm font-semibold uppercase text-muted-foreground tracking-wider">Level Curve Visualization</h4>
                     <p className="text-xs text-muted-foreground -mt-2">
                         Preview how XP requirements scale across all 50 levels with your current settings.
@@ -474,22 +472,22 @@ function GlobalDefaultsTab() {
 
                     {/* Milestone Check */}
                     <div className="grid grid-cols-3 gap-4 mt-4">
-                        <div className="p-3 bg-muted/30 rounded-lg text-center">
+                        <div className="p-3 bg-foreground/[0.02] border border-foreground/[0.05] rounded-lg text-center">
                             <div className="text-xs text-muted-foreground mb-1">Level 10</div>
                             <div className="font-mono font-medium">{calculateTotalXPForLevel(10, { xpPerDollar: config.defaultXpPerDollar, baseXP: config.defaultBaseXP, multiplier: config.defaultMultiplier, maxLevel: config.defaultMaxLevel, maxPrestige: config.defaultMaxPrestige }).toLocaleString()} XP</div>
                         </div>
-                        <div className="p-3 bg-muted/30 rounded-lg text-center">
+                        <div className="p-3 bg-foreground/[0.02] border border-foreground/[0.05] rounded-lg text-center">
                             <div className="text-xs text-muted-foreground mb-1">Level 25</div>
                             <div className="font-mono font-medium">{calculateTotalXPForLevel(25, { xpPerDollar: config.defaultXpPerDollar, baseXP: config.defaultBaseXP, multiplier: config.defaultMultiplier, maxLevel: config.defaultMaxLevel, maxPrestige: config.defaultMaxPrestige }).toLocaleString()} XP</div>
                         </div>
-                        <div className="p-3 bg-muted/30 rounded-lg text-center">
+                        <div className="p-3 bg-foreground/[0.02] border border-foreground/[0.05] rounded-lg text-center">
                             <div className="text-xs text-muted-foreground mb-1">Level 50</div>
                             <div className="font-mono font-medium">{calculateTotalXPForLevel(50, { xpPerDollar: config.defaultXpPerDollar, baseXP: config.defaultBaseXP, multiplier: config.defaultMultiplier, maxLevel: config.defaultMaxLevel, maxPrestige: config.defaultMaxPrestige }).toLocaleString()} XP</div>
                         </div>
                     </div>
                 </div>
 
-                <div className="pt-4 border-t flex justify-end items-center gap-3">
+                <div className="pt-4 border-t border-foreground/[0.05] flex justify-end items-center gap-3">
                     {saved && (
                         <span className="flex items-center gap-1.5 text-green-600 text-sm font-medium animate-in fade-in slide-in-from-right-2">
                             <Check className="w-4 h-4" />
