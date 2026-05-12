@@ -1185,7 +1185,71 @@ export default function HomeContent() {
               initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
               className="flex-1 w-full rounded-3xl overflow-hidden border border-white/10 shadow-2xl h-[500px] relative bg-white/5"
             >
-              {!isPartnerContainer && <img src="/luxury_boutique.png" alt="Luxury Boutique" className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-1000" />}
+              {!isPartnerContainer ? (
+                <img src="/luxury_boutique.png" alt="Luxury Boutique" className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-1000" />
+              ) : (
+                <div className="absolute inset-0 overflow-hidden bg-[#050508] flex items-center justify-center">
+                  {/* Ambient glow */}
+                  <div className="absolute inset-0 opacity-12" style={{ background: 'radial-gradient(ellipse at 50% 60%, var(--pp-secondary) 0%, transparent 60%)' }} />
+                  <svg className="w-[88%] h-auto max-w-[420px]" viewBox="0 0 360 260" fill="none">
+                    {/* Legacy rail — crossed out */}
+                    <g opacity="0.25">
+                      <rect x="30" y="30" width="120" height="75" rx="8" stroke="white" strokeWidth="1" fill="none" />
+                      <rect x="30" y="55" width="120" height="12" fill="white" opacity="0.1" />
+                      <text x="90" y="50" textAnchor="middle" fill="white" fontSize="8">Card Rail</text>
+                      <text x="90" y="92" textAnchor="middle" fill="white" fontSize="6" opacity="0.5">2-5 Day Settle</text>
+                      {/* Strike-through */}
+                      <line x1="25" y1="25" x2="155" y2="110" stroke="#ff4444" strokeWidth="1.5" opacity="0.6" />
+                      <line x1="155" y1="25" x2="25" y2="110" stroke="#ff4444" strokeWidth="1.5" opacity="0.6" />
+                    </g>
+                    {/* Arrow from legacy to crypto */}
+                    <path d="M160 67 L195 67" stroke="white" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.2" />
+                    <text x="178" y="60" textAnchor="middle" fill="white" fontSize="7" opacity="0.3">→</text>
+
+                    {/* Crypto rail — active */}
+                    {/* Wallet node */}
+                    <circle cx="230" cy="45" r="20" stroke="var(--pp-secondary)" strokeWidth="1.2" fill="none" opacity="0.6" />
+                    <circle cx="230" cy="45" r="10" fill="var(--pp-secondary)" opacity="0.08" />
+                    <text x="230" y="48" textAnchor="middle" fill="var(--pp-secondary)" fontSize="7" opacity="0.8">Wallet</text>
+
+                    {/* Chain node */}
+                    <circle cx="295" cy="130" r="22" stroke="var(--pp-primary)" strokeWidth="1.2" fill="none" opacity="0.6" />
+                    <circle cx="295" cy="130" r="11" fill="var(--pp-primary)" opacity="0.08" />
+                    <text x="295" y="128" textAnchor="middle" fill="var(--pp-primary)" fontSize="7" opacity="0.8">Chain</text>
+                    <text x="295" y="138" textAnchor="middle" fill="white" fontSize="5" opacity="0.35">Finality</text>
+
+                    {/* Merchant node */}
+                    <circle cx="230" cy="215" r="20" stroke="var(--pp-secondary)" strokeWidth="1.2" fill="none" opacity="0.6" />
+                    <circle cx="230" cy="215" r="10" fill="var(--pp-secondary)" opacity="0.08" />
+                    <text x="230" y="218" textAnchor="middle" fill="var(--pp-secondary)" fontSize="7" opacity="0.8">Merchant</text>
+
+                    {/* Path: Wallet → Chain */}
+                    <path d="M248 55 L278 115" stroke="var(--pp-secondary)" strokeWidth="1" strokeDasharray="4 3" opacity="0.4">
+                      <animate attributeName="stroke-dashoffset" from="28" to="0" dur="2s" repeatCount="indefinite" />
+                    </path>
+                    <circle r="2.5" fill="var(--pp-secondary)" opacity="0.9">
+                      <animateMotion path="M248 55 L278 115" dur="2s" repeatCount="indefinite" />
+                    </circle>
+
+                    {/* Path: Chain → Merchant */}
+                    <path d="M278 145 L248 205" stroke="var(--pp-primary)" strokeWidth="1" strokeDasharray="4 3" opacity="0.4">
+                      <animate attributeName="stroke-dashoffset" from="28" to="0" dur="2.5s" repeatCount="indefinite" />
+                    </path>
+                    <circle r="2.5" fill="var(--pp-primary)" opacity="0.9">
+                      <animateMotion path="M278 145 L248 205" dur="2.5s" repeatCount="indefinite" />
+                    </circle>
+
+                    {/* Settlement label */}
+                    <text x="335" y="133" textAnchor="middle" fill="var(--pp-secondary)" fontSize="6" opacity="0.5">Instant</text>
+                    <text x="335" y="143" textAnchor="middle" fill="var(--pp-secondary)" fontSize="6" opacity="0.5">Settlement</text>
+
+                    {/* Zero chargeback badge */}
+                    <rect x="55" y="140" width="100" height="30" rx="6" stroke="var(--pp-secondary)" strokeWidth="0.8" fill="none" opacity="0.3" />
+                    <text x="105" y="155" textAnchor="middle" fill="var(--pp-secondary)" fontSize="7" opacity="0.6">0% Chargeback</text>
+                    <text x="105" y="165" textAnchor="middle" fill="white" fontSize="5" opacity="0.3">Cryptographic Finality</text>
+                  </svg>
+                </div>
+              )}
             </motion.div>
           </div>
         </section>
