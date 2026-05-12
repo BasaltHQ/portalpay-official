@@ -438,7 +438,7 @@ export default function HomeContent() {
           <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/40 to-transparent z-10" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent z-10" />
           
-          {!isPartnerContainer && (
+          {!isPartnerContainer ? (
             <video
               autoPlay
               loop
@@ -448,6 +448,30 @@ export default function HomeContent() {
             >
               <source src="/SurgeHeader.mp4" type="video/mp4" />
             </video>
+          ) : (
+            <div className="absolute inset-0 overflow-hidden bg-black/50">
+              <svg className="hidden">
+                <filter id="hero-plasma">
+                  <feTurbulence type="fractalNoise" baseFrequency="0.005 0.01" numOctaves="3" seed="5" result="noise" />
+                  <feDisplacementMap in="SourceGraphic" in2="noise" scale="150" xChannelSelector="R" yChannelSelector="G" />
+                </filter>
+              </svg>
+              <div className="absolute inset-0 opacity-50 mix-blend-screen" style={{ filter: 'url(#hero-plasma)' }}>
+                <motion.div
+                  initial={{ x: "-50%", y: "-50%" }}
+                  animate={{ x: "150%", y: "150%" }}
+                  transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                  className="absolute top-0 left-0 w-[150vw] h-[150vh] blur-[80px] opacity-60"
+                  style={{ background: 'radial-gradient(circle, var(--pp-primary, #34d399) 0%, transparent 50%)' }}
+                />
+                <motion.div
+                  animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.8, 0.4] }}
+                  transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute top-1/2 left-1/2 w-[80vw] h-[80vh] -translate-x-1/2 -translate-y-1/2 rounded-[100%] blur-[100px]"
+                  style={{ background: 'radial-gradient(ellipse, var(--pp-secondary, #10b981) 0%, transparent 60%)' }}
+                />
+              </div>
+            </div>
           )}
         </div>
 
@@ -631,7 +655,6 @@ export default function HomeContent() {
         {/* Social Proof: Stats - Cinematic Typographic Design */}
         <section className="mt-24 mb-32 py-24 overflow-hidden relative w-[100vw] left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] border-y border-white/10 shadow-2xl bg-black">
           <div className="absolute inset-0 z-0">
-            {!isPartnerContainer && (
               <div className="absolute inset-0 overflow-hidden bg-black/50">
                 {/* SVG Filter for Wispy Plasma Smoke */}
                 <svg className="hidden">
@@ -674,7 +697,6 @@ export default function HomeContent() {
                   />
                 </div>
               </div>
-            )}
             <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/40 to-transparent" />
           </div>
           <div className="max-w-[90rem] mx-auto grid grid-cols-2 lg:grid-cols-4 gap-y-12 gap-x-8 relative z-10 px-8 md:px-12">
@@ -739,7 +761,26 @@ export default function HomeContent() {
                   </p>
                 </div>
                 <div className="flex-1 relative min-h-[300px] border-t md:border-t-0 md:border-l border-white/10 overflow-hidden">
-                  {!isPartnerContainer && <img src="/mockup_theme.png" alt="Mobile Checkout UI Mockup" className="absolute inset-0 w-full h-full object-cover" />}
+                  {!isPartnerContainer ? (
+                    <img src="/mockup_theme.png" alt="Mobile Checkout UI Mockup" className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 overflow-hidden bg-black flex items-center justify-center">
+                      <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at center, var(--pp-primary) 0%, transparent 70%)' }} />
+                      <motion.div 
+                        initial={{ y: "-100%" }} animate={{ y: "200%" }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                        className="absolute top-0 left-0 right-0 h-1"
+                        style={{ background: 'linear-gradient(90deg, transparent, var(--pp-secondary), transparent)', boxShadow: '0 0 20px 5px var(--pp-secondary)' }}
+                      />
+                      <svg className="w-1/2 h-1/2 opacity-20" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="40" stroke="var(--pp-secondary)" strokeWidth="0.5" fill="none" strokeDasharray="4 4">
+                           <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="20s" repeatCount="indefinite" />
+                        </circle>
+                        <circle cx="50" cy="50" r="30" stroke="var(--pp-primary)" strokeWidth="0.5" fill="none" strokeDasharray="2 4">
+                           <animateTransform attributeName="transform" type="rotate" from="360 50 50" to="0 50 50" dur="15s" repeatCount="indefinite" />
+                        </circle>
+                      </svg>
+                    </div>
+                  )}
                 </div>
               </motion.div>
 
@@ -749,7 +790,19 @@ export default function HomeContent() {
                 className="rounded-[2rem] bg-[#0A0A0A] border border-white/5 p-0 relative overflow-hidden group shadow-2xl transition-all duration-500 hover:border-white/10 flex flex-col"
               >
                 <div className="flex-1 relative min-h-[200px] border-b border-white/10">
-                  {!isPartnerContainer && <img src="/mockup_branding.png" alt="White Label Config Mockup" className="absolute inset-0 w-full h-full object-cover" />}
+                  {!isPartnerContainer ? (
+                    <img src="/mockup_branding.png" alt="White Label Config Mockup" className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 overflow-hidden bg-black">
+                      <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-10 -left-10 w-40 h-40 blur-[40px] rounded-full" style={{ backgroundColor: 'var(--pp-primary)' }} />
+                      <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.2, 0.5, 0.2] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute -bottom-10 -right-10 w-48 h-48 blur-[50px] rounded-full" style={{ backgroundColor: 'var(--pp-secondary)' }} />
+                      <div className="absolute inset-0 flex flex-col gap-4 items-center justify-center opacity-30 rotate-[-15deg]">
+                         <div className="w-32 h-4 rounded-full" style={{ backgroundColor: 'var(--pp-primary)' }} />
+                         <div className="w-24 h-4 rounded-full" style={{ backgroundColor: 'var(--pp-secondary)' }} />
+                         <div className="w-40 h-4 rounded-full" style={{ backgroundColor: 'var(--pp-text)' }} />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="relative z-10 p-8 flex flex-col justify-center">
                   <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-6 backdrop-blur-md border border-white/10 shadow-inner">
@@ -777,7 +830,22 @@ export default function HomeContent() {
                   </p>
                 </div>
                 <div className="flex-1 relative min-h-[200px] border-t border-white/10">
-                  {!isPartnerContainer && <img src="/mockup_admin.png" alt="Touchpoint Management Mockup" className="absolute inset-0 w-full h-full object-cover" />}
+                  {!isPartnerContainer ? (
+                    <img src="/mockup_admin.png" alt="Touchpoint Management Mockup" className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 overflow-hidden bg-black flex items-center justify-center">
+                       <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#ffffff1a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff1a_1px,transparent_1px)] bg-[size:20px_20px]" />
+                       <svg className="w-full h-full opacity-40" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+                          <circle cx="20" cy="30" r="2" fill="var(--pp-primary)" />
+                          <circle cx="80" cy="40" r="2" fill="var(--pp-secondary)" />
+                          <circle cx="50" cy="80" r="2" fill="var(--pp-primary)" />
+                          <circle cx="40" cy="50" r="3" fill="var(--pp-text)" />
+                          <path d="M20 30 L40 50 L80 40 M40 50 L50 80" stroke="var(--pp-secondary)" strokeWidth="0.5" fill="none" strokeDasharray="1 2">
+                             <animate attributeName="stroke-dashoffset" from="100" to="0" dur="10s" repeatCount="indefinite" />
+                          </path>
+                       </svg>
+                    </div>
+                  )}
                 </div>
               </motion.div>
 
@@ -787,7 +855,17 @@ export default function HomeContent() {
                 className="md:col-span-2 rounded-[2rem] bg-[#0A0A0A] border border-white/5 p-0 relative overflow-hidden group shadow-2xl transition-all duration-500 hover:border-white/10 flex flex-col-reverse md:flex-row"
               >
                 <div className="flex-1 relative min-h-[300px] border-t md:border-t-0 md:border-r border-white/10 overflow-hidden">
-                  {!isPartnerContainer && <img src="/mockup_storefront.png" alt="Storefront Interface Mockup" className="absolute inset-0 w-full h-full object-cover" />}
+                  {!isPartnerContainer ? (
+                    <img src="/mockup_storefront.png" alt="Storefront Interface Mockup" className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 overflow-hidden bg-black flex items-center justify-center">
+                       <motion.div animate={{ rotate: 360 }} transition={{ duration: 40, repeat: Infinity, ease: "linear" }} className="absolute w-[150%] h-[150%] opacity-20">
+                          <div className="absolute inset-0" style={{ background: 'conic-gradient(from 0deg, transparent, var(--pp-primary) 45deg, transparent 90deg, var(--pp-secondary) 135deg, transparent 180deg, var(--pp-primary) 225deg, transparent 270deg, var(--pp-secondary) 315deg, transparent 360deg)' }} />
+                       </motion.div>
+                       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                       <div className="absolute inset-0 opacity-30" style={{ background: 'radial-gradient(circle, var(--pp-secondary) 0%, transparent 60%)' }} />
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 p-10 relative z-10 flex flex-col justify-center">
                   <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-8 backdrop-blur-md border border-white/10 shadow-inner">
@@ -821,7 +899,20 @@ export default function HomeContent() {
               initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
               className="flex-1 w-full relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl h-[600px]"
             >
-              {!isPartnerContainer && <img src="/pos_qr_surge.png" alt="BasaltSurge POS Terminal QR Scanning" className="absolute inset-0 w-full h-full object-cover" />}
+              {!isPartnerContainer ? (
+                <img src="/pos_qr_surge.png" alt="BasaltSurge POS Terminal QR Scanning" className="absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <div className="absolute inset-0 overflow-hidden bg-black/80">
+                  <div className="absolute inset-0 opacity-40 mix-blend-screen" style={{ filter: 'url(#hero-plasma)' }}>
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                      transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                      className="absolute top-1/2 left-1/2 w-full h-[150%] -translate-x-1/2 -translate-y-1/2 blur-[80px]"
+                      style={{ background: 'linear-gradient(45deg, var(--pp-primary), var(--pp-secondary))' }}
+                    />
+                  </div>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
               <div className="absolute bottom-10 left-10 right-10">
                 <h2 className="text-4xl md:text-6xl font-black tracking-tight mb-4 text-white drop-shadow-md">Architected for Speed.</h2>
