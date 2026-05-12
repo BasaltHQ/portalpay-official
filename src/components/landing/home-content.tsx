@@ -588,7 +588,7 @@ export default function HomeContent() {
             <div className="relative z-10 w-full transform perspective-1000">
               <div className="absolute -inset-2 bg-gradient-to-r from-pp-secondary/30 to-blue-500/20 blur-3xl opacity-50 rounded-2xl pointer-events-none" />
               
-              <div className="relative transition-transform duration-700 hover:scale-[1.02]">
+              <div className="relative transition-transform duration-700 hover:scale-[1.02] pointer-events-none">
                 <PortalPreviewEmbedded
                   key={`${siteTheme.brandLogoUrl}-${siteTheme.primaryColor}`}
                   theme={siteTheme}
