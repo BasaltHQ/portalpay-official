@@ -764,21 +764,57 @@ export default function HomeContent() {
                   {!isPartnerContainer ? (
                     <img src="/mockup_theme.png" alt="Mobile Checkout UI Mockup" className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
-                    <div className="absolute inset-0 overflow-hidden bg-black flex items-center justify-center">
-                      <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at center, var(--pp-primary) 0%, transparent 70%)' }} />
-                      <motion.div 
-                        initial={{ y: "-100%" }} animate={{ y: "200%" }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                        className="absolute top-0 left-0 right-0 h-1"
-                        style={{ background: 'linear-gradient(90deg, transparent, var(--pp-secondary), transparent)', boxShadow: '0 0 20px 5px var(--pp-secondary)' }}
+                    <div className="absolute inset-0 overflow-hidden bg-[#050508] flex items-center justify-center">
+                      {/* Ambient glow */}
+                      <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(ellipse at 50% 60%, var(--pp-secondary) 0%, transparent 70%)' }} />
+                      {/* Phone frame with QR */}
+                      <div className="relative w-[45%] max-w-[160px] aspect-[9/16] rounded-[16px] border border-white/10 bg-black/80 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center overflow-hidden">
+                        {/* Status bar */}
+                        <div className="absolute top-0 left-0 right-0 h-5 flex items-center justify-center">
+                          <div className="w-8 h-1.5 rounded-full bg-white/10 mt-1" />
+                        </div>
+                        {/* QR Code grid */}
+                        <svg className="w-[65%] aspect-square" viewBox="0 0 80 80" fill="none">
+                          {/* Corner brackets */}
+                          <rect x="4" y="4" width="20" height="20" rx="2" stroke="var(--pp-secondary)" strokeWidth="2.5" fill="none" />
+                          <rect x="8" y="8" width="12" height="12" rx="1" fill="var(--pp-secondary)" opacity="0.7" />
+                          <rect x="56" y="4" width="20" height="20" rx="2" stroke="var(--pp-secondary)" strokeWidth="2.5" fill="none" />
+                          <rect x="60" y="8" width="12" height="12" rx="1" fill="var(--pp-secondary)" opacity="0.7" />
+                          <rect x="4" y="56" width="20" height="20" rx="2" stroke="var(--pp-secondary)" strokeWidth="2.5" fill="none" />
+                          <rect x="8" y="60" width="12" height="12" rx="1" fill="var(--pp-secondary)" opacity="0.7" />
+                          {/* Data dots */}
+                          {[
+                            [30,10],[36,10],[42,10],[48,10],
+                            [30,16],[42,16],[30,22],[36,22],[48,22],
+                            [10,30],[16,30],[22,30],[30,30],[42,30],[48,30],[54,30],[60,30],[66,30],[72,30],
+                            [10,36],[30,36],[36,36],[48,36],[60,36],[72,36],
+                            [10,42],[22,42],[30,42],[42,42],[54,42],[66,42],[72,42],
+                            [10,48],[16,48],[30,48],[36,48],[48,48],[60,48],[72,48],
+                            [30,54],[42,54],[48,54],[54,54],[60,54],[66,54],[72,54],
+                            [30,60],[36,60],[48,60],[60,60],
+                            [30,66],[42,66],[54,66],[66,66],[72,66],
+                            [30,72],[36,72],[48,72],[60,72],[72,72],
+                          ].map(([cx,cy], i) => (
+                            <rect key={i} x={cx} y={cy} width="4" height="4" rx="0.5" fill="var(--pp-primary)" opacity={0.4 + (i % 3) * 0.2} />
+                          ))}
+                        </svg>
+                        {/* Scan line sweeping over QR */}
+                        <motion.div
+                          animate={{ y: ['-80%', '80%'] }}
+                          transition={{ duration: 2, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
+                          className="absolute left-[17%] right-[17%] h-[2px]"
+                          style={{ background: 'var(--pp-secondary)', boxShadow: '0 0 12px 3px var(--pp-secondary)' }}
+                        />
+                        {/* Bottom pill button */}
+                        <div className="absolute bottom-3 w-[50%] h-4 rounded-full opacity-40" style={{ backgroundColor: 'var(--pp-secondary)' }} />
+                      </div>
+                      {/* Pulse ring around phone */}
+                      <motion.div
+                        animate={{ scale: [1, 1.6], opacity: [0.3, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
+                        className="absolute w-[50%] max-w-[180px] aspect-[9/16] rounded-[20px] border-2 pointer-events-none"
+                        style={{ borderColor: 'var(--pp-secondary)' }}
                       />
-                      <svg className="w-1/2 h-1/2 opacity-20" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="40" stroke="var(--pp-secondary)" strokeWidth="0.5" fill="none" strokeDasharray="4 4">
-                           <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="20s" repeatCount="indefinite" />
-                        </circle>
-                        <circle cx="50" cy="50" r="30" stroke="var(--pp-primary)" strokeWidth="0.5" fill="none" strokeDasharray="2 4">
-                           <animateTransform attributeName="transform" type="rotate" from="360 50 50" to="0 50 50" dur="15s" repeatCount="indefinite" />
-                        </circle>
-                      </svg>
                     </div>
                   )}
                 </div>
@@ -793,13 +829,45 @@ export default function HomeContent() {
                   {!isPartnerContainer ? (
                     <img src="/mockup_branding.png" alt="White Label Config Mockup" className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
-                    <div className="absolute inset-0 overflow-hidden bg-black">
-                      <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-10 -left-10 w-40 h-40 blur-[40px] rounded-full" style={{ backgroundColor: 'var(--pp-primary)' }} />
-                      <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.2, 0.5, 0.2] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute -bottom-10 -right-10 w-48 h-48 blur-[50px] rounded-full" style={{ backgroundColor: 'var(--pp-secondary)' }} />
-                      <div className="absolute inset-0 flex flex-col gap-4 items-center justify-center opacity-30 rotate-[-15deg]">
-                         <div className="w-32 h-4 rounded-full" style={{ backgroundColor: 'var(--pp-primary)' }} />
-                         <div className="w-24 h-4 rounded-full" style={{ backgroundColor: 'var(--pp-secondary)' }} />
-                         <div className="w-40 h-4 rounded-full" style={{ backgroundColor: 'var(--pp-text)' }} />
+                    <div className="absolute inset-0 overflow-hidden bg-[#050508] flex items-center justify-center p-6">
+                      {/* Ambient glow */}
+                      <div className="absolute inset-0 opacity-15" style={{ background: 'radial-gradient(ellipse at 30% 40%, var(--pp-primary) 0%, transparent 60%)' }} />
+                      <div className="relative w-full max-w-[200px] flex flex-col gap-3">
+                        {/* Color palette row */}
+                        <div className="flex gap-2 justify-center">
+                          {[
+                            { color: 'var(--pp-primary)', delay: 0 },
+                            { color: 'var(--pp-secondary)', delay: 0.3 },
+                            { color: 'var(--pp-primary)', delay: 0.6, opacity: 0.5 },
+                            { color: 'var(--pp-secondary)', delay: 0.9, opacity: 0.3 },
+                          ].map((swatch, i) => (
+                            <motion.div
+                              key={i}
+                              animate={{ scale: [1, 1.15, 1], opacity: [swatch.opacity || 0.8, 1, swatch.opacity || 0.8] }}
+                              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: swatch.delay }}
+                              className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg border border-white/10 shadow-lg"
+                              style={{ backgroundColor: swatch.color }}
+                            />
+                          ))}
+                        </div>
+                        {/* Mini receipt skeleton */}
+                        <div className="mt-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 flex flex-col gap-2.5 backdrop-blur-sm">
+                          <div className="w-[60%] h-2 rounded-full mx-auto" style={{ backgroundColor: 'var(--pp-secondary)', opacity: 0.5 }} />
+                          <div className="w-full h-[1px] bg-white/10" />
+                          <div className="flex justify-between">
+                            <div className="w-[40%] h-1.5 rounded-full bg-white/15" />
+                            <div className="w-[20%] h-1.5 rounded-full bg-white/15" />
+                          </div>
+                          <div className="flex justify-between">
+                            <div className="w-[55%] h-1.5 rounded-full bg-white/10" />
+                            <div className="w-[15%] h-1.5 rounded-full bg-white/10" />
+                          </div>
+                          <div className="w-full h-[1px] bg-white/10" />
+                          <div className="flex justify-between">
+                            <div className="w-[30%] h-2 rounded-full bg-white/20 font-bold" />
+                            <div className="w-[25%] h-2 rounded-full" style={{ backgroundColor: 'var(--pp-primary)', opacity: 0.5 }} />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -833,17 +901,46 @@ export default function HomeContent() {
                   {!isPartnerContainer ? (
                     <img src="/mockup_admin.png" alt="Touchpoint Management Mockup" className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
-                    <div className="absolute inset-0 overflow-hidden bg-black flex items-center justify-center">
-                       <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#ffffff1a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff1a_1px,transparent_1px)] bg-[size:20px_20px]" />
-                       <svg className="w-full h-full opacity-40" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
-                          <circle cx="20" cy="30" r="2" fill="var(--pp-primary)" />
-                          <circle cx="80" cy="40" r="2" fill="var(--pp-secondary)" />
-                          <circle cx="50" cy="80" r="2" fill="var(--pp-primary)" />
-                          <circle cx="40" cy="50" r="3" fill="var(--pp-text)" />
-                          <path d="M20 30 L40 50 L80 40 M40 50 L50 80" stroke="var(--pp-secondary)" strokeWidth="0.5" fill="none" strokeDasharray="1 2">
-                             <animate attributeName="stroke-dashoffset" from="100" to="0" dur="10s" repeatCount="indefinite" />
-                          </path>
-                       </svg>
+                    <div className="absolute inset-0 overflow-hidden bg-[#050508] flex items-center justify-center">
+                      <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(ellipse at 50% 20%, var(--pp-secondary) 0%, transparent 60%)' }} />
+                      <svg className="w-[85%] h-[85%] max-w-[260px]" viewBox="0 0 200 140" fill="none">
+                        {/* Cloud node at top */}
+                        <ellipse cx="100" cy="20" rx="28" ry="12" stroke="var(--pp-secondary)" strokeWidth="1" fill="none" opacity="0.6" />
+                        <text x="100" y="23" textAnchor="middle" fill="var(--pp-secondary)" fontSize="6" opacity="0.8">Cloud</text>
+                        {/* Connection lines from cloud to devices */}
+                        <path d="M80 30 L40 90" stroke="var(--pp-primary)" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.5">
+                          <animate attributeName="stroke-dashoffset" from="24" to="0" dur="3s" repeatCount="indefinite" />
+                        </path>
+                        <path d="M100 32 L100 90" stroke="var(--pp-secondary)" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.5">
+                          <animate attributeName="stroke-dashoffset" from="24" to="0" dur="2.5s" repeatCount="indefinite" />
+                        </path>
+                        <path d="M120 30 L160 90" stroke="var(--pp-primary)" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.5">
+                          <animate attributeName="stroke-dashoffset" from="24" to="0" dur="3.5s" repeatCount="indefinite" />
+                        </path>
+                        {/* Kiosk (left) */}
+                        <rect x="22" y="90" width="36" height="40" rx="3" stroke="var(--pp-secondary)" strokeWidth="1" fill="none" opacity="0.5" />
+                        <rect x="26" y="94" width="28" height="24" rx="1" fill="var(--pp-secondary)" opacity="0.08" />
+                        <text x="40" y="122" textAnchor="middle" fill="white" fontSize="5" opacity="0.4">Kiosk</text>
+                        {/* Terminal (center) */}
+                        <rect x="80" y="92" width="40" height="28" rx="3" stroke="var(--pp-secondary)" strokeWidth="1" fill="none" opacity="0.5" />
+                        <rect x="84" y="96" width="32" height="16" rx="1" fill="var(--pp-secondary)" opacity="0.08" />
+                        <rect x="88" y="120" width="24" height="6" rx="1" fill="var(--pp-primary)" opacity="0.15" />
+                        <text x="100" y="136" textAnchor="middle" fill="white" fontSize="5" opacity="0.4">Terminal</text>
+                        {/* Handheld (right) */}
+                        <rect x="147" y="90" width="24" height="38" rx="4" stroke="var(--pp-secondary)" strokeWidth="1" fill="none" opacity="0.5" />
+                        <rect x="150" y="94" width="18" height="24" rx="1" fill="var(--pp-secondary)" opacity="0.08" />
+                        <text x="159" y="122" textAnchor="middle" fill="white" fontSize="5" opacity="0.4">Handheld</text>
+                        {/* Pulse dots traveling down lines */}
+                        <circle r="2" fill="var(--pp-secondary)" opacity="0.8">
+                          <animateMotion path="M80 30 L40 90" dur="3s" repeatCount="indefinite" />
+                        </circle>
+                        <circle r="2" fill="var(--pp-secondary)" opacity="0.8">
+                          <animateMotion path="M100 32 L100 90" dur="2.5s" repeatCount="indefinite" />
+                        </circle>
+                        <circle r="2" fill="var(--pp-secondary)" opacity="0.8">
+                          <animateMotion path="M120 30 L160 90" dur="3.5s" repeatCount="indefinite" />
+                        </circle>
+                      </svg>
                     </div>
                   )}
                 </div>
@@ -858,12 +955,55 @@ export default function HomeContent() {
                   {!isPartnerContainer ? (
                     <img src="/mockup_storefront.png" alt="Storefront Interface Mockup" className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
-                    <div className="absolute inset-0 overflow-hidden bg-black flex items-center justify-center">
-                       <motion.div animate={{ rotate: 360 }} transition={{ duration: 40, repeat: Infinity, ease: "linear" }} className="absolute w-[150%] h-[150%] opacity-20">
-                          <div className="absolute inset-0" style={{ background: 'conic-gradient(from 0deg, transparent, var(--pp-primary) 45deg, transparent 90deg, var(--pp-secondary) 135deg, transparent 180deg, var(--pp-primary) 225deg, transparent 270deg, var(--pp-secondary) 315deg, transparent 360deg)' }} />
-                       </motion.div>
-                       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-                       <div className="absolute inset-0 opacity-30" style={{ background: 'radial-gradient(circle, var(--pp-secondary) 0%, transparent 60%)' }} />
+                    <div className="absolute inset-0 overflow-hidden bg-[#050508] flex items-center justify-center">
+                      <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(ellipse at 30% 50%, var(--pp-primary) 0%, transparent 50%)' }} />
+                      <svg className="w-[90%] h-[80%] max-w-[400px]" viewBox="0 0 300 180" fill="none">
+                        {/* Source node — incoming payment */}
+                        <rect x="10" y="70" width="60" height="40" rx="8" stroke="var(--pp-secondary)" strokeWidth="1.5" fill="none" opacity="0.6" />
+                        <text x="40" y="86" textAnchor="middle" fill="var(--pp-secondary)" fontSize="7" opacity="0.9">Payment</text>
+                        <text x="40" y="98" textAnchor="middle" fill="white" fontSize="6" opacity="0.4">$100.00</text>
+                        {/* Central router hub */}
+                        <circle cx="140" cy="90" r="18" stroke="var(--pp-secondary)" strokeWidth="1.5" fill="none" opacity="0.5" />
+                        <circle cx="140" cy="90" r="8" fill="var(--pp-secondary)" opacity="0.15" />
+                        <text x="140" y="93" textAnchor="middle" fill="var(--pp-secondary)" fontSize="6" opacity="0.8">Router</text>
+                        {/* Line: source → router */}
+                        <path d="M70 90 L122 90" stroke="var(--pp-primary)" strokeWidth="1" strokeDasharray="4 3" opacity="0.5">
+                          <animate attributeName="stroke-dashoffset" from="28" to="0" dur="2s" repeatCount="indefinite" />
+                        </path>
+                        <circle r="2.5" fill="var(--pp-primary)" opacity="0.9">
+                          <animateMotion path="M70 90 L122 90" dur="2s" repeatCount="indefinite" />
+                        </circle>
+                        {/* Destination 1 — Vendor (top) */}
+                        <path d="M158 80 L220 40" stroke="var(--pp-secondary)" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.4">
+                          <animate attributeName="stroke-dashoffset" from="24" to="0" dur="2.5s" repeatCount="indefinite" />
+                        </path>
+                        <rect x="220" y="22" width="65" height="36" rx="6" stroke="var(--pp-secondary)" strokeWidth="1" fill="none" opacity="0.5" />
+                        <text x="252" y="38" textAnchor="middle" fill="white" fontSize="6" opacity="0.5">Vendor A</text>
+                        <text x="252" y="50" textAnchor="middle" fill="var(--pp-secondary)" fontSize="7" opacity="0.7">50%</text>
+                        <circle r="2" fill="var(--pp-secondary)" opacity="0.8">
+                          <animateMotion path="M158 80 L220 40" dur="2.5s" repeatCount="indefinite" />
+                        </circle>
+                        {/* Destination 2 — Platform (middle) */}
+                        <path d="M158 90 L220 90" stroke="var(--pp-secondary)" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.4">
+                          <animate attributeName="stroke-dashoffset" from="24" to="0" dur="3s" repeatCount="indefinite" />
+                        </path>
+                        <rect x="220" y="72" width="65" height="36" rx="6" stroke="var(--pp-primary)" strokeWidth="1" fill="none" opacity="0.5" />
+                        <text x="252" y="88" textAnchor="middle" fill="white" fontSize="6" opacity="0.5">Platform</text>
+                        <text x="252" y="100" textAnchor="middle" fill="var(--pp-primary)" fontSize="7" opacity="0.7">30%</text>
+                        <circle r="2" fill="var(--pp-primary)" opacity="0.8">
+                          <animateMotion path="M158 90 L220 90" dur="3s" repeatCount="indefinite" />
+                        </circle>
+                        {/* Destination 3 — Reserve (bottom) */}
+                        <path d="M158 100 L220 140" stroke="var(--pp-secondary)" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.4">
+                          <animate attributeName="stroke-dashoffset" from="24" to="0" dur="3.5s" repeatCount="indefinite" />
+                        </path>
+                        <rect x="220" y="122" width="65" height="36" rx="6" stroke="var(--pp-secondary)" strokeWidth="1" fill="none" opacity="0.5" />
+                        <text x="252" y="138" textAnchor="middle" fill="white" fontSize="6" opacity="0.5">Reserve</text>
+                        <text x="252" y="150" textAnchor="middle" fill="var(--pp-secondary)" fontSize="7" opacity="0.7">20%</text>
+                        <circle r="2" fill="var(--pp-secondary)" opacity="0.8">
+                          <animateMotion path="M158 100 L220 140" dur="3.5s" repeatCount="indefinite" />
+                        </circle>
+                      </svg>
                     </div>
                   )}
                 </div>
@@ -902,15 +1042,50 @@ export default function HomeContent() {
               {!isPartnerContainer ? (
                 <img src="/pos_qr_surge.png" alt="BasaltSurge POS Terminal QR Scanning" className="absolute inset-0 w-full h-full object-cover" />
               ) : (
-                <div className="absolute inset-0 overflow-hidden bg-black/80">
-                  <div className="absolute inset-0 opacity-40 mix-blend-screen" style={{ filter: 'url(#hero-plasma)' }}>
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-                      transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                      className="absolute top-1/2 left-1/2 w-full h-[150%] -translate-x-1/2 -translate-y-1/2 blur-[80px]"
-                      style={{ background: 'linear-gradient(45deg, var(--pp-primary), var(--pp-secondary))' }}
-                    />
-                  </div>
+                <div className="absolute inset-0 overflow-hidden bg-[#050508] flex items-center justify-center">
+                  {/* Ambient gradient */}
+                  <div className="absolute inset-0 opacity-15" style={{ background: 'linear-gradient(135deg, var(--pp-primary) 0%, transparent 40%, var(--pp-secondary) 100%)' }} />
+                  {/* 4-step pipeline SVG */}
+                  <svg className="w-[90%] h-auto max-w-[500px]" viewBox="0 0 400 200" fill="none">
+                    {/* Step nodes */}
+                    {[
+                      { x: 30, label: 'Configure', sub: 'Brand & Wallet', icon: 'M50 70 L50 60 L60 60 L60 70 M45 70 L65 70 L65 85 L45 85 Z' },
+                      { x: 135, label: 'Generate', sub: 'Receipt & QR', icon: 'M155 60 L165 60 L165 70 L155 70 Z M155 72 L165 72 L165 82 L155 82 Z M152 58 L168 58 L168 84 L152 84 Z' },
+                      { x: 240, label: 'Scan & Pay', sub: 'Instant Settle', icon: 'M260 60 L260 85 M252 68 L260 60 L268 68' },
+                      { x: 345, label: 'Reconcile', sub: 'Real-time', icon: 'M358 62 L362 70 L366 62 M358 72 L362 80 L366 72 M355 58 L355 84 L369 84 L369 58 Z' },
+                    ].map((step, i) => (
+                      <g key={i}>
+                        {/* Node circle */}
+                        <circle cx={step.x + 10} cy={100} r="28" stroke="var(--pp-secondary)" strokeWidth="1" fill="none" opacity="0.4" />
+                        <circle cx={step.x + 10} cy={100} r="16" fill="var(--pp-secondary)" opacity="0.06" />
+                        {/* Step number */}
+                        <text x={step.x + 10} y={105} textAnchor="middle" fill="var(--pp-secondary)" fontSize="14" fontWeight="bold" opacity="0.6">{i + 1}</text>
+                        {/* Label */}
+                        <text x={step.x + 10} y={148} textAnchor="middle" fill="white" fontSize="9" opacity="0.7">{step.label}</text>
+                        <text x={step.x + 10} y={162} textAnchor="middle" fill="var(--pp-secondary)" fontSize="7" opacity="0.4">{step.sub}</text>
+                      </g>
+                    ))}
+                    {/* Connectors with animated dash */}
+                    {[
+                      { d: 'M68 100 L107 100' },
+                      { d: 'M173 100 L212 100' },
+                      { d: 'M278 100 L317 100' },
+                    ].map((conn, i) => (
+                      <g key={i}>
+                        <path d={conn.d} stroke="var(--pp-primary)" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.4">
+                          <animate attributeName="stroke-dashoffset" from="32" to="0" dur={`${1.5 + i * 0.3}s`} repeatCount="indefinite" />
+                        </path>
+                        {/* Chevron arrow */}
+                        <circle r="3" fill="var(--pp-secondary)" opacity="0.8">
+                          <animateMotion path={conn.d} dur={`${1.5 + i * 0.3}s`} repeatCount="indefinite" />
+                        </circle>
+                      </g>
+                    ))}
+                    {/* Speed lines burst from center */}
+                    {[15, 35, 165, 185].map((y, i) => (
+                      <line key={i} x1="120" y1={y} x2="280" y2={y} stroke="var(--pp-secondary)" strokeWidth="0.5" opacity="0.08" />
+                    ))}
+                  </svg>
                 </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
