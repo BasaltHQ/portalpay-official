@@ -682,7 +682,7 @@ export default function HomeContent() {
               <div className="text-white/80 font-semibold uppercase tracking-[0.2em] text-[10px] mb-4 flex items-center gap-2">
                 <span className="w-4 h-[1px] bg-white/50" /> Transactions
               </div>
-              <div className="text-4xl md:text-5xl lg:text-6xl font-light tracking-tighter text-white drop-shadow-md">
+              <div className="text-4xl md:text-5xl lg:text-4xl xl:text-5xl font-light tracking-tighter text-white drop-shadow-md">
                 {displayTxCount !== null ? displayTxCount.toLocaleString() : (metrics?.receiptsCount ? metrics.receiptsCount.toLocaleString() : "—")}
               </div>
             </motion.div>
@@ -690,7 +690,7 @@ export default function HomeContent() {
               <div className="text-white/80 font-semibold uppercase tracking-[0.2em] text-[10px] mb-4 flex items-center gap-2">
                 <span className="w-4 h-[1px] bg-white/50" /> Vendor Earnings
               </div>
-              <div className="text-4xl md:text-5xl lg:text-6xl font-light tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 drop-shadow-md">
+              <div className="text-4xl md:text-5xl lg:text-4xl xl:text-5xl font-light tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 drop-shadow-md">
                 {displayEarnings !== null ? fmtUSD(displayEarnings) : (metrics ? fmtUSD(metrics.merchantEarnedUsdTotal) : "—")}
               </div>
             </motion.div>
@@ -698,13 +698,13 @@ export default function HomeContent() {
               <div className="text-white/80 font-semibold uppercase tracking-[0.2em] text-[10px] mb-4 flex items-center gap-2">
                 <span className="w-4 h-[1px] bg-white/50" /> Active Wallets
               </div>
-              <div className="text-4xl md:text-5xl lg:text-6xl font-light tracking-tighter text-white drop-shadow-md">{metrics?.totalUsers ? metrics.totalUsers.toLocaleString() : "—"}</div>
+              <div className="text-4xl md:text-5xl lg:text-4xl xl:text-5xl font-light tracking-tighter text-white drop-shadow-md">{metrics?.totalUsers ? metrics.totalUsers.toLocaleString() : "—"}</div>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} viewport={{ once: true }}>
               <div className="text-white/80 font-semibold uppercase tracking-[0.2em] text-[10px] mb-4 flex items-center gap-2">
                 <span className="w-4 h-[1px] bg-white/50" /> 24h Volume
               </div>
-              <div className="text-4xl md:text-5xl lg:text-6xl font-light tracking-tighter text-white drop-shadow-md">
+              <div className="text-4xl md:text-5xl lg:text-4xl xl:text-5xl font-light tracking-tighter text-white drop-shadow-md">
                 {displayVolume !== null ? fmtUSD(displayVolume) : (metrics ? fmtUSD(metrics.receiptsTotalUsd24h) : "—")}
               </div>
             </motion.div>
