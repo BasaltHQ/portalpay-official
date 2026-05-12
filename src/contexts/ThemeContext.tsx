@@ -119,10 +119,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       secondaryColor: isBasaltPlatform ? '#FF6B35' : (partnerSecondary || '#F54029'),
       brandName: brand.name || (isPartner ? brandKey : 'BasaltSurge'),
       brandFaviconUrl: sanitizeFaviconUrl(brand.logos.favicon),
-      symbolLogoUrl: isBasaltPlatform ? '/BasaltSurgeD.png' : (partnerSymbol || ''),
+      symbolLogoUrl: isBasaltPlatform ? '/Surge.png' : (partnerSymbol || ''),
       brandLogoUrl: isBasaltPlatform ? '/BasaltSurgeWideD.png' : (partnerLogo || ''),
       footerLogoUrl: (brand as any)?.logos?.footer || '',
-      navbarMode: isBasaltPlatform ? 'logo' : ((brand as any)?.logos?.navbarMode === 'logo' ? 'logo' : 'symbol'),
+      navbarMode: isBasaltPlatform ? 'symbol' : ((brand as any)?.logos?.navbarMode === 'logo' ? 'logo' : 'symbol'),
       brandKey: (brand as any)?.key || '',
     };
   });
@@ -244,7 +244,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             primaryColor: shopTheme.primaryColor || mergedTheme.primaryColor || defaultTheme.primaryColor,
             secondaryColor: shopTheme.secondaryColor || mergedTheme.secondaryColor || defaultTheme.secondaryColor,
             brandLogoUrl: shopLogoToUse,
-            brandFaviconUrl: sanitizeFaviconUrl(shopTheme.brandFaviconUrl || shopTheme.symbolLogoUrl || shopTheme.brandLogoUrl || mergedTheme.brandFaviconUrl || ''),
+            brandFaviconUrl: sanitizeFaviconUrl(shopTheme.brandFaviconUrl || shopTheme.symbolLogoUrl || shopTheme.brandLogoUrl || shopLogoToUse || (hasShopLogo ? '' : mergedTheme.brandFaviconUrl) || ''),
             symbolLogoUrl: shopSymbolToUse,
             navbarMode: (/(basalt|portal\s*pay)/i.test(String(shopTheme.brandName || shopTheme.name || shopTheme.partName || ''))) ? 'logo' : (shopTheme.navbarMode || 'symbol'),
             brandName: shopTheme.brandName || shopTheme.name || shopTheme.partName || mergedTheme.brandName || brand.name || '',
@@ -423,10 +423,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             x.primaryColor = '#35ff7c';
             x.secondaryColor = '#FF6B35';
             x.brandLogoUrl = '/BasaltSurgeWideD.png';
-            x.symbolLogoUrl = '/BasaltSurgeD.png';
+            x.symbolLogoUrl = '/Surge.png';
             if (x.logos) {
               x.logos.app = '/BasaltSurgeWideD.png';
-              x.logos.symbol = '/BasaltSurgeD.png';
+              x.logos.symbol = '/Surge.png';
               x.logos.navbarMode = 'symbol';
             }
             x.navbarMode = 'symbol';

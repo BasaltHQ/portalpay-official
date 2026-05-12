@@ -9,67 +9,75 @@ import { isPartnerContext } from "@/lib/env";
 const INDUSTRY_PACKS = [
   {
     title: "General Store",
-    icon: <Store className="w-6 h-6 text-sky-400" />,
+    icon: <Store className="w-5 h-5 text-sky-400" />,
     color: "sky",
     href: "/crypto-payments/general-store",
     desc: "Universal point of sale for retail and service businesses. Flexible setup without industry-specific overhead.",
     touchpoints: ["Universal POS", "Products & Services", "Global Payments"],
+    image: "/touchpoint-bg/industry_general_store.png",
   },
   {
     title: "Restaurant & Cafe",
-    icon: <Utensils className="w-6 h-6 text-red-500" />,
+    icon: <Utensils className="w-5 h-5 text-red-500" />,
     color: "red",
     href: "/crypto-payments/restaurants",
     desc: "Full-scale POS with table management, kitchen display systems, order modifiers, and dietary tags.",
     touchpoints: ["Kitchen Display System", "Order Modifiers", "Table Management"],
+    image: "/touchpoint-bg/industry_restaurant.png",
   },
   {
     title: "Retail & Apparel",
-    icon: <ShoppingCart className="w-6 h-6 text-indigo-400" />,
+    icon: <ShoppingCart className="w-5 h-5 text-indigo-400" />,
     color: "indigo",
     href: "/crypto-payments/retail",
     desc: "Retail POS with inventory variants, barcode scanning, and multi-location stock management.",
     touchpoints: ["Inventory Variants", "Barcode Scanning", "Stock Alerts"],
+    image: "/touchpoint-bg/industry_retail.png",
   },
   {
     title: "Hotel & Accommodation",
-    icon: <Building2 className="w-6 h-6 text-violet-400" />,
+    icon: <Building2 className="w-5 h-5 text-violet-400" />,
     color: "violet",
     href: "/crypto-payments/hotels",
     desc: "Property Management System with room inventory, housekeeping tracking, and guest booking.",
     touchpoints: ["Room Inventory", "Guest Booking", "Housekeeping Status"],
+    image: "/touchpoint-bg/industry_hotel.png",
   },
   {
     title: "Freelancer & Services",
-    icon: <Briefcase className="w-6 h-6 text-amber-500" />,
+    icon: <Briefcase className="w-5 h-5 text-amber-500" />,
     color: "amber",
     href: "/crypto-payments/freelancers",
     desc: "Service business manager for flexible pricing, invoicing, project tracking, and client retainers.",
     touchpoints: ["Invoicing & Retainers", "Project Tracking", "Flexible Packages"],
+    image: "/touchpoint-bg/industry_freelancer.png",
   },
   {
     title: "Publishing & Bookstore",
-    icon: <BookOpen className="w-6 h-6 text-fuchsia-400" />,
+    icon: <BookOpen className="w-5 h-5 text-fuchsia-400" />,
     color: "fuchsia",
     href: "/crypto-payments/publishing-bookstores",
     desc: "Digital bookstore and writer's workshop with manuscript management and direct reader integration.",
     touchpoints: ["Manuscript Management", "Osiris USBN", "Direct Royalties"],
+    image: "/touchpoint-bg/industry_publishing.png",
   },
   {
     title: "Cannabis Dispensary",
-    icon: <Leaf className="w-6 h-6 text-emerald-400" />,
+    icon: <Leaf className="w-5 h-5 text-emerald-400" />,
     color: "emerald",
     href: "/cannabis",
     desc: "Fully compliant checkout with native METRC v2 and BioTrack integrations. No extra compliance fees.",
     touchpoints: ["Seed-to-Sale Tracking", "Automated METRC Sync", "Transfer Manifests"],
+    image: "/touchpoint-bg/industry_cannabis.png",
   },
   {
     title: "All Apps Included. Free.",
-    icon: <Zap className="w-6 h-6 text-yellow-400" />,
+    icon: <Zap className="w-5 h-5 text-yellow-400" />,
     color: "yellow",
     href: "/crypto-payments",
     desc: "Stop paying extra for compliance, table management, or inventory add-ons. Every industry tool is built-in and 100% free.",
     touchpoints: ["Zero Monthly Fees", "Unlimited Features", "No Upcharges"],
+    image: "/touchpoint-bg/industry_all_apps.png",
   },
 ];
 
@@ -107,34 +115,44 @@ export default function IndustryTouchpointsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.05, duration: 0.4 }}
-              className="glass-pane rounded-[2rem] border border-white/10 p-6 flex flex-col group relative overflow-hidden shadow-xl"
+              className="glass-pane rounded-[2rem] border border-white/10 p-0 flex flex-col group relative overflow-hidden shadow-xl bg-zinc-950/40 hover:bg-zinc-900/60 transition-colors"
             >
-              <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-4 border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                {pack.icon}
+              <div className="relative w-full h-40 overflow-hidden border-b border-white/5">
+                <img 
+                  src={pack.image} 
+                  alt={pack.title} 
+                  className="object-cover w-full h-full opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700 ease-out" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent" />
+                <div className="absolute bottom-4 left-6 w-10 h-10 rounded-xl bg-zinc-900/80 backdrop-blur-xl flex items-center justify-center border border-white/10 shadow-lg group-hover:-translate-y-1 transition-transform duration-300">
+                  {pack.icon}
+                </div>
               </div>
               
-              <h3 className="text-xl font-bold mb-2 tracking-tight">{pack.title}</h3>
-              <p className="text-muted-foreground mb-6 text-sm leading-relaxed flex-grow">
-                {pack.desc}
-              </p>
+              <div className="p-6 flex flex-col flex-grow pt-4">
+                <h3 className="text-xl font-bold mb-2 tracking-tight">{pack.title}</h3>
+                <p className="text-muted-foreground mb-6 text-sm leading-relaxed flex-grow">
+                  {pack.desc}
+                </p>
 
-              <div className="space-y-2 mb-6">
-                <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-3">Key Touchpoints</div>
-                {pack.touchpoints.map((tp, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs font-medium text-white/80">
-                    <div className="w-1 h-1 rounded-full bg-white/30" />
-                    {tp}
-                  </div>
-                ))}
+                <div className="space-y-2 mb-6">
+                  <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-3">Key Touchpoints</div>
+                  {pack.touchpoints.map((tp, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs font-medium text-white/80">
+                      <div className="w-1 h-1 rounded-full bg-white/30" />
+                      {tp}
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  href={pack.href}
+                  className="inline-flex items-center gap-2 text-xs font-bold mt-auto group-hover:gap-3 transition-all text-white hover:text-white/80"
+                >
+                  Explore {pack.title.split(' ')[0]}
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
               </div>
-
-              <Link
-                href={pack.href}
-                className="inline-flex items-center gap-2 text-xs font-bold mt-auto group-hover:gap-3 transition-all text-white hover:text-white/80"
-              >
-                Explore {pack.title.split(' ')[0]}
-                <ArrowRight className="w-3 h-3" />
-              </Link>
             </motion.div>
           ))}
         </div>

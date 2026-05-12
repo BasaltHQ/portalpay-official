@@ -9486,6 +9486,9 @@ function TerminalPanel() {
   const [rates, setRates] = useState<Record<string, number>>({});
   const [usdRates, setUsdRates] = useState<Record<string, number>>({});
 
+  // Brand logo for QR code
+  const [terminalLogoUrl, setTerminalLogoUrl] = useState<string>("");
+
   // Site meta for tax & fee
   const [siteMeta, setSiteMeta] = useState<{ processingFeePct: number; basePlatformFeePct: number; taxRate: number; hasDefault: boolean; storeCurrency?: string }>({
     processingFeePct: 0,
@@ -9515,6 +9518,10 @@ function TerminalPanel() {
       }
       const storeCurrency = typeof cfg?.storeCurrency === "string" ? cfg.storeCurrency : undefined;
       const basePlatformFeePct = typeof cfg?.basePlatformFeePct === "number" ? cfg.basePlatformFeePct : 0.5;
+      // Extract logo for QR code
+      const theme: any = cfg?.theme || {};
+      const logo = theme?.symbolLogoUrl || theme?.brandLogoUrl || theme?.brandFaviconUrl || "";
+      if (logo) setTerminalLogoUrl(logo);
       return { processingFeePct, basePlatformFeePct, taxRate: rate, hasDefault, storeCurrency };
     } catch {
       return { processingFeePct: 0, basePlatformFeePct: 0.5, taxRate: 0, hasDefault: false };
@@ -9900,30 +9907,62 @@ function TerminalPanel() {
 
       {qrOpen && selected && typeof window !== "undefined"
         ? createPortal(
-          <div className="fixed inset-0 z-[100000] bg-black/80 backdrop-blur-md grid place-items-center p-4 print-no-bg print-static">
-            <div className="w-full max-w-sm rounded-3xl bg-background border border-foreground/[0.05] p-8 relative shadow-2xl">
+          <div className="fixed inset-0 z-[100000] bg-black/80 backdrop-blur-xl grid place-items-center p-4 print-no-bg print-static transition-opacity duration-300">
+            <div className="w-full max-w-md rounded-[2rem] bg-[#0A0A0A] border border-white/10 p-8 relative shadow-[0_0_80px_rgba(0,0,0,0.8)] overflow-hidden">
+              {/* Background Glow */}
+              <div className="absolute -top-24 -right-24 w-64 h-64 bg-[var(--pp-secondary)] opacity-10 blur-[100px] pointer-events-none rounded-full" />
+              
               <button
                 onClick={() => { setQrOpen(false); }}
-                className="absolute right-5 top-5 h-8 w-8 rounded-full border-none bg-foreground/[0.03] hover:bg-foreground/[0.08] text-foreground flex items-center justify-center transition-colors"
+                className="absolute right-6 top-6 h-10 w-10 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white flex items-center justify-center transition-colors z-20"
                 title="Close"
-                aria-label="Close terminal QR"
               >
                 ✕
               </button>
-              <div className="text-lg font-bold uppercase tracking-wider mb-6">Present to Buyer</div>
-              <div className="thermal-paper relative mx-auto scale-105 origin-top mb-6">
-                <div className="grid place-items-center my-2">
-                  <QRCode value={portalUrl} size={140} quietZone={10} fgColor="#000000" bgColor="#ffffff" />
+              
+              <div className="text-center mb-8 relative z-10">
+                <div className="text-[10px] font-bold text-[var(--pp-secondary)] uppercase tracking-[0.3em] mb-2">Scan to Pay</div>
+                <div className="text-2xl font-black tracking-tight text-white">Present to Buyer</div>
+              </div>
+
+              <div className="relative mx-auto bg-white p-6 rounded-3xl shadow-xl w-fit mb-8 border-4 border-white/5 group transform transition-transform hover:scale-105 duration-500">
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-transparent to-[var(--pp-secondary)]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl" />
+                <QRCode
+                  value={portalUrl}
+                  size={200}
+                  quietZone={8}
+                  fgColor="#000000"
+                  bgColor="#ffffff"
+                  qrStyle="dots"
+                  eyeRadius={[
+                    [10, 10, 0, 10],
+                    [10, 10, 10, 0],
+                    [10, 0, 10, 10],
+                  ]}
+                  ecLevel="H"
+                  logoImage={terminalLogoUrl || "/Surge.png"}
+                  logoWidth={48}
+                  logoHeight={48}
+                  logoPaddingStyle="circle"
+                  logoPadding={4}
+                  removeQrCodeBehindLogo={true}
+                />
+              </div>
+
+              <div className="bg-white/5 rounded-2xl p-5 border border-white/10 mb-8 space-y-3 relative z-10 backdrop-blur-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase font-bold tracking-wider text-muted-foreground">Receipt #</span>
+                  <span className="text-sm font-medium text-white">{selected.receiptId}</span>
                 </div>
-                <div className="thermal-footer">Scan to pay or visit</div>
-                {isRuntimePlatformBrand() && <div className="thermal-footer" style={{ wordBreak: "break-all" }}>{portalUrl}</div>}
-                <div className="thermal-rule" />
-                <div className="space-y-1">
-                  <div className="thermal-row"><span>Receipt #</span><span>{selected.receiptId}</span></div>
-                  <div className="thermal-row"><span>Operator</span><span>{shortWallet}</span></div>
-                  <div className="thermal-row">
-                    <span>Total ({selected.currency || "USD"})</span>
-                    <span>{(() => {
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase font-bold tracking-wider text-muted-foreground">Operator</span>
+                  <span className="text-sm font-medium text-white">{shortWallet}</span>
+                </div>
+                <div className="h-px bg-white/10 my-2" />
+                <div className="flex items-center justify-between">
+                  <span className="text-sm uppercase font-bold tracking-[0.2em] text-white">Total</span>
+                  <span className="text-xl font-black text-[var(--pp-secondary)]">
+                    {(() => {
                       const curr = selected.currency || "USD";
                       const total = Number(selected.totalUsd || 0);
                       if (curr === "USD") return `$${total.toFixed(2)}`;
@@ -9932,20 +9971,18 @@ function TerminalPanel() {
                         ? roundForCurrency(total * usdRate, curr)
                         : convertFromUsd(total, curr, rates);
                       return converted > 0 ? formatCurrency(converted, curr) : `$${total.toFixed(2)}`;
-                    })()}</span>
-                  </div>
-                  {selected.currency && selected.currency !== "USD" && (
-                    <div className="thermal-row text-[10px] uppercase font-bold tracking-wider text-muted-foreground mt-2">
-                      <span>Equivalent (USD)</span>
-                      <span>${Number(selected.totalUsd || 0).toFixed(2)}</span>
-                    </div>
-                  )}
+                    })()}
+                  </span>
                 </div>
               </div>
-              <div className="thermal-actions print-hidden grid grid-cols-3 gap-3 mt-8">
-                <button onClick={() => { try { window.print(); } catch { } }} className="h-12 rounded-xl text-[10px] font-bold uppercase tracking-wider border-none bg-foreground/[0.03] hover:bg-foreground/[0.08] transition-colors flex items-center justify-center active:scale-95">Print</button>
-                <button onClick={() => { try { navigator.clipboard.writeText(portalUrl); } catch { } }} className="h-12 rounded-xl text-[10px] font-bold uppercase tracking-wider border-none bg-foreground/[0.03] hover:bg-foreground/[0.08] transition-colors flex items-center justify-center active:scale-95">Copy</button>
-                <button onClick={() => { try { const w = window.open(portalUrl, "_blank", "noopener,noreferrer"); w?.focus(); } catch { } }} className="h-12 rounded-xl text-[10px] font-bold uppercase tracking-wider border-none bg-foreground/[0.03] hover:bg-foreground/[0.08] transition-colors flex items-center justify-center active:scale-95">Open</button>
+
+              <div className="print-hidden grid grid-cols-2 gap-3 relative z-10">
+                <button onClick={() => { try { navigator.clipboard.writeText(portalUrl); } catch { } }} className="h-12 rounded-xl text-xs font-bold uppercase tracking-wider border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-white flex items-center justify-center active:scale-95 group">
+                  <span className="group-active:scale-90 transition-transform">Copy Link</span>
+                </button>
+                <button onClick={() => { try { window.print(); } catch { } }} className="h-12 rounded-xl text-xs font-extrabold uppercase tracking-wider text-white transition-all active:scale-95 shadow-lg shadow-[var(--pp-secondary)]/20 hover:brightness-110 flex items-center justify-center" style={{ backgroundColor: "var(--pp-secondary)" }}>
+                  Print Receipt
+                </button>
               </div>
             </div>
           </div>,

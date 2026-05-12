@@ -69,8 +69,24 @@ export function AgenticPaymentsSection() {
                 </p>
             </div>
 
+            {/* Cinematic Visualization */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 1 }}
+                className="relative w-full max-w-6xl mx-auto h-[400px] md:h-[600px] rounded-[3rem] overflow-hidden mb-24 border border-white/10 shadow-[0_0_100px_rgba(100,100,255,0.15)] z-10 group"
+            >
+                <img src="/robot_neural_net.png" alt="Machine Economy Robotics" className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-1000" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80" />
+                <div className="absolute bottom-12 left-12 right-12">
+                    <h3 className="text-3xl md:text-5xl font-black text-white drop-shadow-2xl mb-4 tracking-tight">Neural Networks. Instant Value.</h3>
+                    <p className="text-xl md:text-2xl text-white/90 font-light drop-shadow-xl max-w-2xl">The next billion autonomous users are machines. Sell to them natively.</p>
+                </div>
+            </motion.div>
+
             {/* Main Feature Grids */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-stretch relative z-10 mb-20">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-stretch relative z-10 mb-20 max-w-6xl mx-auto px-4">
                 {/* UCP Card */}
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
