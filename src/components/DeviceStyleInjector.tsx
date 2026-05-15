@@ -17,7 +17,7 @@ export function DeviceStyleInjector() {
     // We detect legacy devices using TWO methods:
     //   1. Capacitor Android environment (most reliable for our app)
     //   2. Fallback: Android UA with Chrome < 99 (covers @layer support boundary)
-    const isCapacitorAndroid = !!(window as any).Capacitor && (window as any).Capacitor.getPlatform?.() === 'android';
+    const isCapacitorAndroid = !!(window as any).Capacitor && typeof (window as any).Capacitor.getPlatform === 'function' && (window as any).Capacitor.getPlatform() === 'android';
     const isAndroid = /Android/i.test(ua);
     const chromeMatch = ua.match(/Chrome\/([0-9]+)/i);
     const chromeVersion = chromeMatch ? parseInt(chromeMatch[1], 10) : 0;

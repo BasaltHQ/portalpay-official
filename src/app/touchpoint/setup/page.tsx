@@ -171,7 +171,7 @@ export default function TouchpointSetupPage() {
         );
     }
 
-    if (config?.configured) {
+    if (config && config.configured) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-950 text-white">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mb-4"></div>
@@ -181,7 +181,7 @@ export default function TouchpointSetupPage() {
     }
 
     return (
-        <div className="min-h-[var(--pp-vh)] bg-neutral-900 text-neutral-100 font-sans flex flex-col p-4 sm:p-6 overflow-y-auto">
+        <div className="min-h-screen min-h-[var(--pp-vh)] bg-neutral-900 text-neutral-100 font-sans flex flex-col p-4 sm:p-6 overflow-y-auto">
             <div className="w-full max-w-md mx-auto my-auto shrink-0 bg-neutral-800 rounded-2xl shadow-2xl overflow-hidden border border-neutral-700">
 
                 {/* Header */}
@@ -269,9 +269,9 @@ export default function TouchpointSetupPage() {
                 <p>UA: {typeof navigator !== "undefined" ? navigator.userAgent : "SSR"}</p>
                 {typeof navigator !== "undefined" && (
                     <>
-                        <p>isCapacitor: {String(!!(window as any).Capacitor && (window as any).Capacitor.getPlatform?.() === 'android')}</p>
+                        <p>isCapacitor: {String(!!(window as any).Capacitor && typeof (window as any).Capacitor.getPlatform === 'function' && (window as any).Capacitor.getPlatform() === 'android')}</p>
                         <p>isAndroid: {String(/Android/i.test(navigator.userAgent))}</p>
-                        <p>chromeMatch: {navigator.userAgent.match(/Chrome\/([0-9]+)/i)?.[1] || "null"}</p>
+                        <p>chromeMatch: {(navigator.userAgent.match(/Chrome\/([0-9]+)/i) || [])[1] || "null"}</p>
                         <p>legacyCssInjected: {String(!!document.getElementById("vp550-legacy-styles"))}</p>
                         <p>legacyLinkInjected: {String(!!document.getElementById("vp550-legacy-link"))}</p>
                     </>
