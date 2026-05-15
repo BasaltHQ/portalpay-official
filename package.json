@@ -150,7 +150,6 @@
       "d3-zoom": {
         "d3-interpolate": "3.0.1"
       }
-    },
-    "postcss": "$postcss"
+    }
   }
 }
