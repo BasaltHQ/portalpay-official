@@ -181,7 +181,7 @@ export default function TouchpointSetupPage() {
     }
 
     return (
-        <div className="min-h-[100dvh] bg-neutral-900 text-neutral-100 font-sans flex flex-col p-4 sm:p-6 overflow-y-auto">
+        <div className="min-h-[var(--pp-vh)] bg-neutral-900 text-neutral-100 font-sans flex flex-col p-4 sm:p-6 overflow-y-auto">
             <div className="w-full max-w-md mx-auto my-auto shrink-0 bg-neutral-800 rounded-2xl shadow-2xl overflow-hidden border border-neutral-700">
 
                 {/* Header */}

@@ -493,7 +493,7 @@ export default function ShopClient({ config: cfg, items: initialItems, reviews: 
         const prevBodyBg = body.style.background;
         const prevHtmlBg = html.style.background;
         body.style.overflow = "hidden";
-        body.style.height = "100dvh";
+        body.style.height = "var(--pp-vh)";
         html.style.overflow = "hidden";
         body.style.background = "#000";
         html.style.background = "#000";

@@ -24,7 +24,7 @@ export function exportCSV(filename: string, rows: Array<Record<string, any>>): v
 }
 
 export async function exportXLSX(filename: string, sheetName: string, rows: Array<Record<string, any>>): Promise<void> {
-	const XLSX = await import('xlsx');
+	const XLSX = await import('xlsx-js-style');
 	const ws = XLSX.utils.json_to_sheet(rows || []);
 	const wb = XLSX.utils.book_new();
 	XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Sheet1');
@@ -38,7 +38,7 @@ export async function exportXLSX(filename: string, sheetName: string, rows: Arra
 }
 
 export async function exportXLSXMulti(filename: string, sheets: Array<{ name: string; rows: Array<Record<string, any>> }>): Promise<void> {
-	const XLSX = await import('xlsx');
+	const XLSX = await import('xlsx-js-style');
 	const wb = XLSX.utils.book_new();
 	for (const s of sheets) {
 		const ws = XLSX.utils.json_to_sheet(s.rows || []);
