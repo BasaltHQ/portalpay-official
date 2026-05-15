@@ -1556,7 +1556,7 @@ function TerminalPageInner({ session, theme, onLogout, merchantWallet }: { sessi
   const containerClass = activeTab === "invoice" || activeTab === "wide"
     ? "w-full min-h-[100svh] px-0 md:px-0 py-0"
     : activeTab === "terminal"
-      ? "h-[var(--pp-vh)] px-0 py-0 md:h-auto md:max-w-6xl md:mx-auto md:px-4 md:px-6 md:py-2"
+      ? "h-screen h-[var(--pp-vh)] px-0 py-0 md:h-auto md:max-w-6xl md:mx-auto md:px-4 md:px-6 md:py-2"
       : "max-w-6xl mx-auto px-4 md:px-6 py-2";
 
   const showTabs = !pathname?.startsWith("/pricing") &&
