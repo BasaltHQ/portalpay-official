@@ -42,9 +42,13 @@ export function DeviceStyleInjector() {
 
     console.log('[DeviceStyleInjector] Injecting legacy CSS for Chrome', chromeVersion);
 
-    // ── STEP 1: Disable all Next.js modern CSS that uses @layer ──
-    // We disable these so they don't conflict or cause partial styling
-    const ssrSheets = document.querySelectorAll('link[rel="stylesheet"][data-precedence]');
+
+    
+    // ── STEP 0: Disable conflicting Next.js SSR stylesheets ──
+    // Next.js SSR embeds CSS with @layer directives that Chrome <99 can't parse.
+    // This results in partial/broken styles that conflict with our legacy.css.
+    // We disable them entirely so legacy.css is the sole source of styles.
+    const ssrSheets = document.querySelectorAll('style[data-next-font], link[rel="stylesheet"][href*="/_next/"]');
     ssrSheets.forEach((sheet) => {
       (sheet as HTMLElement).setAttribute('media', 'not all');
       console.log('[DeviceStyleInjector] Disabled SSR stylesheet:', sheet.tagName, (sheet as any).href || 'inline');

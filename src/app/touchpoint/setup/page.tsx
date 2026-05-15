@@ -261,7 +261,21 @@ export default function TouchpointSetupPage() {
                         Touchpoint Provisioning Required
                     </p>
                 </div>
+            </div>
 
+            {/* DEBUG INFO PANEL */}
+            <div className="w-full max-w-md mx-auto mt-4 p-4 bg-black/80 border border-red-500/50 rounded-xl text-[10px] font-mono text-red-400 break-all space-y-1">
+                <p className="font-bold text-red-500 mb-2">DEBUG INFO (DeviceStyleInjector)</p>
+                <p>UA: {typeof navigator !== "undefined" ? navigator.userAgent : "SSR"}</p>
+                {typeof navigator !== "undefined" && (
+                    <>
+                        <p>isCapacitor: {String(!!(window as any).Capacitor && (window as any).Capacitor.getPlatform?.() === 'android')}</p>
+                        <p>isAndroid: {String(/Android/i.test(navigator.userAgent))}</p>
+                        <p>chromeMatch: {navigator.userAgent.match(/Chrome\/([0-9]+)/i)?.[1] || "null"}</p>
+                        <p>legacyCssInjected: {String(!!document.getElementById("vp550-legacy-styles"))}</p>
+                        <p>legacyLinkInjected: {String(!!document.getElementById("vp550-legacy-link"))}</p>
+                    </>
+                )}
             </div>
         </div>
     );
