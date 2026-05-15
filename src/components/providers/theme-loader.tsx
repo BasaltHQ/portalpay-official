@@ -33,6 +33,18 @@ export function ThemeLoader() {
       if (path.startsWith("/portal") || path.startsWith("/shop")) {
         return; // Portal/Shop components are sole theme source for their routes
       }
+      // Device routes: TerminalSessionManager / HandheldInterface apply merchant branding
+      // from server-fetched ShopConfig. Skip ThemeLoader network calls (redundant) and
+      // mark theme-ready so any residual gating clears instantly.
+      if (path.startsWith("/touchpoint") || path.startsWith("/terminal") || path.startsWith("/handheld") || path.startsWith("/kiosk") || path.startsWith("/kitchen")) {
+        try {
+          const root = document.documentElement;
+          root.setAttribute("data-pp-theme-stage", "init");
+          root.setAttribute("data-pp-theme-ready", "1");
+          window.dispatchEvent(new CustomEvent("pp:theme:ready", { detail: {} }));
+        } catch {}
+        return;
+      }
 
       // Detect custom domain shops - if hostname is not a main platform domain, skip ThemeLoader
       const hostname = (url.hostname || "").toLowerCase();

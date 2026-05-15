@@ -796,6 +796,12 @@ export default async function RootLayout({
             d.setAttribute("data-pp-theme-stage","init");
             d.setAttribute("data-pp-theme-ready","1");
           }
+          // Device routes: mark ready immediately – merchant branding is applied
+          // independently by TerminalSessionManager / HandheldInterface from ShopConfig props
+          if (path.indexOf("/touchpoint") === 0 || path.indexOf("/terminal") === 0 || path.indexOf("/handheld") === 0 || path.indexOf("/kiosk") === 0 || path.indexOf("/kitchen") === 0) {
+            d.setAttribute("data-pp-theme-stage","init");
+            d.setAttribute("data-pp-theme-ready","1");
+          }
         } catch(e) {}`}} />
         <Script id="pp-ios-webview-polyfill" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
           try {
