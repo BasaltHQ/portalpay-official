@@ -721,6 +721,45 @@ export default async function RootLayout({
         style={{ overflowX: 'hidden' }}
       >
         <DeviceStyleInjector />
+        <Script id="vp550-css-blocker" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            try {
+              var ua = navigator.userAgent || navigator.vendor || window.opera;
+              var isAndroid = /Android/i.test(ua);
+              var chromeMatch = ua.match(/Chrome\\/([0-9]+)/i);
+              var chromeVersion = chromeMatch ? parseInt(chromeMatch[1], 10) : 0;
+              var isPreLayerChrome = chromeVersion > 0 && chromeVersion < 99;
+              var cap = window.Capacitor;
+              var isCapacitorAndroid = !!cap && typeof cap.getPlatform === 'function' && cap.getPlatform() === 'android';
+              var needsLegacyCss = isCapacitorAndroid || (isAndroid && isPreLayerChrome);
+              
+              if (needsLegacyCss) {
+                var links = document.querySelectorAll('link[rel="stylesheet"]');
+                for (var i = 0; i < links.length; i++) {
+                  if (links[i].href.indexOf('_next/static/css') > -1) {
+                    links[i].disabled = true;
+                    if (links[i].parentNode) links[i].parentNode.removeChild(links[i]);
+                  }
+                }
+                var legacyLink = document.createElement("link");
+                legacyLink.id = "vp550-legacy-link";
+                legacyLink.rel = "stylesheet";
+                legacyLink.href = "/css/legacy.css";
+                document.head.appendChild(legacyLink);
+                
+                var style = document.createElement("style");
+                style.id = "vp550-legacy-styles";
+                style.appendChild(document.createTextNode(
+                  "body::before, .glass-pane, .glass-backdrop, .tw-modal { background: rgba(10, 10, 10, 0.95) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; } " +
+                  ".global-gradient-layer div { background: #052e16 !important; filter: none !important; } " +
+                  ".tw-modal *, .tw-connect * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; } " +
+                  ".shield-gleam-container, .shield-gleam { display: none !important; }"
+                ));
+                document.head.appendChild(style);
+              }
+            } catch(e) {}
+          })();
+        `}} />
         <Script id="linkedin-insight-tag" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
           _linkedin_partner_id = "8943644";
           window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
