@@ -42,6 +42,25 @@ export function DeviceStyleInjector() {
 
     console.log('[DeviceStyleInjector] Injecting legacy CSS for Chrome', chromeVersion);
 
+    // ── STEP 1: Disable all Next.js modern CSS that uses @layer ──
+    // We disable these so they don't conflict or cause partial styling
+    const ssrSheets = document.querySelectorAll('link[rel="stylesheet"][data-precedence]');
+    ssrSheets.forEach((sheet) => {
+      (sheet as HTMLElement).setAttribute('media', 'not all');
+      console.log('[DeviceStyleInjector] Disabled SSR stylesheet:', sheet.tagName, (sheet as any).href || 'inline');
+    });
+
+    // Also disable inline <style> tags injected by Next.js that contain @layer
+    const allStyles = document.querySelectorAll('style');
+    allStyles.forEach((styleEl) => {
+      if (styleEl.id === 'vp550-legacy-styles' || styleEl.id === 'vp550-legacy-link') return;
+      const text = styleEl.textContent || '';
+      if (text.includes('@layer') || text.includes('oklch(') || text.includes('@import "tailwindcss"')) {
+        styleEl.setAttribute('media', 'not all');
+        console.log('[DeviceStyleInjector] Disabled @layer stylesheet (inline)');
+      }
+    });
+
     // ── STEP 1: Load Flattened External Stylesheet ──
     const link = document.createElement("link");
     link.id = "vp550-legacy-link";
