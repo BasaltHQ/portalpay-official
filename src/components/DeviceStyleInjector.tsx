@@ -38,44 +38,9 @@ export function DeviceStyleInjector() {
 
     if (!needsLegacyCss) return;
 
-    // Prevent duplicate injections
-    if (document.getElementById("vp550-legacy-styles")) return;
-
-    console.log('[DeviceStyleInjector] Injecting legacy CSS for Chrome', chromeVersion);
-
-    // ── STEP 1: Load Flattened External Stylesheet ──
-    const link = document.createElement("link");
-    link.id = "vp550-legacy-link";
-    link.rel = "stylesheet";
-    link.href = "/css/legacy.css";
-    document.head.appendChild(link);
-
-    // ── STEP 2: SES-safe inline overrides ──
-    const style = document.createElement("style");
-    style.id = "vp550-legacy-styles";
-    const css = `
-      /* VP550/Legacy Android Overrides */
-      body::before, .glass-pane, .glass-backdrop, .tw-modal {
-        background: rgba(10, 10, 10, 0.95) !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-      }
-      .global-gradient-layer div {
-        background: #052e16 !important;
-        filter: none !important;
-      }
-      /* Thirdweb contrast fixes */
-      .tw-modal *, .tw-connect * {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-      }
-      /* Hide elements that break layout in older Chrome */
-      .shield-gleam-container, .shield-gleam {
-        display: none !important;
-      }
-    `;
-    style.appendChild(document.createTextNode(css));
-    document.head.appendChild(style);
+    // ── STEP 1 & 2: Legacy CSS injection and SES overrides are now handled ──
+    // ── instantly by the beforeInteractive Script in layout.tsx to prevent ──
+    // ── the 5-second unstyled flash and rendering crash. ──
 
     // ── STEP 3: Direct DOM Manipulation (MutationObserver) ──
     const fixLayout = (root: Node) => {
