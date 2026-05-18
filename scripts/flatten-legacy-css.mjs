@@ -403,6 +403,14 @@ function stripColorMixDeclarations(input) {
 }
 css = stripColorMixDeclarations(css);
 
+// 5g. Strip SSR theme-ready overlay rules — these create a z-9999 fixed overlay
+// when data-pp-theme-ready="0". On legacy devices the beforeInteractive script
+// that flips this attribute may not execute, leaving a permanent blocking overlay.
+css = css.replace(/html\[data-pp-theme-ready="0"\]\s*body:(?::)?before[^}]*\}/g, '');
+css = css.replace(/html\[data-pp-theme-ready="0"\]\s*body:(?::)?after[^}]*\}/g, '');
+// Also remove the combined selector form: html[...] body:before, html[...] body:after { ... }
+css = css.replace(/html\[data-pp-theme-ready="0"\]\s*body:(?::)?(?:before|after)\s*,\s*html\[data-pp-theme-ready="0"\]\s*body:(?::)?(?:before|after)\s*\{[^}]*\}/g, '');
+
 // 5f. Final cleanup: remove any remaining lab() that slipped through
 css = css.replace(/[\w-]+\s*:\s*lab\([^)]*\)\s*;?/g, '');
 

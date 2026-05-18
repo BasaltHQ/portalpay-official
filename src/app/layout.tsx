@@ -798,7 +798,7 @@ export default async function RootLayout({
           }
           // Device routes: mark ready immediately – merchant branding is applied
           // independently by TerminalSessionManager / HandheldInterface from ShopConfig props
-          if (path.indexOf("/touchpoint") === 0 || path.indexOf("/terminal") === 0 || path.indexOf("/handheld") === 0 || path.indexOf("/kiosk") === 0 || path.indexOf("/kitchen") === 0) {
+          if (path.indexOf("/touchpoint") === 0 || path.indexOf("/terminal") === 0 || path.indexOf("/handheld") === 0 || path.indexOf("/kiosk") === 0 || path.indexOf("/kitchen") === 0 || path.indexOf("/legacy") === 0) {
             d.setAttribute("data-pp-theme-stage","init");
             d.setAttribute("data-pp-theme-ready","1");
           }
