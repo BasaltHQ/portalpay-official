@@ -70,21 +70,31 @@ export default function TouchpointSetupPage() {
 
         const queryStr = queryParams.toString() ? `?${queryParams.toString()}` : "";
 
+        // Detect if this is a legacy Android WebView (Chrome < 99) that the
+        // proxy routes through the /legacy layout for Chrome 93-compatible CSS.
+        // We must use UA detection (not pathname) because proxy.ts uses
+        // NextResponse.rewrite() which is invisible to window.location.
+        const ua = navigator.userAgent || "";
+        const chromeMatch = ua.match(/Chrome\/([0-9]+)/i);
+        const chromeVer = chromeMatch ? parseInt(chromeMatch[1], 10) : 0;
+        const isLegacy = /Android/i.test(ua) && chromeVer > 0 && chromeVer < 99;
+        const prefix = isLegacy ? "/legacy" : "";
+
         if (cfg.mode === "terminal") {
             // Wallet must be a path parameter for terminal to work without login
-            router.replace(`/terminal/${cfg.merchantWallet}${queryStr}`);
+            router.replace(`${prefix}/terminal/${cfg.merchantWallet}${queryStr}`);
         } else if (cfg.mode === "handheld") {
             // Handheld mode uses dedicated handheld interface
-            router.replace(`/handheld/${cfg.merchantWallet}${queryStr}`);
+            router.replace(`${prefix}/handheld/${cfg.merchantWallet}${queryStr}`);
         } else if (cfg.mode === "kds") {
             // Kitchen Display System mode
-            router.replace(`/kitchen/${cfg.merchantWallet}${queryStr}`);
+            router.replace(`${prefix}/kitchen/${cfg.merchantWallet}${queryStr}`);
         } else if (cfg.mode === "kiosk") {
             // Kiosk mode uses dedicated kiosk interface
-            router.replace(`/kiosk/${cfg.merchantWallet}${queryStr}`);
+            router.replace(`${prefix}/kiosk/${cfg.merchantWallet}${queryStr}`);
         } else {
             // Fallback
-            router.replace(`/shop/${cfg.merchantWallet}${queryStr}`);
+            router.replace(`${prefix}/shop/${cfg.merchantWallet}${queryStr}`);
         }
     }
 
