@@ -729,23 +729,37 @@ export default async function RootLayout({
               var chromeMatch = ua.match(/Chrome\\/([0-9]+)/i);
               var chromeVersion = chromeMatch ? parseInt(chromeMatch[1], 10) : 0;
               var isPreLayerChrome = chromeVersion > 0 && chromeVersion < 99;
-              var cap = window.Capacitor;
-              var isCapacitorAndroid = !!cap && typeof cap.getPlatform === 'function' && cap.getPlatform() === 'android';
-              var needsLegacyCss = isCapacitorAndroid || (isAndroid && isPreLayerChrome);
+              var needsLegacyCss = isAndroid && isPreLayerChrome;
               
               if (needsLegacyCss) {
+                var logs = ["UA: " + chromeVersion, "Legacy mode: YES"];
                 var links = document.querySelectorAll('link[rel="stylesheet"]');
+                var stripped = 0;
                 for (var i = 0; i < links.length; i++) {
                   if (links[i].href.indexOf('_next/static/css') > -1) {
                     links[i].disabled = true;
                     if (links[i].parentNode) links[i].parentNode.removeChild(links[i]);
+                    stripped++;
                   }
                 }
+                logs.push("Stripped Next CSS: " + stripped);
+
                 var legacyLink = document.createElement("link");
                 legacyLink.id = "vp550-legacy-link";
                 legacyLink.rel = "stylesheet";
-                legacyLink.href = "/css/legacy.css";
+                legacyLink.href = "/css/legacy.css?v=" + new Date().getTime(); // Cache buster
+                
+                legacyLink.onload = function() {
+                  var debug = document.getElementById("vp550-debug");
+                  if(debug) debug.innerHTML += "<br/>✅ legacy.css LOADED";
+                };
+                legacyLink.onerror = function() {
+                  var debug = document.getElementById("vp550-debug");
+                  if(debug) debug.innerHTML += "<br/>❌ legacy.css FAILED TO LOAD";
+                };
+
                 document.head.appendChild(legacyLink);
+                logs.push("Injected legacy.css");
                 
                 var style = document.createElement("style");
                 style.id = "vp550-legacy-styles";
@@ -756,8 +770,30 @@ export default async function RootLayout({
                   ".shield-gleam-container, .shield-gleam { display: none !important; }"
                 ));
                 document.head.appendChild(style);
+
+                // Create on-screen debug overlay
+                window.addEventListener("DOMContentLoaded", function() {
+                  var debugDiv = document.createElement("div");
+                  debugDiv.id = "vp550-debug";
+                  debugDiv.style.position = "fixed";
+                  debugDiv.style.bottom = "10px";
+                  debugDiv.style.left = "10px";
+                  debugDiv.style.right = "10px";
+                  debugDiv.style.zIndex = "999999";
+                  debugDiv.style.background = "rgba(0,0,0,0.8)";
+                  debugDiv.style.color = "#00ff00";
+                  debugDiv.style.padding = "10px";
+                  debugDiv.style.fontFamily = "monospace";
+                  debugDiv.style.fontSize = "12px";
+                  debugDiv.style.borderRadius = "8px";
+                  debugDiv.style.border = "1px solid #00ff00";
+                  debugDiv.innerHTML = "<strong>VP550 DEBUG</strong><br/>" + logs.join("<br/>");
+                  document.body.appendChild(debugDiv);
+                });
               }
-            } catch(e) {}
+            } catch(e) {
+              alert("Legacy setup error: " + e.message);
+            }
           })();
         `}} />
         <Script id="linkedin-insight-tag" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
