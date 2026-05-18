@@ -15,7 +15,7 @@ import { installShopAgentDispatcher } from "@/agent/dispatcher/shopAgentDispatch
 import { useBrand } from "@/contexts/BrandContext";
 import { getEffectiveBrandKey, resolveBrandSymbol } from "@/lib/branding";
 import ShopLanguageDropdown from "@/components/ShopLanguageDropdown";
-import PortalReceiptPage from "@/app/portal/[id]/page";
+import PortalReceiptPage from "@/app/(web)/portal/[id]/page";
 import dynamic from "next/dynamic";
 const ConnectButton = dynamic(() => import("thirdweb/react").then((m) => m.ConnectButton), { ssr: false });
 import { RestaurantModifierSelector, getDefaultModifierSelections } from "@/components/shop/industry/RestaurantModifierSelector";

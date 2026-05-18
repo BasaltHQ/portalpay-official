@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import TerminalInterface from "@/components/terminal/TerminalInterface";
 import TerminalAdminDashboard from "@/components/terminal/TerminalAdminDashboard";
-import { ShopConfig } from "@/app/shop/[slug]/ShopClient";
+import { ShopConfig } from "@/app/(web)/shop/[slug]/ShopClient";
 import { useApplyTheme, resolveThemeId } from "@/lib/themes";
 
 // ThirdWeb Imports

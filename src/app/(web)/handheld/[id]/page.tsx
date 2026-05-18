@@ -1,11 +1,8 @@
 import { notFound } from "next/navigation";
 import { getContainer } from "@/lib/cosmos";
-import { InventoryItem } from "@/types/inventory";
-import KioskClient from "./KioskClient";
-import { ShopConfig } from "@/app/shop/[slug]/ShopClient";
-import { getBrandKey } from "@/config/brands";
+import HandheldSessionManager from "@/components/handheld/HandheldSessionManager";
+import { ShopConfig } from "@/app/(web)/shop/[slug]/ShopClient";
 
-// Force fresh data on every request — admin theme changes must appear immediately
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -30,7 +27,7 @@ function sanitizeShopTheme(theme: any) {
     return sanitized;
 }
 
-export default async function KioskPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function HandheldModePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const cleanSlug = id.toLowerCase();
     const container = await getContainer();
@@ -46,54 +43,27 @@ export default async function KioskPage({ params }: { params: Promise<{ id: stri
         })
         .fetchAll();
 
-    console.log(`[KIOSK DEBUG] found ${docs.length} docs for ${cleanSlug}:`, docs.map((c: any) => ({ id: c.id, type: c.type, kiosk: c.kioskEnabled })));
-
-    // Categorize docs
+    // 2. Select Best Match (Prioritize active brand key to avoid slug collisions)
     const envBrandKey = (process.env.BRAND_KEY || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge").toLowerCase();
-    
-    let shopConfig = (
+
+    const shopConfig = (
+      // 1. Exact match for current brand environment
       docs.filter((c: any) => c.type === 'shop_config').find((c: any) => (c.brandKey || "").toLowerCase() === envBrandKey) ||
+      // 2. Fallback for platform: basaltsurge, portalpay, or legacy (no brandKey)
       ((envBrandKey === "basaltsurge" || envBrandKey === "portalpay")
         ? docs.filter((c: any) => c.type === 'shop_config').find((c: any) => !c.brandKey || c.brandKey === "portalpay" || c.brandKey === "basaltsurge")
         : undefined) ||
+      // 3. Fallback to first result
       docs.find((c: any) => c.type === 'shop_config')
     );
 
-    // Multiple site_config docs may exist (site:config:basaltsurge, site:config:portalpay, site:config).
-    // Prefer the brand-scoped doc that the admin actually writes to.
-    let brandKey = "basaltsurge";
-    try { brandKey = getBrandKey(); } catch { }
-    const siteConfigs = docs.filter((c: any) => c.type === 'site_config');
-    let siteConfig =
-        siteConfigs.find((c: any) => c.id === `site:config:${brandKey}`) ||  // brand-scoped (admin writes here)
-        siteConfigs.find((c: any) => c.id === 'site:config') ||              // legacy mirror
-        siteConfigs[0];                                                       // any fallback
-
-    console.log(`[KIOSK DEBUG] selected site_config id=${siteConfig?.id}, touchpointThemes=`, JSON.stringify(siteConfig?.touchpointThemes));
-
-    // If we found a shop_config by slug but missed the site_config entirely,
-    // do a targeted point-read using the merchant wallet
-    if (shopConfig && !siteConfig && shopConfig.wallet) {
-        const merchantWallet = String(shopConfig.wallet).toLowerCase();
-        const brandDocId = `site:config:${brandKey}`;
-        const legacyDocId = "site:config";
-
-        try {
-            const { resource } = await container.item(brandDocId, merchantWallet).read<any>();
-            if (resource) {
-                siteConfig = resource;
-                console.log(`[KIOSK DEBUG] fetched site_config via brand doc ${brandDocId} for wallet ${merchantWallet}`);
-            }
-        } catch {
-            try {
-                const { resource } = await container.item(legacyDocId, merchantWallet).read<any>();
-                if (resource) {
-                    siteConfig = resource;
-                    console.log(`[KIOSK DEBUG] fetched site_config via legacy doc ${legacyDocId} for wallet ${merchantWallet}`);
-                }
-            } catch { }
-        }
-    }
+    const siteConfig = (
+      docs.filter((c: any) => c.type === 'site_config').find((c: any) => (c.brandKey || "").toLowerCase() === envBrandKey) ||
+      ((envBrandKey === "basaltsurge" || envBrandKey === "portalpay")
+        ? docs.filter((c: any) => c.type === 'site_config').find((c: any) => !c.brandKey || c.brandKey === "portalpay" || c.brandKey === "basaltsurge")
+        : undefined) ||
+      docs.find((c: any) => c.type === 'site_config')
+    );
 
     if (!shopConfig && !siteConfig) {
         return notFound();
@@ -123,23 +93,7 @@ export default async function KioskPage({ params }: { params: Promise<{ id: stri
         wallet: shopConfig?.wallet || siteConfig?.wallet || docs[0]?.wallet,
     };
 
-    console.log(`[KIOSK DEBUG] touchpointThemes resolved:`, JSON.stringify(mergedConfig.touchpointThemes));
-
-    // 2. Security Check: Kiosk Enabled?
-    const isKioskEnabled = mergedConfig.kioskEnabled === true;
-
-    if (!isKioskEnabled) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-4 text-center">
-                <div className="max-w-md space-y-4">
-                    <h1 className="text-2xl font-bold">Kiosk Not Enabled</h1>
-                    <p className="text-muted-foreground">This merchant has not enabled Kiosk mode. Please check with an administrator.</p>
-                </div>
-            </div>
-        );
-    }
-
-    // 3. Sanitize Theme
+    // 2. Sanitize Theme
     if (mergedConfig.theme) {
         mergedConfig.theme = sanitizeShopTheme(mergedConfig.theme);
     } else {
@@ -151,15 +105,30 @@ export default async function KioskPage({ params }: { params: Promise<{ id: stri
         });
     }
 
-    // 4. Prebuild items
-    const items: InventoryItem[] = [];
+    // 3. Security Check: Handheld Enabled? (Optional, similar to Terminal Check)
+    // For now, assume if Terminal or Kiosk is enabled, or just existence of config allows it.
+    // Or we can add a specific check later. Defaults to allowing if provisioned.
+
+    // 4. Fetch Inventory (Server-Side)
+    const merchantWallet = mergedConfig.wallet || cleanSlug;
+    let items: any[] = [];
+    try {
+        const { resources } = await container.items
+            .query({
+                query: "SELECT * FROM c WHERE c.type = 'inventory_item' AND c.wallet = @wallet",
+                parameters: [{ name: "@wallet", value: merchantWallet }]
+            })
+            .fetchAll();
+        items = resources || [];
+    } catch (e) {
+        console.error("Failed to fetch inventory for handheld", e);
+    }
 
     return (
-        <KioskClient
-            config={mergedConfig as ShopConfig}
+        <HandheldSessionManager
+            config={mergedConfig as any}
+            merchantWallet={merchantWallet}
             items={items}
-            merchantWallet={mergedConfig.wallet}
         />
     );
 }
-

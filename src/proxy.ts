@@ -228,6 +228,27 @@ export function proxy(req: NextRequest) {
         }
     }
 
+    // Legacy Hardware Routing (VP550 Terminals)
+    const ua = req.headers.get("user-agent") || "";
+    const isTerminalRoute = url.pathname.startsWith("/terminal") || 
+                            url.pathname.startsWith("/touchpoint") || 
+                            url.pathname.startsWith("/kiosk") || 
+                            url.pathname.startsWith("/kitchen") || 
+                            url.pathname.startsWith("/handheld");
+    
+    if (isTerminalRoute) {
+        const chromeMatch = ua.match(/Chrome\/([0-9]+)/i);
+        const chromeVersion = chromeMatch ? parseInt(chromeMatch[1], 10) : 0;
+        const isLegacyAndroid = /Android/i.test(ua) && chromeVersion > 0 && chromeVersion < 99;
+        
+        if (isLegacyAndroid && !url.pathname.startsWith("/_legacy")) {
+            const target = new URL(`/_legacy${url.pathname}`, req.url);
+            const res = NextResponse.rewrite(target);
+            applySecurityHeaders(req, res);
+            return res;
+        }
+    }
+
     // Custom Domain Detection (needed for favicon routing below)
     let faviconHostname = req.headers.get("x-custom-host") || req.headers.get("x-forwarded-host") || req.headers.get("host") || url.hostname || "";
     faviconHostname = faviconHostname.split(":")[0].toLowerCase();

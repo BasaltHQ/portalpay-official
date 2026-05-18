@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getContainer } from "@/lib/cosmos";
 import TerminalSessionManager from "@/components/terminal/TerminalSessionManager";
-import { ShopConfig } from "@/app/shop/[slug]/ShopClient";
+import { ShopConfig } from "@/app/(web)/shop/[slug]/ShopClient";
 
 // Helper to sanitize theme (duplicated from shop/page.tsx to ensure consistency)
 function sanitizeShopTheme(theme: any) {

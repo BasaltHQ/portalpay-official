@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BOOK_CATEGORIES, BookCategory } from "@/lib/book-categories";
 import { client, chain } from "@/lib/thirdweb/client";
 import { getContract, prepareContractCall, sendTransaction, readContract, waitForReceipt } from "thirdweb";
-import { getPdfPageCount } from "@/app/actions/pdf-utils";
+import { getPdfPageCount } from "@/app/(web)/actions/pdf-utils";
 import OsirisUSBNArtifact from "@/lib/contracts/OsirisUSBN.json";
 
 /**

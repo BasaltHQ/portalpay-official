@@ -369,7 +369,7 @@ import { PlatformArtConfig, createDefaultPlatformConfig } from "@/utils/generati
 import { calculateTotalXPForLevel, calculateLevelFromXP, DEFAULT_LOYALTY_CONFIG, LoyaltyConfig, simulateProjections, calculateRecommendedConfig, calculateLevelProgress, Role } from "@/utils/loyalty-math";
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { Wand2, LayoutTemplate, MoveRight, TrendingUp, Info } from "lucide-react";
-import GlobalArtPanel from "@/app/admin/panels/GlobalArtPanel";
+import GlobalArtPanel from "@/app/(web)/admin/panels/GlobalArtPanel";
 
 export function LevelArtTab({ isPlatform = false, merchantWallet }: { isPlatform?: boolean, merchantWallet?: string }) {
     // Both platform admin and merchant view use GlobalArtPanel

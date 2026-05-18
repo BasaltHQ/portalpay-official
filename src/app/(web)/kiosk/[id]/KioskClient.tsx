@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { X, Search, ShoppingCart, Trash2, Plus, Minus, Tag, RotateCcw, ChevronLeft, ChevronRight, Sparkles, Ticket, ChevronDown } from "lucide-react";
 import { InventoryItem, isRestaurantAttributes } from "@/types/inventory";
 import type { SelectedModifier, RestaurantItemAttributes } from "@/types/inventory";
-import { ShopConfig } from "@/app/shop/[slug]/ShopClient";
+import { ShopConfig } from "@/app/(web)/shop/[slug]/ShopClient";
 import { resolveThemeId, resolveKioskConfig, useApplyTheme } from "@/lib/themes";
 import type { KioskLayout, ColorMode } from "@/lib/themes";
 import KioskModifierSheet from "./KioskModifierSheet";
