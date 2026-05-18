@@ -3,7 +3,7 @@
 import React from "react";
 import AdminHero from "@/components/admin/admin-hero";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
-import InstallerPackagesPanel from "@/app/admin/panels/InstallerPackagesPanel";
+import InstallerPackagesPanel from "@/app/(web)/admin/panels/InstallerPackagesPanel";
 import { useActiveAccount } from "thirdweb/react";
 import { isPlatformSuperAdmin, canAccessPanel } from "@/lib/authz";
 

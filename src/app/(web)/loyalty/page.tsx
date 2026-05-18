@@ -5,7 +5,7 @@ import { useActiveAccount, ConnectButton } from "thirdweb/react";
 import { client, chain } from "@/lib/thirdweb/client";
 import { useBrand } from "@/contexts/BrandContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import RewardsPanel from "@/app/admin/panels/RewardsPanel";
+import RewardsPanel from "@/app/(web)/admin/panels/RewardsPanel";
 import { Heart, Wallet } from "lucide-react";
 
 export default function LoyaltyPage() {

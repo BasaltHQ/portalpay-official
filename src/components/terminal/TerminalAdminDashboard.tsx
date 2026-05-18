@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { formatCurrency } from "@/lib/fx";
 import { createPortal } from "react-dom";
-import ReportsPanelv2 from "@/app/admin/panels/ReportsPanelv2";
+import ReportsPanelv2 from "@/app/(web)/admin/panels/ReportsPanelv2";
 import TeamManagementPanel from "@/components/admin/team/TeamManagementPanel";
 
 interface AdminDashboardProps {

@@ -10,7 +10,7 @@ import { getAllIndustryPacks, IndustryPack, IndustryPackType } from "@/lib/indus
 import { Utensils, ShoppingBag, Hotel, Briefcase, BookOpen, Leaf } from "lucide-react";
 import ImageUploadField from "@/components/forms/ImageUploadField";
 import ShopWizard from "@/components/shop/ShopWizard";
-import ShopClient from "@/app/shop/[slug]/ShopClient";
+import ShopClient from "@/app/(web)/shop/[slug]/ShopClient";
 import { useBrand } from "@/contexts/BrandContext";
 import AdvancedShopTab from "@/components/admin/AdvancedShopTab";
 import ShopDiscoveryEditor from "@/components/shop/ShopDiscoveryEditor";

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import HandheldInterface from "@/components/handheld/HandheldInterface";
 import TerminalAdminDashboard from "@/components/terminal/TerminalAdminDashboard";
-import { ShopConfig } from "@/app/shop/[slug]/ShopClient";
+import { ShopConfig } from "@/app/(web)/shop/[slug]/ShopClient";
 
 // ThirdWeb Imports
 import { ConnectButton, useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";

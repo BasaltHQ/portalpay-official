@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback, memo, startTransition } from "react";
 import { createPortal } from "react-dom";
-import { ShopConfig, ShopTheme, InventoryArrangement } from "@/app/shop/page";
+import { ShopConfig, ShopTheme, InventoryArrangement } from "@/app/(web)/shop/page";
 import ImageUploadField from "@/components/forms/ImageUploadField";
-import ShopClient from "@/app/shop/[slug]/ShopClient";
+import ShopClient from "@/app/(web)/shop/[slug]/ShopClient";
 import { getAllIndustryPacks } from "@/lib/industry-packs";
 import { useActiveAccount } from "thirdweb/react";
 
