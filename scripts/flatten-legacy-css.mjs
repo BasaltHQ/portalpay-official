@@ -129,8 +129,13 @@ function stripAtProperty(input) {
 }
 css = stripAtProperty(css);
 
-// 3b. Remove @supports blocks that test for features Chrome 70 doesn't have
-function stripSupports(input) {
+// 3b. Unwrap ALL @supports blocks — extract contents, remove wrapper
+// Tailwind v4 wraps --tw-* variable definitions in @supports blocks that test
+// for features like relative color syntax (Chrome 119+). Chrome 93 evaluates
+// these @supports conditions to false, causing 5000+ var(--tw-*) references
+// to resolve to nothing. By unwrapping ALL @supports blocks, the variable
+// definitions become unconditional and work on any browser.
+function stripAllSupports(input) {
     let result = '';
     let i = 0;
     while (i < input.length) {
@@ -139,33 +144,15 @@ function stripSupports(input) {
             result += input.slice(i);
             break;
         }
-
-        // Check if this @supports tests for color-mix, lab, or contain-intrinsic
-        const parenStart = input.indexOf('(', supIdx);
+        // Add everything before @supports
+        result += input.slice(i, supIdx);
+        // Find the opening brace
         const braceStart = input.indexOf('{', supIdx);
-        if (parenStart === -1 || braceStart === -1) {
-            result += input.slice(i, supIdx + 9);
+        if (braceStart === -1) {
             i = supIdx + 9;
             continue;
         }
-
-        const condition = input.slice(parenStart, braceStart).toLowerCase();
-        const shouldRemove = condition.includes('color-mix') ||
-            condition.includes('color:lab(') ||
-            condition.includes('color: lab(') ||
-            condition.includes('contain-intrinsic') ||
-            condition.includes('-apple-pay-button');
-
-        if (!shouldRemove) {
-            result += input.slice(i, braceStart + 1);
-            i = braceStart + 1;
-            continue;
-        }
-
-        // Add everything before @supports
-        result += input.slice(i, supIdx);
-
-        // Find matching closing brace and skip entire block
+        // Find matching closing brace
         let depth = 1;
         let j = braceStart + 1;
         while (j < input.length && depth > 0) {
@@ -173,11 +160,13 @@ function stripSupports(input) {
             if (input[j] === '}') depth--;
             j++;
         }
+        // Extract contents (without outer braces) — unwrap, don't discard
+        result += input.slice(braceStart + 1, j - 1);
         i = j;
     }
     return result;
 }
-css = stripSupports(css);
+css = stripAllSupports(css);
 
 // 3c. Remove lab() declarations — these are fallbacks that Chrome 70 doesn't understand
 // Match property declarations ending with lab(...) 
@@ -205,11 +194,11 @@ function splitCssValue(val) {
     return parts;
 }
 
-// 3d. Replace :where(...) with inner selectors
+// 3d. Replace :where(...) with inner selectors (first pass — pre-minification)
 // :where() has zero specificity (Chrome 88+). Safe to replace with inner content.
 css = css.replace(/:where\(([^)]+)\)/g, '$1');
 
-// 3e. Replace remaining :is() with :-webkit-any() for Chrome 70
+// 3e. Replace remaining :is() with :-webkit-any() for Chrome 70 (first pass)
 css = css.replace(/:is\(/g, ':-webkit-any(');
 
 // 3f. Convert individual transform properties to transform shorthand
@@ -311,6 +300,11 @@ css = css.replace(/contain-intrinsic-size\s*:\s*[^;{}]+\s*;?/g, '');
 // 3l. Remove ::backdrop (Chrome 76+, but we don't need it)
 // Actually, ::backdrop is fine in Chrome 70, leave it.
 
+// 3m. Strip 'in oklab' (and other color spaces) from gradient declarations
+// Chrome 93 doesn't support gradient color interpolation spaces (Chrome 111+)
+// linear-gradient(to bottom in oklab, ...) → linear-gradient(to bottom, ...)
+css = css.replace(/\b(linear-gradient|radial-gradient|conic-gradient)\(([^)]*?)\s+in\s+(oklab|oklch|srgb|srgb-linear|display-p3|a98-rgb|prophoto-rgb|rec2020|lab|lch|xyz|xyz-d50|xyz-d65)/gi, '$1($2');
+
 // ── STEP 4: Final LightningCSS pass for minification ────────────────
 console.log('[4/4] Final minification...');
 try {
@@ -318,7 +312,24 @@ try {
         filename: outputCss,
         code: Buffer.from(css),
         minify: true,
-        // No targets here — everything is already downleveled
+        // Target Chrome 93 so the minifier doesn't re-introduce modern CSS
+        // features like color-mix() or @supports blocks
+        targets: { chrome: (93 << 16) },
+        include:
+            Features.Nesting |
+            Features.IsSelector |
+            Features.OklabColors |
+            Features.LabColors |
+            Features.P3Colors |
+            Features.ColorFunction |
+            Features.HexAlphaColors |
+            Features.LogicalProperties |
+            Features.MediaRangeSyntax |
+            Features.Colors |
+            Features.Selectors |
+            Features.VendorPrefixes |
+            Features.DoublePositionGradients |
+            Features.LightDark
     });
     css = minified.code.toString();
 } catch (e) {
@@ -326,7 +337,73 @@ try {
     console.warn('⚠️  Minification had issues, using un-minified output:', e.message);
 }
 
-// Final cleanup: remove any remaining lab() that slipped through
+// ── STEP 5: Post-minification cleanup ───────────────────────────────
+// LightningCSS minification can re-introduce modern selectors like :is()
+// and :where() that we already converted in Step 3. Run replacements again.
+console.log('[5/5] Post-minification compatibility cleanup...');
+
+// 5a. Re-unwrap any @supports blocks the minifier re-introduced
+css = stripAllSupports(css);
+
+// 5b. Re-run :where() → inner content (minifier may re-introduce)
+css = css.replace(/:where\(([^)]+)\)/g, '$1');
+
+// 5c. Re-run :is() → :-webkit-any() (minifier may re-introduce)
+css = css.replace(/:is\(/g, ':-webkit-any(');
+
+// 5d. Re-strip 'in oklab' and all color interpolation spaces
+// These appear both in gradient functions AND in CSS variable declarations
+// like --tw-gradient-position: to bottom in oklab;
+// LightningCSS re-introduces these during minification
+css = css.replace(/\b(linear-gradient|radial-gradient|conic-gradient)\(([^)]*?)\s+in\s+(oklab|oklch|srgb|srgb-linear|display-p3|a98-rgb|prophoto-rgb|rec2020|lab|lch|xyz|xyz-d50|xyz-d65)/gi, '$1($2');
+// Also strip from variable declarations: "to bottom in oklab" → "to bottom"
+css = css.replace(/\s+in\s+(oklab|oklch|srgb-linear|display-p3|a98-rgb|prophoto-rgb|rec2020)\b/gi, '');
+
+// 5e. Remove CSS declarations containing color-mix() — Chrome 93 doesn't support it (Chrome 111+)
+// LightningCSS re-introduces color-mix() as progressive enhancement fallbacks.
+// These typically appear as duplicate declarations after a static fallback:
+//   color: currentColor; color: color-mix(in oklab, currentcolor 50%, transparent);
+// We remove the color-mix declaration, keeping the static fallback.
+function stripColorMixDeclarations(input) {
+    let result = '';
+    let i = 0;
+    while (i < input.length) {
+        const cmIdx = input.indexOf('color-mix(', i);
+        if (cmIdx === -1) {
+            result += input.slice(i);
+            break;
+        }
+        // Find the start of this declaration (scan back for ; or {)
+        let declStart = cmIdx;
+        while (declStart > 0 && input[declStart - 1] !== ';' && input[declStart - 1] !== '{') {
+            declStart--;
+        }
+        // Find the end of color-mix() respecting nested parens
+        let depth = 0;
+        let j = cmIdx + 'color-mix'.length;
+        // Find opening paren
+        while (j < input.length && input[j] !== '(') j++;
+        depth = 1;
+        j++;
+        while (j < input.length && depth > 0) {
+            if (input[j] === '(') depth++;
+            if (input[j] === ')') depth--;
+            j++;
+        }
+        // Find end of the declaration (next ; or })
+        while (j < input.length && input[j] !== ';' && input[j] !== '}') j++;
+        // Include the ; if present
+        if (j < input.length && input[j] === ';') j++;
+
+        // Add everything before this declaration
+        result += input.slice(i, declStart);
+        i = j;
+    }
+    return result;
+}
+css = stripColorMixDeclarations(css);
+
+// 5f. Final cleanup: remove any remaining lab() that slipped through
 css = css.replace(/[\w-]+\s*:\s*lab\([^)]*\)\s*;?/g, '');
 
 fs.writeFileSync(outputCss, css);
@@ -337,13 +414,16 @@ const checks = {
     'oklch(': (css.match(/oklch\(/g) || []).length,
     'lab(': (css.match(/\blab\(/g) || []).length,
     'color-mix(': (css.match(/color-mix\(/g) || []).length,
-    'margin-inline': (css.match(/margin-inline[^-]/g) || []).length,
-    'padding-inline': (css.match(/padding-inline[^-]/g) || []).length,
-    'margin-block': (css.match(/margin-block[^-]/g) || []).length,
-    'padding-block': (css.match(/padding-block[^-]/g) || []).length,
+    'margin-inline': (css.match(/[{;]\s*margin-inline\s*:/g) || []).length,
+    'padding-inline': (css.match(/[{;]\s*padding-inline\s*:/g) || []).length,
+    'margin-block': (css.match(/[{;]\s*margin-block\s*:/g) || []).length,
+    'padding-block': (css.match(/[{;]\s*padding-block\s*:/g) || []).length,
     'inset:': (css.match(/[{;]inset:/g) || []).length,
     ':where(': (css.match(/:where\(/g) || []).length,
+    ':is(': (css.match(/:is\(/g) || []).length,
     '@supports': (css.match(/@supports/g) || []).length,
+    '@layer': (css.match(/@layer/g) || []).length,
+    'in oklab': (css.match(/in\s+oklab/g) || []).length,
     'translate:': (css.match(/[{;]translate:/g) || []).length,
     'scale:': (css.match(/[{;]scale:/g) || []).length,
     'rotate:': (css.match(/[{;]rotate:/g) || []).length,
@@ -352,7 +432,7 @@ const checks = {
     'inset-block': (css.match(/inset-block/g) || []).length,
 };
 
-console.log('\n═══ Chrome 70 Compatibility Report ═══');
+console.log('\n═══ Chrome 93 Compatibility Report ═══');
 let totalIssues = 0;
 for (const [pattern, count] of Object.entries(checks)) {
     const status = count === 0 ? '✅' : '⚠️ ';
