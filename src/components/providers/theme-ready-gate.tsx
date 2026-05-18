@@ -488,7 +488,7 @@ export function ThemeReadyGate() {
   const isShopRoute = pathname.startsWith("/shop");
   // Device routes handle their own loading states and merchant branding via TerminalSessionManager/HandheldInterface.
   // The ThemeReadyGate overlay uses CSS (backdrop-blur, @layer Tailwind) that Chrome 93 on VP550 can't render.
-  const isDeviceRoute = pathname.startsWith("/touchpoint") || pathname.startsWith("/terminal") || pathname.startsWith("/handheld") || pathname.startsWith("/kiosk") || pathname.startsWith("/kitchen");
+  const isDeviceRoute = pathname.startsWith("/touchpoint") || pathname.startsWith("/terminal") || pathname.startsWith("/handheld") || pathname.startsWith("/kiosk") || pathname.startsWith("/kitchen") || pathname.startsWith("/legacy");
   if (!shouldShow || isLandingPage || isShopRoute || isDeviceRoute) return null;
 
   return (
