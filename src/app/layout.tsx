@@ -729,9 +729,7 @@ export default async function RootLayout({
               var chromeMatch = ua.match(/Chrome\\/([0-9]+)/i);
               var chromeVersion = chromeMatch ? parseInt(chromeMatch[1], 10) : 0;
               var isPreLayerChrome = chromeVersion > 0 && chromeVersion < 99;
-              var cap = window.Capacitor;
-              var isCapacitorAndroid = !!cap && typeof cap.getPlatform === 'function' && cap.getPlatform() === 'android';
-              var needsLegacyCss = isCapacitorAndroid || (isAndroid && isPreLayerChrome);
+              var needsLegacyCss = isAndroid && isPreLayerChrome;
               
               if (needsLegacyCss) {
                 var logs = ["UA: " + chromeVersion, "Legacy mode: YES"];
