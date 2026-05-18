@@ -241,8 +241,8 @@ export function proxy(req: NextRequest) {
         const chromeVersion = chromeMatch ? parseInt(chromeMatch[1], 10) : 0;
         const isLegacyAndroid = /Android/i.test(ua) && chromeVersion > 0 && chromeVersion < 99;
         
-        if (isLegacyAndroid && !url.pathname.startsWith("/_legacy")) {
-            const target = new URL(`/_legacy${url.pathname}`, req.url);
+        if (isLegacyAndroid && !url.pathname.startsWith("/legacy")) {
+            const target = new URL(`/legacy${url.pathname}`, req.url);
             const res = NextResponse.rewrite(target);
             applySecurityHeaders(req, res);
             return res;
