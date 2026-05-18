@@ -34,7 +34,7 @@ export default function LegacyTouchpointSetup({
       }}
     >
       {/* Loading state — shown until JS runs */}
-      <div id="tp-loading" style={{ textAlign: "center" }}>
+      <div id="tp-loading" suppressHydrationWarning style={{ textAlign: "center" }}>
         <div
           style={{
             width: 48,
@@ -52,6 +52,7 @@ export default function LegacyTouchpointSetup({
       {/* Setup form — shown when device is not configured */}
       <div
         id="tp-setup"
+        suppressHydrationWarning
         style={{
           display: "none",
           width: "100%",
@@ -198,7 +199,7 @@ export default function LegacyTouchpointSetup({
       </div>
 
       {/* Redirecting state */}
-      <div id="tp-redirect" style={{ display: "none", textAlign: "center" }}>
+      <div id="tp-redirect" suppressHydrationWarning style={{ display: "none", textAlign: "center" }}>
         <div
           style={{
             width: 48,
