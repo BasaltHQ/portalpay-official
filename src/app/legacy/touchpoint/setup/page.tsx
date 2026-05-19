@@ -339,6 +339,19 @@ export default function LegacyTouchpointSetup({
       return;
     }
     
+    // Expose config to Android app via JS bridge — MUST match (web) setup page contract
+    // The APK reads window.TOUCHPOINT_CONFIG to determine lockdown mode, provisioning status, etc.
+    window.TOUCHPOINT_CONFIG = {
+      configured: !!(cfg && cfg.configured),
+      mode: (cfg && cfg.mode) || null,
+      merchantWallet: (cfg && cfg.merchantWallet) || null,
+      brandKey: (cfg && cfg.brandKey) || null,
+      locked: !!(cfg && cfg.locked),
+      lockdownMode: (cfg && cfg.lockdownMode) || "none",
+      unlockCodeHash: (cfg && cfg.unlockCodeHash) || null
+    };
+    console.log("[Legacy Setup] Exposed config to JS bridge:", window.TOUCHPOINT_CONFIG);
+    
     if (cfg && cfg.configured) {
       console.log("[Legacy Setup] Device configured, redirecting to:", cfg.mode);
       showRedirect(cfg.mode);
@@ -370,7 +383,7 @@ export default function LegacyTouchpointSetup({
     };
   }
   
-  // Expose config for Android app bridge
+  // Expose installation ID for Android app bridge
   window.TOUCHPOINT_INSTALL_ID = installId;
 })();
           `,
