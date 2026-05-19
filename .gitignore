@@ -61,7 +61,14 @@ android/launcher/recovered
 /tools/jre-linux
 
 # resources
-/resources
+/resources/80*
+/resources/Device*
+/resources/GCX Store*
+/resources/KDS*
+/resources/T1*
+/resources/VP550*
+/resources/PXL*
+/resources/icod*
 
 # secrets
 env_dump.json
