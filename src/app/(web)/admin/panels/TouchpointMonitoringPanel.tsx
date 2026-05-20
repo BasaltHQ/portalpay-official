@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Smartphone, RefreshCw, Plus, Trash2, Check, X, Clock, Lock, Key, Upload, Globe, QrCode, Download, MoreVertical, Unlock, AlertTriangle } from "lucide-react";
+import { Smartphone, RefreshCw, Plus, Trash2, Check, X, Clock, Lock, Key, Upload, Globe, QrCode, Download, MoreVertical, Unlock, AlertTriangle, Settings } from "lucide-react";
 
 interface TouchpointDevice {
     id: string;
@@ -87,6 +87,11 @@ export default function TouchpointMonitoringPanel() {
     const [deviceActionLoading, setDeviceActionLoading] = useState(false);
     const [deviceActionMessage, setDeviceActionMessage] = useState("");
     const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+    // Edit configuration state
+    const [editMode, setEditMode] = useState<"terminal" | "kiosk" | "handheld" | "kds">("terminal");
+    const [editLockdownMode, setEditLockdownMode] = useState<"none" | "standard" | "device_owner">("none");
+    const [editMerchantWallet, setEditMerchantWallet] = useState("");
 
     const fetchDevices = useCallback(async () => {
         setLoading(true);
@@ -536,36 +541,72 @@ export default function TouchpointMonitoringPanel() {
     }
 
     // Device Actions handlers
-    async function handleUpdateUnlockCode() {
-        if (!selectedDevice || !newUnlockCode) return;
+    async function handleSaveDeviceConfig() {
+        if (!selectedDevice) return;
 
-        if (newUnlockCode.length < 4 || newUnlockCode.length > 8) {
-            setDeviceActionMessage("Unlock code must be 4-8 digits");
+        // Validation: merchant wallet must be valid
+        if (!/^0x[a-fA-F0-9]{40}$/.test(editMerchantWallet)) {
+            alert("Merchant wallet must be a valid 0x address");
             return;
+        }
+
+        // Validation: unlock code if lockdown is standard/owner
+        if (editLockdownMode !== "none" && newUnlockCode) {
+            if (!/^\d{4,8}$/.test(newUnlockCode)) {
+                alert("Unlock code must be 4-8 digits");
+                return;
+            }
         }
 
         setDeviceActionLoading(true);
         setDeviceActionMessage("");
+
         try {
-            const res = await fetch("/api/touchpoint/unlock-code", {
+            // 1. Update config (mode, merchantWallet, lockdownMode)
+            const configRes = await fetch("/api/touchpoint/config", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     installationId: selectedDevice.installationId,
-                    unlockCode: newUnlockCode
+                    mode: editMode,
+                    merchantWallet: editMerchantWallet,
+                    lockdownMode: editLockdownMode
                 })
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data?.error || "Failed to update unlock code");
+            const configData = await configRes.json();
+            if (!configRes.ok) throw new Error(configData?.error || "Failed to update device configuration");
 
-            setDeviceActionMessage("✓ Unlock code updated. Device will sync on next poll (~60s).");
+            // 2. Update unlock code if provided
+            if (editLockdownMode !== "none" && newUnlockCode) {
+                const codeRes = await fetch("/api/touchpoint/unlock-code", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        installationId: selectedDevice.installationId,
+                        unlockCode: newUnlockCode
+                    })
+                });
+                const codeData = await codeRes.json();
+                if (!codeRes.ok) throw new Error(codeData?.error || "Failed to update unlock code");
+            }
+
+            // Update local state instantly
+            setDevices(prev =>
+                prev.map(d =>
+                    d.id === selectedDevice.id
+                        ? { ...d, mode: editMode, merchantWallet: editMerchantWallet, lockdownMode: editLockdownMode }
+                        : d
+                )
+            );
+
+            setDeviceActionMessage("✓ Configuration saved. Device will sync on next poll (~60s).");
             setNewUnlockCode("");
             setTimeout(() => {
                 setShowDeviceActionsModal(false);
                 setDeviceActionMessage("");
             }, 2000);
         } catch (e: any) {
-            setDeviceActionMessage(`✗ ${e?.message || "Failed to update unlock code"}`);
+            setDeviceActionMessage(`✗ ${e?.message || "Failed to save configuration"}`);
         } finally {
             setDeviceActionLoading(false);
         }
@@ -614,6 +655,9 @@ export default function TouchpointMonitoringPanel() {
         setNewUnlockCode("");
         setDeviceActionMessage("");
         setOpenDropdownId(null);
+        setEditMode("terminal");
+        setEditLockdownMode("none");
+        setEditMerchantWallet("");
     }
 
     return (
@@ -1352,19 +1396,22 @@ export default function TouchpointMonitoringPanel() {
                                                 {openDropdownId === device.id && (
                                                     <div className="absolute right-0 mt-1 w-48 rounded-xl shadow-xl bg-background border border-foreground/[0.1] z-50 overflow-hidden">
                                                         <div className="p-1">
-                                                            {/* Update Unlock Code */}
-                                                            {device.lockdownMode !== "none" && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setShowDeviceActionsModal(true);
-                                                                        setOpenDropdownId(null);
-                                                                    }}
-                                                                    className="w-full px-3 py-2 text-left text-xs font-semibold rounded-lg hover:bg-foreground/5 flex items-center gap-2 text-foreground"
-                                                                >
-                                                                    <Key className="h-3.5 w-3.5" />
-                                                                    Update Unlock Code
-                                                                </button>
-                                                            )}
+                                                            {/* Edit Configuration */}
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedDevice(device);
+                                                                    setEditMode(device.mode);
+                                                                    setEditLockdownMode(device.lockdownMode || "none");
+                                                                    setEditMerchantWallet(device.merchantWallet);
+                                                                    setNewUnlockCode("");
+                                                                    setShowDeviceActionsModal(true);
+                                                                    setOpenDropdownId(null);
+                                                                }}
+                                                                className="w-full px-3 py-2 text-left text-xs font-semibold rounded-lg hover:bg-foreground/5 flex items-center gap-2 text-foreground"
+                                                            >
+                                                                <Settings className="h-3.5 w-3.5" />
+                                                                Edit Configuration
+                                                            </button>
 
                                                             {/* Remove Device Owner */}
                                                             {device.lockdownMode === "device_owner" && (
@@ -1421,33 +1468,83 @@ export default function TouchpointMonitoringPanel() {
                 </div>
             )}
 
-            {/* Unlock Code Update Modal */}
+            {/* Edit Configuration Modal */}
             {showDeviceActionsModal && selectedDevice && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => resetDeviceActionsModal()}>
-                    <div className="bg-neutral-800 rounded-lg p-6 w-full max-w-sm border shadow-xl" onClick={e => e.stopPropagation()}>
+                    <div className="bg-neutral-800 rounded-lg p-6 w-full max-w-md border shadow-xl" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-4">
                             <h4 className="font-semibold flex items-center gap-2">
-                                <Key className="h-4 w-4" />
-                                Update Unlock Code
+                                <Settings className="h-4 w-4" />
+                                Edit Configuration
                             </h4>
                             <button onClick={() => resetDeviceActionsModal()} className="h-6 w-6 rounded hover:bg-foreground/10 flex items-center justify-center">
                                 <X className="h-4 w-4" />
                             </button>
                         </div>
 
-                        <p className="text-xs text-muted-foreground mb-3">
-                            Device: {selectedDevice.installationId.slice(0, 16)}...
+                        <p className="text-xs text-muted-foreground mb-4">
+                            Device ID: <span className="font-mono">{selectedDevice.installationId}</span>
                         </p>
 
-                        <div className="space-y-3">
-                            <input
-                                type="password"
-                                value={newUnlockCode}
-                                onChange={(e) => setNewUnlockCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                                placeholder="Enter new 4-8 digit PIN"
-                                className="w-full h-10 px-3 rounded-md border bg-background text-center text-lg tracking-widest font-mono"
-                                maxLength={8}
-                            />
+                        <div className="space-y-4">
+                            {/* Touchpoint Type (Mode) */}
+                            <div>
+                                <label className="text-xs text-muted-foreground block mb-1">Touchpoint Type</label>
+                                <select
+                                    value={editMode}
+                                    onChange={(e) => setEditMode(e.target.value as any)}
+                                    className="w-full h-10 px-3 rounded-md border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                >
+                                    <option value="terminal">Terminal</option>
+                                    <option value="kiosk">Kiosk</option>
+                                    <option value="handheld">Handheld</option>
+                                    <option value="kds">Kitchen Display (KDS)</option>
+                                </select>
+                            </div>
+
+                            {/* Merchant Wallet */}
+                            <div>
+                                <label className="text-xs text-muted-foreground block mb-1">Merchant Wallet Address</label>
+                                <input
+                                    type="text"
+                                    value={editMerchantWallet}
+                                    onChange={(e) => setEditMerchantWallet(e.target.value.trim())}
+                                    placeholder="0x..."
+                                    className="w-full h-10 px-3 rounded-md border bg-background text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                />
+                            </div>
+
+                            {/* Lockdown Mode */}
+                            <div>
+                                <label className="text-xs text-muted-foreground block mb-1">Lockdown Mode</label>
+                                <select
+                                    value={editLockdownMode}
+                                    onChange={(e) => setEditLockdownMode(e.target.value as any)}
+                                    className="w-full h-10 px-3 rounded-md border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                >
+                                    <option value="none">None / No Lockdown</option>
+                                    <option value="standard">Standard Lockdown (Lock Task)</option>
+                                    <option value="device_owner">Owner / Full Lockdown (MDM)</option>
+                                </select>
+                            </div>
+
+                            {/* Unlock Code PIN (optional, shown if lockdown is enabled) */}
+                            {editLockdownMode !== "none" && (
+                                <div>
+                                    <label className="text-xs text-muted-foreground block mb-1">Unlock PIN (Optional)</label>
+                                    <input
+                                        type="password"
+                                        value={newUnlockCode}
+                                        onChange={(e) => setNewUnlockCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                                        placeholder="Leave blank to keep current PIN"
+                                        className="w-full h-10 px-3 rounded-md border bg-background text-center text-lg tracking-widest font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                        maxLength={8}
+                                    />
+                                    <p className="text-[10px] text-muted-foreground mt-1">
+                                        Only enter a 4-8 digit code if you wish to change the current PIN.
+                                    </p>
+                                </div>
+                            )}
 
                             {deviceActionMessage && (
                                 <p className={`text-xs ${deviceActionMessage.startsWith("✓") ? "text-emerald-400" : "text-red-400"}`}>
@@ -1456,15 +1553,15 @@ export default function TouchpointMonitoringPanel() {
                             )}
 
                             <button
-                                onClick={handleUpdateUnlockCode}
-                                disabled={deviceActionLoading || newUnlockCode.length < 4}
-                                className="w-full h-9 px-3 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium"
+                                onClick={handleSaveDeviceConfig}
+                                disabled={deviceActionLoading}
+                                className="w-full h-10 px-3 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
                             >
-                                {deviceActionLoading ? "Updating..." : "Update Unlock Code"}
+                                {deviceActionLoading ? "Saving..." : "Save Configuration"}
                             </button>
 
                             <p className="text-[10px] text-muted-foreground text-center">
-                                Device will sync the new code on next poll (~60s)
+                                Device will poll and apply these settings dynamically (~60s)
                             </p>
                         </div>
                     </div>

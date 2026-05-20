@@ -231,6 +231,22 @@ export async function PATCH(req: NextRequest) {
             updates.lockdownMode = body.lockdownMode;
         }
 
+        if (body.mode !== undefined) {
+            const validTouchpointModes = ["terminal", "kiosk", "handheld", "kds"];
+            if (!validTouchpointModes.includes(body.mode)) {
+                return json({ error: "invalid_touchpoint_mode" }, { status: 400 });
+            }
+            updates.mode = body.mode;
+        }
+
+        if (body.merchantWallet !== undefined) {
+            const merchantWallet = String(body.merchantWallet || "").trim();
+            if (!/^0x[a-fA-F0-9]{40}$/.test(merchantWallet)) {
+                return json({ error: "invalid_wallet", message: "merchantWallet must be a valid 0x address" }, { status: 400 });
+            }
+            updates.merchantWallet = merchantWallet;
+        }
+
         if (body.clearDeviceOwner !== undefined) {
             updates.clearDeviceOwner = Boolean(body.clearDeviceOwner);
         }
