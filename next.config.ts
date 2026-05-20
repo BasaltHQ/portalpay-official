@@ -23,7 +23,20 @@ const nextConfig = {
     "ox",
     "abitype",
     "@coinbase/onchainkit",
-    "porto"
+    "porto",
+    "@coinbase/wallet-sdk",
+    "@walletconnect/sign-client",
+    "@walletconnect/universal-provider",
+    "@walletconnect/core",
+    "@walletconnect/utils",
+    "@noble/curves",
+    "@noble/hashes",
+    "@passwordless-id/webauthn",
+    "mipd",
+    "uqr",
+    "@x402/core",
+    "@x402/evm",
+    "@x402/next"
   ],
 
   // Force-include mongodb adapter files in standalone output since they're
