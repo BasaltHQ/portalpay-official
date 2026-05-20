@@ -56,6 +56,8 @@ class MainActivity : BridgeActivity() {
     private var showUpdateDialog = mutableStateOf(false)
     private var updateInfo = mutableStateOf<OtaUpdateManager.UpdateInfo?>(null)
     private lateinit var otaUpdateManager: OtaUpdateManager
+    private var currentTouchpointMode: String? = null
+    private var currentMerchantWallet: String? = null
 
     companion object {
         private const val TAG = "MainActivity"
@@ -229,16 +231,7 @@ class MainActivity : BridgeActivity() {
                 if (parts.isNotEmpty()) {
                     val mode = parts[0]
                     val hashValue = if (parts.size > 1 && parts[1] != "null" && parts[1].isNotEmpty()) parts[1] else null
-                    
-                    val newConfig = LockdownConfig(mode, hashValue)
-                    if (newConfig != lockdownConfig.value) {
-                        Log.d(TAG, "Lockdown config updated: $newConfig")
-                        lockdownConfig.value = newConfig
-                        
-                        if (mode == "standard" || mode == "device_owner") {
-                            enableLockTaskMode()
-                        }
-                    }
+                    updateLockdownMode(mode, hashValue)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error parsing lockdown config from URL: ${e.message}")
@@ -252,16 +245,7 @@ class MainActivity : BridgeActivity() {
                 val uri = Uri.parse(currentUrl)
                 val mode = uri.getQueryParameter("lockdownMode") ?: "none"
                 val hashValue = uri.getQueryParameter("unlockHash")
-                
-                val newConfig = LockdownConfig(mode, hashValue)
-                if (newConfig != lockdownConfig.value && mode != "none") {
-                    Log.d(TAG, "Lockdown config from query params: $newConfig")
-                    lockdownConfig.value = newConfig
-                    
-                    if (mode == "standard" || mode == "device_owner") {
-                        enableLockTaskMode()
-                    }
-                }
+                updateLockdownMode(mode, hashValue)
             } catch (e: Exception) {
                 Log.e(TAG, "Error parsing lockdown config from query: ${e.message}")
             }
@@ -278,6 +262,29 @@ class MainActivity : BridgeActivity() {
                     storeInstallationId(installId)
                     Log.d(TAG, "Stored installation ID: $installId")
                 }
+            }
+        } catch (e: Exception) {
+            // Ignore
+        }
+
+        // Track the current touchpoint mode loaded in WebView
+        if (currentUrl.contains("/terminal/")) {
+            currentTouchpointMode = "terminal"
+        } else if (currentUrl.contains("/handheld/")) {
+            currentTouchpointMode = "handheld"
+        } else if (currentUrl.contains("/kiosk/")) {
+            currentTouchpointMode = "kiosk"
+        } else if (currentUrl.contains("/kitchen/")) {
+            currentTouchpointMode = "kds"
+        }
+
+        // Track the current merchant wallet address loaded in WebView
+        try {
+            val walletRegex = Regex("0x[a-fA-F0-9]{40}", RegexOption.IGNORE_CASE)
+            val match = walletRegex.find(currentUrl)
+            if (match != null) {
+                currentMerchantWallet = match.value
+                Log.d(TAG, "Detected merchant wallet in WebView URL: ${match.value}")
             }
         } catch (e: Exception) {
             // Ignore
@@ -374,14 +381,45 @@ class MainActivity : BridgeActivity() {
                     val currentConfig = lockdownConfig.value
                     
                     if (remoteUnlockHash != null && remoteUnlockHash != currentConfig.unlockCodeHash) {
-                        Log.d(TAG, "Remote unlock code hash updated")
-                        lockdownConfig.value = currentConfig.copy(
-                            unlockCodeHash = remoteUnlockHash,
-                            lockdownMode = remoteLockdownMode
-                        )
+                        Log.d(TAG, "Remote unlock code hash updated via polling")
+                        updateLockdownMode(remoteLockdownMode, remoteUnlockHash)
                     } else if (remoteLockdownMode != currentConfig.lockdownMode) {
-                        Log.d(TAG, "Remote lockdown mode updated: $remoteLockdownMode")
-                        lockdownConfig.value = currentConfig.copy(lockdownMode = remoteLockdownMode)
+                        Log.d(TAG, "Remote lockdown mode updated via polling: $remoteLockdownMode")
+                        updateLockdownMode(remoteLockdownMode, currentConfig.unlockCodeHash)
+                    }
+
+                    // Dynamic mode/wallet changes detection
+                    val remoteMode = config.optString("mode")
+                    val remoteWallet = config.optString("merchantWallet")
+                    var needsReload = false
+
+                    if (remoteMode.isNotEmpty()) {
+                        val currentMode = currentTouchpointMode
+                        if (currentMode != null && remoteMode != currentMode) {
+                            Log.i(TAG, "Remote touchpoint mode changed from $currentMode to $remoteMode.")
+                            currentTouchpointMode = remoteMode
+                            needsReload = true
+                        } else if (currentMode == null) {
+                            currentTouchpointMode = remoteMode
+                        }
+                    }
+
+                    if (remoteWallet.isNotEmpty()) {
+                        val currentWallet = currentMerchantWallet
+                        if (currentWallet != null && !remoteWallet.equals(currentWallet, ignoreCase = true)) {
+                            Log.i(TAG, "Remote merchant wallet changed from $currentWallet to $remoteWallet.")
+                            currentMerchantWallet = remoteWallet
+                            needsReload = true
+                        } else if (currentWallet == null) {
+                            currentMerchantWallet = remoteWallet
+                        }
+                    }
+
+                    if (needsReload) {
+                        Log.d(TAG, "Reloading WebView to setup page to apply remote config updates.")
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            bridge.webView.loadUrl("${BuildConfig.BASE_DOMAIN}/touchpoint/setup?scale=0.75")
+                        }
                     }
                     
                 } catch (e: Exception) {
@@ -466,42 +504,75 @@ class MainActivity : BridgeActivity() {
     }
 
     private fun enableLockTaskMode() {
+        if (isTemporarilyUnlocked) {
+            Log.d(TAG, "Bypassing enableLockTaskMode because device is temporarily unlocked")
+            return
+        }
         try {
             val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
             if (am.lockTaskModeState == ActivityManager.LOCK_TASK_MODE_NONE) {
                 val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
                 val componentName = ComponentName(this, AppDeviceAdminReceiver::class.java)
                 
-                if (dpm.isDeviceOwnerApp(packageName)) {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                        dpm.setLockTaskFeatures(
-                            componentName,
-                            DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO
-                        )
-                    }
-                    dpm.setLockTaskPackages(componentName, arrayOf(packageName))
-                    startLockTask()
-                    
-                    Log.d(TAG, "Started Lock Task Mode (Device Owner)")
-                } else if (lockdownConfig.value.lockdownMode == "standard") {
-                    // CRITICAL FIX: The NDroid OS on the VP550/N950 completely hides the ScreenPinningConfirmation 
-                    // modal behind the app window, but the invisible modal continues to consume all user touches, 
-                    // rendering the actual app completely unclickable (e.g. employee PIN pad frozen). 
-                    // Therefore, we must NEVER call startLockTask() for standard mode on the VP550/N950.
-                    val modelUpper = android.os.Build.MODEL.uppercase()
-                    val productUpper = android.os.Build.PRODUCT.uppercase()
-                    val isValorLegacy = modelUpper.contains("VP550") || modelUpper.contains("N950") || 
-                                       productUpper.contains("VP550") || productUpper.contains("N950")
-                    if (!isValorLegacy) {
+                val mode = lockdownConfig.value.lockdownMode
+                if (mode == "standard" || mode == "device_owner") {
+                    if (dpm.isDeviceOwnerApp(packageName)) {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                            dpm.setLockTaskFeatures(
+                                componentName,
+                                DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO
+                            )
+                        }
+                        dpm.setLockTaskPackages(componentName, arrayOf(packageName))
                         startLockTask()
-                        Log.d(TAG, "Started Lock Task Mode (Standard)")
-                    } else {
-                        Log.w(TAG, "Bypassing Standard Lock Task Mode on Valor legacy hardware (VP550/N950) to prevent invisible confirmation dialog from consuming touches")
+                        
+                        Log.d(TAG, "Started Lock Task Mode (Device Owner)")
+                    } else if (mode == "standard") {
+                        // CRITICAL FIX: The NDroid OS on the VP550/N950 completely hides the ScreenPinningConfirmation 
+                        // modal behind the app window, but the invisible modal continues to consume all user touches, 
+                        // rendering the actual app completely unclickable (e.g. employee PIN pad frozen). 
+                        // Therefore, we must NEVER call startLockTask() for standard mode on the VP550/N950.
+                        val modelUpper = android.os.Build.MODEL.uppercase()
+                        val productUpper = android.os.Build.PRODUCT.uppercase()
+                        val isValorLegacy = modelUpper.contains("VP550") || modelUpper.contains("N950") || 
+                                           productUpper.contains("VP550") || productUpper.contains("N950")
+                        if (!isValorLegacy) {
+                            startLockTask()
+                            Log.d(TAG, "Started Lock Task Mode (Standard)")
+                        } else {
+                            Log.w(TAG, "Bypassing Standard Lock Task Mode on Valor legacy hardware (VP550/N950) to prevent invisible confirmation dialog from consuming touches")
+                        }
                     }
                 }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start Lock Task Mode: ${e.message}")
+        }
+    }
+
+    private fun disableLockTaskMode() {
+        try {
+            val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            if (am.lockTaskModeState != ActivityManager.LOCK_TASK_MODE_NONE) {
+                stopLockTask()
+                Log.d(TAG, "Stopped Lock Task Mode dynamically")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to stop Lock Task Mode: ${e.message}")
+        }
+    }
+
+    private fun updateLockdownMode(newMode: String, newHash: String?) {
+        val newConfig = LockdownConfig(newMode, newHash)
+        if (newConfig != lockdownConfig.value) {
+            Log.d(TAG, "Updating lockdown mode to: $newMode")
+            lockdownConfig.value = newConfig
+            
+            if (newMode == "standard" || newMode == "device_owner") {
+                enableLockTaskMode()
+            } else if (newMode == "none") {
+                disableLockTaskMode()
+            }
         }
     }
 
