@@ -76,6 +76,7 @@ export function HideableNavbar({ isServerCustomDomain = false }: { isServerCusto
     pathname === "/handheld" || pathname.startsWith("/handheld/") ||
     pathname.startsWith("/pms/") || // PMS fullscreen mode
     pathname === "/admin" || pathname.startsWith("/admin/") ||
+    pathname === "/touchpoint" || pathname.startsWith("/touchpoint/") ||
     pathname === "/legacy" || pathname.startsWith("/legacy/") ||
     isCandidateSlug(pathname);
 
