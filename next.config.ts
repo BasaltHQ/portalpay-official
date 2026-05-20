@@ -15,6 +15,17 @@ const nextConfig = {
   // Externalize problematic deep deps so Turbopack doesn't crawl their tests
   serverExternalPackages: ['pino', '@walletconnect/logger', 'thread-stream', 'mongodb'],
 
+  // Transpile ESM Web3 packages that contain modern ES syntax (class static blocks, etc.)
+  // so they are compiled to the standard backward-compatible Next.js target.
+  transpilePackages: [
+    "thirdweb",
+    "viem",
+    "ox",
+    "abitype",
+    "@coinbase/onchainkit",
+    "porto"
+  ],
+
   // Force-include mongodb adapter files in standalone output since they're
   // dynamically imported with webpackIgnore/turbopackIgnore and not traced.
   outputFileTracingIncludes: {
