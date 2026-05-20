@@ -112,6 +112,9 @@ class MainActivity : BridgeActivity() {
             allowContentAccess = true
         }
         
+        // Enable Chrome developer tools remote debugging for the WebView
+        android.webkit.WebView.setWebContentsDebuggingEnabled(true)
+        
         // Check for overlay permission (required for auto-boot on Android 10+)
         checkOverlayPermission()
         checkInstallPermission()
