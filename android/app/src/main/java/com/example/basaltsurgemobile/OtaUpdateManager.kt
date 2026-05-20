@@ -122,13 +122,29 @@ class OtaUpdateManager(private val context: Context) {
                         val query = DownloadManager.Query().setFilterById(downloadId)
                         val cursor = downloadManager.query(query)
                         if (cursor.moveToFirst()) {
-                            val columnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)
-                            val localUri = cursor.getString(columnIndex)
-                            cursor.close()
+                            val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                            val status = if (statusIndex != -1) cursor.getInt(statusIndex) else -1
                             
-                            if (localUri != null) {
-                                installApk(Uri.parse(localUri))
+                            if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                                val columnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)
+                                val localUri = cursor.getString(columnIndex)
+                                cursor.close()
+                                
+                                if (localUri != null) {
+                                    Log.d(TAG, "Download completed successfully: $localUri")
+                                    installApk(Uri.parse(localUri))
+                                } else {
+                                    Log.e(TAG, "Download succeeded but local URI is null")
+                                }
+                            } else {
+                                val reasonIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
+                                val reason = if (reasonIndex != -1) cursor.getInt(reasonIndex) else -1
+                                cursor.close()
+                                Log.e(TAG, "Download failed or incomplete. Status: $status, Reason: $reason")
                             }
+                        } else {
+                            cursor.close()
+                            Log.e(TAG, "Download query returned empty cursor")
                         }
                     }
                 }
