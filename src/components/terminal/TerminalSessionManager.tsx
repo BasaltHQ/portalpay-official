@@ -32,12 +32,16 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
     // Load wallets and handle mounting to prevent hydration mismatch
     const [wallets, setWallets] = useState<any[]>([]);
     const [mounted, setMounted] = useState(false);
+    const [walletError, setWalletError] = useState<string | null>(null);
 
     useEffect(() => {
         let isMounted = true;
         setMounted(true);
         getWallets().then((w) => {
             if (isMounted) setWallets(w);
+        }).catch((err) => {
+            console.error("[TerminalSessionManager] Failed to load wallets:", err);
+            if (isMounted) setWalletError(err?.message || String(err));
         });
         return () => { isMounted = false; };
     }, []);
@@ -379,6 +383,10 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                                     }}
                                     theme={twTheme}
                                 />
+                            ) : walletError ? (
+                                <div className="text-center text-xs text-red-500 bg-red-950/30 border border-red-900/50 rounded px-3 py-1.5 max-w-[250px] select-all cursor-pointer break-words">
+                                    Wallet Load Error: {walletError}
+                                </div>
                             ) : (
                                 <div className="h-[28px] flex items-center justify-center text-xs text-muted-foreground animate-pulse">
                                     Loading...

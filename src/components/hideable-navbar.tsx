@@ -76,6 +76,7 @@ export function HideableNavbar({ isServerCustomDomain = false }: { isServerCusto
     pathname === "/handheld" || pathname.startsWith("/handheld/") ||
     pathname.startsWith("/pms/") || // PMS fullscreen mode
     pathname === "/admin" || pathname.startsWith("/admin/") ||
+    pathname === "/legacy" || pathname.startsWith("/legacy/") ||
     isCandidateSlug(pathname);
 
   // Apply body class for navbar padding
