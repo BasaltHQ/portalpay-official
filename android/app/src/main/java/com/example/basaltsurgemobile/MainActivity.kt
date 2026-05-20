@@ -484,15 +484,19 @@ class MainActivity : BridgeActivity() {
                     
                     Log.d(TAG, "Started Lock Task Mode (Device Owner)")
                 } else if (lockdownConfig.value.lockdownMode == "standard") {
-                    // CRITICAL FIX: The NDroid OS on the VP550 completely hides the ScreenPinningConfirmation 
+                    // CRITICAL FIX: The NDroid OS on the VP550/N950 completely hides the ScreenPinningConfirmation 
                     // modal behind the app window, but the invisible modal continues to consume all user touches, 
                     // rendering the actual app completely unclickable (e.g. employee PIN pad frozen). 
-                    // Therefore, we must NEVER call startLockTask() for standard mode on the VP550.
-                    if (android.os.Build.MODEL != "VP550") {
+                    // Therefore, we must NEVER call startLockTask() for standard mode on the VP550/N950.
+                    val modelUpper = android.os.Build.MODEL.uppercase()
+                    val productUpper = android.os.Build.PRODUCT.uppercase()
+                    val isValorLegacy = modelUpper.contains("VP550") || modelUpper.contains("N950") || 
+                                       productUpper.contains("VP550") || productUpper.contains("N950")
+                    if (!isValorLegacy) {
                         startLockTask()
                         Log.d(TAG, "Started Lock Task Mode (Standard)")
                     } else {
-                        Log.w(TAG, "Bypassing Standard Lock Task Mode on VP550 to prevent invisible confirmation dialog from consuming touches")
+                        Log.w(TAG, "Bypassing Standard Lock Task Mode on Valor legacy hardware (VP550/N950) to prevent invisible confirmation dialog from consuming touches")
                     }
                 }
             }
