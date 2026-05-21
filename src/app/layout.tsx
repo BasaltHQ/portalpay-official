@@ -890,6 +890,12 @@ export default async function RootLayout({
                     if (low.indexOf('user rejected the request') !== -1 || (a && a.code === 4001)) return;
                   }
                 } catch {}
+                try {
+                  if (arguments.length === 0 || arguments[0] === undefined || arguments[0] === null || arguments[0] === '' || arguments[0] === 'undefined') {
+                    var stack = new Error().stack || '';
+                    origErr.call(console, '[Diagnostic Trace]: console.error called with: ' + arguments[0] + '. Stack:', stack);
+                  }
+                } catch (e) {}
                 return origErr.apply(console, arguments);
               };
             })();
