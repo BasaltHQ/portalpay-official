@@ -1656,6 +1656,7 @@ function TouchpointThemesTab({
 
     // Handheld-specific local state
     const [pendingHandheldMode, setPendingHandheldMode] = useState<"general" | "restaurant">("restaurant");
+    const [pendingDisableSwipe, setPendingDisableSwipe] = useState<boolean>(false);
     const [handheldDirty, setHandheldDirty] = useState(false);
     const [handheldSaving, setHandheldSaving] = useState(false);
     const [handheldSaved, setHandheldSaved] = useState(false);
@@ -1675,10 +1676,13 @@ function TouchpointThemesTab({
                     const kiosk = parseKioskConfig(cfg.touchpointThemes["kiosk"]);
                     setPendingColorMode(kiosk.colorMode || "dark");
                     setPendingLayout(kiosk.kioskLayout || "grid");
-                    // Seed handheld mode from config
+                    // Seed handheld settings from config
                     const hh = cfg.touchpointThemes["handheld"];
-                    if (hh && typeof hh === "object" && (hh.handheldMode === "general" || hh.handheldMode === "restaurant")) {
-                        setPendingHandheldMode(hh.handheldMode);
+                    if (hh && typeof hh === "object") {
+                        if (hh.handheldMode === "general" || hh.handheldMode === "restaurant") {
+                            setPendingHandheldMode(hh.handheldMode);
+                        }
+                        setPendingDisableSwipe(!!hh.disableSwipeDismiss);
                     }
                 }
             } catch (e) {
@@ -1702,8 +1706,9 @@ function TouchpointThemesTab({
     useEffect(() => {
         const hh = touchpointThemes["handheld"];
         const savedMode = (hh && typeof hh === "object" && hh.handheldMode) || "restaurant";
-        setHandheldDirty(pendingHandheldMode !== savedMode);
-    }, [pendingHandheldMode, touchpointThemes]);
+        const savedDisableSwipe = (hh && typeof hh === "object" && !!hh.disableSwipeDismiss) || false;
+        setHandheldDirty(pendingHandheldMode !== savedMode || pendingDisableSwipe !== savedDisableSwipe);
+    }, [pendingHandheldMode, pendingDisableSwipe, touchpointThemes]);
 
     // Core save function
     const saveTouchpointThemes = useCallback(async (updated: Record<string, any>) => {
@@ -1743,9 +1748,23 @@ function TouchpointThemesTab({
             };
             await saveTouchpointThemes(updated);
         } else {
-            await saveTouchpointThemes({ ...touchpointThemes, [touchpoint]: themeId });
+            await saveThemeSelectionHandheld(touchpoint, themeId);
         }
     }, [touchpointThemes, pendingColorMode, pendingLayout, saveTouchpointThemes]);
+
+    // Helper to save generic touchpoint themes (e.g. handheld)
+    const saveThemeSelectionHandheld = useCallback(async (touchpoint: string, themeId: string) => {
+        if (touchpoint === "handheld") {
+            const current = touchpointThemes["handheld"] && typeof touchpointThemes["handheld"] === "object" ? touchpointThemes["handheld"] : {};
+            const updated = {
+                ...touchpointThemes,
+                handheld: { ...current, themeId },
+            };
+            await saveTouchpointThemes(updated);
+        } else {
+            await saveTouchpointThemes({ ...touchpointThemes, [touchpoint]: themeId });
+        }
+    }, [touchpointThemes, saveTouchpointThemes]);
 
     // Save kiosk settings (color mode + layout)
     const saveKioskSettings = useCallback(async () => {
@@ -1768,14 +1787,14 @@ function TouchpointThemesTab({
         const current = touchpointThemes["handheld"] && typeof touchpointThemes["handheld"] === "object" ? touchpointThemes["handheld"] : {};
         const updated = {
             ...touchpointThemes,
-            handheld: { ...current, handheldMode: pendingHandheldMode },
+            handheld: { ...current, handheldMode: pendingHandheldMode, disableSwipeDismiss: pendingDisableSwipe },
         };
         await saveTouchpointThemes(updated);
         setHandheldDirty(false);
         setHandheldSaved(true);
         setHandheldSaving(false);
         setTimeout(() => setHandheldSaved(false), 2000);
-    }, [touchpointThemes, pendingHandheldMode, saveTouchpointThemes]);
+    }, [touchpointThemes, pendingHandheldMode, pendingDisableSwipe, saveTouchpointThemes]);
 
     if (loading) {
         return (
@@ -1905,6 +1924,34 @@ function TouchpointThemesTab({
                         {pendingHandheldMode === "general"
                             ? "General mode: all items shown with images, no table selection, orders go directly to payment."
                             : "Restaurant mode: table-based ordering with kitchen routing and KDS integration."}
+                    </p>
+                </div>
+
+                {/* Swipe Gesture Toggle */}
+                <div className="space-y-2 pt-2 border-t border-white/5">
+                    <label className="text-xs uppercase tracking-wider font-mono text-zinc-500">Swipe-to-Dismiss Gesture</label>
+                    <div className="flex gap-2">
+                        {[
+                            { key: false, label: "Enabled", emoji: "✨" },
+                            { key: true, label: "Disabled", emoji: "🚫" },
+                        ].map(opt => (
+                            <button
+                                key={String(opt.key)}
+                                onClick={() => setPendingDisableSwipe(opt.key)}
+                                className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all capitalize flex items-center justify-center gap-2 ${pendingDisableSwipe === opt.key
+                                    ? opt.key
+                                        ? "bg-red-500/15 text-red-400 border border-red-500/30 shadow-sm"
+                                        : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-sm"
+                                    : "bg-black/20 text-zinc-400 border border-white/5 hover:bg-white/5"
+                                    }`}
+                            >
+                                <span>{opt.emoji}</span>
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
+                    <p className="text-[10px] text-zinc-500 mt-1">
+                        Configure whether swiping left-to-right closes screens like the Modifiers View.
                     </p>
                 </div>
             </div>

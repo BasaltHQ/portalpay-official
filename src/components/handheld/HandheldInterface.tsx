@@ -782,22 +782,41 @@ export default function HandheldInterface({
     };
 
     // -- SWIPE HANDLING --
-    const touchStart = useRef<number | null>(null);
-    const touchEnd = useRef<number | null>(null);
+    const touchStartX = useRef<number | null>(null);
+    const touchStartY = useRef<number | null>(null);
+    const touchEndX = useRef<number | null>(null);
+    const touchEndY = useRef<number | null>(null);
 
     const onTouchStart = (e: React.TouchEvent) => {
-        touchEnd.current = null;
-        touchStart.current = e.targetTouches[0].clientX;
+        if (shopConfig?.touchpointThemes?.handheld?.disableSwipeDismiss) return;
+        touchEndX.current = null;
+        touchEndY.current = null;
+        touchStartX.current = e.targetTouches[0].clientX;
+        touchStartY.current = e.targetTouches[0].clientY;
     };
 
     const onTouchMove = (e: React.TouchEvent) => {
-        touchEnd.current = e.targetTouches[0].clientX;
+        if (shopConfig?.touchpointThemes?.handheld?.disableSwipeDismiss) return;
+        touchEndX.current = e.targetTouches[0].clientX;
+        touchEndY.current = e.targetTouches[0].clientY;
     };
 
     const onTouchEnd = () => {
-        if (!touchStart.current || !touchEnd.current) return;
-        const distance = touchStart.current - touchEnd.current;
-        const isRightSwipe = distance < -50;
+        if (shopConfig?.touchpointThemes?.handheld?.disableSwipeDismiss) return;
+        if (
+            touchStartX.current === null ||
+            touchStartY.current === null ||
+            touchEndX.current === null ||
+            touchEndY.current === null
+        ) return;
+
+        const deltaX = touchEndX.current - touchStartX.current;
+        const deltaY = touchEndY.current - touchStartY.current;
+
+        // Right swipe is left-to-right (finger moving right -> positive deltaX)
+        // - deltaX must exceed 120px
+        // - deltaX must be at least 2.5x greater than vertical movement deltaY
+        const isRightSwipe = deltaX > 120 && Math.abs(deltaX) > Math.abs(deltaY) * 2.5;
 
         if (isRightSwipe) {
             if (view === "modifiers") setView("menu");
