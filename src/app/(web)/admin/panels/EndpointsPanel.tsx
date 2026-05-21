@@ -33,6 +33,7 @@ export default function EndpointsPanel({ industryPack, onNavigateToTab }: { indu
 
     // Buffered handheld settings
     const [pendingHandheldMode, setPendingHandheldMode] = useState<"general" | "restaurant">("restaurant");
+    const [pendingDisableSwipe, setPendingDisableSwipe] = useState<boolean>(false);
     const [handheldDirty, setHandheldDirty] = useState(false);
 
     // UI State
@@ -43,6 +44,12 @@ export default function EndpointsPanel({ industryPack, onNavigateToTab }: { indu
         const hh = touchpointThemes["handheld"];
         if (hh && typeof hh === "object" && hh.handheldMode) return hh.handheldMode;
         return "restaurant";
+    }, [touchpointThemes]);
+
+    const savedDisableSwipe = useMemo(() => {
+        const hh = touchpointThemes["handheld"];
+        if (hh && typeof hh === "object" && hh.disableSwipeDismiss !== undefined) return !!hh.disableSwipeDismiss;
+        return false;
     }, [touchpointThemes]);
 
     const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -80,8 +87,11 @@ export default function EndpointsPanel({ industryPack, onNavigateToTab }: { indu
                     const kiosk = parseKioskConfig(cfg.touchpointThemes["kiosk"]);
                     setPendingColorMode(kiosk.colorMode || "dark");
                     const hh = cfg.touchpointThemes["handheld"];
-                    if (hh && typeof hh === "object" && hh.handheldMode) {
-                        setPendingHandheldMode(hh.handheldMode);
+                    if (hh && typeof hh === "object") {
+                        if (hh.handheldMode) {
+                            setPendingHandheldMode(hh.handheldMode);
+                        }
+                        setPendingDisableSwipe(!!hh.disableSwipeDismiss);
                     }
                     setPendingLayout(kiosk.kioskLayout || "grid");
                 }
@@ -101,8 +111,8 @@ export default function EndpointsPanel({ industryPack, onNavigateToTab }: { indu
     }, [pendingColorMode, pendingLayout, kioskConfig]);
 
     useEffect(() => {
-        setHandheldDirty(pendingHandheldMode !== savedHandheldMode);
-    }, [pendingHandheldMode, savedHandheldMode]);
+        setHandheldDirty(pendingHandheldMode !== savedHandheldMode || pendingDisableSwipe !== savedDisableSwipe);
+    }, [pendingHandheldMode, savedHandheldMode, pendingDisableSwipe, savedDisableSwipe]);
 
     const saveTouchpointTheme = useCallback(async (updated: Record<string, any>) => {
         if (!merchantWallet) return;
@@ -140,10 +150,10 @@ export default function EndpointsPanel({ industryPack, onNavigateToTab }: { indu
             ? touchpointThemes["handheld"] : {};
         const updated = {
             ...touchpointThemes,
-            handheld: { ...current, handheldMode: pendingHandheldMode },
+            handheld: { ...current, handheldMode: pendingHandheldMode, disableSwipeDismiss: pendingDisableSwipe },
         };
         await saveTouchpointTheme(updated);
-    }, [touchpointThemes, pendingHandheldMode, saveTouchpointTheme]);
+    }, [touchpointThemes, pendingHandheldMode, pendingDisableSwipe, saveTouchpointTheme]);
 
     const saveThemeSelection = useCallback(async (touchpoint: string, themeId: string) => {
         if (touchpoint === "kiosk") {
@@ -327,15 +337,29 @@ export default function EndpointsPanel({ industryPack, onNavigateToTab }: { indu
 
                                     {/* Handheld Controls */}
                                     {app.key === "handheld" && (
-                                        <div className="space-y-2">
-                                            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Operational Mode</span>
-                                            <div className="flex rounded-lg border border-white/10 overflow-hidden bg-black/50">
-                                                <button onClick={() => setPendingHandheldMode('general')} className={`flex-1 flex justify-center items-center gap-1.5 py-2 text-xs font-medium transition-all ${pendingHandheldMode === 'general' ? 'bg-blue-500/20 text-blue-400' : 'text-muted-foreground hover:text-white'}`}>
-                                                    <Store size={12} /> General Retail
-                                                </button>
-                                                <button onClick={() => setPendingHandheldMode('restaurant')} className={`flex-1 flex justify-center items-center gap-1.5 py-2 text-xs font-medium transition-all border-l border-white/10 ${pendingHandheldMode === 'restaurant' ? 'bg-amber-500/20 text-amber-400' : 'text-muted-foreground hover:text-white'}`}>
-                                                    <UtensilsCrossed size={12} /> Table Service
-                                                </button>
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Operational Mode</span>
+                                                <div className="flex rounded-lg border border-white/10 overflow-hidden bg-black/50">
+                                                    <button onClick={() => setPendingHandheldMode('general')} className={`flex-1 flex justify-center items-center gap-1.5 py-2 text-xs font-medium transition-all ${pendingHandheldMode === 'general' ? 'bg-blue-500/20 text-blue-400' : 'text-muted-foreground hover:text-white'}`}>
+                                                        <Store size={12} /> General Retail
+                                                    </button>
+                                                    <button onClick={() => setPendingHandheldMode('restaurant')} className={`flex-1 flex justify-center items-center gap-1.5 py-2 text-xs font-medium transition-all border-l border-white/10 ${pendingHandheldMode === 'restaurant' ? 'bg-amber-500/20 text-amber-400' : 'text-muted-foreground hover:text-white'}`}>
+                                                        <UtensilsCrossed size={12} /> Table Service
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="space-y-2">
+                                                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Swipe-to-Dismiss Gesture</span>
+                                                <div className="flex rounded-lg border border-white/10 overflow-hidden bg-black/50">
+                                                    <button onClick={() => setPendingDisableSwipe(false)} className={`flex-1 flex justify-center items-center gap-1.5 py-2 text-xs font-medium transition-all ${!pendingDisableSwipe ? 'bg-emerald-500/20 text-emerald-400' : 'text-muted-foreground hover:text-white'}`}>
+                                                        Enabled
+                                                    </button>
+                                                    <button onClick={() => setPendingDisableSwipe(true)} className={`flex-1 flex justify-center items-center gap-1.5 py-2 text-xs font-medium transition-all border-l border-white/10 ${pendingDisableSwipe ? 'bg-red-500/20 text-red-400' : 'text-muted-foreground hover:text-white'}`}>
+                                                        Disabled
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
