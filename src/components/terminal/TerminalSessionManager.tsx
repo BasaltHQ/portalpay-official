@@ -281,7 +281,7 @@ export default function TerminalSessionManager({ config, merchantWallet }: { con
                     <p className="text-sm" style={{ color: tpTheme.textSecondary }}>Enter your Access PIN to start session</p>
 
                     <div className="flex justify-center gap-2 my-6">
-                        {[0, 1, 2, 3].map(i => (
+                        {[0, 1, 2, 3, 4, 5].map(i => (
                             <div
                                 key={i}
                                 className="w-4 h-4 rounded-full border transition-all duration-300"
