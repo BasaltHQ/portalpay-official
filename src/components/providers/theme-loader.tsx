@@ -36,7 +36,14 @@ export function ThemeLoader() {
       // Device routes: TerminalSessionManager / HandheldInterface apply merchant branding
       // from server-fetched ShopConfig. Skip ThemeLoader network calls (redundant) and
       // mark theme-ready so any residual gating clears instantly.
-      if (path.startsWith("/touchpoint") || path.startsWith("/terminal") || path.startsWith("/handheld") || path.startsWith("/kiosk") || path.startsWith("/kitchen")) {
+      if (
+        path.startsWith("/touchpoint") ||
+        path.startsWith("/terminal") ||
+        path.startsWith("/handheld") ||
+        path.startsWith("/kiosk") ||
+        path.startsWith("/kitchen") ||
+        path.startsWith("/legacy")
+      ) {
         try {
           const root = document.documentElement;
           root.setAttribute("data-pp-theme-stage", "init");
@@ -488,6 +495,16 @@ export function ThemeLoader() {
       const r = String(url.searchParams.get("recipient") || "").trim();
       const w = String(url.searchParams.get("wallet") || "").trim();
       const hasMerchantParam = /^0x[a-fA-F0-9]{40}$/i.test(r) || /^0x[a-fA-F0-9]{40}$/i.test(w);
+      if (
+        path.startsWith("/touchpoint") ||
+        path.startsWith("/terminal") ||
+        path.startsWith("/handheld") ||
+        path.startsWith("/kiosk") ||
+        path.startsWith("/kitchen") ||
+        path.startsWith("/legacy")
+      ) {
+        return; // Don't listen to theme events on devices
+      }
       if (path.startsWith("/portal") && hasMerchantParam) {
         return; // Don't listen to theme events on merchant portals
       }
@@ -624,6 +641,16 @@ export function ThemeLoader() {
       const r = String(url.searchParams.get("recipient") || "").trim();
       const w = String(url.searchParams.get("wallet") || "").trim();
       const hasMerchantParam = /^0x[a-fA-F0-9]{40}$/i.test(r) || /^0x[a-fA-F0-9]{40}$/i.test(w);
+      if (
+        path.startsWith("/touchpoint") ||
+        path.startsWith("/terminal") ||
+        path.startsWith("/handheld") ||
+        path.startsWith("/kiosk") ||
+        path.startsWith("/kitchen") ||
+        path.startsWith("/legacy")
+      ) {
+        return; // Don't apply user theme on devices
+      }
       if (path.startsWith("/portal") && hasMerchantParam) {
         return; // Don't apply user theme on merchant portals
       }
