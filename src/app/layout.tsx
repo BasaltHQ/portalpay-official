@@ -721,6 +721,79 @@ export default async function RootLayout({
         style={{ overflowX: 'hidden' }}
       >
         <DeviceStyleInjector />
+        <Script id="pp-error-cause-polyfill" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
+          try {
+            if (typeof Error !== 'undefined') {
+              var errorTypes = [Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError];
+              if (typeof AggregateError !== 'undefined') errorTypes.push(AggregateError);
+              if (typeof DOMException !== 'undefined') errorTypes.push(DOMException);
+              
+              var errorProtos = [];
+              for (var i = 0; i < errorTypes.length; i++) {
+                if (errorTypes[i] && errorTypes[i].prototype) {
+                  errorProtos.push(errorTypes[i].prototype);
+                }
+              }
+
+              var isErrorProto = function(obj) {
+                for (var j = 0; j < errorProtos.length; j++) {
+                  if (obj === errorProtos[j]) return true;
+                }
+                return false;
+              };
+
+              var origDefine = Object.defineProperty;
+              Object.defineProperty = function(obj, prop, desc) {
+                if (prop === 'cause' && isErrorProto(obj)) {
+                  return obj;
+                }
+                return origDefine.apply(this, arguments);
+              };
+
+              var origDefineProps = Object.defineProperties;
+              Object.defineProperties = function(obj, props) {
+                if (props && 'cause' in props && isErrorProto(obj)) {
+                  var newProps = {};
+                  for (var k in props) {
+                    if (Object.prototype.hasOwnProperty.call(props, k) && k !== 'cause') {
+                      newProps[k] = props[k];
+                    }
+                  }
+                  return origDefineProps.call(this, obj, newProps);
+                }
+                return origDefineProps.apply(this, arguments);
+              };
+
+              for (var i = 0; i < errorProtos.length; i++) {
+                var proto = errorProtos[i];
+                try {
+                  if ('cause' in proto) {
+                    delete proto.cause;
+                  }
+                } catch(e) {}
+                try {
+                  origDefine(proto, 'cause', {
+                    configurable: true,
+                    get: function() {
+                      return this;
+                    },
+                    set: function(val) {
+                      if (isErrorProto(this)) return;
+                      try {
+                        origDefine(this, 'cause', {
+                          configurable: true,
+                          enumerable: true,
+                          writable: true,
+                          value: val
+                        });
+                      } catch(e) {}
+                    }
+                  });
+                } catch(e) {}
+              }
+            }
+          } catch(e) {}
+        `}} />
         <Script id="linkedin-insight-tag" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
           _linkedin_partner_id = "8943644";
           window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
