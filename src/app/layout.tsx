@@ -695,9 +695,6 @@ export default async function RootLayout({
     <html
       lang="en"
       className="dark"
-      data-pp-theme-ready="0"
-      data-pp-theme-stage="boot"
-      data-pp-theme-lock="user"
       data-pp-container-type={containerIdentity.containerType}
       data-pp-brand-key={brand.key}
       data-pp-brand-name={brand.name}

@@ -753,8 +753,8 @@ html[data-pp-route="portal"] .global-gradient-layer {
 }
 
 /* Show overlay while initial theme is not ready */
-html[data-pp-theme-ready="0"] body::before,
-html[data-pp-theme-ready="0"] body::after {
+html:not([data-pp-theme-ready="1"]) body::before,
+html:not([data-pp-theme-ready="1"]) body::after {
   content: "";
   position: fixed;
   z-index: 9999;
@@ -762,7 +762,7 @@ html[data-pp-theme-ready="0"] body::after {
 
 
 /* Backdrop glass pane */
-html[data-pp-theme-ready="0"] body::before {
+html:not([data-pp-theme-ready="1"]) body::before {
   inset: 0;
   background: hsl(220 18% 5% / 0.60);
   backdrop-filter: blur(10px) saturate(1.05);
@@ -770,7 +770,7 @@ html[data-pp-theme-ready="0"] body::before {
 }
 
 /* Skeleton shop layout */
-html[data-pp-theme-ready="0"] body::after {
+html:not([data-pp-theme-ready="1"]) body::after {
   inset: 0;
   display: grid;
   grid-template-rows: 56px 1fr;
@@ -781,7 +781,7 @@ html[data-pp-theme-ready="0"] body::after {
 }
 
 /* Shimmer overlay on the backdrop */
-html[data-pp-theme-ready="0"] body::before {
+html:not([data-pp-theme-ready="1"]) body::before {
   inset: 0;
   background: hsl(220 18% 5% / 0.75);
   backdrop-filter: blur(16px) saturate(1.05);
