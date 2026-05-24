@@ -207,6 +207,8 @@ export function useStripeEmbeddedOnramp({
     if (!mountedRef.current) return;
     console.error(`[EMBEDDED ONRAMP] ${message}`, err);
     setError(message);
+    setAuthElement(null);
+    setPaymentElement(null);
     updateStep("error");
     onError?.(new Error(message));
   }, [onError, updateStep]);

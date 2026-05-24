@@ -1947,6 +1947,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   // ── Stripe Headless Onramp State ──
   const [headlessEmailPrompt, setHeadlessEmailPrompt] = useState(false);
   const [headlessEmailInput, setHeadlessEmailInput] = useState('');
+  const [headlessInitiated, setHeadlessInitiated] = useState(false);
   const [shipLine1, setShipLine1] = useState('');
   const [shipLine2, setShipLine2] = useState('');
   const [shipCity, setShipCity] = useState('');
@@ -2838,6 +2839,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
       if (!shipEmail) {
         setHeadlessEmailPrompt(true);
       } else {
+        setHeadlessInitiated(true);
         startHeadlessOnramp(shipEmail);
       }
     } : undefined,
@@ -3126,7 +3128,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   }, [tpThemeApplied, currency]);
 
   // ─── STRIPE HEADLESS INLINE UI ───
-  const stripeHeadlessUI = (headlessEmailPrompt || headlessActive) ? (
+  const stripeHeadlessUI = (headlessEmailPrompt || headlessActive || headlessInitiated) ? (
     <div className="w-full flex flex-col items-center justify-center p-4 rounded-2xl bg-black/20 animate-in fade-in duration-300" style={{ minHeight: '300px' }}>
       {headlessEmailPrompt ? (
         <div className="bg-[#131418] border border-white/10 rounded-2xl shadow-xl p-6 max-w-sm w-full animate-in zoom-in duration-300">
@@ -3145,6 +3147,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
               className="flex-1 py-2 rounded-lg bg-white/5 text-white font-medium border border-white/10 hover:bg-white/10 transition-colors"
               onClick={() => {
                 setHeadlessEmailPrompt(false);
+                setHeadlessInitiated(false);
               }}
             >
               Cancel
@@ -3154,6 +3157,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
               disabled={!headlessEmailInput.includes('@')}
               onClick={() => {
                 setShipEmail(headlessEmailInput);
+                setHeadlessInitiated(true);
                 setHeadlessEmailPrompt(false);
                 startHeadlessOnramp(headlessEmailInput);
               }}
@@ -3166,10 +3170,11 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
         <div className="bg-[#131418] border border-white/10 rounded-2xl shadow-xl overflow-hidden max-w-[440px] w-full flex flex-col relative min-h-[400px]">
           {/* Header */}
           <div className="p-4 border-b border-white/10 flex items-center justify-between">
-            <span className="text-white font-semibold flex items-center gap-2">
-              <svg viewBox="0 0 60 25" className="h-5 text-[#635BFF] fill-current">
-                <path d="M59.64 14.28h-8.06c.19 1.93 1.6 2.55 3.2 2.55 1.64 0 2.96-.37 4.05-.95v3.32c-1.15.58-2.82.96-4.96.96-4.24 0-6.78-2.61-6.78-6.97 0-4.46 2.37-7.23 6.36-7.23 3.91 0 5.67 2.66 5.67 6.13 0 .42-.03.74-.08 1.15-.06.51-.15 1.04-.4 1.04zm-8.02-2.19h3.76c-.08-1.57-.96-2.48-2.18-2.48-1.37 0-1.87 1.1-1.58 2.48zM36.19 19.86h-4.2V6.36h4.2v13.5zM30.68 11.23c-1.07-.86-2.33-1.1-3.6-1.1-2.43 0-3.8 1.1-3.8 2.57 0 3.1 4.7 2.14 4.7 4.3 0 1.25-1.14 1.83-2.66 1.83-1.42 0-2.8-.5-3.86-1.1v3.4c1.1.58 2.8.96 4.34.96 2.76 0 4.15-1.17 4.15-2.83 0-3.3-4.7-2.3-4.7-4.32 0-1.05 1.12-1.56 2.4-1.56 1.18 0 2.25.33 3.03.8v-3.05zm-15.08 8.63h-4.2v-9.3c0-1.15-.84-1.56-1.84-1.56-1.03 0-2 .46-2.8 1.06v9.8H2.57V6.36h4.2v1.54c1.1-1.1 2.66-1.93 4.46-1.93 2.92 0 4.37 1.83 4.37 5.16v8.73zm13.19-2.65V6.36h4.2v13.5h-4.2v-2.65c-1.1 1.57-2.8 2.2-4.66 2.2-3.34 0-5.74-2.6-5.74-6.8 0-4.22 2.37-6.66 5.68-6.66 1.9 0 3.65-.65 4.72 2.24zm-1.8 1.92c1.23-.97 1.8-2.33 1.8-3.9 0-3.06-1.55-4.46-3.48-4.46-2.12 0-3.64 1.57-3.64 4.46 0 2.72 1.45 4.47 3.48 4.47 1.05 0 1.9-.38 2.4-1.07zm22.42-7.5c-1.1-1.57-2.8-2.2-4.66-2.2-3.34 0-5.74 2.6-5.74 6.8 0 4.22 2.37 6.66 5.68 6.66 1.9 0 3.65-.65 4.72-2.24v2.6h4.2V6.36h-4.2v5.27zm-1.8 1.92c1.23-.97 1.8-2.33 1.8-3.9 0-3.06-1.55-4.46-3.48-4.46-2.12 0-3.64 1.57-3.64 4.46 0 2.72 1.45 4.47 3.48 4.47 1.05 0 1.9-.38 2.4-1.07z"/>
+            <span className="text-white font-semibold flex items-center gap-1.5 select-none">
+              <svg viewBox="0 0 24 24" className="h-5 w-5 text-[#635BFF] fill-current">
+                <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .979-.714 1.481-1.993 1.481-2.274 0-4.662-.835-6.353-1.638l-.898 5.568c2.81 1.748 5.51 1.748 8.028 1.748 2.541 0 4.606-.654 6.095-1.872 1.583-1.282 2.39-3.136 2.39-5.381 0-4.088-2.52-5.77-6.476-7.228z" />
               </svg>
+              <span className="text-white text-lg font-bold tracking-tight">stripe</span>
             </span>
             {headlessStep === "error" && (
               <button 
@@ -3182,9 +3187,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           </div>
 
           {/* Content Body */}
-          <div className="flex-1 flex flex-col p-6 items-center justify-center relative min-h-[300px]">
+          <div className={`flex-1 flex flex-col items-center justify-center relative min-h-[300px] ${(headlessAuthElement || headlessPaymentElement) ? "p-0 w-full" : "p-6"}`}>
             {headlessStep === "error" ? (
-              <div className="text-center">
+              <div className="text-center px-6">
                 <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
                   <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
                 </div>
@@ -3198,7 +3203,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                 </button>
               </div>
             ) : headlessStep === "completed" ? (
-              <div className="text-center">
+              <div className="text-center px-6">
                 <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500">
                   <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                 </div>
@@ -3213,7 +3218,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
               </div>
             ) : headlessAuthElement || headlessPaymentElement ? (
               <div 
-                className="w-full" 
+                className="w-full h-full flex flex-col items-stretch" 
                 ref={(el) => {
                   if (el) {
                     const elementToMount = headlessAuthElement || headlessPaymentElement;
@@ -3225,7 +3230,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                 }} 
               />
             ) : (
-              <div className="text-center flex flex-col items-center">
+              <div className="text-center flex flex-col items-center px-6">
                 <svg className="animate-spin h-10 w-10 text-[#635BFF] mb-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -4061,7 +4066,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                                     </div>
                                     {shippingComplete && (
                                       <div className="px-2 pb-2">
-                                        {(headlessEmailPrompt || headlessActive) ? stripeHeadlessUI : (
+                                        {(headlessEmailPrompt || headlessActive || headlessInitiated) ? stripeHeadlessUI : (
                                         <CheckoutWidget
                                           key={`${token}-${currency}`}
                                           className="w-full"
@@ -4142,7 +4147,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                               {/* Non-shipping: render CheckoutWidget directly */}
                               {!shippingRequired && (
                                 <>
-                                  {(headlessEmailPrompt || headlessActive) ? stripeHeadlessUI : (
+                                  {(headlessEmailPrompt || headlessActive || headlessInitiated) ? stripeHeadlessUI : (
                                   <CheckoutWidget
                                   key={`noshp-${token}-${currency}`}
                                   className="w-full"
