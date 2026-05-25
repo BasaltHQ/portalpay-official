@@ -75,6 +75,7 @@ import ReportsPanelPartner from "@/app/(web)/admin/panels/ReportsPanelPartner";
 import ReportsPanelPlatform from "@/app/(web)/admin/panels/ReportsPanelPlatform";
 import ClientRequestsPanel from "@/app/(web)/admin/panels/ClientRequestsPanel";
 import AgentRequestsPanel from "@/app/(web)/admin/panels/AgentRequestsPanel";
+import NotificationsPanel from "@/app/(web)/admin/panels/NotificationsPanel";
 import TablesPanel from "@/app/(web)/admin/panels/TablesPanel";
 import SubscriptionsPanel from "@/app/(web)/admin/panels/SubscriptionsPanel";
 import ModulesPanel from "@/app/(web)/admin/panels/ModulesPanel";
@@ -11039,6 +11040,15 @@ export default function AdminPage() {
         </div>
 
         {/* Tabs Content */}
+        {activeTab === "notificationsMerchant" && (
+          <NotificationsPanel level="merchant" />
+        )}
+        {activeTab === "notificationsPartner" && (
+          <NotificationsPanel level="partner" />
+        )}
+        {activeTab === "notificationsPlatform" && (
+          <NotificationsPanel level="platform" />
+        )}
         {activeTab === "devices" && (
           <div className="w-full space-y-6 pb-24 admin-panel-enter">
             <TouchpointMonitoringPanel />
