@@ -79,11 +79,32 @@ function buildCsp(req: NextRequest): string {
     } catch { }
     const imgSrc = [self, data, https, ...extras].join(" ");
     // Allow dev HMR WebSockets explicitly + WalletConnect + Privy
-    const connectSrc = [self, https, ws, wss, ...extras, "https://explorer-api.walletconnect.com", "wss://*.walletconnect.com", "https://*.walletconnect.com", "https://auth.privy.io", "https://*.rpc.privy.systems", "https://px.ads.linkedin.com", "https://snap.licdn.com", "https://api.stripe.com", "https://*.stripe.com", "https://*.clarity.ms", "https://c.bing.com"].join(" ");
+    const connectSrc = [
+        self,
+        https,
+        ws,
+        wss,
+        ...extras,
+        "https://explorer-api.walletconnect.com",
+        "wss://*.walletconnect.com",
+        "https://*.walletconnect.com",
+        "https://auth.privy.io",
+        "https://*.rpc.privy.systems",
+        "https://px.ads.linkedin.com",
+        "https://snap.licdn.com",
+        "https://api.stripe.com",
+        "https://*.stripe.com",
+        "https://stripe.com",
+        "https://*.stripe.network",
+        "https://*.js.stripe.com",
+        "https://js.stripe.com",
+        "https://*.clarity.ms",
+        "https://c.bing.com"
+    ].join(" ");
     // Script-src: Allow unsafe-inline in production for Next.js managed inline scripts; unsafe-eval only in dev for HMR
     const scriptSrc = isDev
-        ? `${self} 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://js.stripe.com https://crypto-js.stripe.com https://*.clarity.ms https://c.bing.com`
-        : `${self} 'unsafe-inline' 'wasm-unsafe-eval' https://static.cloudflareinsights.com https://snap.licdn.com https://js.stripe.com https://crypto-js.stripe.com https://*.clarity.ms https://c.bing.com`;
+        ? `${self} 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://*.stripe.com https://stripe.com https://*.stripe.network https://*.js.stripe.com https://js.stripe.com https://*.clarity.ms https://c.bing.com`
+        : `${self} 'unsafe-inline' 'wasm-unsafe-eval' https://static.cloudflareinsights.com https://snap.licdn.com https://*.stripe.com https://stripe.com https://*.stripe.network https://*.js.stripe.com https://js.stripe.com https://*.clarity.ms https://c.bing.com`;
     const policy = [
         `default-src ${self}`,
         `img-src ${imgSrc} https://px.ads.linkedin.com https://*.clarity.ms https://c.bing.com`,
@@ -95,10 +116,10 @@ function buildCsp(req: NextRequest): string {
         `base-uri ${self}`,
         `form-action ${self}`,
         `media-src ${https} ${self}`,
-        `child-src ${self} blob: https://*.clarity.ms`,
+        `child-src ${self} blob: https://*.clarity.ms https://*.stripe.com https://stripe.com https://*.js.stripe.com https://js.stripe.com`,
         `worker-src ${self} blob:`,
         // Allow Thirdweb wallet iframes and Adobe Sign
-        `frame-src ${self} https://embedded-wallet.thirdweb.com https://*.thirdweb.com https://na2.documents.adobe.com https://*.documents.adobe.com https://*.adobesign.com https://js.stripe.com https://crypto-js.stripe.com https://*.stripe.com https://*.clarity.ms`,
+        `frame-src ${self} https://embedded-wallet.thirdweb.com https://*.thirdweb.com https://na2.documents.adobe.com https://*.documents.adobe.com https://*.adobesign.com https://js.stripe.com https://crypto-js.stripe.com https://*.stripe.com https://stripe.com https://*.stripe.network https://*.js.stripe.com https://hooks.stripe.com https://*.clarity.ms`,
         // Disallow object/embed entirely
         `object-src 'none'`,
     ].join("; ");
