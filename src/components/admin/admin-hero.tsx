@@ -2,6 +2,8 @@
 
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Code } from 'lucide-react';
 import { useBrand } from '@/contexts/BrandContext';
 import { cachedFetch } from '@/lib/client-api-cache';
 import { resolveBrandAppLogo } from "@/lib/branding";
@@ -88,7 +90,14 @@ export default function AdminHero() {
         </div>
 
         {/* Right side — brand badge and connect button */}
-        <div className="hidden md:flex items-center">
+        <div className="hidden md:flex items-center gap-4">
+          <Link
+            href="/developers"
+            className="flex items-center gap-2 px-4 h-9 rounded-[10px] border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-semibold text-white/80 hover:text-white transition-all duration-200 shadow-sm"
+          >
+            <Code className="w-3.5 h-3.5 text-white/60" />
+            <span>Developers</span>
+          </Link>
           {wallets.length > 0 ? (
             <ConnectButton
               client={client}
