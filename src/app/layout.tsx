@@ -706,19 +706,13 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* Cache invalidate comment */}
         <link rel="stylesheet" href="https://use.typekit.net/eur3bvn.css" />
         <meta name="base:app_id" content="69614c80b8395f034ac21fe2" />
         <noscript>
           <img height="1" width="1" style={{ display: 'none' }} alt="" src="https://px.ads.linkedin.com/collect/?pid=8943644&fmt=gif" />
         </noscript>
-      </head>
-      <body
-        suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        style={{ overflowX: 'hidden' }}
-      >
-        <DeviceStyleInjector />
-        <Script id="pp-error-cause-polyfill" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
+        <script id="pp-error-cause-polyfill" dangerouslySetInnerHTML={{ __html: `
           try {
             if (typeof Error !== 'undefined') {
               var errorTypes = [Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError];
@@ -791,32 +785,8 @@ export default async function RootLayout({
             }
           } catch(e) {}
         `}} />
-        <Script id="linkedin-insight-tag" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
-          _linkedin_partner_id = "8943644";
-          window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
-          window._linkedin_data_partner_ids.push(_linkedin_partner_id);
-          (function(l) {
-            if (!l){window.lintrk = function(a,b){window.lintrk.q.push([a,b])};
-            window.lintrk.q=[]}
-            var s = document.getElementsByTagName("script")[0];
-            var b = document.createElement("script");
-            b.type = "text/javascript";b.async = true;
-            b.src = "https://snap.licdn.com/li.lms-analytics/insight.min.js";
-            s.parentNode.insertBefore(b, s);
-          })(window.lintrk);
-        `}} />
-        {containerIdentity.containerType === 'platform' && (
-          <Script id="microsoft-clarity-platform" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
-            (function(c,l,a,r,i,t,y){
-              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window,document,"clarity","script","w0lt4j6fw3");
-          `}} />
-        )}
-        {!isDebug() && <Script id="pp-silence-console" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `try{var _l=console.log.bind(console);console.log=function(){};console._log=_l}catch(e){}`}} />}
-        <ConsoleBanner />
-        <Script id="pp-preset-vars" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `try {
+        {!isDebug() && <script id="pp-silence-console" dangerouslySetInnerHTML={{ __html: `try{var _l=console.log.bind(console);console.log=function(){};console._log=_l}catch(e){}`}} />}
+        <script id="pp-preset-vars" dangerouslySetInnerHTML={{ __html: `try {
           var d=document.documentElement;
           var dp=d.getAttribute('data-pp-brand-primary')||'#1f2937';
           var da=d.getAttribute('data-pp-brand-accent')||'#F54029';
@@ -830,7 +800,7 @@ export default async function RootLayout({
           d.style.setProperty('--primary',dp);
           d.style.setProperty('--primary-foreground',dh);
         } catch(e) {}`}} />
-        <Script id="pp-prelock" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `try {
+        <script id="pp-prelock" dangerouslySetInnerHTML={{ __html: `try {
           var d=document.documentElement;
           var url=new URL(window.location.href);
           var path=url.pathname || "";
@@ -873,14 +843,14 @@ export default async function RootLayout({
             d.setAttribute("data-pp-theme-ready","1");
           }
         } catch(e) {}`}} />
-        <Script id="pp-ios-webview-polyfill" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
+        <script id="pp-ios-webview-polyfill" dangerouslySetInnerHTML={{ __html: `
           try {
             if (typeof window !== "undefined" && !window.webkit) {
               window.webkit = { messageHandlers: {} };
             }
           } catch(e) {}
         `}} />
-        <Script id="pp-suppress-ethereum-redefine" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
+        <script id="pp-suppress-ethereum-redefine" dangerouslySetInnerHTML={{ __html: `
           try {
             // Suppress extension errors like "Cannot redefine property: ethereum"
             window.addEventListener('error', function (e) {
@@ -906,7 +876,7 @@ export default async function RootLayout({
             }, true);
           } catch {}
         `}} />
-        <Script id="pp-suppress-extension-errors" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
+        <script id="pp-suppress-extension-errors" dangerouslySetInnerHTML={{ __html: `
           try {
             window.addEventListener('error', function (e) {
               try {
@@ -971,120 +941,155 @@ export default async function RootLayout({
             })();
           } catch {}
         `}} />
-        {process.env.NODE_ENV !== "production" && (<>
-          <Script id="pp-suppress-nested-button-error" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
-          try {
-            // Suppress React DEV warning: "In HTML, <button> cannot be a descendant of <button>" from third-party modals
-            // Only intercept when the message matches exactly to avoid hiding other errors
-            window.addEventListener('error', function (e) {
+        {process.env.NODE_ENV !== "production" && (
+          <>
+            <script id="pp-suppress-nested-button-error" dangerouslySetInnerHTML={{ __html: `
               try {
-                var msg = (e && e.message) ? String(e.message) : '';
-                var low = String(msg || '').toLowerCase();
-                var pats = [
-                  '<button> cannot be a descendant of <button>',
-                  '<button> cannot appear as a descendant of <button>',
-                  '<button> cannot contain a nested <button>',
-                  'validatedomnesting(',
-                  'warning: validatedomnesting',
-                  'this will cause a hydration error',
-                  'ancestor stack trace'
-                ];
-                for (var i=0;i<pats.length;i++){
-                  if (low.indexOf(pats[i]) !== -1) {
-                    e.stopImmediatePropagation && e.stopImmediatePropagation();
-                    e.preventDefault && e.preventDefault();
-                    return false;
-                  }
-                }
+                // Suppress React DEV warning: "In HTML, <button> cannot be a descendant of <button>" from third-party modals
+                // Only intercept when the message matches exactly to avoid hiding other errors
+                window.addEventListener('error', function (e) {
+                  try {
+                    var msg = (e && e.message) ? String(e.message) : '';
+                    var low = String(msg || '').toLowerCase();
+                    var pats = [
+                      '<button> cannot be a descendant of <button>',
+                      '<button> cannot appear as a descendant of <button>',
+                      '<button> cannot contain a nested <button>',
+                      'validatedomnesting(',
+                      'warning: validatedomnesting',
+                      'this will cause a hydration error',
+                      'ancestor stack trace'
+                    ];
+                    for (var i=0;i<pats.length;i++){
+                      if (low.indexOf(pats[i]) !== -1) {
+                        e.stopImmediatePropagation && e.stopImmediatePropagation();
+                        e.preventDefault && e.preventDefault();
+                        return false;
+                      }
+                    }
+                  } catch {}
+                }, true);
+                window.addEventListener('unhandledrejection', function (e) {
+                  try {
+                    var reason = e && (e.reason || e.detail);
+                    var msg = reason && (reason.message || (reason.toString && reason.toString())) || '';
+                    var low = String(msg || '').toLowerCase();
+                    var pats = [
+                      '<button> cannot be a descendant of <button>',
+                      '<button> cannot appear as a descendant of <button>',
+                      '<button> cannot contain a nested <button>',
+                      'validatedomnesting(',
+                      'warning: validatedomnesting',
+                      'this will cause a hydration error',
+                      'ancestor stack trace'
+                    ];
+                    for (var i=0;i<pats.length;i++){
+                      if (low.indexOf(pats[i]) !== -1) {
+                        e.stopImmediatePropagation && e.stopImmediatePropagation();
+                        e.preventDefault && e.preventDefault();
+                        return false;
+                      }
+                    }
+                  } catch {}
+                }, true);
               } catch {}
-            }, true);
-            window.addEventListener('unhandledrejection', function (e) {
+            `}} />
+            <script id="pp-filter-react-nested-button" dangerouslySetInnerHTML={{ __html: `
               try {
-                var reason = e && (e.reason || e.detail);
-                var msg = reason && (reason.message || (reason.toString && reason.toString())) || '';
-                var low = String(msg || '').toLowerCase();
-                var pats = [
-                  '<button> cannot be a descendant of <button>',
-                  '<button> cannot appear as a descendant of <button>',
-                  '<button> cannot contain a nested <button>',
-                  'validatedomnesting(',
-                  'warning: validatedomnesting',
-                  'this will cause a hydration error',
-                  'ancestor stack trace'
-                ];
-                for (var i=0;i<pats.length;i++){
-                  if (low.indexOf(pats[i]) !== -1) {
-                    e.stopImmediatePropagation && e.stopImmediatePropagation();
-                    e.preventDefault && e.preventDefault();
-                    return false;
-                  }
-                }
-              } catch {}
-            }, true);
-          } catch {}
-        `}} />
-          <Script id="pp-filter-react-nested-button" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
-          try {
-            (function(){
-              var origError = console.error;
-              var origWarn = console.warn;
-              var origLog = console.log;
-              var origInfo = console.info;
-              var origDebug = console.debug;
-              function shouldSuppress(args){
-                try {
-                  var patterns = [
-                    'warning: validatedomnesting',
-                    'validatedomnesting(',
-                    '<button> cannot be a descendant of <button>',
-                    '<button> cannot appear as a descendant of <button>',
-                    '<button> cannot contain a nested <button>',
-                    'this will cause a hydration error',
-                    'ancestor stack trace'
-                  ];
-                  function extractText(x){
+                (function(){
+                  var origError = console.error;
+                  var origWarn = console.warn;
+                  var origLog = console.log;
+                  var origInfo = console.info;
+                  var origDebug = console.debug;
+                  function shouldSuppress(args){
                     try {
-                      if (!x) return '';
-                      if (typeof x === 'string') return x;
-                      if (x instanceof Error) return (x.message || '') + ' ' + (x.stack || '');
-                      if (typeof x.message === 'string' || typeof x.stack === 'string') return (x.message || '') + ' ' + (x.stack || '');
-                      if (Array.isArray(x)) return x.map(extractText).join(' ');
-                      var s = (x && x.toString && x.toString()) || '';
-                      return typeof s === 'string' ? s : '';
-                    } catch(_) { return ''; }
+                      var patterns = [
+                        'warning: validatedomnesting',
+                        'validatedomnesting(',
+                        '<button> cannot be a descendant of <button>',
+                        '<button> cannot appear as a descendant of <button>',
+                        '<button> cannot contain a nested <button>',
+                        'this will cause a hydration error',
+                        'ancestor stack trace'
+                      ];
+                      function extractText(x){
+                        try {
+                          if (!x) return '';
+                          if (typeof x === 'string') return x;
+                          if (x instanceof Error) return (x.message || '') + ' ' + (x.stack || '');
+                          if (typeof x.message === 'string' || typeof x.stack === 'string') return (x.message || '') + ' ' + (x.stack || '');
+                          if (Array.isArray(x)) return x.map(extractText).join(' ');
+                          var s = (x && x.toString && x.toString()) || '';
+                          return typeof s === 'string' ? s : '';
+                        } catch(_) { return ''; }
+                      }
+                      var blob = '';
+                      for (var i=0;i<args.length;i++) { blob += ' ' + extractText(args[i]); }
+                      var low = String(blob || '').toLowerCase();
+                      for (var j=0;j<patterns.length;j++){
+                        if (low.indexOf(patterns[j]) !== -1) return true;
+                      }
+                    } catch(e){}
+                    return false;
                   }
-                  var blob = '';
-                  for (var i=0;i<args.length;i++) { blob += ' ' + extractText(args[i]); }
-                  var low = String(blob || '').toLowerCase();
-                  for (var j=0;j<patterns.length;j++){
-                    if (low.indexOf(patterns[j]) !== -1) return true;
-                  }
-                } catch(e){}
-                return false;
-              }
-              console.error = function(){
-                if (shouldSuppress(arguments)) return;
-                return origError.apply(this, arguments);
-              };
-              console.warn = function(){
-                if (shouldSuppress(arguments)) return;
-                return origWarn.apply(this, arguments);
-              };
-              console.log = function(){
-                if (shouldSuppress(arguments)) return;
-                return origLog.apply(this, arguments);
-              };
-              console.info = function(){
-                if (shouldSuppress(arguments)) return;
-                return origInfo.apply(this, arguments);
-              };
-              console.debug = function(){
-                if (shouldSuppress(arguments)) return;
-                return origDebug.apply(this, arguments);
-              };
-            })();
-          } catch {}
+                  console.error = function(){
+                    if (shouldSuppress(arguments)) return;
+                    return origError.apply(this, arguments);
+                  };
+                  console.warn = function(){
+                    if (shouldSuppress(arguments)) return;
+                    return origWarn.apply(this, arguments);
+                  };
+                  console.log = function(){
+                    if (shouldSuppress(arguments)) return;
+                    return origLog.apply(this, arguments);
+                  };
+                  console.info = function(){
+                    if (shouldSuppress(arguments)) return;
+                    return origInfo.apply(this, arguments);
+                  };
+                  console.debug = function(){
+                    if (shouldSuppress(arguments)) return;
+                    return origDebug.apply(this, arguments);
+                  };
+                })();
+              } catch {}
+            `}} />
+          </>
+        )}
+      </head>
+      <body
+        suppressHydrationWarning
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        style={{ overflowX: 'hidden' }}
+      >
+        <DeviceStyleInjector />
+        <Script id="linkedin-insight-tag" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
+          _linkedin_partner_id = "8943644";
+          window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
+          window._linkedin_data_partner_ids.push(_linkedin_partner_id);
+          (function(l) {
+            if (!l){window.lintrk = function(a,b){window.lintrk.q.push([a,b])};
+            window.lintrk.q=[]}
+            var s = document.getElementsByTagName("script")[0];
+            var b = document.createElement("script");
+            b.type = "text/javascript";b.async = true;
+            b.src = "https://snap.licdn.com/li.lms-analytics/insight.min.js";
+            s.parentNode.insertBefore(b, s);
+          })(window.lintrk);
         `}} />
+        {containerIdentity.containerType === 'platform' && (
+          <Script id="microsoft-clarity-platform" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
+            (function(c,l,a,r,i,t,y){
+              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window,document,"clarity","script","w0lt4j6fw3");
+          `}} />
+        )}
+        <ConsoleBanner />
+        {process.env.NODE_ENV !== "production" && (<>
           <Script id="pp-fix-thirdweb-nested-buttons" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
           try {
             (function(){

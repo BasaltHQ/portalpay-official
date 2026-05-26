@@ -5,6 +5,7 @@ import Image from 'next/image';
 import {
   PanelLeftClose,
   PanelLeft,
+  Bell,
   LayoutDashboard,
   Receipt,
   Package,
@@ -71,6 +72,9 @@ export type AdminTabKey =
   | 'tables'
   | 'delivery'
   | 'reserve'
+  | 'notificationsMerchant'
+  | 'notificationsPartner'
+  | 'notificationsPlatform'
 
   | 'inventory'
   | 'orders'
@@ -111,6 +115,7 @@ export type AdminTabKey =
   | 'reportsPlatform'
   | 'clientRequests'
   | 'agentRequests'
+  | 'driverRequests'
   | 'subscriptions'
   | 'shopifyPartner'
   | 'shopifyPlatform'
@@ -407,6 +412,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
         { title: 'Integrations', key: 'integrations' as AdminTabKey, icon: <Plug className="w-4 h-4" /> },
         { title: 'Team', key: 'team' as AdminTabKey, icon: <Users className="w-4 h-4" /> },
         { title: 'Reports', key: 'reports' as AdminTabKey, icon: <FileBarChart className="w-4 h-4" /> },
+        { title: 'Notifications', key: 'notificationsMerchant' as AdminTabKey, icon: <Bell className="w-4 h-4" /> },
       ].filter((item) => !disabledMerchantModules.includes(item.key)),
     },
     {
@@ -441,12 +447,14 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
             // Client Requests & Agent Requests: Show for all admins now that platform requires approval
             ...((canBranding || isSuperadmin) ? [{ title: 'Client Requests', key: 'clientRequests' as AdminTabKey, icon: <FileQuestion className="w-4 h-4" /> }] : []),
             ...((canBranding || isSuperadmin) ? [{ title: 'Agent Requests', key: 'agentRequests' as AdminTabKey, icon: <Bot className="w-4 h-4" /> }] : []),
+            ...((canBranding || isSuperadmin) ? [{ title: 'Driver Requests', key: 'driverRequests' as AdminTabKey, icon: <Truck className="w-4 h-4" /> }] : []),
             ...(canAdmins ? [
               { title: 'Admin Users', key: 'admins' as AdminTabKey, icon: <Shield className="w-4 h-4" /> },
             ] : []),
             { title: 'Reports', key: 'reportsPartner' as AdminTabKey, icon: <FileBarChart className="w-4 h-4" /> },
             { title: 'Roadmap', key: 'roadmap' as AdminTabKey, icon: <LayoutGrid className="w-4 h-4" /> },
             { title: 'Modules', key: 'modules' as AdminTabKey, icon: <Blocks className="w-4 h-4" /> },
+            { title: 'Notifications', key: 'notificationsPartner' as AdminTabKey, icon: <Bell className="w-4 h-4" /> },
           ],
         } as NavItem,
       ]
@@ -469,6 +477,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
                 { title: 'Support Admin', key: 'supportAdmin' as AdminTabKey, icon: <LifeBuoy className="w-4 h-4" /> },
                 { title: 'Agent University', key: 'agentUniversity' as AdminTabKey, icon: <GraduationCap className="w-4 h-4" /> },
                 { title: 'Reports', key: 'reportsPlatform' as AdminTabKey, icon: <FileBarChart className="w-4 h-4" /> },
+                { title: 'Notifications', key: 'notificationsPlatform' as AdminTabKey, icon: <Bell className="w-4 h-4" /> },
                 ...(process.env.NEXT_PUBLIC_DECENTRALIZATION?.toUpperCase() === 'TRUE' ? [{ title: 'Node Operators', key: 'nodeOperators' as AdminTabKey, icon: <Server className="w-4 h-4" /> }] : []),
               ]
               : []),

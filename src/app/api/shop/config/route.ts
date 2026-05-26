@@ -106,6 +106,12 @@ export type ShopConfig = {
   categories?: string[]; // Up to 3
   categoryConfig?: Record<string, { order: number; hidden: boolean }>; // Detailed category settings
   portalTheme?: Record<string, any>; // Portal Theme Playground config (opaque blob)
+  deliveryEnabled?: boolean;
+  deliveryFee?: number;
+  deliveryRadius?: number;
+  latitude?: number;
+  longitude?: number;
+  shopAddress?: string;
   createdAt: number;
   updatedAt: number;
 };
@@ -154,6 +160,12 @@ function defaults(brandKey?: string): Required<Omit<ShopConfig, "wallet" | "id" 
     categories: [],
     categoryConfig: undefined as any,
     portalTheme: undefined as any,
+    deliveryEnabled: false,
+    deliveryFee: 5.00,
+    deliveryRadius: 10,
+    latitude: 35.6895,
+    longitude: 139.6917,
+    shopAddress: "",
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
@@ -191,6 +203,12 @@ function normalize(raw?: any, brandKey?: string): Omit<ShopConfig, "wallet" | "i
     categories: [],
     categoryConfig: undefined,
     portalTheme: undefined,
+    deliveryEnabled: d.deliveryEnabled,
+    deliveryFee: d.deliveryFee,
+    deliveryRadius: d.deliveryRadius,
+    latitude: d.latitude,
+    longitude: d.longitude,
+    shopAddress: d.shopAddress,
     createdAt: d.createdAt,
     updatedAt: d.updatedAt,
     slug: undefined as string | undefined,
@@ -324,6 +342,13 @@ function normalize(raw?: any, brandKey?: string): Omit<ShopConfig, "wallet" | "i
     if (raw.portalTheme && typeof raw.portalTheme === 'object') {
       out.portalTheme = raw.portalTheme;
     }
+
+    if (typeof raw.deliveryEnabled === "boolean") out.deliveryEnabled = raw.deliveryEnabled;
+    if (typeof raw.deliveryFee === "number") out.deliveryFee = raw.deliveryFee;
+    if (typeof raw.deliveryRadius === "number") out.deliveryRadius = raw.deliveryRadius;
+    if (typeof raw.latitude === "number") out.latitude = raw.latitude;
+    if (typeof raw.longitude === "number") out.longitude = raw.longitude;
+    if (typeof raw.shopAddress === "string") out.shopAddress = raw.shopAddress;
 
   }
 
@@ -839,6 +864,13 @@ export async function POST(req: NextRequest) {
 
     const now = Date.now();
     const setupComplete = typeof body.setupComplete === "boolean" ? (body.setupComplete === true) : !!(name && slug);
+
+    const deliveryEnabled = typeof body.deliveryEnabled === "boolean" ? body.deliveryEnabled : base.deliveryEnabled;
+    const deliveryFee = typeof body.deliveryFee === "number" ? Math.max(0, body.deliveryFee) : base.deliveryFee;
+    const deliveryRadius = typeof body.deliveryRadius === "number" ? Math.max(0, body.deliveryRadius) : base.deliveryRadius;
+    const latitude = typeof body.latitude === "number" ? body.latitude : base.latitude;
+    const longitude = typeof body.longitude === "number" ? body.longitude : base.longitude;
+    const shopAddress = typeof body.shopAddress === "string" ? body.shopAddress : base.shopAddress;
     // Write to brand-scoped doc id only for partner brands (not 'portalpay'); keep legacy id on platform to avoid disrupting existing data.
     const docId = (brandKey && String(brandKey).toLowerCase() !== "portalpay" && String(brandKey).toLowerCase() !== "basaltsurge")
       ? getDocIdForBrand(brandKey)
@@ -873,6 +905,12 @@ export async function POST(req: NextRequest) {
       portalTheme: (body.portalTheme && typeof body.portalTheme === 'object')
         ? body.portalTheme
         : (body.portalTheme === null ? undefined : ((prev as any)?.portalTheme || (base as any).portalTheme || undefined)),
+      deliveryEnabled,
+      deliveryFee,
+      deliveryRadius,
+      latitude,
+      longitude,
+      shopAddress,
       createdAt: prev?.createdAt || now,
       updatedAt: now,
     };

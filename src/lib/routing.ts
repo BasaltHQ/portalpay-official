@@ -42,6 +42,8 @@ export const EXCLUDE_PREFIXES = new Set<string>([
     "locations", // location landing pages
     "pms", // PMS routes
     "nodes", // Node operators landing page
+    "delivers", // Local Delivery consumer storefront
+    "drive", // Local Delivery driver console
     "favicon.ico",
     "globals.css",
     "robots.txt",

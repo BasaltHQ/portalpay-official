@@ -424,6 +424,42 @@ html[data-pp-route="portal"] .global-gradient-layer {
   filter: saturate(0.92) contrast(0.98) brightness(0.96);
 }
 
+/* MapLibre GL premium glass theme overrides */
+.maplibregl-ctrl-group {
+  background: rgba(17, 18, 26, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  border-radius: 8px !important;
+}
+
+.maplibregl-ctrl-group button {
+  background-color: transparent !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+.maplibregl-ctrl-group button:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.maplibregl-ctrl-group button span {
+  filter: invert(1) brightness(2) !important; /* Make standard icons white */
+}
+
+/* Push top-right map navigation control down below floating header bar to prevent collisions */
+.maplibregl-ctrl-top-right {
+  top: 96px !important;
+  right: 16px !important;
+}
+
+/* Hide default attribution elements that clutter the premium storefront layout */
+.maplibregl-ctrl-attrib,
+.maplibregl-ctrl-logo {
+  display: none !important;
+}
+
 /* Retro 8-bit pixel toggles */
 .pixel-toggle {
   display: inline-flex;

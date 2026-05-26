@@ -1,0 +1,403 @@
+%============================================================================
+% BASALTHQ PROPOSAL — OFFICE OF THE CTO
+% BasaltDelivers: Two-Touchpoint Delivery Platform on Surge
+%============================================================================
+\documentclass[11pt, letterpaper]{article}
+\usepackage{basalthq-brand}
+\usepackage{tocloft}
+\usepackage{needspace}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+
+% ============================================================================
+% DOCUMENT VARIABLES
+% ============================================================================
+\setauthor{Krishna Patel}{Chief Technical Officer \& Founder}
+\setdepartment{Office of the CTO}{DeptCTO}
+\setclassification{Confidential}
+
+\newcommand{\proposalTitle}{BasaltDelivers}
+\newcommand{\proposalSubtitle}{A two-touchpoint delivery ecosystem on BasaltSurge --- web, Android, and iOS}
+\newcommand{\proposalTo}{Eric Turner, Chief Executive Officer}
+\newcommand{\proposalVersion}{1.2}
+\newcommand{\proposalBudget}{\$0 (Internal Engineering)}
+
+% ============================================================================
+\begin{document}
+% ============================================================================
+
+\setupheaderfooter{Proposal --- \proposalTitle}
+\raggedbottom
+\widowpenalty=10000
+\clubpenalty=10000
+
+% ============================================================================
+% COVER PAGE
+% ============================================================================
+\begin{titlepage}
+\begin{center}
+    \vspace*{3cm}
+
+    {\fontsize{14}{18}\selectfont\color{BasaltText}\textsc{BasaltHQ Inc.}}
+
+    \vspace{0.5em}
+    {\color{\docDeptColor}\rule{0.4\linewidth}{2.5pt}}
+
+    \vspace{2em}
+    {\fontsize{12}{16}\selectfont\color{BasaltText}\textsc{Proposal}}
+
+    \vspace{0.5em}
+    {\fontsize{32}{40}\selectfont\bfseries\color{BasaltDark} \proposalTitle}
+
+    \vspace{0.8em}
+    {\fontsize{13}{17}\selectfont\color{BasaltText}\itshape \proposalSubtitle}
+
+    \vspace{4em}
+
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{rl}
+        {\small\textsc{Prepared by}} & \docAuthorName, \docAuthorTitle \\
+        {\small\textsc{Prepared for}} & \proposalTo \\
+        {\small\textsc{Department}} & \docDepartment \\
+        {\small\textsc{Date}} & \today \\
+        {\small\textsc{Version}} & \proposalVersion \\
+        {\small\textsc{Budget}} & \proposalBudget \\
+        {\small\textsc{Classification}} & \docClassification \\
+    \end{tabular}
+    \renewcommand{\arraystretch}{1.0}
+
+    \vfill
+    {\color{\docDeptColor}\rule{0.4\linewidth}{2.5pt}}
+
+    \vspace{1em}
+    {\small\color{BasaltText}\textsc{BasaltHQ Inc. \quad$\cdot$\quad Murrieta, California}}
+\end{center}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ============================================================================
+% PROPOSAL BODY
+% ============================================================================
+
+\section{Executive Summary}
+
+This proposal introduces \textbf{BasaltDelivers}, a delivery-as-a-service product built entirely on the existing BasaltSurge protocol. The product is deployed as two \emph{touchpoints} within the Surge ecosystem, each available on web, Android, and iOS:
+
+\begin{enumerate}
+    \item \textbf{BasaltDelivers} --- the consumer-facing storefront where customers browse merchant offerings and place delivery orders.
+    \item \textbf{BasaltDrive} --- the driver-facing operations hub where independent delivery drivers sign up, receive dispatch requests, navigate to delivery locations, and confirm completed deliveries.
+\end{enumerate}
+
+Both touchpoints are first built as route groups within the existing \texttt{portalpay-official} Next.js application, then packaged as native Android and iOS applications using \textbf{Capacitor} (by Ionic). This ``write once, deploy everywhere'' strategy gives us App Store and Play Store presence---with full access to native device APIs (GPS, push notifications, camera)---while sharing 100\% of the business logic with the web touchpoints.
+
+BasaltDelivers and BasaltDrive are monetized as \textbf{add-on subscription services} at \textbf{\$50/month per merchant}, billed via Stripe. This replaces any per-delivery commission model---merchants retain 100\% of their delivery fees and tips, and compensate their drivers independently. The standard BasaltSurge platform fee (moving to 1\%) continues to apply to the underlying transaction as usual.
+
+Dedicated vanity domains (\texttt{basaltdelivers.com} and \texttt{basaltdrive.com}, pending finalization) will forward to the Surge-hosted web versions. Because the entire product is built on existing Surge infrastructure and AI-assisted code generation tools (Antigravity, Claude Code) compress our development velocity by an estimated 5--8$\times$, the total time-to-market is approximately \textbf{4 weeks}.
+
+\begin{actionbox}
+\textbf{Decision Requested:} Approve the creation of the two Surge touchpoints with Capacitor-based native app packaging, Stripe subscription billing integration, domain procurement, and Apple Developer Program enrollment (\$99/year). All engineering is AI-assisted internal work at zero labor cost.
+\end{actionbox}
+
+\section{Problem Statement}
+
+\subsection{Current State}
+BasaltSurge currently serves merchants through point-of-sale terminals, handhelds, kiosks, and online shop portals. While merchants can manage full-service dine-in and takeout operations, the platform does not yet offer a first-party delivery channel. Merchants who wish to offer delivery must rely on third-party aggregators (DoorDash, Uber Eats, Grubhub) that extract 15--30\% commission per order, eroding margins and fragmenting the customer relationship.
+
+On the driver side, no mechanism exists within Surge for independent drivers to discover, apply to, and fulfill delivery orders for our onboarded merchants.
+
+\subsection{Impact}
+\begin{itemize}
+    \item \textbf{Revenue leakage:} Every order fulfilled through a third-party aggregator costs the merchant 15--30\% in commission---revenue that could be retained under the Surge 1\% model.
+    \item \textbf{Brand dilution:} Merchants lose direct customer relationships when orders flow through aggregator apps.
+    \item \textbf{Platform gap:} Without a native delivery channel, BasaltSurge is incomplete as an end-to-end commerce protocol, limiting our competitive positioning against full-stack alternatives.
+    \item \textbf{Driver ecosystem void:} There is no pathway for gig-economy drivers to participate in our ecosystem, representing a missed network-effect opportunity.
+    \item \textbf{Subscription revenue opportunity:} A \$50/month add-on service creates predictable, recurring SaaS revenue independent of transaction volume---a fundamentally more stable revenue stream than per-delivery commissions.
+\end{itemize}
+
+\section{Proposed Solution}
+
+\subsection{Approach}
+We will implement BasaltDelivers as two dedicated touchpoint routes within the existing \texttt{portalpay-official} Next.js application, leveraging the multi-tenant brand resolution system already in production. Each touchpoint inherits the full Surge infrastructure stack:
+
+\begin{itemize}
+    \item \textbf{Inventory API} for menu and catalog browsing
+    \item \textbf{Orders API} for unified order lifecycle management
+    \item \textbf{Receipts API} for financial records and guest-facing portals
+    \item \textbf{BPS Fee Engine} for the 1\% platform fee on underlying transactions
+    \item \textbf{Thirdweb Authentication} for identity and wallet-based sessions
+    \item \textbf{Stripe Billing} for \$50/month merchant subscription management
+    \item \textbf{WebSocket Infrastructure} for real-time order status and driver location streaming
+    \item \textbf{Cloudflare DNS \& Plesk Hosting} for domain forwarding and SSL termination
+\end{itemize}
+
+\subsubsection{Domain Architecture}
+Two vanity domains will be procured and configured:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}l l X@{}}
+\toprule
+\textbf{Domain} & \textbf{Forwards To} & \textbf{Purpose} \\
+\midrule
+\texttt{basaltdelivers.com} & \texttt{surge.basalthq.com/delivers} & Consumer delivery storefront \\
+\texttt{basaltdrive.com} & \texttt{surge.basalthq.com/drive} & Driver operations hub \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Both domains will CNAME to \texttt{surge.basalthq.com} and leverage the existing Cloudflare SSL-for-SaaS pipeline for automatic certificate provisioning. The brand resolution system will detect the incoming hostname and apply the appropriate BasaltDelivers or BasaltDrive branding context.
+
+Critically, this requires only a \textbf{slight modification} to our existing custom domain system. Surge already supports merchant-to-touchpoint domain mapping via the Cloudflare DNS manager (\texttt{cloudflare/manager.ts}) and Plesk nginx routing. Today, merchants CNAME their own domains to \texttt{surge.basalthq.com}, and the platform resolves the hostname to the correct brand context. For BasaltDelivers, we simply register \texttt{basaltdelivers.com} and \texttt{basaltdrive.com} as platform-level domain entries in the same resolution table---rather than merchant-scoped entries---and map them to the \texttt{(delivers)} and \texttt{(drive)} route groups respectively. No new DNS infrastructure or SSL pipeline is needed.
+
+\subsection{Key Deliverables}
+
+\begin{enumerate}
+    \item \textbf{BasaltDelivers Consumer Touchpoint:} A responsive web application where consumers can browse participating merchants, view menus and item details, compose delivery orders with modifier support (including merchant-configured delivery fees), and complete checkout via the embedded Surge payment portal. Real-time order tracking with driver location streaming is included.
+    \item \textbf{BasaltDrive Driver Touchpoint:} A responsive web application where drivers can create profiles, discover merchants within their geolocation radius, submit applications to join merchant delivery teams, receive real-time delivery dispatch notifications via WebSocket, access turn-by-turn navigation to the delivery address, and confirm delivery completion with photo proof.
+    \item \textbf{Admin Team Panel --- Driver Role:} A new ``Drivers'' tab within the existing merchant Team panel in the admin module, adding a \textbf{Driver} role to the existing team role system. The tab includes three subtabs:
+    \begin{itemize}
+        \item \textbf{Active} --- Currently approved and operational drivers with real-time status, vehicle info, and performance metrics.
+        \item \textbf{Requested} --- Incoming driver applications (filtered by the merchant's configured delivery radius) with one-click approve/deny actions.
+        \item \textbf{Denied} --- Previously rejected applicants with the option to reconsider.
+    \end{itemize}
+    Merchants can also configure delivery fee amounts, attire requirements, and delivery scripts from this panel.
+    \item \textbf{Stripe Subscription Billing:} Integration of Stripe Checkout and Customer Portal for \$50/month BasaltDelivers add-on billing, with automated feature gating (delivery touchpoints activate only for merchants with an active subscription).
+    \item \textbf{Domain Forwarding Infrastructure:} DNS configuration for \texttt{basaltdelivers.com} and \texttt{basaltdrive.com} with SSL termination and brand-context injection via the existing Cloudflare + Plesk hosting stack.
+\end{enumerate}
+
+\subsection{Alternatives Considered}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+\textbf{Option} & \textbf{Pros} & \textbf{Cons} \\
+\midrule
+Option A --- Surge + Capacitor (Recommended) & Single codebase for web, Android, and iOS; full native API access (GPS, push, camera); ships to App Store and Play Store; zero logic duplication; AI-accelerated development & Requires Apple Developer enrollment (\$99/yr); Capacitor plugin ecosystem for edge-case native APIs \\
+Option B --- Surge Web Only & Simplest implementation; no app store overhead & No push notifications; degraded GPS on mobile browsers; no discoverability in app stores \\
+Option C --- React Native / Expo & Near-native performance; cross-platform from one codebase & Requires rewriting all UI from React/Next.js to React Native primitives; separate build toolchain; doubles maintenance surface \\
+Option D --- Native Swift + Kotlin & Best possible UX and performance & Two completely separate codebases; requires macOS for iOS builds; 3--6 month timeline even with AI tools \\
+Option E --- Do Nothing & No engineering cost & Merchants continue losing 15--30\% to aggregators; platform remains incomplete; driver network opportunity forfeited \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{insightbox}
+\textbf{Why Capacitor over React Native:} Our touchpoints are already Next.js web applications. Capacitor wraps the \emph{existing} web app in a native shell and provides a bridge to native device APIs via plugins---no UI rewrite required. The same \texttt{npm run build} output that serves the web also powers the native apps. Capacitor's plugin ecosystem covers all critical requirements: \texttt{@capacitor/geolocation} for high-accuracy GPS, \texttt{@capacitor/push-notifications} for real-time dispatch alerts, \texttt{@capacitor/camera} for proof-of-delivery photos, and \texttt{@capacitor/haptics} for tactile feedback on driver actions.
+\end{insightbox}
+
+\section{Scope \& Timeline}
+
+\begin{warningbox}
+\textbf{AI-Accelerated Development:} This timeline assumes the use of state-of-the-art agentic code generation tools (Antigravity, Claude Code) which provide 5--8$\times$ velocity gains on scaffolding, API integration, UI component generation, and boilerplate-heavy tasks like Capacitor plugin wiring. A single engineer equipped with these tools can produce output equivalent to a 4--6 person team working conventionally. The phases below reflect this accelerated cadence.
+\end{warningbox}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}l l l X@{}}
+\toprule
+\textbf{Phase} & \textbf{Duration} & \textbf{Milestone} & \textbf{Deliverables} \\
+\midrule
+Phase 1 & Days 1--3 & Infrastructure \& APIs & Database schema for \texttt{drivers}, \texttt{empanelments}, and \texttt{delivery\_orders} in the \texttt{skynetpod} partition; full REST API surface for driver registration, geolocation-based discovery, empanelment lifecycle, and delivery order management; Stripe subscription product and webhook configuration; domain CNAME setup; Capacitor project initialization for both apps \\
+Phase 2 & Days 4--8 & Consumer Touchpoint & BasaltDelivers storefront UI with merchant discovery, menu browsing, cart with modifier and delivery-fee support, Surge payment portal checkout, and real-time order tracking; Capacitor build verified on Android emulator \\
+Phase 3 & Days 9--14 & Driver Touchpoint & BasaltDrive dashboard with geolocation-radius merchant discovery, team application flow, WebSocket-based delivery dispatch, native GPS tracking via \texttt{@capacitor/geolocation}, map-based navigation with deep-link to native Maps, proof-of-delivery camera capture, and delivery confirmation; Capacitor build verified on iOS simulator \\
+Phase 4 & Days 15--19 & Team Panel \& Native Polish & Admin Team panel ``Drivers'' tab with Active/Requested/Denied subtabs; delivery fee and attire/script configuration; Stripe subscription gating and Customer Portal integration; push notification wiring via \texttt{@capacitor/push-notifications}; native splash screens and app icons for both platforms \\
+Phase 5 & Days 20--25 & QA, Submission \& Launch & End-to-end QA across web, Android, and iOS; Stripe subscription lifecycle testing; domain SSL verification; App Store and Play Store submissions; production deployment; merchant onboarding documentation \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{insightbox}
+\textbf{Total elapsed time: $\sim$4 weeks} (25 working days), accounting for App Store review cycles running in parallel with final QA. Compare to the 12--16 week industry standard for a comparable multi-platform delivery product built without AI tooling.
+\end{insightbox}
+
+\section{Revenue Model}
+
+BasaltDelivers is monetized as a \textbf{subscription add-on service}, not a per-delivery commission. This creates predictable, recurring SaaS revenue that is independent of transaction volume.
+
+\subsection{Subscription Pricing}
+\begin{itemize}
+    \item \textbf{Price:} \$50/month per merchant (billed via Stripe).
+    \item \textbf{Includes:} Full access to the BasaltDelivers consumer storefront, BasaltDrive driver operations hub, the admin Team panel Driver role, and unlimited delivery orders.
+    \item \textbf{Feature Gating:} Delivery touchpoints are only visible and functional for merchants with an active Stripe subscription. Cancellation immediately disables delivery ordering for that merchant while preserving their core Surge POS functionality.
+\end{itemize}
+
+\subsection{Payment Flow}
+Delivery orders use the \textbf{existing} Surge payment infrastructure with no new split deployment:
+\begin{enumerate}
+    \item The consumer places a delivery order. The order total includes the menu items plus the \textbf{merchant-configured delivery fee}.
+    \item Payment is processed through the standard Surge payment portal. The platform retains its 1\% fee (\texttt{platformBps: 100}) on the full transaction amount, including the delivery fee.
+    \item The merchant receives the remainder (99\% of the order total, including the delivery fee and any tip).
+    \item The merchant compensates their drivers independently---via cash, Zelle, direct deposit, or any method of their choosing. This is an operational relationship between the merchant and their team, not mediated by the platform.
+\end{enumerate}
+
+\begin{insightbox}
+\textbf{Why subscription over commission:} A flat \$50/month fee is simpler for merchants to budget, avoids the ``DoorDash anxiety'' of watching per-order commissions erode margins, and gives BasaltHQ predictable MRR. Merchants who process even modest delivery volume (3--4 orders/day at \$30 average) save \$4,000--\$9,000/year vs.\ aggregator commissions while paying only \$600/year to us.
+\end{insightbox}
+
+\subsection{Stripe Integration}
+Subscription billing is handled entirely by Stripe:
+\begin{itemize}
+    \item \textbf{Stripe Checkout:} Merchants subscribe via a hosted Stripe Checkout session linked from their admin dashboard.
+    \item \textbf{Stripe Customer Portal:} Merchants manage payment methods, view invoices, and cancel subscriptions via the Stripe-hosted Customer Portal.
+    \item \textbf{Webhook Enforcement:} A \texttt{/api/stripe/webhook} endpoint listens for subscription lifecycle events (\texttt{created}, \texttt{paid}, \texttt{deleted}) to toggle the \texttt{deliveryEnabled} flag on the merchant's shop configuration document in real time.
+\end{itemize}
+
+\needspace{5\baselineskip}
+\section{Budget \& Resources}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}l r X@{}}
+\toprule
+\textbf{Line Item} & \textbf{Cost} & \textbf{Notes} \\
+\midrule
+Engineering (Internal) & \$0 & AI-assisted development by in-house engineering; Antigravity and Claude Code licenses covered under existing subscriptions \\
+Domain Registration & \$30/yr & Two \texttt{.com} domains at standard registrar pricing \\
+Apple Developer Program & \$99/yr & Required for iOS App Store distribution \\
+Google Play Console & \$25 (one-time) & Required for Play Store distribution \\
+Stripe Processing & 2.9\% + 30\textcent/txn & Applied to each \$50 subscription charge (\$1.75/merchant/month); net revenue \$48.25/merchant/month \\
+Infrastructure (Hosting) & \$0 & Served from existing Plesk VPS; no additional compute required \\
+Cloudflare SSL-for-SaaS & \$0 & Covered under existing Cloudflare plan for custom hostnames \\
+Database (Cosmos DB) & \$0 & New collections within existing \texttt{skynetpod} partition; no throughput increase needed \\
+\midrule
+\textbf{Total (Fixed)} & \textbf{\$154 Year 1} & \$129/yr recurring (no repeat Google Play fee) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{ROI Analysis}
+
+\begin{insightbox}
+\textbf{Expected ROI:} Each subscribing merchant generates \textbf{\$579/year} in net subscription revenue (\$48.25/month after Stripe fees). Additionally, all delivery orders continue to generate the standard 1\% platform fee on the transaction amount. For a merchant processing 50 delivery orders/week at \$35 average, the platform earns an additional \$910/year in transaction fees---bringing the total per-merchant yield to approximately \textbf{\$1,489/year}. Meanwhile, the merchant saves \$13,000--\$27,000/year vs.\ aggregator commissions (15--30\% of \$91,000 annual delivery revenue), making the \$600/year subscription a compelling value proposition. At 20 subscribing merchants, the delivery add-on alone generates \$29,780/year in recurring revenue.
+\end{insightbox}
+
+\needspace{5\baselineskip}
+\section{Technical Architecture}
+
+\subsection{Touchpoint Integration Model}
+Both touchpoints are implemented as route groups within the existing \texttt{portalpay-official} Next.js application:
+
+\begin{itemize}
+    \item \texttt{src/app/(delivers)/} --- Consumer-facing pages (merchant listing, menu, cart, checkout, tracking)
+    \item \texttt{src/app/(drive)/} --- Driver-facing pages (dashboard, empanelment, dispatch, navigation, earnings)
+\end{itemize}
+
+The existing \texttt{brand-config.ts} hostname resolution system will be extended to recognize \texttt{basaltdelivers.com} and \texttt{basaltdrive.com} as first-class brand contexts, applying the appropriate layout, color tokens, and navigation structure.
+
+\subsection{Capacitor Native Deployment}
+Capacitor (by Ionic) wraps the production web build into native Android and iOS application shells. The architecture is as follows:
+
+\begin{enumerate}
+    \item \textbf{Shared Web Core:} The \texttt{next build \&\& next export} output (or static export via \texttt{output: 'export'}) is copied into the Capacitor project's \texttt{dist/} directory. This is the identical artifact served by the web deployment.
+    \item \textbf{Native Shell:} Capacitor generates an Xcode project (\texttt{ios/}) and an Android Studio project (\texttt{android/}) that embed the web build in a \texttt{WKWebView} (iOS) or \texttt{WebView} (Android) with full native bridge access.
+    \item \textbf{Native Plugin Bridge:} JavaScript code calls native APIs through Capacitor's typed plugin system. No native code is written manually for standard capabilities:
+    \begin{itemize}
+        \item \texttt{@capacitor/geolocation} --- High-accuracy GPS with background tracking for active deliveries
+        \item \texttt{@capacitor/push-notifications} --- FCM (Android) and APNs (iOS) for delivery dispatch alerts
+        \item \texttt{@capacitor/camera} --- Photo capture for proof-of-delivery
+        \item \texttt{@capacitor/haptics} --- Tactile feedback on driver accept/complete actions
+        \item \texttt{@capacitor/app} --- Deep linking from \texttt{basaltdelivers.com} and \texttt{basaltdrive.com} URLs
+        \item \texttt{@capacitor/splash-screen} --- Branded launch experience
+    \end{itemize}
+    \item \textbf{Two Capacitor Projects:} We maintain two separate Capacitor configurations (\texttt{capacitor.config.ts}) to produce distinct app binaries:
+    \begin{itemize}
+        \item \texttt{com.basalthq.delivers} --- Consumer app (BasaltDelivers)
+        \item \texttt{com.basalthq.drive} --- Driver app (BasaltDrive)
+    \end{itemize}
+    Each configuration sets a different \texttt{server.url} in development mode and a different \texttt{webDir} for production builds, ensuring brand-context isolation at the native level.
+\end{enumerate}
+
+\begin{recommendbox}
+\textbf{Build Pipeline:} Android builds can be produced on Windows via Android Studio. iOS builds require a macOS environment; we will use a cloud CI service (GitHub Actions with \texttt{macos-latest} runner) for automated iOS archive and App Store Connect uploads, eliminating the need for local macOS hardware.
+\end{recommendbox}
+
+\subsection{Data Model Extensions}
+New entities will be created within the existing \texttt{skynetpod} database partition:
+
+\begin{itemize}
+    \item \textbf{\texttt{drivers}} --- Driver profiles including vehicle type, background check status, real-time GPS coordinates, online/offline state, and home geolocation (used for radius-based merchant discovery).
+    \item \textbf{\texttt{empanelments}} --- Many-to-many relationships between drivers and merchants, with lifecycle status (\texttt{requested}, \texttt{active}, \texttt{denied}), attire acknowledgment flags, and script acknowledgment timestamps. These records power the Team panel's Drivers tab subtabs.
+    \item \textbf{\texttt{delivery\_orders}} --- Extension of the existing \texttt{orders} entity with delivery-specific fields: driver assignment, merchant-configured delivery fee amount, pickup confirmation timestamp, delivery proof (photo URL), estimated delivery time, and real-time location trail.
+    \item \textbf{\texttt{shop\_config} extension} --- New fields: \texttt{deliveryEnabled} (toggled by Stripe webhook), \texttt{deliveryFee} (flat fee added to orders), \texttt{deliveryRadius} (km, for driver discovery filtering), and Stripe identifiers (\texttt{stripeSubscriptionId}, \texttt{stripeCustomerId}).
+\end{itemize}
+
+\subsection{Driver Onboarding \& Team Panel Integration}
+Driver management is integrated into the \textbf{existing Admin Team panel} rather than a standalone fleet management module. This leverages the role-based team architecture already in production:
+
+\begin{enumerate}
+    \item \textbf{New ``Driver'' Role:} A \texttt{driver} role is added to the existing team role enum (alongside \texttt{admin}, \texttt{manager}, \texttt{cashier}, etc.). This role grants access to the BasaltDrive touchpoint for that specific merchant.
+    \item \textbf{``Drivers'' Tab:} A new top-level tab appears in the Team panel for merchants with an active BasaltDelivers subscription. It contains three subtabs:
+    \begin{itemize}
+        \item \textbf{Active} --- Approved drivers currently on the merchant's team. Shows real-time online/offline status, vehicle type, and delivery performance metrics (on-time \%, average delivery time). Merchants can suspend or remove drivers here.
+        \item \textbf{Requested} --- Incoming applications from drivers who discovered the merchant via geolocation-radius search in BasaltDrive. Each application shows the driver's profile, vehicle info, distance from the merchant, and a brief message. One-click \textbf{Approve} or \textbf{Deny} actions transition the empanelment record.
+        \item \textbf{Denied} --- Previously rejected applicants. Merchants can reconsider and approve from this view if circumstances change.
+    \end{itemize}
+    \item \textbf{Geolocation-Based Discovery:} When a driver opens BasaltDrive, the app uses \texttt{@capacitor/geolocation} to determine their position and queries the API for merchants within a configurable radius (default 15 km) that have active BasaltDelivers subscriptions. Drivers can then submit applications directly from the discovery view.
+    \item \textbf{Delivery Configuration:} From the Drivers tab, merchants also configure their \textbf{delivery fee} (a flat amount added to consumer orders), \textbf{delivery radius} (which controls both consumer eligibility and driver discovery), \textbf{attire requirements}, and \textbf{delivery scripts}.
+\end{enumerate}
+
+\subsection{Payment \& Fee Routing}
+Delivery transactions flow through the \textbf{existing} BPS fee engine with no new split deployment:
+\begin{itemize}
+    \item \textbf{Platform fee:} 1\% (\texttt{platformBps: 100}) retained by BasaltSurge on the full order amount (menu items + delivery fee + tip).
+    \item \textbf{Delivery fee:} A merchant-configured flat fee appended to the consumer's order total. The merchant receives this fee in full (minus the 1\% platform fee) as part of their standard Surge settlement.
+    \item \textbf{Driver compensation:} Handled entirely by the merchant outside the platform. The merchant-driver financial relationship is an internal team arrangement---similar to how a restaurant pays its waitstaff. No new \texttt{splitConfig} or on-chain split contract is required.
+    \item \textbf{Tips:} Consumer tips are included in the order total, settled to the merchant, and forwarded to drivers at the merchant's discretion.
+\end{itemize}
+
+\begin{recommendbox}
+\textbf{Architectural Simplification:} By keeping driver compensation off-platform, we avoid the complexity of a new split deployment, additional \texttt{splitConfig} documents, and the associated synchronization traps documented in the Fee Infrastructure KI. The merchant's existing Surge payment flow is completely unchanged---delivery orders are simply regular orders with an additional line item for the delivery fee.
+\end{recommendbox}
+
+\subsection{Real-Time Infrastructure}
+The existing WebSocket infrastructure is extended with two new channel types:
+\begin{itemize}
+    \item \textbf{Dispatch channel:} Broadcasts new delivery orders to empaneled drivers within the merchant's configured delivery radius. On native apps, incoming dispatches trigger push notifications via Capacitor's push-notifications plugin even when the app is backgrounded.
+    \item \textbf{Tracking channel:} Streams driver GPS coordinates (sourced from Capacitor's geolocation plugin with high-accuracy mode) to both the merchant dashboard and the consumer's order tracking view.
+\end{itemize}
+
+
+\needspace{6\baselineskip}
+\section{Risks \& Mitigation}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}l l X X@{}}
+\toprule
+\textbf{Risk} & \textbf{Likelihood} & \textbf{Impact} & \textbf{Mitigation} \\
+\midrule
+Insufficient driver supply at launch & Medium & Slow delivery times degrade consumer experience & Seed with merchant-employed delivery staff; phase launch by market (Pontevedra, FL first) \\
+App Store review rejection & Low & Delays iOS launch by 1--2 weeks & Follow Apple Human Interface Guidelines; ensure native-feeling UX via Capacitor plugins; submit early to catch issues during Phase 4 \\
+Brand-context bleed between apps & Low & Consumer sees driver UI or vice versa & Separate Capacitor projects with distinct bundle IDs; hostname-based layout isolation on web; automated E2E tests per touchpoint \\
+AI-generated code quality gaps & Low & Subtle bugs in edge-case flows & Human review of all AI-generated code; comprehensive E2E testing on real devices; staged rollout to initial merchant cohort \\
+Domain procurement delays & Low & Launch uses Surge URLs and native apps directly & Touchpoints are fully functional on Surge URLs and in native apps; vanity domains are cosmetic additions \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Success Criteria}
+
+\begin{itemize}
+    \item \textbf{Platform Availability:} Both apps published on App Store and Google Play Store within 30 days of project start.
+    \item \textbf{Subscription Revenue:} At least 3 merchants with active \$50/month subscriptions within 30 days of launch (\$150 MRR).
+    \item \textbf{Driver Fleet:} A minimum of 10 approved drivers (``Active'' status in Team panel) across all subscribing merchants within 60 days.
+    \item \textbf{Order Volume:} 50+ delivery orders processed through BasaltDelivers within the first 90 days.
+    \item \textbf{Uptime:} 99.5\% availability across all three surfaces (web, Android, iOS), measured via Cloudflare and app crash analytics.
+    \item \textbf{Subscription Retention:} Less than 10\% monthly churn on BasaltDelivers subscriptions after the first 90 days.
+\end{itemize}
+
+\section{Requested Decision}
+
+\begin{actionbox}
+I am requesting approval to proceed with \textbf{Option A (Surge Touchpoints + Capacitor + Stripe Subscription)} at an estimated fixed budget of \textbf{\$154 in Year 1} (\$129/yr recurring) plus Stripe processing fees of 2.9\% + 30\textcent\ per subscription charge. Revenue target: \textbf{\$150+ MRR} within 30 days of launch. AI-accelerated engineering begins \textbf{immediately upon approval}, with all three surfaces (web, Android, iOS) targeted for production within \textbf{4 weeks}. Please confirm by \textbf{May 1, 2026}.
+\end{actionbox}
+
+% ============================================================================
+% SIGNATURE
+% ============================================================================
+
+\vspace{2em}
+
+\noindent\rule{5cm}{0.4pt}\\[4pt]
+\noindent\textbf{\docAuthorName}\\
+\noindent\textit{\docAuthorTitle}\\
+\noindent BasaltHQ Inc.
+
+\end{document}

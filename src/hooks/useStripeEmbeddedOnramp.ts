@@ -46,12 +46,12 @@ export type OnrampStep =
   | "error";
 
 type OnrampCoordinator = {
-  registerLinkUser: (info: {
-    email: string;
-    phone: string;
-    country: string;
-    fullName?: string;
-  }) => Promise<{ created: boolean }>;
+  registerLinkUser: (
+    email: string,
+    phone: string,
+    country: string,
+    fullName?: string
+  ) => Promise<{ created: boolean }>;
   authenticate: (
     linkAuthIntentId: string,
     onCompletion: (result: {
@@ -383,12 +383,12 @@ export function useStripeEmbeddedOnramp({
         // No Link account — register
         updateStep("registering_link");
 
-        const registerResult = await onramp.registerLinkUser({
-          email: activeEmail,
-          phone: phone || "",
-          country: "US",
-          fullName: "",
-        });
+        const registerResult = await onramp.registerLinkUser(
+          activeEmail,
+          phone || "",
+          "US",
+          ""
+        );
 
         if (!registerResult.created) {
           handleError("Failed to create Link account");

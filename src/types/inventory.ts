@@ -79,6 +79,8 @@ export interface BaseInventoryItem {
   shippingEnabled?: boolean;
   /** Full shipping configuration for this item */
   shippingConfig?: ShippingConfig;
+  /** Quick-check flag: true if this item is eligible for delivery */
+  deliveryEnabled?: boolean;
   createdAt: number;
   updatedAt: number;
   attributes?: IndustryAttributes;

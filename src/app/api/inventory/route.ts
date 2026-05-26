@@ -28,6 +28,7 @@ type InventoryItemBody = {
   name: string;
   priceUsd: number;
   stockQty: number;
+  deliveryEnabled?: boolean;
   currency?: string;
   category?: string;
   description?: string;
@@ -309,7 +310,7 @@ export async function GET(req: NextRequest) {
       }
       const spec = (() => {
         const baseSelect =
-          "SELECT c.id, c.wallet, c.sku, c.name, c.priceUsd, c.currency, c.stockQty, c.category, c.description, c.tags, c.images, c.attributes, c.costUsd, c.taxable, c.jurisdictionCode, c.industryPack, c.metrics, c.createdAt, c.updatedAt, c.isBook, c.bookFileUrl, c.bookCoverUrl, c.approvalStatus, c.contentDetails, c.releaseDate, c.previewUrl, c.allowDownload, c.drmEnabled, c.isSubscription, c.subscriptionPlanId, c.shippingEnabled, c.shippingConfig FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet";
+          "SELECT c.id, c.wallet, c.sku, c.name, c.priceUsd, c.currency, c.stockQty, c.category, c.description, c.tags, c.images, c.attributes, c.costUsd, c.taxable, c.jurisdictionCode, c.industryPack, c.metrics, c.createdAt, c.updatedAt, c.isBook, c.bookFileUrl, c.bookCoverUrl, c.approvalStatus, c.contentDetails, c.releaseDate, c.previewUrl, c.allowDownload, c.drmEnabled, c.isSubscription, c.subscriptionPlanId, c.shippingEnabled, c.shippingConfig, c.deliveryEnabled FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet";
         if (brandKey) {
           const partner = isPartnerContext();
           return partner
@@ -497,6 +498,8 @@ export async function POST(req: NextRequest) {
           insuranceRequired: body.shippingConfig.insuranceRequired === true,
         }
         : undefined,
+      // Delivery
+      deliveryEnabled: body.deliveryEnabled === true,
     };
 
     try {

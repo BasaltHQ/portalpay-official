@@ -75,6 +75,8 @@ import ReportsPanelPartner from "@/app/(web)/admin/panels/ReportsPanelPartner";
 import ReportsPanelPlatform from "@/app/(web)/admin/panels/ReportsPanelPlatform";
 import ClientRequestsPanel from "@/app/(web)/admin/panels/ClientRequestsPanel";
 import AgentRequestsPanel from "@/app/(web)/admin/panels/AgentRequestsPanel";
+import DriverRequestsPanel from "@/app/(web)/admin/panels/DriverRequestsPanel";
+import NotificationsPanel from "@/app/(web)/admin/panels/NotificationsPanel";
 import TablesPanel from "@/app/(web)/admin/panels/TablesPanel";
 import SubscriptionsPanel from "@/app/(web)/admin/panels/SubscriptionsPanel";
 import ModulesPanel from "@/app/(web)/admin/panels/ModulesPanel";
@@ -6797,6 +6799,7 @@ function InventoryPanel() {
 
   // Shipping state for Add modal
   const [shippingEnabled, setShippingEnabled] = useState(false);
+  const [deliveryEnabled, setDeliveryEnabled] = useState(false);
   const [shippingWeightLbs, setShippingWeightLbs] = useState<number | undefined>(undefined);
   const [shippingLength, setShippingLength] = useState<number | undefined>(undefined);
   const [shippingWidth, setShippingWidth] = useState<number | undefined>(undefined);
@@ -6814,6 +6817,7 @@ function InventoryPanel() {
 
   // Shipping state for Edit modal
   const [editShippingEnabled, setEditShippingEnabled] = useState(false);
+  const [editDeliveryEnabled, setEditDeliveryEnabled] = useState(false);
   const [editShippingWeightLbs, setEditShippingWeightLbs] = useState<number | undefined>(undefined);
   const [editShippingLength, setEditShippingLength] = useState<number | undefined>(undefined);
   const [editShippingWidth, setEditShippingWidth] = useState<number | undefined>(undefined);
@@ -6880,7 +6884,9 @@ function InventoryPanel() {
       setPubDownloadUrl(""); setPubPreviewUrl(""); setPubDrm(false);
       setIsSubscription(false);
       setSubscriptionPlanId("");
-      setShippingEnabled(false); setShippingWeightLbs(undefined); setShippingLength(undefined); setShippingWidth(undefined); setShippingHeight(undefined);
+      setShippingEnabled(false);
+      setDeliveryEnabled(false);
+      setShippingWeightLbs(undefined); setShippingLength(undefined); setShippingWidth(undefined); setShippingHeight(undefined);
       setShippingDimUnit('in'); setShippingClass('standard'); setFreeShippingThreshold(undefined); setMethodPricing({ standard: 5.99, express: 12.99, overnight: 24.99, freight: 29.99 });
       setHandlingTimeDays(2); setShippingMethods(['standard']); setOriginCountry('US'); setDomesticOnly(false); setRequiresSignature(false); setInsuranceRequired(false);
       setAddOpen(true);
@@ -6990,9 +6996,10 @@ function InventoryPanel() {
     setEditIsSubscription(!!(item as any).isSubscription);
     setEditSubscriptionPlanId((item as any).subscriptionPlanId || "");
 
-    // Hydrate shipping state
+    // Hydrate shipping and delivery states
     const sc = (item as any).shippingConfig || {};
     setEditShippingEnabled(!!(item as any).shippingEnabled);
+    setEditDeliveryEnabled(!!(item as any).deliveryEnabled);
     setEditShippingWeightLbs(typeof sc.weightLbs === 'number' ? sc.weightLbs : undefined);
     setEditShippingLength(sc.dimensions?.length ?? undefined);
     setEditShippingWidth(sc.dimensions?.width ?? undefined);
@@ -7129,6 +7136,7 @@ function InventoryPanel() {
           requiresSignature: editRequiresSignature,
           insuranceRequired: editInsuranceRequired,
         } : undefined,
+        deliveryEnabled: editDeliveryEnabled,
       };
 
       const r = await fetch("/api/inventory", {
@@ -7599,6 +7607,7 @@ function InventoryPanel() {
           requiresSignature,
           insuranceRequired,
         } : undefined,
+        deliveryEnabled,
       };
       const r = await fetch("/api/inventory", {
         method: "POST",
@@ -8612,6 +8621,21 @@ function InventoryPanel() {
                   )}
                 </div>
 
+                {/* ── Delivery Configuration ── */}
+                <div className="border-t pt-4 my-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={deliveryEnabled}
+                      onChange={(e) => setDeliveryEnabled(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="font-medium text-sm">🛵 Eligible for Delivery</span>
+                  </label>
+                  <div className="microtext text-muted-foreground mt-1 ml-6">Enable for items that can be locally delivered using BasaltDelivers.</div>
+                </div>
+
                 <div className="border-t pt-4 my-4">
                   <label className="flex items-center gap-2">
                     <input
@@ -9224,6 +9248,21 @@ function InventoryPanel() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* ── Delivery Configuration ── */}
+                <div className="border-t pt-4 my-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={editDeliveryEnabled}
+                      onChange={(e) => setEditDeliveryEnabled(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="font-medium text-sm">🛵 Eligible for Delivery</span>
+                  </label>
+                  <div className="microtext text-muted-foreground mt-1 ml-6">Enable for items that can be locally delivered using BasaltDelivers.</div>
                 </div>
 
                 <div className="border-t pt-4 my-4">
@@ -11039,6 +11078,15 @@ export default function AdminPage() {
         </div>
 
         {/* Tabs Content */}
+        {activeTab === "notificationsMerchant" && (
+          <NotificationsPanel level="merchant" />
+        )}
+        {activeTab === "notificationsPartner" && (
+          <NotificationsPanel level="partner" />
+        )}
+        {activeTab === "notificationsPlatform" && (
+          <NotificationsPanel level="platform" />
+        )}
         {activeTab === "devices" && (
           <div className="w-full space-y-6 pb-24 admin-panel-enter">
             <TouchpointMonitoringPanel />
@@ -11181,6 +11229,9 @@ export default function AdminPage() {
         )}
         {activeTab === "agentRequests" && (canBranding || isSuperadmin) && (isRequestMode || isSuperadmin) && (
           <AgentRequestsPanel />
+        )}
+        {activeTab === "driverRequests" && (canBranding || isSuperadmin) && (
+          <DriverRequestsPanel />
         )}
         {activeTab === "modules" && (canBranding || isSuperadmin) && (
           <ModulesPanel />
