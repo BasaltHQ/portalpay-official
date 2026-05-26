@@ -95,7 +95,8 @@ function buildCsp(req: NextRequest): string {
         `base-uri ${self}`,
         `form-action ${self}`,
         `media-src ${https} ${self}`,
-        `child-src ${self} https://*.clarity.ms`,
+        `child-src ${self} blob: https://*.clarity.ms`,
+        `worker-src ${self} blob:`,
         // Allow Thirdweb wallet iframes and Adobe Sign
         `frame-src ${self} https://embedded-wallet.thirdweb.com https://*.thirdweb.com https://na2.documents.adobe.com https://*.documents.adobe.com https://*.adobesign.com https://js.stripe.com https://crypto-js.stripe.com https://*.stripe.com https://*.clarity.ms`,
         // Disallow object/embed entirely

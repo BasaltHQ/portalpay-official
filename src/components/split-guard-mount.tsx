@@ -13,7 +13,7 @@ function shouldSuppressForPath(path: string): boolean {
   try {
     const p = (path || "/").toLowerCase();
     // Suppress on buyer receipt portal pages, agent pages, apply page, and legal documents
-    if (p.startsWith("/portal") || p.startsWith("/agents") || p.startsWith("/legal") || p.startsWith("/apply")) return true;
+    if (p.startsWith("/portal") || p.startsWith("/agents") || p.startsWith("/legal") || p.startsWith("/apply") || p.startsWith("/delivers") || p.startsWith("/drive")) return true;
     return false;
   } catch {
     return false;

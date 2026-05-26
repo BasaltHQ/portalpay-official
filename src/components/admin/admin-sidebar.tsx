@@ -115,6 +115,7 @@ export type AdminTabKey =
   | 'reportsPlatform'
   | 'clientRequests'
   | 'agentRequests'
+  | 'driverRequests'
   | 'subscriptions'
   | 'shopifyPartner'
   | 'shopifyPlatform'
@@ -446,6 +447,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
             // Client Requests & Agent Requests: Show for all admins now that platform requires approval
             ...((canBranding || isSuperadmin) ? [{ title: 'Client Requests', key: 'clientRequests' as AdminTabKey, icon: <FileQuestion className="w-4 h-4" /> }] : []),
             ...((canBranding || isSuperadmin) ? [{ title: 'Agent Requests', key: 'agentRequests' as AdminTabKey, icon: <Bot className="w-4 h-4" /> }] : []),
+            ...((canBranding || isSuperadmin) ? [{ title: 'Driver Requests', key: 'driverRequests' as AdminTabKey, icon: <Truck className="w-4 h-4" /> }] : []),
             ...(canAdmins ? [
               { title: 'Admin Users', key: 'admins' as AdminTabKey, icon: <Shield className="w-4 h-4" /> },
             ] : []),

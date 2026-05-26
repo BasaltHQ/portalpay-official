@@ -66,6 +66,7 @@ type ReceiptLineItem = {
     requiresSignature?: boolean;
     insuranceRequired?: boolean;
   };
+  requiresDelivery?: boolean;
 };
 
 export type Receipt = {
@@ -373,7 +374,7 @@ export async function POST(req: NextRequest) {
     try {
       const container = await getContainer();
       const baseSelect =
-        "SELECT c.id, c.wallet, c.sku, c.name, c.priceUsd, c.currency, c.stockQty, c.category, c.description, c.tags, c.images, c.attributes, c.costUsd, c.taxable, c.jurisdictionCode, c.metrics, c.createdAt, c.updatedAt, c.shippingEnabled, c.shippingConfig FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet";
+        "SELECT c.id, c.wallet, c.sku, c.name, c.priceUsd, c.currency, c.stockQty, c.category, c.description, c.tags, c.images, c.attributes, c.costUsd, c.taxable, c.jurisdictionCode, c.metrics, c.createdAt, c.updatedAt, c.shippingEnabled, c.shippingConfig, c.deliveryEnabled FROM c WHERE c.type='inventory_item' AND c.wallet=@wallet";
       // Determine if we're in a strict partner context
       const partner = isPartnerContext();
       const spec =
@@ -754,6 +755,7 @@ export async function POST(req: NextRequest) {
           requiresSignature: (inv as any).shippingConfig.requiresSignature,
           insuranceRequired: (inv as any).shippingConfig.insuranceRequired,
         } : undefined,
+        requiresDelivery: (inv as any).deliveryEnabled === true ? true : undefined,
       });
     }
 
