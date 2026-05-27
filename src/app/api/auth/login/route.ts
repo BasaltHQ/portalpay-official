@@ -17,11 +17,12 @@ function getCookieDomainFromRequest(req: NextRequest): string | undefined {
 
 	try {
 		// Get the actual request host (prefer x-forwarded-host for reverse proxies)
-		const forwarded = req.headers.get("x-forwarded-host");
-		const host = forwarded || req.headers.get("host") || "";
+		const forwarded = req.headers.get("x-forwarded-host") || "";
+		const firstForwarded = forwarded.split(",")[0].trim();
+		const host = firstForwarded || req.headers.get("host") || "";
 
 		// Extract hostname without port
-		const hostname = host.split(":")[0];
+		const hostname = host.split(":")[0].trim();
 
 		// Don't set domain for localhost or IP addresses
 		if (hostname === "localhost" || /^[\d.]+$/.test(hostname)) return undefined;
