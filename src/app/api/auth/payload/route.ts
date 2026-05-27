@@ -4,8 +4,8 @@ import { chain } from "@/lib/thirdweb/server";
 
 export async function GET(req: NextRequest) {
   try {
-    const rawAddr = String(req.nextUrl.searchParams.get("address") || "");
-    if (!/^0x[a-f0-9]{40}$/i.test(rawAddr)) {
+    const addr = String(req.nextUrl.searchParams.get("address") || "").toLowerCase();
+    if (!/^0x[a-f0-9]{40}$/.test(addr)) {
       return NextResponse.json({ error: "invalid_address" }, { status: 400 });
     }
     // Proactive check so we return a clear error instead of crashing
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     }
     const auth = getAuth(req);
     const payload = await auth.generatePayload({ 
-      address: rawAddr, // Retain original EIP-55 checksum case to prevent Metamask signature mismatch
+      address: addr,
       chainId: chain.id,
     });
     return NextResponse.json({ payload });
