@@ -259,17 +259,20 @@ const brandConfigGetCache: Record<string, { data: any; ts: number }> = {};
 const BRAND_CONFIG_GET_TTL = 30_000; // 30 seconds
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ brandKey: string }> }) {
-  const { brandKey } = await ctx.params;
-  const key = String(brandKey || "").toLowerCase();
-
-  // Check in-memory cache first
-  const now = Date.now();
-  const cached = brandConfigGetCache[key];
-  if (cached && (now - cached.ts) < BRAND_CONFIG_GET_TTL) {
-    return headerJson(cached.data);
-  }
-
+  let key = "basaltsurge";
   try {
+    // Safely extract parameters in a robust, framework-version-agnostic way
+    const params = ctx && ctx.params ? await ctx.params : {};
+    const brandKey = (params as any)?.brandKey || "basaltsurge";
+    key = String(brandKey || "").toLowerCase();
+
+    // Check in-memory cache first
+    const now = Date.now();
+    const cached = brandConfigGetCache[key];
+    if (cached && (now - cached.ts) < BRAND_CONFIG_GET_TTL) {
+      return headerJson(cached.data);
+    }
+
     let overrides = await readBrandOverrides(key);
 
     // Auto-correct favicon to proper .ico format - ONLY when explicitly requested via ?autoFavicon=1
@@ -326,8 +329,17 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ brandKey: s
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ brandKey: string }> }) {
   const correlationId = crypto.randomUUID();
-  const { brandKey } = await ctx.params;
-  const key = String(brandKey || "").toLowerCase();
+  let key = "basaltsurge";
+  try {
+    const params = ctx && ctx.params ? await ctx.params : {};
+    const brandKey = (params as any)?.brandKey || "basaltsurge";
+    key = String(brandKey || "").toLowerCase();
+  } catch {
+    return NextResponse.json(
+      { error: "invalid_params", correlationId },
+      { status: 400, headers: { "x-correlation-id": correlationId } }
+    );
+  }
 
   // Admin-only: require JWT with admin role
   let caller: { wallet: string; roles: string[] };
