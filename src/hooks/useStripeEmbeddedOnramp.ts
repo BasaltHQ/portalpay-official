@@ -30,6 +30,7 @@ export type OnrampStep =
   | "initializing"
   | "checking_link"
   | "registering_link"
+  | "collecting_phone"
   | "authenticating"
   | "exchanging_tokens"
   | "checking_kyc"
@@ -128,9 +129,11 @@ export type UseStripeEmbeddedOnrampReturn = {
   /** The payment method element to render */
   paymentElement: HTMLElement | null;
   /** Start the full onramp flow */
-  startOnramp: (overrideEmail?: string) => Promise<void>;
+  startOnramp: (overrideEmail?: string, overridePhone?: string) => Promise<void>;
   /** Reset state */
   reset: () => void;
+  /** Submit phone number to resume registration */
+  submitPhone: (phoneNumber: string) => void;
   /** Whether the flow is actively running */
   isActive: boolean;
   /** The crypto customer ID after auth */
@@ -144,6 +147,7 @@ const STEP_MESSAGES: Record<OnrampStep, string> = {
   initializing: "Initializing Stripe...",
   checking_link: "Checking account...",
   registering_link: "Creating account...",
+  collecting_phone: "Enter phone number for Link...",
   authenticating: "Verifying identity...",
   exchanging_tokens: "Securing session...",
   checking_kyc: "Checking verification...",
@@ -186,12 +190,14 @@ export function useStripeEmbeddedOnramp({
   const [paymentElement, setPaymentElement] = useState<HTMLElement | null>(null);
   const [cryptoCustomerId, setCryptoCustomerId] = useState<string | null>(null);
   const [buyerWalletAddress, setBuyerWalletAddress] = useState<string | null>(null);
+  const [localPhone, setLocalPhone] = useState<string>("");
 
   const onrampRef = useRef<OnrampCoordinator | null>(null);
   const mountedRef = useRef(true);
   const oauthTokenRef = useRef<string | null>(null);
   const paymentTokenRef = useRef<string | null>(null);
   const verificationTokenRef = useRef<string | null>(null);
+  const buyerAccountRef = useRef<any>(null);
 
   const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
 
@@ -229,6 +235,8 @@ export function useStripeEmbeddedOnramp({
     oauthTokenRef.current = null;
     paymentTokenRef.current = null;
     verificationTokenRef.current = null;
+    setLocalPhone("");
+    buyerAccountRef.current = null;
   }, []);
 
   // ─── Create/retrieve Thirdweb smart wallet for buyer email ───
@@ -271,6 +279,8 @@ export function useStripeEmbeddedOnramp({
       const address = account.address;
       console.log("[EMBEDDED ONRAMP] Smart wallet created/retrieved:", address?.slice(0, 10) + "...");
 
+      buyerAccountRef.current = account;
+
       return address || null;
     } catch (err: any) {
       console.error("[EMBEDDED ONRAMP] Wallet creation failed:", err);
@@ -308,6 +318,9 @@ export function useStripeEmbeddedOnramp({
           personalAccount: connectedWallet,
         });
         console.log("[EMBEDDED ONRAMP] Smart Account active for EOA:", account.address);
+      } else if (buyerAccountRef.current) {
+        console.log("[EMBEDDED ONRAMP] Using active connected smart wallet account:", buyerAccountRef.current.address);
+        account = buyerAccountRef.current;
       } else {
         const { inAppWallet } = await import("thirdweb/wallets");
         // Re-connect the wallet (same email = same wallet, deterministic)
@@ -365,8 +378,9 @@ export function useStripeEmbeddedOnramp({
     }
   }, []);
 
-  const startOnramp = useCallback(async (overrideEmail?: string) => {
+  const startOnramp = useCallback(async (overrideEmail?: string, overridePhone?: string) => {
     const activeEmail = overrideEmail || email;
+    const activePhone = overridePhone || phone || localPhone;
 
     if (!enabled || !activeEmail || !splitAddress || !publishableKey) {
       handleError("Missing required fields (email, split address, or API key)");
@@ -405,17 +419,28 @@ export function useStripeEmbeddedOnramp({
 
       if (linkRes.status === 404) {
         // No Link account — register
+        if (!activePhone) {
+          console.log("[EMBEDDED ONRAMP] Fresh Link account detected, but no phone number provided. Transitioning to collecting_phone.");
+          updateStep("collecting_phone");
+          return;
+        }
+
         updateStep("registering_link");
 
-        const registerResult = await onramp.registerLinkUser(
-          activeEmail,
-          phone || "",
-          "US",
-          ""
-        );
+        try {
+          const registerResult = await onramp.registerLinkUser(
+            activeEmail,
+            activePhone,
+            "US",
+            ""
+          );
 
-        if (!registerResult.created) {
-          handleError("Failed to create Link account");
+          if (!registerResult.created) {
+            throw new Error("Registration returned created: false");
+          }
+        } catch (regErr: any) {
+          console.warn("[EMBEDDED ONRAMP] Link registration failed, asking for phone number:", regErr);
+          updateStep("collecting_phone");
           return;
         }
 
@@ -763,11 +788,17 @@ export function useStripeEmbeddedOnramp({
       handleError(err?.message || "Onramp flow failed");
     }
   }, [
-    enabled, email, phone, splitAddress, amount, network,
+    enabled, email, phone, localPhone, splitAddress, amount, network,
     destinationCurrency, receiptId, merchantWallet, brandKey,
     publishableKey, connectedWalletAddress, connectedWallet, onSuccess, handleError,
     updateStep, createBuyerWallet, executeGaslessTransfer,
   ]);
+
+  const submitPhone = useCallback((phoneNumber: string) => {
+    setLocalPhone(phoneNumber);
+    console.log("[EMBEDDED ONRAMP] Phone number submitted, resuming flow:", phoneNumber);
+    startOnramp(undefined, phoneNumber);
+  }, [startOnramp]);
 
   const statusMessage = useMemo(() => STEP_MESSAGES[step], [step]);
 
@@ -784,6 +815,7 @@ export function useStripeEmbeddedOnramp({
     paymentElement,
     startOnramp,
     reset,
+    submitPhone,
     isActive,
     cryptoCustomerId,
     buyerWalletAddress,

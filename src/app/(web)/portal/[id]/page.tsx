@@ -1947,6 +1947,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
   // ── Stripe Headless Onramp State ──
   const [headlessEmailPrompt, setHeadlessEmailPrompt] = useState(false);
   const [headlessEmailInput, setHeadlessEmailInput] = useState('');
+  const [headlessPhoneInput, setHeadlessPhoneInput] = useState('');
   const [headlessInitiated, setHeadlessInitiated] = useState(false);
   const [shipLine1, setShipLine1] = useState('');
   const [shipLine2, setShipLine2] = useState('');
@@ -2796,6 +2797,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     authElement: headlessAuthElement,
     paymentElement: headlessPaymentElement,
     startOnramp: startHeadlessOnramp,
+    submitPhone: headlessSubmitPhone,
     isActive: headlessActive,
     buyerWalletAddress: headlessBuyerWallet,
   } = useStripeEmbeddedOnramp({
@@ -3225,6 +3227,28 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                   className="w-full py-3 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-colors"
                 >
                   Done
+                </button>
+              </div>
+            ) : headlessStep === "collecting_phone" ? (
+              <div className="w-full flex flex-col items-stretch p-6 animate-in zoom-in duration-300">
+                <h3 className="text-white text-lg font-semibold mb-2">Stripe Verification Required</h3>
+                <p className="text-white/60 text-sm mb-4">Enter your phone number to register your Link account securely.</p>
+                <input
+                  type="tel"
+                  placeholder="Phone number (+1 555-555-5555)"
+                  className="w-full h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-white placeholder-white/30 mb-4 focus:outline-none focus:border-white/30"
+                  value={headlessPhoneInput}
+                  onChange={(e) => setHeadlessPhoneInput(e.target.value)}
+                  autoFocus
+                />
+                <button
+                  className="w-full py-2.5 rounded-lg bg-white text-black font-semibold hover:bg-white/90 transition-colors disabled:opacity-50"
+                  disabled={headlessPhoneInput.trim().length < 8}
+                  onClick={() => {
+                    headlessSubmitPhone(headlessPhoneInput);
+                  }}
+                >
+                  Confirm & Continue
                 </button>
               </div>
             ) : headlessAuthElement || headlessPaymentElement ? (
