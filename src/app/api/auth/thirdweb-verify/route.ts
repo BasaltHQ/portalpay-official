@@ -108,7 +108,16 @@ export async function POST(req: NextRequest) {
 
     // 2. Parse the payload from Thirdweb
     const body = await req.json().catch(() => ({}));
-    const payload = body.payload || body;
+    let payload = body.payload || body;
+
+    // Handle case where payload is forwarded as a JSON-stringified string
+    if (typeof payload === "string") {
+      try {
+        payload = JSON.parse(payload);
+      } catch (e) {
+        console.warn("[TW AUTH] Failed to parse stringified payload:", e);
+      }
+    }
 
     const email = String(payload.email || payload.userId || "").trim().toLowerCase();
     const verificationToken = String(payload.verificationToken || payload.token || "").trim();
