@@ -1946,6 +1946,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
 
   // ── Stripe Headless Onramp State ──
   const [headlessEmailPrompt, setHeadlessEmailPrompt] = useState(false);
+  const [copiedWallet, setCopiedWallet] = useState(false);
   const [headlessEmailInput, setHeadlessEmailInput] = useState('');
   const [headlessPhoneInput, setHeadlessPhoneInput] = useState('');
   const [headlessInitiated, setHeadlessInitiated] = useState(false);
@@ -3265,12 +3266,40 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                 }} 
               />
             ) : (
-              <div className="text-center flex flex-col items-center px-6">
+              <div className="text-center flex flex-col items-center px-6 w-full">
                 <svg className="animate-spin h-10 w-10 text-[#635BFF] mb-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <p className="text-white/80 font-medium text-lg">{headlessStatus}</p>
+                <p className="text-white/80 font-medium text-lg mb-4">{headlessStatus}</p>
+
+                {headlessBuyerWallet && (
+                  <div className="w-full max-w-sm mt-2 p-3.5 rounded-xl border border-white/5 bg-white/[0.02] flex flex-col items-stretch text-left animate-in fade-in duration-300">
+                    <span className="text-white/40 text-xs font-medium uppercase tracking-wider mb-1.5">Receiving Wallet</span>
+                    <div className="flex items-center justify-between gap-3 bg-black/35 rounded-lg p-2.5 border border-white/5">
+                      <code className="text-white/95 font-mono text-sm select-all overflow-hidden text-ellipsis whitespace-nowrap flex-1">
+                        {headlessBuyerWallet}
+                      </code>
+                      <button
+                        onClick={() => {
+                          try {
+                            navigator.clipboard.writeText(headlessBuyerWallet);
+                            setCopiedWallet(true);
+                            setTimeout(() => setCopiedWallet(false), 2000);
+                          } catch {}
+                        }}
+                        className="text-white/50 hover:text-white transition-colors p-1.5 rounded-md hover:bg-white/5"
+                        title="Copy wallet address"
+                      >
+                        {copiedWallet ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

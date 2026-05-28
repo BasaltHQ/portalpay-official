@@ -296,7 +296,7 @@ export function useStripeEmbeddedOnramp({
     connectedWallet?: any
   ): Promise<string | null> => {
     try {
-      const { createThirdwebClient, getContract, prepareContractCall, sendTransaction } = await import("thirdweb");
+      const { createThirdwebClient, getContract, prepareContractCall, sendTransaction, readContract } = await import("thirdweb");
       const { base } = await import("thirdweb/chains");
 
       const twClient = createThirdwebClient({
@@ -305,22 +305,28 @@ export function useStripeEmbeddedOnramp({
 
       let account: any;
 
-      if (connectedWallet) {
-        console.log("[EMBEDDED ONRAMP] Wrapping EOA connected wallet with Smart Wallet for EIP-4337/7702 gasless execution...");
-        const { smartWallet } = await import("thirdweb/wallets");
-        const wallet = smartWallet({
-          chain: base,
-          gasless: true,
-        });
-
-        account = await wallet.connect({
-          client: twClient,
-          personalAccount: connectedWallet,
-        });
-        console.log("[EMBEDDED ONRAMP] Smart Account active for EOA:", account.address);
-      } else if (buyerAccountRef.current) {
+      if (buyerAccountRef.current) {
         console.log("[EMBEDDED ONRAMP] Using active connected smart wallet account:", buyerAccountRef.current.address);
         account = buyerAccountRef.current;
+      } else if (connectedWallet) {
+        // If connectedWallet is already a Smart Account, use it directly!
+        if (connectedWallet.personalAccount) {
+          console.log("[EMBEDDED ONRAMP] Using connected Smart Wallet account directly:", connectedWallet.address);
+          account = connectedWallet;
+        } else {
+          console.log("[EMBEDDED ONRAMP] Wrapping EOA connected wallet with Smart Wallet for EIP-4337/7702 gasless execution...");
+          const { smartWallet } = await import("thirdweb/wallets");
+          const wallet = smartWallet({
+            chain: base,
+            gasless: true,
+          });
+
+          account = await wallet.connect({
+            client: twClient,
+            personalAccount: connectedWallet,
+          });
+          console.log("[EMBEDDED ONRAMP] Smart Account active for EOA:", account.address);
+        }
       } else {
         const { inAppWallet } = await import("thirdweb/wallets");
         // Re-connect the wallet (same email = same wallet, deterministic)
@@ -355,7 +361,41 @@ export function useStripeEmbeddedOnramp({
         address: BASE_USDC_ADDRESS,
       });
 
-      const amountInUnits = BigInt(Math.floor(usdcAmount * 1_000_000)); // 6 decimals
+      // Query the actual USDC balance in the wallet on-chain to handle decimals / dust/ slippage perfectly
+      let balance = BigInt(0);
+      try {
+        balance = await readContract({
+          contract: usdcContract,
+          method: "function balanceOf(address account) view returns (uint256)",
+          params: [account.address],
+        });
+        console.log(`[EMBEDDED ONRAMP] Smart wallet address: ${account.address}, USDC balance: ${balance.toString()}`);
+      } catch (balErr) {
+        console.warn("[EMBEDDED ONRAMP] Failed to query smart wallet USDC balance on-chain:", balErr);
+      }
+
+      const requiredUnits = BigInt(Math.floor(usdcAmount * 1_000_000)); // 6 decimals
+      
+      // Sweep full balance only if balance is less than required (slippage/fee adjustment) or if guest smart wallet.
+      // If balance is sufficient and they have personal funds, only transfer the requiredUnits to protect their extra balance.
+      let amountInUnits = requiredUnits;
+      if (balance > BigInt(0)) {
+        if (balance < requiredUnits) {
+          console.log(`[EMBEDDED ONRAMP] Balance ${balance.toString()} is less than required ${requiredUnits.toString()}. Sweeping full balance.`);
+          amountInUnits = balance;
+        } else {
+          // If it's a guest smart wallet (buyerAccountRef was created deterministically), we can sweep everything to keep it clean.
+          // But if it's a user's personal connected wallet (inAppWallet or EOA), we MUST only transfer requiredUnits to avoid taking their personal funds.
+          const isGuestWallet = !connectedWallet;
+          if (isGuestWallet) {
+            console.log(`[EMBEDDED ONRAMP] Balance is sufficient: ${balance.toString()}. Sweeping guest wallet to clear dust.`);
+            amountInUnits = balance;
+          } else {
+            console.log(`[EMBEDDED ONRAMP] Balance is sufficient: ${balance.toString()}. Transferring exactly required amount: ${requiredUnits.toString()}`);
+            amountInUnits = requiredUnits;
+          }
+        }
+      }
 
       const tx = prepareContractCall({
         contract: usdcContract,
@@ -558,13 +598,73 @@ export function useStripeEmbeddedOnramp({
       }
 
       // ─── Step 6: Resolve buyer's wallet ───
-      // If the buyer is already connected via Thirdweb, use their wallet directly.
+      // If the buyer is already connected via Thirdweb, use their wallet directly (or wrap EOA to make it gasless).
       // Otherwise, create/retrieve a smart wallet via auth_endpoint (no OTP).
       let buyerWallet: string;
 
-      if (connectedWalletAddress) {
-        buyerWallet = connectedWalletAddress;
-        console.log("[EMBEDDED ONRAMP] Using connected Thirdweb wallet:", buyerWallet.slice(0, 10) + "...");
+      if (connectedWalletAddress && connectedWallet) {
+        // Link the email to the EOA in the database automatically
+        try {
+          fetch("/api/users/profile", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "x-wallet": connectedWalletAddress,
+            },
+            body: JSON.stringify({
+              wallet: connectedWalletAddress,
+              contact: {
+                email: activeEmail,
+              },
+            }),
+          }).then(res => {
+            if (res.ok) {
+              console.log("[EMBEDDED ONRAMP] Email linked to connected EOA profile successfully:", activeEmail);
+            }
+          }).catch(err => {
+            console.warn("[EMBEDDED ONRAMP] Failed to link email to EOA profile:", err);
+          });
+        } catch (linkErr) {
+          console.warn("[EMBEDDED ONRAMP] Error in profile link attempt:", linkErr);
+        }
+
+        // Check if it's already a Smart Account (e.g. inAppWallet EIP-4337)
+        if (connectedWallet.personalAccount) {
+          buyerWallet = connectedWalletAddress;
+          console.log("[EMBEDDED ONRAMP] Using connected Smart Wallet directly:", buyerWallet.slice(0, 10) + "...");
+        } else {
+          // EOA: Wrap in Smart Wallet to enable EIP-4337 sponsored gas.
+          // Establish the Smart Wallet address before creating the Stripe session so funds land on the Smart Account.
+          updateStep("creating_wallet");
+          console.log("[EMBEDDED ONRAMP] Wrapping EOA connected wallet with Smart Wallet for gasless transaction...");
+          try {
+            const { smartWallet } = await import("thirdweb/wallets");
+            const { createThirdwebClient } = await import("thirdweb");
+            const { base } = await import("thirdweb/chains");
+
+            const twClient = createThirdwebClient({
+              clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "",
+            });
+
+            const wallet = smartWallet({
+              chain: base,
+              gasless: true,
+            });
+
+            const smartAccount = await wallet.connect({
+              client: twClient,
+              personalAccount: connectedWallet,
+            });
+
+            buyerWallet = smartAccount.address;
+            buyerAccountRef.current = smartAccount; // Persist session to transfer step
+            console.log("[EMBEDDED ONRAMP] Wrapped EOA Smart Wallet Address:", buyerWallet.slice(0, 10) + "...");
+          } catch (wrapErr: any) {
+            console.error("[EMBEDDED ONRAMP] Failed to wrap EOA in Smart Wallet:", wrapErr);
+            // Fallback to the EOA address directly if wrapping fails
+            buyerWallet = connectedWalletAddress;
+          }
+        }
       } else {
         updateStep("creating_wallet");
 
