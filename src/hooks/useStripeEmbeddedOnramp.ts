@@ -239,7 +239,7 @@ export function useStripeEmbeddedOnramp({
     buyerAccountRef.current = null;
   }, []);
 
-  // ─── Create/retrieve Thirdweb smart wallet for buyer email ───
+  // ─── Create/retrieve Thirdweb EOA wallet for buyer email ───
   // Uses auth_endpoint strategy — no OTP (email already verified by Stripe Link)
   const createBuyerWallet = useCallback(async (buyerEmail: string): Promise<string | null> => {
     try {
@@ -251,17 +251,14 @@ export function useStripeEmbeddedOnramp({
         clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "",
       });
 
-      // Create in-app wallet with auth_endpoint strategy (no OTP)
+      // Create in-app wallet with auth_endpoint strategy and EIP-7702 gasless sponsored mode!
       const wallet = inAppWallet({
         auth: {
           options: ["auth_endpoint" as any],
         },
         executionMode: {
-          mode: "EIP4337",
-          smartAccount: {
-            chain: base,
-            sponsorGas: true,
-          },
+          mode: "EIP7702",
+          sponsorGas: true,
         },
       });
 
@@ -277,7 +274,7 @@ export function useStripeEmbeddedOnramp({
       });
 
       const address = account.address;
-      console.log("[EMBEDDED ONRAMP] Smart wallet created/retrieved:", address?.slice(0, 10) + "...");
+      console.log("[EMBEDDED ONRAMP] Guest EOA created/retrieved:", address?.slice(0, 10) + "...");
 
       buyerAccountRef.current = account;
 
@@ -306,12 +303,11 @@ export function useStripeEmbeddedOnramp({
       let account: any;
 
       if (buyerAccountRef.current) {
-        console.log("[EMBEDDED ONRAMP] Using active connected smart wallet account:", buyerAccountRef.current.address);
+        console.log("[EMBEDDED ONRAMP] Using active guest EOA account (EIP-7702 mode):", buyerAccountRef.current.address);
         account = buyerAccountRef.current;
       } else if (connectedWallet) {
-        // If connectedWallet is already a Smart Account, use it directly!
         if (connectedWallet.personalAccount) {
-          console.log("[EMBEDDED ONRAMP] Using connected Smart Wallet account directly:", connectedWallet.address);
+          console.log("[EMBEDDED ONRAMP] Using connected Smart Account directly:", connectedWallet.address);
           account = connectedWallet;
         } else {
           console.log("[EMBEDDED ONRAMP] Wrapping EOA connected wallet with Smart Wallet for EIP-4337/7702 gasless execution...");
@@ -329,17 +325,14 @@ export function useStripeEmbeddedOnramp({
         }
       } else {
         const { inAppWallet } = await import("thirdweb/wallets");
-        // Re-connect the wallet (same email = same wallet, deterministic)
+        // Re-connect the wallet as EOA with EIP-7702 gasless sponsored execution
         const wallet = inAppWallet({
           auth: {
             options: ["auth_endpoint" as any],
           },
           executionMode: {
-            mode: "EIP4337",
-            smartAccount: {
-              chain: base,
-              sponsorGas: true,
-            },
+            mode: "EIP7702",
+            sponsorGas: true,
           },
         });
 
@@ -352,6 +345,7 @@ export function useStripeEmbeddedOnramp({
             verificationToken: verificationTokenRef.current || "",
           }),
         });
+        console.log("[EMBEDDED ONRAMP] Guest EOA re-connected:", account.address);
       }
 
       // Prepare ERC-20 transfer: USDC has 6 decimals
@@ -369,9 +363,9 @@ export function useStripeEmbeddedOnramp({
           method: "function balanceOf(address account) view returns (uint256)",
           params: [account.address],
         });
-        console.log(`[EMBEDDED ONRAMP] Smart wallet address: ${account.address}, USDC balance: ${balance.toString()}`);
+        console.log(`[EMBEDDED ONRAMP] Target address: ${account.address}, USDC balance: ${balance.toString()}`);
       } catch (balErr) {
-        console.warn("[EMBEDDED ONRAMP] Failed to query smart wallet USDC balance on-chain:", balErr);
+        console.warn("[EMBEDDED ONRAMP] Failed to query USDC balance on-chain:", balErr);
       }
 
       const requiredUnits = BigInt(Math.floor(usdcAmount * 1_000_000)); // 6 decimals
@@ -403,7 +397,7 @@ export function useStripeEmbeddedOnramp({
         params: [toAddress, amountInUnits],
       });
 
-      console.log("[EMBEDDED ONRAMP] Executing USDC transfer:", amountInUnits.toString(), "→", toAddress.slice(0, 10) + "...");
+      console.log("[EMBEDDED ONRAMP] Preparing USDC transfer:", amountInUnits.toString(), "→", toAddress.slice(0, 10) + "...");
 
       const result = await sendTransaction({
         account,
@@ -628,43 +622,10 @@ export function useStripeEmbeddedOnramp({
           console.warn("[EMBEDDED ONRAMP] Error in profile link attempt:", linkErr);
         }
 
-        // Check if it's already a Smart Account (e.g. inAppWallet EIP-4337)
-        if (connectedWallet.personalAccount) {
-          buyerWallet = connectedWalletAddress;
-          console.log("[EMBEDDED ONRAMP] Using connected Smart Wallet directly:", buyerWallet.slice(0, 10) + "...");
-        } else {
-          // EOA: Wrap in Smart Wallet to enable EIP-4337 sponsored gas.
-          // Establish the Smart Wallet address before creating the Stripe session so funds land on the Smart Account.
-          updateStep("creating_wallet");
-          console.log("[EMBEDDED ONRAMP] Wrapping EOA connected wallet with Smart Wallet for gasless transaction...");
-          try {
-            const { smartWallet } = await import("thirdweb/wallets");
-            const { createThirdwebClient } = await import("thirdweb");
-            const { base } = await import("thirdweb/chains");
-
-            const twClient = createThirdwebClient({
-              clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "",
-            });
-
-            const wallet = smartWallet({
-              chain: base,
-              gasless: true,
-            });
-
-            const smartAccount = await wallet.connect({
-              client: twClient,
-              personalAccount: connectedWallet,
-            });
-
-            buyerWallet = smartAccount.address;
-            buyerAccountRef.current = smartAccount; // Persist session to transfer step
-            console.log("[EMBEDDED ONRAMP] Wrapped EOA Smart Wallet Address:", buyerWallet.slice(0, 10) + "...");
-          } catch (wrapErr: any) {
-            console.error("[EMBEDDED ONRAMP] Failed to wrap EOA in Smart Wallet:", wrapErr);
-            // Fallback to the EOA address directly if wrapping fails
-            buyerWallet = connectedWalletAddress;
-          }
-        }
+        // Register the EOA address directly with Stripe so it associates successfully!
+        buyerWallet = connectedWalletAddress;
+        buyerAccountRef.current = connectedWallet; // Persist session to transfer step
+        console.log("[EMBEDDED ONRAMP] Using EOA address for Stripe registration:", buyerWallet.slice(0, 10) + "...");
       } else {
         updateStep("creating_wallet");
 
@@ -676,7 +637,7 @@ export function useStripeEmbeddedOnramp({
         }
 
         buyerWallet = createdWallet;
-        console.log("[EMBEDDED ONRAMP] Created smart wallet via auth_endpoint:", buyerWallet.slice(0, 10) + "...");
+        console.log("[EMBEDDED ONRAMP] Using created guest EOA wallet for Stripe registration:", buyerWallet.slice(0, 10) + "...");
       }
 
       if (!mountedRef.current) return;
