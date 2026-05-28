@@ -105,6 +105,11 @@ export type UseStripeEmbeddedOnrampProps = {
    * This skips the auth_endpoint wallet creation entirely — no extra OTP, no new wallet.
    */
   connectedWalletAddress?: string;
+  /**
+   * If the buyer is already connected, pass their active Thirdweb account object.
+   * Enables automatic/manual signing fallback depending on wallet type.
+   */
+  connectedWallet?: any;
   /** Callbacks */
   onSuccess?: (result: { sessionId: string; txHash?: string }) => void;
   onError?: (error: Error) => void;
@@ -170,6 +175,7 @@ export function useStripeEmbeddedOnramp({
   brandKey,
   enabled = true,
   connectedWalletAddress,
+  connectedWallet,
   onSuccess,
   onError,
   onStepChange,
@@ -277,39 +283,57 @@ export function useStripeEmbeddedOnramp({
     fromWalletEmail: string,
     toAddress: string,
     usdcAmount: number,
+    connectedWallet?: any
   ): Promise<string | null> => {
     try {
       const { createThirdwebClient, getContract, prepareContractCall, sendTransaction } = await import("thirdweb");
-      const { inAppWallet } = await import("thirdweb/wallets");
       const { base } = await import("thirdweb/chains");
 
       const twClient = createThirdwebClient({
         clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "",
       });
 
-      // Re-connect the wallet (same email = same wallet, deterministic)
-      const wallet = inAppWallet({
-        auth: {
-          options: ["auth_endpoint" as any],
-        },
-        executionMode: {
-          mode: "EIP4337",
-          smartAccount: {
-            chain: base,
-            sponsorGas: true,
-          },
-        },
-      });
+      let account: any;
 
-      const account = await wallet.connect({
-        client: twClient,
-        chain: base,
-        strategy: "auth_endpoint" as any,
-        payload: JSON.stringify({
-          email: fromWalletEmail,
-          verificationToken: verificationTokenRef.current || "",
-        }),
-      });
+      if (connectedWallet) {
+        console.log("[EMBEDDED ONRAMP] Wrapping EOA connected wallet with Smart Wallet for EIP-4337/7702 gasless execution...");
+        const { smartWallet } = await import("thirdweb/wallets");
+        const wallet = smartWallet({
+          chain: base,
+          gasless: true,
+        });
+
+        account = await wallet.connect({
+          client: twClient,
+          personalAccount: connectedWallet,
+        });
+        console.log("[EMBEDDED ONRAMP] Smart Account active for EOA:", account.address);
+      } else {
+        const { inAppWallet } = await import("thirdweb/wallets");
+        // Re-connect the wallet (same email = same wallet, deterministic)
+        const wallet = inAppWallet({
+          auth: {
+            options: ["auth_endpoint" as any],
+          },
+          executionMode: {
+            mode: "EIP4337",
+            smartAccount: {
+              chain: base,
+              sponsorGas: true,
+            },
+          },
+        });
+
+        account = await wallet.connect({
+          client: twClient,
+          chain: base,
+          strategy: "auth_endpoint" as any,
+          payload: JSON.stringify({
+            email: fromWalletEmail,
+            verificationToken: verificationTokenRef.current || "",
+          }),
+        });
+      }
 
       // Prepare ERC-20 transfer: USDC has 6 decimals
       const usdcContract = getContract({
@@ -326,7 +350,7 @@ export function useStripeEmbeddedOnramp({
         params: [toAddress, amountInUnits],
       });
 
-      console.log("[EMBEDDED ONRAMP] Executing gasless USDC transfer:", amountInUnits.toString(), "→", toAddress.slice(0, 10) + "...");
+      console.log("[EMBEDDED ONRAMP] Executing USDC transfer:", amountInUnits.toString(), "→", toAddress.slice(0, 10) + "...");
 
       const result = await sendTransaction({
         account,
@@ -336,7 +360,7 @@ export function useStripeEmbeddedOnramp({
       console.log("[EMBEDDED ONRAMP] ✓ Transfer complete, tx:", result.transactionHash);
       return result.transactionHash;
     } catch (err: any) {
-      console.error("[EMBEDDED ONRAMP] Gasless transfer failed:", err);
+      console.error("[EMBEDDED ONRAMP] Transfer failed:", err);
       return null;
     }
   }, []);
@@ -690,20 +714,28 @@ export function useStripeEmbeddedOnramp({
 
       // Poll for onramp fulfillment (Stripe delivers USDC to buyer's smart wallet)
       let fundsDelivered = false;
+      console.log(`[EMBEDDED ONRAMP] Starting to poll status for session: ${sessionId}`);
       for (let poll = 0; poll < 60; poll++) { // Max 5 minutes
         await new Promise(r => setTimeout(r, 5000));
         if (!mountedRef.current) return;
 
         try {
           const statusRes = await fetch(`/api/stripe/onramp-status?sessionId=${encodeURIComponent(sessionId)}`);
+          if (!statusRes.ok) {
+            console.warn(`[EMBEDDED ONRAMP] Status endpoint returned error status: ${statusRes.status}`);
+            continue;
+          }
           const statusData = await statusRes.json();
+          console.log(`[EMBEDDED ONRAMP] Polled status (attempt ${poll + 1}):`, statusData?.status, statusData);
 
-          if (statusData.status === "fulfillment_complete") {
+          if (statusData && statusData.status === "fulfillment_complete") {
             fundsDelivered = true;
             console.log("[EMBEDDED ONRAMP] ✓ USDC delivered to buyer's smart wallet");
             break;
           }
-        } catch {}
+        } catch (pollErr) {
+          console.warn("[EMBEDDED ONRAMP] Exception while polling status:", pollErr);
+        }
       }
 
       if (!fundsDelivered) {
@@ -716,7 +748,7 @@ export function useStripeEmbeddedOnramp({
       // ─── Step 12: Gasless transfer from buyer's smart wallet → split contract ───
       updateStep("transferring");
 
-      const txHash = await executeGaslessTransfer(activeEmail, splitAddress, amount);
+      const txHash = await executeGaslessTransfer(activeEmail, splitAddress, amount, connectedWallet);
 
       if (!txHash) {
         handleError("Failed to transfer funds to merchant");
@@ -733,7 +765,7 @@ export function useStripeEmbeddedOnramp({
   }, [
     enabled, email, phone, splitAddress, amount, network,
     destinationCurrency, receiptId, merchantWallet, brandKey,
-    publishableKey, connectedWalletAddress, onSuccess, handleError,
+    publishableKey, connectedWalletAddress, connectedWallet, onSuccess, handleError,
     updateStep, createBuyerWallet, executeGaslessTransfer,
   ]);
 

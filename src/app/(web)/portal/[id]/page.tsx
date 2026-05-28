@@ -2806,10 +2806,21 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     merchantWallet: (merchantWallet || resolvedRecipient || recipient) as string,
     brandKey: theme.brandKey || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge",
     connectedWalletAddress: account?.address, // Skip wallet creation if buyer is already connected
+    connectedWallet: account,
     enabled: stripeHeadless,
     onSuccess: (result) => {
       console.log("[STRIPE HEADLESS] ✓ Onramp + transfer completed:", result);
       // Funds are now in the split contract — receipt can be marked paid
+      const txHash = result.txHash || "";
+      setPaymentConfirmed({
+        txHash,
+        amount: totalUsd,
+        token: "USDC",
+      });
+      postStatus("paid", {
+        txHash,
+        paymentMethod: "stripe_headless",
+      });
     },
     onError: (error) => {
       console.error("[STRIPE HEADLESS] Error:", error);

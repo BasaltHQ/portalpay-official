@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${stripeKey}`,
+          "Stripe-Version": "2026-03-25.dahlia;crypto_onramp_beta=v2",
         },
       }
     );
