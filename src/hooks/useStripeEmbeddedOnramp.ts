@@ -198,6 +198,7 @@ export function useStripeEmbeddedOnramp({
   const paymentTokenRef = useRef<string | null>(null);
   const verificationTokenRef = useRef<string | null>(null);
   const buyerAccountRef = useRef<any>(null);
+  const isRunningRef = useRef(false);
 
   const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
 
@@ -218,6 +219,7 @@ export function useStripeEmbeddedOnramp({
   const handleError = useCallback((message: string, err?: any) => {
     if (!mountedRef.current) return;
     console.error(`[EMBEDDED ONRAMP] ${message}`, err);
+    isRunningRef.current = false;
     setError(message);
     setAuthElement(null);
     setPaymentElement(null);
@@ -226,6 +228,7 @@ export function useStripeEmbeddedOnramp({
   }, [onError, updateStep]);
 
   const reset = useCallback(() => {
+    isRunningRef.current = false;
     setStep("idle");
     setError(null);
     setAuthElement(null);
@@ -413,6 +416,12 @@ export function useStripeEmbeddedOnramp({
   }, []);
 
   const startOnramp = useCallback(async (overrideEmail?: string, overridePhone?: string) => {
+    if (isRunningRef.current) {
+      console.warn("[EMBEDDED ONRAMP] Onramp flow is already running. Ignoring duplicate trigger.");
+      return;
+    }
+    isRunningRef.current = true;
+
     const activeEmail = overrideEmail || email;
     const activePhone = overridePhone || phone || localPhone;
 
@@ -455,6 +464,7 @@ export function useStripeEmbeddedOnramp({
         // No Link account — register
         if (!activePhone) {
           console.log("[EMBEDDED ONRAMP] Fresh Link account detected, but no phone number provided. Transitioning to collecting_phone.");
+          isRunningRef.current = false;
           updateStep("collecting_phone");
           return;
         }
@@ -474,6 +484,7 @@ export function useStripeEmbeddedOnramp({
           }
         } catch (regErr: any) {
           console.warn("[EMBEDDED ONRAMP] Link registration failed, asking for phone number:", regErr);
+          isRunningRef.current = false;
           updateStep("collecting_phone");
           return;
         }
@@ -793,7 +804,10 @@ export function useStripeEmbeddedOnramp({
         }
       }
 
-      if (!checkoutSucceeded || !mountedRef.current) return;
+      if (!checkoutSucceeded || !mountedRef.current) {
+        isRunningRef.current = false;
+        return;
+      }
 
       // ─── Step 11: Wait for USDC to arrive in buyer's smart wallet ───
       updateStep("awaiting_funds");
@@ -842,6 +856,7 @@ export function useStripeEmbeddedOnramp({
       }
 
       // ─── Done ───
+      isRunningRef.current = false;
       updateStep("completed");
       onSuccess?.({ sessionId, txHash });
 
