@@ -3167,7 +3167,10 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
               Cancel
             </button>
             <button
-              className="flex-1 py-2.5 rounded-xl bg-white text-black font-semibold hover:bg-white/90 disabled:opacity-30 disabled:hover:bg-white transition-all text-xs"
+              className="flex-1 py-2.5 rounded-xl font-semibold transition-all text-xs text-white !text-white hover:opacity-90 disabled:opacity-30 disabled:hover:opacity-30 border border-transparent shadow-md"
+              style={{
+                backgroundColor: theme.primaryColor || "#635BFF",
+              }}
               disabled={!headlessEmailInput.includes('@')}
               onClick={() => {
                 setShipEmail(headlessEmailInput);
@@ -3217,7 +3220,10 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                 <p className="text-white/60 text-xs mb-6 max-w-xs">{headlessError}</p>
                 <button 
                   onClick={() => window.location.reload()}
-                  className="w-full py-2.5 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all text-xs"
+                  className="w-full py-2.5 rounded-xl font-semibold transition-all text-xs text-white !text-white hover:opacity-90 border border-transparent shadow-md"
+                  style={{
+                    backgroundColor: theme.primaryColor || "#635BFF",
+                  }}
                 >
                   Try Again
                 </button>
@@ -3231,7 +3237,10 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                 <p className="text-white/60 text-xs mb-6 max-w-xs">USDC has been transferred successfully.</p>
                 <button 
                   onClick={() => window.location.reload()}
-                  className="w-full py-2.5 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all text-xs"
+                  className="w-full py-2.5 rounded-xl font-semibold transition-all text-xs text-white !text-white hover:opacity-90 border border-transparent shadow-md"
+                  style={{
+                    backgroundColor: theme.primaryColor || "#635BFF",
+                  }}
                 >
                   Done
                 </button>
@@ -3249,7 +3258,10 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                   autoFocus
                 />
                 <button
-                  className="w-full py-2.5 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all disabled:opacity-30 disabled:hover:bg-white text-xs"
+                  className="w-full py-2.5 rounded-xl font-semibold transition-all text-xs text-white !text-white hover:opacity-90 disabled:opacity-30 disabled:hover:opacity-30 border border-transparent shadow-md"
+                  style={{
+                    backgroundColor: theme.primaryColor || "#635BFF",
+                  }}
                   disabled={headlessPhoneInput.trim().length < 8}
                   onClick={() => {
                     headlessSubmitPhone(headlessPhoneInput);
@@ -3388,6 +3400,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
               color-scheme: dark !important;
               border: none !important;
               border-radius: 12px !important;
+              filter: invert(0.93) hue-rotate(180deg) brightness(1.1) contrast(0.95) !important;
             }
 
             /* ── portalTheme live overrides ── */
