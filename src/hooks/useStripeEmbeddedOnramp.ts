@@ -493,68 +493,7 @@ export function useStripeEmbeddedOnramp({
     }
 
     try {
-      // ─── Step 1: Pre-emptively mark email as verified to get the stateless Thirdweb verification token ───
-      const markRes = await fetch("/api/auth/mark-verified", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: activeEmail }),
-      });
-
-      if (markRes.ok) {
-        const markData = await markRes.json();
-        verificationTokenRef.current = markData.verificationToken;
-        console.log("[EMBEDDED ONRAMP] Email marked as Stripe-verified for Thirdweb (pre-emptive)");
-      }
-
-      // ─── Step 2: Resolve/create buyer's wallet FIRST ───
-      updateStep("creating_wallet");
-
-      let buyerWallet: string;
-
-      if (connectedWalletAddress && connectedWallet) {
-        // Link the email to the EOA in the database automatically
-        try {
-          fetch("/api/users/profile", {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "x-wallet": connectedWalletAddress,
-            },
-            body: JSON.stringify({
-              wallet: connectedWalletAddress,
-              contact: {
-                email: activeEmail,
-              },
-            }),
-          }).then(res => {
-            if (res.ok) {
-              console.log("[EMBEDDED ONRAMP] Email linked to connected EOA profile successfully:", activeEmail);
-            }
-          }).catch(err => {
-            console.warn("[EMBEDDED ONRAMP] Failed to link email to EOA profile:", err);
-          });
-        } catch (linkErr) {
-          console.warn("[EMBEDDED ONRAMP] Error in profile link attempt:", linkErr);
-        }
-
-        buyerWallet = connectedWalletAddress;
-        buyerAccountRef.current = connectedWallet;
-        console.log("[EMBEDDED ONRAMP] Using connected EOA wallet:", buyerWallet);
-      } else {
-        const createdWallet = await createBuyerWallet(activeEmail);
-
-        if (!createdWallet) {
-          handleError("Failed to create buyer wallet");
-          return;
-        }
-
-        buyerWallet = createdWallet;
-        console.log("[EMBEDDED ONRAMP] Created/retrieved guest EOA wallet:", buyerWallet);
-      }
-
-      setBuyerWalletAddress(buyerWallet);
-
-      // ─── Step 3: Initialize Stripe SDK with native Dark theme ───
+      // ─── Step 1: Initialize Stripe SDK with native Dark theme ───
       // @ts-ignore - beta SDK method missing from types
       const stripeCryptoModule = (await import("@stripe/crypto")) as any;
       const loadCryptoOnrampAndInitialize = stripeCryptoModule.loadCryptoOnrampAndInitialize || stripeCryptoModule.loadStripeOnramp;
@@ -566,7 +505,7 @@ export function useStripeEmbeddedOnramp({
       if (!mountedRef.current) return;
       onrampRef.current = onramp as unknown as OnrampCoordinator;
 
-      // ─── Step 4: Check for Link account ───
+      // ─── Step 2: Check for Link account ───
       updateStep("checking_link");
 
       const linkRes = await fetch("/api/stripe/link-auth-intent", {
@@ -633,7 +572,7 @@ export function useStripeEmbeddedOnramp({
 
       if (!mountedRef.current) return;
 
-      // ─── Step 5: Authenticate via Stripe Link (buyer does OTP here) ───
+      // ─── Step 3: Authenticate via Stripe Link (buyer does OTP here) ───
       updateStep("authenticating");
 
       const authPromise = new Promise<string>((resolve, reject) => {
@@ -660,7 +599,7 @@ export function useStripeEmbeddedOnramp({
       setCryptoCustomerId(customerId);
       setAuthElement(null);
 
-      // ─── Step 6: Exchange tokens ───
+      // ─── Step 4: Exchange tokens ───
       updateStep("exchanging_tokens");
 
       const tokenRes = await fetch("/api/stripe/link-auth-tokens", {
@@ -682,6 +621,76 @@ export function useStripeEmbeddedOnramp({
       oauthTokenRef.current = tokenData.accessToken;
 
       if (!mountedRef.current) return;
+
+      // ─── Step 5: Cryptographically verify email via Stripe Link Session Token ───
+      // We pass the email, customerId, and oauthToken to securely generate the stateless signed Thirdweb verification token
+      const markRes = await fetch("/api/auth/mark-verified", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: activeEmail,
+          customerId,
+          oauthToken: oauthTokenRef.current,
+        }),
+      });
+
+      if (!markRes.ok) {
+        const markData = await markRes.json();
+        handleError(markData.error || "Secure email verification failed");
+        return;
+      }
+
+      const markData = await markRes.json();
+      verificationTokenRef.current = markData.verificationToken;
+      console.log("[EMBEDDED ONRAMP] SECURE: Email verification token retrieved successfully");
+
+      // ─── Step 6: Create/resolve Thirdweb Guest Wallet safely ───
+      updateStep("creating_wallet");
+
+      let buyerWallet: string;
+
+      if (connectedWalletAddress && connectedWallet) {
+        // Link the email to the EOA in the database automatically
+        try {
+          fetch("/api/users/profile", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "x-wallet": connectedWalletAddress,
+            },
+            body: JSON.stringify({
+              wallet: connectedWalletAddress,
+              contact: {
+                email: activeEmail,
+              },
+            }),
+          }).then(res => {
+            if (res.ok) {
+              console.log("[EMBEDDED ONRAMP] Email linked to connected EOA profile successfully:", activeEmail);
+            }
+          }).catch(err => {
+            console.warn("[EMBEDDED ONRAMP] Failed to link email to EOA profile:", err);
+          });
+        } catch (linkErr) {
+          console.warn("[EMBEDDED ONRAMP] Error in profile link attempt:", linkErr);
+        }
+
+        buyerWallet = connectedWalletAddress;
+        buyerAccountRef.current = connectedWallet;
+        console.log("[EMBEDDED ONRAMP] Using connected EOA wallet:", buyerWallet);
+      } else {
+        const createdWallet = await createBuyerWallet(activeEmail);
+
+        if (!createdWallet) {
+          handleError("Failed to create buyer wallet");
+          return;
+        }
+
+        buyerWallet = createdWallet;
+        console.log("[EMBEDDED ONRAMP] Created/retrieved guest EOA wallet:", buyerWallet);
+      }
+
+      setBuyerWalletAddress(buyerWallet);
 
       // ─── Step 6b: Check KYC ───
       updateStep("checking_kyc");
