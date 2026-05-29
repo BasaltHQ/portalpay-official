@@ -66,9 +66,10 @@ export function isSameOrigin(req: NextRequest): boolean {
 
     // Handle proxy/CDN scenarios: check forwarded headers
     const forwardedProto = req.headers.get("x-forwarded-proto");
-    const forwardedHost = req.headers.get("x-forwarded-host");
+    const forwardedHost = req.headers.get("x-forwarded-host") || "";
     if (forwardedProto && forwardedHost) {
-      const forwardedOrigin = `${forwardedProto}://${forwardedHost}`;
+      const firstForwardedHost = forwardedHost.split(",")[0].trim();
+      const forwardedOrigin = `${forwardedProto}://${firstForwardedHost}`;
       if (origin && origin === forwardedOrigin) return true;
       if (referer && referer.startsWith(forwardedOrigin)) return true;
     }

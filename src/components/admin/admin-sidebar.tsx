@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   PanelLeftClose,
   PanelLeft,
@@ -144,33 +145,47 @@ interface AdminSidebarProps {
 interface NavItem {
   title: string;
   key?: AdminTabKey;
+  href?: string;
   icon?: React.ReactNode;
-  items?: { title: string; key: AdminTabKey; icon?: React.ReactNode; badge?: React.ReactNode }[];
+  items?: { title: string; key?: AdminTabKey; href?: string; icon?: React.ReactNode; badge?: React.ReactNode }[];
 }
 
 function NavGroup({ item, activeTab, onChangeTab }: { item: NavItem; activeTab: AdminTabKey; onChangeTab: (tab: AdminTabKey) => void }) {
   const [isOpen, setIsOpen] = useState<boolean>(() => {
     // Auto-open if any child is active
     if (item.items) {
-      return item.items.some((child) => activeTab === child.key);
+      return item.items.some((child) => child.key && activeTab === child.key);
     }
     return true;
   });
 
   const hasChildren = item.items && item.items.length > 0;
 
-  if (!hasChildren && item.key) {
-    const isActive = activeTab === item.key;
-    return (
-      <button
-        type="button"
-        onClick={() => onChangeTab(item.key!)}
-        className={`admin-nav-item ${isActive ? 'active' : ''}`}
-      >
-        <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center opacity-70">{item.icon}</span>
-        <span className="text-left">{item.title}</span>
-      </button>
-    );
+  if (!hasChildren) {
+    if (item.href) {
+      return (
+        <Link
+          href={item.href}
+          className="admin-nav-item hover:bg-white/5"
+        >
+          <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center opacity-70">{item.icon}</span>
+          <span className="text-left">{item.title}</span>
+        </Link>
+      );
+    }
+    if (item.key) {
+      const isActive = activeTab === item.key;
+      return (
+        <button
+          type="button"
+          onClick={() => onChangeTab(item.key!)}
+          className={`admin-nav-item ${isActive ? 'active' : ''}`}
+        >
+          <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center opacity-70">{item.icon}</span>
+          <span className="text-left">{item.title}</span>
+        </button>
+      );
+    }
   }
 
   return (
@@ -193,7 +208,24 @@ function NavGroup({ item, activeTab, onChangeTab }: { item: NavItem; activeTab: 
         {isOpen && hasChildren && (
           <div className="space-y-0.5">
             {item.items!.map((child) => {
-              const isActive = activeTab === child.key;
+              const isActive = child.key ? activeTab === child.key : false;
+              if (child.href) {
+                return (
+                  <Link
+                    key={child.title}
+                    href={child.href}
+                    className="admin-nav-item ml-3 group transition-all duration-300 hover:bg-white/5"
+                  >
+                    {child.icon && (
+                      <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center transition-all duration-300 opacity-60 group-hover:opacity-100 group-hover:scale-110">
+                        {child.icon}
+                      </span>
+                    )}
+                    <span className="text-left transition-colors duration-300 flex-1 text-white/70 group-hover:text-white">{child.title}</span>
+                    {child.badge && <span className="ml-auto">{child.badge}</span>}
+                  </Link>
+                );
+              }
               return (
                 <button
                   key={child.key}
@@ -218,12 +250,23 @@ function NavGroup({ item, activeTab, onChangeTab }: { item: NavItem; activeTab: 
       {/* Mobile: flat list of children */}
       {hasChildren &&
         item.items!.map((child) => {
-          const isActive = activeTab === child.key;
+          const isActive = child.key ? activeTab === child.key : false;
+          if (child.href) {
+            return (
+              <Link
+                key={child.title}
+                href={child.href}
+                className="md:hidden admin-mobile-nav-item"
+              >
+                {child.title}
+              </Link>
+            );
+          }
           return (
             <button
               key={child.key}
               type="button"
-              onClick={() => onChangeTab(child.key)}
+              onClick={() => onChangeTab(child.key!)}
               className={`md:hidden admin-mobile-nav-item ${isActive ? 'active' : ''}`}
             >
               {child.title}
@@ -383,6 +426,7 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
       icon: <LayoutDashboard className="w-4 h-4" />,
       items: [
         { title: 'Support', key: 'support' as AdminTabKey, icon: <LifeBuoy className="w-4 h-4" /> },
+        { title: 'Developers', href: '/developers', icon: <Code className="w-4 h-4" /> },
       ],
     },
     {
@@ -601,7 +645,26 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
                       {/* Sub-panel icons */}
                       <div className="flex flex-col items-center gap-1 w-full px-1 mt-1">
                         {item.items?.map((child) => {
-                          const isActive = activeTab === child.key;
+                          const isActive = child.key ? activeTab === child.key : false;
+                          if (child.href) {
+                            return (
+                              <Link
+                                key={child.title}
+                                href={child.href}
+                                className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 relative group/btn hover:bg-white/10 hover:shadow-lg border border-transparent hover:border-white/10"
+                                aria-label={child.title}
+                                onMouseEnter={(e) => {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setHoveredTooltip({ title: child.title, top: rect.top + rect.height / 2, right: rect.right });
+                                }}
+                                onMouseLeave={() => setHoveredTooltip(null)}
+                              >
+                                <div className="transition-all duration-300 flex items-center justify-center text-white/40 scale-90 group-hover/btn:text-white/90 group-hover/btn:scale-100">
+                                  {child.icon || item.icon}
+                                </div>
+                              </Link>
+                            );
+                          }
                           return (
                             <button
                               key={child.key}
@@ -614,8 +677,8 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
                               }`}
                               aria-label={child.title}
                               onMouseEnter={(e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setHoveredTooltip({ title: child.title, top: rect.top + rect.height / 2, right: rect.right });
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setHoveredTooltip({ title: child.title, top: rect.top + rect.height / 2, right: rect.right });
                               }}
                               onMouseLeave={() => setHoveredTooltip(null)}
                             >
@@ -646,12 +709,23 @@ export function AdminSidebar({ activeTab, onChangeTab, industryPack, canBranding
             {/* Children as text links */}
             <div className="flex items-center gap-3">
               {group.items?.map((child) => {
-                const isActive = activeTab === child.key;
+                const isActive = child.key ? activeTab === child.key : false;
+                if (child.href) {
+                  return (
+                    <Link
+                      key={child.title}
+                      href={child.href}
+                      className="admin-mobile-nav-item"
+                    >
+                      {child.title}
+                    </Link>
+                  );
+                }
                 return (
                   <button
                     key={child.key}
                     type="button"
-                    onClick={() => onChangeTab(child.key)}
+                    onClick={() => onChangeTab(child.key!)}
                     className={`admin-mobile-nav-item ${isActive ? 'active' : ''}`}
                   >
                     {child.title}

@@ -14,9 +14,10 @@ function getCookieDomainFromRequest(req: NextRequest): string | undefined {
   if (process.env.NODE_ENV !== "production") return undefined;
 
   try {
-    const forwarded = req.headers.get("x-forwarded-host");
-    const host = forwarded || req.headers.get("host") || "";
-    const hostname = host.split(":")[0];
+    const forwarded = req.headers.get("x-forwarded-host") || "";
+    const firstForwarded = forwarded.split(",")[0].trim();
+    const host = firstForwarded || req.headers.get("host") || "";
+    const hostname = host.split(":")[0].trim();
 
     if (hostname === "localhost" || /^[\d.]+$/.test(hostname)) return undefined;
 

@@ -9,8 +9,9 @@ const AUTH_COOKIE = "cb_auth_token";
 function getDomainFromRequest(req?: NextRequest): string {
 	try {
 		// First, get the actual request host (important for partner containers)
-		const forwarded = req?.headers?.get("x-forwarded-host");
-		let requestHost = forwarded || req?.headers?.get("host") || "";
+		const forwarded = req?.headers?.get("x-forwarded-host") || "";
+		const firstForwarded = forwarded.split(",")[0].trim();
+		let requestHost = firstForwarded || req?.headers?.get("host") || "";
 
 		// Normalize localhost variations
 		if (requestHost) {

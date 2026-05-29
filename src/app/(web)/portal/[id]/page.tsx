@@ -1946,7 +1946,9 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
 
   // ── Stripe Headless Onramp State ──
   const [headlessEmailPrompt, setHeadlessEmailPrompt] = useState(false);
+  const [copiedWallet, setCopiedWallet] = useState(false);
   const [headlessEmailInput, setHeadlessEmailInput] = useState('');
+  const [headlessPhoneInput, setHeadlessPhoneInput] = useState('');
   const [headlessInitiated, setHeadlessInitiated] = useState(false);
   const [shipLine1, setShipLine1] = useState('');
   const [shipLine2, setShipLine2] = useState('');
@@ -2796,6 +2798,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     authElement: headlessAuthElement,
     paymentElement: headlessPaymentElement,
     startOnramp: startHeadlessOnramp,
+    submitPhone: headlessSubmitPhone,
     isActive: headlessActive,
     buyerWalletAddress: headlessBuyerWallet,
   } = useStripeEmbeddedOnramp({
@@ -2806,10 +2809,21 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
     merchantWallet: (merchantWallet || resolvedRecipient || recipient) as string,
     brandKey: theme.brandKey || process.env.NEXT_PUBLIC_BRAND_KEY || "basaltsurge",
     connectedWalletAddress: account?.address, // Skip wallet creation if buyer is already connected
+    connectedWallet: account,
     enabled: stripeHeadless,
     onSuccess: (result) => {
       console.log("[STRIPE HEADLESS] ✓ Onramp + transfer completed:", result);
       // Funds are now in the split contract — receipt can be marked paid
+      const txHash = result.txHash || "";
+      setPaymentConfirmed({
+        txHash,
+        amount: totalUsd,
+        token: "USDC",
+      });
+      postStatus("paid", {
+        txHash,
+        paymentMethod: "stripe_headless",
+      });
     },
     onError: (error) => {
       console.error("[STRIPE HEADLESS] Error:", error);
@@ -3129,22 +3143,22 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
 
   // ─── STRIPE HEADLESS INLINE UI ───
   const stripeHeadlessUI = (headlessEmailPrompt || headlessActive || headlessInitiated) ? (
-    <div className="w-full flex flex-col items-center justify-center p-4 rounded-2xl bg-black/20 animate-in fade-in duration-300" style={{ minHeight: '300px' }}>
+    <div className="w-full flex flex-col items-stretch justify-start animate-in fade-in duration-300">
       {headlessEmailPrompt ? (
-        <div className="bg-[#131418] border border-white/10 rounded-2xl shadow-xl p-6 max-w-sm w-full animate-in zoom-in duration-300">
-          <h3 className="text-white text-lg font-semibold mb-2">Stripe Quick Checkout</h3>
-          <p className="text-white/60 text-sm mb-4">Enter your email to verify your identity with Stripe Link.</p>
+        <div className="w-full rounded-xl border border-white/5 bg-white/[0.02] backdrop-blur-xl p-5 flex flex-col items-stretch animate-in zoom-in duration-300">
+          <h3 className="text-white text-base font-bold tracking-tight mb-1">Stripe Quick Checkout</h3>
+          <p className="text-white/60 text-xs mb-4">Verify your identity with Stripe Link to complete your payment.</p>
           <input
             type="email"
             placeholder="Email address"
-            className="w-full h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-white placeholder-white/30 mb-4 focus:outline-none focus:border-white/30"
+            className="w-full h-11 px-3 rounded-xl bg-black/45 border border-white/10 text-white placeholder-white/30 mb-4 focus:outline-none focus:border-white/30 focus:bg-black/65 focus:ring-1 focus:ring-white/20 transition-all text-sm font-medium"
             value={headlessEmailInput}
             onChange={(e) => setHeadlessEmailInput(e.target.value)}
             autoFocus
           />
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <button
-              className="flex-1 py-2 rounded-lg bg-white/5 text-white font-medium border border-white/10 hover:bg-white/10 transition-colors"
+              className="flex-1 py-2.5 rounded-xl bg-white/[0.03] text-white/80 font-semibold border border-white/5 hover:bg-white/[0.07] hover:text-white transition-all text-xs"
               onClick={() => {
                 setHeadlessEmailPrompt(false);
                 setHeadlessInitiated(false);
@@ -3153,7 +3167,10 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
               Cancel
             </button>
             <button
-              className="flex-1 py-2 rounded-lg bg-white text-black font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-xl font-semibold transition-all text-xs text-white !text-white hover:opacity-90 disabled:opacity-30 disabled:hover:opacity-30 border border-transparent shadow-md"
+              style={{
+                backgroundColor: theme.primaryColor || "#635BFF",
+              }}
               disabled={!headlessEmailInput.includes('@')}
               onClick={() => {
                 setShipEmail(headlessEmailInput);
@@ -3167,58 +3184,95 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
           </div>
         </div>
       ) : (
-        <div className="bg-[#131418] border border-white/10 rounded-2xl shadow-xl overflow-hidden max-w-[440px] w-full flex flex-col relative min-h-[400px]">
+        <div className={`w-full flex flex-col relative transition-all duration-300 ${
+          (headlessAuthElement || headlessPaymentElement)
+            ? "border-0 bg-transparent shadow-none" 
+            : "bg-white/[0.02] border border-white/5 rounded-xl shadow-xl backdrop-blur-xl overflow-hidden"
+        }`}>
           {/* Header */}
-          <div className="p-4 border-b border-white/10 flex items-center justify-between">
-            <span className="text-white font-semibold flex items-center gap-1.5 select-none">
-              <svg viewBox="0 0 24 24" className="h-5 w-5 text-[#635BFF] fill-current">
-                <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .979-.714 1.481-1.993 1.481-2.274 0-4.662-.835-6.353-1.638l-.898 5.568c2.81 1.748 5.51 1.748 8.028 1.748 2.541 0 4.606-.654 6.095-1.872 1.583-1.282 2.39-3.136 2.39-5.381 0-4.088-2.52-5.77-6.476-7.228z" />
-              </svg>
-              <span className="text-white text-lg font-bold tracking-tight">stripe</span>
-            </span>
-            {headlessStep === "error" && (
-              <button 
-                onClick={() => window.location.reload()}
-                className="text-white/50 hover:text-white transition-colors p-1"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
-            )}
-          </div>
-
-          {/* Content Body */}
-          <div className={`flex-1 flex flex-col items-center justify-center relative min-h-[300px] ${(headlessAuthElement || headlessPaymentElement) ? "p-0 w-full" : "p-6"}`}>
-            {headlessStep === "error" ? (
-              <div className="text-center px-6">
-                <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
-                </div>
-                <h3 className="text-white text-lg font-semibold mb-2">Payment Failed</h3>
-                <p className="text-white/60 text-sm mb-6">{headlessError}</p>
+          {!(headlessAuthElement || headlessPaymentElement) && (
+            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+              <span className="text-white font-semibold flex items-center gap-1.5 select-none">
+                <svg viewBox="0 0 24 24" className="h-4 w-4 text-[#635BFF] fill-current">
+                  <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .979-.714 1.481-1.993 1.481-2.274 0-4.662-.835-6.353-1.638l-.898 5.568c2.81 1.748 5.51 1.748 8.028 1.748 2.541 0 4.606-.654 6.095-1.872 1.583-1.282 2.39-3.136 2.39-5.381 0-4.088-2.52-5.77-6.476-7.228z" />
+                </svg>
+                <span className="text-white text-base font-bold tracking-tight">stripe</span>
+              </span>
+              {headlessStep === "error" && (
                 <button 
                   onClick={() => window.location.reload()}
-                  className="w-full py-3 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-colors"
+                  className="text-white/50 hover:text-white transition-colors p-1"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Content Body */}
+          <div className={`flex-1 flex flex-col items-center justify-center relative ${(headlessAuthElement || headlessPaymentElement) ? "p-0 w-full" : "p-5"}`}>
+            {headlessStep === "error" ? (
+              <div className="text-center px-4 py-6 flex flex-col items-center w-full">
+                <div className="w-14 h-14 bg-red-500/10 rounded-full flex items-center justify-center mb-4 text-red-500 border border-red-500/20">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                </div>
+                <h3 className="text-white text-base font-bold mb-1.5">Payment Failed</h3>
+                <p className="text-white/60 text-xs mb-6 max-w-xs">{headlessError}</p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="w-full py-2.5 rounded-xl font-semibold transition-all text-xs text-white !text-white hover:opacity-90 border border-transparent shadow-md"
+                  style={{
+                    backgroundColor: theme.primaryColor || "#635BFF",
+                  }}
                 >
                   Try Again
                 </button>
               </div>
             ) : headlessStep === "completed" ? (
-              <div className="text-center px-6">
-                <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              <div className="text-center px-4 py-6 flex flex-col items-center w-full">
+                <div className="w-14 h-14 bg-green-500/10 rounded-full flex items-center justify-center mb-4 text-green-500 border border-green-500/20">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                 </div>
-                <h3 className="text-white text-lg font-semibold mb-2">Payment Complete</h3>
-                <p className="text-white/60 text-sm mb-6">USDC has been transferred successfully.</p>
+                <h3 className="text-white text-base font-bold mb-1.5">Payment Complete</h3>
+                <p className="text-white/60 text-xs mb-6 max-w-xs">USDC has been transferred successfully.</p>
                 <button 
                   onClick={() => window.location.reload()}
-                  className="w-full py-3 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-colors"
+                  className="w-full py-2.5 rounded-xl font-semibold transition-all text-xs text-white !text-white hover:opacity-90 border border-transparent shadow-md"
+                  style={{
+                    backgroundColor: theme.primaryColor || "#635BFF",
+                  }}
                 >
                   Done
                 </button>
               </div>
+            ) : headlessStep === "collecting_phone" ? (
+              <div className="w-full flex flex-col items-stretch p-2 animate-in zoom-in duration-300">
+                <h3 className="text-white text-base font-bold tracking-tight mb-1">Stripe Verification Required</h3>
+                <p className="text-white/60 text-xs mb-4">Enter your phone number to register your Link account securely.</p>
+                <input
+                  type="tel"
+                  placeholder="Phone number (+1 555-555-5555)"
+                  className="w-full h-11 px-3 rounded-xl bg-black/45 border border-white/10 text-white placeholder-white/30 mb-4 focus:outline-none focus:border-white/30 focus:bg-black/65 focus:ring-1 focus:ring-white/20 transition-all text-sm font-medium"
+                  value={headlessPhoneInput}
+                  onChange={(e) => setHeadlessPhoneInput(e.target.value)}
+                  autoFocus
+                />
+                <button
+                  className="w-full py-2.5 rounded-xl font-semibold transition-all text-xs text-white !text-white hover:opacity-90 disabled:opacity-30 disabled:hover:opacity-30 border border-transparent shadow-md"
+                  style={{
+                    backgroundColor: theme.primaryColor || "#635BFF",
+                  }}
+                  disabled={headlessPhoneInput.trim().length < 8}
+                  onClick={() => {
+                    headlessSubmitPhone(headlessPhoneInput);
+                  }}
+                >
+                  Confirm & Continue
+                </button>
+              </div>
             ) : headlessAuthElement || headlessPaymentElement ? (
               <div 
-                className="w-full h-full flex flex-col items-stretch" 
+                className="w-full h-full flex flex-col items-stretch stripe-embedded-container animate-in fade-in duration-300" 
                 ref={(el) => {
                   if (el) {
                     const elementToMount = headlessAuthElement || headlessPaymentElement;
@@ -3230,23 +3284,60 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                 }} 
               />
             ) : (
-              <div className="text-center flex flex-col items-center px-6">
-                <svg className="animate-spin h-10 w-10 text-[#635BFF] mb-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p className="text-white/80 font-medium text-lg">{headlessStatus}</p>
+              <div className="text-center flex flex-col items-center px-4 py-10 w-full animate-in fade-in duration-300">
+                <div className="relative flex items-center justify-center mb-8">
+                  {/* Rotating Outer Ring */}
+                  <div className="absolute w-14 h-14 rounded-full border-2 border-white/5 border-t-white/30 animate-spin"></div>
+                  {/* Glowing Core */}
+                  <div className="w-9 h-9 rounded-full bg-white/[0.02] border border-white/10 flex items-center justify-center">
+                    <svg className="h-4.5 w-4.5 text-white/80 animate-pulse" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.25z"/>
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-white font-semibold text-sm tracking-tight mb-1">{headlessStatus}</p>
+                <p className="text-white/40 text-[11px]">This process is secure and authenticated.</p>
+
+                {headlessBuyerWallet && (
+                  <div className="w-full max-w-xs mt-6 p-3 rounded-xl border border-white/5 bg-white/[0.01] flex flex-col items-stretch text-left animate-in fade-in duration-500">
+                    <span className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-1.5">Deterministic EOA Wallet</span>
+                    <div className="flex items-center justify-between gap-3 bg-black/40 rounded-lg p-2.5 border border-white/5">
+                      <code className="text-white/80 font-mono text-xs select-all overflow-hidden text-ellipsis whitespace-nowrap flex-1">
+                        {headlessBuyerWallet}
+                      </code>
+                      <button
+                        onClick={() => {
+                          try {
+                            navigator.clipboard.writeText(headlessBuyerWallet);
+                            setCopiedWallet(true);
+                            setTimeout(() => setCopiedWallet(false), 2000);
+                          } catch {}
+                        }}
+                        className="text-white/40 hover:text-white/80 transition-all p-1.5 rounded-md hover:bg-white/5"
+                        title="Copy wallet address"
+                      >
+                        {copiedWallet ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
           
           {/* Footer */}
-          <div className="p-4 border-t border-white/10 bg-white/5 text-center">
-            <p className="text-xs text-white/40 flex items-center justify-center gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              Secure connection to Stripe
-            </p>
-          </div>
+          {!(headlessAuthElement || headlessPaymentElement) && (
+            <div className="p-4 border-t border-white/5 bg-white/[0.01] text-center">
+              <p className="text-xs text-white/40 flex items-center justify-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Secure connection to Stripe
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -3294,6 +3385,22 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
               border: none !important;
               border-color: transparent !important;
               outline: none !important;
+            }
+
+            /* ── Stripe Embedded Headless styling ── */
+            .stripe-embedded-container {
+              background: transparent !important;
+              color-scheme: dark !important;
+              border: none !important;
+              border-radius: 12px !important;
+              overflow: hidden !important;
+            }
+            .stripe-embedded-container iframe {
+              background: transparent !important;
+              color-scheme: dark !important;
+              border: none !important;
+              border-radius: 12px !important;
+              filter: invert(0.93) hue-rotate(180deg) brightness(1.1) contrast(0.95) !important;
             }
 
             /* ── portalTheme live overrides ── */

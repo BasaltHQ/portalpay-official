@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
+const STRIPE_API_VERSION = "2026-03-25.dahlia;crypto_onramp_beta=v2";
+
 /**
  * POST /api/stripe/link-auth-intent
  * Creates a LinkAuthIntent to determine if the customer's email is associated
@@ -47,6 +49,7 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${stripeKey}`,
+        "Stripe-Version": STRIPE_API_VERSION,
       },
       body: JSON.stringify({
         email,

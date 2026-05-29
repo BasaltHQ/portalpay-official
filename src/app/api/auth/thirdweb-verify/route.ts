@@ -24,14 +24,7 @@ export const dynamic = 'force-dynamic';
  * - Verification tokens expire after 10 minutes
  */
 
-// ─── In-Memory Verified Email Store ───
-// Maps email → { verifiedAt, verificationToken, expiresAt }
-// In production, use Redis or a session store for multi-instance deployments.
-const verifiedEmails = new Map<string, {
-  verifiedAt: number;
-  verificationToken: string;
-  expiresAt: number;
-}>();
+import crypto from "crypto";
 
 const VERIFICATION_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -41,56 +34,52 @@ const VERIFICATION_TTL_MS = 10 * 60 * 1000; // 10 minutes
  */
 export function markEmailVerified(email: string): string {
   const normalizedEmail = email.trim().toLowerCase();
-  const token = require("crypto").randomBytes(32).toString("hex");
-  const now = Date.now();
+  const expiresAt = Date.now() + VERIFICATION_TTL_MS;
+  const secret = process.env.THIRDWEB_AUTH_ENDPOINT_SECRET || "default_auth_secret_temp_key_portalpay";
 
-  verifiedEmails.set(normalizedEmail, {
-    verifiedAt: now,
-    verificationToken: token,
-    expiresAt: now + VERIFICATION_TTL_MS,
-  });
+  const dataToSign = `${normalizedEmail}:${expiresAt}`;
+  const signature = crypto.createHmac("sha256", secret).update(dataToSign).digest("hex");
+  const verificationToken = `${expiresAt}:${signature}`;
 
-  // Cleanup expired entries periodically
-  if (verifiedEmails.size > 100) {
-    for (const [key, val] of verifiedEmails) {
-      if (val.expiresAt < now) verifiedEmails.delete(key);
-    }
-  }
-
-  console.log("[TW AUTH] Email marked as verified:", normalizedEmail.slice(0, 3) + "***");
-  return token;
+  console.log("[TW AUTH] Email statelessly marked as verified:", normalizedEmail.slice(0, 3) + "***");
+  return verificationToken;
 }
 
 /**
  * Check if an email was recently verified by Stripe Link.
  */
 function isEmailVerified(email: string, token?: string): boolean {
-  const normalizedEmail = email.trim().toLowerCase();
-  const entry = verifiedEmails.get(normalizedEmail);
+  if (!token) return false;
+  
+  try {
+    const parts = token.split(":");
+    if (parts.length !== 2) return false;
+    const [expiresAtStr, signature] = parts;
+    const expiresAt = Number(expiresAtStr);
 
-  if (!entry) return false;
-  if (Date.now() > entry.expiresAt) {
-    verifiedEmails.delete(normalizedEmail);
+    if (isNaN(expiresAt) || Date.now() > expiresAt) {
+      console.warn("[TW AUTH] Verification token expired:", email.slice(0, 3) + "***");
+      return false; // Expired
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const secret = process.env.THIRDWEB_AUTH_ENDPOINT_SECRET || "default_auth_secret_temp_key_portalpay";
+    const dataToSign = `${normalizedEmail}:${expiresAt}`;
+    const expectedSignature = crypto.createHmac("sha256", secret).update(dataToSign).digest("hex");
+
+    return signature === expectedSignature;
+  } catch (err) {
+    console.error("[TW AUTH] Error parsing verification token:", err);
     return false;
   }
-
-  // If a token is provided, validate it matches
-  if (token && entry.verificationToken !== token) return false;
-
-  return true;
 }
 
 /**
- * Consume a verification (one-time use after wallet creation).
- * The email remains "known" but the token is invalidated.
+ * Consume a verification (no-op in stateless mode since it's checked by expiration).
  */
 function consumeVerification(email: string): void {
-  const normalizedEmail = email.trim().toLowerCase();
-  // Don't delete — just update the token so it can't be reused
-  const entry = verifiedEmails.get(normalizedEmail);
-  if (entry) {
-    entry.verificationToken = "consumed";
-  }
+  // Stateless mode uses expiration (TTL) instead of a stateful blacklist,
+  // which prevents lockouts during transient wallet-connection failures.
 }
 
 // ─── Thirdweb Auth Endpoint ───
@@ -119,7 +108,16 @@ export async function POST(req: NextRequest) {
 
     // 2. Parse the payload from Thirdweb
     const body = await req.json().catch(() => ({}));
-    const payload = body.payload || body;
+    let payload = body.payload || body;
+
+    // Handle case where payload is forwarded as a JSON-stringified string
+    if (typeof payload === "string") {
+      try {
+        payload = JSON.parse(payload);
+      } catch (e) {
+        console.warn("[TW AUTH] Failed to parse stringified payload:", e);
+      }
+    }
 
     const email = String(payload.email || payload.userId || "").trim().toLowerCase();
     const verificationToken = String(payload.verificationToken || payload.token || "").trim();

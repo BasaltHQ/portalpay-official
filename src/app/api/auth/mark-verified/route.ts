@@ -3,25 +3,24 @@ import { markEmailVerified } from "../thirdweb-verify/route";
 
 export const dynamic = 'force-dynamic';
 
+const STRIPE_API_VERSION = "2026-03-25.dahlia;crypto_onramp_beta=v2";
+
 /**
  * POST /api/auth/mark-verified
  * 
  * Called by the onramp flow AFTER Stripe Link has verified the buyer's email.
- * Stores the email in the short-lived verification store so the Thirdweb
- * auth endpoint can issue a wallet without sending another OTP.
+ * Cryptographically validates the short-lived Stripe Link OAuth token to prevent
+ * unauthorized guest wallet connection attempts.
  * 
- * Body: { email: string }
+ * Body: { email: string, customerId: string, oauthToken: string }
  * Returns: { ok, verificationToken }
- * 
- * Security: This is an internal-only endpoint. It does NOT face Thirdweb's
- * infrastructure — it's called by our own client code after Stripe Link auth
- * succeeds. The verificationToken returned must be passed to Thirdweb's
- * connect flow so it reaches our auth endpoint for validation.
  */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const email = String(body.email || "").trim().toLowerCase();
+    const customerId = String(body.customerId || "").trim();
+    const oauthToken = String(body.oauthToken || "").trim();
 
     if (!email || !email.includes("@")) {
       return NextResponse.json(
@@ -30,9 +29,47 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const stripeKey = process.env.STRIPE_API_KEY;
+    if (!stripeKey) {
+      return NextResponse.json(
+        { ok: false, error: "stripe_not_configured" },
+        { status: 500 }
+      );
+    }
+
+    if (!oauthToken || !customerId) {
+      return NextResponse.json(
+        { ok: false, error: "unauthorized_session" },
+        { status: 401 }
+      );
+    }
+
+    // ─── Cryptographic Verification Check ───
+    // Verify that the OAuth token is valid and associated with the customer session on Stripe
+    const response = await fetch(
+      `https://api.stripe.com/v1/crypto/customers/${encodeURIComponent(customerId)}`,
+      {
+        headers: {
+          "Authorization": `Bearer ${stripeKey}`,
+          "Stripe-OAuth-Token": oauthToken,
+          "Stripe-Version": STRIPE_API_VERSION,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errData = await response.json();
+      console.warn("[MARK VERIFIED] Stripe OAuth verification failed:", errData);
+      return NextResponse.json(
+        { ok: false, error: "invalid_stripe_session" },
+        { status: 403 }
+      );
+    }
+
+    // Stateless signed token (expires in 10 minutes)
     const verificationToken = markEmailVerified(email);
 
-    console.log("[MARK VERIFIED] Email marked as Stripe-verified:", email.slice(0, 3) + "***");
+    console.log("[MARK VERIFIED] SECURE: Email verified via active Stripe Link OAuth token:", email.slice(0, 3) + "***");
 
     return NextResponse.json({
       ok: true,

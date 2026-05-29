@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
+const STRIPE_API_VERSION = "2026-03-25.dahlia;crypto_onramp_beta=v2";
+
 /**
  * In-memory OAuth token store.
  * Maps crypto_customer_id → { accessToken, refreshToken, expiresAt }
@@ -77,6 +79,7 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${stripeKey}`,
+          "Stripe-Version": STRIPE_API_VERSION,
         },
       }
     );

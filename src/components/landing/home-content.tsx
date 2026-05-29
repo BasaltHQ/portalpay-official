@@ -109,12 +109,6 @@ export default function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Redirect to admin console if user connects their wallet on the homepage
-  React.useEffect(() => {
-    if (account?.address) {
-      router.push("/admin");
-    }
-  }, [account?.address, router]);
 
   const handleAdminClick = async (e: React.MouseEvent) => {
     e.preventDefault();

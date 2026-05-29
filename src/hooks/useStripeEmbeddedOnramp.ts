@@ -30,6 +30,7 @@ export type OnrampStep =
   | "initializing"
   | "checking_link"
   | "registering_link"
+  | "collecting_phone"
   | "authenticating"
   | "exchanging_tokens"
   | "checking_kyc"
@@ -105,6 +106,11 @@ export type UseStripeEmbeddedOnrampProps = {
    * This skips the auth_endpoint wallet creation entirely — no extra OTP, no new wallet.
    */
   connectedWalletAddress?: string;
+  /**
+   * If the buyer is already connected, pass their active Thirdweb account object.
+   * Enables automatic/manual signing fallback depending on wallet type.
+   */
+  connectedWallet?: any;
   /** Callbacks */
   onSuccess?: (result: { sessionId: string; txHash?: string }) => void;
   onError?: (error: Error) => void;
@@ -123,9 +129,11 @@ export type UseStripeEmbeddedOnrampReturn = {
   /** The payment method element to render */
   paymentElement: HTMLElement | null;
   /** Start the full onramp flow */
-  startOnramp: (overrideEmail?: string) => Promise<void>;
+  startOnramp: (overrideEmail?: string, overridePhone?: string) => Promise<void>;
   /** Reset state */
   reset: () => void;
+  /** Submit phone number to resume registration */
+  submitPhone: (phoneNumber: string) => void;
   /** Whether the flow is actively running */
   isActive: boolean;
   /** The crypto customer ID after auth */
@@ -139,6 +147,7 @@ const STEP_MESSAGES: Record<OnrampStep, string> = {
   initializing: "Initializing Stripe...",
   checking_link: "Checking account...",
   registering_link: "Creating account...",
+  collecting_phone: "Enter phone number for Link...",
   authenticating: "Verifying identity...",
   exchanging_tokens: "Securing session...",
   checking_kyc: "Checking verification...",
@@ -170,6 +179,7 @@ export function useStripeEmbeddedOnramp({
   brandKey,
   enabled = true,
   connectedWalletAddress,
+  connectedWallet,
   onSuccess,
   onError,
   onStepChange,
@@ -180,12 +190,15 @@ export function useStripeEmbeddedOnramp({
   const [paymentElement, setPaymentElement] = useState<HTMLElement | null>(null);
   const [cryptoCustomerId, setCryptoCustomerId] = useState<string | null>(null);
   const [buyerWalletAddress, setBuyerWalletAddress] = useState<string | null>(null);
+  const [localPhone, setLocalPhone] = useState<string>("");
 
   const onrampRef = useRef<OnrampCoordinator | null>(null);
   const mountedRef = useRef(true);
   const oauthTokenRef = useRef<string | null>(null);
   const paymentTokenRef = useRef<string | null>(null);
   const verificationTokenRef = useRef<string | null>(null);
+  const buyerAccountRef = useRef<any>(null);
+  const isRunningRef = useRef(false);
 
   const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
 
@@ -194,6 +207,63 @@ export function useStripeEmbeddedOnramp({
     return () => {
       mountedRef.current = false;
       try { onrampRef.current?.destroy(); } catch {}
+    };
+  }, []);
+
+  // ─── Document.createElement Patch for Secure Iframe URL Interception ───
+  // Intercepts iframe creation by Stripe's SDK *at creation time* before it is appended.
+  // Replaces the query hash `theme=stripe` with `theme=dark` synchronously to load Link natively
+  // in dark mode. This avoids cross-origin re-navigations, preventing browser same-origin/CORS blocks
+  // and Next.js asset 404s.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const originalCreateElement = document.createElement;
+
+    try {
+      document.createElement = function patchedCreateElement(
+        tagName: string,
+        options?: ElementCreationOptions
+      ): HTMLElement {
+        const el = originalCreateElement.call(document, tagName, options);
+        if (tagName.toLowerCase() === "iframe") {
+          const originalSetAttribute = el.setAttribute;
+          
+          Object.defineProperty(el, "src", {
+            get() {
+              return this.getAttribute("src") || "";
+            },
+            set(val) {
+              let finalVal = val;
+              if (typeof val === "string" && val.includes("theme=stripe")) {
+                console.log("[STRIPE HEADLESS] Intercepted iframe src property and forced dark theme:", val.slice(0, 100) + "...");
+                finalVal = val.replace("theme=stripe", "theme=dark");
+              }
+              this.setAttribute("src", finalVal);
+            },
+            configurable: true,
+            enumerable: true
+          });
+
+          el.setAttribute = function patchedSetAttribute(name: string, value: string) {
+            let finalValue = value;
+            if (name.toLowerCase() === "src" && typeof value === "string" && value.includes("theme=stripe")) {
+              console.log("[STRIPE HEADLESS] Intercepted iframe src attribute and forced dark theme:", value.slice(0, 100) + "...");
+              finalValue = value.replace("theme=stripe", "theme=dark");
+            }
+            return originalSetAttribute.call(this, name, finalValue);
+          };
+        }
+        return el;
+      } as any;
+    } catch (e) {
+      console.warn("[STRIPE HEADLESS] Failed to patch document.createElement:", e);
+    }
+
+    return () => {
+      try {
+        document.createElement = originalCreateElement;
+      } catch {}
     };
   }, []);
 
@@ -206,6 +276,7 @@ export function useStripeEmbeddedOnramp({
   const handleError = useCallback((message: string, err?: any) => {
     if (!mountedRef.current) return;
     console.error(`[EMBEDDED ONRAMP] ${message}`, err);
+    isRunningRef.current = false;
     setError(message);
     setAuthElement(null);
     setPaymentElement(null);
@@ -214,6 +285,7 @@ export function useStripeEmbeddedOnramp({
   }, [onError, updateStep]);
 
   const reset = useCallback(() => {
+    isRunningRef.current = false;
     setStep("idle");
     setError(null);
     setAuthElement(null);
@@ -223,9 +295,11 @@ export function useStripeEmbeddedOnramp({
     oauthTokenRef.current = null;
     paymentTokenRef.current = null;
     verificationTokenRef.current = null;
+    setLocalPhone("");
+    buyerAccountRef.current = null;
   }, []);
 
-  // ─── Create/retrieve Thirdweb smart wallet for buyer email ───
+  // ─── Create/retrieve Thirdweb EOA wallet for buyer email ───
   // Uses auth_endpoint strategy — no OTP (email already verified by Stripe Link)
   const createBuyerWallet = useCallback(async (buyerEmail: string): Promise<string | null> => {
     try {
@@ -237,17 +311,14 @@ export function useStripeEmbeddedOnramp({
         clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "",
       });
 
-      // Create in-app wallet with auth_endpoint strategy (no OTP)
+      // Create in-app wallet with auth_endpoint strategy and EIP-7702 gasless sponsored mode!
       const wallet = inAppWallet({
         auth: {
           options: ["auth_endpoint" as any],
         },
         executionMode: {
-          mode: "EIP4337",
-          smartAccount: {
-            chain: base,
-            sponsorGas: true,
-          },
+          mode: "EIP7702",
+          sponsorGas: true,
         },
       });
 
@@ -263,7 +334,9 @@ export function useStripeEmbeddedOnramp({
       });
 
       const address = account.address;
-      console.log("[EMBEDDED ONRAMP] Smart wallet created/retrieved:", address?.slice(0, 10) + "...");
+      console.log("[EMBEDDED ONRAMP] Guest EOA created/retrieved:", address?.slice(0, 10) + "...");
+
+      buyerAccountRef.current = account;
 
       return address || null;
     } catch (err: any) {
@@ -277,39 +350,63 @@ export function useStripeEmbeddedOnramp({
     fromWalletEmail: string,
     toAddress: string,
     usdcAmount: number,
+    connectedWallet?: any
   ): Promise<string | null> => {
     try {
-      const { createThirdwebClient, getContract, prepareContractCall, sendTransaction } = await import("thirdweb");
-      const { inAppWallet } = await import("thirdweb/wallets");
+      const { createThirdwebClient, getContract, prepareContractCall, sendTransaction, readContract } = await import("thirdweb");
       const { base } = await import("thirdweb/chains");
 
       const twClient = createThirdwebClient({
         clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "",
       });
 
-      // Re-connect the wallet (same email = same wallet, deterministic)
-      const wallet = inAppWallet({
-        auth: {
-          options: ["auth_endpoint" as any],
-        },
-        executionMode: {
-          mode: "EIP4337",
-          smartAccount: {
+      let account: any;
+
+      if (buyerAccountRef.current) {
+        console.log("[EMBEDDED ONRAMP] Using active guest EOA account (EIP-7702 mode):", buyerAccountRef.current.address);
+        account = buyerAccountRef.current;
+      } else if (connectedWallet) {
+        if (connectedWallet.personalAccount) {
+          console.log("[EMBEDDED ONRAMP] Using connected Smart Account directly:", connectedWallet.address);
+          account = connectedWallet;
+        } else {
+          console.log("[EMBEDDED ONRAMP] Wrapping EOA connected wallet with Smart Wallet for EIP-4337/7702 gasless execution...");
+          const { smartWallet } = await import("thirdweb/wallets");
+          const wallet = smartWallet({
             chain: base,
+            gasless: true,
+          });
+
+          account = await wallet.connect({
+            client: twClient,
+            personalAccount: connectedWallet,
+          });
+          console.log("[EMBEDDED ONRAMP] Smart Account active for EOA:", account.address);
+        }
+      } else {
+        const { inAppWallet } = await import("thirdweb/wallets");
+        // Re-connect the wallet as EOA with EIP-7702 gasless sponsored execution
+        const wallet = inAppWallet({
+          auth: {
+            options: ["auth_endpoint" as any],
+          },
+          executionMode: {
+            mode: "EIP7702",
             sponsorGas: true,
           },
-        },
-      });
+        });
 
-      const account = await wallet.connect({
-        client: twClient,
-        chain: base,
-        strategy: "auth_endpoint" as any,
-        payload: JSON.stringify({
-          email: fromWalletEmail,
-          verificationToken: verificationTokenRef.current || "",
-        }),
-      });
+        account = await wallet.connect({
+          client: twClient,
+          chain: base,
+          strategy: "auth_endpoint" as any,
+          payload: JSON.stringify({
+            email: fromWalletEmail,
+            verificationToken: verificationTokenRef.current || "",
+          }),
+        });
+        console.log("[EMBEDDED ONRAMP] Guest EOA re-connected:", account.address);
+      }
 
       // Prepare ERC-20 transfer: USDC has 6 decimals
       const usdcContract = getContract({
@@ -318,7 +415,41 @@ export function useStripeEmbeddedOnramp({
         address: BASE_USDC_ADDRESS,
       });
 
-      const amountInUnits = BigInt(Math.floor(usdcAmount * 1_000_000)); // 6 decimals
+      // Query the actual USDC balance in the wallet on-chain to handle decimals / dust/ slippage perfectly
+      let balance = BigInt(0);
+      try {
+        balance = await readContract({
+          contract: usdcContract,
+          method: "function balanceOf(address account) view returns (uint256)",
+          params: [account.address],
+        });
+        console.log(`[EMBEDDED ONRAMP] Target address: ${account.address}, USDC balance: ${balance.toString()}`);
+      } catch (balErr) {
+        console.warn("[EMBEDDED ONRAMP] Failed to query USDC balance on-chain:", balErr);
+      }
+
+      const requiredUnits = BigInt(Math.floor(usdcAmount * 1_000_000)); // 6 decimals
+      
+      // Sweep full balance only if balance is less than required (slippage/fee adjustment) or if guest smart wallet.
+      // If balance is sufficient and they have personal funds, only transfer the requiredUnits to protect their extra balance.
+      let amountInUnits = requiredUnits;
+      if (balance > BigInt(0)) {
+        if (balance < requiredUnits) {
+          console.log(`[EMBEDDED ONRAMP] Balance ${balance.toString()} is less than required ${requiredUnits.toString()}. Sweeping full balance.`);
+          amountInUnits = balance;
+        } else {
+          // If it's a guest smart wallet (buyerAccountRef was created deterministically), we can sweep everything to keep it clean.
+          // But if it's a user's personal connected wallet (inAppWallet or EOA), we MUST only transfer requiredUnits to avoid taking their personal funds.
+          const isGuestWallet = !connectedWallet;
+          if (isGuestWallet) {
+            console.log(`[EMBEDDED ONRAMP] Balance is sufficient: ${balance.toString()}. Sweeping guest wallet to clear dust.`);
+            amountInUnits = balance;
+          } else {
+            console.log(`[EMBEDDED ONRAMP] Balance is sufficient: ${balance.toString()}. Transferring exactly required amount: ${requiredUnits.toString()}`);
+            amountInUnits = requiredUnits;
+          }
+        }
+      }
 
       const tx = prepareContractCall({
         contract: usdcContract,
@@ -326,7 +457,7 @@ export function useStripeEmbeddedOnramp({
         params: [toAddress, amountInUnits],
       });
 
-      console.log("[EMBEDDED ONRAMP] Executing gasless USDC transfer:", amountInUnits.toString(), "→", toAddress.slice(0, 10) + "...");
+      console.log("[EMBEDDED ONRAMP] Preparing USDC transfer:", amountInUnits.toString(), "→", toAddress.slice(0, 10) + "...");
 
       const result = await sendTransaction({
         account,
@@ -336,13 +467,20 @@ export function useStripeEmbeddedOnramp({
       console.log("[EMBEDDED ONRAMP] ✓ Transfer complete, tx:", result.transactionHash);
       return result.transactionHash;
     } catch (err: any) {
-      console.error("[EMBEDDED ONRAMP] Gasless transfer failed:", err);
+      console.error("[EMBEDDED ONRAMP] Transfer failed:", err);
       return null;
     }
   }, []);
 
-  const startOnramp = useCallback(async (overrideEmail?: string) => {
+  const startOnramp = useCallback(async (overrideEmail?: string, overridePhone?: string) => {
+    if (isRunningRef.current) {
+      console.warn("[EMBEDDED ONRAMP] Onramp flow is already running. Ignoring duplicate trigger.");
+      return;
+    }
+    isRunningRef.current = true;
+
     const activeEmail = overrideEmail || email;
+    const activePhone = overridePhone || phone || localPhone;
 
     if (!enabled || !activeEmail || !splitAddress || !publishableKey) {
       handleError("Missing required fields (email, split address, or API key)");
@@ -355,12 +493,13 @@ export function useStripeEmbeddedOnramp({
     }
 
     try {
+      // ─── Step 1: Initialize Stripe SDK with native Dark theme ───
       // @ts-ignore - beta SDK method missing from types
       const stripeCryptoModule = (await import("@stripe/crypto")) as any;
       const loadCryptoOnrampAndInitialize = stripeCryptoModule.loadCryptoOnrampAndInitialize || stripeCryptoModule.loadStripeOnramp;
 
       const onramp = await loadCryptoOnrampAndInitialize(publishableKey, {
-        theme: "stripe",
+        theme: "dark",
       });
 
       if (!mountedRef.current) return;
@@ -381,17 +520,30 @@ export function useStripeEmbeddedOnramp({
 
       if (linkRes.status === 404) {
         // No Link account — register
+        if (!activePhone) {
+          console.log("[EMBEDDED ONRAMP] Fresh Link account detected, but no phone number provided. Transitioning to collecting_phone.");
+          isRunningRef.current = false;
+          updateStep("collecting_phone");
+          return;
+        }
+
         updateStep("registering_link");
 
-        const registerResult = await onramp.registerLinkUser(
-          activeEmail,
-          phone || "",
-          "US",
-          ""
-        );
+        try {
+          const registerResult = await onramp.registerLinkUser(
+            activeEmail,
+            activePhone,
+            "US",
+            ""
+          );
 
-        if (!registerResult.created) {
-          handleError("Failed to create Link account");
+          if (!registerResult.created) {
+            throw new Error("Registration returned created: false");
+          }
+        } catch (regErr: any) {
+          console.warn("[EMBEDDED ONRAMP] Link registration failed, asking for phone number:", regErr);
+          isRunningRef.current = false;
+          updateStep("collecting_phone");
           return;
         }
 
@@ -447,21 +599,6 @@ export function useStripeEmbeddedOnramp({
       setCryptoCustomerId(customerId);
       setAuthElement(null);
 
-      // ─── Step 3b: Mark email as verified for Thirdweb ───
-      // Stripe Link has verified this email via OTP.
-      // Tell our server so Thirdweb's auth_endpoint can trust it (no 2nd OTP).
-      const markRes = await fetch("/api/auth/mark-verified", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: activeEmail }),
-      });
-
-      if (markRes.ok) {
-        const markData = await markRes.json();
-        verificationTokenRef.current = markData.verificationToken;
-        console.log("[EMBEDDED ONRAMP] Email marked as Stripe-verified for Thirdweb");
-      }
-
       // ─── Step 4: Exchange tokens ───
       updateStep("exchanging_tokens");
 
@@ -485,7 +622,77 @@ export function useStripeEmbeddedOnramp({
 
       if (!mountedRef.current) return;
 
-      // ─── Step 5: Check KYC ───
+      // ─── Step 5: Cryptographically verify email via Stripe Link Session Token ───
+      // We pass the email, customerId, and oauthToken to securely generate the stateless signed Thirdweb verification token
+      const markRes = await fetch("/api/auth/mark-verified", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: activeEmail,
+          customerId,
+          oauthToken: oauthTokenRef.current,
+        }),
+      });
+
+      if (!markRes.ok) {
+        const markData = await markRes.json();
+        handleError(markData.error || "Secure email verification failed");
+        return;
+      }
+
+      const markData = await markRes.json();
+      verificationTokenRef.current = markData.verificationToken;
+      console.log("[EMBEDDED ONRAMP] SECURE: Email verification token retrieved successfully");
+
+      // ─── Step 6: Create/resolve Thirdweb Guest Wallet safely ───
+      updateStep("creating_wallet");
+
+      let buyerWallet: string;
+
+      if (connectedWalletAddress && connectedWallet) {
+        // Link the email to the EOA in the database automatically
+        try {
+          fetch("/api/users/profile", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "x-wallet": connectedWalletAddress,
+            },
+            body: JSON.stringify({
+              wallet: connectedWalletAddress,
+              contact: {
+                email: activeEmail,
+              },
+            }),
+          }).then(res => {
+            if (res.ok) {
+              console.log("[EMBEDDED ONRAMP] Email linked to connected EOA profile successfully:", activeEmail);
+            }
+          }).catch(err => {
+            console.warn("[EMBEDDED ONRAMP] Failed to link email to EOA profile:", err);
+          });
+        } catch (linkErr) {
+          console.warn("[EMBEDDED ONRAMP] Error in profile link attempt:", linkErr);
+        }
+
+        buyerWallet = connectedWalletAddress;
+        buyerAccountRef.current = connectedWallet;
+        console.log("[EMBEDDED ONRAMP] Using connected EOA wallet:", buyerWallet);
+      } else {
+        const createdWallet = await createBuyerWallet(activeEmail);
+
+        if (!createdWallet) {
+          handleError("Failed to create buyer wallet");
+          return;
+        }
+
+        buyerWallet = createdWallet;
+        console.log("[EMBEDDED ONRAMP] Created/retrieved guest EOA wallet:", buyerWallet);
+      }
+
+      setBuyerWalletAddress(buyerWallet);
+
+      // ─── Step 6b: Check KYC ───
       updateStep("checking_kyc");
 
       const kycRes = await fetch(`/api/stripe/crypto-customer/${encodeURIComponent(customerId)}`, {
@@ -508,32 +715,7 @@ export function useStripeEmbeddedOnramp({
         }
       }
 
-      // ─── Step 6: Resolve buyer's wallet ───
-      // If the buyer is already connected via Thirdweb, use their wallet directly.
-      // Otherwise, create/retrieve a smart wallet via auth_endpoint (no OTP).
-      let buyerWallet: string;
-
-      if (connectedWalletAddress) {
-        buyerWallet = connectedWalletAddress;
-        console.log("[EMBEDDED ONRAMP] Using connected Thirdweb wallet:", buyerWallet.slice(0, 10) + "...");
-      } else {
-        updateStep("creating_wallet");
-
-        const createdWallet = await createBuyerWallet(activeEmail);
-
-        if (!createdWallet) {
-          handleError("Failed to create buyer wallet");
-          return;
-        }
-
-        buyerWallet = createdWallet;
-        console.log("[EMBEDDED ONRAMP] Created smart wallet via auth_endpoint:", buyerWallet.slice(0, 10) + "...");
-      }
-
-      if (!mountedRef.current) return;
-      setBuyerWalletAddress(buyerWallet);
-
-      // ─── Step 7: Register buyer's smart wallet with Stripe ───
+      // ─── Step 7: Register buyer's wallet with Stripe ───
       updateStep("registering_wallet");
 
       try {
@@ -683,27 +865,38 @@ export function useStripeEmbeddedOnramp({
         }
       }
 
-      if (!checkoutSucceeded || !mountedRef.current) return;
+      if (!checkoutSucceeded || !mountedRef.current) {
+        isRunningRef.current = false;
+        return;
+      }
 
       // ─── Step 11: Wait for USDC to arrive in buyer's smart wallet ───
       updateStep("awaiting_funds");
 
       // Poll for onramp fulfillment (Stripe delivers USDC to buyer's smart wallet)
       let fundsDelivered = false;
+      console.log(`[EMBEDDED ONRAMP] Starting to poll status for session: ${sessionId}`);
       for (let poll = 0; poll < 60; poll++) { // Max 5 minutes
         await new Promise(r => setTimeout(r, 5000));
         if (!mountedRef.current) return;
 
         try {
           const statusRes = await fetch(`/api/stripe/onramp-status?sessionId=${encodeURIComponent(sessionId)}`);
+          if (!statusRes.ok) {
+            console.warn(`[EMBEDDED ONRAMP] Status endpoint returned error status: ${statusRes.status}`);
+            continue;
+          }
           const statusData = await statusRes.json();
+          console.log(`[EMBEDDED ONRAMP] Polled status (attempt ${poll + 1}):`, statusData?.status, statusData);
 
-          if (statusData.status === "fulfillment_complete") {
+          if (statusData && statusData.status === "fulfillment_complete") {
             fundsDelivered = true;
             console.log("[EMBEDDED ONRAMP] ✓ USDC delivered to buyer's smart wallet");
             break;
           }
-        } catch {}
+        } catch (pollErr) {
+          console.warn("[EMBEDDED ONRAMP] Exception while polling status:", pollErr);
+        }
       }
 
       if (!fundsDelivered) {
@@ -716,7 +909,7 @@ export function useStripeEmbeddedOnramp({
       // ─── Step 12: Gasless transfer from buyer's smart wallet → split contract ───
       updateStep("transferring");
 
-      const txHash = await executeGaslessTransfer(activeEmail, splitAddress, amount);
+      const txHash = await executeGaslessTransfer(activeEmail, splitAddress, amount, connectedWallet);
 
       if (!txHash) {
         handleError("Failed to transfer funds to merchant");
@@ -724,6 +917,7 @@ export function useStripeEmbeddedOnramp({
       }
 
       // ─── Done ───
+      isRunningRef.current = false;
       updateStep("completed");
       onSuccess?.({ sessionId, txHash });
 
@@ -731,11 +925,17 @@ export function useStripeEmbeddedOnramp({
       handleError(err?.message || "Onramp flow failed");
     }
   }, [
-    enabled, email, phone, splitAddress, amount, network,
+    enabled, email, phone, localPhone, splitAddress, amount, network,
     destinationCurrency, receiptId, merchantWallet, brandKey,
-    publishableKey, connectedWalletAddress, onSuccess, handleError,
+    publishableKey, connectedWalletAddress, connectedWallet, onSuccess, handleError,
     updateStep, createBuyerWallet, executeGaslessTransfer,
   ]);
+
+  const submitPhone = useCallback((phoneNumber: string) => {
+    setLocalPhone(phoneNumber);
+    console.log("[EMBEDDED ONRAMP] Phone number submitted, resuming flow:", phoneNumber);
+    startOnramp(undefined, phoneNumber);
+  }, [startOnramp]);
 
   const statusMessage = useMemo(() => STEP_MESSAGES[step], [step]);
 
@@ -752,6 +952,7 @@ export function useStripeEmbeddedOnramp({
     paymentElement,
     startOnramp,
     reset,
+    submitPhone,
     isActive,
     cryptoCustomerId,
     buyerWalletAddress,

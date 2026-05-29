@@ -47,7 +47,9 @@ export function getBaseUrl(): string {
       try {
         const { headers } = require('next/headers');
         const headersList = headers();
-        const host = headersList.get('x-forwarded-host') || headersList.get('host');
+        const forwardedHost = headersList.get('x-forwarded-host') || "";
+        const firstForwarded = forwardedHost.split(",")[0].trim();
+        const host = firstForwarded || headersList.get('host');
         if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
           url = `https://${host}`;
         }
@@ -84,7 +86,9 @@ export async function getProductionBaseUrl(): Promise<string> {
     try {
       const { headers } = await import('next/headers');
       const headersList = await headers();
-      const host = headersList.get('x-forwarded-host') || headersList.get('host');
+      const forwardedHost = headersList.get('x-forwarded-host') || "";
+      const firstForwarded = forwardedHost.split(",")[0].trim();
+      const host = firstForwarded || headersList.get('host');
       if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
         url = `https://${host}`;
       }
