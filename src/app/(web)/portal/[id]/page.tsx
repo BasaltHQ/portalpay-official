@@ -3260,24 +3260,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
                     const elementToMount = headlessAuthElement || headlessPaymentElement;
                     if (elementToMount && !el.contains(elementToMount)) {
                       el.innerHTML = "";
-                      
-                      const forceDarkIframe = (container: HTMLElement) => {
-                        const iframes = container.querySelectorAll("iframe");
-                        iframes.forEach((iframe: HTMLIFrameElement) => {
-                          if (iframe.src && iframe.src.includes("theme=stripe")) {
-                            console.log("[STRIPE HEADLESS] Intercepted iframe URL and forced dark theme:", iframe.src);
-                            iframe.src = iframe.src.replace("theme=stripe", "theme=dark");
-                          }
-                        });
-                      };
-
-                      forceDarkIframe(elementToMount);
                       el.appendChild(elementToMount);
-
-                      const observer = new MutationObserver(() => {
-                        forceDarkIframe(el);
-                      });
-                      observer.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ["src"] });
                     }
                   }
                 }} 
