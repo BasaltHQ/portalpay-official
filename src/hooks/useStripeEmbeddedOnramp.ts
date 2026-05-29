@@ -760,34 +760,90 @@ export function useStripeEmbeddedOnramp({
       // ─── Step 9: Create onramp session (destination = buyer's smart wallet) ───
       updateStep("creating_session");
 
-      const sessionRes = await fetch("/api/stripe/onramp-session-v2", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cryptoCustomerId: customerId,
-          cryptoPaymentToken: pmToken,
-          sourceAmount: amount,
-          sourceCurrency: "usd",
-          destinationCurrency,
-          destinationNetwork: network,
-          walletAddress: buyerWallet, // ← Buyer's unique smart wallet
-          oauthToken: oauthTokenRef.current,
-          receiptId,
-          merchantWallet,
-          brandKey,
-        }),
-      });
+      let sessionId: string | null = null;
 
-      if (!sessionRes.ok) {
-        const sessionData = await sessionRes.json();
-        handleError(sessionData.error || "Session creation failed");
+      try {
+        const sessionRes = await fetch("/api/stripe/onramp-session-v2", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cryptoCustomerId: customerId,
+            cryptoPaymentToken: pmToken,
+            sourceAmount: amount,
+            sourceCurrency: "usd",
+            destinationCurrency,
+            destinationNetwork: network,
+            walletAddress: buyerWallet, // ← Buyer's unique smart wallet
+            oauthToken: oauthTokenRef.current,
+            receiptId,
+            merchantWallet,
+            brandKey,
+          }),
+        });
+
+        if (!sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          const errMessage = String(sessionData.error || "").toLowerCase();
+          const errCode = String(sessionData.code || "").toLowerCase();
+
+          if (
+            errMessage.includes("verification") || 
+            errMessage.includes("kyc") || 
+            errCode.includes("verification") || 
+            errCode.includes("kyc")
+          ) {
+            console.log("[EMBEDDED ONRAMP] Document verification required during session creation. Launching verifyDocuments...");
+            updateStep("verifying_identity");
+            try {
+              await onramp.verifyDocuments();
+              console.log("[EMBEDDED ONRAMP] Document verification completed. Retrying session creation...");
+              
+              // Retry session creation after verification completes!
+              updateStep("creating_session");
+              const retryRes = await fetch("/api/stripe/onramp-session-v2", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  cryptoCustomerId: customerId,
+                  cryptoPaymentToken: pmToken,
+                  sourceAmount: amount,
+                  sourceCurrency: "usd",
+                  destinationCurrency,
+                  destinationNetwork: network,
+                  walletAddress: buyerWallet,
+                  oauthToken: oauthTokenRef.current,
+                  receiptId,
+                  merchantWallet,
+                  brandKey,
+                }),
+              });
+
+              if (!retryRes.ok) {
+                const retryData = await retryRes.json();
+                handleError(retryData.error || "Session creation failed after document verification");
+                return;
+              }
+
+              const retryData = await retryRes.json();
+              sessionId = retryData.id;
+            } catch (verifyErr: any) {
+              handleError(verifyErr?.message || "Identity verification failed or was cancelled");
+              return;
+            }
+          } else {
+            handleError(sessionData.error || "Session creation failed");
+            return;
+          }
+        } else {
+          const sessionData = await sessionRes.json();
+          sessionId = sessionData.id;
+        }
+      } catch (err: any) {
+        handleError(err?.message || "Session creation failed");
         return;
       }
 
-      const sessionData = await sessionRes.json();
-      const sessionId = sessionData.id;
-
-      if (!mountedRef.current) return;
+      if (!sessionId || !mountedRef.current) return;
 
       // ─── Step 10: Perform checkout with retry loop ───
       updateStep("checking_out");
