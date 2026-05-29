@@ -3395,6 +3395,7 @@ export default function PortalReceiptPage({ propId, propEmbedded, propRecipient 
               border-radius: 12px !important;
               overflow: hidden !important;
             }
+            .pp-portal-container iframe,
             .stripe-embedded-container iframe {
               background: transparent !important;
               color-scheme: dark !important;
